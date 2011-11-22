@@ -58,6 +58,9 @@ class DependsKeys (object):
   #//-------------------------------------------------------//
   
   def   __setitem__(self, dep_key, value_keys ):
+    if not value_keys:
+      raise AssertionError("value_keys is empty")
+    
     self.deps[ dep_key ] = value_keys
     values_setdefault = self.values.setdefault
     for value_key in value_keys:
@@ -128,6 +131,9 @@ class DependsKeys (object):
     all_keys = set()
     all_value_keys = set()
     
+    print("deps: %s" % str(self.deps) )
+    print("values: %s" % str(self.values) )
+    
     for key, value_keys in self.deps.items():
       for value_key in value_keys:
         dep_keys = self.values[ value_key ]
@@ -139,7 +145,7 @@ class DependsKeys (object):
       all_value_keys |= value_keys
     
     if len(all_keys) != len(self.deps):
-      raise AssertionError("len(all_keys) (%s) != len(self.deps)" % (len(all_keys), len(self.deps)))
+      raise AssertionError("len(all_keys) (%s) != len(self.deps) (%s)" % (len(all_keys), len(self.deps)))
     
     if len(all_value_keys) != len(self.values):
       raise AssertionError("len(all_value_keys) (%s) != len(self.value_keys)" % (len(all_value_keys), len(self.value_keys)))
@@ -175,6 +181,7 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   __getValuesByKeys( self, keys ):
+    print("keys: %s" % str(keys))
     values = []
     values_append = values.append
     
@@ -184,10 +191,13 @@ class ValuesFile (object):
       for key in keys:
         values_append( getValue( key ) )
     except KeyError:
+      print("KeyError")
       return None
     except TypeError:
+      print("TypeError")
       return None
     
+    print("values: %s" % str(values) )
     return values
   
   #//---------------------------------------------------------------------------//
@@ -213,12 +223,15 @@ class ValuesFile (object):
   
   def __restoreDepends( self, dep_values ):
     
+    print("dep_values: %s" % str(dep_values))
+    
     sorted_deps = _sortDepends( dep_values )
     
     xash = self.xash
     
     for key, dep_keys_value in sorted_deps:
-      values = self.__getValuesByKeys( dep_keys_value.content )
+      value_keys = dep_keys_value.content
+      values = self.__getValuesByKeys( value_keys )
       dep_value = DependsValue( dep_keys_value.name, values )
       
       xash[ key ] = dep_value
@@ -246,15 +259,16 @@ class ValuesFile (object):
     self.deps = DependsKeys()
     self.data_file = None
     self.pickler = ValuePickler()
-    self.open( filename )
     self.loads = self.pickler.loads
     self.dumps = self.pickler.dumps
+    self.open( filename )
   
   #//---------------------------------------------------------------------------//
   
   def   __loadValue( self, key, data, dep_values ):
     
     value = self.loads( data )
+    print("loadValue: value: %s, %s" % (value, value.content) )
     
     if isinstance( value, DependsValue ):
       try:

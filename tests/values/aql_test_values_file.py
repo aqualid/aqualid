@@ -18,7 +18,8 @@ from aql_values_file import ValuesFile
 @testcase
 def test_deps_1(self):
   
-  with Tempfile() as tmp:
+    with Tempfile() as tmp:
+      pass
     vfile = ValuesFile( tmp.name )
     vfile.selfTest()
     
@@ -44,8 +45,12 @@ def test_deps_1(self):
     s_values = vfile.findValues( values ); vfile.selfTest()
     
     self.assertEqual( values, s_values )
-
     
+    #//-------------------------------------------------------//
+    
+    vfile2 = ValuesFile( tmp.name ); vfile2.selfTest()
+    s_values2 = vfile2.findValues( values ); vfile.selfTest()
+    self.assertEqual( values, s_values )
     
 
 #//===========================================================================//
