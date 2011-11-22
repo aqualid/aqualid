@@ -3,7 +3,8 @@ from aql_logging import logWarning
 from aql_xash import Xash
 from aql_lock_file import FileLock
 from aql_data_file import DataFile
-from aql_depends_value import DependsValue
+from aql_value import NoContent
+from aql_depends_value import DependsValue, DependsKeyContent
 from aql_value_pickler import ValuePickler
 
 #//===========================================================================//
@@ -129,13 +130,13 @@ class DependsKeys (object):
     
     for key, value_keys in self.deps.items():
       for value_key in value_keys:
-        dep_keys = self.value_keys[ value_key ]
+        dep_keys = self.values[ value_key ]
         if key not in dep_keys:
           raise AssertionError("dep (%s) is not in value_keys[%s]" % (key, value_key))
         
-        all_keys += dep_keys
+        all_keys |= dep_keys
       
-      all_value_keys += value_keys
+      all_value_keys |= value_keys
     
     if len(all_keys) != len(self.deps):
       raise AssertionError("len(all_keys) (%s) != len(self.deps)" % (len(all_keys), len(self.deps)))
@@ -154,7 +155,7 @@ class ValuesFile (object):
   
   def   __getKeysOfValues( self, values ):
   
-    value_keys = set()
+    value_keys = DependsKeyContent()
     value_keys_append = value_keys.add
     
     findValue = self.xash.find
@@ -361,8 +362,11 @@ class ValuesFile (object):
   
   def   __addDepValue( self, value ):
     
+    xash = self.xash
     deps = self.deps
-    dep_value = DependsValue( value.name, self.__getKeysOfValues( value.content ) )
+    
+    content_keys = self.__getKeysOfValues( value.content )
+    dep_value = DependsValue( value.name, content_keys )
     
     key, val = xash.find( value )
     if val is not None:
@@ -395,7 +399,7 @@ class ValuesFile (object):
       for value in values:
         self.__addValue( value )
       
-      for dep_value in dep_values:
+      for id, dep_value in dep_values:
         self.__addDepValue( dep_value )
   
   #//---------------------------------------------------------------------------//

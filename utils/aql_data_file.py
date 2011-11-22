@@ -294,7 +294,7 @@ class DataFile (object):
       stream.seek( 0 )
       stream.truncate( 0 )
     
-    del self.locations[:]
+    self.locations.clear()
     self.file_size = 0
   
   #//-------------------------------------------------------//

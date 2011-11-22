@@ -8,6 +8,7 @@ from aql_tests import testcase, skip, runTests
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
 from aql_str_value import StringValue
+from aql_depends_value import DependsValue
 from aql_value_pickler import ValuePickler, pickleable
 from aql_values_file import ValuesFile
 
@@ -15,7 +16,7 @@ from aql_values_file import ValuesFile
 #//===========================================================================//
 
 @testcase
-def test_value_pickler(self):
+def test_deps_1(self):
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -29,12 +30,23 @@ def test_value_pickler(self):
     
     vfile.addValues( values ); vfile.selfTest()
     
-    s_values = vfile.findValues( values )
+    s_values = vfile.findValues( values ); vfile.selfTest()
     
     self.assertEqual( values, s_values )
     
-    print("values: %s" % str(values) )
-    print("s_values: %s" % str(s_values) )
+    vfile.clear(); vfile.selfTest()
+    #//-------------------------------------------------------//
+    
+    dep_value = DependsValue( "urls", values )
+    values.insert( 0, dep_value )
+    
+    vfile.addValues( values ); vfile.selfTest()
+    s_values = vfile.findValues( values ); vfile.selfTest()
+    
+    self.assertEqual( values, s_values )
+
+    
+    
 
 #//===========================================================================//
 

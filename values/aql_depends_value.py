@@ -2,6 +2,11 @@
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
 
+@pickleable
+class DependsKeyContent (set):
+  def   __getnewargs__(self):
+    return ()
+
 #//===========================================================================//
 
 class   DependsValueContent (tuple):
@@ -11,6 +16,9 @@ class   DependsValueContent (tuple):
     if isinstance( values, DependsValueContent ):
       return values
     
+    if isinstance( values, DependsKeyContent ):
+      return values
+    
     if isinstance( values, NoContent ):
       return values
     
@@ -18,17 +26,7 @@ class   DependsValueContent (tuple):
       return NoContent()
     
     try:
-      values_list = []
-      for value in values:
-        if not isinstance( value, Value ):
-          return values
-        values_list.append( value )
-      
-      if not values_list:
-        return values
-      
-      values = values_list
-      
+      values = list(values)
     except TypeError:
       values = [values]
     
