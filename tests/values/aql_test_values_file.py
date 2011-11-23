@@ -50,8 +50,31 @@ def test_deps_1(self):
     
     vfile2 = ValuesFile( tmp.name ); vfile2.selfTest()
     s_values2 = vfile2.findValues( values ); vfile.selfTest()
+    self.assertEqual( values, s_values2 )
+    
+    #//-------------------------------------------------------//
+    
+    values[0] = DependsValue( "urls", reversed(values[1:]) )
+    
+    vfile2.addValues( values ); vfile2.selfTest()
+    s_values = vfile.findValues( values ); vfile.selfTest()
     self.assertEqual( values, s_values )
     
+    #//-------------------------------------------------------//
+    
+    value1.content = "http://aql.org/download1"
+    
+    vfile2.addValues( [ value1 ] ); vfile2.selfTest()
+    s_value1 = vfile.findValues( [ value1 ] )[0]; vfile.selfTest()
+    self.assertEqual( value1, s_value1 )
+    
+    #//-------------------------------------------------------//
+    
+    dep_value = DependsValue( "urls", reversed(values) )
+    
+    vfile2.addValues( [dep_value] ); vfile2.selfTest()
+    s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
+    self.assertEqual( dep_value, s_dep_value )
 
 #//===========================================================================//
 

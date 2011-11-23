@@ -58,6 +58,7 @@ class DependsKeys (object):
   #//-------------------------------------------------------//
   
   def   __setitem__(self, dep_key, value_keys ):
+    print( "DependsKeys.__setitem__: %s: %s" % (dep_key, value_keys) )
     if not value_keys:
       raise AssertionError("value_keys is empty")
     
@@ -95,6 +96,7 @@ class DependsKeys (object):
   #//-------------------------------------------------------//
   
   def   remove( self, key ):
+    print( "DependsKeys.remove: %s" % key )
     removed_deps = set()
     removing_keys = set([key])
     
@@ -111,7 +113,10 @@ class DependsKeys (object):
         
         for value_key in value_keys:
           try:
-            values[value_key].remove( key )
+            value_deps = values[value_key]
+            value_deps.remove( key )
+            if not value_deps:
+              del values[value_key]
           except KeyError:
             pass
         
@@ -119,10 +124,10 @@ class DependsKeys (object):
         pass
       
       try:
-        removing_keys += values_pop( key )
+        removing_keys |= values_pop( key )
       except KeyError:
         pass
-    
+    print( "removed deps: %s" % str(removed_deps) )
     return removed_deps
   
   #//-------------------------------------------------------//
@@ -148,7 +153,7 @@ class DependsKeys (object):
       raise AssertionError("len(all_keys) (%s) != len(self.deps) (%s)" % (len(all_keys), len(self.deps)))
     
     if len(all_value_keys) != len(self.values):
-      raise AssertionError("len(all_value_keys) (%s) != len(self.value_keys)" % (len(all_value_keys), len(self.value_keys)))
+      raise AssertionError("len(all_value_keys) (%s) != len(self.values) (%s)" % (len(all_value_keys), len(self.values)))
     
   
 #//===========================================================================//
@@ -240,7 +245,7 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   __removedDepends( self, removed_deps ):
+  def   __removedDepends( self, removed_keys ):
     if removed_keys:
       xash = self.xash
       replace = self.data_file.replace
@@ -310,7 +315,7 @@ class ValuesFile (object):
     deps_remove = self.deps.remove
     for del_key in deleted_keys:
       del xash[ del_key ]
-      removed_keys += deps_remove( del_key )
+      removed_keys |= deps_remove( del_key )
     
     removed_keys -= deleted_keys
     
@@ -340,7 +345,6 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   findValues( self, values ):
-    
     with self.lock.writeLock():
       self.__update()
     
@@ -366,7 +370,7 @@ class ValuesFile (object):
         new_key = self.data_file.replace( key, self.dumps( value ) )
         xash[ new_key ] = value
         
-        removed_keys = deps.remove( key )
+        removed_keys = self.deps.remove( key )
         self.__removedDepends( removed_keys )
     else:
       key = self.data_file.append( self.dumps( value ) )
@@ -380,11 +384,19 @@ class ValuesFile (object):
     deps = self.deps
     
     content_keys = self.__getKeysOfValues( value.content )
+    print("content_keys: %s" % str(content_keys) )
     dep_value = DependsValue( value.name, content_keys )
     
     key, val = xash.find( value )
+    print("key: %s" % key )
     if val is not None:
-      if deps[ key ] != dep_value.content:
+      
+      try:
+        old_content_keys = deps[ key ]
+      except KeyError:
+        old_content_keys = None
+      
+      if old_content_keys != content_keys:
         data = self.dumps( dep_value )
         
         new_key = self.data_file.replace( key, data )
@@ -392,19 +404,19 @@ class ValuesFile (object):
         
         removed_keys = deps.remove( key )
         self.__removedDepends( removed_keys )
-        
-        deps[ key ] = content_keys
-        
+        if content_keys is not None:
+          deps[ key ] = content_keys
+    
     else:
       data = self.dumps( dep_value )
       key = self.data_file.append( data )
       xash[key] = value
-      deps[ key ] = content_keys
+      if content_keys is not None:
+        deps[ key ] = content_keys
   
   #//---------------------------------------------------------------------------//
   
   def   addValues( self, values ):
-    
     values, dep_values = self.__sortValues( values )
     
     with self.lock.writeLock():

@@ -4,14 +4,15 @@ from aql_value_pickler import pickleable
 
 @pickleable
 class DependsKeyContent (set):
-  def   __new__( cls, values ):
+  def   __new__( cls, values = None ):
     
     self = super(DependsKeyContent,cls).__new__(cls)
-    self.update( values )
+    if values is not None:
+      self.update( values )
     return self
   
   def   __getnewargs__(self):
-    return tuple(self)
+    return ( tuple(self), )
 
 #//===========================================================================//
 
