@@ -384,11 +384,11 @@ class ValuesFile (object):
     deps = self.deps
     
     content_keys = self.__getKeysOfValues( value.content )
-    print("content_keys: %s" % str(content_keys) )
-    dep_value = DependsValue( value.name, content_keys )
+    
+    print("__addDepValue: content_keys: %s" % str(content_keys) )
     
     key, val = xash.find( value )
-    print("key: %s" % key )
+    print("__addDepValue: key: %s" % key )
     if val is not None:
       
       try:
@@ -397,17 +397,30 @@ class ValuesFile (object):
         old_content_keys = None
       
       if old_content_keys != content_keys:
+        if (content_keys is None) or (key in content_keys):   # recursive dependecy
+          content_keys = None
+          value = DependsValue( value.name, None )
+          dep_value = value
+        else:
+          dep_value = DependsValue( value.name, content_keys )
+        
         data = self.dumps( dep_value )
         
         new_key = self.data_file.replace( key, data )
-        xash[ new_key ] = dep_value
+        xash[ new_key ] = value
         
         removed_keys = deps.remove( key )
         self.__removedDepends( removed_keys )
         if content_keys is not None:
-          deps[ key ] = content_keys
+          deps[ new_key ] = content_keys
     
     else:
+      if content_keys is None:
+        value = DependsValue( value.name, None )
+        dep_value = value
+      else:
+        dep_value = DependsValue( value.name, content_keys )
+      
       data = self.dumps( dep_value )
       key = self.data_file.append( data )
       xash[key] = value
