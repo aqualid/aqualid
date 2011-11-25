@@ -10,6 +10,7 @@ from aql_value import Value, NoContent
 from aql_str_value import StringValue
 from aql_depends_value import DependsValue
 from aql_value_pickler import ValuePickler, pickleable
+from aql_data_file import DataFile
 from aql_values_file import ValuesFile
 
 
@@ -75,6 +76,34 @@ def test_deps_1(self):
     vfile2.addValues( [dep_value] ); vfile2.selfTest()
     s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
     self.assertEqual( dep_value, s_dep_value )
+    
+    #//-------------------------------------------------------//
+    
+    dep_value2 = DependsValue( "urls2", [ dep_value ] )
+    vfile2.addValues( [dep_value2] ); vfile2.selfTest()
+    
+    dep_value = DependsValue( "urls", [ dep_value2 ] )
+    vfile2.addValues( [dep_value] ); vfile2.selfTest()
+    
+    s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
+    print("s_dep_value.content: %s " % str(s_dep_value.content) )
+    
+    #//-------------------------------------------------------//
+    
+    dep_value = DependsValue( "urls", [ value1 ] )
+    vfile.addValues( [dep_value, value1] ); vfile2.selfTest()
+    
+    df = DataFile( tmp.name )
+    
+    value1_key, value1 = vfile.xash.find( value1 )
+    del df[value1_key]
+    
+    s_value1 = vfile.findValues( [value1] )[0]; vfile.selfTest()
+    self.assertNotEqual( s_value1.content, value1.content )
+    
+    s_value1 = vfile2.findValues( [value1] )[0]; vfile.selfTest()
+    self.assertNotEqual( s_value1.content, value1.content )
+    
 
 #//===========================================================================//
 

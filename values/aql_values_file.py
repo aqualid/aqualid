@@ -228,7 +228,7 @@ class ValuesFile (object):
   
   def __restoreDepends( self, dep_values ):
     
-    print("dep_values: %s" % str(dep_values))
+    print("__restoreDepends: dep_values: %s" % str(dep_values))
     
     sorted_deps = _sortDepends( dep_values )
     
@@ -246,6 +246,7 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   __removedDepends( self, removed_keys ):
+    print("__removedDepends: %s" % str(removed_keys))
     if removed_keys:
       xash = self.xash
       replace = self.data_file.replace
@@ -384,8 +385,13 @@ class ValuesFile (object):
     deps = self.deps
     
     content_keys = self.__getKeysOfValues( value.content )
+    if content_keys is None:
+      value = DependsValue( value.name, None )
+      dep_value = value
+    else:
+      dep_value = DependsValue( value.name, content_keys )
     
-    print("__addDepValue: content_keys: %s" % str(content_keys) )
+    print("__addDepValue: %s content_keys: %s" % (value.name, content_keys) )
     
     key, val = xash.find( value )
     print("__addDepValue: key: %s" % key )
@@ -397,30 +403,17 @@ class ValuesFile (object):
         old_content_keys = None
       
       if old_content_keys != content_keys:
-        if (content_keys is None) or (key in content_keys):   # recursive dependecy
-          content_keys = None
-          value = DependsValue( value.name, None )
-          dep_value = value
-        else:
-          dep_value = DependsValue( value.name, content_keys )
-        
         data = self.dumps( dep_value )
         
         new_key = self.data_file.replace( key, data )
         xash[ new_key ] = value
+        if content_keys is not None:
+          deps[ new_key ] = content_keys
         
         removed_keys = deps.remove( key )
         self.__removedDepends( removed_keys )
-        if content_keys is not None:
-          deps[ new_key ] = content_keys
     
     else:
-      if content_keys is None:
-        value = DependsValue( value.name, None )
-        dep_value = value
-      else:
-        dep_value = DependsValue( value.name, content_keys )
-      
       data = self.dumps( dep_value )
       key = self.data_file.append( data )
       xash[key] = value
