@@ -17,10 +17,9 @@ from aql_values_file import ValuesFile
 #//===========================================================================//
 
 @testcase
-def test_deps_1(self):
+def test_value_file(self):
   
-    with Tempfile() as tmp:
-      pass
+  with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
     vfile.selfTest()
     
@@ -86,12 +85,11 @@ def test_deps_1(self):
     vfile2.addValues( [dep_value] ); vfile2.selfTest()
     
     s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
-    print("s_dep_value.content: %s " % str(s_dep_value.content) )
     
     #//-------------------------------------------------------//
     
     dep_value = DependsValue( "urls", [ value1 ] )
-    vfile.addValues( [dep_value, value1] ); vfile2.selfTest()
+    vfile.addValues( [dep_value, value1] ); vfile.selfTest()
     
     df = DataFile( tmp.name )
     
@@ -103,7 +101,76 @@ def test_deps_1(self):
     
     s_value1 = vfile2.findValues( [value1] )[0]; vfile.selfTest()
     self.assertNotEqual( s_value1.content, value1.content )
+
+#//===========================================================================//
+
+@testcase
+def test_value_file_2(self):
+  
+  with Tempfile() as tmp:
+    vfile = ValuesFile( tmp.name )
+    vfile.selfTest()
     
+    value1 = StringValue( "target_url1", "http://aql.org/download" )
+    value2 = StringValue( "target_url2", "http://aql.org/download2" )
+    value3 = StringValue( "target_url3", "http://aql.org/download3" )
+    
+    values = [ value1, value2, value3 ]
+    
+    dep_value1 = DependsValue( "urls1", values )
+    
+    value4 = StringValue( "target_url4", "http://aql.org/download4" )
+    dep_value2 = DependsValue( "urls2", [ dep_value1, value4 ] )
+    
+    value5 = StringValue( "target_url5", "http://aql.org/download5" )
+    dep_value3 = DependsValue( "urls3", [ dep_value1, value5 ] )
+    
+    value6 = StringValue( "target_url6", "http://aql.org/download6" )
+    dep_value4 = DependsValue( "urls4", [ dep_value1, dep_value2, dep_value3, value6 ] )
+    
+    
+    all_dep_values = [dep_value4, dep_value3, dep_value2, dep_value1]
+    
+    all_values = all_dep_values + values +[ value4, value5, value6 ]
+    
+    vfile.addValues( all_values ); vfile.selfTest()
+    
+    vfile.close()
+    vfile.open( tmp.name ); vfile.selfTest()
+    
+    s_all_values = vfile.findValues( all_values ); vfile.selfTest()
+    for value, s_value in zip( all_values, s_all_values ):
+      self.assertEqual( value, s_value )
+      self.assertEqual( value.content, s_value.content )
+    
+    value3 = StringValue( "target_url3", "http://aql.org/download3/0" )
+    
+    vfile.addValues( [value3] ); vfile.selfTest()
+    
+    s_all_dep_values = vfile.findValues( all_dep_values ); vfile.selfTest()
+    for value, s_value in zip( all_dep_values, s_all_dep_values ):
+      self.assertEqual( value, s_value )
+      self.assertNotEqual( value.content, s_value.content )
+      self.assertIsInstance( s_value.content, NoContent )
+
+#//===========================================================================//
+
+@skip
+@testcase
+def   test_value_file_speed(self):
+  
+  values = []
+  for i in range(0, 100000):
+    value = StringValue( "target_url%s" % i, "http://aql.org/download" )
+    values.append( value )
+  
+  with Tempfile() as tmp:
+    vf = ValuesFile( tmp.name )
+    
+    t = lambda addValues = vf.addValues, values = values: addValues( values )
+    t = timeit.timeit( t, number = 1 )
+    print("value picker: %s" % t)
+
 
 #//===========================================================================//
 

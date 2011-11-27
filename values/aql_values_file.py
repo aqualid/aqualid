@@ -58,7 +58,6 @@ class DependsKeys (object):
   #//-------------------------------------------------------//
   
   def   __setitem__(self, dep_key, value_keys ):
-    print( "DependsKeys.__setitem__: %s: %s" % (dep_key, value_keys) )
     if not value_keys:
       raise AssertionError("value_keys is empty")
     
@@ -96,7 +95,6 @@ class DependsKeys (object):
   #//-------------------------------------------------------//
   
   def   remove( self, key ):
-    print( "DependsKeys.remove: %s" % key )
     removed_deps = set()
     removing_keys = set([key])
     
@@ -127,7 +125,6 @@ class DependsKeys (object):
         removing_keys |= values_pop( key )
       except KeyError:
         pass
-    print( "removed deps: %s" % str(removed_deps) )
     return removed_deps
   
   #//-------------------------------------------------------//
@@ -135,9 +132,6 @@ class DependsKeys (object):
   def   selfTest( self ):
     all_keys = set()
     all_value_keys = set()
-    
-    print("deps: %s" % str(self.deps) )
-    print("values: %s" % str(self.values) )
     
     for key, value_keys in self.deps.items():
       for value_key in value_keys:
@@ -186,7 +180,6 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   __getValuesByKeys( self, keys ):
-    print("keys: %s" % str(keys))
     values = []
     values_append = values.append
     
@@ -196,13 +189,10 @@ class ValuesFile (object):
       for key in keys:
         values_append( getValue( key ) )
     except KeyError:
-      print("KeyError")
       return None
     except TypeError:
-      print("TypeError")
       return None
     
-    print("values: %s" % str(values) )
     return values
   
   #//---------------------------------------------------------------------------//
@@ -228,8 +218,6 @@ class ValuesFile (object):
   
   def __restoreDepends( self, dep_values ):
     
-    print("__restoreDepends: dep_values: %s" % str(dep_values))
-    
     sorted_deps = _sortDepends( dep_values )
     
     xash = self.xash
@@ -246,7 +234,6 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   __removedDepends( self, removed_keys ):
-    print("__removedDepends: %s" % str(removed_keys))
     if removed_keys:
       xash = self.xash
       replace = self.data_file.replace
@@ -274,7 +261,6 @@ class ValuesFile (object):
   def   __loadValue( self, key, data, dep_values ):
     
     value = self.loads( data )
-    print("loadValue: value: %s, %s" % (value, value.content) )
     
     if isinstance( value, DependsValue ):
       try:
@@ -340,8 +326,8 @@ class ValuesFile (object):
       self.data_file.close()
       self.data_file = None
     
-    self.locations.clear()
     self.xash.clear()
+    self.deps.clear()
   
   #//---------------------------------------------------------------------------//
   
@@ -391,10 +377,7 @@ class ValuesFile (object):
     else:
       dep_value = DependsValue( value.name, content_keys )
     
-    print("__addDepValue: %s content_keys: %s" % (value.name, content_keys) )
-    
     key, val = xash.find( value )
-    print("__addDepValue: key: %s" % key )
     if val is not None:
       
       try:

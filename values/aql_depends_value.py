@@ -47,7 +47,7 @@ class   DependsValueContent (tuple):
   
   def   __eq__( self, other ):
     if (type(self) != type(other)) or \
-      super(DependsValueContent,self).__ne__(self, other ):
+      super(DependsValueContent,self).__ne__( other ):
       return False
     
     for value1, value2 in zip( self, other ):
