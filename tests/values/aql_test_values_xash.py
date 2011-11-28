@@ -4,11 +4,12 @@ import sys
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import testcase, runTests
-from aql_xash import Xash
+from aql_values_xash import ValuesXash
+from aql_str_value import StringValue
 
 #//===========================================================================//
 
-class Item (object):
+class TestValueName (object):
   
   __slots__ = ('name', 'value')
   
@@ -32,12 +33,12 @@ class Item (object):
 
 @testcase
 def test_xash(self):
-  items_xash = Xash()
+  xash = ValuesXash()
   
-  item1 = Item('test', 'value1')
-  item2 = Item('test', 'value2')
-  item2_ = Item('test', 'value2')
-  item3 = Item('test3', 'value2')
+  item1 = StringValue( TestValueName('test', 'value1'), '1' )
+  item2 = StringValue( TestValueName('test', 'value2'), '1' )
+  item2_ = StringValue( TestValueName('test', 'value2'), '1' )
+  item3 = StringValue( TestValueName('test3', 'value3'), '1' )
   
   xash.selfTest()
   
@@ -62,7 +63,7 @@ def test_xash(self):
   
   self.assertEqual( len(xash), count )
   
-  new_item1 = Item('testing', 'value')
+  new_item1 = StringValue( TestValueName('testing', 'value'), '1' )
   xash[ 1 ] = new_item1; xash.selfTest()
   self.assertEqual( xash.find( item1 ), (None, None) )
   self.assertEqual( xash.find( new_item1 ), (1, new_item1) );

@@ -21,7 +21,6 @@ def test_file_value(self):
     temp_file_value2 = FileValue( temp_file.name )
     
     self.assertEqual( temp_file_value1, temp_file_value2 )
-    self.assertEqual( temp_file_value1.content, temp_file_value2.content )
     
     reversed_test_string = str(reversed(test_string))
     temp_file.seek( 0 )
@@ -29,7 +28,7 @@ def test_file_value(self):
     temp_file.flush()
     
     temp_file_value2 = FileValue( temp_file_value1 )
-    self.assertEqual( temp_file_value1, temp_file_value2 )
+    self.assertEqual( temp_file_value1.name, temp_file_value2.name )
     self.assertNotEqual( temp_file_value1.content, temp_file_value2.content )
 
   #//=======================================================//
@@ -52,7 +51,7 @@ def test_file_value_save_load(self):
   self.testSaveLoad( temp_file_value )
   
   file_value = FileValue( temp_file_name )
-  self.assertEqual( temp_file_value, file_value )
+  self.assertEqual( temp_file_value.name, file_value.name )
   self.assertNotEqual( temp_file_value.content, file_value.content )
   self.assertFalse( file_value.exists() )
 
@@ -70,7 +69,6 @@ def test_file_value_time(self):
     temp_file_value2 = FileValue( temp_file.name, FileContentTimeStamp )
     
     self.assertEqual( temp_file_value1, temp_file_value2 )
-    self.assertEqual( temp_file_value1.content, temp_file_value2.content )
     
     time.sleep(1)
     temp_file.seek( 0 )
@@ -78,7 +76,7 @@ def test_file_value_time(self):
     temp_file.flush()
     
     temp_file_value2 = FileValue( temp_file_value1, FileContentTimeStamp )
-    self.assertEqual( temp_file_value1, temp_file_value2 )
+    self.assertEqual( temp_file_value1.name, temp_file_value2.name )
     self.assertNotEqual( temp_file_value1.content, temp_file_value2.content )
 
 #//=======================================================//
@@ -101,7 +99,7 @@ def test_file_value_time_save_load(self):
   self.testSaveLoad( temp_file_value )
   
   file_value = FileValue( temp_file_name, FileContentTimeStamp )
-  self.assertEqual( temp_file_value, file_value )
+  self.assertEqual( temp_file_value.name, file_value.name )
   self.assertNotEqual( temp_file_value.content, file_value.content )
   self.assertFalse( file_value.exists() )
 

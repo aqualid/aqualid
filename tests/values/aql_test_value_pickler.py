@@ -33,32 +33,27 @@ def test_value_pickler(self):
     v = vpick.loads( vl )
     v = vpick.loads( vl )
     self.assertEqual( value, v )
-    self.assertEqual( value.content, v.content )
     
     value = FileValue( tmp.name, FileContentTimeStamp )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
-    self.assertEqual( value.content, v.content )
   
   value = StringValue( tmp.name, '123-345' )
   v = vpick.loads( vpick.dumps( value ) )
   self.assertEqual( value, v )
-  self.assertEqual( value.content, v.content )
   
   value = StringValue( tmp.name, StringContentIgnoreCase('123-345') )
   v = vpick.loads( vpick.dumps( value ) )
   self.assertEqual( value, v )
-  self.assertEqual( value.content, v.content )
   
   value = StringValue( tmp.name, None )
   v = vpick.loads( vpick.dumps( value ) )
-  self.assertEqual( value, v )
+  self.assertEqual( value.name, v.name )
   self.assertIsInstance( v.content, NoContent )
   
   value = Value( "1221", 12345 )
   v = vpick.loads( vpick.dumps( value ) )
   self.assertEqual( value, v )
-  self.assertEqual( value.content, v.content )
   
 
 #//===========================================================================//

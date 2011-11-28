@@ -121,7 +121,7 @@ class AqlTests(unittest.TestCase):
     loaded_values = pickle.loads( data )
     loaded_value = loaded_values[0]
     
-    self.assertEqual( value, loaded_value )
+    self.assertEqual( value.name, loaded_value.name )
     if type(value.content) is not NoContent:
       self.assertEqual( value.content, loaded_value.content )
     else:

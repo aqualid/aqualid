@@ -1,6 +1,6 @@
 
 from aql_logging import logWarning
-from aql_xash import Xash
+from aql_values_xash import ValuesXash
 from aql_lock_file import FileLock
 from aql_data_file import DataFile
 from aql_value import NoContent
@@ -248,7 +248,7 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   __init__( self, filename ):
-    self.xash = Xash()
+    self.xash = ValuesXash()
     self.deps = DependsKeys()
     self.data_file = None
     self.pickler = ValuePickler()
@@ -328,6 +328,23 @@ class ValuesFile (object):
     
     self.xash.clear()
     self.deps.clear()
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   upToDate( self, values ):
+    with self.lock.writeLock():
+      self.__update()
+    
+    find = self.xash.find
+    for value in values:
+      val = find( value )[1]
+      if val is None:
+        return False
+      
+      if val != value:
+        return False
+    
+    return True
   
   #//---------------------------------------------------------------------------//
   

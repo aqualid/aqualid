@@ -18,12 +18,9 @@ def test_str_value(self):
   
   self.assertEqual( value1, value1 )
   self.assertEqual( value1, value2 )
-  self.assertEqual( value1.content, value2.content )
-  self.assertEqual( value1.content, value1.content )
   
   value2 = StringValue( value1 )
   self.assertEqual( value1, value2 )
-  self.assertEqual( value1.content, value2.content )
   
   value2.content = StringContent( value2.content.upper() )
   self.assertNotEqual( value1.content, value2.content )

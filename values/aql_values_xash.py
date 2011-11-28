@@ -1,21 +1,20 @@
-class Xash (object):
+class ValuesXash (object):
   
-  __slots__ = ('pairs', 'seq_num', 'keys')
+  __slots__ = ('pairs', 'keys')
   
   def   __init__(self):
     
     self.pairs = {}
-    self.seq_num = 0
     self.keys = {}
   
   #//-------------------------------------------------------//
   
-  def   getRef( self, item ):
-    pairs = self.pairs.setdefault( hash(item), [] )
+  def   getRef( self, value ):
+    pairs = self.pairs.setdefault( hash(value.name), [] )
     
     index = 0
-    for value_key, value_item in pairs:
-      if value_item == item:
+    for key, val in pairs:
+      if val.name == value.name:
         return pairs, index
       
       index += 1
@@ -24,16 +23,16 @@ class Xash (object):
     
   #//-------------------------------------------------------//
   
-  def   addToRef( self, ref, key, item ):
+  def   addToRef( self, ref, key, value ):
     
     pairs, index = ref
-    pair = (key, item )
+    pair = (key, value )
     keys = self.keys
     
     try:
-      old_item = keys[ key ]
-      if (index == -1) or (pairs[index][1] is not old_item):
-        self.removeByRef( self.getRef( old_item ) )
+      old_value = keys[ key ]
+      if (index == -1) or (pairs[index][1] is not old_value):
+        self.removeByRef( self.getRef( old_value ) )
     except KeyError:
       pass
     
@@ -45,7 +44,7 @@ class Xash (object):
     else:
       pairs.append( pair )
     
-    keys[ key ] = item
+    keys[ key ] = value
     
   #//-------------------------------------------------------//
   
@@ -68,8 +67,8 @@ class Xash (object):
   
   #//-------------------------------------------------------//
   
-  def   __setitem__(self, key, item ):
-    self.addToRef( self.getRef( item ), key, item )
+  def   __setitem__(self, key, value ):
+    self.addToRef( self.getRef( value ), key, value )
   
   #//-------------------------------------------------------//
   
@@ -79,9 +78,9 @@ class Xash (object):
   #//-------------------------------------------------------//
   
   def   pop(self, key):
-    item = self.keys[ key ]
-    self.removeByRef( self.getRef( item ) )
-    return item
+    value = self.keys[ key ]
+    self.removeByRef( self.getRef( value ) )
+    return value
   
   #//-------------------------------------------------------//
   
@@ -94,8 +93,8 @@ class Xash (object):
   
   #//-------------------------------------------------------//
   
-  def   find(self, item):
-    pairs, index = self.getRef( item )
+  def   find(self, value):
+    pairs, index = self.getRef( value )
     if index != -1:
       return pairs[index]
     
@@ -103,8 +102,8 @@ class Xash (object):
   
   #//-------------------------------------------------------//
   
-  def   remove( self, item ):
-    ref = self.getRef( item )
+  def   remove( self, value ):
+    ref = self.getRef( value )
     key = self.getKey( ref )
     self.removeByRef( ref )
     
@@ -112,8 +111,8 @@ class Xash (object):
   
   #//-------------------------------------------------------//
   
-  def   __contains__(self, item):
-    return self.getRef( item )[1] != -1
+  def   __contains__(self, value):
+    return self.getRef( value )[1] != -1
   
   #//-------------------------------------------------------//
   
@@ -135,18 +134,18 @@ class Xash (object):
   
   def   selfTest( self ):
     size = 0
-    for item_id, pairs in self.pairs.items():
-      for key, item in pairs:
+    for value_id, pairs in self.pairs.items():
+      for key, value in pairs:
         size += 1
         
-        if hash(item) != item_id:
-          raise AssertionError("hash(item) != item_id")
+        if hash(value.name) != value_id:
+          raise AssertionError("hash(value.name) != value_id")
         
         if key not in self.keys:
           raise AssertionError("key not in self.keys")
         
-        if item is not self.keys[ key ]:
-          raise AssertionError("item is not self.keys[ key ]")
+        if value is not self.keys[ key ]:
+          raise AssertionError("value is not self.keys[ key ]")
     
     if size != len(self.keys):
       raise AssertionError("size != len(self.keys)")

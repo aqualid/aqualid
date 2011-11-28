@@ -37,7 +37,7 @@ class   DependsValueContent (tuple):
     except TypeError:
       values = [values]
     
-    values.sort()
+    values.sort( key = lambda value: value.name )
     
     self = super(DependsValueContent,cls).__new__(cls, tuple(values) )
     
@@ -46,15 +46,7 @@ class   DependsValueContent (tuple):
   #//-------------------------------------------------------//
   
   def   __eq__( self, other ):
-    if (type(self) != type(other)) or \
-      super(DependsValueContent,self).__ne__( other ):
-      return False
-    
-    for value1, value2 in zip( self, other ):
-      if value1.content != value2.content:
-        return False
-    
-    return True
+    return (type(self) == type(other)) and super(DependsValueContent,self).__eq__( other )
   
   #//-------------------------------------------------------//
   
