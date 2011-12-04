@@ -135,6 +135,7 @@ def test_value_file_2(self):
     all_values = all_dep_values + values +[ value4, value5, value6 ]
     
     vfile.addValues( all_values ); vfile.selfTest()
+    self.assertTrue( vfile.actual( all_values ) )
     
     vfile.close()
     vfile.open( tmp.name ); vfile.selfTest()
@@ -148,6 +149,7 @@ def test_value_file_2(self):
     vfile.addValues( [value3] ); vfile.selfTest()
     
     s_all_dep_values = vfile.findValues( all_dep_values ); vfile.selfTest()
+    self.assertFalse( vfile.actual( all_dep_values ) )
     for value, s_value in zip( all_dep_values, s_all_dep_values ):
       self.assertEqual( value.name, s_value.name )
       self.assertNotEqual( value.content, s_value.content )

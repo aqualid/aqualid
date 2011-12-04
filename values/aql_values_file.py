@@ -331,7 +331,7 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   upToDate( self, values ):
+  def   actual( self, values ):
     with self.lock.writeLock():
       self.__update()
     

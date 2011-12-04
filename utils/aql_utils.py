@@ -4,15 +4,24 @@ import fnmatch
 
 #//===========================================================================//
 
-def     isSequence( value, isinstance = isinstance, sequence_types = (list, tuple) ):
-  return isinstance( value, sequence_types )
+def     isSequence( value, iter = iter ):
+  try:
+    iter( value )
+    return True
+  except TypeEror:
+    pass
+  
+  return False
 
 #//===========================================================================//
 
-def     toSequence( value ):
+def     toSequence( value, iter = iter, tuple = tuple ):
   
-  if isinstance( value, (list, tuple) ):
-      return value
+  try:
+    iter( value )
+    return value
+  except TypeEror:
+    pass
   
   if value is None:
       return tuple()
