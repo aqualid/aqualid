@@ -111,8 +111,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   save( self, vfile ):
-    
+  def   sourcesValue( self ):
     source_values = list(self.source_values)
     
     for node in self.source_nodes:
@@ -123,6 +122,12 @@ class Node (object):
     
     source_values += self.builder.values()
     
+    return DependsValue( self.name source_values )
+  
+  #//=======================================================//
+  
+  def   save( self, vfile ):
+    
     values = []
     values += self.source_values
     values += self.dep_values
@@ -131,7 +136,7 @@ class Node (object):
     values += self.target_values
     values += self.side_effect_values
     
-    values.append( DependsValue( self.name,               source_values ) )
+    values.append( self.sourcesValue() )
     values.append( DependsValue( self.implicit_deps_name, self.implicit_dep_values ) )
     values.append( DependsValue( self.target_name,        self.target_values ) )
     values.append( DependsValue( self.side_name,          self.side_effect_values ) )
@@ -145,37 +150,23 @@ class Node (object):
   
   #//=======================================================//
   
-  def   scan( self, vfile ):
-    
-    if vfile.actual( self.builder.values() ):
-      return False
-    
-    implicit_deps_value = DependsValue( self.implicit_deps_name, None )
-    value = vfile.findValues( [value] )[0]
-    if not value.actual():
-      return False
-    
-    implicit_deps = self.builder.scan( self )
-    self.implicit_dep_values = implicit_deps
-    return implicit_deps
-    
-  
-  #//=======================================================//
-  
   def   actual( self, vfile ):
-    value = DependsValue( self.target_name, None )
-    value = vfile.findValues( [value] )[0]
-    if not value.actual():
+    sources_value = self.sourcesValue()
+    targets_value = DependsValue( self.target_name )
+    side_effects_value = DependsValue( self.side_name )
+    deps_value = DependsValue( self.deps_name )
+    ideps_value = DependsValue( self.implicit_deps_name )
+    
+    values = [sources_value, targets_value, side_effects_value, deps_value, ideps_value ]
+    values = vfile.findValues( values )
+    old_sources_value = values[0]
+    
+    if sources_value != old_sources_value:
       return False
     
-    if not vfile.actual( self.builder.values() ):
-      return False
-    
-    if not vfile.actual( self.source_values ):
-      return False
-    
-    if not vfile.actual( self.dep_values ):
-      return False
+    for value in values[1:]:
+      if not value.actual():
+        return False
     
     return True
   
