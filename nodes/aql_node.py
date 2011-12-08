@@ -13,15 +13,20 @@ class Node (object):
     'source_values',
     'dep_nodes',
     'dep_values',
-    'implicit_dep_values',
+    
+    'idep_values',
     'target_values',
-    'side_effect_values',
+    'itarget_values',
     
     'name',
     'long_name',
-    'target_name',
-    'side_name',
-    'implicit_deps_name',
+    'targets_name',
+    'itargets_name',
+    'deps_name',
+    'ideps_name',
+    
+    'sources_value',
+    'deps_value',
   )
   
   #//-------------------------------------------------------//
@@ -35,7 +40,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __getSourceNodes( self, sources )
+  def   __getSourceNodes( self, sources ):
     
     source_nodes = []
     source_values = []
@@ -79,22 +84,47 @@ class Node (object):
        chcksum.update( name )
      
      name = chcksum.digest()
-     chcksum.update( 'targets' )
+     chcksum.update( 'target_values' )
      target_name = chcksum.digest()
      
-     chcksum.update( 'side_effect_values' )
+     chcksum.update( 'itarget_values' )
      side_name = chcksum.digest()
      
-     chcksum.update( 'implicit_dep_values' )
-     implicit_deps_name = chcksum.digest()
+     chcksum.update( 'dep_values' )
+     deps_name = chcksum.digest()
      
-     return name, target_name, side_name, implicit_deps_name
+     chcksum.update( 'idep_values' )
+     ideps_name = chcksum.digest()
+     
+     return name, targets_name, itargets_name, deps_name, ideps_name
   
   #//=======================================================//
   
-  def   __getattr__( self, attr )
-    if attr in ('name', 'target_name', 'side_name', 'implicit_deps_name'):
-      self.name, self.target_name, self.side_name = self.__getNames()
+  def   __sourcesValue( self ):
+    source_values = list(self.source_values)
+    
+    for node in self.source_nodes:
+      source_values += node.target_values
+    
+    source_values += self.builder.values()
+    
+    return DependsValue( self.name, source_values )
+  
+  #//=======================================================//
+  
+  def   __depsValue( self ):
+    dep_values = list(self.dep_values)
+    
+    for node in self.dep_nodes:
+      dep_values += node.target_values
+    
+    return DependsValue( self.deps_name, dep_values )
+  
+  #//=======================================================//
+  
+  def   __getattr__( self, attr ):
+    if attr in ('name', 'targets_name', 'itargets_name', 'deps_name', 'ideps_name'):
+      self.name, self.targets_name, self.itargets_name, self.deps_name, self.ideps_name = self.__getNames()
       return getattr(self, attr)
     
     elif attr == 'long_name':
@@ -102,31 +132,19 @@ class Node (object):
       self.long_name = long_name
       return long_name
     
-    elif attr == 'implicit_dep_values':
-      implicit_deps = self.builder.scan( self )
-      self.implicit_dep_values = implicit_deps
-      return implicit_deps
-   
-   raise AttributeError("Unknown attribute: '%s'" % str(attr) )
+    elif attr == 'sources_value':
+      self.sources_value = self.__sourcesValue()
+      return self.sources_value
+    
+    elif attr == 'deps_value':
+      self.deps_value = self.__depsValue()
+      return self.deps_value
+    
+    raise AttributeError("Unknown attribute: '%s'" % str(attr) )
   
   #//=======================================================//
   
-  def   sourcesValue( self ):
-    source_values = list(self.source_values)
-    
-    for node in self.source_nodes:
-      source_values += node.target_values
-    
-    for node in self.dep_nodes:
-      source_values += node.target_values
-    
-    source_values += self.builder.values()
-    
-    return DependsValue( self.name source_values )
-  
-  #//=======================================================//
-  
-  def   save( self, vfile ):
+  def   __save( self, vfile ):
     
     values = []
     values += self.source_values
@@ -136,42 +154,50 @@ class Node (object):
     values += self.target_values
     values += self.side_effect_values
     
-    values.append( self.sourcesValue() )
-    values.append( DependsValue( self.implicit_deps_name, self.implicit_dep_values ) )
-    values.append( DependsValue( self.target_name,        self.target_values ) )
-    values.append( DependsValue( self.side_name,          self.side_effect_values ) )
+    values.append( self.sources_value )
+    values.append( self.deps_value )
+    values.append( DependsValue( self.ideps_name,   self.idep_values )        )
+    values.append( DependsValue( self.target_name,  self.target_values )      )
+    values.append( DependsValue( self.side_name,    self.side_effect_values ) )
     
     vfile.addValues( values )
   
   #//=======================================================//
   
-  def   build( self ):
-    self.builder( self )
+  def   build( self, vfile ):
+    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self )
+    
+    self.__save( vfile )
   
   #//=======================================================//
   
   def   actual( self, vfile ):
-    sources_value = self.sourcesValue()
-    targets_value = DependsValue( self.target_name )
-    side_effects_value = DependsValue( self.side_name )
-    deps_value = DependsValue( self.deps_name )
-    ideps_value = DependsValue( self.implicit_deps_name )
+    sources_value = self.sources_value
+    deps_value    = self.deps_value
     
-    values = [sources_value, targets_value, side_effects_value, deps_value, ideps_value ]
+    targets_value   = DependsValue( self.targets_name   )
+    itargets_value  = DependsValue( self.itargets_name  )
+    ideps_value     = DependsValue( self.ideps_name     )
+    
+    values = [ sources_value, deps_value, targets_value, itargets_value, ideps_value ]
     values = vfile.findValues( values )
-    old_sources_value = values[0]
+    
+    old_sources_value = values.pop(0)
+    old_deps_value    = values.pop(0)
     
     if sources_value != old_sources_value:
       return False
     
-    for value in values[1:]:
+    if deps_value != old_deps_value:
+      return False
+    
+    for value in values:
       if not value.actual():
         return False
     
+    self.target_values  = list( targets_value.content   )
+    self.itarget_values = list( itargets_value.content  )
+    self.idep_values    = list( ideps_value.content     )
+    
     return True
-  
-  #//=======================================================//
-  
-  def   sources( self ):
-    return self.source_nodes
   
