@@ -1,6 +1,7 @@
 import hashlib
 
 from aql_value import Value
+from aql_depends_value import DependsValue
 from aql_logging import logError
 from aql_utils import toSequence
 
@@ -49,9 +50,9 @@ class Node (object):
     source_values_append = source_values.append
     
     for source in toSequence( sources ):
-      if isintance(source, Node):
+      if isinstance(source, Node):
         source_nodes_append( source )
-      elif isintance(source, Value):
+      elif isinstance(source, Value):
         source_values_append( source )
       else:
         raise Exception( "Unknown source type: %s" % type(source) )
@@ -81,19 +82,19 @@ class Node (object):
      chcksum = hashlib.md5()
      
      for name in self.long_name:
-       chcksum.update( name )
+       chcksum.update( name.encode() )
      
      name = chcksum.digest()
-     chcksum.update( 'target_values' )
-     target_name = chcksum.digest()
+     chcksum.update( b'target_values' )
+     targets_name = chcksum.digest()
      
-     chcksum.update( 'itarget_values' )
-     side_name = chcksum.digest()
+     chcksum.update( b'itarget_values' )
+     itargets_name = chcksum.digest()
      
-     chcksum.update( 'dep_values' )
+     chcksum.update( b'dep_values' )
      deps_name = chcksum.digest()
      
-     chcksum.update( 'idep_values' )
+     chcksum.update( b'idep_values' )
      ideps_name = chcksum.digest()
      
      return name, targets_name, itargets_name, deps_name, ideps_name
@@ -105,6 +106,8 @@ class Node (object):
     
     for node in self.source_nodes:
       source_values += node.target_values
+    
+    self.source_values = list(source_values)
     
     source_values += self.builder.values()
     
@@ -150,22 +153,23 @@ class Node (object):
     values += self.source_values
     values += self.dep_values
     values += self.builder.values()
-    values += self.implicit_dep_values
+    values += self.idep_values
     values += self.target_values
-    values += self.side_effect_values
+    values += self.itarget_values
     
     values.append( self.sources_value )
     values.append( self.deps_value )
-    values.append( DependsValue( self.ideps_name,   self.idep_values )        )
-    values.append( DependsValue( self.target_name,  self.target_values )      )
-    values.append( DependsValue( self.side_name,    self.side_effect_values ) )
+    values.append( DependsValue( self.ideps_name,     self.idep_values )        )
+    values.append( DependsValue( self.targets_name,   self.target_values )      )
+    values.append( DependsValue( self.itargets_name,  self.itarget_values ) )
     
     vfile.addValues( values )
   
   #//=======================================================//
   
   def   build( self, vfile ):
-    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self )
+    
+    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self.source_values )
     
     self.__save( vfile )
   
@@ -182,13 +186,10 @@ class Node (object):
     values = [ sources_value, deps_value, targets_value, itargets_value, ideps_value ]
     values = vfile.findValues( values )
     
-    old_sources_value = values.pop(0)
-    old_deps_value    = values.pop(0)
-    
-    if sources_value != old_sources_value:
+    if sources_value != values.pop(0):
       return False
     
-    if deps_value != old_deps_value:
+    if deps_value != values.pop(0):
       return False
     
     for value in values:

@@ -130,22 +130,29 @@ class   FileName (str):
 @pickleable
 class   FileValue (Value):
   
-  def   __new__( cls, name, content = None ):
+  def   __new__( cls, name, content = NotImplemented ):
     
     if isinstance( name, FileValue ):
       other = name
       name = other.name
     
-      if content is None:
+      if content is NotImplemented:
         content = type(other.content)( name )
     else:
       name = FileName( name )
     
-    if content is None:
+    if content is NotImplemented:
       content = FileContentChecksum( name )
     elif type(content) is type:
       content = content( name )
     
     return super(FileValue, cls).__new__( cls, name, content )
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    content = self.content
+    return content == type(content)( self.name )
+
 
 #//===========================================================================//

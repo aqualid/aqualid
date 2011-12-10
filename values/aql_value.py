@@ -5,7 +5,7 @@ from aql_value_pickler import pickleable
 @pickleable
 class NoContent( object ):
   
-  def   __new__( cls ):
+  def   __new__( cls, *args ):
     return super(NoContent,cls).__new__(cls)
   
   def   __init__(self, *args ):     pass
@@ -40,11 +40,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    content = self.content
-    if content is None:
-      content = None
-    
-    return ( self.name, content )
+    return ( self.name, self.content )
   
   #//-------------------------------------------------------//
   
@@ -70,5 +66,10 @@ class   Value (object):
   
   def   exists( self ):
     return type(self.content) is not NoContent
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    return True
   
   #//-------------------------------------------------------//

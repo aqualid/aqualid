@@ -37,7 +37,7 @@ class   DependsValueContent (tuple):
     except TypeError:
       values = [values]
     
-    values.sort( key = lambda value: value.name )
+    values.sort( key = lambda value: str(value.name) )
     
     self = super(DependsValueContent,cls).__new__(cls, tuple(values) )
     

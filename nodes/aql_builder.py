@@ -1,35 +1,29 @@
 
-from aql_value import Value
-from aql_logging import logError
-from aql_utils import toSequence
-
 class Builder (object):
-  
-  __slots__ = \
-  (
-    'name',
-    'long_name',
-    'options',
-  )
+  """
+  Base class for all builders
+  """
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, options ):
-    
-    self.options = options
-    
+  def   __getattr__( self, attr ):
+    if attr == 'long_name':
+      pass
+   
+    raise Exception( "Abstract method. It should be implemented in a child class." )
+   
   #//-------------------------------------------------------//
   
-  def   scan( self, node ):
+  def   build( self, source_values ):
     """
-    Returns impicit dependencies values of the node
+    Builds the source values and returns lists of values: target, intermediate targets, impicit dependencies
     """
     raise Exception( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   values( self ):
     """
-    Builds the node and returns list of target values and list of side effect values
+    Returns builder values
     """
     raise Exception( "Abstract method. It should be implemented in a child class." )

@@ -20,13 +20,13 @@ class   StringContentIgnoreCase (str):
 
 @pickleable
 class StringValue (Value):
-  def   __new__( cls, name, content = None ):
+  def   __new__( cls, name, content = NotImplemented ):
     
     if isinstance( name, StringValue ):
       other = name
       name = other.name
       
-      if content is None:
+      if content is NotImplemented:
         content = other.content
     
     return super(StringValue,cls).__new__(cls, name, content)
