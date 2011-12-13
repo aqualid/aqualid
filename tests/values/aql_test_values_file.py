@@ -157,6 +157,31 @@ def test_value_file_2(self):
 
 #//===========================================================================//
 
+@testcase
+def test_value_file_3(self):
+  
+  with Tempfile() as tmp:
+    vfile = ValuesFile( tmp.name )
+    vfile.selfTest()
+    
+    values = []
+    
+    value1 = StringValue( "target_url1", "http://aql.org/download" )
+    value2 = StringValue( "target_url2", "http://aql.org/download2" )
+    dep_value = DependsValue( "urls1", [ value1, value2 ] )
+    
+    values += [value1, value2, dep_value ]
+    
+    vfile.addValues( values ); vfile.selfTest()
+    
+    value1 = StringValue( "target_url3", "http://aql.org/download3" )
+    value2 = StringValue( "target_url4", "http://aql.org/download4" )
+    
+    dep_value = DependsValue( "urls1", [ value1, value2 ] )
+    vfile.addValues( [ dep_value, value1, value2 ] ); vfile.selfTest()
+
+#//===========================================================================//
+
 @skip
 @testcase
 def   test_value_file_speed(self):

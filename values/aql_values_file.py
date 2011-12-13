@@ -107,7 +107,6 @@ class DependsKeys (object):
       
       try:
         value_keys = deps_pop( key )
-        removed_deps.add( key )
         
         for value_key in value_keys:
           try:
@@ -122,7 +121,9 @@ class DependsKeys (object):
         pass
       
       try:
-        removing_keys |= values_pop( key )
+        value_deps = values_pop( key )
+        removing_keys |= value_deps
+        removed_deps.update( value_deps )
       except KeyError:
         pass
     return removed_deps
@@ -407,7 +408,7 @@ class ValuesFile (object):
         
         new_key = self.data_file.replace( key, data )
         xash[ new_key ] = value
-        if content_keys is not None:
+        if content_keys:
           deps[ new_key ] = content_keys
         
         removed_keys = deps.remove( key )
@@ -417,7 +418,7 @@ class ValuesFile (object):
       data = self.dumps( dep_value )
       key = self.data_file.append( data )
       xash[key] = value
-      if content_keys is not None:
+      if content_keys:
         deps[ key ] = content_keys
   
   #//---------------------------------------------------------------------------//

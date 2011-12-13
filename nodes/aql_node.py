@@ -107,15 +107,23 @@ class Node (object):
     for node in self.source_nodes:
       source_values += node.target_values
     
-    self.source_values = list(source_values)
-    
-    source_values += self.builder.values()
-    
     return DependsValue( self.name, source_values )
   
   #//=======================================================//
   
   def   __depsValue( self ):
+    dep_values = list(self.dep_values)
+    
+    for node in self.dep_nodes:
+      dep_values += node.target_values
+    
+    dep_values += self.builder.values()
+    
+    return DependsValue( self.deps_name, dep_values )
+  
+  #//=======================================================//
+  
+  def   __builderValue( self ):
     dep_values = list(self.dep_values)
     
     for node in self.dep_nodes:
@@ -159,8 +167,8 @@ class Node (object):
     
     values.append( self.sources_value )
     values.append( self.deps_value )
-    values.append( DependsValue( self.ideps_name,     self.idep_values )        )
-    values.append( DependsValue( self.targets_name,   self.target_values )      )
+    values.append( DependsValue( self.ideps_name,     self.idep_values )    )
+    values.append( DependsValue( self.targets_name,   self.target_values )  )
     values.append( DependsValue( self.itargets_name,  self.itarget_values ) )
     
     vfile.addValues( values )
@@ -169,7 +177,7 @@ class Node (object):
   
   def   build( self, vfile ):
     
-    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self.source_values )
+    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self.sources_value.content )
     
     self.__save( vfile )
   
@@ -195,6 +203,8 @@ class Node (object):
     for value in values:
       if not value.actual():
         return False
+    
+    targets_value, itargets_value, ideps_value = values
     
     self.target_values  = list( targets_value.content   )
     self.itarget_values = list( itargets_value.content  )
