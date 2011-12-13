@@ -123,16 +123,6 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __builderValue( self ):
-    dep_values = list(self.dep_values)
-    
-    for node in self.dep_nodes:
-      dep_values += node.target_values
-    
-    return DependsValue( self.deps_name, dep_values )
-  
-  #//=======================================================//
-  
   def   __getattr__( self, attr ):
     if attr in ('name', 'targets_name', 'itargets_name', 'deps_name', 'ideps_name'):
       self.name, self.targets_name, self.itargets_name, self.deps_name, self.ideps_name = self.__getNames()
