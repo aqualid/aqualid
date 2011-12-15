@@ -219,26 +219,6 @@ def test_node_file(self):
       except OSError:
         pass
 
-
-#//===========================================================================//
-
-@skip
-@testcase
-def   test_node_speed(self):
-  
-  values = []
-  for i in range(0, 100000):
-    value = StringValue( "target_url%s" % i, "http://aql.org/download" )
-    values.append( value )
-  
-  with Tempfile() as tmp:
-    vf = ValuesFile( tmp.name )
-    
-    t = lambda addValues = vf.addValues, values = values: addValues( values )
-    t = timeit.timeit( t, number = 1 )
-    print("value picker: %s" % t)
-
-
 #//===========================================================================//
 
 if __name__ == "__main__":

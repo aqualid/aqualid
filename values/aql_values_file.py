@@ -169,6 +169,7 @@ class ValuesFile (object):
       for value in values:
         key = findValue( value )[0]
         if key is None:
+          logWarning("Value: %s has been not found" % str(value.name))
           return None
         
         value_keys_append( key )
