@@ -167,7 +167,7 @@ class Node (object):
   
   def   build( self, vfile ):
     
-    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self.sources_value.content )
+    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self )
     
     self.__save( vfile )
   
@@ -202,3 +202,33 @@ class Node (object):
     
     return True
   
+  #//=======================================================//
+  
+  def   sources(self):
+    return self.sources_value.content
+  
+  #//=======================================================//
+  
+  def   targets(self):
+    return self.target_values
+  
+  #//=======================================================//
+  
+  def   sideEffects(self):
+    return self.itarget_values
+  
+  #//=======================================================//
+  
+  def   addDeps( self, deps ):
+    
+    append_node = self.dep_nodes.append
+    append_value = self.dep_values.append
+    
+    for dep in toSequence( deps ):
+      if isinstance(dep, Node):
+        append_node( dep )
+      elif isinstance(dep, Value):
+        append_value( dep )
+      else:
+        raise Exception( "Unknown dependency type: %s" % type(dep) )
+

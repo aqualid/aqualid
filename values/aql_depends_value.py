@@ -55,11 +55,6 @@ class   DependsValueContent (tuple):
   
   #//-------------------------------------------------------//
   
-  def   __str__( self ):
-    return str(self.values)
-  
-  #//-------------------------------------------------------//
-  
   def   __getnewargs__(self):
     raise Exception( "Object '%s' can't be serialized." % type(self).__name__ )
   
@@ -91,5 +86,18 @@ class   DependsValue (Value):
     content = DependsValueContent( content )
     
     return super(DependsValue,cls).__new__(cls, name, content )
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    try:
+      for value in self.content:
+        if not value.actual():
+          return False
+        
+    except TypeError:
+      return False
+    
+    return True
 
 #//===========================================================================//

@@ -14,9 +14,9 @@ class Builder (object):
    
   #//-------------------------------------------------------//
   
-  def   build( self, source_values ):
+  def   build( self, node ):
     """
-    Builds the source values and returns lists of values: target, intermediate targets, impicit dependencies
+    Builds the node and returns lists of values: target, intermediate targets, impicit dependencies
     """
     raise Exception( "Abstract method. It should be implemented in a child class." )
   

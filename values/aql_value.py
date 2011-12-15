@@ -71,6 +71,6 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   actual( self ):
-    return True
+    return not isinstance( self.content, NoContent )
   
   #//-------------------------------------------------------//
