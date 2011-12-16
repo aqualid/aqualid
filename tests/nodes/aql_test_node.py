@@ -9,7 +9,6 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import testcase, skip, runTests
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
-from aql_str_value import StringValue
 from aql_file_value import FileValue
 from aql_depends_value import DependsValue
 from aql_values_file import ValuesFile
@@ -49,7 +48,7 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return [StringValue(self.name, "")]
+    return [Value(self.name, "")]
 
 #//===========================================================================//
 
@@ -90,7 +89,7 @@ class CopyBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return [StringValue(self.name, self.ext + '|' + self.iext)]
+    return [Value(self.name, self.ext + '|' + self.iext)]
 
 
 #//===========================================================================//
@@ -102,9 +101,9 @@ def test_node_value(self):
     
     vfile = ValuesFile( tmp.name )
     
-    value1 = StringValue( "target_url1", "http://aql.org/download" )
-    value2 = StringValue( "target_url2", "http://aql.org/download2" )
-    value3 = StringValue( "target_url3", "http://aql.org/download3" )
+    value1 = Value( "target_url1", "http://aql.org/download" )
+    value2 = Value( "target_url2", "http://aql.org/download2" )
+    value3 = Value( "target_url3", "http://aql.org/download3" )
     
     builder = ChecksumBuilder("ChecksumBuilder")
     
@@ -185,10 +184,10 @@ def test_node_file(self):
             node = _rebuildNode( self, vfile, builder, [value1, node3], [], tmp_files )
             node = _rebuildNode( self, vfile, builder, [value1], [node3], tmp_files )
             
-            dep = StringValue( "dep1", "1" )
+            dep = Value( "dep1", "1" )
             node = _rebuildNode( self, vfile, builder, [value1, node3], [dep], tmp_files )
             
-            dep = StringValue( "dep1", "11" )
+            dep = Value( "dep1", "11" )
             node = _rebuildNode( self, vfile, builder, [value1, node3], [dep], tmp_files )
             node3 = _rebuildNode( self, vfile, builder3, [value1], [], tmp_files )
             node = _rebuildNode( self, vfile, builder, [value1], [node3], tmp_files )
@@ -218,6 +217,52 @@ def test_node_file(self):
         os.remove( tmp_file )
       except OSError:
         pass
+
+#//===========================================================================//
+
+def   _testNoBuildSpeed( vfile, builder, values, deps ):
+  node = Node( builder, values )
+  node.addDeps( deps )
+  if not node.actual( vfile ):
+    raise AssertionError("node is not actual")
+
+@skip
+@testcase
+def test_node_speed( self ):
+  
+  with Tempfile() as tmp:
+    
+    vfile = ValuesFile( tmp.name )
+    
+    with Tempfile() as tmp1:
+      with Tempfile() as tmp2:
+        with Tempfile() as tmp3:
+          with Tempfile() as tmp4:
+            tmp1.write( b'1'* (50 * 1024) )
+            tmp2.write( b'2'* (50 * 1024) )
+            tmp3.write( b'3'* (50 * 1024) )
+            tmp4.write( b'4'* (50 * 1024) )
+            
+            values = []
+            values.append( FileValue( tmp1.name ) )
+            values.append( FileValue( tmp2.name ) )
+            deps = []
+            deps.append( FileValue( tmp3.name ) )
+            deps.append( FileValue( tmp3.name ) )
+            
+            builder = CopyBuilder("CopyBuilder", "tmp", "bak")
+            
+            node = Node( builder, values )
+            node.addDeps( deps )
+            
+            self.assertFalse( node.actual( vfile ) )
+            
+            node.build( vfile )
+            self.assertTrue( node.actual( vfile ) )
+            
+            t = lambda vfile = vfile, builder = builder, values = values, deps = deps, testNoBuildSpeed = _testNoBuildSpeed: testNoBuildSpeed( vfile, builder, values, deps )
+            t = timeit.timeit( t, number = 20000 )
+            print("load nodes: %s" % t)
 
 #//===========================================================================//
 

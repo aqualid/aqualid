@@ -10,8 +10,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import testcase, skip, runTests
 from aql_temp_file import Tempfile
-from aql_value import Value, NoContent
-from aql_str_value import StringValue, StringContentIgnoreCase
+from aql_value import Value, NoContent, IgnoreCaseStringContent
 from aql_file_value import FileValue, FileContentTimeStamp
 from aql_value_pickler import ValuePickler, pickleable
 
@@ -38,15 +37,15 @@ def test_value_pickler(self):
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
   
-  value = StringValue( tmp.name, '123-345' )
+  value = Value( tmp.name, '123-345' )
   v = vpick.loads( vpick.dumps( value ) )
   self.assertEqual( value, v )
   
-  value = StringValue( tmp.name, StringContentIgnoreCase('123-345') )
+  value = Value( tmp.name, IgnoreCaseStringContent('123-345') )
   v = vpick.loads( vpick.dumps( value ) )
   self.assertEqual( value, v )
   
-  value = StringValue( tmp.name, None )
+  value = Value( tmp.name, None )
   v = vpick.loads( vpick.dumps( value ) )
   self.assertEqual( value.name, v.name )
   self.assertIsInstance( v.content, NoContent )

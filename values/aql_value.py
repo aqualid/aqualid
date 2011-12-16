@@ -20,17 +20,38 @@ class NoContent( object ):
 #//===========================================================================//
 
 @pickleable
+class   IgnoreCaseStringContent (str):
+  
+  def   __eq__( self, other ):
+    return type(self) == type(other) and \
+      (self.lower() == other.lower())
+  
+  def   __ne__( self, other ):
+    return not self.__eq__( other )
+
+#//===========================================================================//
+
+@pickleable
 class   Value (object):
   
   __slots__ = ( 'name', 'content' )
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name, content = None ):
+  def   __new__( cls, name, content = NotImplemented ):
+    
+    if isinstance( name, Value ):
+      other = name
+      name = other.name
+      
+      if content is NotImplemented:
+        content = other.content
+      
+      return type(other)( name, content )
     
     self = super(Value,cls).__new__(cls)
     
-    if content is None:
+    if (content is NotImplemented) or (content is None):
       content = NoContent()
     
     self.name = name

@@ -7,7 +7,6 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import testcase, skip, runTests
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
-from aql_str_value import StringValue
 from aql_depends_value import DependsValue
 from aql_value_pickler import ValuePickler, pickleable
 from aql_data_file import DataFile
@@ -23,9 +22,9 @@ def test_value_file(self):
     vfile = ValuesFile( tmp.name )
     vfile.selfTest()
     
-    value1 = StringValue( "target_url1", "http://aql.org/download" )
-    value2 = StringValue( "target_url2", "http://aql.org/download2" )
-    value3 = StringValue( "target_url3", "http://aql.org/download3" )
+    value1 = Value( "target_url1", "http://aql.org/download" )
+    value2 = Value( "target_url2", "http://aql.org/download2" )
+    value3 = Value( "target_url3", "http://aql.org/download3" )
     
     values = [ value1, value2, value3 ]
     
@@ -112,21 +111,21 @@ def test_value_file_2(self):
     vfile = ValuesFile( tmp.name )
     vfile.selfTest()
     
-    value1 = StringValue( "target_url1", "http://aql.org/download" )
-    value2 = StringValue( "target_url2", "http://aql.org/download2" )
-    value3 = StringValue( "target_url3", "http://aql.org/download3" )
+    value1 = Value( "target_url1", "http://aql.org/download" )
+    value2 = Value( "target_url2", "http://aql.org/download2" )
+    value3 = Value( "target_url3", "http://aql.org/download3" )
     
     values = [ value1, value2, value3 ]
     
     dep_value1 = DependsValue( "urls1", values )
     
-    value4 = StringValue( "target_url4", "http://aql.org/download4" )
+    value4 = Value( "target_url4", "http://aql.org/download4" )
     dep_value2 = DependsValue( "urls2", [ dep_value1, value4 ] )
     
-    value5 = StringValue( "target_url5", "http://aql.org/download5" )
+    value5 = Value( "target_url5", "http://aql.org/download5" )
     dep_value3 = DependsValue( "urls3", [ dep_value1, value5 ] )
     
-    value6 = StringValue( "target_url6", "http://aql.org/download6" )
+    value6 = Value( "target_url6", "http://aql.org/download6" )
     dep_value4 = DependsValue( "urls4", [ dep_value1, dep_value2, dep_value3, value6 ] )
     
     
@@ -144,7 +143,7 @@ def test_value_file_2(self):
     for value, s_value in zip( all_values, s_all_values ):
       self.assertEqual( value, s_value )
     
-    value3 = StringValue( "target_url3", "http://aql.org/download3/0" )
+    value3 = Value( "target_url3", "http://aql.org/download3/0" )
     
     vfile.addValues( [value3] ); vfile.selfTest()
     
@@ -166,16 +165,16 @@ def test_value_file_3(self):
     
     values = []
     
-    value1 = StringValue( "target_url1", "http://aql.org/download" )
-    value2 = StringValue( "target_url2", "http://aql.org/download2" )
+    value1 = Value( "target_url1", "http://aql.org/download" )
+    value2 = Value( "target_url2", "http://aql.org/download2" )
     dep_value = DependsValue( "urls1", [ value1, value2 ] )
     
     values += [value1, value2, dep_value ]
     
     vfile.addValues( values ); vfile.selfTest()
     
-    value1 = StringValue( "target_url3", "http://aql.org/download3" )
-    value2 = StringValue( "target_url4", "http://aql.org/download4" )
+    value1 = Value( "target_url3", "http://aql.org/download3" )
+    value2 = Value( "target_url4", "http://aql.org/download4" )
     
     dep_value = DependsValue( "urls1", [ value1, value2 ] )
     vfile.addValues( [ dep_value, value1, value2 ] ); vfile.selfTest()
@@ -188,7 +187,7 @@ def   test_value_file_speed(self):
   
   values = []
   for i in range(0, 100000):
-    value = StringValue( "target_url%s" % i, "http://aql.org/download" )
+    value = Value( "target_url%s" % i, "http://aql.org/download" )
     values.append( value )
   
   with Tempfile() as tmp:
