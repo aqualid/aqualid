@@ -28,13 +28,18 @@ class   FileContentChecksum (object):
       return path
     
     try:
-      size = os.stat( str(path) ).st_size
-      
       checksum = hashlib.md5()
+      size = 0
       
       with open( path, mode = 'rb' ) as f:
-        for chunk in f:
-          checksum.update( chunk )
+        read = f.read
+        checksum_update = checksum.update
+        while True:
+          chunk = read( 262144 )
+          if not chunk:
+            break
+          size += len(chunk)
+          checksum_update( chunk )
       
       self = super(FileContentChecksum,cls).__new__(cls)
       

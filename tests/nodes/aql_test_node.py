@@ -9,7 +9,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import testcase, skip, runTests
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
-from aql_file_value import FileValue
+from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
 from aql_depends_value import DependsValue
 from aql_values_file import ValuesFile
 from aql_node import Node
@@ -90,7 +90,6 @@ class CopyBuilder (Builder):
   
   def   values( self ):
     return [Value(self.name, self.ext + '|' + self.iext)]
-
 
 #//===========================================================================//
 
@@ -220,49 +219,108 @@ def test_node_file(self):
 
 #//===========================================================================//
 
-def   _testNoBuildSpeed( vfile, builder, values, deps ):
-  node = Node( builder, values )
-  node.addDeps( deps )
-  if not node.actual( vfile ):
-    raise AssertionError("node is not actual")
+_FileContentType = FileContentTimeStamp
+
+class TestSpeedBuilder (Builder):
+  
+  __slots__ = ('name', 'long_name', 'ext', 'idep')
+  
+  def   __init__(self, name, ext, idep ):
+    chcksum = hashlib.md5()
+    chcksum.update( name.encode() )
+    
+    self.name = chcksum.digest()
+    self.long_name = name
+    self.ext = ext
+    self.idep = idep
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target_values = []
+    itarget_values = []
+    idep_values = []
+    
+    for source_value in node.sources():
+      new_name = source_value.name + '.' + self.ext
+      idep_name = source_value.name + '.' + self.idep
+      
+      shutil.copy( source_value.name, new_name )
+      
+      target_values.append( FileValue( new_name, _FileContentType ) )
+      idep_values.append( FileValue( idep_name, _FileContentType ) )
+    
+    return target_values, itarget_values, idep_values
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    return [Value(self.name, self.ext + '|' + self.idep)]
+
+#//===========================================================================//
+
+def   _testNoBuildSpeed( vfile, builder, source_values ):
+  for source in source_values:
+    node = Node( builder, [ FileValue( source, _FileContentType ) ] )
+    if not node.actual( vfile ):
+      raise AssertionError( "node is not actual" )
+
+def   _generateFiles( tmp_files, number, size ):
+  content = b'1' * size
+  files = []
+  for i in range( 0, number ):
+    t = Tempfile()
+    tmp_files.append( t.name )
+    t.write( content )
+    files.append( t.name )
+  
+  return files
+
+def   _copyFiles( tmp_files, files, ext ):
+  copied_files= []
+  
+  for f in files:
+    name = f + '.' + ext
+    shutil.copy( f, f + '.' + ext )
+    tmp_files.append( name )
+    copied_files.append( name )
+  
+  return copied_files
 
 @skip
 @testcase
 def test_node_speed( self ):
   
-  with Tempfile() as tmp:
+  try:
+    tmp_files = []
     
-    vfile = ValuesFile( tmp.name )
+    source_files = _generateFiles( tmp_files, 4000, 50 * 1024 )
+    idep_files = _copyFiles( tmp_files, source_files, 'h' )
     
-    with Tempfile() as tmp1:
-      with Tempfile() as tmp2:
-        with Tempfile() as tmp3:
-          with Tempfile() as tmp4:
-            tmp1.write( b'1'* (50 * 1024) )
-            tmp2.write( b'2'* (50 * 1024) )
-            tmp3.write( b'3'* (50 * 1024) )
-            tmp4.write( b'4'* (50 * 1024) )
-            
-            values = []
-            values.append( FileValue( tmp1.name ) )
-            values.append( FileValue( tmp2.name ) )
-            deps = []
-            deps.append( FileValue( tmp3.name ) )
-            deps.append( FileValue( tmp3.name ) )
-            
-            builder = CopyBuilder("CopyBuilder", "tmp", "bak")
-            
-            node = Node( builder, values )
-            node.addDeps( deps )
-            
-            self.assertFalse( node.actual( vfile ) )
-            
-            node.build( vfile )
-            self.assertTrue( node.actual( vfile ) )
-            
-            t = lambda vfile = vfile, builder = builder, values = values, deps = deps, testNoBuildSpeed = _testNoBuildSpeed: testNoBuildSpeed( vfile, builder, values, deps )
-            t = timeit.timeit( t, number = 20000 )
-            print("load nodes: %s" % t)
+    with Tempfile() as tmp:
+      
+      vfile = ValuesFile( tmp.name )
+      
+      builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
+      
+      for source in source_files:
+        node = Node( builder, [ FileValue( source, _FileContentType ) ] )
+        self.assertFalse( node.actual( vfile ) )
+        node.build( vfile )
+        for tmp_file in node.target_values:
+          tmp_files.append( tmp_file.name )
+      
+      t = lambda vfile = vfile, builder = builder, source_files = source_files, testNoBuildSpeed = _testNoBuildSpeed: testNoBuildSpeed( vfile, builder, source_files )
+      t = timeit.timeit( t, number = 1 )
+      print("load actual nodes: %s" % t)
+      
+  finally:
+    for tmp_file in tmp_files:
+      try:
+        os.remove( tmp_file )
+      except OSError:
+        pass
+
 
 #//===========================================================================//
 
