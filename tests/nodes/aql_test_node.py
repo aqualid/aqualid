@@ -219,7 +219,7 @@ def test_node_file(self):
 
 #//===========================================================================//
 
-_FileContentType = FileContentTimeStamp
+_FileContentType = FileContentChecksum
 
 class TestSpeedBuilder (Builder):
   

@@ -4,6 +4,11 @@ class Builder (object):
   Base class for all builders
   """
   
+  __slots__ = (
+    'name'
+    'long_name',
+  )
+  
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
