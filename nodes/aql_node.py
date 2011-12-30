@@ -37,16 +37,16 @@ class Node (object):
     self.builder = builder
     self.source_nodes, self.source_values = self.__getSourceNodes( sources )
     self.dep_values = []
-    self.dep_nodes = []
+    self.dep_nodes = set()
   
   #//=======================================================//
   
   def   __getSourceNodes( self, sources ):
     
-    source_nodes = []
+    source_nodes = set()
     source_values = []
     
-    source_nodes_append = source_nodes.append
+    source_nodes_append = source_nodes.add
     source_values_append = source_values.append
     
     for source in toSequence( sources ):
@@ -221,7 +221,7 @@ class Node (object):
   
   def   addDeps( self, deps ):
     
-    append_node = self.dep_nodes.append
+    append_node = self.dep_nodes.add
     append_value = self.dep_values.append
     
     for dep in toSequence( deps ):

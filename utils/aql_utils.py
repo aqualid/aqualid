@@ -20,7 +20,7 @@ def     toSequence( value, iter = iter, tuple = tuple ):
   try:
     iter( value )
     return value
-  except TypeEror:
+  except TypeError:
     pass
   
   if value is None:
