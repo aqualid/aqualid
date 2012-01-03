@@ -74,7 +74,32 @@ def test_bm_deps(self):
   node1.addDeps( node3 ); bm.addDeps( node1, node3 ); bm.selfTest()
   node2.addDeps( node3 ); bm.addDeps( node2, node3 ); bm.selfTest()
   node3.addDeps( node4 ); bm.addDeps( node3, node4 ); bm.selfTest()
-  node5.addDeps( node0 ); bm.addDeps( node5, node0 ); bm.selfTest()
+  node0.addDeps( node5 ); bm.addDeps( node0, node5 ); bm.selfTest()
+
+#//===========================================================================//
+
+def   _generateNodeTree( bm, builder, node, depth ):
+  while depth:
+    node = Node( builder, node )
+    bm.addNode( node )
+    depth -= 1
+
+#//===========================================================================//
+
+@skip
+@testcase
+def test_bm_deps_speed(self):
+  
+  bm = BuildManager()
+  
+  value = Value( "target_url1", "http://aql.org/download" )
+  builder = CopyValueBuilder("CopyValueBuilder")
+  
+  node = Node( builder, value )
+  bm.addNode( node )
+  
+  _generateNodeTree( bm, builder, node, 5000 )
+  
 
 #//===========================================================================//
 
