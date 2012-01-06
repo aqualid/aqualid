@@ -82,6 +82,7 @@ def   _generateNodeTree( bm, builder, node, depth ):
   while depth:
     node = Node( builder, node )
     bm.addNode( node )
+    #~ bm.selfTest()
     depth -= 1
 
 #//===========================================================================//
