@@ -75,6 +75,8 @@ def test_bm_deps(self):
   node2.addDeps( node3 ); bm.addDeps( node2, node3 ); bm.selfTest()
   node3.addDeps( node4 ); bm.addDeps( node3, node4 ); bm.selfTest()
   node0.addDeps( node5 ); bm.addDeps( node0, node5 ); bm.selfTest()
+  node5.addDeps( node3 ); bm.addDeps( node5, node3 ); bm.selfTest()
+  #~ node4.addDeps( node3 ); bm.addDeps( node4, node3 ); bm.selfTest()
 
 #//===========================================================================//
 

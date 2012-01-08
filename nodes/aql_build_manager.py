@@ -14,7 +14,6 @@ class _Nodes (object):
   __slots__ = \
   (
     'node_names',
-    'nodes',
     'node_deps',
     'dep_nodes',
   )
@@ -22,7 +21,6 @@ class _Nodes (object):
   #//-------------------------------------------------------//
   
   def   __init__( self ):
-    self.nodes = set()
     self.node_names = set()
     self.node_deps = {}
     self.dep_nodes = {}
@@ -34,15 +32,28 @@ class _Nodes (object):
   
   #//-------------------------------------------------------//
   
-  def __flatDeps( self, deps ):
-    flatten_deps = set(deps)
-    flatten_deps_update = flatten_deps.update
-    get_node = self.node_deps.__getitem__
+  def   __hasCycle( self, node, new_deps ):
     
-    for dep in source_nodes:
-      flatten_deps_update( get_node( dep.name )[1] )
+    if node in new_deps:
+      return True
     
-    return flatten_deps
+    deps = set(new_deps)
+    node_deps = self.node_deps
+    
+    try:
+      while deps:
+        dep = deps.pop()
+        
+        dep_deps = node_deps[dep]
+        
+        if node in dep_deps:
+          return True
+        
+        deps |= dep_deps
+    except KeyError as dep:
+      raise Exception("Unknown node: %s" % str(dep.args[0].long_name) )
+    
+    return False
   
   #//-------------------------------------------------------//
   
@@ -58,16 +69,7 @@ class _Nodes (object):
     if not new_deps:
       return
     
-    unknown_deps = new_deps - self.nodes
-    if unknown_deps:
-      raise Exception("Unknown node: %s" % str(unknown_deps.pop().long_name) )
-    
-    for dep in deps:
-      new_deps |= node_deps[dep]
-    
-    new_deps -= current_node_deps
-    
-    if node in new_deps:
+    if self.__hasCycle( node, new_deps ):
       raise Exception( "Node has a cyclic dependency: %s" % str(node.long_name) )
     
     #//-------------------------------------------------------//
@@ -76,17 +78,8 @@ class _Nodes (object):
     
     #//-------------------------------------------------------//
     
-    deps_from_node = set(dep_nodes[ node ])
-    
-    for dep in deps_from_node:
-      node_deps[ dep ] |= new_deps
-    
-    #//-------------------------------------------------------//
-    
-    deps_from_node.add( node )
-    
     for dep in new_deps:
-      dep_nodes[ dep ] |= deps_from_node
+      dep_nodes[ dep ].add( node )
     
   #//-------------------------------------------------------//
   
@@ -96,7 +89,6 @@ class _Nodes (object):
       raise Exception("Multiple instances of node: %s" % str(node.long_name) )
     
     self.node_names.add( node.name )
-    self.nodes.add( node )
     self.node_deps[ node ] = set()
     self.dep_nodes[ node ] = set()
     
@@ -109,24 +101,6 @@ class _Nodes (object):
       raise Exception("Unknown node: %s" % str(node.long_name) )
     
     self.__addDeps( node, toSequence( deps ) )
-
-  #//-------------------------------------------------------//
-  
-  def   __nodeDeps( self, node ):
-    
-    all_deps = set()
-    
-    new_deps = set([node])
-    
-    while new_deps:
-      node = new_deps.pop()
-      
-      deps = node.source_nodes | node.dep_nodes
-      deps -= all_deps
-      all_deps |= deps
-      new_deps |= deps
-    
-    return all_deps
   
   #//-------------------------------------------------------//
   
@@ -134,22 +108,19 @@ class _Nodes (object):
     if len(self.node_names) != len(self.node_deps):
       raise AssertionError("len(self.node_names)(%s) != len(self.node_deps)(%s)" % (len(self.node_names), len(self.node_deps)) )
     
-    if self.nodes != set(self.dep_nodes):
+    if set(self.node_deps) != set(self.dep_nodes):
       raise AssertionError("Not all deps are added")
-    
-    if self.nodes != set(self.node_deps):
-      raise AssertionError("Not all nodes are added")
     
     all_dep_nodes = set()
     
-    for node in self.node_deps:
+    for node in self.dep_nodes:
       if node.name not in self.node_names:
         raise AssertionError("Missed node's name: %s" % str(node.long_name) )
       
-      if node not in self.nodes:
+      if node not in self.node_deps:
         raise AssertionError("Missed node: %s" % str(node.long_name) )
       
-      node_deps = self.__nodeDeps( node )
+      node_deps = node.source_nodes | node.dep_nodes
       
       all_dep_nodes |= node_deps
       
@@ -195,6 +166,11 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   def   selfTest( self ):
     self.__nodes.selfTest()
+  
+  #//-------------------------------------------------------//
+  
+  def   build(self):
+    pass
   
   #//-------------------------------------------------------//
   
