@@ -231,4 +231,13 @@ class Node (object):
         append_value( dep )
       else:
         raise Exception( "Unknown dependency type: %s" % type(dep) )
-
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__(self):
+    return str( self.long_name )
+  
+  #//-------------------------------------------------------//
+  
+  def   __repr__(self):
+    return str( self.long_name )

@@ -77,7 +77,7 @@ def test_bm_deps(self):
   node0.addDeps( node5 ); bm.addDeps( node0, node5 ); bm.selfTest()
   node5.addDeps( node3 ); bm.addDeps( node5, node3 ); bm.selfTest()
   #~ node4.addDeps( node3 ); bm.addDeps( node4, node3 ); bm.selfTest()
-
+  
 #//===========================================================================//
 
 def   _generateNodeTree( bm, builder, node, depth ):
