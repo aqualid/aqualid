@@ -235,10 +235,10 @@ class BuildManager (object):
       for node in tails:
         self.__building_nodes.add( node )
       
-      built_nodes = self.__building_nodes.builtNodes()
+      finished_nodes = self.__building_nodes.finishedNodes()
       
       tails = []
-      for node in built_nodes:
+      for node in finished_nodes:
         tails += self.__nodes.removeTail( node )
   
   #//-------------------------------------------------------//
