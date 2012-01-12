@@ -5,13 +5,9 @@ try:
 except ImportError:
   import Queue as queue # python 2
 
-from aql_node import Node
-from aql_logging import logError
-from aql_utils import toSequence
-
 #//===========================================================================//
 
-class _ExitExecption( Exception ):
+class _ExitException( Exception ):
   pass
 
 def   _exitEventFunction():
@@ -25,7 +21,7 @@ class _TaskProcessor( threading.Thread ):
   
   def __init__(self, tasks, completed_tasks, stop_on_error, exit_event ):
     
-    super(_TaskJob,self).__init__(self)
+    super(_TaskProcessor,self).__init__()
     
     self.tasks            = tasks
     self.completed_tasks  = completed_tasks
@@ -53,8 +49,15 @@ class _TaskProcessor( threading.Thread ):
       except _ExitException:
         exit_event.set()
       
-      except Exception as err:
+      except (Exception, BaseException) as err:
         fail = ( id, err )
+        completed_tasks.put( fail )
+        
+        if self.stop_on_error:
+          exit_event.set()
+      
+      except:
+        fail = ( id, Exception("Unknown exception") )
         completed_tasks.put( fail )
         
         if self.stop_on_error:
@@ -73,28 +76,29 @@ class TaskManager (object):
     'tasks',
     'threads',
     'completed_tasks',
-    'stop_on_error',
     'exit_event',
   )
   
   #//-------------------------------------------------------//
   
   def   __init__(self, num_threads = 1, stop_on_error = True ):
+    self.completed_tasks  = queue.Queue()
+    self.exit_event       = threading.Event()
+    self.threads          = []
+    
     self.start( num_threads, stop_on_error )
   
   #//-------------------------------------------------------//
   
-  def   start( num_threads = 1, stop_on_error = True )
-    self.tasks            = queue.Queue()
-    self.completed_tasks  = queue.Queue()
-    self.stop_on_error    = stop_on_error
-    self.exit_event       = threading.Event()
+  def   start( self, num_threads = 1, stop_on_error = True ):
+    self.tasks = queue.Queue()
+    self.exit_event.clear()
     
     threads = []
     
     while num_threads > 0:
       num_threads -= 1
-      t = _TaskProcessor( self.tasks, self.completed_tasks, stop_on_error )
+      t = _TaskProcessor( self.tasks, self.completed_tasks, stop_on_error, self.exit_event )
       threads.append( t )
     
     self.threads = threads
@@ -109,35 +113,26 @@ class TaskManager (object):
     for t in self.threads:
       t.join()
     
-    self.threads          = []
-    self.tasks            = None
-    self.completed_tasks  = None
-    self.stop_on_error    = stop_on_error
-    self.exit_event       = None
+    self.threads = []
   
   #//-------------------------------------------------------//
   
   def   addTask( self, id, function, *args, **kw ):
-    if not self.threads:
-      raise Exception("TaskManager is not started.")
-      
     task = ( id, function, args, kw )
     self.tasks.put( task )
   
   #//-------------------------------------------------------//
   
   def   completedTasks( self ):
-    if not self.threads:
-      raise Exception("TaskManager is not started.")
-    
     completed_tasks = []
+    isExit = self.exit_event.is_set
     
     while True:
       try:
-        block = not completed_tasks
-        id, err = self.completed_tasks.get( block = block )
+        block = (not completed_tasks) and (not isExit())
+        task_result = self.completed_tasks.get( block = block )
         
-        completed_tasks.append( id )
+        completed_tasks.append( task_result )
         self.completed_tasks.task_done()
       except queue.Empty:
         break
