@@ -161,6 +161,7 @@ class ValuesFile (object):
     'xash',
     'pickler',
     'lock' ,
+    'file_lock',
     'deps',
     'loads',
     'dumps')
@@ -207,7 +208,8 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   __sortValues( self, values ):
+  @staticmethod
+  def   __sortValues( values ):
     
     sorted_values = []
     
@@ -264,6 +266,7 @@ class ValuesFile (object):
     self.pickler = ValuePickler()
     self.loads = self.pickler.loads
     self.dumps = self.pickler.dumps
+    self.lock = threading.Lock()
     self.open( filename )
   
   #//---------------------------------------------------------------------------//
@@ -284,17 +287,17 @@ class ValuesFile (object):
   
   def   open( self, filename ):
     
-    lock = FileLock( filename )
-    self.lock = lock
-    
-    with lock.readLock():
-      self.data_file = DataFile( filename )
+    with self.lock:
+      self.file_lock = FileLock( filename )
       
-      dep_values = {}
-      for key, data in self.data_file:
-        self.__loadValue( key, data, dep_values )
-      
-      self.__restoreDepends( dep_values )
+      with self.file_lock.readLock():
+        self.data_file = DataFile( filename )
+        
+        dep_values = {}
+        for key, data in self.data_file:
+          self.__loadValue( key, data, dep_values )
+        
+        self.__restoreDepends( dep_values )
   
   #//---------------------------------------------------------------------------//
   
@@ -342,37 +345,39 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   actual( self, values ):
-    with self.lock.writeLock():
-      self.__update()
-    
-    find = self.xash.find
-    for value in values:
-      val = find( value )[1]
-      if val is None:
-        return False
+    with self.lock:
+      with self.file_lock.writeLock():
+        self.__update()
       
-      if val != value:
-        return False
-    
-    return True
+      find = self.xash.find
+      for value in values:
+        val = find( value )[1]
+        if val is None:
+          return False
+        
+        if val != value:
+          return False
+      
+      return True
   
   #//---------------------------------------------------------------------------//
   
   def   findValues( self, values ):
-    with self.lock.writeLock():
-      self.__update()
-    
-    out_values = []
-    
-    xash = self.xash
-    for value in values:
-      val = xash.find( value )[1]
-      if val is None:
-        val = type(value)( value.name, None )
+    with self.lock:
+      with self.file_lock.writeLock():
+        self.__update()
       
-      out_values.append( val )
-    
-    return out_values
+      out_values = []
+      
+      xash = self.xash
+      for value in values:
+        val = xash.find( value )[1]
+        if val is None:
+          val = type(value)( value.name, None )
+        
+        out_values.append( val )
+      
+      return out_values
   
   #//---------------------------------------------------------------------------//
   
@@ -435,65 +440,68 @@ class ValuesFile (object):
   def   addValues( self, values ):
     values, dep_values = self.__sortValues( values )
     
-    with self.lock.writeLock():
-      self.__update()
-      
-      for value in values:
-        self.__addValue( value )
-      
-      for id, dep_value in dep_values:
-        self.__addDepValue( dep_value )
+    with self.lock:
+      with self.file_lock.writeLock():
+        self.__update()
+        
+        for value in values:
+          self.__addValue( value )
+        
+        for id, dep_value in dep_values:
+          self.__addDepValue( dep_value )
   
   #//---------------------------------------------------------------------------//
   
   def   clear(self):
-    with self.lock.writeLock():
-      if self.data_file is not None:
-        self.data_file.clear()
-    
-    self.xash.clear()
-    self.deps.clear()
+    with self.lock:
+      with self.file_lock.writeLock():
+        if self.data_file is not None:
+          self.data_file.clear()
+      
+      self.xash.clear()
+      self.deps.clear()
   
   #//---------------------------------------------------------------------------//
   
   def   selfTest(self):
-    with self.lock.writeLock():
-      self.__update()
-    
-      self.deps.selfTest()
+    with self.lock:
+      with self.file_lock.writeLock():
+        self.__update()
       
-      if self.data_file is not None:
-        self.data_file.selfTest()
-      
-      self.xash.selfTest()
-      
-      #//-------------------------------------------------------//
-      
-      for dep_key in self.deps:
-        dep_value = self.xash[dep_key]
-        if not isinstance( dep_value, DependsValue ):
-          raise AssertionError("dep_value(%s) is not DependsValue" % (dep_value.name,) )
+        self.deps.selfTest()
         
-        if len(self.deps[dep_key]) != len(dep_value.content):
-          raise AssertionError("len(self.deps[%s])(%s) != len(dep_value.content)(%s)" % (dep_key, len(self.deps[dep_key]), len(dep_value.content)) )
+        if self.data_file is not None:
+          self.data_file.selfTest()
         
-        value_keys = self.__getKeysOfValues( dep_value.content )
+        self.xash.selfTest()
         
-        if self.deps[dep_key] != value_keys:
-          raise AssertionError("self.deps[%s])(%s) != value_keys(%s)" % (dep_key, self.deps[dep_key], value_keys) )
-      
-      #//-------------------------------------------------------//
-      
-      for key in self.xash:
-        value = self.xash[key]
-        if isinstance(value, DependsValue):
-          if isinstance(value.content, NoContent):
-            if key in self.deps:
-              raise AssertionError("empty dep value(%s) is in deps" % (value.name,) )
+        #//-------------------------------------------------------//
+        
+        for dep_key in self.deps:
+          dep_value = self.xash[dep_key]
+          if not isinstance( dep_value, DependsValue ):
+            raise AssertionError("dep_value(%s) is not DependsValue" % (dep_value.name,) )
+          
+          if len(self.deps[dep_key]) != len(dep_value.content):
+            raise AssertionError("len(self.deps[%s])(%s) != len(dep_value.content)(%s)" % (dep_key, len(self.deps[dep_key]), len(dep_value.content)) )
+          
+          value_keys = self.__getKeysOfValues( dep_value.content )
+          
+          if self.deps[dep_key] != value_keys:
+            raise AssertionError("self.deps[%s])(%s) != value_keys(%s)" % (dep_key, self.deps[dep_key], value_keys) )
+        
+        #//-------------------------------------------------------//
+        
+        for key in self.xash:
+          value = self.xash[key]
+          if isinstance(value, DependsValue):
+            if isinstance(value.content, NoContent):
+              if key in self.deps:
+                raise AssertionError("empty dep value(%s) is in deps" % (value.name,) )
+            else:
+              if key not in self.deps:
+                raise AssertionError("dep value(%s) is not in deps" % (value.name,) )
           else:
-            if key not in self.deps:
-              raise AssertionError("dep value(%s) is not in deps" % (value.name,) )
-        else:
-          if key in self.deps:
-            raise AssertionError("value(%s) is in deps" % (value.name,) )
+            if key in self.deps:
+              raise AssertionError("value(%s) is in deps" % (value.name,) )
 
