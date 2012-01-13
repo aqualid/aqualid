@@ -2,7 +2,7 @@ import hashlib
 
 from aql_node import Node
 from aql_task_manager import TaskManager
-from aql_vaules_file import ValuesFile
+from aql_values_file import ValuesFile
 from aql_logging import logError
 from aql_utils import toSequence
 
@@ -187,7 +187,6 @@ class _NodesBuilder (object):
     'jobs',
     'stop_on_error',
     'task_manager',
-    'failed_nodes',
   )
   
   #//-------------------------------------------------------//
@@ -196,7 +195,6 @@ class _NodesBuilder (object):
     self.vfilename = vfilename
     self.jobs = jobs
     self.stop_on_error = stop_on_error
-    self.failed_nodes = []
   
   #//-------------------------------------------------------//
   
@@ -210,27 +208,31 @@ class _NodesBuilder (object):
       tm = TaskManager( self.jobs, self.stop_on_error )
       self.tm = tm
       return tm
-  
+    
+    raise AttributeError("Unknown attribute: '%s'" % str(attr) )
+    
   #//-------------------------------------------------------//
   
-  def   add( self, nodes ):
+  def   build( self, nodes ):
+    completed_nodes = []
+    failed_nodes = []
+    
     addTask = self.task_manager.addTask
     vfile = self.vfile
     
     for node in nodes:
-      addTask( node, node.build, vfile )
-  
-  #//-------------------------------------------------------//
-  
-  def   completedNodes(self):
-    completed_nodes = []
+      if node.actual( vfile ):
+        completed_nodes.append( node )
+      else:
+        addTask( node, node.build, vfile )
+    
     for node, exception in self.task_manager.completedTasks():
       if exception is None:
         completed_nodes.append( node )
       else:
-        self.failed_nodes.append( node )
+        failed_nodes.append( node )
     
-    return completed_nodes
+    return completed_nodes, failed_nodes
 
 #//===========================================================================//
 
@@ -280,20 +282,21 @@ class BuildManager (object):
     tails = nodes.tails()
     nodes_builder = self.__nodes_builder
     
-    buildNodes = nodes_builder.add
-    completedNodes = nodes_builder.completedNodes
+    buildNodes = nodes_builder.build
     removeTailNodes = nodes.removeTail
     
+    failed_nodes = []
+    
     while tails:
-      buildNodes( tails )
+      completed_nodes, tmp_failed_nodes = buildNodes( tails )
       
-      completed_nodes = completedNodes()
+      failed_nodes += tmp_failed_nodes
       
       tails = []
       for node in completed_nodes:
         tails += removeTailNodes( node )
     
-    return tuple(nodes_builder.failed_nodes)
+    return failed_nodes
     
   #//-------------------------------------------------------//
   

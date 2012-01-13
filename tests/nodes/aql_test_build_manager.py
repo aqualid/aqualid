@@ -48,7 +48,7 @@ class CopyValueBuilder (Builder):
 @testcase
 def test_bm_deps(self):
   
-  bm = BuildManager()
+  bm = BuildManager( None, 0, True )
   
   value1 = Value( "target_url1", "http://aql.org/download" )
   value2 = Value( "target_url2", "http://aql.org/download2" )

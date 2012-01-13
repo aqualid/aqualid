@@ -48,7 +48,7 @@ class   FileContentChecksum (object):
       
       return self
     
-    except OSError:
+    except (OSError, IOError):
       return NoContent()
   
   #//-------------------------------------------------------//
