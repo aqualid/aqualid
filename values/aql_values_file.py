@@ -1,3 +1,4 @@
+import threading
 
 from aql_logging import logWarning
 from aql_values_xash import ValuesXash
@@ -155,7 +156,14 @@ class DependsKeys (object):
 
 class ValuesFile (object):
   
-  __slots__ = ('data_file', 'xash', 'pickler', 'lock' , 'deps', 'loads', 'dumps')
+  __slots__ = (
+    'data_file',
+    'xash',
+    'pickler',
+    'lock' ,
+    'deps',
+    'loads',
+    'dumps')
   
   #//---------------------------------------------------------------------------//
   

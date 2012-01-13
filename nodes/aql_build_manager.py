@@ -1,6 +1,8 @@
 import hashlib
 
 from aql_node import Node
+from aql_task_manager import TaskManager
+from aql_vaules_file import ValuesFile
 from aql_logging import logError
 from aql_utils import toSequence
 
@@ -176,16 +178,59 @@ class _Nodes (object):
 
 #//===========================================================================//
 
-class _BuildingNodes (object):
+class _NodesBuilder (object):
   
   __slots__ = \
   (
-    '__nodes',
-    '__failed',
+    'vfile',
+    'vfilename',
+    'jobs',
+    'stop_on_error',
+    'task_manager',
+    'failed_nodes',
   )
   
-  def   __init__( self ):
-    self.
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, vfilename, jobs, stop_on_error ):
+    self.vfilename = vfilename
+    self.jobs = jobs
+    self.stop_on_error = stop_on_error
+    self.failed_nodes = []
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    if attr in ('vfile'):
+      vfile = ValuesFile( self.vfilename )
+      self.vfile = vfile
+      return vfile
+    
+    elif attr == 'task_manager':
+      tm = TaskManager( self.jobs, self.stop_on_error )
+      self.tm = tm
+      return tm
+  
+  #//-------------------------------------------------------//
+  
+  def   add( self, nodes ):
+    addTask = self.task_manager.addTask
+    vfile = self.vfile
+    
+    for node in nodes:
+      addTask( node, node.build, vfile )
+  
+  #//-------------------------------------------------------//
+  
+  def   completedNodes(self):
+    completed_nodes = []
+    for node, exception in self.task_manager.completedTasks():
+      if exception is None:
+        completed_nodes.append( node )
+      else:
+        self.failed_nodes.append( node )
+    
+    return completed_nodes
 
 #//===========================================================================//
 
@@ -194,13 +239,15 @@ class BuildManager (object):
   __slots__ = \
   (
     '__nodes',
-    '__building_nodes',
+    '__nodes_builder',
+    '__vfile',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__(self):
+  def   __init__(self, vfilename, jobs, stop_on_error ):
     self.__nodes = _Nodes()
+    self.__nodes_builder = _NodesBuilder( vfilename, jobs, stop_on_error )
   
   #//-------------------------------------------------------//
   
@@ -229,18 +276,25 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   build(self):
-    tails = self.__nodes.tails()
+    nodes = self.__nodes
+    tails = nodes.tails()
+    nodes_builder = self.__nodes_builder
+    
+    buildNodes = nodes_builder.add
+    completedNodes = nodes_builder.completedNodes
+    removeTailNodes = nodes.removeTail
     
     while tails:
-      for node in tails:
-        self.__building_nodes.add( node )
+      buildNodes( tails )
       
-      finished_nodes = self.__building_nodes.finishedNodes()
+      completed_nodes = completedNodes()
       
       tails = []
-      for node in finished_nodes:
-        tails += self.__nodes.removeTail( node )
-  
+      for node in completed_nodes:
+        tails += removeTailNodes( node )
+    
+    return tuple(nodes_builder.failed_nodes)
+    
   #//-------------------------------------------------------//
   
 
