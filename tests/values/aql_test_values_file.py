@@ -181,6 +181,26 @@ def test_value_file_3(self):
 
 #//===========================================================================//
 
+@testcase
+def test_value_file_empty_deps(self):
+  
+  with Tempfile() as tmp:
+    vfile = ValuesFile( tmp.name )
+    vfile.selfTest()
+    
+    values = []
+    
+    dep_value = DependsValue( "urls1", [] )
+    
+    values += [dep_value ]
+    
+    vfile.addValues( values ); vfile.selfTest()
+    
+    vfile.close()
+    vfile.open( tmp.name ); vfile.selfTest()
+
+#//===========================================================================//
+
 @skip
 @testcase
 def   test_value_file_speed(self):

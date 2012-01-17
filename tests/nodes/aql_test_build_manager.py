@@ -7,6 +7,7 @@ import shutil
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import testcase, skip, runTests
+from aql_utils import fileChecksum
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
 from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
@@ -18,8 +19,6 @@ from aql_build_manager import BuildManager
 #//===========================================================================//
 
 class CopyValueBuilder (Builder):
-  
-  __slots__ = ('name', 'long_name')
   
   def   __init__(self, name ):
     chcksum = hashlib.md5()
@@ -80,6 +79,126 @@ def test_bm_deps(self):
   
 #//===========================================================================//
 
+class ChecksumBuilder (Builder):
+  
+  __slots__ = (
+    'offset',
+    'length',
+  )
+  
+  def   __init__(self, name, offset, length ):
+    
+    chcksum = hashlib.md5()
+    chcksum.update( name.encode() )
+    
+    self.name = chcksum.digest()
+    self.long_name = name
+    
+    self.offset = offset
+    self.length = length
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target_values = []
+    
+    for source_value in node.sources():
+      
+      chcksum = fileChecksum( source_value.name, self.offset, self.length, 'sha512' )
+      chcksum_filename = source_value.name + '.chksum'
+      
+      with open( chcksum_filename, 'wb' ) as f:
+        f.write( chcksum.digest() )
+      
+      target_values.append( FileValue( chcksum_filename ) )
+    
+    return target_values, [], []
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    return [ Value(self.name, (self.offset, self.length) ) ]
+
+#//===========================================================================//
+
+def   _generateFile( start, stop ):
+  tmp = Tempfile()
+  tmp.write( bytearray( map( lambda v: v % 256, range( start, stop ) ) ) )
+  
+  tmp.close()
+  
+  return tmp.name
+
+#//===========================================================================//
+
+def   _removeFiles( files ):
+  for f in files:
+    try:
+      os.remove( f )
+    except (OSError, IOError):
+      pass
+
+#//===========================================================================//
+
+def   _generateSourceFiles( num, size ):
+  
+  src_files = []
+  
+  start = 0
+  
+  try:
+    while num > 0:
+      num -= 1
+      src_files.append( _generateFile( start, start + size ) )
+      start += size
+  except:
+    _removeFiles( src_files )
+    raise
+  
+  return src_files
+
+#//===========================================================================//
+
+def   _buildChecksums( vfilename, builder, src_files ):
+      
+      bm = BuildManager( vfilename, 4, True )
+      
+      src_values = []
+      for s in src_files:
+        src_values.append( FileValue( s ) )
+      
+      checksums_node = Node( builder, src_values )
+      checksums_node2 = Node( builder, checksums_node )
+      
+      bm.addNode( checksums_node ); bm.selfTest()
+      bm.addNode( checksums_node2 ); bm.selfTest()
+      
+      failed_nodes = bm.build()
+      for node,err in failed_nodes:
+        import traceback
+        print("err: %s" % str(err) )
+        traceback.print_tb( err.__traceback__ )
+
+
+#//===========================================================================//
+
+@testcase
+def test_bm_build(self):
+  
+  with Tempfile() as tmp:
+    
+    src_files = _generateSourceFiles( 3, 201 )
+    try:
+      builder = ChecksumBuilder("ChecksumBuilder", 0, 256 )
+      _buildChecksums( tmp.name, builder, src_files )
+      _buildChecksums( tmp.name, builder, src_files )
+      
+    finally:
+      _removeFiles( src_files )
+
+
+#//===========================================================================//
+
 def   _generateNodeTree( bm, builder, node, depth ):
   while depth:
     node = Node( builder, node )
@@ -101,7 +220,10 @@ def test_bm_deps_speed(self):
   bm.addNode( node )
   
   _generateNodeTree( bm, builder, node, 5000 )
-  
+
+#//===========================================================================//
+
+
 
 #//===========================================================================//
 

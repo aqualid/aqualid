@@ -5,17 +5,9 @@ class Builder (object):
   """
   
   __slots__ = (
-    'name'
+    'name',
     'long_name',
   )
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, attr ):
-    if attr == 'long_name':
-      pass
-   
-    raise Exception( "Abstract method. It should be implemented in a child class." )
    
   #//-------------------------------------------------------//
   

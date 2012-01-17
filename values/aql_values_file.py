@@ -240,7 +240,7 @@ class ValuesFile (object):
       dep_value = DependsValue( dep_keys_value.name, values )
       
       xash[ key ] = dep_value
-      if values is not None:
+      if values:
         self.deps[ key ] = value_keys
   
   #//---------------------------------------------------------------------------//
@@ -499,8 +499,9 @@ class ValuesFile (object):
               if key in self.deps:
                 raise AssertionError("empty dep value(%s) is in deps" % (value.name,) )
             else:
-              if key not in self.deps:
-                raise AssertionError("dep value(%s) is not in deps" % (value.name,) )
+              if value.content:
+                if key not in self.deps:
+                  raise AssertionError("dep value(%s) is not in deps" % (value.name,) )
           else:
             if key in self.deps:
               raise AssertionError("value(%s) is in deps" % (value.name,) )

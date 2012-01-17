@@ -1,6 +1,7 @@
 
 import os.path
 import fnmatch
+import hashlib
 
 #//===========================================================================//
 
@@ -43,46 +44,28 @@ def     flattenList( values, isSequence = isSequence ):
 
 #//===========================================================================//
 
-def     toList( value,
-                isinstance = isinstance,
-                list = list,
-                tuple = tuple ):
-    
-    if isinstance( value, list ):
-        return value
-    
-    if isinstance( value, tuple ):
-        return list(value)
-    
-    if value is None:
-        return []
-    
-    return [ value ]
+def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5' ):
+  
+  checksum = hashlib.__dict__[alg]()
+  
+  with open( filename, mode = 'rb' ) as f:
+    read = f.read
+    f.seek( offset )
+    checksum_update = checksum.update
+    while True:
+      chunk = read( 262144 )
+      if not chunk:
+        break
+      
+      if size > 0:
+        size -= len(chunk)
+        if size <= 0:
+          break
+      
+      checksum_update( chunk )
+  
+  return checksum
 
-#//===========================================================================//
-
-def     appendToListUnique( values_list, values ):
-    for v in values:
-        if not v in values_list:
-            values_list.append( v )
-
-#//===========================================================================//
-
-def     appendToList( values_list, values, isSequence = isSequence ):
-    if isSequence( values ):
-        values_list += values
-    else:
-        values_list.append( values )
-
-#//===========================================================================//
-
-def     removeFromList( values_list, values ):
-    for v in values:
-        while 1:
-            try:
-                values_list.remove( v )
-            except ValueError:
-                break
 
 #//===========================================================================//
 

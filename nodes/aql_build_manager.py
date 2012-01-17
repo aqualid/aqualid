@@ -107,7 +107,6 @@ class _Nodes (object):
   #//-------------------------------------------------------//
   
   def   removeTail( self, node ):
-    
     node_deps = self.node_deps
     
     try:
@@ -118,14 +117,14 @@ class _Nodes (object):
     
     tail_nodes = self.tail_nodes
     
-    del self.node_names[ node.name ]
+    self.node_names.remove( node.name )
     del node_deps[node]
     tail_nodes.remove( node )
     
     tails = []
     for dep in self.dep_nodes.pop( node ):
       d = node_deps[ dep ]
-      d.remove( dep )
+      d.remove( node )
       if not d:
         tails.append( dep )
         tail_nodes.add( dep )
@@ -155,7 +154,8 @@ class _Nodes (object):
       if node not in self.node_deps:
         raise AssertionError("Missed node: %s" % str(node.long_name) )
       
-      node_deps = node.source_nodes | node.dep_nodes
+      #~ node_deps = node.source_nodes | node.dep_nodes
+      node_deps = self.node_deps[node]
       
       if not node_deps:
         if node not in self.tail_nodes:
@@ -166,7 +166,7 @@ class _Nodes (object):
       
       all_dep_nodes |= node_deps
       
-      if self.node_deps[node] != node_deps:
+      if (node_deps - (node.source_nodes | node.dep_nodes)):
         raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node.long_name) )
       
       for dep in node_deps:
@@ -206,7 +206,7 @@ class _NodesBuilder (object):
     
     elif attr == 'task_manager':
       tm = TaskManager( self.jobs, self.stop_on_error )
-      self.tm = tm
+      self.task_manager = tm
       return tm
     
     raise AttributeError("Unknown attribute: '%s'" % str(attr) )
@@ -220,17 +220,21 @@ class _NodesBuilder (object):
     addTask = self.task_manager.addTask
     vfile = self.vfile
     
+    wait_tasks = False
+    
     for node in nodes:
       if node.actual( vfile ):
         completed_nodes.append( node )
       else:
         addTask( node, node.build, vfile )
+        wait_tasks = True
     
-    for node, exception in self.task_manager.completedTasks():
-      if exception is None:
-        completed_nodes.append( node )
-      else:
-        failed_nodes.append( node )
+    if wait_tasks:
+      for node, exception in self.task_manager.completedTasks():
+        if exception is None:
+          completed_nodes.append( node )
+        else:
+          failed_nodes.append( (node, exception) )
     
     return completed_nodes, failed_nodes
 

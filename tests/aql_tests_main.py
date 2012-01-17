@@ -4,10 +4,13 @@ import os.path
 
 from aql_tests import runTests
 from aql_logging import logInfo
+from aql_utils import toSequence
 
 #//===========================================================================//
 
 def  _findTestModules( path = None ):
+  print(path)
+  
   test_case_re = re.compile(r"^aql_test_.+\.py$")
   
   test_case_modules = []
@@ -40,18 +43,18 @@ def   _loadTestModules( test_modules ):
 
 #//===========================================================================//
 
-def   _isIterable( obj ):
-  return hasattr( obj, '__iter__') or hasattr( obj, '__getitem__')
-
-#//===========================================================================//
-
 def   _importTestModules( path = None ):
-  if _isIterable(path):
-    module_files = path
-  elif (path is not None) and os.path.isfile( path ):
-    module_files = ( path, )
-  else:
+  
+  if path is None:
     module_files = _findTestModules( path )
+  
+  else:
+    module_files = []
+    for path in toSequence( path ):
+      if os.path.isdir( path ):
+        module_files += _findTestModules( path )
+      else:
+        module_files.append( path )
   
   _loadTestModules( module_files )
 
