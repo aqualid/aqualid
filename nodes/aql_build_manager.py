@@ -187,6 +187,7 @@ class _NodesBuilder (object):
     'jobs',
     'stop_on_error',
     'task_manager',
+    'active_tasks',
   )
   
   #//-------------------------------------------------------//
@@ -195,6 +196,7 @@ class _NodesBuilder (object):
     self.vfilename = vfilename
     self.jobs = jobs
     self.stop_on_error = stop_on_error
+    self.active_tasks = 0
   
   #//-------------------------------------------------------//
   
@@ -220,17 +222,16 @@ class _NodesBuilder (object):
     addTask = self.task_manager.addTask
     vfile = self.vfile
     
-    wait_tasks = False
-    
     for node in nodes:
       if node.actual( vfile ):
         completed_nodes.append( node )
       else:
         addTask( node, node.build, vfile )
-        wait_tasks = True
+        self.active_tasks += 1
     
-    if wait_tasks:
+    if self.active_tasks:
       for node, exception in self.task_manager.completedTasks():
+        self.active_tasks -= 1
         if exception is None:
           completed_nodes.append( node )
         else:
