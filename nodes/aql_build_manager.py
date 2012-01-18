@@ -309,10 +309,12 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   clear(self):
-    for node in self.__nodes.node_deps:
-      node.clear()
+    vfile = self.__nodes_builder.vfile
     
-    self.__nodes_builder.vfile.clear()
+    for node in self.__nodes.node_deps:
+      node.clear( vfile )
+    
+    vfile.clear()
   
   #//-------------------------------------------------------//
   

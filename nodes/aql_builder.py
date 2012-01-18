@@ -13,7 +13,7 @@ class Builder (object):
   
   def   build( self, node ):
     """
-    Builds the node and returns lists of values: target, intermediate targets, impicit dependencies
+    Builds the node and returns values: targets, intermediate targets, impicit dependencies
     """
     raise Exception( "Abstract method. It should be implemented in a child class." )
   
@@ -27,7 +27,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   clean( self ):
+  def   clean( self, node, target_values, itarget_values ):
     """
     Cleans produced values
     """

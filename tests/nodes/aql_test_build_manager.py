@@ -117,7 +117,9 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   clear( self, node, target_values, itarget_values ):
+    print("Clear:")
     for value in target_values:
+      print("remove value: %s" % value )
       value.remove()
   
   #//-------------------------------------------------------//
@@ -166,33 +168,49 @@ def   _generateSourceFiles( num, size ):
 #//===========================================================================//
 
 def   _buildChecksums( vfilename, builder, src_files ):
-      
-      bm = BuildManager( vfilename, 4, True )
-      
-      src_values = []
-      for s in src_files:
-        src_values.append( FileValue( s ) )
-      
-      checksums_node = Node( builder, src_values )
-      checksums_node2 = Node( builder, checksums_node )
-      
-      bm.addNode( checksums_node ); bm.selfTest()
-      bm.addNode( checksums_node2 ); bm.selfTest()
-      
-      failed_nodes = bm.build()
-      for node,err in failed_nodes:
-        import traceback
-        print("err: %s" % str(err) )
-        traceback.print_tb( err.__traceback__ )
+  
+  bm = BuildManager( vfilename, 4, True )
+  
+  src_values = []
+  for s in src_files:
+    src_values.append( FileValue( s ) )
+  
+  checksums_node = Node( builder, src_values )
+  checksums_node2 = Node( builder, checksums_node )
+  
+  bm.addNode( checksums_node ); bm.selfTest()
+  bm.addNode( checksums_node2 ); bm.selfTest()
+  
+  failed_nodes = bm.build()
+  for node,err in failed_nodes:
+    import traceback
+    print("err: %s" % str(err) )
+    traceback.print_tb( err.__traceback__ )
 
+#//===========================================================================//
+
+def   _clearTargets( vfilename, builder, src_files ):
+  
+  bm = BuildManager( vfilename, 0, True )
+  
+  src_values = []
+  for s in src_files:
+    src_values.append( FileValue( s ) )
+  
+  checksums_node = Node( builder, src_values )
+  checksums_node2 = Node( builder, checksums_node )
+  
+  bm.addNode( checksums_node ); bm.selfTest()
+  bm.addNode( checksums_node2 ); bm.selfTest()
+  
+  bm.clear(); bm.selfTest()
 
 #//===========================================================================//
 
 @testcase
 def test_bm_build(self):
   
-  #~ with Tempfile() as tmp:
-    tmp = Tempfile()
+  with Tempfile() as tmp:
     
     src_files = _generateSourceFiles( 3, 201 )
     try:
@@ -204,6 +222,7 @@ def test_bm_build(self):
       _buildChecksums( tmp.name, builder, src_files )
       
     finally:
+      _clearTargets( tmp.name, builder, src_files )
       _removeFiles( src_files )
 
 
