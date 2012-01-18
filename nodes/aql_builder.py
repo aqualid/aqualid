@@ -24,3 +24,11 @@ class Builder (object):
     Returns builder values
     """
     raise Exception( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   clean( self ):
+    """
+    Cleans produced values
+    """
+    raise Exception( "Abstract method. It should be implemented in a child class." )

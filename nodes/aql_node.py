@@ -1,6 +1,6 @@
 import hashlib
 
-from aql_value import Value
+from aql_value import Value, NoContent
 from aql_depends_value import DependsValue
 from aql_logging import logError
 from aql_utils import toSequence
@@ -196,9 +196,9 @@ class Node (object):
     
     targets_value, itargets_value, ideps_value = values
     
-    self.target_values  = list( targets_value.content   )
-    self.itarget_values = list( itargets_value.content  )
-    self.idep_values    = list( ideps_value.content     )
+    self.target_values  = targets_value.content
+    self.itarget_values = itargets_value.content
+    self.idep_values    = ideps_value.content
     
     return True
   
@@ -209,13 +209,54 @@ class Node (object):
   
   #//=======================================================//
   
-  def   targets(self):
-    return self.target_values
+  @staticmethod
+  def   __removeValues( values ):
+    for value in values:
+      value.remove()
   
   #//=======================================================//
   
-  def   sideEffects(self):
-    return self.itarget_values
+  def   clear( self, vfile ):
+    
+    values = [ DependsValue( self.targets_name  ), DependsValue( self.itargets_name  ) ]
+    
+    targets_value, itargets_value = vfile.findValues( values )
+    target_values = targets_value.content
+    itarget_values = itargets_value.content
+    
+    if itarget_values or target_values:
+      if isinstance( target_values, NoContent ):
+        target_values = None
+      
+      if isinstance( itarget_values, NoContent ):
+        itarget_values = None
+      
+      self.builder.clear( self, target_values, itarget_values )
+  
+  #//=======================================================//
+  
+  def   targets( self, vfile ):
+    try:
+      return self.target_values
+    except AttributeError:
+      targets_value   = DependsValue( self.targets_name  )
+      
+      target_values = vfile.findValues( [ targets_value ] )[0].content
+      if isinstance( target_values, NoContent ):
+        return None
+      
+      return target_values
+  
+  #//=======================================================//
+  
+  def   sideEffects( self, vfile ):
+    try:
+      return self.itarget_values
+    except AttributeError:
+      itargets_value = DependsValue( self.itargets_name )
+      
+      value = vfile.findValues( [ itargets_value ] )[0]
+      return value.content
   
   #//=======================================================//
   

@@ -71,8 +71,12 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
+  def   copy( self ):
+    return type(self)( self.name, self.content )
+  #//-------------------------------------------------------//
+  
   def   __copy__( self ):
-    raise Exception("Coping is not allowed")
+    return self.copy()
   
   #//-------------------------------------------------------//
   
@@ -93,5 +97,10 @@ class   Value (object):
   
   def   actual( self ):
     return not isinstance( self.content, NoContent )
+  
+  #//-------------------------------------------------------//
+  
+  def   remove( self ):
+    pass
   
   #//-------------------------------------------------------//

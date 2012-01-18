@@ -158,6 +158,13 @@ class   FileValue (Value):
   def   actual( self ):
     content = self.content
     return content == type(content)( self.name )
-
+  
+  #//-------------------------------------------------------//
+  
+  def   remove( self, os_remove = os.remove ):
+    try:
+      os_remove( self.name )
+    except OSError:
+      pass
 
 #//===========================================================================//

@@ -116,6 +116,12 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
+  def   clear( self, node, target_values, itarget_values ):
+    for value in target_values:
+      value.remove()
+  
+  #//-------------------------------------------------------//
+  
   def   values( self ):
     return [ Value(self.name, (self.offset, self.length) ) ]
 
@@ -185,11 +191,15 @@ def   _buildChecksums( vfilename, builder, src_files ):
 @testcase
 def test_bm_build(self):
   
-  with Tempfile() as tmp:
+  #~ with Tempfile() as tmp:
+    tmp = Tempfile()
     
     src_files = _generateSourceFiles( 3, 201 )
     try:
       builder = ChecksumBuilder("ChecksumBuilder", 0, 256 )
+      _buildChecksums( tmp.name, builder, src_files )
+      _buildChecksums( tmp.name, builder, src_files )
+      builder = ChecksumBuilder("ChecksumBuilder", 32, 1024 )
       _buildChecksums( tmp.name, builder, src_files )
       _buildChecksums( tmp.name, builder, src_files )
       

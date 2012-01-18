@@ -193,13 +193,13 @@ def test_node_file(self):
             node3 = _rebuildNode( self, vfile, builder3, [value2], [], tmp_files )
             node = _rebuildNode( self, vfile, builder, [value1], [node3], tmp_files )
             
-            with open( node.targets()[0].name, 'wb' ) as f:
+            with open( node.target_values[0].name, 'wb' ) as f:
               f.write( b'333' )
               f.flush()
             
             node = _rebuildNode( self, vfile, builder, [value1], [node3], tmp_files )
             
-            with open( node.sideEffects()[0].name, 'wb' ) as f:
+            with open( node.itarget_values[0].name, 'wb' ) as f:
               f.write( b'abc' )
               f.flush()
             

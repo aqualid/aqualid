@@ -216,6 +216,7 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   build( self, nodes ):
+    print("building nodes: %s" % str(nodes))
     completed_nodes = []
     failed_nodes = []
     
@@ -224,8 +225,10 @@ class _NodesBuilder (object):
     
     for node in nodes:
       if node.actual( vfile ):
+        print("actual node: %s" % str(node))
         completed_nodes.append( node )
       else:
+        print("add node to tm: %s" % str(node))
         addTask( node, node.build, vfile )
         self.active_tasks += 1
     
@@ -303,6 +306,14 @@ class BuildManager (object):
     
     return failed_nodes
     
+  #//-------------------------------------------------------//
+  
+  def   clear(self):
+    for node in self.__nodes.node_deps:
+      node.clear()
+    
+    self.__nodes_builder.vfile.clear()
+  
   #//-------------------------------------------------------//
   
 
