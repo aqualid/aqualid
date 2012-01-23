@@ -3,7 +3,7 @@ import hashlib
 from aql_node import Node
 from aql_task_manager import TaskManager
 from aql_values_file import ValuesFile
-from aql_logging import logError
+from aql_logging import logError,logInfo,logWarning
 from aql_utils import toSequence
 
 #//===========================================================================//
@@ -207,7 +207,7 @@ class _NodesBuilder (object):
       return vfile
     
     elif attr == 'task_manager':
-      tm = TaskManager( self.jobs, self.stop_on_error )
+      tm = TaskManager( self.jobs )
       self.task_manager = tm
       return tm
     
@@ -216,7 +216,7 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   build( self, nodes ):
-    print("building nodes: %s" % str(nodes))
+    #~ print("building nodes: %s" % str(nodes))
     completed_nodes = []
     failed_nodes = []
     
@@ -225,10 +225,10 @@ class _NodesBuilder (object):
     
     for node in nodes:
       if node.actual( vfile ):
-        print("actual node: %s" % str(node))
+        #~ print("actual node: %s" % str(node))
         completed_nodes.append( node )
       else:
-        print("add node to tm: %s" % str(node))
+        #~ print("add node to tm: %s" % str(node))
         addTask( node, node.build, vfile )
         self.active_tasks += 1
     
@@ -238,6 +238,9 @@ class _NodesBuilder (object):
         if exception is None:
           completed_nodes.append( node )
         else:
+          if self.stop_on_error:
+            self.task_manager.stop()
+          
           failed_nodes.append( (node, exception) )
     
     return completed_nodes, failed_nodes
@@ -286,12 +289,12 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   build(self):
-    nodes = self.__nodes
-    tails = nodes.tails()
-    nodes_builder = self.__nodes_builder
+    target_nodes = {}
     
-    buildNodes = nodes_builder.build
-    removeTailNodes = nodes.removeTail
+    tails = self.__nodes.tails()
+    
+    buildNodes = self.__nodes_builder.build
+    removeTailNodes = self.__nodes.removeTail
     
     failed_nodes = []
     
@@ -301,7 +304,19 @@ class BuildManager (object):
       failed_nodes += tmp_failed_nodes
       
       tails = []
+      
       for node in completed_nodes:
+        
+        values = []
+        values += node.target_values
+        values += node.itarget_values
+        
+        for value in values:
+          other_node = target_nodes.setdefault( value.name, node )
+          
+          if other_node is not node:
+            logWarning("Target '%s' is built by different nodes: %s, %s " % ( value.name, node, other_node ) )
+        
         tails += removeTailNodes( node )
     
     return failed_nodes
@@ -313,9 +328,24 @@ class BuildManager (object):
     
     for node in self.__nodes.node_deps:
       node.clear( vfile )
-    
-    vfile.clear()
   
   #//-------------------------------------------------------//
   
-
+  def   status(self):
+    
+    target_nodes = {}
+    vfile = self.__nodes_builder.vfile
+    tails = self.__nodes.tails()
+    
+    removeTailNodes = self.__nodes.removeTail
+    
+    while tails:
+      new_tails = []
+      
+      for node in tails:
+        if not node.actual( vfile ):
+          logInfo("Outdated node: %s" % node )
+        else:
+          new_tails += removeTailNodes( node )
+      
+      tails = new_tails

@@ -84,9 +84,10 @@ class ChecksumBuilder (Builder):
   __slots__ = (
     'offset',
     'length',
+    'replace_ext',
   )
   
-  def   __init__(self, name, offset, length ):
+  def   __init__(self, name, offset, length, replace_ext = False ):
     
     chcksum = hashlib.md5()
     chcksum.update( name.encode() )
@@ -96,6 +97,7 @@ class ChecksumBuilder (Builder):
     
     self.offset = offset
     self.length = length
+    self.replace_ext = replace_ext
   
   #//-------------------------------------------------------//
   
@@ -105,7 +107,10 @@ class ChecksumBuilder (Builder):
     for source_value in node.sources():
       
       chcksum = fileChecksum( source_value.name, self.offset, self.length, 'sha512' )
-      chcksum_filename = source_value.name + '.chksum'
+      if self.replace_ext:
+        chcksum_filename = os.path.splitext(source_value.name)[0] + '.chksum'
+      else:
+        chcksum_filename = source_value.name + '.chksum'
       
       with open( chcksum_filename, 'wb' ) as f:
         f.write( chcksum.digest() )
@@ -117,9 +122,7 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   clear( self, node, target_values, itarget_values ):
-    print("Clear:")
     for value in target_values:
-      print("remove value: %s" % value )
       value.remove()
   
   #//-------------------------------------------------------//
@@ -167,8 +170,7 @@ def   _generateSourceFiles( num, size ):
 
 #//===========================================================================//
 
-def   _buildChecksums( vfilename, builder, src_files ):
-  
+def   _addNodesToBM( vfilename, builder, src_files ):
   bm = BuildManager( vfilename, 4, True )
   
   src_values = []
@@ -181,6 +183,14 @@ def   _buildChecksums( vfilename, builder, src_files ):
   bm.addNode( checksums_node ); bm.selfTest()
   bm.addNode( checksums_node2 ); bm.selfTest()
   
+  return bm
+
+#//===========================================================================//
+
+def   _buildChecksums( vfilename, builder, src_files ):
+  
+  bm = _addNodesToBM( vfilename, builder, src_files )
+  
   failed_nodes = bm.build()
   for node,err in failed_nodes:
     import traceback
@@ -191,17 +201,7 @@ def   _buildChecksums( vfilename, builder, src_files ):
 
 def   _clearTargets( vfilename, builder, src_files ):
   
-  bm = BuildManager( vfilename, 0, True )
-  
-  src_values = []
-  for s in src_files:
-    src_values.append( FileValue( s ) )
-  
-  checksums_node = Node( builder, src_values )
-  checksums_node2 = Node( builder, checksums_node )
-  
-  bm.addNode( checksums_node ); bm.selfTest()
-  bm.addNode( checksums_node2 ); bm.selfTest()
+  bm = _addNodesToBM( vfilename, builder, src_files )
   
   bm.clear(); bm.selfTest()
 
@@ -211,6 +211,7 @@ def   _clearTargets( vfilename, builder, src_files ):
 def test_bm_build(self):
   
   with Tempfile() as tmp:
+    #~ tmp = Tempfile()
     
     src_files = _generateSourceFiles( 3, 201 )
     try:
@@ -221,6 +222,27 @@ def test_bm_build(self):
       _buildChecksums( tmp.name, builder, src_files )
       _buildChecksums( tmp.name, builder, src_files )
       
+    finally:
+      _clearTargets( tmp.name, builder, src_files )
+      _removeFiles( src_files )
+
+#//===========================================================================//
+
+@testcase
+def test_bm_check(self):
+  
+  with Tempfile() as tmp:
+    #~ tmp = Tempfile()
+    
+    src_files = _generateSourceFiles( 3, 201 )
+    try:
+      builder = ChecksumBuilder("ChecksumBuilder", 0, 256, replace_ext = True )
+      _buildChecksums( tmp.name, builder, src_files )
+      #~ _buildChecksums( tmp.name, builder, src_files )
+      
+      bm = _addNodesToBM( tmp.name, builder, src_files )
+      bm.status(); bm.selfTest()
+    
     finally:
       _clearTargets( tmp.name, builder, src_files )
       _removeFiles( src_files )

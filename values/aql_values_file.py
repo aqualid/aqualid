@@ -41,6 +41,7 @@ def _sortDepends( dep_sort_data ):
     value = value_keys[0]
     value = DependsValue( value.name, None )
     sorted_deps.append( (key, value) )
+    logWarning("Cyclic dependency value: %s" % value )
   
   return sorted_deps
 
@@ -375,7 +376,7 @@ class ValuesFile (object):
         if val is None:
           val = type(value)( value.name, None )
         else:
-          val = type(val)( val )
+          val = val.copy()
         
         out_values.append( val )
       
@@ -389,13 +390,13 @@ class ValuesFile (object):
     if val is not None:
       if value.content != val.content:
         new_key = self.data_file.replace( key, self.dumps( value ) )
-        xash[ new_key ] = type(value)( value )
+        xash[ new_key ] = value.copy()
         
         removed_keys = self.deps.remove( key )
         self.__removedDepends( removed_keys )
     else:
       key = self.data_file.append( self.dumps( value ) )
-      xash[key] = type(value)( value )
+      xash[key] = value.copy()
   
   #//---------------------------------------------------------------------------//
   
@@ -410,7 +411,7 @@ class ValuesFile (object):
       dep_value = value
     else:
       dep_value = DependsValue( value.name, content_keys )
-      value = type(value)( value )
+      value = value.copy()
     
     key, val = xash.find( value )
     if val is not None:

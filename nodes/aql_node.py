@@ -210,9 +210,9 @@ class Node (object):
   #//=======================================================//
   
   @staticmethod
-  def   __removeValues( values ):
+  def   __removeContent( values, no_content = NoContent() ):
     for value in values:
-      value.remove()
+      value.content = no_content
   
   #//=======================================================//
   
@@ -232,31 +232,26 @@ class Node (object):
         itarget_values = None
       
       self.builder.clear( self, target_values, itarget_values )
+      
+      values = []
+      values += target_values
+      values += itarget_values
+      
+      no_content = NoContent()
+      for value in values:
+        value.content = no_content
+      
+      vfile.addValues( values )
   
   #//=======================================================//
   
-  def   targets( self, vfile ):
-    try:
-      return self.target_values
-    except AttributeError:
-      targets_value   = DependsValue( self.targets_name  )
-      
-      target_values = vfile.findValues( [ targets_value ] )[0].content
-      if isinstance( target_values, NoContent ):
-        return None
-      
-      return target_values
+  def   targets( self ):
+    return self.target_values
   
   #//=======================================================//
   
-  def   sideEffects( self, vfile ):
-    try:
-      return self.itarget_values
-    except AttributeError:
-      itargets_value = DependsValue( self.itargets_name )
-      
-      value = vfile.findValues( [ itargets_value ] )[0]
-      return value.content
+  def   sideEffects( self ):
+    return self.itarget_values
   
   #//=======================================================//
   
@@ -276,7 +271,18 @@ class Node (object):
   #//-------------------------------------------------------//
   
   def   __str__(self):
-    return str( self.long_name )
+    try:
+      source_values = self.sources()
+      
+    except AttributeError:
+    
+    for source in self.source_nodes:
+      names += source.long_name
+    
+    for source in self.source_values:
+      names_append( source.name )
+    
+    return str( self.builder.long_name )
   
   #//-------------------------------------------------------//
   
