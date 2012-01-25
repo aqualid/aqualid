@@ -270,19 +270,67 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   __str__(self):
+  def   __friendlyName( self ):
+    
+    many_sources = False
+    
     try:
-      source_values = self.sources()
+      source_values = self.source_values
+      
+      if not self.source_values:
+        source_values = self.sources()
+        many_sources = (len(source_values) > 1)
+      else:
+        many_sources = (len(source_values) > 1)
+        if not many_sources:
+          if self.source_nodes:
+            many_sources = True
+      
+      if source_values:
+        first_source = min( source_values, key = lambda v: v.name ).name
+      else:
+        first_source = []
       
     except AttributeError:
+      return None
     
-    for source in self.source_nodes:
-      names += source.long_name
+    name = str( self.builder.long_name ) + ': '
+    if many_sources:
+      name += '[' + str(first_source) + ' ...]'
+    else:
+      name += str(first_source)
     
-    for source in self.source_values:
-      names_append( source.name )
+    return name
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__(self):
     
-    return str( self.builder.long_name )
+    name = self.__friendlyName()
+    if name is not None:
+      return name
+    
+    depth = 0
+    long_name = []
+    
+    node = self
+    
+    while True:
+      node = next(iter(node.source_nodes))
+      
+      long_name.append( str( node.builder.long_name ) + ': ['  )
+      depth += 1
+      
+      first_source = node.__friendlyName()
+      if first_source is not None:
+        long_name.append( first_source )
+        break
+    
+    long_name += [']'] * depth
+    
+    # g++: [ moc: [ m4: src1.m4 ... ] ]
+    
+    return ' '.join( long_name )
   
   #//-------------------------------------------------------//
   

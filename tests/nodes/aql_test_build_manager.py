@@ -247,6 +247,47 @@ def test_bm_check(self):
       _clearTargets( tmp.name, builder, src_files )
       _removeFiles( src_files )
 
+#//===========================================================================//
+
+@skip
+@testcase
+def test_bm_node_names(self):
+  
+  with Tempfile() as tmp:
+    #~ tmp = Tempfile()
+    
+    src_files = _generateSourceFiles( 3, 201 )
+    try:
+      builder = ChecksumBuilder("ChecksumBuilder", 0, 256, replace_ext = False )
+      bm = BuildManager( tmp.name, 4, True )
+      
+      src_values = []
+      for s in src_files:
+        src_values.append( FileValue( s ) )
+      
+      node0 = Node( builder, [] )
+      node1 = Node( builder, src_values )
+      node2 = Node( builder, node1 )
+      node3 = Node( builder, node2 )
+      node4 = Node( builder, node3 )
+      
+      bm.addNode( node0 )
+      bm.addNode( node1 )
+      bm.addNode( node2 )
+      bm.addNode( node3 )
+      bm.addNode( node4 )
+      
+      #~ bm.build()
+      
+      print("node2: %s" % str(node4) )
+      print("node2: %s" % str(node3) )
+      print("node2: %s" % str(node2) )
+      print("node1: %s" % str(node1) )
+      print("node0: %s" % str(node0) )
+    
+    finally:
+      _removeFiles( src_files )
+
 
 #//===========================================================================//
 

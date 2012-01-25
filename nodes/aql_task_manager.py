@@ -74,7 +74,8 @@ class TaskManager (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__(self, num_threads = 1 ):
+  def   __init__(self, num_threads ):
+    self.tasks            = queue.Queue()
     self.completed_tasks  = queue.Queue()
     self.exit_event       = threading.Event()
     self.threads          = []
@@ -83,18 +84,16 @@ class TaskManager (object):
   
   #//-------------------------------------------------------//
   
-  def   start( self, num_threads = 1 ):
-    self.tasks = queue.Queue()
-    self.exit_event.clear()
+  def   start( self, num_threads ):
     
-    threads = []
+    threads = self.threads
+    
+    num_threads -= len(threads)
     
     while num_threads > 0:
       num_threads -= 1
       t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event )
       threads.append( t )
-    
-    self.threads = threads
   
   #//-------------------------------------------------------//
   
@@ -107,6 +106,8 @@ class TaskManager (object):
       t.join()
     
     self.threads = []
+    self.tasks = queue.Queue()
+    self.exit_event.clear()
   
   #//-------------------------------------------------------//
   

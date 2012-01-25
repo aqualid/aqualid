@@ -244,6 +244,11 @@ class _NodesBuilder (object):
           failed_nodes.append( (node, exception) )
     
     return completed_nodes, failed_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   isBuilding( self ):
+    return bool( self.active_tasks )
 
 #//===========================================================================//
 
@@ -294,11 +299,12 @@ class BuildManager (object):
     tails = self.__nodes.tails()
     
     buildNodes = self.__nodes_builder.build
+    isBuilding = self.__nodes_builder.isBuilding
     removeTailNodes = self.__nodes.removeTail
     
     failed_nodes = []
     
-    while tails:
+    while True:
       completed_nodes, tmp_failed_nodes = buildNodes( tails )
       
       failed_nodes += tmp_failed_nodes
@@ -315,9 +321,12 @@ class BuildManager (object):
           other_node = target_nodes.setdefault( value.name, node )
           
           if other_node is not node:
-            logWarning("Target '%s' is built by different nodes: %s, %s " % ( value.name, node, other_node ) )
+            logWarning("Target '%s' is built by different nodes: '%s', '%s' " % ( value.name, node, other_node ) )
         
         tails += removeTailNodes( node )
+      
+      if not (tails or isBuilding()):
+        break
     
     return failed_nodes
     
