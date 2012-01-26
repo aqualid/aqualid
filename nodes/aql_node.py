@@ -2,7 +2,6 @@ import hashlib
 
 from aql_value import Value, NoContent
 from aql_depends_value import DependsValue
-from aql_logging import logError
 from aql_utils import toSequence
 
 class Node (object):

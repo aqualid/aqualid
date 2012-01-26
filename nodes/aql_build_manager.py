@@ -3,7 +3,7 @@ import hashlib
 from aql_node import Node
 from aql_task_manager import TaskManager
 from aql_values_file import ValuesFile
-from aql_logging import logError,logInfo,logWarning
+from aql_logging import logInfo,logWarning
 from aql_utils import toSequence
 
 #//===========================================================================//

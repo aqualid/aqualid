@@ -24,11 +24,20 @@ class EventManager( object ):
     with self.lock:
       handlers = self.handlers.setdefault( event_id, [] )
       handlers.append( handler )
+      
       self.tm.start( len(handlers) )
   
   #//-------------------------------------------------------//
   
   def   sendEvent( self, event_id, **kw ):
     with self.lock:
-      for handler in self.handlers.get( event_id, [] ):
-        self.tm.addTask( 0, handler, kw )
+      handlers = self.handlers.get( event_id, [] )
+    
+    addTask = self.tm.addTask
+    for handler in handlers:
+      addTask( 0, handler, kw )
+  
+  #//-------------------------------------------------------//
+  
+  def   release( self ):
+    self.tm.stop()
