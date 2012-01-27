@@ -1,5 +1,7 @@
 import hashlib
 
+from aql_errors import NodeHasCyclicDependency, UnknownNode, NodeAlreadyExists, RemovingNonTailNode
+
 from aql_node import Node
 from aql_task_manager import TaskManager
 from aql_values_file import ValuesFile
@@ -69,7 +71,7 @@ class _Nodes (object):
         return
       
       if self.__hasCycle( node, new_deps ):
-        raise Exception( "Node has a cyclic dependency: %s" % str(node.long_name) )
+        raise NodeHasCyclicDependency( node )
       
       self.tail_nodes.discard( node )
       
@@ -83,14 +85,14 @@ class _Nodes (object):
         dep_nodes[ dep ].add( node )
     
     except KeyError as node:
-      raise Exception( "Unknown node: %s" % str(node.args[0].long_name) )
+      raise UnknownNode( node.args[0] )
     
   #//-------------------------------------------------------//
   
   def   add( self, node ):
     
     if node.name in self.node_names:
-      raise Exception("Multiple instances of node: %s" % str(node.long_name) )
+      raise NodeAlreadyExists( node )
     
     self.node_names.add( node.name )
     self.node_deps[ node ] = set()
@@ -111,9 +113,9 @@ class _Nodes (object):
     
     try:
       if node_deps[node]:
-        raise Exception("Removing non-tail node: %s" % str(node.long_name) )
+        raise RemovingNonTailNode( node )
     except KeyError as node:
-      raise Exception( "Unknown node: %s" % str(node.args[0].long_name) )
+      raise UnknownNode( node.args[0] )
     
     tail_nodes = self.tail_nodes
     

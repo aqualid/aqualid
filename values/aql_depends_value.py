@@ -1,4 +1,5 @@
 
+from aql_errors import UnpickleableValue
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
 
@@ -56,17 +57,17 @@ class   DependsValueContent (tuple):
   #//-------------------------------------------------------//
   
   def   __getnewargs__(self):
-    raise Exception( "Object '%s' can't be serialized." % type(self).__name__ )
+    raise UnpickleableValue( self )
   
   #//-------------------------------------------------------//
   
   def   __getstate__( self ):
-    raise Exception( "Object '%s' can't be serialized." % type(self).__name__ )
+    raise UnpickleableValue( self )
   
   #//-------------------------------------------------------//
   
   def   __setstate__( self, state ):
-    raise Exception( "Object '%s' can't be de-serialized." % type(self).__name__ )
+    raise UnpickleableValue( self )
 
 
 #//===========================================================================//

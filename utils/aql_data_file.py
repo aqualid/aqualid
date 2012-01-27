@@ -185,6 +185,7 @@ class DataFile (object):
   
   __slots__ = \
   (
+    'filename',
     'locations',
     'file_header',
     'file_size',
@@ -219,6 +220,7 @@ class DataFile (object):
     else:
       stream = io.open( filename, 'w+b', 0 )
     
+    self.filename = str(filename)
     self.stream = stream
     
     self.file_header.update( stream )

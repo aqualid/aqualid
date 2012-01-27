@@ -41,6 +41,7 @@ def _sortDepends( dep_sort_data ):
     value = value_keys[0]
     value = DependsValue( value.name, None )
     sorted_deps.append( (key, value) )
+    event_manager.depValueIsCyclic( value )
     logWarning("Cyclic dependency value: %s" % value )
   
   return sorted_deps
@@ -179,6 +180,7 @@ class ValuesFile (object):
       for value in values:
         key = findValue( value )[0]
         if key is None:
+          event_manager.unknownValue( value )
           logWarning("Value: %s has been not found" % str(value.name))
           return None
         
@@ -321,7 +323,7 @@ class ValuesFile (object):
     removed_keys -= deleted_keys
     
     if removed_keys:
-      logWarning("DataFile is unsynchronized")
+      event_manager.dataFileIsNotSync( self.data_file.filename )
       self.__removedDepends( removed_keys )
     
     #//-------------------------------------------------------//

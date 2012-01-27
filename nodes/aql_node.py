@@ -1,5 +1,6 @@
 import hashlib
 
+from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType
 from aql_value import Value, NoContent
 from aql_depends_value import DependsValue
 from aql_utils import toSequence
@@ -54,7 +55,7 @@ class Node (object):
       elif isinstance(source, Value):
         source_values_append( source )
       else:
-        raise Exception( "Unknown source type: %s" % type(source) )
+        raise UnknownNodeSourceType( self, source )
     
     return source_nodes, source_values
     
@@ -140,7 +141,7 @@ class Node (object):
       self.deps_value = self.__depsValue()
       return self.deps_value
     
-    raise AttributeError("Unknown attribute: '%s'" % str(attr) )
+    raise UnknownAttribute( self, attr )
   
   #//=======================================================//
   
@@ -265,7 +266,7 @@ class Node (object):
       elif isinstance(dep, Value):
         append_value( dep )
       else:
-        raise Exception( "Unknown dependency type: %s" % type(dep) )
+        raise UnknownNodeDependencyType( self, dep )
   
   #//-------------------------------------------------------//
   

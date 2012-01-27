@@ -5,6 +5,7 @@ import pickle
 import unittest
 
 sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'utils') ) )
+sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'events') ) )
 sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'values') ) )
 sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'nodes') ) )
 

@@ -15,7 +15,7 @@ class Builder (object):
     """
     Builds the node and returns values: targets, intermediate targets, impicit dependencies
     """
-    raise Exception( "Abstract method. It should be implemented in a child class." )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
@@ -23,7 +23,7 @@ class Builder (object):
     """
     Returns builder values
     """
-    raise Exception( "Abstract method. It should be implemented in a child class." )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
@@ -31,4 +31,4 @@ class Builder (object):
     """
     Cleans produced values
     """
-    raise Exception( "Abstract method. It should be implemented in a child class." )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )

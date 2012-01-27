@@ -1,3 +1,8 @@
+
+from aql_logging import logInfo,logWarning,logError
+
+#//===========================================================================//
+
 class EventHandler( object ):
   
   #//-------------------------------------------------------//
@@ -7,15 +12,18 @@ class EventHandler( object ):
   
   #//-------------------------------------------------------//
   
-  def   data( self, event_id, **kw ):
-    with self.lock:
-      handlers = self.handlers.get( event_id, [] )
-    
-    addTask = self.tm.addTask
-    for handler in handlers:
-      addTask( 0, handler, kw )
+  def   dataFileIsNotSync( self, filename ):
+    logWarning("Internal error: DataFile is unsynchronized")
   
   #//-------------------------------------------------------//
   
-  def   release( self ):
-    self.tm.stop()
+  def   depValueIsCyclic( self, value ):
+    logWarning("Internal error: Cyclic dependency value: %s" % value )
+  
+  #//-------------------------------------------------------//
+  
+  def   unknownValue( self, value ):
+    logWarning("Internal error: Unknown value: %s " % value )
+  
+  #//-------------------------------------------------------//
+  

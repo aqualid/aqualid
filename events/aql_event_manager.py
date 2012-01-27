@@ -1,8 +1,9 @@
 import threading
 
 from aql_task_manager import TaskManager
+from aql_event_handler import EventHandler
 
-class EventManager( object ):
+class EventManager( EventHandler ):
   
   __slots__ = \
   (
@@ -20,7 +21,7 @@ class EventManager( object ):
   
   #//-------------------------------------------------------//
   
-  def   addHandler( self, event_id, handler ):
+  def   addHandler( self, handler ):
     with self.lock:
       handlers = self.handlers.setdefault( event_id, [] )
       handlers.append( handler )
@@ -29,14 +30,23 @@ class EventManager( object ):
   
   #//-------------------------------------------------------//
   
-  def   sendEvent( self, event_id, **kw ):
-    with self.lock:
-      handlers = self.handlers.get( event_id, [] )
-    
-    addTask = self.tm.addTask
-    for handler in handlers:
-      addTask( 0, handler, kw )
+  def   outdatedNode( self, node ):
+    logInfo("Outdated node: %s" % node )
   
+  #//-------------------------------------------------------//
+  
+  def   dataFileIsNotSync( self, filename ):
+    logWarning("Internal error: DataFile is unsynchronized")
+  
+  #//-------------------------------------------------------//
+  
+  def   depValueIsCyclic( self, value ):
+    logWarning("Internal error: Cyclic dependency value: %s" % value )
+  
+  #//-------------------------------------------------------//
+  
+  def   unknownValue( self, value ):
+    logWarning("Internal error: Unknown value: %s " % value )
   #//-------------------------------------------------------//
   
   def   release( self ):
