@@ -26,4 +26,3 @@ class EventHandler( object ):
     logWarning("Internal error: Unknown value: %s " % value )
   
   #//-------------------------------------------------------//
-  

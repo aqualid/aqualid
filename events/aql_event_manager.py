@@ -3,7 +3,7 @@ import threading
 from aql_task_manager import TaskManager
 from aql_event_handler import EventHandler
 
-class EventManager( EventHandler ):
+class EventManager( object ):
   
   __slots__ = \
   (
@@ -16,38 +16,37 @@ class EventManager( EventHandler ):
 
   def   __init__(self):
     self.lock = threading.Lock()
-    self.handlers = {}
+    self.handlers = set()
     self.tm = TaskManager( 0 )
   
   #//-------------------------------------------------------//
   
   def   addHandler( self, handler ):
     with self.lock:
-      handlers = self.handlers.setdefault( event_id, [] )
-      handlers.append( handler )
-      
+      handlers = self.handlers
+      handlers.add( handler )
       self.tm.start( len(handlers) )
   
   #//-------------------------------------------------------//
   
-  def   outdatedNode( self, node ):
-    logInfo("Outdated node: %s" % node )
+  def   __getattr__( self, attr ):
+    def   _handleEvent( *args, **kw ):
+      self.handleEvent( attr, *args, **kw )
+    
+    return _handleEvent
   
   #//-------------------------------------------------------//
   
-  def   dataFileIsNotSync( self, filename ):
-    logWarning("Internal error: DataFile is unsynchronized")
+  def   handleEvent( self, handler_method, *args, **kw ):
+    with self.lock:
+      addTask = self.tm.addTask
+      for handler in self.handlers:
+        task = getattr( handler, handler_method )
+        addTask( 0, task, *args, **kw )
   
   #//-------------------------------------------------------//
   
-  def   depValueIsCyclic( self, value ):
-    logWarning("Internal error: Cyclic dependency value: %s" % value )
-  
-  #//-------------------------------------------------------//
-  
-  def   unknownValue( self, value ):
-    logWarning("Internal error: Unknown value: %s " % value )
-  #//-------------------------------------------------------//
-  
-  def   release( self ):
-    self.tm.stop()
+  def   reset( self ):
+    with self.lock:
+      self.handlers.clear()
+      self.tm.stop()
