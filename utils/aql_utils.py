@@ -1,7 +1,10 @@
 
+import sys
 import os.path
 import fnmatch
 import hashlib
+import threading
+import traceback
 
 #//===========================================================================//
 
@@ -32,15 +35,15 @@ def     toSequence( value, iter = iter, tuple = tuple ):
 #//===========================================================================//
 
 def     flattenList( values, isSequence = isSequence ):
-    
-    flatten_list = []
-    for v in values:
-        if isSequence( v ):
-            flatten_list += flattenList( v )
-        else:
-            flatten_list.append( v )
-    
-    return flatten_list
+  
+  flatten_list = []
+  for v in values:
+    if isSequence( v ):
+      flatten_list += flattenList( v )
+    else:
+      flatten_list.append( v )
+  
+  return flatten_list
 
 #//===========================================================================//
 
@@ -65,6 +68,21 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5' ):
       checksum_update( chunk )
   
   return checksum
+
+#//===========================================================================//
+
+def   getFunctionName( level = 1, getframe = sys._getframe ):
+  return getframe( level ).f_code.co_name
+
+#//===========================================================================//
+
+def   printStacks():
+  id2name = dict([(th.ident, th.name) for th in threading.enumerate()])
+  
+  for thread_id, stack in sys._current_frames().items():
+    print("\n" + ("=" * 64) )
+    print("Thread: %s (%s)" % (id2name.get(thread_id,""), thread_id))
+    traceback.print_stack(stack)
 
 
 #//===========================================================================//

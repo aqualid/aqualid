@@ -53,6 +53,7 @@ class _TaskProcessor( threading.Thread ):
         completed_tasks.put( fail )
         
       except:
+        print("Unknown exception")
         fail = ( id, Exception("Unknown exception") )
         completed_tasks.put( fail )
       
