@@ -52,3 +52,17 @@ class   UnpickleableValue ( Exception ):
   def   __init__( self, value ):
     msg = "Value '%s' can't be serialized." % type(value).__name__ 
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   InvalidHandlerNoMethod ( Exception ):
+  def   __init__( self, method ):
+    msg = "Handler doesn't have method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   InvalidHandlerMethodArgs ( Exception ):
+  def   __init__( self, method ):
+    msg = "Invalid arguments of handler method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )

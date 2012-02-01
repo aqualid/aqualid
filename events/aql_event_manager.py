@@ -36,12 +36,20 @@ class EventManager( object ):
     return _handleEvent
   
   #//-------------------------------------------------------//
+  @staticmethod
+  def   verifyHandler( handler ):
+    
+
+  
+  #//-------------------------------------------------------//
+  
   
   def   handleEvent( self, handler_method, *args, **kw ):
     with self.lock:
       addTask = self.tm.addTask
       for handler in self.handlers:
         task = getattr( handler, handler_method )
+        fs = inspect.getfullargspec( task )
         addTask( 0, task, *args, **kw )
   
   #//-------------------------------------------------------//

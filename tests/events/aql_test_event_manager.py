@@ -1,7 +1,7 @@
 ﻿import sys
 import os.path
 import time
-import traceback
+import inspect
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -29,16 +29,6 @@ class _TestEventHandler( EventHandler ):
     #~ print(globals())
     
     print("Func name: %s" % getFunctionName() )
-    
-    #~ try:
-      #~ raise Exception()
-    #~ except Exception as err:
-      #~ print(err.__traceback__.tb_frame.f_code.co_name)
-    
-    #~ import traceback
-    #~ method_name = traceback.extract_stack( limit = 1 )
-    #~ print("outdatedNode: %s" % method_name )
-    #~ self.last_event = method_name
     print("< outdatedNode")
   
   #//-------------------------------------------------------//
@@ -58,9 +48,17 @@ class _TestEventHandler( EventHandler ):
 
 
 #//===========================================================================//
+def   _foo( a, b, c = -5, d = -9, *agrs, **kw ):
+  fs = inspect.getfullargspec(_foo)
+  
+  print( fs )
+  print( fs.varargs )
 
 @testcase
 def test_event_manager(self):
+  print( inspect.getfullargspec(self.test_event_manager) )
+  _foo( 1, 2, b = -4)
+  
   em = EventManager()
   
   eh = _TestEventHandler()

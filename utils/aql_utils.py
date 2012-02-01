@@ -5,6 +5,7 @@ import fnmatch
 import hashlib
 import threading
 import traceback
+import inspect
 
 #//===========================================================================//
 
@@ -12,7 +13,7 @@ def     isSequence( value, iter = iter ):
   try:
     iter( value )
     return True
-  except TypeEror:
+  except TypeError:
     pass
   
   return False
@@ -47,7 +48,7 @@ def     flattenList( values, isSequence = isSequence ):
 
 #//===========================================================================//
 
-def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5' ):
+def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5', chunk_size = 262144 ):
   
   checksum = hashlib.__dict__[alg]()
   
@@ -56,7 +57,7 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5' ):
     f.seek( offset )
     checksum_update = checksum.update
     while True:
-      chunk = read( 262144 )
+      chunk = read( chunk_size )
       if not chunk:
         break
       
@@ -83,6 +84,58 @@ def   printStacks():
     print("\n" + ("=" * 64) )
     print("Thread: %s (%s)" % (id2name.get(thread_id,""), thread_id))
     traceback.print_stack(stack)
+
+#//===========================================================================//
+
+def   equalFunctionArgs( function1, function2, getfullargspec = inspect.getfullargspec):
+  fs1 = getfullargspec( function1 )
+  fs2 = getfullargspec( function2 )
+  
+  return (fs1.args == fs2.args) and (fs1.varargs == fs2.varargs) and (fs1.varkw == fs2.varkw)
+
+#//===========================================================================//
+
+def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullargspec):
+  fs = getfullargspec( function )
+  current_args_num = len(args) + len(kw)
+  
+  args_num = len(fs.args)
+  
+  if not fs.varargs and not fs.varkw:
+    if current_args_num > args_num:
+      print("current_args_num: %s" % current_args_num )
+      print("max_args_num: %s" % args_num )
+      return False
+  
+  if fs.defaults:
+    def_args_num = len(fs.defaults)
+  else:
+    def_args_num = 0
+  
+  min_args_num = args_num - def_args_num
+  if current_args_num < min_args_num:
+    print("current_args_num: %s" % current_args_num )
+    print("min_args_num: %s" % min_args_num )
+    return False
+  
+  kw = set(kw)
+  unknown_args = kw - set(fs.args)
+  
+  if unknown_args and not fs.varkw:
+    print("unknown_args: %s" % str(unknown_args))
+    return False
+  
+  def_args = fs.args[args_num - def_args_num:]
+  non_def_kw = kw - set(def_args)
+  
+  non_def_args_num = len(args) + len(non_def_kw)
+  if non_def_args_num < min_args_num:
+    print("non_def_args_num < min_args_num: %s" % str(non_def_args_num - min_args_num))
+    return False
+  
+  kw & set(fs.args)
+  
+  return True
 
 
 #//===========================================================================//
