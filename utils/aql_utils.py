@@ -103,8 +103,6 @@ def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullarg
   
   if not fs.varargs and not fs.varkw:
     if current_args_num > args_num:
-      print("current_args_num: %s" % current_args_num )
-      print("max_args_num: %s" % args_num )
       return False
   
   if fs.defaults:
@@ -114,15 +112,12 @@ def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullarg
   
   min_args_num = args_num - def_args_num
   if current_args_num < min_args_num:
-    print("current_args_num: %s" % current_args_num )
-    print("min_args_num: %s" % min_args_num )
     return False
   
   kw = set(kw)
   unknown_args = kw - set(fs.args)
   
   if unknown_args and not fs.varkw:
-    print("unknown_args: %s" % str(unknown_args))
     return False
   
   def_args = fs.args[args_num - def_args_num:]
@@ -130,16 +125,13 @@ def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullarg
   
   non_def_args_num = len(args) + len(non_def_kw)
   if non_def_args_num < min_args_num:
-    print("non_def_args_num < min_args_num: %s" % str(non_def_args_num - min_args_num))
     return False
   
   twice_args = set(fs.args[:len(args)]) & kw
   if twice_args:
-    print("twice_args: %s" % str(twice_args))
     return False
   
   return True
-
 
 #//===========================================================================//
 
