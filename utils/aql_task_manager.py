@@ -1,5 +1,7 @@
 import threading
 
+from aql_logging import logWarning
+
 try:
   import queue
 except ImportError:
@@ -42,20 +44,19 @@ class _TaskProcessor( threading.Thread ):
       id, func, args, kw = tasks.get()
       try:
         func(*args, **kw)
-        success = (id, None)
-        completed_tasks.put( success )
+        if id is not None:
+          success = (id, None)
+          completed_tasks.put( success )
       
       except _ExitException:
         exit_event.set()
       
       except (Exception, BaseException) as err:
-        fail = ( id, err )
-        completed_tasks.put( fail )
-        
-      except:
-        print("Unknown exception")
-        fail = ( id, Exception("Unknown exception") )
-        completed_tasks.put( fail )
+        if id is not None:
+          fail = ( id, err )
+          completed_tasks.put( fail )
+        else:
+          logWarning("Task failed with error: %" % str(err) )
       
       finally:
         tasks.task_done()

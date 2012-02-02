@@ -1,7 +1,8 @@
 import threading
 
+from aql_utils import checkFunctionArgs
 from aql_task_manager import TaskManager
-from aql_event_handler import EventHandler
+from aql_event_handler import EventHandler, verifyHandler
 
 class EventManager( object ):
   
@@ -22,6 +23,7 @@ class EventManager( object ):
   #//-------------------------------------------------------//
   
   def   addHandler( self, handler ):
+    verifyHandler( handler )
     with self.lock:
       handlers = self.handlers
       handlers.add( handler )
@@ -36,21 +38,27 @@ class EventManager( object ):
     return _handleEvent
   
   #//-------------------------------------------------------//
-  @staticmethod
-  def   verifyHandler( handler ):
-    
-
-  
-  #//-------------------------------------------------------//
-  
   
   def   handleEvent( self, handler_method, *args, **kw ):
+    
+    if __debug__:
+      check_args = [ None ]
+      check_args += args
+    
     with self.lock:
       addTask = self.tm.addTask
       for handler in self.handlers:
-        task = getattr( handler, handler_method )
-        fs = inspect.getfullargspec( task )
-        addTask( 0, task, *args, **kw )
+        try:
+          task = getattr( handler, handler_method )
+          
+          if __debug__:
+            if not checkFunctionArgs( task, check_args, kw ):
+              raise InvalidHandlerMethodArgs( handler_method )
+        
+        except AttributeError:
+          raise InvalidHandlerNoMethod( handler_method )
+        
+        addTask( None, task, *args, **kw )
   
   #//-------------------------------------------------------//
   

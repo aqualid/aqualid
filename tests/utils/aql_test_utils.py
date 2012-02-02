@@ -68,38 +68,52 @@ def test_checkFunctionArgs(self):
   
   args = []
   kw = {'a':2, 'c':4, 'b': 3}
-
+  
   self.assertTrue( checkFunctionArgs( f0, args, kw) )
   
   args = [1]
   kw = {'c':4, 'b': 3}
-
+  
   self.assertTrue( checkFunctionArgs( f0, args, kw) )
   
-  args = [1,2,3,4,5]
   kw = {'g':4, 'f': 3}
-
+  args = [1,2,3,4,5]
+  
   self.assertTrue( checkFunctionArgs( f1, args, kw) )
   
   args = [1,2,3,4 ]
   kw = {'e':4, 'f': 3}
-
+  
   self.assertTrue( checkFunctionArgs( f1, args, kw) )
   
   args = [1,2,3,4 ]
   kw = {'a':4, 'f': 3}
-
+  
   self.assertFalse( checkFunctionArgs( f1, args, kw) )
   
   args = []
   kw = {'e':4, 'f': 3, 'd': 1 }
-
+  
   self.assertFalse( checkFunctionArgs( f1, args, kw) )
   
   args = []
   kw = {}
-
+  
   self.assertFalse( checkFunctionArgs( f1, args, kw) )
+  
+  #//-------------------------------------------------------//
+  
+  class Foo:
+    def   test(self, a, b, c):
+      pass
+  
+  class Bar( Foo ):
+    pass
+  
+  args = [None, 1, 2, 3]
+  kw = {}
+  
+  self.assertTrue( checkFunctionArgs( Foo().test, args, kw) )
 
 
 #//===========================================================================//

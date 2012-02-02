@@ -1,25 +1,29 @@
 
-#~ from aql_logging import logInfo,logWarning,logError
+from aql_logging import logInfo,logWarning
+from aql_utils import equalFunctionArgs
+from aql_errors import InvalidHandlerMethodArgs,InvalidHandlerNoMethod
 
 #//===========================================================================//
 
 _events = set()
 
 def   _event( event_method ):
-  print( event_method )
-  print( dir(event_method) )
   _events.add( event_method )
 
 #//-------------------------------------------------------//
 def   verifyHandler( handler ):
-  for event_method in _events:
-    try:
-      handler_method = handler.getattr( event_method.__name__ )
-      if not equalFunctionArgs( event_method, handler_method ):
-        raise InvalidHandlerMethodArgs( event_method )
-    except AttributeError:
-      raise InvalidHandlerNoMethod( event_method )
-    
+  if type(handler) is not EventHandler:
+    for event_method in _events:
+      try:
+        event_method_name = event_method.__name__
+        
+        handler_method = getattr( handler, event_method_name )
+        
+        if not equalFunctionArgs( event_method, handler_method ):
+          raise InvalidHandlerMethodArgs( event_method_name )
+      
+      except AttributeError:
+        raise InvalidHandlerNoMethod( event_method_name )
   
 #//===========================================================================//
 

@@ -1,7 +1,6 @@
 ﻿import sys
 import os.path
 import time
-import inspect
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -25,49 +24,47 @@ class _TestEventHandler( EventHandler ):
   #//-------------------------------------------------------//
   
   def   outdatedNode( self, node ):
-    print("> outdatedNode")
-    #~ print(globals())
-    
-    print("Func name: %s" % getFunctionName() )
-    print("< outdatedNode")
+    self.last_event = getFunctionName()
   
   #//-------------------------------------------------------//
   
   def   dataFileIsNotSync( self, filename ):
-    logWarning("Internal error: DataFile is unsynchronized")
+    self.last_event = getFunctionName()
   
   #//-------------------------------------------------------//
   
   def   depValueIsCyclic( self, value ):
-    logWarning("Internal error: Cyclic dependency value: %s" % value )
+    self.last_event = getFunctionName()
   
   #//-------------------------------------------------------//
   
   def   unknownValue( self, value ):
-    logWarning("Internal error: Unknown value: %s " % value )
+    self.last_event = getFunctionName()
 
 
 #//===========================================================================//
-def   _foo( a, b, c = -5, d = -9, *agrs, **kw ):
-  fs = inspect.getfullargspec(_foo)
-  
-  print( fs )
-  print( fs.varargs )
+
+def   _testHandlerMethod( test, event_manager, event_handler, method, *args, **kw):
+  getattr(event_manager, method)( *args, **kw )
+  time.sleep(0.05)
+  test.assertEqual( event_handler.last_event, method )
+
+#//===========================================================================//
 
 @testcase
 def test_event_manager(self):
-  print( inspect.getfullargspec(self.test_event_manager) )
-  _foo( 1, 2, b = -4)
   
   em = EventManager()
   
   eh = _TestEventHandler()
-  eh.outdatedNode( 1 )
-  
+  eh.outdatedNode( 'abc' )
   
   em.addHandler( eh )
-  em.outdatedNode( 'abc' )
-  printStacks()
+  
+  _testHandlerMethod( self, em, eh, 'outdatedNode',       None )
+  _testHandlerMethod( self, em, eh, 'dataFileIsNotSync',  None )
+  _testHandlerMethod( self, em, eh, 'depValueIsCyclic',   None )
+  _testHandlerMethod( self, em, eh, 'unknownValue',       None )
 
 #//===========================================================================//
 
