@@ -133,7 +133,10 @@ def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullarg
     print("non_def_args_num < min_args_num: %s" % str(non_def_args_num - min_args_num))
     return False
   
-  kw & set(fs.args)
+  twice_args = set(fs.args[:len(args)]) & kw
+  if twice_args:
+    print("twice_args: %s" % str(twice_args))
+    return False
   
   return True
 

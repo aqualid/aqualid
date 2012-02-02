@@ -53,7 +53,7 @@ def test_equalFunctionArgs(self):
 @testcase
 def test_checkFunctionArgs(self):
   def   f0( a, b, c ): pass
-  def   f1( a, b, c, *args, **kw): pass
+  def   f1( a, b, c, d = 0, e = 1, f = 2, *args, **kw): pass
   
   args = [1,2,3]
   kw = {}
@@ -71,12 +71,12 @@ def test_checkFunctionArgs(self):
   self.assertTrue( checkFunctionArgs( f0, args, kw) )
   
   args = [1,2,3,4,5]
-  kw = {'e':4, 'f': 3}
+  kw = {'g':4, 'f': 3}
 
   self.assertTrue( checkFunctionArgs( f1, args, kw) )
   
-  args = [1,2,3,4,5]
-  kw = {'e':4, 'c': 3}
+  args = [1,2,3,4 ]
+  kw = {'e':4, 'f': 3}
 
   self.assertTrue( checkFunctionArgs( f1, args, kw) )
 
