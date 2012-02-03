@@ -1,11 +1,11 @@
 import hashlib
 
+from aql_singletons import event_manager
 from aql_errors import NodeHasCyclicDependency, UnknownNode, NodeAlreadyExists, RemovingNonTailNode
 
 from aql_node import Node
 from aql_task_manager import TaskManager
 from aql_values_file import ValuesFile
-from aql_logging import logInfo,logWarning
 from aql_utils import toSequence
 
 #//===========================================================================//
@@ -323,7 +323,7 @@ class BuildManager (object):
           other_node = target_nodes.setdefault( value.name, node )
           
           if other_node is not node:
-            logWarning("Target '%s' is built by different nodes: '%s', '%s' " % ( value.name, node, other_node ) )
+            event_manager.targetIsBuiltTwiceByNodes( value, node, other_node )
         
         tails += removeTailNodes( node )
       
@@ -355,7 +355,7 @@ class BuildManager (object):
       
       for node in tails:
         if not node.actual( vfile ):
-          logInfo("Outdated node: %s" % node )
+          event_manager.outdatedNode( node )
         else:
           new_tails += removeTailNodes( node )
       

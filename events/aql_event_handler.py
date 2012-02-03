@@ -30,14 +30,11 @@ def   verifyHandler( handler ):
 class EventHandler( object ):
   
   #//-------------------------------------------------------//
-  
-  @_event
-  def   outdatedNode( self, node ):
-    logInfo("Outdated node: %s" % node )
-  
-  #//-------------------------------------------------------//
   @_event
   def   dataFileIsNotSync( self, filename ):
+    """
+    Inconsistency state of Data file. Either internal error or external corruption.
+    """
     logWarning("Internal error: DataFile is unsynchronized")
   
   #//-------------------------------------------------------//
@@ -49,5 +46,21 @@ class EventHandler( object ):
   @_event
   def   unknownValue( self, value ):
     logWarning("Internal error: Unknown value: %s " % value )
+  
+  
+  #//-------------------------------------------------------//
+  
+  @_event
+  def   outdatedNode( self, node ):
+    """
+    Node needs to be rebuilt.
+    """
+    logInfo("Outdated node: %s" % node )
+  
+  #//-------------------------------------------------------//
+  
+  @_event
+  def   targetIsBuiltTwiceByNodes( self, value, node1, node2 ):
+    logWarning("Target '%s' is built by different nodes: '%s', '%s' " % ( value.name, node1, node2 ) )
   
   #//-------------------------------------------------------//

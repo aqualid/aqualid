@@ -1,6 +1,7 @@
 import threading
 
-from aql_logging import logWarning
+from aql_singletons import event_manager
+
 from aql_values_xash import ValuesXash
 from aql_lock_file import FileLock
 from aql_data_file import DataFile
@@ -42,7 +43,6 @@ def _sortDepends( dep_sort_data ):
     value = DependsValue( value.name, None )
     sorted_deps.append( (key, value) )
     event_manager.depValueIsCyclic( value )
-    logWarning("Cyclic dependency value: %s" % value )
   
   return sorted_deps
 
@@ -181,7 +181,6 @@ class ValuesFile (object):
         key = findValue( value )[0]
         if key is None:
           event_manager.unknownValue( value )
-          logWarning("Value: %s has been not found" % str(value.name))
           return None
         
         value_keys_append( key )
