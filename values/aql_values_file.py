@@ -1,6 +1,6 @@
 import threading
 
-from aql_singletons import event_manager
+from aql_event_manager import event_manager
 
 from aql_values_xash import ValuesXash
 from aql_lock_file import FileLock
@@ -322,7 +322,7 @@ class ValuesFile (object):
     removed_keys -= deleted_keys
     
     if removed_keys:
-      event_manager.dataFileIsNotSync( self.data_file.filename )
+      event_manager.eventDataFileIsNotSync( self.data_file.filename )
       self.__removedDepends( removed_keys )
     
     #//-------------------------------------------------------//

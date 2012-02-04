@@ -286,3 +286,7 @@ def     findFiles( root, path, pattern, recursive = True ):
     
     files = map( os.path.normpath, files )
     return files
+
+if __name__ == "__main__":
+  print( inspect.getcallargs( findFiles, 1, 2, path = 4 ) )
+  

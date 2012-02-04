@@ -1,6 +1,6 @@
 import hashlib
 
-from aql_singletons import event_manager
+from aql_event_manager import event_manager
 from aql_errors import NodeHasCyclicDependency, UnknownNode, NodeAlreadyExists, RemovingNonTailNode
 
 from aql_node import Node
@@ -227,10 +227,10 @@ class _NodesBuilder (object):
     
     for node in nodes:
       if node.actual( vfile ):
-        #~ print("actual node: %s" % str(node))
+        event_manager.eventActualNode( node )
         completed_nodes.append( node )
       else:
-        #~ print("add node to tm: %s" % str(node))
+        event_manager.eventOutdateNode( node )
         addTask( node, node.build, vfile )
         self.active_tasks += 1
     

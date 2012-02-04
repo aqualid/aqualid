@@ -11,10 +11,7 @@ from aql_event_handler import EventHandler
 
 #//===========================================================================//
 
-
-#//===========================================================================//
-
-class _TestEventHandler( EventHandler ):
+class _TestEventHandler( object ):
   
   __slots__ = ( 'last_event' )
   
@@ -23,31 +20,45 @@ class _TestEventHandler( EventHandler ):
   
   #//-------------------------------------------------------//
   
-  def   outdatedNode( self, node ):
+  def   eventOutdatedNode( self, node ):
     self.last_event = getFunctionName()
   
   #//-------------------------------------------------------//
   
-  def   dataFileIsNotSync( self, filename ):
+  def   eventDataFileIsNotSync( self, filename ):
     self.last_event = getFunctionName()
   
   #//-------------------------------------------------------//
   
-  def   depValueIsCyclic( self, value ):
+  def   eventDepValueIsCyclic( self, value ):
     self.last_event = getFunctionName()
   
   #//-------------------------------------------------------//
   
-  def   unknownValue( self, value ):
+  def   eventUnknownValue( self, value ):
+    self.last_event = getFunctionName()
+
+  #//-------------------------------------------------------//
+  
+  def   eventActualNode( self, node ):
     self.last_event = getFunctionName()
 
 
 #//===========================================================================//
 
-def   _testHandlerMethod( test, event_manager, event_handler, method, *args, **kw):
+def   _testEvent( test, event_manager, event_handler, method, *args, **kw):
+  event_handler.last_event = None
   getattr(event_manager, method)( *args, **kw )
   time.sleep(0.05)
   test.assertEqual( event_handler.last_event, method )
+
+#//===========================================================================//
+
+def   _testDisabledEvent( test, event_manager, event_handler, method, *args, **kw):
+  event_handler.last_event = None
+  getattr(event_manager, method)( *args, **kw )
+  time.sleep(0.05)
+  test.assertIsNone( event_handler.last_event )
 
 #//===========================================================================//
 
@@ -55,16 +66,27 @@ def   _testHandlerMethod( test, event_manager, event_handler, method, *args, **k
 def test_event_manager(self):
   
   em = EventManager()
-  
   eh = _TestEventHandler()
-  eh.outdatedNode( 'abc' )
   
-  em.addHandler( eh )
+  em.addHandler( eh, True )
   
-  _testHandlerMethod( self, em, eh, 'outdatedNode',       None )
-  _testHandlerMethod( self, em, eh, 'dataFileIsNotSync',  None )
-  _testHandlerMethod( self, em, eh, 'depValueIsCyclic',   None )
-  _testHandlerMethod( self, em, eh, 'unknownValue',       None )
+  _testEvent( self, em, eh, 'eventOutdatedNode',       None )
+  _testEvent( self, em, eh, 'eventDataFileIsNotSync',  None )
+  _testEvent( self, em, eh, 'eventDepValueIsCyclic',   None )
+  _testEvent( self, em, eh, 'eventUnknownValue',       None )
+  
+  em.enableEvents( 'eventUnknownValue', False )
+  _testDisabledEvent( self, em, eh, 'eventUnknownValue',  None )
+  
+  em.enableWarning( False )
+  _testDisabledEvent( self, em, eh, 'eventDepValueIsCyclic',  None )
+  
+  em.enableAll( False )
+  _testDisabledEvent( self, em, eh, 'eventActualNode', None )
+  
+  em.enableAll( True )
+  _testEvent( self, em, eh, 'eventActualNode', None )
+  
 
 #//===========================================================================//
 

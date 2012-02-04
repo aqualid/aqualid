@@ -55,13 +55,6 @@ class   UnpickleableValue ( Exception ):
 
 #//-------------------------------------------------------//
 
-class   InvalidHandlerNoMethod ( Exception ):
-  def   __init__( self, method ):
-    msg = "Handler doesn't have method: '%s'" % str(method)
-    super(type(self), self).__init__( msg )
-
-#//-------------------------------------------------------//
-
 class   InvalidHandlerMethodArgs ( Exception ):
   def   __init__( self, method ):
     msg = "Invalid arguments of handler method: '%s'" % str(method)
