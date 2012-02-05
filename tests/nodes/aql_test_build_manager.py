@@ -15,6 +15,8 @@ from aql_values_file import ValuesFile
 from aql_node import Node
 from aql_builder import Builder
 from aql_build_manager import BuildManager
+from aql_event_manager import event_manager
+from aql_event_handler import EventHandler
 
 #//===========================================================================//
 
@@ -210,6 +212,8 @@ def   _clearTargets( vfilename, builder, src_files ):
 @testcase
 def test_bm_build(self):
   
+  event_manager.addHandler( EventHandler() )
+  
   with Tempfile() as tmp:
     #~ tmp = Tempfile()
     
@@ -230,6 +234,8 @@ def test_bm_build(self):
 
 @testcase
 def test_bm_check(self):
+  
+  event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
     #~ tmp = Tempfile()
@@ -252,6 +258,8 @@ def test_bm_check(self):
 @skip
 @testcase
 def test_bm_node_names(self):
+  
+  event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
     #~ tmp = Tempfile()
@@ -303,6 +311,8 @@ def   _generateNodeTree( bm, builder, node, depth ):
 @testcase
 def test_bm_deps_speed(self):
   
+  event_manager.addHandler( EventHandler() )
+  
   bm = BuildManager()
   
   value = Value( "target_url1", "http://aql.org/download" )
@@ -312,9 +322,6 @@ def test_bm_deps_speed(self):
   bm.addNode( node )
   
   _generateNodeTree( bm, builder, node, 5000 )
-
-#//===========================================================================//
-
 
 
 #//===========================================================================//

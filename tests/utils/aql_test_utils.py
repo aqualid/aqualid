@@ -7,7 +7,7 @@ import shutil
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import testcase, skip, runTests
-from aql_utils import fileChecksum, isSequence, toSequence, equalFunctionArgs, checkFunctionArgs
+from aql_utils import fileChecksum, isSequence, toSequence, equalFunctionArgs, checkFunctionArgs, getFunctionName
 
 @testcase
 def test_isSequence(self):
@@ -115,6 +115,11 @@ def test_checkFunctionArgs(self):
   
   self.assertTrue( checkFunctionArgs( Foo().test, args, kw) )
 
+#//===========================================================================//
+
+@testcase
+def   test_functionName( self ):
+  self.assertTrue( getFunctionName(), 'test_functionName' )
 
 #//===========================================================================//
 

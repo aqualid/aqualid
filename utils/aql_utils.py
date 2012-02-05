@@ -72,11 +72,18 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5', chunk_size = 2
 
 #//===========================================================================//
 
-def   getFunctionName():
-  try:
-    raise Exception()
-  except Exception as err:
-    return err.__traceback__.tb_frame.f_back.f_code.co_name
+def   getFunctionName( currentframe = inspect.currentframe ):
+  
+  frame = currentframe()
+  if frame:
+    return frame.f_back.f_code.co_name
+  
+  return "__not_avaiable__"
+  
+  #~ try:
+    #~ raise Exception()
+  #~ except Exception as err:
+    #~ return err.__traceback__.tb_frame.f_back.f_code.co_name
 
 #//===========================================================================//
 
@@ -88,33 +95,40 @@ def   printStacks():
     print("Thread: %s (%s)" % (id2name.get(thread_id,""), thread_id))
     traceback.print_stack(stack)
 
+
 #//===========================================================================//
 
-def   equalFunctionArgs( function1, function2, getfullargspec = inspect.getfullargspec):
+try:
+  _getargspec = inspect.getfullargspec
+except AttributeError:
+  _getargspec = inspect.getargspec
+
+#//===========================================================================//
+
+def   equalFunctionArgs( function1, function2, getargspec = _getargspec):
   if id(function1) == id(function2):
     return True
   
-  fs1 = getfullargspec( function1 )
-  fs2 = getfullargspec( function2 )
-  
-  return (fs1.args == fs2.args) and (fs1.varargs == fs2.varargs) and (fs1.varkw == fs2.varkw)
+  return getargspec( function1 )[0:3] == getargspec( function2 )[0:3]
 
 #//===========================================================================//
 
-def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullargspec):
-  fs = getfullargspec( function )
+def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
+  
+  f_args, f_varargs, f_varkw, f_defaults = getargspec( function )[:4]
+  
   current_args_num = len(args) + len(kw)
   
-  args_num = len(fs.args)
+  args_num = len(f_args)
   
-  if not fs.varargs and not fs.varkw:
+  if not f_varargs and not f_varkw:
     if current_args_num > args_num:
       #~ print("current_args_num: %s" % current_args_num )
       #~ print("max_args_num: %s" % args_num )
       return False
   
-  if fs.defaults:
-    def_args_num = len(fs.defaults)
+  if f_defaults:
+    def_args_num = len(f_defaults)
   else:
     def_args_num = 0
   
@@ -125,13 +139,13 @@ def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullarg
     return False
   
   kw = set(kw)
-  unknown_args = kw - set(fs.args)
+  unknown_args = kw - set(f_args)
   
-  if unknown_args and not fs.varkw:
+  if unknown_args and not f_varkw:
     #~ print("unknown_args: %s" % str(unknown_args))
     return False
   
-  def_args = fs.args[args_num - def_args_num:]
+  def_args = f_args[args_num - def_args_num:]
   non_def_kw = kw - set(def_args)
   
   non_def_args_num = len(args) + len(non_def_kw)
@@ -139,13 +153,12 @@ def   checkFunctionArgs( function, args, kw, getfullargspec = inspect.getfullarg
     #~ print("non_def_args_num (%s) < min_args_num(%s)" % (non_def_args_num, min_args_num) )
     return False
   
-  twice_args = set(fs.args[:len(args)]) & kw
+  twice_args = set(f_args[:len(args)]) & kw
   if twice_args:
     #~ print("twice_args: %s" % str(twice_args))
     return False
   
   return True
-
 
 #//===========================================================================//
 
@@ -286,7 +299,3 @@ def     findFiles( root, path, pattern, recursive = True ):
     
     files = map( os.path.normpath, files )
     return files
-
-if __name__ == "__main__":
-  print( inspect.getcallargs( findFiles, 1, 2, path = 4 ) )
-  

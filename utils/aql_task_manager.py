@@ -56,7 +56,7 @@ class _TaskProcessor( threading.Thread ):
           fail = ( id, err )
           completed_tasks.put( fail )
         else:
-          logWarning("Task failed with error: %" % str(err) )
+          logWarning("Task failed with error: %s" % str(err) )
       
       finally:
         tasks.task_done()

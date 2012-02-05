@@ -7,6 +7,8 @@ import shutil
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import testcase, skip, runTests
+from aql_event_manager import event_manager
+from aql_event_handler import EventHandler
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
 from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
@@ -95,6 +97,7 @@ class CopyBuilder (Builder):
 
 @testcase
 def test_node_value(self):
+  event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
     
@@ -146,6 +149,7 @@ def   _rebuildNode( self, vfile, builder, values, deps, tmp_files):
 
 @testcase
 def test_node_file(self):
+  event_manager.addHandler( EventHandler() )
   
   try:
     tmp_files = []
@@ -290,6 +294,7 @@ def   _copyFiles( tmp_files, files, ext ):
 @skip
 @testcase
 def test_node_speed( self ):
+  event_manager.addHandler( EventHandler() )
   
   try:
     tmp_files = []

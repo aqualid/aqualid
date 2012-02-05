@@ -6,6 +6,8 @@ import timeit
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import testcase, skip, runTests
+from aql_event_manager import event_manager
+from aql_event_handler import EventHandler
 from aql_temp_file import Tempfile
 from aql_data_file import DataFile
 
@@ -41,6 +43,8 @@ def   printFileContent( filename ):
 
 @testcase
 def test_data_file(self):
+  event_manager.addHandler( EventHandler() )
+  
   with Tempfile() as tmp:
     tmp.remove()
     
@@ -101,6 +105,8 @@ def test_data_file(self):
 
 @testcase
 def   test_data_file_update(self):
+  event_manager.addHandler( EventHandler() )
+  
   with Tempfile() as tmp:
     
     data_list = generateDataList( 10, 10, 7, 57 )
@@ -181,6 +187,8 @@ def   test_data_file_update(self):
 @skip
 @testcase
 def   test_data_file_speed(self):
+  event_manager.addHandler( EventHandler() )
+  
   with Tempfile() as tmp:
     
     data_list = generateDataList( 100000, 100000, 128, 1024 )

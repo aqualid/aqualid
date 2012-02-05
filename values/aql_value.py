@@ -12,6 +12,7 @@ class NoContent( object ):
   def   __eq__( self, other ):      return False
   def   __ne__( self, other ):      return True
   def   __bool__( self ):           return False
+  def   __nonzero__( self ):        return False
   def   __str__( self ):            return "<Not exist>"
   def   __getnewargs__(self):       return ()
   def   __getstate__(self):         return {}

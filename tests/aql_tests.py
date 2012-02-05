@@ -37,7 +37,6 @@ def  _getExecTests( tests ):
 
 #//===========================================================================//
 
-
 class _Settings( object ):
   def   __init__(self):
     from optparse import OptionParser

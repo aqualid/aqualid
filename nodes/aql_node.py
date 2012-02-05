@@ -226,10 +226,10 @@ class Node (object):
     
     if itarget_values or target_values:
       if isinstance( target_values, NoContent ):
-        target_values = None
+        target_values = tuple()
       
       if isinstance( itarget_values, NoContent ):
-        itarget_values = None
+        itarget_values = tuple()
       
       self.builder.clear( self, target_values, itarget_values )
       
