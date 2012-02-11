@@ -11,12 +11,23 @@ from aql_depends_value import DependsValue
 from aql_value_pickler import ValuePickler, pickleable
 from aql_data_file import DataFile
 from aql_values_file import ValuesFile
-
+from aql_event_manager import event_manager
+from aql_event_handler import EventHandler
 
 #//===========================================================================//
 
+class _TestEventHandler (EventHandler):
+  __slots__ = ('not_sync')
+  
+  def   __init__( self ):
+    self.not_sync = False
+  
+  def   eventDataFileIsNotSync( self, filename ):
+    self.not_sync = True
+
 @testcase
 def test_value_file(self):
+  event_manager.addHandler( _TestEventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -99,6 +110,9 @@ def test_value_file(self):
     s_value1 = vfile.findValues( [value1] )[0]; vfile.selfTest()
     self.assertNotEqual( s_value1.content, value1.content )
     
+    time.sleep(0.05)
+    
+    
     s_value1 = vfile2.findValues( [value1] )[0]; vfile.selfTest()
     self.assertNotEqual( s_value1.content, value1.content )
 
@@ -106,6 +120,7 @@ def test_value_file(self):
 
 @testcase
 def test_value_file_2(self):
+  event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -158,6 +173,7 @@ def test_value_file_2(self):
 
 @testcase
 def test_value_file_3(self):
+  event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -183,6 +199,7 @@ def test_value_file_3(self):
 
 @testcase
 def test_value_file_empty_deps(self):
+  event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -204,6 +221,7 @@ def test_value_file_empty_deps(self):
 @skip
 @testcase
 def   test_value_file_speed(self):
+  event_manager.addHandler( EventHandler() )
   
   values = []
   for i in range(0, 100000):

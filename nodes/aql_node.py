@@ -1,9 +1,10 @@
 import hashlib
 
-from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType
+from aql_event_manager import event_manager
+from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType, InvalidBuilderResults
 from aql_value import Value, NoContent
 from aql_depends_value import DependsValue
-from aql_utils import toSequence
+from aql_utils import toSequence, isSequence
 
 class Node (object):
   
@@ -62,9 +63,8 @@ class Node (object):
   #//=======================================================//
   
   def   __getLongName( self ):
-    names = []
+    names = list( self.builder.long_name )
     names_append = names.append
-    names_append( self.builder.long_name )
     
     for source in self.source_nodes:
       names += source.long_name
@@ -165,9 +165,30 @@ class Node (object):
   
   #//=======================================================//
   
+  def   __checkValues( self, values ):
+    if not isSequence( values ):
+      raise InvalidBuilderResults( self, values )
+    
+    for value in values:
+      if not isinstance( value, Value ):
+        raise InvalidBuilderResults( self, values )
+  
+  #//=======================================================//
+  
   def   build( self, vfile ):
     
-    self.target_values, self.itarget_values, self.idep_values = self.builder.build( self )
+    event_manager.eventBuildingNode( self )
+    target_values, itarget_values, idep_values = self.builder.build( self )
+    
+    self.__checkValues( target_values )
+    self.__checkValues( itarget_values )
+    self.__checkValues( idep_values )
+    
+    self.target_values = target_values
+    self.itarget_values = itarget_values
+    self.idep_values = idep_values
+    
+    event_manager.eventBuildingNodeFinished( self )
     
     self.__save( vfile )
   
@@ -206,13 +227,6 @@ class Node (object):
   
   def   sources(self):
     return self.sources_value.content
-  
-  #//=======================================================//
-  
-  @staticmethod
-  def   __removeContent( values, no_content = NoContent() ):
-    for value in values:
-      value.content = no_content
   
   #//=======================================================//
   
@@ -294,7 +308,7 @@ class Node (object):
     except AttributeError:
       return None
     
-    name = str( self.builder.long_name ) + ': '
+    name = str( self.builder ) + ': '
     if many_sources:
       name += '[' + str(first_source) + ' ...]'
     else:
@@ -318,7 +332,7 @@ class Node (object):
     while True:
       node = next(iter(node.source_nodes))
       
-      long_name.append( str( node.builder.long_name ) + ': ['  )
+      long_name.append( str( node.builder ) + ': ['  )
       depth += 1
       
       first_source = node.__friendlyName()

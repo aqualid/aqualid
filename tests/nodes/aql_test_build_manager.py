@@ -13,7 +13,8 @@ from aql_value import Value, NoContent
 from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
 from aql_values_file import ValuesFile
 from aql_node import Node
-from aql_builder import Builder
+from aql_builder import Builder, RebuildNode
+from aql_errors import NodeHasCyclicDependency
 from aql_build_manager import BuildManager
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
@@ -27,7 +28,7 @@ class CopyValueBuilder (Builder):
     chcksum.update( name.encode() )
     
     self.name = chcksum.digest()
-    self.long_name = name
+    self.long_name = [ name ]
   
   #//-------------------------------------------------------//
   
@@ -43,6 +44,11 @@ class CopyValueBuilder (Builder):
   
   def   values( self ):
     return [Value(self.name, "")]
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
 
 #//===========================================================================//
 
@@ -64,12 +70,16 @@ def test_bm_deps(self):
   node4 = Node( builder, value3 )
   node5 = Node( builder, node4 )
   
-  bm.addNode( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
-  bm.addNode( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
-  bm.addNode( node2 ); bm.selfTest(); self.assertEqual( len(bm), 3 )
-  bm.addNode( node3 ); bm.selfTest(); self.assertEqual( len(bm), 4 )
-  bm.addNode( node4 ); bm.selfTest(); self.assertEqual( len(bm), 5 )
-  bm.addNode( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
+  node6 = Node( builder, node5 )
+  node6.addDeps( [node0, node1] )
+  
+  bm.addNodes( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
+  bm.addNodes( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
+  bm.addNodes( node2 ); bm.selfTest(); self.assertEqual( len(bm), 3 )
+  bm.addNodes( node3 ); bm.selfTest(); self.assertEqual( len(bm), 4 )
+  bm.addNodes( node4 ); bm.selfTest(); self.assertEqual( len(bm), 5 )
+  bm.addNodes( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
+  bm.addNodes( node6 ); bm.selfTest(); self.assertEqual( len(bm), 7 )
   
   node0.addDeps( node3 ); bm.addDeps( node0, node3 ); bm.selfTest()
   node1.addDeps( node3 ); bm.addDeps( node1, node3 ); bm.selfTest()
@@ -77,7 +87,9 @@ def test_bm_deps(self):
   node3.addDeps( node4 ); bm.addDeps( node3, node4 ); bm.selfTest()
   node0.addDeps( node5 ); bm.addDeps( node0, node5 ); bm.selfTest()
   node5.addDeps( node3 ); bm.addDeps( node5, node3 ); bm.selfTest()
-  #~ node4.addDeps( node3 ); bm.addDeps( node4, node3 ); bm.selfTest()
+  
+  with self.assertRaises(NodeHasCyclicDependency):
+    node4.addDeps( node3 ); bm.addDeps( node4, node3 ); bm.selfTest()
   
 #//===========================================================================//
 
@@ -95,7 +107,7 @@ class ChecksumBuilder (Builder):
     chcksum.update( name.encode() )
     
     self.name = chcksum.digest()
-    self.long_name = name
+    self.long_name = [ name ]
     
     self.offset = offset
     self.length = length
@@ -131,6 +143,12 @@ class ChecksumBuilder (Builder):
   
   def   values( self ):
     return [ Value(self.name, (self.offset, self.length) ) ]
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
+
 
 #//===========================================================================//
 
@@ -182,8 +200,8 @@ def   _addNodesToBM( vfilename, builder, src_files ):
   checksums_node = Node( builder, src_values )
   checksums_node2 = Node( builder, checksums_node )
   
-  bm.addNode( checksums_node ); bm.selfTest()
-  bm.addNode( checksums_node2 ); bm.selfTest()
+  bm.addNodes( checksums_node ); bm.selfTest()
+  bm.addNodes( checksums_node2 ); bm.selfTest()
   
   return bm
 
@@ -255,6 +273,115 @@ def test_bm_check(self):
 
 #//===========================================================================//
 
+class TestEnv( object ):
+  __slots__ = ('build_manager')
+  
+  def   __init__(self, bm ):
+    self.build_manager = bm
+
+#//===========================================================================//
+
+class MultiChecksumBuilder (Builder):
+  
+  __slots__ = (
+    'builder',
+  )
+  
+  def   __init__(self, env, name, offset, length ):
+    
+    chcksum = hashlib.md5()
+    chcksum.update( name.encode() )
+    
+    self.name = chcksum.digest()
+    self.long_name = [ name ]
+    
+    self.env = env
+    self.builder = ChecksumBuilder( "ChecksumBuilder", offset, length )
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target_values = []
+    
+    bm = self.env.build_manager
+    vfile = bm.valuesFile()
+    
+    sub_nodes = []
+    
+    print( "node.sources(): %s" % str(node.sources()) )
+    
+    for source_value in node.sources():
+      
+      print( "source_value: %s" % str(source_value) )
+      
+      n = Node( self.builder, source_value )
+      if n.actual( vfile ):
+        target_values += n.targets()
+      else:
+        sub_nodes.append( n )
+    
+    if sub_nodes:
+      bm.addNodes( sub_nodes )
+      raise RebuildNode()
+    
+    return target_values, [], []
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self, node, target_values, itarget_values ):
+    for value in target_values:
+      value.remove()
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    return self.builder.values()
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
+
+#//===========================================================================//
+
+@testcase
+def test_bm_rebuild(self):
+  
+  event_manager.addHandler( EventHandler() )
+  
+  with Tempfile() as vfilename:
+    #~ tmp = Tempfile()test_bm_node_names
+    
+    src_files = _generateSourceFiles( 1, 201 )
+    try:
+      bm = BuildManager( vfilename.name, 4, True )
+      
+      env = TestEnv( bm )
+      
+      builder = MultiChecksumBuilder( env, "MultiChecksumBuilder", 0, 256 )
+      
+      
+      src_values = []
+      for s in src_files:
+        src_values.append( FileValue( s ) )
+      
+      node = Node( builder, src_values )
+      
+      bm.addNodes( node ); bm.selfTest()
+      failed_nodes = bm.build()
+      
+      for node, err in failed_nodes:
+        import traceback
+        print("err: %s" % str(err) )
+        traceback.print_tb( err.__traceback__ )
+      
+      bm.status(); bm.selfTest()
+    
+    finally:
+      _removeFiles( src_files )
+
+#//===========================================================================//
+
 @skip
 @testcase
 def test_bm_node_names(self):
@@ -279,11 +406,11 @@ def test_bm_node_names(self):
       node3 = Node( builder, node2 )
       node4 = Node( builder, node3 )
       
-      bm.addNode( node0 )
-      bm.addNode( node1 )
-      bm.addNode( node2 )
-      bm.addNode( node3 )
-      bm.addNode( node4 )
+      bm.addNodes( node0 )
+      bm.addNodes( node1 )
+      bm.addNodes( node2 )
+      bm.addNodes( node3 )
+      bm.addNodes( node4 )
       
       #~ bm.build()
       
@@ -302,7 +429,7 @@ def test_bm_node_names(self):
 def   _generateNodeTree( bm, builder, node, depth ):
   while depth:
     node = Node( builder, node )
-    bm.addNode( node )
+    bm.addNodes( node )
     depth -= 1
 
 #//===========================================================================//
@@ -319,7 +446,7 @@ def test_bm_deps_speed(self):
   builder = CopyValueBuilder("CopyValueBuilder")
   
   node = Node( builder, value )
-  bm.addNode( node )
+  bm.addNodes( node )
   
   _generateNodeTree( bm, builder, node, 5000 )
 

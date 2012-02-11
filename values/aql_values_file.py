@@ -42,7 +42,7 @@ def _sortDepends( dep_sort_data ):
     value = value_keys[0]
     value = DependsValue( value.name, None )
     sorted_deps.append( (key, value) )
-    event_manager.depValueIsCyclic( value )
+    event_manager.eventDepValueIsCyclic( value )
   
   return sorted_deps
 
@@ -180,7 +180,7 @@ class ValuesFile (object):
       for value in values:
         key = findValue( value )[0]
         if key is None:
-          event_manager.unknownValue( value )
+          event_manager.eventUnknownValue( value )
           return None
         
         value_keys_append( key )

@@ -28,7 +28,7 @@ class ChecksumBuilder (Builder):
     chcksum.update( name.encode() )
     
     self.name = chcksum.digest()
-    self.long_name = name
+    self.long_name = [ name ]
   
   #//-------------------------------------------------------//
   
@@ -51,6 +51,12 @@ class ChecksumBuilder (Builder):
   
   def   values( self ):
     return [Value(self.name, "")]
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
+
 
 #//===========================================================================//
 
@@ -63,7 +69,7 @@ class CopyBuilder (Builder):
     chcksum.update( name.encode() )
     
     self.name = chcksum.digest()
-    self.long_name = name
+    self.long_name = [ name ]
     self.ext = ext
     self.iext = iext
   
@@ -92,6 +98,11 @@ class CopyBuilder (Builder):
   
   def   values( self ):
     return [Value(self.name, self.ext + '|' + self.iext)]
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
 
 #//===========================================================================//
 
@@ -234,7 +245,7 @@ class TestSpeedBuilder (Builder):
     chcksum.update( name.encode() )
     
     self.name = chcksum.digest()
-    self.long_name = name
+    self.long_name = [ name ]
     self.ext = ext
     self.idep = idep
   
@@ -260,6 +271,11 @@ class TestSpeedBuilder (Builder):
   
   def   values( self ):
     return [Value(self.name, self.ext + '|' + self.idep)]
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
 
 #//===========================================================================//
 

@@ -23,7 +23,7 @@ class EventHandler( object ):
     """
     Inconsistency state of Data file. Either internal error or external corruption.
     """
-    logWarning("Internal error: DataFile is unsynchronized")
+    logWarning("Internal error: DataFile '%s' is unsynchronized" % str(filename) )
   
   #//-------------------------------------------------------//
   @_warning
@@ -61,9 +61,21 @@ class EventHandler( object ):
   
   #//-------------------------------------------------------//
   
-  @_debug
-  def   eventBuildingNodes( self, nodes ):
-    logDebug("Target '%s' is built by different nodes: '%s', '%s' " % ( value.name, node1, node2 ) )
+  @_status
+  def   eventBuildingNodes( self, total_nodes ):
+    logInfo("Building %s nodes" % total_nodes )
+  
+  #//-------------------------------------------------------//
+  
+  @_status
+  def   eventBuildingNode( self, node ):
+    logInfo("Building node: %s" % str(node) )
+  
+  #//-------------------------------------------------------//
+  
+  @_status
+  def   eventBuildingNodeFinished( self, node ):
+    logInfo("Finished node: %s" % str(node) )
 
 #//===========================================================================//
 

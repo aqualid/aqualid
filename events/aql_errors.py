@@ -59,3 +59,10 @@ class   InvalidHandlerMethodArgs ( Exception ):
   def   __init__( self, method ):
     msg = "Invalid arguments of handler method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   InvalidBuilderResults( Exception ):
+  def   __init__( self, node, values ):
+    msg = "Invalid node (%s) builder results: %s" % (node, values )
+    super(type(self), self).__init__( msg )

@@ -1,10 +1,16 @@
 
+class RebuildNode( Exception ):
+  pass
+
+#//===========================================================================//
+
 class Builder (object):
   """
   Base class for all builders
   """
   
   __slots__ = (
+    'env',
     'name',
     'long_name',
   )
@@ -31,4 +37,9 @@ class Builder (object):
     """
     Cleans produced values
     """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
