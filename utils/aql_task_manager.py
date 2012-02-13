@@ -88,6 +88,7 @@ class TaskManager (object):
   
   def   start( self, num_threads ):
     
+    self.exit_event.clear()
     threads = self.threads
     
     num_threads -= len(threads)
@@ -109,7 +110,6 @@ class TaskManager (object):
     
     self.threads = []
     self.tasks = queue.Queue()
-    self.exit_event.clear()
   
   #//-------------------------------------------------------//
   

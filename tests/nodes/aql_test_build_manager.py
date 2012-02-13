@@ -1,13 +1,12 @@
 ﻿import sys
 import os.path
-import timeit
 import hashlib
 import shutil
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import testcase, skip, runTests
-from aql_utils import fileChecksum
+from aql_utils import fileChecksum, printStacks
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
 from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
@@ -230,6 +229,7 @@ def   _clearTargets( vfilename, builder, src_files ):
 @testcase
 def test_bm_build(self):
   
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
@@ -253,6 +253,7 @@ def test_bm_build(self):
 @testcase
 def test_bm_check(self):
   
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
@@ -308,11 +309,7 @@ class MultiChecksumBuilder (Builder):
     
     sub_nodes = []
     
-    print( "node.sources(): %s" % str(node.sources()) )
-    
     for source_value in node.sources():
-      
-      print( "source_value: %s" % str(source_value) )
       
       n = Node( self.builder, source_value )
       if n.actual( vfile ):
@@ -321,7 +318,7 @@ class MultiChecksumBuilder (Builder):
         sub_nodes.append( n )
     
     if sub_nodes:
-      bm.addNodes( sub_nodes )
+      bm.addDeps( node, sub_nodes ); bm.selfTest()
       raise RebuildNode()
     
     return target_values, [], []
@@ -347,19 +344,18 @@ class MultiChecksumBuilder (Builder):
 @testcase
 def test_bm_rebuild(self):
   
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   with Tempfile() as vfilename:
     #~ tmp = Tempfile()test_bm_node_names
     
-    src_files = _generateSourceFiles( 1, 201 )
+    src_files = _generateSourceFiles( 3, 201 )
     try:
       bm = BuildManager( vfilename.name, 4, True )
-      
       env = TestEnv( bm )
       
       builder = MultiChecksumBuilder( env, "MultiChecksumBuilder", 0, 256 )
-      
       
       src_values = []
       for s in src_files:
@@ -370,12 +366,17 @@ def test_bm_rebuild(self):
       bm.addNodes( node ); bm.selfTest()
       failed_nodes = bm.build()
       
-      for node, err in failed_nodes:
-        import traceback
-        print("err: %s" % str(err) )
-        traceback.print_tb( err.__traceback__ )
+      #//-------------------------------------------------------//
       
+      bm = BuildManager( vfilename.name, 4, True )
+      env = TestEnv( bm )
+      builder = MultiChecksumBuilder( env, "MultiChecksumBuilder", 0, 256 )
+      
+      node = Node( builder, src_values )
+      bm.addNodes( node ); bm.selfTest()
       bm.status(); bm.selfTest()
+      
+      #//-------------------------------------------------------//
     
     finally:
       _removeFiles( src_files )
@@ -386,6 +387,7 @@ def test_bm_rebuild(self):
 @testcase
 def test_bm_node_names(self):
   
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
@@ -438,6 +440,7 @@ def   _generateNodeTree( bm, builder, node, depth ):
 @testcase
 def test_bm_deps_speed(self):
   
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   bm = BuildManager()

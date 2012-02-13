@@ -108,6 +108,7 @@ class CopyBuilder (Builder):
 
 @testcase
 def test_node_value(self):
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   with Tempfile() as tmp:
@@ -160,6 +161,7 @@ def   _rebuildNode( self, vfile, builder, values, deps, tmp_files):
 
 @testcase
 def test_node_file(self):
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   try:
@@ -310,6 +312,7 @@ def   _copyFiles( tmp_files, files, ext ):
 @skip
 @testcase
 def test_node_speed( self ):
+  event_manager.reset()
   event_manager.addHandler( EventHandler() )
   
   try:

@@ -188,9 +188,9 @@ class Node (object):
     self.itarget_values = itarget_values
     self.idep_values = idep_values
     
-    event_manager.eventBuildingNodeFinished( self )
-    
     self.__save( vfile )
+    
+    event_manager.eventBuildingNodeFinished( self )
   
   #//=======================================================//
   

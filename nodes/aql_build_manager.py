@@ -93,25 +93,40 @@ class _Nodes (object):
     
   #//-------------------------------------------------------//
   
+  def   __add( self, nodes ):
+      node_deps = self.node_deps
+      
+      for node in nodes:
+        
+        if node not in node_deps:
+          if node.name in self.node_names:
+            raise NodeAlreadyExists( node )
+          
+          self.node_names.add( node.name )
+          self.node_deps[ node ] = set()
+          self.dep_nodes[ node ] = set()
+          self.tail_nodes.add( node )
+          
+          self.__add( node.source_nodes )   # TODO: recursively add sources and depends
+          self.__add( node.dep_nodes )      # It would be better to rewrite this code to aviod the recursion
+          
+          self.__addDeps( node, node.source_nodes )
+          self.__addDeps( node, node.dep_nodes )
+    
+  #//-------------------------------------------------------//
+  
   def   add( self, nodes ):
     with self.lock:
-      for node in toSequence( nodes ):
-        if node.name in self.node_names:
-          raise NodeAlreadyExists( node )
-        
-        self.node_names.add( node.name )
-        self.node_deps[ node ] = set()
-        self.dep_nodes[ node ] = set()
-        self.tail_nodes.add( node )
-        
-        self.__addDeps( node, node.source_nodes )
-        self.__addDeps( node, node.dep_nodes )
+      self.__add( toSequence( nodes ) )
     
   #//-------------------------------------------------------//
   
   def   addDeps( self, node, deps ):
     with self.lock:
-      self.__addDeps( node, toSequence( deps ) )
+      deps = toSequence( deps )
+      
+      self.__add( deps )
+      self.__addDeps( node, deps )
   
   #//-------------------------------------------------------//
   
@@ -140,7 +155,8 @@ class _Nodes (object):
   #//-------------------------------------------------------//
   
   def   tails( self ):
-    return set( self.tail_nodes )
+    with self.lock:
+      return set( self.tail_nodes )
   
   #//-------------------------------------------------------//
   
@@ -173,8 +189,8 @@ class _Nodes (object):
         
         all_dep_nodes |= node_deps
         
-        if (node_deps - (node.source_nodes | node.dep_nodes)):
-          raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node.long_name) )
+        #~ if (node_deps - (node.source_nodes | node.dep_nodes)):
+          #~ raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node.long_name) )
         
         for dep in node_deps:
           if node not in self.dep_nodes[dep]:
@@ -213,6 +229,7 @@ class _NodesBuilder (object):
     
     elif attr == 'task_manager':
       tm = TaskManager( self.jobs )
+      
       self.task_manager = tm
       return tm
     
@@ -226,6 +243,7 @@ class _NodesBuilder (object):
     rebuild_nodes = []
     
     addTask = self.task_manager.addTask
+    
     vfile = self.vfile
     
     for node in nodes:
@@ -242,11 +260,12 @@ class _NodesBuilder (object):
           completed_nodes.append( node )
         else:
           if isinstance( exception, RebuildNode ):
+            event_manager.eventRebuildNode( node )
             rebuild_nodes.append( node )
           else:
             if self.stop_on_error:
               self.task_manager.stop()
-            
+            event_manager.eventFailedNode( node, exception )
             failed_nodes[ node ] = exception
     
     return completed_nodes, failed_nodes, rebuild_nodes
@@ -294,17 +313,19 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __checkAlreadyBuilt( target_nodes, node ):
+  def   __checkAlreadyBuilt( self, target_nodes, node ):
     values = []
     values += node.target_values
     values += node.itarget_values
-  
+    
+    vfile = self.valuesFile()
+    
     for value in values:
       other_node = target_nodes.setdefault( value.name, node )
       
       if other_node is not node:
-        event_manager.eventTargetIsBuiltTwiceByNodes( value, node, other_node )
+        if not other_node.actual( vfile ):
+          event_manager.eventTargetIsBuiltTwiceByNodes( value, node, other_node )
   
   #//-------------------------------------------------------//
   
@@ -343,9 +364,7 @@ class BuildManager (object):
       waitingDiff( rebuild_nodes )
       
       for node in completed_nodes:
-        
         self.__checkAlreadyBuilt( target_nodes, node )
-        
         removeTailNode( node )
     
     return tuple( failed_nodes.items() )
@@ -381,4 +400,5 @@ class BuildManager (object):
           event_manager.eventOutdatedNode( node )
           outdated_nodes.add( node )
         else:
+          event_manager.eventActualNode( node )
           removeTailNode( node )

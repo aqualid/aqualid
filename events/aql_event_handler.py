@@ -1,5 +1,6 @@
+import traceback
 
-from aql_logging import logInfo,logWarning
+from aql_logging import logInfo,logWarning,logError
 
 #//===========================================================================//
 
@@ -76,6 +77,17 @@ class EventHandler( object ):
   @_status
   def   eventBuildingNodeFinished( self, node ):
     logInfo("Finished node: %s" % str(node) )
+  
+  @_status
+  def   eventRebuildNode( self, node ):
+    logInfo("Rebuild node: %s" % str(node) )
+  
+  @_status
+  def   eventFailedNode( self, node, error ):
+    logError("Failed node: %s" % str(node) )
+    logError("Error: %s" % str(error) )
+    traceback.print_tb( error.__traceback__ )
+
 
 #//===========================================================================//
 
