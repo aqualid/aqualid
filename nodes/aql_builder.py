@@ -11,6 +11,7 @@ class Builder (object):
   
   __slots__ = (
     'env',
+    'options',
     'name',
     'long_name',
   )

@@ -175,9 +175,8 @@ class Node (object):
   
   #//=======================================================//
   
-  def   build( self, vfile ):
+  def   _build( self ):
     
-    event_manager.eventBuildingNode( self )
     target_values, itarget_values, idep_values = self.builder.build( self )
     
     self.__checkValues( target_values )
@@ -187,6 +186,14 @@ class Node (object):
     self.target_values = target_values
     self.itarget_values = itarget_values
     self.idep_values = idep_values
+  
+  #//=======================================================//
+  
+  def   build( self, vfile ):
+    
+    event_manager.eventBuildingNode( self )
+    
+    self._build()
     
     self.__save( vfile )
     

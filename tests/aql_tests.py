@@ -132,21 +132,19 @@ class AqlTests(unittest.TestCase):
 
 
 def  testcase( test_case ):
-  if callable(test_case):
-    test_case_name = test_case.__name__
-    setattr( AqlTests, test_case_name, test_case )
-    AqlTests.testcases.add( test_case_name )
+  test_case_name = test_case.__name__
+  setattr( AqlTests, test_case_name, test_case )
+  AqlTests.testcases.add( test_case_name )
   
   return test_case
 
 #//===========================================================================//
 
 def  skip( test_case ):
-  if callable(test_case):
-    try:
-      AqlTests.testcases.remove( test_case.__name__ )
-    except KeyError:
-      pass
+  try:
+    AqlTests.testcases.remove( test_case.__name__ )
+  except KeyError:
+    pass
   
   return test_case
 
