@@ -68,7 +68,7 @@ def test_event_manager(self):
   em = EventManager()
   eh = _TestEventHandler()
   
-  em.addHandler( eh, True )
+  em.addHandlers( eh, True )
   
   _testEvent( self, em, eh, 'eventOutdatedNode',       None )
   _testEvent( self, em, eh, 'eventDataFileIsNotSync',  None )

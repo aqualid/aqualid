@@ -230,7 +230,7 @@ def   _clearTargets( vfilename, builder, src_files ):
 def test_bm_build(self):
   
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     #~ tmp = Tempfile()
@@ -254,7 +254,7 @@ def test_bm_build(self):
 def test_bm_check(self):
   
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     #~ tmp = Tempfile()
@@ -345,7 +345,7 @@ class MultiChecksumBuilder (Builder):
 def test_bm_rebuild(self):
   
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as vfilename:
     #~ tmp = Tempfile()test_bm_node_names
@@ -388,7 +388,7 @@ def test_bm_rebuild(self):
 def test_bm_node_names(self):
   
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     #~ tmp = Tempfile()
@@ -441,7 +441,7 @@ def   _generateNodeTree( bm, builder, node, depth ):
 def test_bm_deps_speed(self):
   
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   bm = BuildManager()
   

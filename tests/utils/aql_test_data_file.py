@@ -45,7 +45,7 @@ def   printFileContent( filename ):
 @testcase
 def test_data_file(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     tmp.remove()
@@ -108,7 +108,7 @@ def test_data_file(self):
 @testcase
 def   test_data_file_update(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     
@@ -191,7 +191,7 @@ def   test_data_file_update(self):
 @testcase
 def   test_data_file_speed(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     

@@ -28,7 +28,7 @@ class _TestEventHandler (EventHandler):
 @testcase
 def test_value_file(self):
   event_manager.reset()
-  event_manager.addHandler( _TestEventHandler() )
+  event_manager.addHandlers( _TestEventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -119,7 +119,7 @@ def test_value_file(self):
 @testcase
 def test_value_file_2(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -173,7 +173,7 @@ def test_value_file_2(self):
 @testcase
 def test_value_file_3(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -200,7 +200,7 @@ def test_value_file_3(self):
 @testcase
 def test_value_file_empty_deps(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   with Tempfile() as tmp:
     vfile = ValuesFile( tmp.name )
@@ -223,7 +223,7 @@ def test_value_file_empty_deps(self):
 @testcase
 def   test_value_file_speed(self):
   event_manager.reset()
-  event_manager.addHandler( EventHandler() )
+  event_manager.addHandlers( EventHandler() )
   
   values = []
   for i in range(0, 100000):
