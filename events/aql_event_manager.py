@@ -8,19 +8,19 @@ from aql_event_handler import EventHandler, warning_events, info_events, debug_e
 
 #//===========================================================================//
 
-def   _verifyHandler( handler, verbose ):
-  if type(handler) is not EventHandler:
-    
-    for event_method in all_events:
-      handler_method = getattr( handler, event_method, None )
-      if handler_method is None:
-        if verbose:
-          logWarning( "Handler doesn't have method: '%s'" % str(event_method) )
-      else:
-        method = getattr(EventHandler, event_method)
-        if not equalFunctionArgs( method, handler_method ):
-          raise InvalidHandlerMethodArgs( event_method )
-
+def   _verifyHandlers( handlers, verbose ):
+  
+  for handler in handlers:
+    if type(handler) is not EventHandler:
+      for event_method in all_events:
+        handler_method = getattr( handler, event_method, None )
+        if handler_method is None:
+          if verbose:
+            logWarning( "Handler doesn't have method: '%s'" % str(event_method) )
+        else:
+          method = getattr(EventHandler, event_method)
+          if not equalFunctionArgs( method, handler_method ):
+            raise InvalidHandlerMethodArgs( event_method )
 
 #//===========================================================================//
 
@@ -67,11 +67,24 @@ class EventManager( object ):
   
   #//-------------------------------------------------------//
   
-  def   addHandler( self, handler, verbose = False ):
-    _verifyHandler( handler, verbose )
+  def   addHandlers( self, handlers, verbose = False ):
+    handlers = toSequence( handlers )
+    _verifyHandlers( handlers, verbose )
     with self.lock:
-      handlers = self.handlers
-      handlers.add( handler )
+      self.handlers.update( handlers )
+      self.tm.start( len(self.handlers) )
+  
+  #//-------------------------------------------------------//
+  
+  def   setHandlers( self, handlers, verbose = False ):
+    handlers = toSequence( handlers )
+    _verifyHandlers( handlers, verbose )
+    with self.lock:
+      self.tm.stop()
+      
+      self.handlers.clear()
+      self.handlers.update( handlers )
+      
       self.tm.start( len(handlers) )
   
   #//-------------------------------------------------------//

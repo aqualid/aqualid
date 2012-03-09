@@ -26,6 +26,14 @@ class   OptionBase (object):
     Converts a value to options' value
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def     rangeHelp( self ):
+    """
+    Returns a description about range of allowed values
+    """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
 
 #//===========================================================================//
 #//===========================================================================//
@@ -43,10 +51,10 @@ class   BoolOption (OptionBase):
   class   __Value( int ):
     
     def __new__( cls, value, str_value ):
-      self = super(Foo, cls).__new__(cls, value )
+      self = super(cls, cls).__new__( cls, value )
       self.__value = str(str_value)
-    
-    
+      
+      return self
     
     def   __str__( self ):
       return self.__value
@@ -56,9 +64,6 @@ class   BoolOption (OptionBase):
   __true_values = ('yes', 'true', 'on', 'enabled', 'y', '1', 't' )
   __false_values = ('no', 'false', 'off', 'disabled', 'n', '0', 'f' )
   
-  __inverted_bool = __invert_true.copy()
-  __inverted_bool.update( __invert_false )
-
   #//-------------------------------------------------------//
   
   def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
@@ -66,6 +71,8 @@ class   BoolOption (OptionBase):
     
     if style is None:
       style = ('True', 'False')
+    else:
+      style = map(str, style)
     
     if true_values is None:
       true_values = self.__true_values
@@ -83,8 +90,8 @@ class   BoolOption (OptionBase):
   
   #//-------------------------------------------------------//
   
-  def   convert( self, value ):
-    if isinstance( BoolOption.__Value, value ):
+  def   convert( self, value, _BoolValue = __Value):
+    if isinstance( value, _BoolValue ):
       return value
     
     value_str = str(value).lower()
@@ -95,9 +102,9 @@ class   BoolOption (OptionBase):
       value =  False
     
     if value:
-      return BoolOption.__Value( True, self.true_value )
+      return _BoolValue( True, self.true_value )
     
-    return BoolOption.__Value( False, self.false_value )
+    return _BoolValue( False, self.false_value )
   
   #//-------------------------------------------------------//
   

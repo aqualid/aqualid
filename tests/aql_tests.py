@@ -8,6 +8,7 @@ sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ),
 sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'events') ) )
 sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'values') ) )
 sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'nodes') ) )
+sys.path.insert( 0, os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', 'options') ) )
 
 from aql_value import NoContent
 
