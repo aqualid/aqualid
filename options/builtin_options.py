@@ -219,6 +219,11 @@ def     _add_optimization_options( options ):
                                         aliases = {'0': 'off', '1': 'size', '2': 'speed'},
                                         help = 'Compiler optimization level',
                                         group = "Optimization" )
+    
+    allowed_values = {'off':0, 'size':2, 'speed':3 }
+    allowed_values = (('off',0), ('size',2 ), ('speed',3) )
+    allowed_values = ('off', ('size', 1), ('speed', 2) )
+    
     options.optimization = optimization
     options.opt = optimization
     options.optim = optimization

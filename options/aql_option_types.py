@@ -1,4 +1,7 @@
+
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, EnumOptionInvalidValue
 from aql_utils import toSequence
+from aql_simple_types import IgnoreCaseString
 
 #//===========================================================================//
 #//===========================================================================//
@@ -31,7 +34,7 @@ class   OptionBase (object):
   
   def     rangeHelp( self ):
     """
-    Returns a description about range of allowed values
+    Returns a description (list of strings) about range of allowed values
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
 
@@ -118,5 +121,94 @@ class   BoolOption (OptionBase):
   #//-------------------------------------------------------//
   
   def     rangeHelp( self ):
-    return  self.true_value + ': ' + ','.join( sorted( self.true_values ) ) + ' / ' + \
-            self.false_value + ': ' + ','.join( sorted( self.false_values ) )
+    return  [ self.true_value + ': [' + ', '.join( sorted( self.true_values ) ) + ']',
+              self.false_value + ': [' + ', '.join( sorted( self.false_values ) ) + ']' ]
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   EnumOption (OptionBase):
+  
+  __slots__ = (
+    '__values',
+    '__value_type',
+  )
+  
+  def   __init__( self, description = None, group = None, values = None, value_type = IgnoreCaseString ):
+    
+    super(EnumOption,self).__init__( description, group )
+    
+    self.__values = {}
+    self.__value_type = value_type
+    
+    self.addValues( values );
+  
+  #//-------------------------------------------------------//
+  
+  def   addValues( self, values ):
+    try:
+      values = tuple( values.items() )  # convert dictionary to a sequence
+    except AttributeError:
+      pass
+    
+    setDefaultValue = self.__values.setdefault
+    value_type = self.__value_type
+    
+    for value in values:
+      it = iter( toSequence( value ) )
+      
+      value = value_type( next( it ) )
+      
+      value = setDefaultValue( value, value )
+      
+      for alias in it:
+        alias = value_type(alias)
+        
+        v = setDefaultValue( alias, value )
+        if v != value:
+          if alias == v:
+            raise EnumOptionValueIsAlreadySet( self, alias, value )
+          else:
+            raise EnumOptionAliasIsAlreadySet( self, alias, v, value )
+    
+  #//-------------------------------------------------------//
+  
+  def   convert( self, value ):
+    try:
+      return self.__values[ self.__value_type( value ) ]
+    except KeyError:
+      raise EnumOptionInvalidValue( self, value )
+  
+  #//-------------------------------------------------------//
+  
+  def   rangeHelp(self):
+    
+    values = {}
+    
+    for alias, value in self.__values.items():
+      if alias is value:
+        values.setdefault( alias, [] )
+      else:
+        values.setdefault( value, [] ).append( alias )
+    
+    help_str = []
+    
+    for value, aliases in values.items():
+      s = str(value)
+      if aliases:
+        s += ' (or ' + ', '.join( map( str, aliases ) ) + ')'
+      
+      help_str.append( s )
+    
+    return help_str
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    values = []
+    
+    for alias, value in self.__values.items():
+      if value is value:
+        values.append( alias )
+    
+    return values

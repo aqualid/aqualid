@@ -9,10 +9,11 @@ import inspect
 
 #//===========================================================================//
 
-def     isSequence( value, iter = iter ):
+def     isSequence( value, iter = iter, isinstance = isinstance, str = str ):
   try:
-    iter( value )
-    return True
+    if not isinstance( value, str ):
+      iter( value )
+      return True
   except TypeError:
     pass
   
@@ -20,16 +21,17 @@ def     isSequence( value, iter = iter ):
 
 #//===========================================================================//
 
-def     toSequence( value, iter = iter, tuple = tuple ):
+def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
   
   try:
-    iter( value )
-    return value
+    if not isinstance( value, str ):
+      iter( value )
+      return value
   except TypeError:
     pass
   
   if value is None:
-      return tuple()
+    return tuple()
   
   return ( value, )
 
