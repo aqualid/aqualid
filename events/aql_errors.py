@@ -83,7 +83,7 @@ class   EnumOptionValueIsAlreadySet( Exception ):
 
 #//-------------------------------------------------------//
 
-class   EnumOptionInvalidValue( Exception ):
+class   InvalidOptionValue( TypeError ):
   def   __init__( self, option, value ):
-    msg = "Invalid value '%s' for Enum Option '%s'" % (value, option )
+    msg = "Invalid option value: '%s', option type: '%s'" % (value, option )
     super(type(self), self).__init__( msg )

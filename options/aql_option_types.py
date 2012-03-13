@@ -1,34 +1,38 @@
 
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, EnumOptionInvalidValue
 from aql_utils import toSequence
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 from aql_simple_types import IgnoreCaseString
 
 #//===========================================================================//
-#//===========================================================================//
 
-class   OptionBase (object):
+class   OptionType (object):
 
   __slots__ = (
+    'value_type',
     'description',
     'group',
-    'allowed_operations',
+    'range_help',
   )
 
   #//-------------------------------------------------------//
   
-  def     __init__( self, description = None, group = None, allowed_operations = '=' ):
+  def     __init__( self, value_type, range_help = None, description = None, group = None ):
     
-    self.group = group
+    self.value_type = value_type
     self.description = description
-    self.allowed_operations = allowed_operations
+    self.group = group
+    self.range_help = range_help
   
   #//-------------------------------------------------------//
   
-  def   convert( self, value ):
+  def   __call__( self, value ):
     """
     Converts a value to options' value
     """
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+    try:
+      return self.value_type( value )
+    except TypeError:
+      raise InvalidOptionValue( self.value_type, value )
   
   #//-------------------------------------------------------//
   
@@ -36,12 +40,15 @@ class   OptionBase (object):
     """
     Returns a description (list of strings) about range of allowed values
     """
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+    if self.range_help:
+      return toSequence( self.range_help )
+    
+    return ["Value of type %s" % self.value_type]
 
 #//===========================================================================//
 #//===========================================================================//
 
-class   BoolOption (OptionBase):
+class   BoolOptionType (OptionType):
   
   __slots__ = (
     'true_value',
@@ -53,7 +60,7 @@ class   BoolOption (OptionBase):
   
   class   __Value( int ):
     
-    def __new__( cls, value, str_value ):
+    def   __new__( cls, value, str_value ):
       self = super(cls, cls).__new__( cls, value )
       self.__value = str(str_value)
       
@@ -70,7 +77,8 @@ class   BoolOption (OptionBase):
   #//-------------------------------------------------------//
   
   def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
-    super(BoolOption,self).__init__( description, group )
+    
+    super(BoolOptionType,self).__init__( BoolOptionType.__Value, description, group )
     
     if style is None:
       style = ('True', 'False')
@@ -93,9 +101,7 @@ class   BoolOption (OptionBase):
   
   #//-------------------------------------------------------//
   
-  def   convert( self, value, _BoolValue = __Value):
-    if isinstance( value, _BoolValue ):
-      return value
+  def   __call__( self, value, _BoolValue = __Value):
     
     value_str = str(value).lower()
     if value_str in self.true_values:
@@ -127,21 +133,19 @@ class   BoolOption (OptionBase):
 #//===========================================================================//
 #//===========================================================================//
 
-class   EnumOption (OptionBase):
+class   EnumOptionType (OptionType):
   
   __slots__ = (
     '__values',
-    '__value_type',
   )
   
-  def   __init__( self, description = None, group = None, values = None, value_type = IgnoreCaseString ):
+  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString ):
     
-    super(EnumOption,self).__init__( description, group )
+    super(EnumOptionType,self).__init__( value_type, description, group )
     
     self.__values = {}
-    self.__value_type = value_type
     
-    self.addValues( values );
+    self.addValues( values )
   
   #//-------------------------------------------------------//
   
@@ -152,7 +156,7 @@ class   EnumOption (OptionBase):
       pass
     
     setDefaultValue = self.__values.setdefault
-    value_type = self.__value_type
+    value_type = self.value_type
     
     for value in values:
       it = iter( toSequence( value ) )
@@ -173,11 +177,11 @@ class   EnumOption (OptionBase):
     
   #//-------------------------------------------------------//
   
-  def   convert( self, value ):
+  def   __call__( self, value ):
     try:
-      return self.__values[ self.__value_type( value ) ]
-    except KeyError:
-      raise EnumOptionInvalidValue( self, value )
+      return self.__values[ self.value_type( value ) ]
+    except (KeyError, TypeError):
+      raise InvalidOptionValue( self, value )
   
   #//-------------------------------------------------------//
   
@@ -212,3 +216,76 @@ class   EnumOption (OptionBase):
         values.append( alias )
     
     return values
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   RangeOptionType (OptionType):
+  
+  __slots__ = (
+    'min_value',
+    'max_value',
+    'fix_value',
+  )
+  
+  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, fix_value = False):
+    
+    super(RangeOptionType,self).__init__( value_type, description, group )
+    
+    self.setRange( min_value, max_value, fix_value )
+  
+  #//-------------------------------------------------------//
+  
+  def   setRange( self, min_value, max_value, fix_value = None ):
+    
+    if min_value is not None:
+      try:
+        self.min_value = self.value_type( min_value )
+      except TypeError:
+        raise InvalidOptionValue( self, min_value )
+    else:
+      self.min_value = None
+      
+    if max_value is not None:
+      try:
+        self.max_value = self.value_type( max_value )
+      except TypeError:
+        raise InvalidOptionValue( self, max_value )
+    else:
+      self.max_value = None
+    
+    if fix_value is not None:
+      self.fix_value = fix_value
+    
+  #//-------------------------------------------------------//
+  
+  def   __call__( self, value ):
+    try:
+      value = self.value_type( value )
+      
+      if value < self.min_value:
+        if self.fix_value:
+          value = self.min_value
+        else:
+          raise TypeError()
+      
+      if value > self.max_value:
+        if self.fix_value:
+          value = self.max_value
+        else:
+          raise TypeError()
+      
+      return value
+    
+    except TypeError:
+      raise InvalidOptionValue( self, value )
+  
+  #//-------------------------------------------------------//
+  
+  def   rangeHelp(self):
+    return ["%s ... %s" % (self.min_value, self.max_value) ]
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    return (self.min_value, self.max_value)

@@ -7,9 +7,9 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import testcase, skip, runTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
-from aql_option_types import BoolOption, EnumOption
+from aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType
 
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, EnumOptionInvalidValue
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 
 #//===========================================================================//
 
@@ -17,25 +17,25 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 def test_bool_option(self):
   event_manager.setHandlers( EventHandler() )
   
-  debug_symbols = BoolOption( description = 'Include debug symbols', group = "Debug", style = (True, False))
+  debug_symbols = BoolOptionType( description = 'Include debug symbols', group = "Debug", style = (True, False) )
   
   true_values = ['tRUe', 't', '1', 'yeS', 'ENABled', 'On', 'y', 1, 2, 3, -1, True ]
   false_values = ['FAlsE', 'F', '0', 'nO', 'disabled', 'oFF', 'N', 0, None, False ]
   
   for t in true_values:
-    v = debug_symbols.convert( t )
+    v = debug_symbols( t )
     self.assertTrue( v ); self.assertEqual( str(v), str(True) )
   
   for t in false_values:
-    v = debug_symbols.convert( t )
+    v = debug_symbols( t )
     self.assertFalse( v ); self.assertEqual( str(v), str(False) )
   
-  debug_symbols = BoolOption( description = 'Include debug symbols', group = "Debug", style = ('ON', 'OFF'))
+  debug_symbols = BoolOptionType( description = 'Include debug symbols', group = "Debug", style = ('ON', 'OFF'))
   
-  v = debug_symbols.convert( 'TRUE' )
+  v = debug_symbols( 'TRUE' )
   self.assertTrue( v ); self.assertEqual( str(v), 'ON' )
   
-  v = debug_symbols.convert( 0 )
+  v = debug_symbols( 0 )
   self.assertFalse( v ); self.assertEqual( str(v), 'OFF' )
   
   #~ print( debug_symbols.rangeHelp() )
@@ -46,17 +46,17 @@ def test_bool_option(self):
 def test_enum_option(self):
   event_manager.setHandlers( EventHandler() )
   
-  optimization = EnumOption( description = 'Compiler optimization level', group = "Optimization",
-                             values = ( ('off', 0), ('size', 1), ('speed', 2) ) )
+  optimization = EnumOptionType( values = ( ('off', 0), ('size', 1), ('speed', 2) ),
+                                 description = 'Compiler optimization level', group = "Optimization" )
   
   values = ['oFF', 'siZe', 'SpeeD', '0', '1', '2', 0, 1, 2]
   base_values = ['off', 'size', 'speed', 'off', 'size', 'speed', 'off', 'size', 'speed']
   
   for v, base in zip( values, base_values ):
-    self.assertEqual( optimization.convert( v ), base )
+    self.assertEqual( optimization( v ), base )
   
-  with self.assertRaises( EnumOptionInvalidValue ):
-    optimization.convert( 3 )
+  with self.assertRaises( InvalidOptionValue ):
+    optimization( 3 )
     
   optimization.addValues( {'final': 3} )
   
@@ -69,9 +69,58 @@ def test_enum_option(self):
     optimization.addValues( {'slow': 'speed'} )
   
   optimization.addValues( ('ultra', 'speed') )
-  self.assertEqual( optimization.convert( 'ULTRA' ), 'ultra' )
+  self.assertEqual( optimization( 'ULTRA' ), 'ultra' )
   
   #~ print( optimization.rangeHelp() )
+
+#//===========================================================================//
+
+@testcase
+def test_enum_option_int(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  optimization = EnumOptionType( values = ( (0, 10), (1, 100), (2, 1000) ),
+                                 description = 'Optimization level', group = "Optimization",
+                                 value_type = int )
+  
+  values = [0, 1, 2, 10, 100, 1000 ]
+  base_values = [0, 1, 2, 0, 1, 2 ]
+  
+  for v, base in zip( values, base_values ):
+    self.assertEqual( optimization( v ), base )
+  
+  with self.assertRaises( InvalidOptionValue ):
+    optimization( 3 )
+
+#//===========================================================================//
+
+@testcase
+def test_range_option(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  warn_level = RangeOptionType( min_value = 0, max_value = 5,
+                                description = 'Warning level', group = "Diagnostics" )
+  
+  self.assertEqual( warn_level( 0 ), 0 )
+  self.assertEqual( warn_level( 5 ), 5 )
+  self.assertEqual( warn_level( 3 ), 3 )
+  
+  with self.assertRaises( InvalidOptionValue ):
+    warn_level( 10 )
+  
+  with self.assertRaises( InvalidOptionValue ):
+    warn_level( -1 )
+  
+  warn_level = RangeOptionType( min_value = 0, max_value = 5, fix_value = True,
+                                description = 'Warning level', group = "Diagnostics" )
+  
+  self.assertEqual( warn_level( 0 ), 0 )
+  self.assertEqual( warn_level( 3 ), 3 )
+  self.assertEqual( warn_level( 5 ), 5 )
+  self.assertEqual( warn_level( -100 ), 0 )
+  self.assertEqual( warn_level( 100 ), 5 )
+  
+  print( warn_level.rangeHelp() )
 
 
 #//===========================================================================//

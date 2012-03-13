@@ -1,4 +1,5 @@
 import re
+import os.path
 
 #//===========================================================================//
 #//===========================================================================//
@@ -24,21 +25,19 @@ class   IgnoreCaseString (str):
   
   #//-------------------------------------------------------//
   
-  def   __hash__(self):             return hash(self.__value)
+  def   __hash__(self):         return hash(self.__value)
   
-  def   __eq__( self, other):       return self.__value == IgnoreCaseString( other ).__value
-  def   __ne__( self, other):       return self.__value != IgnoreCaseString( other ).__value
-  def   __lt__( self, other):       return self.__value <  IgnoreCaseString( other ).__value
-  def   __le__( self, other):       return self.__value <= IgnoreCaseString( other ).__value
-  def   __gt__( self, other):       return self.__value >  IgnoreCaseString( other ).__value
-  def   __ge__( self, other):       return self.__value >= IgnoreCaseString( other ).__value
+  def   __eq__( self, other):   return self.__value == IgnoreCaseString( other ).__value
+  def   __ne__( self, other):   return self.__value != IgnoreCaseString( other ).__value
+  def   __lt__( self, other):   return self.__value <  IgnoreCaseString( other ).__value
+  def   __le__( self, other):   return self.__value <= IgnoreCaseString( other ).__value
+  def   __gt__( self, other):   return self.__value >  IgnoreCaseString( other ).__value
+  def   __ge__( self, other):   return self.__value >= IgnoreCaseString( other ).__value
 
 #//===========================================================================//
 #//===========================================================================//
 
 class   LowerCaseString (str):
-
-  __slots__ = ('__value')
 
   def     __new__(cls, value = None ):
     
@@ -56,8 +55,6 @@ class   LowerCaseString (str):
 #//===========================================================================//
 
 class   UpperCaseString (str):
-
-  __slots__ = ('__value')
 
   def     __new__(cls, value = None ):
     
@@ -112,11 +109,43 @@ class   Version (str):
   
   #//-------------------------------------------------------//
   
-  def   __hash__(self):             return hash(self.__version)
+  def   __hash__(self):         return hash(self.__version)
   
-  def   __eq__( self, other):       return self.__version == Version( other ).__version
-  def   __lt__( self, other):       return self.__version <  Version( other ).__version
-  def   __le__( self, other):       return self.__version <= Version( other ).__version
-  def   __ne__( self, other):       return self.__version != Version( other ).__version
-  def   __gt__( self, other):       return self.__version >  Version( other ).__version
-  def   __ge__( self, other):       return self.__version >= Version( other ).__version
+  def   __eq__( self, other):   return self.__version == Version( other ).__version
+  def   __lt__( self, other):   return self.__version <  Version( other ).__version
+  def   __le__( self, other):   return self.__version <= Version( other ).__version
+  def   __ne__( self, other):   return self.__version != Version( other ).__version
+  def   __gt__( self, other):   return self.__version >  Version( other ).__version
+  def   __ge__( self, other):   return self.__version >= Version( other ).__version
+
+#//===========================================================================//
+
+if os.path.normcase('ABC') == os.path.normcase('abc'):
+  FilePathBase = IgnoreCaseString
+else:
+  FilePathBase = str
+
+class   FilePath (FilePathBase):
+  
+  #//-------------------------------------------------------//
+  
+  def     __new__(cls, value = None ):
+    if isinstance( value, FilePath ):
+      return value
+    
+    if value is None:
+        value = ''
+    
+    value = os.path.normpath( str(value) )
+    
+    return super(FilePath,cls).__new__(cls, value )
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):  return super(FilePath,self).__eq__( FilePath( other ) )
+  def   __ne__( self, other ):  return super(FilePath,self).__ne__( FilePath( other ) )
+  def   __lt__( self, other ):  return super(FilePath,self).__lt__( FilePath( other ) )
+  def   __le__( self, other ):  return super(FilePath,self).__le__( FilePath( other ) )
+  def   __gt__( self, other ):  return super(FilePath,self).__gt__( FilePath( other ) )
+  def   __ge__( self, other ):  return super(FilePath,self).__ge__( FilePath( other ) )
+
