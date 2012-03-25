@@ -7,7 +7,8 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import testcase, skip, runTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
-from aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType
+from aql_simple_types import IgnoreCaseString, FilePath
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 
@@ -120,7 +121,52 @@ def test_range_option(self):
   self.assertEqual( warn_level( -100 ), 0 )
   self.assertEqual( warn_level( 100 ), 5 )
   
-  print( warn_level.rangeHelp() )
+  #~ print( warn_level.rangeHelp() )
+
+#//===========================================================================//
+
+@testcase
+def test_str_option(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  opt1 = OptionType( value_type = IgnoreCaseString, description = 'Option 1', group = "group1", range_help = "<Case-insensitive string>")
+  
+  self.assertEqual( opt1( 0 ), '0' )
+  self.assertEqual( opt1( 'ABC' ), 'abc' )
+  self.assertEqual( opt1( 'efg' ), 'EFG' )
+  self.assertEqual( opt1( None ), '' )
+  
+  #~ print( opt1.rangeHelp() )
+  
+#//===========================================================================//
+
+@testcase
+def test_int_option(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  opt1 = OptionType( value_type = int, description = 'Option 1', group = "group1" )
+  
+  self.assertEqual( opt1( 0 ), 0 )
+  self.assertEqual( opt1( '2' ), 2 )
+  
+  with self.assertRaises( InvalidOptionValue ):
+    opt1( 'a1' )
+  
+  #~ print( opt1.rangeHelp() )
+
+#//===========================================================================//
+
+@testcase
+def test_path_option(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  opt1 = OptionType( value_type = FilePath, description = 'Option 1', group = "group1" )
+  
+  self.assertEqual( opt1( 'abc' ), 'abc' )
+  self.assertEqual( opt1( '../abc/../123' ), '../123' )
+  self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
+  
+  #~ print( opt1.rangeHelp() )
 
 
 #//===========================================================================//

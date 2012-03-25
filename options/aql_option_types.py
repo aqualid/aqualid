@@ -5,6 +5,27 @@ from aql_simple_types import IgnoreCaseString
 
 #//===========================================================================//
 
+#~ def   _valueType( option_type, value_type ):
+  #~ class _Value (value_type):
+    
+    #~ def   __iadd__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
+    #~ def   __isub__( self, other ):      return option_type( super(_Value,cls).__isub__( cls, value ) )
+    #~ def   __imul__( self, other ):      return option_type( super(_Value,cls).__imul__( cls, value ) )
+    #~ def   __idiv__( self, other ):      return option_type( super(_Value,cls).__idiv__( cls, value ) )
+    #~ def   __itruediv__( self, other ):  return option_type( super(_Value,cls).__itruediv__( cls, value ) )
+    #~ def   __ifloordiv__( self, other ): return option_type( super(_Value,cls).__ifloordiv__( cls, value ) )
+    #~ def   __imod__( self, other ):      return option_type( super(_Value,cls).__imod__( cls, value ) )
+    #~ def   __ipow__( self, other ):      return option_type( super(_Value,cls).__ipow__( cls, value ) )
+    #~ def   __ilshift__( self, other ):   return option_type( super(_Value,cls).__ilshift__( cls, value ) )
+    #~ def   __irshift__( self, other ):   return option_type( super(_Value,cls).__irshift__( cls, value ) )
+    #~ def   __iand__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
+    #~ def   __ixor__( self, other ):      return option_type( super(_Value,cls).__ixor__( cls, value ) )
+    #~ def   __ior__( self, other ):       return option_type( super(_Value,cls).__ior__( cls, value ) )
+  
+  #~ return _Value
+
+#//===========================================================================//
+
 class   OptionType (object):
 
   __slots__ = (
@@ -13,10 +34,10 @@ class   OptionType (object):
     'group',
     'range_help',
   )
-
+  
   #//-------------------------------------------------------//
   
-  def     __init__( self, value_type, range_help = None, description = None, group = None ):
+  def     __init__( self, value_type, description = None, group = None, range_help = None ):
     
     self.value_type = value_type
     self.description = description
@@ -31,7 +52,7 @@ class   OptionType (object):
     """
     try:
       return self.value_type( value )
-    except TypeError:
+    except (TypeError, ValueError):
       raise InvalidOptionValue( self.value_type, value )
   
   #//-------------------------------------------------------//
@@ -61,7 +82,7 @@ class   BoolOptionType (OptionType):
   class   __Value( int ):
     
     def   __new__( cls, value, str_value ):
-      self = super(cls, cls).__new__( cls, value )
+      self = super(__Value, cls).__new__( cls, value )
       self.__value = str(str_value)
       
       return self
@@ -78,7 +99,9 @@ class   BoolOptionType (OptionType):
   
   def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
     
-    super(BoolOptionType,self).__init__( BoolOptionType.__Value, description, group )
+    value_type = BoolOptionType.__Value
+    
+    super(BoolOptionType,self).__init__( value_type, description, group )
     
     if style is None:
       style = ('True', 'False')
@@ -101,7 +124,7 @@ class   BoolOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, value, _BoolValue = __Value):
+  def   __call__( self, value ):
     
     value_str = str(value).lower()
     if value_str in self.true_values:
@@ -110,10 +133,7 @@ class   BoolOptionType (OptionType):
     if value_str in self.false_values:
       value =  False
     
-    if value:
-      return _BoolValue( True, self.true_value )
-    
-    return _BoolValue( False, self.false_value )
+    return self.value_type( bool(value), self.true_value )
   
   #//-------------------------------------------------------//
   
@@ -279,6 +299,77 @@ class   RangeOptionType (OptionType):
     
     except TypeError:
       raise InvalidOptionValue( self, value )
+  
+  #//-------------------------------------------------------//
+  
+  def   rangeHelp(self):
+    return ["%s ... %s" % (self.min_value, self.max_value) ]
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    return (self.min_value, self.max_value)
+
+#//===========================================================================//
+#//===========================================================================//
+
+#   release_size.flags.value.append( '-Os' )
+#   release_size.flags += '-Os'
+#   release_size.has( 'flags', '-Os' ).flags -= '-O3'
+#   release_size.eq( 'defines', '' ).flags -= '-O3'
+#   options.If().cppdefines( 1, '__getitem__', 'DEBUG' )
+#   options.If().cppdefines['DEBUG'].eq( 0 ).ccflags += '-O3'
+#   options.If().cppdefines['DEBUG'][ 0 ].ccflags += '-O3'
+#   options.If().cppdefines['DEBUG'][ 0 ].ccflags += '-O3'
+
+#   options.If().eq( 'cppdefines' ['DEBUG'].eq( 0 ).ccflags += '-O3'
+
+class   ListOptionType (OptionType):
+  
+  __slots__ = (
+    'option_type',
+    'unique',
+    'separators',
+  )
+  
+  class  __Value( list ):
+    separators
+  
+  #//=======================================================//
+  
+  def   __init__( self, value_type, unique = False, separators = ' ,', description = None, group = None, range_help = None ):
+    
+    if isinstance(value_type, OptionType):
+      if description is None:
+        description = "List." + option_type.description
+      
+      if group is None:
+        group = option_type.group
+      
+      if range_help is None:
+        range_help = option_type.range_help
+    
+    super(ListOptionType,self).__init__( value_type, description, group, range_help )
+  
+  #//-------------------------------------------------------//
+  
+  def   __call__( self, values ):
+    
+    try:
+      converted_values = []
+      append    = converted_values.append
+      convert_value  = self.value_type
+      
+      if isinstance( values, str ):
+        values = values.split( self.separators )
+      
+      for value in toSequence( values ):
+        append( convert_value( value ) )
+      
+      return converted_values
+      
+    except (TypeError, ValueError):
+      raise InvalidOptionValue( self.value_type, values )
   
   #//-------------------------------------------------------//
   

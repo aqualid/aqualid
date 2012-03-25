@@ -41,7 +41,7 @@ class   LowerCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if isinstance(value, LowerCaseString):
+    if isinstance(value, cls):
         return value
     
     if value is None:
@@ -58,7 +58,7 @@ class   UpperCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if isinstance(value, UpperCaseString):
+    if isinstance(value, cls):
         return value
     
     if value is None:
@@ -79,7 +79,7 @@ class   Version (str):
   
   def     __new__(cls, version = None, _ver_re = __ver_re ):
     
-    if isinstance(version, Version):
+    if isinstance(version, cls):
         return version
     
     if version is None:
@@ -130,7 +130,7 @@ class   FilePath (FilePathBase):
   #//-------------------------------------------------------//
   
   def     __new__(cls, value = None ):
-    if isinstance( value, FilePath ):
+    if isinstance( value, cls ):
       return value
     
     if value is None:
@@ -138,7 +138,7 @@ class   FilePath (FilePathBase):
     
     value = os.path.normpath( str(value) )
     
-    return super(FilePath,cls).__new__(cls, value )
+    return super(FilePath,cls).__new__( cls, value )
   
   #//-------------------------------------------------------//
   
@@ -148,4 +148,3 @@ class   FilePath (FilePathBase):
   def   __le__( self, other ):  return super(FilePath,self).__le__( FilePath( other ) )
   def   __gt__( self, other ):  return super(FilePath,self).__gt__( FilePath( other ) )
   def   __ge__( self, other ):  return super(FilePath,self).__ge__( FilePath( other ) )
-
