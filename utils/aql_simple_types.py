@@ -148,3 +148,4 @@ class   FilePath (FilePathBase):
   def   __le__( self, other ):  return super(FilePath,self).__le__( FilePath( other ) )
   def   __gt__( self, other ):  return super(FilePath,self).__gt__( FilePath( other ) )
   def   __ge__( self, other ):  return super(FilePath,self).__ge__( FilePath( other ) )
+
