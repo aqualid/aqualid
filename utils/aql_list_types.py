@@ -260,6 +260,12 @@ class   List (list):
   
   #//-------------------------------------------------------//
   
+  def     __init__( self, values = None ):
+    
+    super( List, self).__init__( toSequence( values ) )
+  
+  #//-------------------------------------------------------//
+  
   def   __iadd__( self, values ):
     return super(List,self).__iadd__( toSequence(values) )
   

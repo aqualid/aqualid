@@ -2,6 +2,7 @@
 from aql_utils import toSequence
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 from aql_simple_types import IgnoreCaseString
+from aql_list_types import UniqueList, List, SplitListType, ValueListType
 
 #//===========================================================================//
 
@@ -79,10 +80,10 @@ class   BoolOptionType (OptionType):
     'aliases',
   )
   
-  class   __Value( int ):
+  class   _Value( int ):
     
     def   __new__( cls, value, str_value ):
-      self = super(__Value, cls).__new__( cls, value )
+      self = super(BoolOptionType._Value, cls).__new__( cls, value )
       self.__value = str(str_value)
       
       return self
@@ -99,9 +100,7 @@ class   BoolOptionType (OptionType):
   
   def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
     
-    value_type = BoolOptionType.__Value
-    
-    super(BoolOptionType,self).__init__( value_type, description, group )
+    super(BoolOptionType,self).__init__( BoolOptionType._Value, description, group )
     
     if style is None:
       style = ('True', 'False')
@@ -133,7 +132,14 @@ class   BoolOptionType (OptionType):
     if value_str in self.false_values:
       value =  False
     
-    return self.value_type( bool(value), self.true_value )
+    if value:
+      value = True
+      value_str = self.true_value
+    else:
+      value = False
+      value_str = self.false_value
+    
+    return self.value_type( value, value_str )
   
   #//-------------------------------------------------------//
   
@@ -327,11 +333,8 @@ class   RangeOptionType (OptionType):
 class   ListOptionType (OptionType):
   
   __slots__ = (
-    'option_type',
+    'list_type',
   )
-  
-  class  __Value( list ):
-    separators
   
   #//=======================================================//
   
@@ -339,42 +342,34 @@ class   ListOptionType (OptionType):
     
     if isinstance(value_type, OptionType):
       if description is None:
-        description = "List." + option_type.description
+        description = "List of: " + value_type.description
       
       if group is None:
-        group = option_type.group
+        group = value_type.group
       
       if range_help is None:
-        range_help = option_type.range_help
+        range_help = value_type.range_help
     
     super(ListOptionType,self).__init__( value_type, description, group, range_help )
-  
+    
+    if unique:
+      list_type = UniqueList
+    else:
+      list_type = List
+    
+    list_type = ValueListType( list_type, value_type )
+    
+    if separators:
+      list_type = SplitListType( list_type, separators )
+    
+    self.list_type = list_type
+    
   #//-------------------------------------------------------//
   
   def   __call__( self, values ):
     
     try:
-      converted_values = []
-      append    = converted_values.append
-      convert_value  = self.value_type
-      
-      if isinstance( values, str ):
-        values = values.split( self.separators )
-      
-      for value in toSequence( values ):
-        append( convert_value( value ) )
-      
-      return converted_values
+      return self.list_type( values )
       
     except (TypeError, ValueError):
       raise InvalidOptionValue( self.value_type, values )
-  
-  #//-------------------------------------------------------//
-  
-  def   rangeHelp(self):
-    return ["%s ... %s" % (self.min_value, self.max_value) ]
-  
-  #//-------------------------------------------------------//
-  
-  def   values( self ):
-    return (self.min_value, self.max_value)

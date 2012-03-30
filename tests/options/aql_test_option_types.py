@@ -7,7 +7,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import testcase, skip, runTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
 from aql_simple_types import IgnoreCaseString, FilePath
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
@@ -165,6 +165,21 @@ def test_path_option(self):
   self.assertEqual( opt1( 'abc' ), 'abc' )
   self.assertEqual( opt1( '../abc/../123' ), '../123' )
   self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
+  
+  #~ print( opt1.rangeHelp() )
+
+#//===========================================================================//
+
+@testcase
+def test_list_option(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  opt1 = ListOptionType( value_type = FilePath, description = 'Option 1', group = "group1" )
+  
+  self.assertEqual( opt1( 'abc' ), 'abc' )
+  self.assertEqual( opt1( '../abc/../123' ), '../123' )
+  self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
+  self.assertEqual( opt1( [1,2,3,4] ), [1,2,3,4] )
   
   #~ print( opt1.rangeHelp() )
 
