@@ -119,6 +119,12 @@ def test_valuelist(self):
   l += [7, 8]
   self.assertEqual( l, ['1','2','3','4','7','8'] )
   
+  l += 78
+  self.assertEqual( l, ['1','2','3','4','7','8', 78] )
+  
+  l -= 78
+  self.assertEqual( l, ['1','2','3','4','7','8'] )
+  
   l -= "2, 3"
   self.assertEqual( l, ['1','4','7','8'] )
   
@@ -130,6 +136,35 @@ def test_valuelist(self):
   
   l.extend( "0,-1" )
   self.assertEqual( l, ['10','12','1','4','7','8', '0', '-1'] )
+
+#//===========================================================================//
+
+@testcase
+def test_list(self):
+  
+  l = List([1,2,3,4])
+  self.assertEqual( l, [1,2,3,4] )
+  
+  l += [7, 8]
+  self.assertEqual( l, [1,2,3,4,7,8] )
+  
+  l += 78
+  self.assertEqual( l, [1,2,3,4,7,8,78] )
+  
+  l -= 78
+  self.assertEqual( l, [1,2,3,4,7,8] )
+  
+  l -= [2, 3]
+  self.assertEqual( l, [1,4,7,8] )
+  
+  l -= 5
+  self.assertEqual( l, [1,4,7,8] )
+  
+  l.extend_front( [10,12] )
+  self.assertEqual( l, [10,12,1,4,7,8] )
+  
+  l.extend( [0,-1] )
+  self.assertEqual( l, [10,12,1,4,7,8, 0, -1] )
 
 #//===========================================================================//
 

@@ -260,6 +260,11 @@ class   List (list):
   
   #//-------------------------------------------------------//
   
+  def   __iadd__( self, values ):
+    return super(List,self).__iadd__( toSequence(values) )
+  
+  #//-------------------------------------------------------//
+  
   def   __isub__( self, values ):
     for value in toSequence(values):
       while True:
@@ -277,8 +282,13 @@ class   List (list):
   
   #//-------------------------------------------------------//
   
+  def   extend( self, values ):
+    super(List, self).extend( toSequence( values ) )
+  
+  #//-------------------------------------------------------//
+  
   def   extend_front( self, values ):
-    self[:0] = values
+    self[:0] = toSequence( values )
   
   #//-------------------------------------------------------//
   

@@ -328,8 +328,6 @@ class   ListOptionType (OptionType):
   
   __slots__ = (
     'option_type',
-    'unique',
-    'separators',
   )
   
   class  __Value( list ):
@@ -337,7 +335,7 @@ class   ListOptionType (OptionType):
   
   #//=======================================================//
   
-  def   __init__( self, value_type, unique = False, separators = ' ,', description = None, group = None, range_help = None ):
+  def   __init__( self, value_type, unique = False, separators = ', ', description = None, group = None, range_help = None ):
     
     if isinstance(value_type, OptionType):
       if description is None:
