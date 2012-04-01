@@ -373,3 +373,13 @@ class   ListOptionType (OptionType):
       
     except (TypeError, ValueError):
       raise InvalidOptionValue( self.value_type, values )
+
+  #//-------------------------------------------------------//
+  
+  def     rangeHelp( self ):
+    
+    if not self.range_help:
+      if isinstance(self.value_type, OptionType):
+        return self.value_type.rangeHelp()
+    
+    return super(ListOptionType, self).rangeHelp()

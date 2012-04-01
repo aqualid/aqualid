@@ -6,8 +6,6 @@ import os.path
 
 class   IgnoreCaseString (str):
 
-  __slots__ = ('__value')
-
   def     __new__(cls, value = None ):
     
     if isinstance(value, IgnoreCaseString):
@@ -73,8 +71,6 @@ class   UpperCaseString (str):
 
 class   Version (str):
 
-  __slots__ = ('__version')
-  
   __ver_re = re.compile(r'[0-9]+[a-zA-Z]*(\.[0-9]+[a-zA-Z]*)*')
   
   def     __new__(cls, version = None, _ver_re = __ver_re ):

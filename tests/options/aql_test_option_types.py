@@ -181,7 +181,17 @@ def test_list_option(self):
   self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
   self.assertEqual( opt1( [1,2,3,4] ), [1,2,3,4] )
   
-  #~ print( opt1.rangeHelp() )
+  b = BoolOptionType( description = 'Test1', group = "Debug", style = ("On", "Off") )
+  ob = ListOptionType( value_type = b, unique = True )
+  
+  self.assertEqual( ob( 'yes,no,1,0' ), 'on,no' )
+  
+  on = ListOptionType( value_type = int, unique = True )
+  
+  self.assertEqual( on( '1,0,2,1,1,2,0' ), [1,0,2] )
+  
+  print( ob.rangeHelp() )
+  print( ob("no,yes,yes,no") )
 
 
 #//===========================================================================//
