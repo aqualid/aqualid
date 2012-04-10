@@ -72,7 +72,8 @@ def test_enum_option(self):
   optimization.addValues( ('ultra', 'speed') )
   self.assertEqual( optimization( 'ULTRA' ), 'ultra' )
   
-  #~ print( optimization.rangeHelp() )
+  self.assertEqual( sorted(optimization.values()), sorted(['slow', 'off', 'ultra', 'speed', 'final', 'size']) )
+  #~ print( optimization.values() )
 
 #//===========================================================================//
 

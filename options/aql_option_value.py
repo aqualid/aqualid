@@ -1,5 +1,5 @@
-#~ from aql_utils import toSequence
-#~ from aql_option_types import OptionType
+from aql_utils import toSequence
+from aql_option_types import OptionType, ListOptionType
 
 
 #//===========================================================================//
@@ -12,7 +12,7 @@ class   OptionCondition(object):
     'kw',
   )
   
-  def   __init__( self, predicate, args, kw ):
+  def   __init__( self, predicate, *args, **kw ):
     self.predicate = predicate
     self.args = args
     self.kw = kw
@@ -21,6 +21,42 @@ class   OptionCondition(object):
   
   def   __call__( self, options, context ):
     return self.predicate( options, context, *self.args, **self.kw )
+
+#//===========================================================================//
+
+class   OptionValuesOperation( object ):
+  __slots__ = (
+    'option_type',
+    'operation'
+  )
+  
+  def   __init__( self, option_type, operation ):
+    self.option_type = option_type
+    self.operation = operation
+  
+  def   __call__( self, dest_value, src_value ):
+    return self.option_type( self.operation( dest_value, src_value ) )
+
+#//===========================================================================//
+def   addOptionValues( current_value, value ):
+  current_value += value
+  return current_value
+
+def   subOptionValues( current_value, value ):
+  current_value -= value
+  return current_value
+
+def   OptionValuesAdd( option_type ):
+  if isinstance( option_type, ListOptionType ):
+    return addOptionValues
+  
+  return OptionValuesOperation( option_type, addOptionValues )
+
+def   OptionValuesSub( option_type ):
+  if isinstance( option_type, ListOptionType ):
+    return subOptionValues
+  
+  return OptionValueOperation( opt_type, subOptionValues )
 
 #//===========================================================================//
 
@@ -42,12 +78,12 @@ class   OptionConditionalValue (object):
   def   updateValue( self, value, options, context ):
     for condition in self.conditions:
       if not condition( options, context ):
-        return
+        return value
     
     if self.operation is not None:
       return self.operation( value, self.value )
     
-    return None
+    return value
 
 #//===========================================================================//
 
@@ -84,9 +120,10 @@ class OptionValue (object):
   
   #//-------------------------------------------------------//
   
-  def   value( self, options ):
+  def   value( self, options, context = None ):
     value = self.option_type()
-    context = {}
+    if context is None:
+      context = {}
     
     for condition in self.conditions:
       context[ self ] = value

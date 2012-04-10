@@ -1,29 +1,29 @@
 
 from aql_utils import toSequence
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionType
 from aql_simple_types import IgnoreCaseString
 from aql_list_types import UniqueList, List, SplitListType, ValueListType
 
 #//===========================================================================//
 
-def   makeValueType( option_type, value_type ):
-  class _ValueProxy (value_type):
+#~ def   makeValueType( option_type, value_type ):
+  #~ class _ValueProxy (value_type):
     
-    def   __iadd__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
-    def   __isub__( self, other ):      return option_type( super(_Value,cls).__isub__( cls, value ) )
-    def   __imul__( self, other ):      return option_type( super(_Value,cls).__imul__( cls, value ) )
-    def   __idiv__( self, other ):      return option_type( super(_Value,cls).__idiv__( cls, value ) )
-    def   __itruediv__( self, other ):  return option_type( super(_Value,cls).__itruediv__( cls, value ) )
-    def   __ifloordiv__( self, other ): return option_type( super(_Value,cls).__ifloordiv__( cls, value ) )
-    def   __imod__( self, other ):      return option_type( super(_Value,cls).__imod__( cls, value ) )
-    def   __ipow__( self, other ):      return option_type( super(_Value,cls).__ipow__( cls, value ) )
-    def   __ilshift__( self, other ):   return option_type( super(_Value,cls).__ilshift__( cls, value ) )
-    def   __irshift__( self, other ):   return option_type( super(_Value,cls).__irshift__( cls, value ) )
-    def   __iand__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
-    def   __ixor__( self, other ):      return option_type( super(_Value,cls).__ixor__( cls, value ) )
-    def   __ior__( self, other ):       return option_type( super(_Value,cls).__ior__( cls, value ) )
+    #~ def   __iadd__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
+    #~ def   __isub__( self, other ):      return option_type( super(_Value,cls).__isub__( cls, value ) )
+    #~ def   __imul__( self, other ):      return option_type( super(_Value,cls).__imul__( cls, value ) )
+    #~ def   __idiv__( self, other ):      return option_type( super(_Value,cls).__idiv__( cls, value ) )
+    #~ def   __itruediv__( self, other ):  return option_type( super(_Value,cls).__itruediv__( cls, value ) )
+    #~ def   __ifloordiv__( self, other ): return option_type( super(_Value,cls).__ifloordiv__( cls, value ) )
+    #~ def   __imod__( self, other ):      return option_type( super(_Value,cls).__imod__( cls, value ) )
+    #~ def   __ipow__( self, other ):      return option_type( super(_Value,cls).__ipow__( cls, value ) )
+    #~ def   __ilshift__( self, other ):   return option_type( super(_Value,cls).__ilshift__( cls, value ) )
+    #~ def   __irshift__( self, other ):   return option_type( super(_Value,cls).__irshift__( cls, value ) )
+    #~ def   __iand__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
+    #~ def   __ixor__( self, other ):      return option_type( super(_Value,cls).__ixor__( cls, value ) )
+    #~ def   __ior__( self, other ):       return option_type( super(_Value,cls).__ior__( cls, value ) )
   
-  return _Value
+  #~ return _Value
 
 #//===========================================================================//
 
@@ -47,11 +47,14 @@ class   OptionType (object):
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, value ):
+  def   __call__( self, value = NotImplemented ):
     """
     Converts a value to options' value
     """
     try:
+      if value is NotImplemented:
+        return self.value_type()
+      
       return self.value_type( value )
     except (TypeError, ValueError):
       raise InvalidOptionValue( self.value_type, value )
@@ -123,7 +126,10 @@ class   BoolOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, value ):
+  def   __call__( self, value = NotImplemented ):
+    
+    if value is NotImplemented:
+      value = False
     
     value_str = str(value).lower()
     if value_str in self.true_values:
@@ -203,8 +209,14 @@ class   EnumOptionType (OptionType):
     
   #//-------------------------------------------------------//
   
-  def   __call__( self, value ):
+  def   __call__( self, value = NotImplemented ):
     try:
+      if value is NotImplemented:
+        try:
+          return next(iter(self.__values.values()))
+        except StopIteration:
+          raise InvalidOptionType( self )
+      
       return self.__values[ self.value_type( value ) ]
     except (KeyError, TypeError):
       raise InvalidOptionValue( self, value )
@@ -238,7 +250,7 @@ class   EnumOptionType (OptionType):
     values = []
     
     for alias, value in self.__values.items():
-      if value is value:
+      if alias is value:
         values.append( alias )
     
     return values
@@ -285,8 +297,11 @@ class   RangeOptionType (OptionType):
     
   #//-------------------------------------------------------//
   
-  def   __call__( self, value ):
+  def   __call__( self, value = NotImplemented):
     try:
+      if value is NotImplemented:
+        value = self.min_value
+      
       value = self.value_type( value )
       
       if value < self.min_value:
@@ -342,7 +357,9 @@ class   ListOptionType (OptionType):
     
     if isinstance(value_type, OptionType):
       if description is None:
-        description = "List of: " + value_type.description
+        description = value_type.description
+        if description:
+          description = "List of: " + description
       
       if group is None:
         group = value_type.group
@@ -366,7 +383,7 @@ class   ListOptionType (OptionType):
     
   #//-------------------------------------------------------//
   
-  def   __call__( self, values ):
+  def   __call__( self, values = None ):
     
     try:
       return self.list_type( values )
