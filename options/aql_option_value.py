@@ -24,52 +24,61 @@ class   OptionCondition(object):
 
 #//===========================================================================//
 
-class   OptionValuesOperation( object ):
+class   ValueOperation( object ):
   __slots__ = (
-    'option_type',
+    'value',
     'operation'
   )
   
-  def   __init__( self, option_type, operation ):
-    self.option_type = option_type
+  def   __init__( self, value, operation = None ):
+    self.value = value
     self.operation = operation
   
-  def   __call__( self, dest_value, src_value ):
-    return self.option_type( self.operation( dest_value, src_value ) )
+  def   __call__( self, dest_value, options, context ):
+    if self.operation is not None:
+      dest_value = self.operation( dest_value, options, context )
+    
+    return self._exec( dest_value, options, context )
+  
+  def   _exec( self, dest_value ):
+    raise NotImplementedError()
 
 #//===========================================================================//
-def   addOptionValues( current_value, value ):
-  current_value += value
-  return current_value
 
-def   subOptionValues( current_value, value ):
-  current_value -= value
-  return current_value
+class   AddValue( ValueOperation ):
+  def   _exec( self, dest_value, options, context ):
+    dest_value += self.value
+    return dest_value
 
-def   OptionValuesAdd( option_type ):
-  if isinstance( option_type, ListOptionType ):
-    return addOptionValues
-  
-  return OptionValuesOperation( option_type, addOptionValues )
+#//===========================================================================//
 
-def   OptionValuesSub( option_type ):
-  if isinstance( option_type, ListOptionType ):
-    return subOptionValues
-  
-  return OptionValueOperation( opt_type, subOptionValues )
+class   SubValue( ValueOperation ):
+  def   _exec( self, dest_value, options, context ):
+    dest_value -= self.value
+    return dest_value
+
+#//===========================================================================//
+
+class   CallValue( ValueOperation ):
+  def   _exec( self, dest_value, options, context ):
+    return self.value( dest_value )
+
+#//===========================================================================//
+
+class   ValueValue( ValueOperation ):
+  def   _exec( self, dest_value, options, context ):
+    return dest_value.value( options, context )
 
 #//===========================================================================//
 
 class   OptionConditionalValue (object):
   
   __slots__ = (
-    'value',
     'operation',
     'conditions',
   )
   
-  def   __init__( self, value, operation, conditions = None ):
-    self.value      = value
+  def   __init__( self, operation, conditions = None ):
     self.operation  = operation
     self.conditions = list(toSequence(conditions))
   
@@ -81,7 +90,7 @@ class   OptionConditionalValue (object):
         return value
     
     if self.operation is not None:
-      return self.operation( value, self.value )
+      return self.operation( value, options, context )
     
     return value
 
