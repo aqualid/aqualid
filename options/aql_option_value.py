@@ -4,7 +4,7 @@ from aql_option_types import OptionType, ListOptionType
 
 #//===========================================================================//
 
-class   OptionCondition(object):
+class   Condition(object):
   
   __slots__ = (
     'predicate',
@@ -24,13 +24,35 @@ class   OptionCondition(object):
 
 #//===========================================================================//
 
-class   ValueOperation( object ):
+class   OperationValue( object ):
+  __slots__ = (
+    'value',
+  )
+  
+  def   __init__( self, value ):
+    self.value = value
+  
+  def   __call__( self, options, context ):
+    return self.value
+
+#//===========================================================================//
+
+class   OperationOptionValue( OperationValue ):
+  def   __call__( self, options, context ):
+    return self.value.value( options, context )
+
+#//===========================================================================//
+
+class   Operation( object ):
   __slots__ = (
     'value',
     'operation'
   )
   
   def   __init__( self, value, operation = None ):
+    if not isinstance( value, OperationValue):
+      value = OperationValue( value )
+    
     self.value = value
     self.operation = operation
   
@@ -38,40 +60,42 @@ class   ValueOperation( object ):
     if self.operation is not None:
       dest_value = self.operation( dest_value, options, context )
     
-    return self._exec( dest_value, options, context )
+    op_value = self.value( options, context )
+    
+    return self._exec( dest_value, op_value, options, context )
   
-  def   _exec( self, dest_value ):
+  def   _exec( self, dest_value, op_value, options, context ):
     raise NotImplementedError()
 
 #//===========================================================================//
 
-class   AddValue( ValueOperation ):
-  def   _exec( self, dest_value, options, context ):
-    dest_value += self.value
+class   SetValue( Operation ):
+  def   _exec( self, dest_value, op_value, options, context ):
+    return op_value
+
+#//===========================================================================//
+
+class   AddValue( Operation ):
+  def   _exec( self, dest_value, op_value, options, context ):
+    dest_value += op_value
     return dest_value
 
 #//===========================================================================//
 
-class   SubValue( ValueOperation ):
-  def   _exec( self, dest_value, options, context ):
-    dest_value -= self.value
+class   SubValue( Operation ):
+  def   _exec( self, dest_value, op_value, options, context ):
+    dest_value -= op_value
     return dest_value
 
 #//===========================================================================//
 
-class   CallValue( ValueOperation ):
-  def   _exec( self, dest_value, options, context ):
-    return self.value( dest_value )
+class   CallValue( Operation ):
+  def   _exec( self, dest_value, op_value, options, context ):
+    return op_value( dest_value )
 
 #//===========================================================================//
 
-class   ValueValue( ValueOperation ):
-  def   _exec( self, dest_value, options, context ):
-    return dest_value.value( options, context )
-
-#//===========================================================================//
-
-class   OptionConditionalValue (object):
+class   ConditionalValue (object):
   
   __slots__ = (
     'operation',

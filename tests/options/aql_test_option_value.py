@@ -8,7 +8,7 @@ from aql_tests import testcase, skip, runTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_option_value import OptionValue, OptionConditionalValue, OptionCondition, AddValue, SubValue, CallValue
+from aql_option_value import OptionValue, ConditionalValue, Condition, AddValue, SubValue, CallValue
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 
@@ -26,10 +26,10 @@ def test_option_value(self):
   
   opt_value = OptionValue( opt_type1 )
   
-  cond = OptionCondition( _condition, flag = True, opt_value = opt_value )
-  cond_value  = OptionConditionalValue( CallValue( opt_type1, AddValue( 2 ) ), [cond] )
-  cond_value2 = OptionConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), [cond] )
-  cond_value3 = OptionConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), [cond] )
+  cond = Condition( _condition, flag = True, opt_value = opt_value )
+  cond_value  = ConditionalValue( CallValue( opt_type1, AddValue( 2 ) ), [cond] )
+  cond_value2 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), [cond] )
+  cond_value3 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), [cond] )
   
   opt_value.appendValue( cond_value )
   opt_value.appendValue( cond_value2 )
@@ -48,11 +48,11 @@ def test_option_value_list(self):
   
   opt_value = OptionValue( opt_type1 )
   
-  cond = OptionCondition( _condition, flag = True, opt_value = opt_value )
-  cond_value = OptionConditionalValue( AddValue( 1 ), [cond] )
-  cond_value2 = OptionConditionalValue( AddValue( 0 ), [cond] )
-  cond_value3 = OptionConditionalValue( AddValue( 2 ), [cond] )
-  cond_value4 = OptionConditionalValue( AddValue( 1 ), [cond] )
+  cond = Condition( _condition, flag = True, opt_value = opt_value )
+  cond_value = ConditionalValue( AddValue( 1 ), [cond] )
+  cond_value2 = ConditionalValue( AddValue( 0 ), [cond] )
+  cond_value3 = ConditionalValue( AddValue( 2 ), [cond] )
+  cond_value4 = ConditionalValue( AddValue( 1 ), [cond] )
   
   opt_value.appendValue( cond_value )
   opt_value.appendValue( cond_value2 )

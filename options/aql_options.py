@@ -23,15 +23,27 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   __makeValue( self, value, operation_type ):
-    if isinstance( value, ValueOperation ):
-      return OptionConditionalValue( value )
+    if isinstance( value, OperationValue ):
+      return ConditionalValue( value )
     
-    if isinstance( value OptionValue ):
+    if isinstance( value, OptionValueProxy ):
+      return ConditionalValue( operation_type( OperationOptionValue( value ) ) )
     
-    if not isinstance( value, OptionConditionalValue ):
-      return OptionConditionalValue( operation_type( value ) )
+    if isinstance( value, OptionValue ):
+    elif isinstance( value, OptionValueProxy ):
+      value = value.option_value
+
+    
+    if not isinstance( value, ConditionalValue ):
+      return ConditionalValue( operation_type( value ) )
     
     return value
+  
+  #//-------------------------------------------------------//
+  
+  += options.opt_level
+  
+  ValueValue( options.opt_level )
   
   #//-------------------------------------------------------//
   
