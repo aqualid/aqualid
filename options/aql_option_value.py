@@ -7,12 +7,14 @@ from aql_option_types import OptionType, ListOptionType
 class   Condition(object):
   
   __slots__ = (
+    'condition',
     'predicate',
     'args',
     'kw',
   )
   
-  def   __init__( self, predicate, *args, **kw ):
+  def   __init__( self, predicate, condition = None, *args, **kw ):
+    self.condition = condition
     self.predicate = predicate
     self.args = args
     self.kw = kw
@@ -20,6 +22,10 @@ class   Condition(object):
   #//-------------------------------------------------------//
   
   def   __call__( self, options, context ):
+    if self.condition is not None:
+      if not self.condition( options, context ):
+        return False
+    
     return self.predicate( options, context, *self.args, **self.kw )
 
 #//===========================================================================//
@@ -99,22 +105,19 @@ class   ConditionalValue (object):
   
   __slots__ = (
     'operation',
-    'conditions',
+    'condition',
   )
   
-  def   __init__( self, operation, conditions = None ):
+  def   __init__( self, operation, condition = None ):
     self.operation  = operation
-    self.conditions = list(toSequence(conditions))
+    self.condition = condition
   
   #//-------------------------------------------------------//
   
   def   updateValue( self, value, options, context ):
-    for condition in self.conditions:
-      if not condition( options, context ):
-        return value
-    
-    if self.operation is not None:
-      return self.operation( value, options, context )
+    if (self.condition is not None) and self.condition( options, context ):
+      if self.operation is not None:
+        return self.operation( value, options, context )
     
     return value
 
@@ -124,27 +127,27 @@ class OptionValue (object):
   
   __slots__ = (
     'option_type',
-    'conditions',
+    'conditional_values',
   )
   
   def   __init__( self, option_type, conditional_values = None ):
     self.option_type = option_type
-    self.conditions = list( toSequence(conditional_values) )
+    self.conditional_values = list( toSequence(conditional_values) )
   
   #//-------------------------------------------------------//
   
   def   appendValue( self, conditional_value ):
-    self.conditions.append( conditional_value )
+    self.conditional_values.append( conditional_value )
   
   #//-------------------------------------------------------//
   
   def   prependValue( self, conditional_value ):
-    self.conditions[:0] = [ conditional_value ]
+    self.conditional_values[:0] = [ conditional_value ]
   
   #//-------------------------------------------------------//
   
   def   copy( self ):
-    return OptionType( self.option_type, self.conditions )
+    return OptionType( self.option_type, self.conditional_values )
   
   #//-------------------------------------------------------//
   
@@ -157,10 +160,12 @@ class OptionValue (object):
     value = self.option_type()
     if context is None:
       context = {}
+    elif self in context:
+      return context[ self ]
     
-    for condition in self.conditions:
+    for conditional_value in self.conditional_values:
       context[ self ] = value
-      value = condition.updateValue( value, options, context )
+      value = conditional_value.updateValue( value, options, context )
     
     return value
 

@@ -6,27 +6,6 @@ from aql_list_types import UniqueList, List, SplitListType, ValueListType
 
 #//===========================================================================//
 
-#~ def   makeValueType( option_type, value_type ):
-  #~ class _ValueProxy (value_type):
-    
-    #~ def   __iadd__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
-    #~ def   __isub__( self, other ):      return option_type( super(_Value,cls).__isub__( cls, value ) )
-    #~ def   __imul__( self, other ):      return option_type( super(_Value,cls).__imul__( cls, value ) )
-    #~ def   __idiv__( self, other ):      return option_type( super(_Value,cls).__idiv__( cls, value ) )
-    #~ def   __itruediv__( self, other ):  return option_type( super(_Value,cls).__itruediv__( cls, value ) )
-    #~ def   __ifloordiv__( self, other ): return option_type( super(_Value,cls).__ifloordiv__( cls, value ) )
-    #~ def   __imod__( self, other ):      return option_type( super(_Value,cls).__imod__( cls, value ) )
-    #~ def   __ipow__( self, other ):      return option_type( super(_Value,cls).__ipow__( cls, value ) )
-    #~ def   __ilshift__( self, other ):   return option_type( super(_Value,cls).__ilshift__( cls, value ) )
-    #~ def   __irshift__( self, other ):   return option_type( super(_Value,cls).__irshift__( cls, value ) )
-    #~ def   __iand__( self, other ):      return option_type( super(_Value,cls).__iadd__( cls, value ) )
-    #~ def   __ixor__( self, other ):      return option_type( super(_Value,cls).__ixor__( cls, value ) )
-    #~ def   __ior__( self, other ):       return option_type( super(_Value,cls).__ior__( cls, value ) )
-  
-  #~ return _Value
-
-#//===========================================================================//
-
 class   OptionType (object):
 
   __slots__ = (

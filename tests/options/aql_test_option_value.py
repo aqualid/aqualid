@@ -15,7 +15,7 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 #//===========================================================================//
 
 def   _condition( options, context, flag, opt_value ):
-  print("context[opt_value]: %s" % (context[opt_value], ))
+  #~ print("context[opt_value]: %s" % (context[opt_value], ))
   return flag
 
 @testcase
@@ -27,9 +27,9 @@ def test_option_value(self):
   opt_value = OptionValue( opt_type1 )
   
   cond = Condition( _condition, flag = True, opt_value = opt_value )
-  cond_value  = ConditionalValue( CallValue( opt_type1, AddValue( 2 ) ), [cond] )
-  cond_value2 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), [cond] )
-  cond_value3 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), [cond] )
+  cond_value  = ConditionalValue( CallValue( opt_type1, AddValue( 2 ) ), cond )
+  cond_value2 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), cond )
+  cond_value3 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), cond )
   
   opt_value.appendValue( cond_value )
   opt_value.appendValue( cond_value2 )
@@ -49,10 +49,12 @@ def test_option_value_list(self):
   opt_value = OptionValue( opt_type1 )
   
   cond = Condition( _condition, flag = True, opt_value = opt_value )
-  cond_value = ConditionalValue( AddValue( 1 ), [cond] )
-  cond_value2 = ConditionalValue( AddValue( 0 ), [cond] )
-  cond_value3 = ConditionalValue( AddValue( 2 ), [cond] )
-  cond_value4 = ConditionalValue( AddValue( 1 ), [cond] )
+  cond = Condition( _condition, cond, flag = True, opt_value = opt_value )
+  
+  cond_value  = ConditionalValue( AddValue( 1 ), cond )
+  cond_value2 = ConditionalValue( AddValue( 0 ), cond )
+  cond_value3 = ConditionalValue( AddValue( 2 ), cond )
+  cond_value4 = ConditionalValue( AddValue( 1 ), cond )
   
   opt_value.appendValue( cond_value )
   opt_value.appendValue( cond_value2 )
