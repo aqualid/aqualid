@@ -94,3 +94,16 @@ class   InvalidOptionType( TypeError ):
   def   __init__( self, option ):
     msg = "Invalid option type: '%s'" % (option, )
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   InvalidOptionValueType( TypeError ):
+  def   __init__( self, option ):
+    msg = "Invalid option value type: '%s'" % (option, )
+    super(type(self), self).__init__( msg )
+#//-------------------------------------------------------//
+
+class   InvalidOptions( TypeError ):
+  def   __init__( self, options ):
+    msg = "Invalid options: '%s'" % (options, )
+    super(type(self), self).__init__( msg )

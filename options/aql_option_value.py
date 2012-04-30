@@ -1,5 +1,5 @@
 from aql_utils import toSequence
-from aql_option_types import OptionType, ListOptionType
+from aql_list_types import UniqueList, List
 
 
 #//===========================================================================//
@@ -95,6 +95,16 @@ class   SubValue( Operation ):
 
 #//===========================================================================//
 
+class   UpdateValue( Operation ):
+  def   _exec( self, dest_value, op_value, options, context ):
+    if isinstance( dest_value, ( UniqueList, List ) ):
+      dest_value += op_value
+      return dest_value
+    
+    return op_value
+
+#//===========================================================================//
+
 class   CallValue( Operation ):
   def   _exec( self, dest_value, op_value, options, context ):
     return op_value( dest_value )
@@ -147,7 +157,7 @@ class OptionValue (object):
   #//-------------------------------------------------------//
   
   def   copy( self ):
-    return OptionType( self.option_type, self.conditional_values )
+    return OptionValue( self.option_type, self.conditional_values )
   
   #//-------------------------------------------------------//
   
