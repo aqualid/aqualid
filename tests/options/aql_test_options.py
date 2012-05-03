@@ -22,6 +22,7 @@ def test_options(self):
   options = Options()
   
   opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+  opt_type2 = BoolOptionType()
   
   options.warn_level = opt_type1
   options.warning_level = options.warn_level
@@ -35,8 +36,38 @@ def test_options(self):
   options.warning_level += 1
   
   self.assertEqual( options.warn_level, 2 )
-
   
+  options.warning_level -= 2
+  
+  self.assertEqual( options.warn_level, 0 )
+  
+  opt_type2 = BoolOptionType()
+  options.debug_on = opt_type2
+  
+  options.debug_on = True
+  self.assertEqual( options.debug_on, 'true' )
+  
+  over_opts = options.override()
+  over_opts.debug_on = False
+  
+  self.assertEqual( options.debug_on, 'true' )
+  self.assertEqual( over_opts.debug_on, 'false' )
+  self.assertEqual( over_opts.warn_level, 0 )
+  
+  options.warning_level = 3
+  self.assertEqual( over_opts.warn_level, 3 )
+  
+  over_opts = over_opts.copy()
+  options.warning_level = 2
+  self.assertEqual( options.warn_level, 2 )
+  self.assertEqual( over_opts.warn_level, 3 )
+  self.assertEqual( over_opts.warning_level, 3 )
+  
+  over_opts.warn_level = 4
+  self.assertEqual( over_opts.warn_level, 4 )
+  self.assertEqual( over_opts.warning_level, 4 )
+  
+
 #//===========================================================================//
 
 if __name__ == "__main__":

@@ -44,7 +44,8 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   __isub__( self, other ):
-    self.options.clearCache()
+    options = self.options
+    options.clearCache()
     self.option_value.appendValue( options._makeOpValue( other, SubValue ) )
     return self
   
@@ -88,7 +89,7 @@ class Options (object):
     self.__dict__['__children']     = []
     
     if parent is not None:
-      parent.__children.append( weakref.proxy( self ) )
+      parent.__dict__['__children'].append( weakref.proxy( self ) )
   
   #//-------------------------------------------------------//
   
@@ -129,9 +130,8 @@ class Options (object):
     opt_value, from_parent = self._get_value( name )
     
     if isinstance( value, OptionType ):
-      value = OptionValue( value )
       if opt_value is None:
-        self.__dict__['__opt_values'][ name ] = value
+        self.__dict__['__opt_values'][ name ] = OptionValue( value )
         return
       else:
         raise InvalidOptionValueType( value )
@@ -174,14 +174,18 @@ class Options (object):
       return (self.__dict__['__opt_values'][ name ], False)
     except KeyError as e:
       try:
-        return (self.__dict__['__parent']._get_value( name ), True )
+        return ( self.__dict__['__parent']._get_value( name )[0], True )
       except AttributeError:
-        return None, False
+        return (None, False)
   
   #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
-    return OptionValueProxy( self._get_value( name )[0], self )
+    opt_value = self._get_value( name )[0]
+    if opt_value is None:
+      raise AttributeError( name )
+    
+    return OptionValueProxy( opt_value, self )
   
   #//-------------------------------------------------------//
   
@@ -253,9 +257,11 @@ class Options (object):
     other = Options()
     
     for opt_value, names in val_names.items():
-      new_opt_value = opt_value.copy()
+      new_opt_value = OptionValueProxy( opt_value.copy(), other )
       for name in names:
         setattr( other, name, new_opt_value )
+    
+    return other
   
   #//-------------------------------------------------------//
   
