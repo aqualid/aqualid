@@ -125,7 +125,8 @@ class   ConditionalValue (object):
   #//-------------------------------------------------------//
   
   def   updateValue( self, value, options, context ):
-    if (self.condition is not None) and self.condition( options, context ):
+    condition = self.condition
+    if (condition is None) or condition( options, context ):
       if self.operation is not None:
         return self.operation( value, options, context )
     
@@ -181,6 +182,6 @@ class OptionValue (object):
 
   #//-------------------------------------------------------//
   
-  def   optionType():
+  def   optionType( self ):
     return self.option_type
   

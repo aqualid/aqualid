@@ -1,0 +1,43 @@
+﻿import sys
+import os.path
+import timeit
+
+sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
+
+from aql_tests import testcase, skip, runTests
+from aql_event_manager import event_manager
+from aql_event_handler import EventHandler
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
+from aql_option_value import OptionValue, ConditionalValue, Condition, AddValue, SubValue, CallValue
+from aql_options import Options
+
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
+
+#//===========================================================================//
+
+@testcase
+def test_options(self):
+  event_manager.setHandlers( EventHandler() )
+  
+  options = Options()
+  
+  opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+  
+  options.warn_level = opt_type1
+  options.warning_level = options.warn_level
+  
+  self.assertEqual( options.warn_level, options.warning_level )
+  
+  options.warning_level = 1
+  
+  self.assertEqual( options.warn_level, options.warning_level )
+  
+  options.warning_level += 1
+  
+  self.assertEqual( options.warn_level, 2 )
+
+  
+#//===========================================================================//
+
+if __name__ == "__main__":
+  runTests()
