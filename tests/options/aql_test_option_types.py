@@ -14,6 +14,7 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 
 #//===========================================================================//
 
+@skip
 @testcase
 def test_bool_option(self):
   event_manager.setHandlers( EventHandler() )
@@ -186,13 +187,14 @@ def test_list_option(self):
   ob = ListOptionType( value_type = b, unique = True )
   
   self.assertEqual( ob( 'yes,no,1,0' ), 'on,no' )
+  self.assertIn( 'yes', ob( 'yes,no,1,0' ) )
   
   on = ListOptionType( value_type = int, unique = True )
   
   self.assertEqual( on( '1,0,2,1,1,2,0' ), [1,0,2] )
   
-  print( ob.rangeHelp() )
-  print( ob("no,yes,yes,no") )
+  #~ print( ob.rangeHelp() )
+  #~ print( ob("no,yes,yes,no") )
 
 
 #//===========================================================================//

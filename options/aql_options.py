@@ -8,6 +8,23 @@ from aql_errors import InvalidOptions, InvalidOptionValueType
 
 #//===========================================================================//
 
+def   _evalValue( other, options, context ):
+  other_context = context
+  
+  if isinstance( other, OptionValueProxy ):
+    if other.options is not options:
+      other_context = None
+    
+    return other.value( other_context )
+  
+  elif isinstance( other, OptionValue ):
+    return other.value( options, context )
+  
+  return other
+
+
+#//===========================================================================//
+
 class OptionValueProxy (object):
   
   __slots__ = (
@@ -59,10 +76,7 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   cmp( self, other, op, context = None ):
-    if isinstance( other, OptionValueProxy ):
-      other = other.value()
-    elif isinstance( other, OptionValue ):
-      other = other.value( self.options, context )
+    other = _evalValue( other, self.options, context )
     
     value       = self.value( context )
     other_value = self.option_value.optionType()( other )
@@ -77,6 +91,87 @@ class OptionValueProxy (object):
   def   __le__( self, other ):  return self.cmp( other, '__le__' )
   def   __gt__( self, other ):  return self.cmp( other, '__gt__' )
   def   __ge__( self, other ):  return self.cmp( other, '__ge__' )
+  
+  #//-------------------------------------------------------//
+  
+  def   has( self, other, context = None ):
+    other = _evalValue( other, self.options, context )
+    
+    value       = self.value( context )
+    other_value = self.option_value.optionType()( other )
+    
+    return other_ in value
+
+
+#//===========================================================================//
+
+class ConditionGenerator( object ):
+  
+  def     __init__( self, options, condition = None ):
+    self.__dict__['__options']  = options
+    self.__dict__['__condition']  = condition
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, name ):
+    return ConditionGeneratorHelper( name, self.__dict__['__options'], self.__dict__['__condition'])
+  
+  #//-------------------------------------------------------//
+  
+  def     __setattr__(self, name, value):
+    raise NotImplementedError("Operation is not allowed.")
+    
+    #~ options = self.__dict__['__options']
+    #~ option = options.get( name )
+    
+    #~ if option is None:
+        #~ if _is_option( value ):
+            #~ _Error( "Can't add new option '%s' within condition." % (name) )
+        #~ else:
+            #~ _Error( "Unknown option: %s" % (name) )
+    
+    #~ if option is value:
+        #~ return
+    
+    #~ option.SetIf( self.__dict__['__conditional_value'], value )
+  
+#//===========================================================================//
+
+def   _cmpValue( options, context, name, other, cmp_operator):
+  return options[ name ].value.cmp( other, cmp_operator, context )
+
+def _makeCmpCondition( cmp_operator, condition, name, other ):
+  return Condition( _cmpValue, condition, name, other, cmp_operator )
+
+class ConditionGeneratorHelper( object ):
+  
+  def     __init__( self, name, options, condition  ):
+    self.name  = name
+    self.options  = options
+    self.condition  = condition
+  
+  #//-------------------------------------------------------//
+  
+  def   cmp( self, other, cmp_operator ):
+    condition = _makeCmpCondition( cmp_operator, self.condition, self.name, other )
+    return ConditionGenerator( self.options, condition )
+  
+  def   __getitem__( self, other ):   return self.cmp( other, '__eq__' )
+    
+  def   eq( self, other ):    return self.cmp( other, '__eq__' )
+  def   ne( self, other ):    return self.cmp( other, '__ne__' )
+  def   gt( self, other ):    return self.cmp( other, '__gt__' )
+  def   ge( self, other ):    return self.cmp( other, '__ge__' )
+  def   lt( self, other ):    return self.cmp( other, '__lt__' )
+  def   le( self, other ):    return self.cmp( other, '__le__' )
+  
+  def   has( self, value ):
+    return self.__cond_options( _has, _ValueList( value, self.option ) )
+  
+  def   has_any( self, values ):    return self.__cond_options( _has_any, _ValueList( values, self.option ) )
+  def   one_of( self, values ):     return self.__cond_options( _one_of, _ValueList( values, self.option ) )
+
+
 
 #//===========================================================================//
 
@@ -169,6 +264,11 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   __setitem__( self, name, value ):
+    self.__setattr__( name, value )
+  
+  #//-------------------------------------------------------//
+  
   def   _get_value( self, name ):
     try:
       return (self.__dict__['__opt_values'][ name ], False)
@@ -186,6 +286,11 @@ class Options (object):
       raise AttributeError( name )
     
     return OptionValueProxy( opt_value, self )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getitem__( self, name ):
+    return self.__getattr__( name )
   
   #//-------------------------------------------------------//
   

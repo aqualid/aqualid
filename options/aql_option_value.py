@@ -169,13 +169,15 @@ class OptionValue (object):
   
   def   value( self, options, context = None ):
     value = self.option_type()
+    self_id = id(self)
+    
     if context is None:
       context = {}
-    elif self in context:
-      return context[ self ]
+    elif self_id in context:
+      return context[ self_id ]
     
     for conditional_value in self.conditional_values:
-      context[ self ] = value
+      context[ self_id ] = value
       value = conditional_value.updateValue( value, options, context )
     
     return value
@@ -185,3 +187,33 @@ class OptionValue (object):
   def   optionType( self ):
     return self.option_type
   
+  #//-------------------------------------------------------//
+  
+  def   cmp( self, other, op, options, context = None ):
+    if isinstance( other, OptionValue ):
+      other = other.value( options, context )
+    
+    value       = self.value( option, context )
+    other_value = self.option_type( other )
+    
+    return getattr(value, op )( other_value )
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):  return self.cmp( other, '__eq__' )
+  def   __ne__( self, other ):  return self.cmp( other, '__ne__' )
+  def   __lt__( self, other ):  return self.cmp( other, '__lt__' )
+  def   __le__( self, other ):  return self.cmp( other, '__le__' )
+  def   __gt__( self, other ):  return self.cmp( other, '__gt__' )
+  def   __ge__( self, other ):  return self.cmp( other, '__ge__' )
+  
+  #//-------------------------------------------------------//
+  
+  def   has( self, other, options, context = None ):
+    if isinstance( other, OptionValue ):
+      other = other.value( options, context )
+    
+    value       = self.value( context )
+    other_value = self.option_type( other )
+    
+    return other_value in value

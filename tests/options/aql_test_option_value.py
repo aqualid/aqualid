@@ -27,9 +27,9 @@ def test_option_value(self):
   opt_value = OptionValue( opt_type1 )
   
   cond = Condition( _condition, flag = True, opt_value = opt_value )
-  cond_value  = ConditionalValue( CallValue( opt_type1, AddValue( 2 ) ), cond )
-  cond_value2 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), cond )
-  cond_value3 = ConditionalValue( CallValue( opt_type1, AddValue( 3 ) ), cond )
+  cond_value  = ConditionalValue( AddValue( 2 ), cond )
+  cond_value2 = ConditionalValue( AddValue( 3 ), cond )
+  cond_value3 = ConditionalValue( AddValue( 3 ), cond )
   
   opt_value.appendValue( cond_value )
   opt_value.appendValue( cond_value2 )

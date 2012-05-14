@@ -6,10 +6,152 @@ from aql_list_types import UniqueList, List, SplitListType, ValueListType
 
 #//===========================================================================//
 
+def   _ValueTypeProxy( option_type, value_type ):
+  
+  class   _ValueTypeProxyImpl (value_type):
+    
+    #//-------------------------------------------------------//
+    
+    def     __new__( cls, value = NotImplemented ):
+      if isinstance( value, _ValueTypeProxyImpl ):
+        return value
+      
+      value = option_type._convert( value )
+      
+      return super(_ValueTypeProxyImpl,cls).__new__( cls, value )
+    
+    #//-------------------------------------------------------//
+    
+    def   __op( self, op, other ):
+      return _ValueTypeProxyImpl( getattr( super(_ValueTypeProxyImpl,self), op )( other ) )
+    
+    #//-------------------------------------------------------//
+    
+    def   __add__ ( self, other ):        return self.__op( '__add__', other )
+    def   __iadd__( self, other ):        return self.__op( '__add__', other )
+    def   __sub__ ( self, other ):        return self.__op( '__sub__', other )
+    def   __isub__( self, other ):        return self.__op( '__sub__', other )
+    def   __mul__ ( self, other ):        return self.__op( '__mul__', other )
+    def   __imul__( self, other ):        return self.__op( '__mul__', other )
+    def   __mod__ ( self, other ):        return self.__op( '__mod__', other )
+    def   __imod__( self, other ):        return self.__op( '__mod__', other )
+    def   __pow__ ( self, other ):        return self.__op( '__pow__', other )
+    def   __ipow__( self, other ):        return self.__op( '__pow__', other )
+    def   __and__ ( self, other ):        return self.__op( '__and__', other )
+    def   __iand__( self, other ):        return self.__op( '__and__', other )
+    def   __xor__ ( self, other ):        return self.__op( '__xor__', other )
+    def   __ixor__( self, other ):        return self.__op( '__xor__', other )
+    def   __or__ ( self, other ):         return self.__op( '__or__', other )
+    def   __ior__( self, other ):         return self.__op( '__or__', other )
+    def   __truediv__ ( self, other ):    return self.__op( '__truediv__', other )
+    def   __itruediv__( self, other ):    return self.__op( '__truediv__', other )
+    def   __floordiv__ ( self, other ):   return self.__op( '__floordiv__', other )
+    def   __ifloordiv__( self, other ):   return self.__op( '__floordiv__', other )
+    def   __lshift__ ( self, other ):     return self.__op( '__lshift__', other )
+    def   __ilshift__( self, other ):     return self.__op( '__lshift__', other )
+    def   __rshift__ ( self, other ):     return self.__op( '__rshift__', other )
+    def   __irshift__( self, other ):     return self.__op( '__rshift__', other )
+    
+    #//-------------------------------------------------------//
+    
+    def   __eq__( self, other ):  return super(_ValueTypeProxyImpl,self).__eq__( _ValueTypeProxyImpl( other ) )
+    def   __ne__( self, other ):  return super(_ValueTypeProxyImpl,self).__ne__( _ValueTypeProxyImpl( other ) )
+    def   __gt__( self, other ):  return super(_ValueTypeProxyImpl,self).__gt__( _ValueTypeProxyImpl( other ) )
+    def   __ge__( self, other ):  return super(_ValueTypeProxyImpl,self).__ge__( _ValueTypeProxyImpl( other ) )
+    def   __lt__( self, other ):  return super(_ValueTypeProxyImpl,self).__lt__( _ValueTypeProxyImpl( other ) )
+    def   __le__( self, other ):  return super(_ValueTypeProxyImpl,self).__le__( _ValueTypeProxyImpl( other ) )
+    
+    def   __hash__( self ):
+      return super(_ValueTypeProxyImpl,self).__hash__()
+  
+  #//=======================================================//
+  
+  return _ValueTypeProxyImpl
+
+
+#//===========================================================================//
+
+def   _ValueBoolTypeProxy( option_type ):
+  
+  class   _ValueBoolTypeProxyImpl (int):
+    
+    #//-------------------------------------------------------//
+    
+    def     __new__( cls, value = NotImplemented ):
+      if isinstance( value, _ValueBoolTypeProxyImpl ):
+        return value
+      
+      value = option_type._convert( value )
+      
+      return super(_ValueBoolTypeProxyImpl,cls).__new__( cls, value )
+    
+    #//-------------------------------------------------------//
+    
+    def   __op( self, op, other ):
+      return _ValueBoolTypeProxyImpl( getattr( super(_ValueBoolTypeProxyImpl,self), op )( other ) )
+    
+    #//-------------------------------------------------------//
+    
+    def   __and__ ( self, other ):        return self.__op( '__and__', other )
+    def   __iand__( self, other ):        return self.__op( '__and__', other )
+    def   __xor__ ( self, other ):        return self.__op( '__xor__', other )
+    def   __ixor__( self, other ):        return self.__op( '__xor__', other )
+    def   __or__ ( self, other ):         return self.__op( '__or__', other )
+    def   __ior__( self, other ):         return self.__op( '__or__', other )
+    
+    #//-------------------------------------------------------//
+    
+    def   __add__ ( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __iadd__( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __sub__ ( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __isub__( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __mul__ ( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __imul__( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __mod__ ( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __imod__( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __pow__ ( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __ipow__( self, other ):      raise NotImplementedError("Not supported operation")
+    def   __truediv__ ( self, other ):  raise NotImplementedError("Not supported operation")
+    def   __itruediv__( self, other ):  raise NotImplementedError("Not supported operation")
+    def   __floordiv__ ( self, other ): raise NotImplementedError("Not supported operation")
+    def   __ifloordiv__( self, other ): raise NotImplementedError("Not supported operation")
+    def   __lshift__ ( self, other ):   raise NotImplementedError("Not supported operation")
+    def   __ilshift__( self, other ):   raise NotImplementedError("Not supported operation")
+    def   __rshift__ ( self, other ):   raise NotImplementedError("Not supported operation")
+    def   __irshift__( self, other ):   raise NotImplementedError("Not supported operation")
+    
+    #//-------------------------------------------------------//
+    
+    def   __eq__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__eq__( _ValueBoolTypeProxyImpl( other ) )
+    def   __ne__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__ne__( _ValueBoolTypeProxyImpl( other ) )
+    def   __gt__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__gt__( _ValueBoolTypeProxyImpl( other ) )
+    def   __ge__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__ge__( _ValueBoolTypeProxyImpl( other ) )
+    def   __lt__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__lt__( _ValueBoolTypeProxyImpl( other ) )
+    def   __le__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__le__( _ValueBoolTypeProxyImpl( other ) )
+    
+    def   __hash__( self ):
+      return super(_ValueBoolTypeProxyImpl,self).__hash__()
+
+    
+    #//-------------------------------------------------------//
+    
+    def   __str__(self):
+      if self:
+        return option_type.true_value
+      return option_type.false_value
+  
+  #//=======================================================//
+  
+  return _ValueBoolTypeProxyImpl
+
+
+#//===========================================================================//
+
 class   OptionType (object):
 
   __slots__ = (
     'value_type',
+    'value_type_proxy',
     'description',
     'group',
     'range_help',
@@ -20,6 +162,12 @@ class   OptionType (object):
   def     __init__( self, value_type, description = None, group = None, range_help = None ):
     
     self.value_type = value_type
+    
+    if value_type is bool:
+      self.value_type_proxy = _ValueBoolTypeProxy( self )
+    else:
+      self.value_type_proxy = _ValueTypeProxy( self, value_type )
+    
     self.description = description
     self.group = group
     self.range_help = range_help
@@ -27,6 +175,11 @@ class   OptionType (object):
   #//-------------------------------------------------------//
   
   def   __call__( self, value = NotImplemented ):
+    return self.value_type_proxy( value )
+  
+  #//-------------------------------------------------------//
+  
+  def   _convert( self, value ):
     """
     Converts a value to options' value
     """
@@ -82,7 +235,7 @@ class   BoolOptionType (OptionType):
   
   def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
     
-    super(BoolOptionType,self).__init__( BoolOptionType._Value, description, group )
+    super(BoolOptionType,self).__init__( bool, description, group )
     
     if style is None:
       style = ('True', 'False')
@@ -105,7 +258,7 @@ class   BoolOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, value = NotImplemented ):
+  def   _convert( self, value = NotImplemented ):
     
     if value is NotImplemented:
       value = False
@@ -119,12 +272,10 @@ class   BoolOptionType (OptionType):
     
     if value:
       value = True
-      value_str = self.true_value
     else:
       value = False
-      value_str = self.false_value
     
-    return self.value_type( value, value_str )
+    return bool( value )
   
   #//-------------------------------------------------------//
   
@@ -188,7 +339,7 @@ class   EnumOptionType (OptionType):
     
   #//-------------------------------------------------------//
   
-  def   __call__( self, value = NotImplemented ):
+  def   _convert( self, value = NotImplemented ):
     try:
       if value is NotImplemented:
         try:
@@ -276,7 +427,7 @@ class   RangeOptionType (OptionType):
     
   #//-------------------------------------------------------//
   
-  def   __call__( self, value = NotImplemented):
+  def   _convert( self, value = NotImplemented):
     try:
       if value is NotImplemented:
         value = self.min_value
@@ -326,10 +477,6 @@ class   RangeOptionType (OptionType):
 
 class   ListOptionType (OptionType):
   
-  __slots__ = (
-    'list_type',
-  )
-  
   #//=======================================================//
   
   def   __init__( self, value_type, unique = False, separators = ', ', description = None, group = None, range_help = None ):
@@ -346,8 +493,6 @@ class   ListOptionType (OptionType):
       if range_help is None:
         range_help = value_type.range_help
     
-    super(ListOptionType,self).__init__( value_type, description, group, range_help )
-    
     if unique:
       list_type = UniqueList
     else:
@@ -358,14 +503,17 @@ class   ListOptionType (OptionType):
     if separators:
       list_type = SplitListType( list_type, separators )
     
-    self.list_type = list_type
-    
+    super(ListOptionType,self).__init__( list_type, description, group, range_help )
+    self.value_type_proxy = list_type
+  
   #//-------------------------------------------------------//
   
   def   __call__( self, values = None ):
-    
     try:
-      return self.list_type( values )
+      if values is NotImplemented:
+        values = None
+      
+      return self.value_type( values )
       
     except (TypeError, ValueError):
       raise InvalidOptionValue( self.value_type, values )

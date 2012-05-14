@@ -110,8 +110,8 @@ class   UniqueList (object):
     
   #//-------------------------------------------------------//
   
-  def   __contains__( self, value ):
-    return value in self.__values_set
+  def   __contains__( self, other ):
+    return other in self.__values_set
   
   #//-------------------------------------------------------//
   
@@ -408,6 +408,12 @@ def   ValueListType( list_type, value_type ):
     def   __le__( self, other ):  return super(_ValueList,self).__le__( _ValueList( other ) )
     def   __gt__( self, other ):  return super(_ValueList,self).__gt__( _ValueList( other ) )
     def   __ge__( self, other ):  return super(_ValueList,self).__ge__( _ValueList( other ) )
+    
+    #//-------------------------------------------------------//
+  
+    def   __contains__( self, other ):
+      return super(_ValueList,self).__contains__( value_type(other) )
+
   
   #//=======================================================//
   
