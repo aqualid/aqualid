@@ -128,7 +128,12 @@ class   ConditionalValue (object):
     condition = self.condition
     if (condition is None) or condition( options, context ):
       if self.operation is not None:
-        return self.operation( value, options, context )
+        new_value = ( self.operation( value, options, context ) )
+        value_type = type(value)
+        if type(new_value) is not value_type:
+          new_value = value_type( new_value )
+        
+        return new_value
     
     return value
 
@@ -186,34 +191,3 @@ class OptionValue (object):
   
   def   optionType( self ):
     return self.option_type
-  
-  #//-------------------------------------------------------//
-  
-  def   cmp( self, other, op, options, context = None ):
-    if isinstance( other, OptionValue ):
-      other = other.value( options, context )
-    
-    value       = self.value( option, context )
-    other_value = self.option_type( other )
-    
-    return getattr(value, op )( other_value )
-  
-  #//-------------------------------------------------------//
-  
-  def   __eq__( self, other ):  return self.cmp( other, '__eq__' )
-  def   __ne__( self, other ):  return self.cmp( other, '__ne__' )
-  def   __lt__( self, other ):  return self.cmp( other, '__lt__' )
-  def   __le__( self, other ):  return self.cmp( other, '__le__' )
-  def   __gt__( self, other ):  return self.cmp( other, '__gt__' )
-  def   __ge__( self, other ):  return self.cmp( other, '__ge__' )
-  
-  #//-------------------------------------------------------//
-  
-  def   has( self, other, options, context = None ):
-    if isinstance( other, OptionValue ):
-      other = other.value( options, context )
-    
-    value       = self.value( context )
-    other_value = self.option_type( other )
-    
-    return other_value in value

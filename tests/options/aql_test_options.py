@@ -43,7 +43,6 @@ def test_options(self):
   
   opt_type2 = BoolOptionType()
   options.debug_on = opt_type2
-  
   options.debug_on = True
   self.assertEqual( options.debug_on, 'true' )
   

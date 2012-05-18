@@ -261,7 +261,6 @@ class   List (list):
   #//-------------------------------------------------------//
   
   def     __init__( self, values = None ):
-    
     super( List, self).__init__( toSequence( values ) )
   
   #//-------------------------------------------------------//
@@ -323,6 +322,14 @@ def   SplitListType( list_type, separators ):
     
     #//-------------------------------------------------------//
     
+    def   __toSplitList( self, values ):
+      if isinstance( values, SplitList ):
+        return values
+      
+      return SplitList( vaues )
+    
+    #//-------------------------------------------------------//
+    
     def     __init__( self, values = None ):
       super(SplitList,self).__init__( self.__toSequence( values ) )
     
@@ -348,12 +355,12 @@ def   SplitListType( list_type, separators ):
     
     #//-------------------------------------------------------//
     
-    def   __eq__( self, other ):  return super(SplitList,self).__eq__( SplitList( other ) )
-    def   __ne__( self, other ):  return super(SplitList,self).__ne__( SplitList( other ) )
-    def   __lt__( self, other ):  return super(SplitList,self).__lt__( SplitList( other ) )
-    def   __le__( self, other ):  return super(SplitList,self).__le__( SplitList( other ) )
-    def   __gt__( self, other ):  return super(SplitList,self).__gt__( SplitList( other ) )
-    def   __ge__( self, other ):  return super(SplitList,self).__ge__( SplitList( other ) )
+    def   __eq__( self, other ):  return super(SplitList,self).__eq__( self.__toSplitList( other ) )
+    def   __ne__( self, other ):  return super(SplitList,self).__ne__( self.__toSplitList( other ) )
+    def   __lt__( self, other ):  return super(SplitList,self).__lt__( self.__toSplitList( other ) )
+    def   __le__( self, other ):  return super(SplitList,self).__le__( self.__toSplitList( other ) )
+    def   __gt__( self, other ):  return super(SplitList,self).__gt__( self.__toSplitList( other ) )
+    def   __ge__( self, other ):  return super(SplitList,self).__ge__( self.__toSplitList( other ) )
     
     #//-------------------------------------------------------//
     
@@ -373,7 +380,18 @@ def   ValueListType( list_type, value_type ):
     #//-------------------------------------------------------//
     
     def   __toSequence( self, values ):
+      if isinstance( values, _ValueList):
+        return values
+      
       return map( value_type, toSequence(values) )
+    
+    #//-------------------------------------------------------//
+    
+    def   __toValueList( self, values ):
+      if isinstance( values, _ValueList):
+        return values
+      
+      return _ValueList(values)
     
     #//-------------------------------------------------------//
     
@@ -402,12 +420,12 @@ def   ValueListType( list_type, value_type ):
     
     #//-------------------------------------------------------//
     
-    def   __eq__( self, other ):  return super(_ValueList,self).__eq__( _ValueList( other ) )
-    def   __ne__( self, other ):  return super(_ValueList,self).__ne__( _ValueList( other ) )
-    def   __lt__( self, other ):  return super(_ValueList,self).__lt__( _ValueList( other ) )
-    def   __le__( self, other ):  return super(_ValueList,self).__le__( _ValueList( other ) )
-    def   __gt__( self, other ):  return super(_ValueList,self).__gt__( _ValueList( other ) )
-    def   __ge__( self, other ):  return super(_ValueList,self).__ge__( _ValueList( other ) )
+    def   __eq__( self, other ):  return super(_ValueList,self).__eq__( self.__toValueList( other ) )
+    def   __ne__( self, other ):  return super(_ValueList,self).__ne__( self.__toValueList( other ) )
+    def   __lt__( self, other ):  return super(_ValueList,self).__lt__( self.__toValueList( other ) )
+    def   __le__( self, other ):  return super(_ValueList,self).__le__( self.__toValueList( other ) )
+    def   __gt__( self, other ):  return super(_ValueList,self).__gt__( self.__toValueList( other ) )
+    def   __ge__( self, other ):  return super(_ValueList,self).__ge__( self.__toValueList( other ) )
     
     #//-------------------------------------------------------//
   

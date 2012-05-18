@@ -9,19 +9,16 @@ from aql_errors import InvalidOptions, InvalidOptionValueType
 #//===========================================================================//
 
 def   _evalValue( other, options, context ):
-  other_context = context
-  
   if isinstance( other, OptionValueProxy ):
     if other.options is not options:
-      other_context = None
+      return other.value()
     
-    return other.value( other_context )
+    return other.value( context )
   
   elif isinstance( other, OptionValue ):
-    return other.value( options, context )
+    return options.value( other, context )
   
   return other
-
 
 #//===========================================================================//
 
@@ -39,49 +36,32 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   value( self, context = None ):
-    option_value = self.option_value
-    options = self.options
-    
-    try:
-      value = options.getCached( option_value )
-    except KeyError:
-      value = option_value.value( self.options, context )
-      options.setCached( option_value, value )
-    
-    return value
+    return self.options.value( self.option_value, context )
   
   #//-------------------------------------------------------//
   
   def   __iadd__( self, other ):
-    options = self.options
-    options.clearCache()
-    self.option_value.appendValue( options._makeOpValue( other, AddValue ) )
+    self.options.appendValue( self.option_value, other, AddValue )
     return self
   
   #//-------------------------------------------------------//
   
   def   __isub__( self, other ):
-    options = self.options
-    options.clearCache()
-    self.option_value.appendValue( options._makeOpValue( other, SubValue ) )
+    self.options.appendValue( self.option_value, other, SubValue )
     return self
   
   #//-------------------------------------------------------//
   
   def   set( self, value, operation_type = SetValue, condition = None ):
-    value = self.options._makeCondValue( value, operation_type, condition )
-    self.options.clearCache()
-    self.option_value.appendValue( value )
+    self.options.appendValue( self.option_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, other, op, context = None ):
     other = _evalValue( other, self.options, context )
     
-    value       = self.value( context )
-    other_value = self.option_value.optionType()( other )
-    
-    return getattr(value, op )( other_value )
+    value = self.value( context )
+    return getattr(value, op )( other )
   
   #//-------------------------------------------------------//
   
@@ -97,10 +77,7 @@ class OptionValueProxy (object):
   def   has( self, other, context = None ):
     other = _evalValue( other, self.options, context )
     
-    value       = self.value( context )
-    other_value = self.option_value.optionType()( other )
-    
-    return other_ in value
+    return other in self.value( context )
 
 
 #//===========================================================================//
@@ -171,8 +148,6 @@ class ConditionGeneratorHelper( object ):
   def   has_any( self, values ):    return self.__cond_options( _has_any, _ValueList( values, self.option ) )
   def   one_of( self, values ):     return self.__cond_options( _one_of, _ValueList( values, self.option ) )
 
-
-
 #//===========================================================================//
 
 class Options (object):
@@ -188,12 +163,14 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   _makeOpValue( self, value, operation_type, condition = None ):
+  def   __makeCondValue( self, value, operation_type = None, condition = None ):
+    if isinstance( value, Operation ):
+      return ConditionalValue( value, condition )
+    
+    elif isinstance( value, ConditionalValue ):
+      return value
     
     if operation_type is None:
-      raise InvalidOptionValueType( value )
-    
-    if isinstance( value, (ConditionalValue, Operation ) ):
       raise InvalidOptionValueType( value )
     
     if isinstance( value, OptionValue ):
@@ -206,17 +183,6 @@ class Options (object):
       value = OperationOptionValue( value.option_value )
     
     return ConditionalValue( operation_type( value ), condition )
-  
-  #//-------------------------------------------------------//
-  
-  def   _makeCondValue( self, value, operation_type = None, condition = None ):
-    if isinstance( value, Operation ):
-      return ConditionalValue( value, condition )
-    elif isinstance( value, ConditionalValue ):
-      return value
-    
-    return self._makeOpValue( value, operation_type, condition )
-
   
   #//-------------------------------------------------------//
   
@@ -242,13 +208,13 @@ class Options (object):
         self.__dict__['__opt_values'][ name ] = value.option_value
         return
       
-      value = ConditionalValue( operation_type( OperationOptionValue( value ) ) )
+      value = ConditionalValue( operation_type( OperationOptionValue( value.option_value ) ) )
     
     else:
       if opt_value is None:
         raise InvalidOptionValueType( value )
       
-      value = self._makeCondValue( value, operation_type )
+      value = self.__makeCondValue( value, operation_type )
     
     if from_parent:
       opt_value = opt_value.copy()
@@ -336,7 +302,7 @@ class Options (object):
     
     for name, value in other.items():
       try:
-        self.__dict__['__set_value']( name, value, UpdateValue )
+        self.__set_value( name, value, UpdateValue )
       except KeyError:
         pass
   
@@ -370,13 +336,21 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   getCached( self, option_value ):
-    return self.__dict__['__cache'][ option_value ]
+  def   value( self, option_value, context = None ):
+    try:
+      value = self.__dict__['__cache'][ id(option_value) ]
+    except KeyError:
+      value = option_value.value( self, context )
+      self.__dict__['__cache'][ id(option_value) ] = value
+    
+    return value
   
   #//-------------------------------------------------------//
   
-  def   setCached( self, option_value, value ):
-    self.__dict__['__cache'][ option_value ] = value
+  def   appendValue( self, option_value, value, operation_type = None, condition = None ):
+    value = self.__makeCondValue( value, operation_type, condition )
+    self.clearCache()
+    option_value.appendValue( value )
   
   #//-------------------------------------------------------//
   
