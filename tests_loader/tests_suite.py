@@ -389,36 +389,32 @@ class Tests(dict):
 class TestsSuiteMaker(object):
   
   __slots__  = (
-    'tests',
     'skip_test_methods',
     'skip_test_classes',
   )
   
   #//-------------------------------------------------------//
   def   __init__( self ):
-    self.tests = Tests()
     self.skip_test_methods = set()
     self.skip_test_classes = set()
   
   #//-------------------------------------------------------//
   
-  def   loadLocals( self, module_globals, test_methods_prefix = 'test' ):
-    test_classes = _getModuleTestCaseClasses( module_globals )
+  def   loadLocals( self, test_methods_prefix = 'test' ):
+    test_classes = _getModuleTestCaseClasses( __import__('__main__').__dict__ )
     
-    self.tests = Tests( test_classes )
+    return Tests( test_classes )
   
   #//-------------------------------------------------------//
   
   def   load( self, path = None, test_files_prefix = 'test', test_methods_prefix = 'test' ):
     test_classes = _loadTestCaseClasses( path, test_files_prefix )
     
-    self.tests = Tests( test_classes )
+    return Tests( test_classes )
   
   #//-------------------------------------------------------//
   
-  def   sortedTests( self, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
-    all_tests = self.tests
-    
+  def   sortedTests( self, all_tests, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
     if run_tests is None:
       tests  = all_tests.copy()
       
@@ -444,13 +440,11 @@ class TestsSuiteMaker(object):
   
   #//-------------------------------------------------------//
   
-  def   suite( self, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
+  def   suite( self, sorted_tests, suite_class = TestCaseSuite ):
     
-    tests = self.sortedTests( run_tests, add_tests, skip_tests, start_from_test )
-    
-    main_suite = unittest.TestSuite()
-    for test_class, methods in tests:
-      suite = TestCaseSuite()
+    main_suite = suite_class()
+    for test_class, methods in sorted_tests:
+      suite = suite_class()
       for method in methods:
         suite.addTest( test_class( method.__name__ ) )
       
@@ -476,22 +470,24 @@ def  skip( test_case ):
 #//===========================================================================//
 
 def   suite( path = None, test_files_prefix = 'test', test_methods_prefix = 'test',
-           run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
+           run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
   
   global _suite_maker
   
-  _suite_maker.load( path, test_files_prefix, test_methods_prefix )
-  return _suite_maker.suite( run_tests, add_tests, skip_tests, start_from_test )
+  all_tests = _suite_maker.load( path, test_files_prefix, test_methods_prefix )
+  sorted_tests = _suite_maker.sortedTests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
+  return _suite_maker.suite( sorted_tests, suite_class )
 
 #//===========================================================================//
 
-def   suiteLocal( module_globals, test_methods_prefix = 'test',
-                  run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
+def   suiteLocal( test_methods_prefix = 'test',
+                  run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
   
   global _suite_maker
   
-  _suite_maker.loadLocals( module_globals, test_methods_prefix )
-  return _suite_maker.suite( run_tests, add_tests, skip_tests, start_from_test )
+  all_tests =_suite_maker.loadLocals( test_methods_prefix )
+  sorted_tests = _suite_maker.sortedTests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
+  return _suite_maker.suite( sorted_tests, suite_class )
 
 #//===========================================================================//
 
@@ -523,7 +519,7 @@ if __name__ == "__main__":
     def test2( self ):
       print("Foo2.test2")
   
-  runSuite( suiteLocal( globals() ) )
+  runSuite( suiteLocal() )
   
   #~ pprint.pprint( runSuite( suiteLocal( globals() ) ) )
   
