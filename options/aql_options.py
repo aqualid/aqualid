@@ -8,7 +8,7 @@ from aql_errors import InvalidOptions, InvalidOptionValueType
 
 #//===========================================================================//
 
-def   _evalValue( other, options, context ):
+def   _evalValue( other, options, context = None ):
   if isinstance( other, OptionValueProxy ):
     if other.options is not options:
       return other.value()
@@ -57,28 +57,32 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   cmp( self, other, op, context = None ):
+  def   cmp( self, other, context = None ):
     other = _evalValue( other, self.options, context )
     
     value = self.value( context )
-    return getattr(value, op )( other )
+    
+    if value == other:
+      return 0
+    elif value < other:
+      return -1
+    else:
+      return 1
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):  return self.cmp( other, '__eq__' )
-  def   __ne__( self, other ):  return self.cmp( other, '__ne__' )
-  def   __lt__( self, other ):  return self.cmp( other, '__lt__' )
-  def   __le__( self, other ):  return self.cmp( other, '__le__' )
-  def   __gt__( self, other ):  return self.cmp( other, '__gt__' )
-  def   __ge__( self, other ):  return self.cmp( other, '__ge__' )
+  def   __eq__( self, other ):  return self.cmp( other ) == 0
+  def   __ne__( self, other ):  return self.cmp( other ) != 0
+  def   __lt__( self, other ):  return self.cmp( other ) <  0
+  def   __le__( self, other ):  return self.cmp( other ) <= 0
+  def   __gt__( self, other ):  return self.cmp( other ) >  0
+  def   __ge__( self, other ):  return self.cmp( other ) >= 0
   
   #//-------------------------------------------------------//
   
   def   has( self, other, context = None ):
     other = _evalValue( other, self.options, context )
-    
     return other in self.value( context )
-
 
 #//===========================================================================//
 
@@ -114,8 +118,8 @@ class ConditionGenerator( object ):
   
 #//===========================================================================//
 
-def   _cmpValue( options, context, name, other, cmp_operator):
-  return options[ name ].value.cmp( other, cmp_operator, context )
+def   _cmpValue( options, context, name, other ):
+  return options[ name ].value.cmp( other, context )
 
 def _makeCmpCondition( cmp_operator, condition, name, other ):
   return Condition( _cmpValue, condition, name, other, cmp_operator )
@@ -129,18 +133,18 @@ class ConditionGeneratorHelper( object ):
   
   #//-------------------------------------------------------//
   
-  def   cmp( self, other, cmp_operator ):
+  def   cmp( self, other ):
     condition = _makeCmpCondition( cmp_operator, self.condition, self.name, other )
     return ConditionGenerator( self.options, condition )
   
-  def   __getitem__( self, other ):   return self.cmp( other, '__eq__' )
+  def   __getitem__( self, other ):   return self.cmp( other ) == 0
     
-  def   eq( self, other ):    return self.cmp( other, '__eq__' )
-  def   ne( self, other ):    return self.cmp( other, '__ne__' )
-  def   gt( self, other ):    return self.cmp( other, '__gt__' )
-  def   ge( self, other ):    return self.cmp( other, '__ge__' )
-  def   lt( self, other ):    return self.cmp( other, '__lt__' )
-  def   le( self, other ):    return self.cmp( other, '__le__' )
+  def   eq( self, other ):    return self.cmp( other ) == 0
+  def   ne( self, other ):    return self.cmp( other ) != 0
+  def   gt( self, other ):    return self.cmp( other ) >  0
+  def   ge( self, other ):    return self.cmp( other ) >= 0
+  def   lt( self, other ):    return self.cmp( other ) <  0
+  def   le( self, other ):    return self.cmp( other ) <= 0
   
   def   has( self, value ):
     return self.__cond_options( _has, _ValueList( value, self.option ) )

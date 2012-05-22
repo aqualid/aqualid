@@ -326,7 +326,7 @@ def   SplitListType( list_type, separators ):
       if isinstance( values, SplitList ):
         return values
       
-      return SplitList( vaues )
+      return SplitList( values )
     
     #//-------------------------------------------------------//
     

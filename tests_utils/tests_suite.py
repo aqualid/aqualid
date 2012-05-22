@@ -36,17 +36,17 @@ class TestCaseSuite(unittest.TestSuite):
   
   #//-------------------------------------------------------//
   
-  def run( self, result, debug = False ):
+  def run( self, result ):
     
     test_case_class = self.__getTestCaseClass()
     
     if test_case_class is not None:
-      print(">>>>>>>> Run test suite: %s.%s" % (test_case_class.__module__, test_case_class.__name__) )
+      print( ">>>>>>>> Run test suite: %s.%s" % (test_case_class.__module__, test_case_class.__name__) )
     
     try:
       self.__setUpTestCaseClass( test_case_class )
       
-      super(TestCaseSuite, self).run( result, debug )
+      super(TestCaseSuite, self).run( result )
       
       self.__tearDownTestCaseClass( test_case_class )
     finally:
@@ -57,7 +57,12 @@ class TestCaseSuite(unittest.TestSuite):
 
 class TestCaseBase(unittest.TestCase):
   
-  def __init__(self, methodName = 'runTest', keep_going = False ):
+  def __init__(self, methodName = 'runTest', keep_going = NotImplemented ):
+    
+    if keep_going is NotImplemented:
+      from tests_options import tests_options
+      keep_going = tests_options.keep_going
+    
     self.keep_going = keep_going
     super( TestCaseBase, self).__init__( methodName )
   
@@ -138,14 +143,14 @@ def   _isSubSequence( sub_seq, seq ):
 
 #//===========================================================================//
 
-def  _findTestModuleFiles( path, test_files_prefix ):
+def  _findTestModuleFiles( path, test_modules_prefix ):
   
   test_case_modules = []
   
   for root, dirs, files in os.walk( path ):
     for file_name in files:
       file_name = file_name.lower()
-      if file_name.startswith( test_files_prefix ) and file_name.endswith('.py'):
+      if file_name.startswith( test_modules_prefix ) and file_name.endswith('.py'):
         test_case_modules.append( os.path.join(root, file_name))
     dirs[:] = filter( lambda d: not d.startswith('.') or d.startswith('__'), dirs )
   
@@ -166,14 +171,14 @@ def   _loadTestModule( module_file ):
 
 #//===========================================================================//
 
-def   _loadTestModules( path, test_files_prefix ):
+def   _loadTestModules( path, test_modules_prefix ):
   
   test_modules = []
   module_files = []
   
   for path in _toSequence( path ):
     if os.path.isdir( path ):
-      module_files += _findTestModuleFiles( path, test_files_prefix )
+      module_files += _findTestModuleFiles( path, test_modules_prefix )
     else:
       module_files.append( path )
   
@@ -205,8 +210,8 @@ def   _getTestCaseClasses( test_modules ):
 
 #//===========================================================================//
 
-def   _loadTestCaseClasses( path, test_files_prefix ):
-  return _getTestCaseClasses( _loadTestModules( path, test_files_prefix ) )
+def   _loadTestCaseClasses( path, test_modules_prefix ):
+  return _getTestCaseClasses( _loadTestModules( path, test_modules_prefix ) )
 
 #//===========================================================================//
 
@@ -407,8 +412,8 @@ class TestsSuiteMaker(object):
   
   #//-------------------------------------------------------//
   
-  def   load( self, path = None, test_files_prefix = 'test', test_methods_prefix = 'test' ):
-    test_classes = _loadTestCaseClasses( path, test_files_prefix )
+  def   load( self, path = None, test_modules_prefix = 'test', test_methods_prefix = 'test' ):
+    test_classes = _loadTestCaseClasses( path, test_modules_prefix )
     
     return Tests( test_classes )
   
@@ -469,18 +474,18 @@ def  skip( test_case ):
 
 #//===========================================================================//
 
-def   suite( path = None, test_files_prefix = 'test', test_methods_prefix = 'test',
-           run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
+def   testsSuite( path = None, test_modules_prefix = 'test_', test_methods_prefix = 'test',
+             run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
   
   global _suite_maker
   
-  all_tests = _suite_maker.load( path, test_files_prefix, test_methods_prefix )
+  all_tests = _suite_maker.load( path, test_modules_prefix, test_methods_prefix )
   sorted_tests = _suite_maker.sortedTests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
   return _suite_maker.suite( sorted_tests, suite_class )
 
 #//===========================================================================//
 
-def   suiteLocal( test_methods_prefix = 'test',
+def   localTestsSuite( test_methods_prefix = 'test',
                   run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
   
   global _suite_maker
@@ -496,6 +501,26 @@ def   runSuite( suite ):
 
 #//===========================================================================//
 
+def   runTests():
+  from tests_options import tests_options as options
+  
+  suite = testsSuite( options.tests_dir, options.test_modules_prefix, options.test_methods_prefix,
+                      options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests )
+  
+  runSuite( suite )
+
+#//===========================================================================//
+
+def   runLocalTests():
+  from tests_options import tests_options as options
+  
+  suite = localTestsSuite( options.test_methods_prefix,
+                           options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests )
+  
+  runSuite( suite )
+
+#//===========================================================================//
+
 if __name__ == "__main__":
   
   #@skip
@@ -507,7 +532,7 @@ if __name__ == "__main__":
     
     #@skip
     def test2( self ):
-      print("Foo.test2")
+      raise NotImplementedError()
   
   class Foo2(TestCaseBase) :
     
@@ -519,7 +544,7 @@ if __name__ == "__main__":
     def test2( self ):
       print("Foo2.test2")
   
-  runSuite( suiteLocal() )
+  runSuite( localTestsSuite() )
   
   #~ pprint.pprint( runSuite( suiteLocal( globals() ) ) )
   
