@@ -1,6 +1,4 @@
-﻿import sys
-import os.path
-import io
+﻿import os.path
 import optparse
 
 __all__ = ( 'tests_options' )
@@ -16,6 +14,8 @@ class TestsOptions( object ):
     self.__parseArguments( args )
     self.__parseTests( opt.tests )
     
+    self.test_methods_prefix = opt.test_methods_prefix
+    self.test_modules_prefix = opt.test_modules_prefix
     self.verbose = opt.verbose
     self.keep_going = opt.keep_going
     self.reset = opt.reset
@@ -117,7 +117,11 @@ class TestsOptions( object ):
 
 #//===========================================================================//
 
-tests_options = TestsOptions()
+def   getOptions( tests_options = [] ):
+  if not tests_options:
+    tests_options.append( TestsOptions() )
+  
+  return tests_options[0]
 
 #//===========================================================================//
 
