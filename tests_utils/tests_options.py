@@ -1,7 +1,7 @@
 ﻿import os.path
 import optparse
 
-__all__ = ( 'tests_options' )
+__all__ = ( 'getOptions', )
 
 #//===========================================================================//
 
@@ -42,8 +42,8 @@ class TestsOptions( object ):
     parser.add_option("-x", "--tests", dest = "tests",
                       help = "Comma separated list of tests which should be executed.", metavar = "TESTS")
     
-    parser.add_option("-q", "--quiet", action="store_false", dest="verbose",
-                      help = "Quiet mode.", default = True )
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
+                      help = "Verbose mode.", default = False )
     
     parser.add_option("-k", "--keep-going", action="store_true", dest="keep_going",
                       help = "Keep going even if any test case failed.", default = False )
@@ -117,17 +117,17 @@ class TestsOptions( object ):
 
 #//===========================================================================//
 
-def   getOptions( tests_options = [] ):
-  if not tests_options:
-    tests_options.append( TestsOptions() )
+def   getOptions( _tests_options = [] ):
+  if not _tests_options:
+    _tests_options.append( TestsOptions() )
   
-  return tests_options[0]
+  return _tests_options[0]
 
 #//===========================================================================//
 
 if __name__ == "__main__":
   import pprint
   
-  pprint.pprint( TestsOptions().__dict__ )
+  pprint.pprint( getOptions().__dict__ )
   
 

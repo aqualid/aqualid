@@ -4,7 +4,7 @@ import unittest
 
 from tests_case import TestCaseSuite
 
-__all__ = ('testsSuite', 'localTestsSuite', 'skip', 'runSuite', 'runTests', 'runLocalTests')
+__all__ = ('testsSuite', 'localTestsSuite', 'skip', 'runSuite', 'runTests', 'runLocalTests' )
 
 #//===========================================================================//
 
@@ -417,7 +417,7 @@ def   runTests( suite_class = TestCaseSuite ):
 
 def   runLocalTests( suite_class = TestCaseSuite ):
   from tests_options import getOptions
-  options = getOptions()
+  options = tests_options.getOptions()
   
   suite = localTestsSuite( options.test_methods_prefix,
                            options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class )

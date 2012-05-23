@@ -2,7 +2,7 @@
 import os.path
 import unittest
 
-__all__ = ('TestCaseBase', 'suite', 'suiteLocal', 'skip', 'runSuite' )
+__all__ = ('TestCaseSuite', 'TestCaseBase')
 
 #//===========================================================================//
 
