@@ -40,18 +40,11 @@ class TestCaseSuite(unittest.TestSuite):
     
     test_case_class = self.__getTestCaseClass()
     
-    if test_case_class is not None:
-      print( ">>>>>>>> Run test suite: %s.%s" % (test_case_class.__module__, test_case_class.__name__) )
+    self.__setUpTestCaseClass( test_case_class )
     
-    try:
-      self.__setUpTestCaseClass( test_case_class )
-      
-      super(TestCaseSuite, self).run( result )
-      
-      self.__tearDownTestCaseClass( test_case_class )
-    finally:
-      if test_case_class is not None:
-        print("<<<<<<<< Finished test suite: %s.%s" % (test_case_class.__module__, test_case_class.__name__) )
+    super(TestCaseSuite, self).run( result )
+    
+    self.__tearDownTestCaseClass( test_case_class )
 
 #//===========================================================================//
 
@@ -94,12 +87,8 @@ class TestCaseBase(unittest.TestCase):
     if not (self.keep_going or self.result.wasSuccessful()):
       self.result.stop()
     
-    print(">> Finished TestCase: %s" % self.id() )
-    
   #//-------------------------------------------------------//
   
   def   setUp(self):
     if not (self.keep_going or self.result.wasSuccessful()):
       self.result.stop()
-    
-    print(">> Run TestCase: %s" % self.id() )
