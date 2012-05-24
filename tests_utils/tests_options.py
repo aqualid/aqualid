@@ -14,6 +14,8 @@ class TestsOptions( object ):
     self.__parseArguments( args )
     self.__parseTests( opt.tests )
     
+    self.__opt = opt
+    
     self.test_methods_prefix = opt.test_methods_prefix
     self.test_modules_prefix = opt.test_modules_prefix
     self.verbose = opt.verbose
@@ -26,7 +28,7 @@ class TestsOptions( object ):
     parser = optparse.OptionParser("usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]")
     
     parser.add_option("-d", "--dir", dest = "tests_dir",
-                      help = "Tests directory", metavar = "DIR PATH", default = '.' )
+                      help = "Tests directory", metavar = "DIR PATH" )
     
     parser.add_option("-p", "--prefix", dest = "test_modules_prefix",
                       help = "File name prefix of test modules", metavar = "FILE PATH PREFIX",
@@ -55,7 +57,15 @@ class TestsOptions( object ):
     
     return (opt, args)
 
-  #//===========================================================================//
+  #//=======================================================//
+  
+  def   __getOpt( self, opt, name, default_value ):
+    value = getattr( opt, name )
+    if value is None:
+      
+    
+  
+  #//=======================================================//
 
   def   __parseArguments( self, args ):
     for arg in args:
@@ -66,7 +76,7 @@ class TestsOptions( object ):
       
       setattr( self, name.strip(), value.strip() )
   
-  #//===========================================================================//
+  #//=======================================================//
   
   def  __parseTests( self, tests ):
     
@@ -101,7 +111,7 @@ class TestsOptions( object ):
     self.skip_tests = skip_tests
     self.start_from_tests = start_from_tests
 
-  #//===========================================================================//
+  #//=======================================================//
 
   def   __parseConfig( self, config ):
     if config is not None:
@@ -114,6 +124,13 @@ class TestsOptions( object ):
       
       for key,value in settings:
         setattr( self, key, value )
+  
+  #//=======================================================//
+  
+  def   setDefault( self, name, value ):
+    
+  #//=======================================================//
+  
 
 #//===========================================================================//
 

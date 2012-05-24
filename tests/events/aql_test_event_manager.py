@@ -4,7 +4,8 @@ import time
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
-from aql_tests import testcase, skip, runTests
+from aql_tests import skip, AqlTestCase, runLocalTests
+
 from aql_utils import getFunctionName, printStacks
 from aql_event_manager import EventManager
 from aql_event_handler import EventHandler
@@ -62,33 +63,33 @@ def   _testDisabledEvent( test, event_manager, event_handler, method, *args, **k
 
 #//===========================================================================//
 
-@testcase
-def test_event_manager(self):
-  
-  em = EventManager()
-  eh = _TestEventHandler()
-  
-  em.addHandlers( eh, True )
-  
-  _testEvent( self, em, eh, 'eventOutdatedNode',       None )
-  _testEvent( self, em, eh, 'eventDataFileIsNotSync',  None )
-  _testEvent( self, em, eh, 'eventDepValueIsCyclic',   None )
-  _testEvent( self, em, eh, 'eventUnknownValue',       None )
-  
-  em.enableEvents( 'eventUnknownValue', False )
-  _testDisabledEvent( self, em, eh, 'eventUnknownValue',  None )
-  
-  em.enableWarning( False )
-  _testDisabledEvent( self, em, eh, 'eventDepValueIsCyclic',  None )
-  
-  em.enableAll( False )
-  _testDisabledEvent( self, em, eh, 'eventActualNode', None )
-  
-  em.enableAll( True )
-  _testEvent( self, em, eh, 'eventActualNode', None )
+class TestEventManager( AqlTestCase ):
+  def test_event_manager(self):
+    
+    em = EventManager()
+    eh = _TestEventHandler()
+    
+    em.addHandlers( eh, True )
+    
+    _testEvent( self, em, eh, 'eventOutdatedNode',       None )
+    _testEvent( self, em, eh, 'eventDataFileIsNotSync',  None )
+    _testEvent( self, em, eh, 'eventDepValueIsCyclic',   None )
+    _testEvent( self, em, eh, 'eventUnknownValue',       None )
+    
+    em.enableEvents( 'eventUnknownValue', False )
+    _testDisabledEvent( self, em, eh, 'eventUnknownValue',  None )
+    
+    em.enableWarning( False )
+    _testDisabledEvent( self, em, eh, 'eventDepValueIsCyclic',  None )
+    
+    em.enableAll( False )
+    _testDisabledEvent( self, em, eh, 'eventActualNode', None )
+    
+    em.enableAll( True )
+    _testEvent( self, em, eh, 'eventActualNode', None )
   
 
 #//===========================================================================//
 
 if __name__ == "__main__":
-  runTests()
+  runLocalTests()
