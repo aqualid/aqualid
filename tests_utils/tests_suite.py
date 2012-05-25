@@ -290,7 +290,17 @@ class Tests(dict):
       index += 1
     
     return tests
-
+  
+  #//-------------------------------------------------------//
+  
+  def   list( self ):
+    test_names = []
+    for test_class, methods in self.sorted():
+      method_names = map( lambda m: m.__name__, methods )
+      test_names.append( ( "%s.%s" % (test_class.__module__ , test_class.__name__), method_names) )
+    
+    return test_names
+  
 #//===========================================================================//
 
 class TestsSuiteMaker(object):
@@ -321,7 +331,7 @@ class TestsSuiteMaker(object):
   
   #//-------------------------------------------------------//
   
-  def   sortedTests( self, all_tests, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
+  def   tests( self, all_tests, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
     if run_tests is None:
       tests  = all_tests.copy()
       
@@ -343,14 +353,14 @@ class TestsSuiteMaker(object):
     if skip_tests:
       tests -= tests.getTestsByNames( skip_tests )
     
-    return tests.sorted()
+    return tests
   
   #//-------------------------------------------------------//
   
-  def   suite( self, sorted_tests, suite_class = TestCaseSuite ):
+  def   suite( self, tests, suite_class = TestCaseSuite ):
     
     main_suite = suite_class()
-    for test_class, methods in sorted_tests:
+    for test_class, methods in tests.sorted():
       suite = suite_class()
       for method in methods:
         suite.addTest( test_class( method.__name__ ) )
@@ -358,7 +368,6 @@ class TestsSuiteMaker(object):
       main_suite.addTest( suite )
     
     return main_suite
-
 
 #//===========================================================================//
 
@@ -377,25 +386,41 @@ def  skip( test_case ):
 
 #//===========================================================================//
 
+def   _printTestsAndExit( tests ):
+  print("\n  Tests:\n==================")
+  for test_name, methods in tests.list():
+    print( test_name + ":\n\t\t" + "\n\t\t".join( methods ) + '\n')
+  exit()
+
+#//===========================================================================//
+
 def   testsSuite( path = None, test_modules_prefix = 'test_', test_methods_prefix = 'test',
-             run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
+             run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False):
   
   global _suite_maker
   
   all_tests = _suite_maker.load( path, test_modules_prefix, test_methods_prefix )
-  sorted_tests = _suite_maker.sortedTests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
-  return _suite_maker.suite( sorted_tests, suite_class )
+  tests = _suite_maker.tests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
+  
+  if list_tests:
+    _printTestsAndExit(tests)
+  
+  return _suite_maker.suite( tests, suite_class )
 
 #//===========================================================================//
 
 def   localTestsSuite( test_methods_prefix = 'test',
-                  run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite ):
+                  run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False ):
   
   global _suite_maker
   
   all_tests =_suite_maker.loadLocals( test_methods_prefix )
-  sorted_tests = _suite_maker.sortedTests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
-  return _suite_maker.suite( sorted_tests, suite_class )
+  tests = _suite_maker.tests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
+  
+  if list_tests:
+    _printTestsAndExit( tests )
+  
+  return _suite_maker.suite( tests, suite_class )
 
 #//===========================================================================//
 
@@ -405,22 +430,22 @@ def   runSuite( suite ):
 #//===========================================================================//
 
 def   runTests( suite_class = TestCaseSuite ):
-  from tests_options import getOptions
-  options = getOptions()
+  from tests_options import TestsOptions
+  options = TestsOptions()
   
   suite = testsSuite( options.tests_dir, options.test_modules_prefix, options.test_methods_prefix,
-                      options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class )
+                      options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests )
   
   runSuite( suite )
 
 #//===========================================================================//
 
 def   runLocalTests( suite_class = TestCaseSuite ):
-  from tests_options import getOptions
-  options = getOptions()
+  from tests_options import TestsOptions
+  options = TestsOptions()
   
   suite = localTestsSuite( options.test_methods_prefix,
-                           options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class )
+                           options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests )
   
   runSuite( suite )
 

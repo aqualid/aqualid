@@ -7,15 +7,14 @@ import unittest
 _search_paths = [ '.', 'tests_utils', 'utils', 'events', 'values', 'nodes', 'options' ]
 sys.path[0:0] = map( lambda p: os.path.normpath( os.path.join( os.path.dirname( __file__ ), '..', p) ), _search_paths )
 
-from tests_utils import TestCaseBase, skip, runTests, runLocalTests
+from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
 from aql_value import NoContent
 
 #//===========================================================================//
 
 class AqlTestCase( TestCaseBase ):
   
-  @skip
-  def testSaveLoad( self, value ):
+  def _testSaveLoad( self, value ):
     data = pickle.dumps( ( value, ), protocol = pickle.HIGHEST_PROTOCOL )
     
     loaded_values = pickle.loads( data )
@@ -30,4 +29,8 @@ class AqlTestCase( TestCaseBase ):
 #//===========================================================================//
 
 if __name__ == '__main__':
+  
+  options = TestsOptions()
+  options.setDefault( 'test_modules_prefix', 'aql_test_' )
+  
   runTests()

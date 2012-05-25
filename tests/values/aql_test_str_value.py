@@ -39,8 +39,8 @@ class TestStrValue( AqlTestCase ):
     value1 = Value('results_link', 'http://buildsrv.com/results.out')
     value2 = Value('results_link', IgnoreCaseStringContent(value1.content))
     
-    self.testSaveLoad( value1 )
-    self.testSaveLoad( value2 )
+    self._testSaveLoad( value1 )
+    self._testSaveLoad( value2 )
 
   #//===========================================================================//
 
@@ -49,8 +49,8 @@ class TestStrValue( AqlTestCase ):
     value1 = Value('results_link')
     value2 = Value( value1 )
     
-    self.testSaveLoad( value1 )
-    self.testSaveLoad( value2 )
+    self._testSaveLoad( value1 )
+    self._testSaveLoad( value2 )
 
 #//=======================================================//
 

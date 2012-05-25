@@ -48,7 +48,7 @@ class TestFileValue( AqlTestCase ):
       
       temp_file_value = FileValue( temp_file_name )
     
-    self.testSaveLoad( temp_file_value )
+    self._testSaveLoad( temp_file_value )
     
     file_value = FileValue( temp_file_name )
     self.assertEqual( temp_file_value.name, file_value.name )
@@ -94,7 +94,7 @@ class TestFileValue( AqlTestCase ):
       
       temp_file_value = FileValue( temp_file_name, FileContentTimeStamp )
       
-    self.testSaveLoad( temp_file_value )
+    self._testSaveLoad( temp_file_value )
     
     file_value = FileValue( temp_file_name, FileContentTimeStamp )
     self.assertEqual( temp_file_value.name, file_value.name )
@@ -108,8 +108,8 @@ class TestFileValue( AqlTestCase ):
     value1 = FileValue('__non_exist_file__')
     value2 = FileValue( value1, FileContentTimeStamp )
     
-    self.testSaveLoad( value1 )
-    self.testSaveLoad( value2 )
+    self._testSaveLoad( value1 )
+    self._testSaveLoad( value2 )
 
 #//=======================================================//
 

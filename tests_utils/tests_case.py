@@ -53,8 +53,8 @@ class TestCaseBase(unittest.TestCase):
   def __init__(self, methodName = 'runTest', keep_going = NotImplemented ):
     
     if keep_going is NotImplemented:
-      from tests_options import getOptions
-      keep_going = getOptions().keep_going
+      from tests_options import TestsOptions
+      keep_going = TestsOptions().keep_going
     
     self.keep_going = keep_going
     super( TestCaseBase, self).__init__( methodName )

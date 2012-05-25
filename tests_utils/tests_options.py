@@ -1,27 +1,39 @@
 ﻿import os.path
 import optparse
 
-__all__ = ( 'getOptions', )
+__all__ = ( 'TestsOptions', )
 
 #//===========================================================================//
 
 class TestsOptions( object ):
   
-  def   __init__( self ):
+  _instance = None
+  
+  def   __new__( cls ):
+    
+    if TestsOptions._instance is not None:
+      return TestsOptions._instance
+    
+    self = super(TestsOptions,cls).__new__(cls)
+    TestsOptions._instance = self
+    
     opt, args = self.__getOptArgs()
+    
+    self.__opt = opt
     
     self.__parseConfig( opt.config )
     self.__parseArguments( args )
     self.__parseTests( opt.tests )
     
-    self.__opt = opt
+    self.setDefault( 'tests_dir',           '.'     )
+    self.setDefault( 'test_modules_prefix', 'test_' )
+    self.setDefault( 'test_methods_prefix', 'test'  )
+    self.setDefault( 'verbose',             False   )
+    self.setDefault( 'keep_going',          False   )
+    self.setDefault( 'reset',               False   )
+    self.setDefault( 'list_tests',          False   )
     
-    self.test_methods_prefix = opt.test_methods_prefix
-    self.test_modules_prefix = opt.test_modules_prefix
-    self.verbose = opt.verbose
-    self.keep_going = opt.keep_going
-    self.reset = opt.reset
-    self.tests_dir = opt.tests_dir
+    return self
     
   @staticmethod
   def   __getOptArgs():
@@ -31,12 +43,10 @@ class TestsOptions( object ):
                       help = "Tests directory", metavar = "DIR PATH" )
     
     parser.add_option("-p", "--prefix", dest = "test_modules_prefix",
-                      help = "File name prefix of test modules", metavar = "FILE PATH PREFIX",
-                      default = 'test_')
+                      help = "File name prefix of test modules", metavar = "FILE PATH PREFIX" )
     
     parser.add_option("-m", "--method-prefix", dest = "test_methods_prefix",
-                      help = "Test methods prefix", metavar = "TEST METHOD PREFIX",
-                      default = 'test')
+                      help = "Test methods prefix", metavar = "TEST METHOD PREFIX" )
     
     parser.add_option("-c", "--config", dest = "config",
                       help = "Path to config file.", metavar = "FILE PATH")
@@ -44,27 +54,21 @@ class TestsOptions( object ):
     parser.add_option("-x", "--tests", dest = "tests",
                       help = "Comma separated list of tests which should be executed.", metavar = "TESTS")
     
-    parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
-                      help = "Verbose mode.", default = False )
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help = "Verbose mode." )
     
     parser.add_option("-k", "--keep-going", action="store_true", dest="keep_going",
-                      help = "Keep going even if any test case failed.", default = False )
+                      help = "Keep going even if any test case failed." )
     
-    parser.add_option("-r", "--reset", action="store_true", dest="reset",
-                      help = "Reset configuration", default = False )
+    parser.add_option("-r", "--reset", action="store_true", dest = "reset",
+                      help = "Reset configuration" )
+    
+    parser.add_option("-l", "--list", action="store_true", dest="list_tests",
+                      help = "List test cases and exit." )
     
     opt, args = parser.parse_args()
     
     return (opt, args)
 
-  #//=======================================================//
-  
-  def   __getOpt( self, opt, name, default_value ):
-    value = getattr( opt, name )
-    if value is None:
-      
-    
-  
   #//=======================================================//
 
   def   __parseArguments( self, args ):
@@ -127,24 +131,16 @@ class TestsOptions( object ):
   
   #//=======================================================//
   
-  def   setDefault( self, name, value ):
-    
-  #//=======================================================//
-  
-
-#//===========================================================================//
-
-def   getOptions( _tests_options = [] ):
-  if not _tests_options:
-    _tests_options.append( TestsOptions() )
-  
-  return _tests_options[0]
+  def   setDefault( self, name, default_value ):
+    value = getattr( self.__opt, name, default_value )
+    if value is None:
+      value = default_value
+    setattr( self, name, value )
 
 #//===========================================================================//
 
 if __name__ == "__main__":
   import pprint
-  
-  pprint.pprint( getOptions().__dict__ )
+  pprint.pprint( TestsOptions().__dict__ )
   
 
