@@ -433,7 +433,7 @@ def   runTests( suite_class = TestCaseSuite ):
   from tests_options import TestsOptions
   options = TestsOptions()
   
-  suite = testsSuite( options.tests_dir, options.test_modules_prefix, options.test_methods_prefix,
+  suite = testsSuite( options.tests_dirs, options.test_modules_prefix, options.test_methods_prefix,
                       options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests )
   
   runSuite( suite )

@@ -17,9 +17,12 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 #//===========================================================================//
 
 class TestOptions( AqlTestCase ):
-  def test_options(self):
+  
+  @staticmethod
+  def   setUpClass():
     event_manager.setHandlers( EventHandler() )
-    
+  
+  def test_options(self):
     options = Options()
     
     opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )

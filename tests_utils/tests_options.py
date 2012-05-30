@@ -3,13 +3,30 @@ import optparse
 
 __all__ = ( 'TestsOptions', )
 
+def   _toSequence( value ):
+  
+  try:
+    if isinstance( value, str ):
+      return value.split(',')
+    else:
+      iter( value )
+      return value
+  except TypeError:
+    pass
+  
+  if value is None:
+    return tuple()
+  
+  return ( value, )
+
+
 #//===========================================================================//
 
 class TestsOptions( object ):
   
   _instance = None
   
-  def   __new__( cls ):
+  def   __new__( cls, configs = None, **kw):
     
     if TestsOptions._instance is not None:
       return TestsOptions._instance
@@ -21,11 +38,16 @@ class TestsOptions( object ):
     
     self.__opt = opt
     
-    self.__parseConfig( opt.config )
+    for name,value in kw.items():
+      setattr( self, name, value )
+    
+    self.appyConfig( configs )
+    
+    self.appyConfig( opt.configs )
     self.__parseArguments( args )
     self.__parseTests( opt.tests )
+    self.__parseTestDirs('.')
     
-    self.setDefault( 'tests_dir',           '.'     )
     self.setDefault( 'test_modules_prefix', 'test_' )
     self.setDefault( 'test_methods_prefix', 'test'  )
     self.setDefault( 'verbose',             False   )
@@ -39,8 +61,8 @@ class TestsOptions( object ):
   def   __getOptArgs():
     parser = optparse.OptionParser("usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]")
     
-    parser.add_option("-d", "--dir", dest = "tests_dir",
-                      help = "Tests directory", metavar = "DIR PATH" )
+    parser.add_option("-d", "--dir", dest = "tests_dirs",
+                      help = "Tests directory", metavar = "DIR PATH,..." )
     
     parser.add_option("-p", "--prefix", dest = "test_modules_prefix",
                       help = "File name prefix of test modules", metavar = "FILE PATH PREFIX" )
@@ -48,11 +70,11 @@ class TestsOptions( object ):
     parser.add_option("-m", "--method-prefix", dest = "test_methods_prefix",
                       help = "Test methods prefix", metavar = "TEST METHOD PREFIX" )
     
-    parser.add_option("-c", "--config", dest = "config",
-                      help = "Path to config file.", metavar = "FILE PATH")
+    parser.add_option("-c", "--config", dest = "configs",
+                      help = "Path to config file(s).", metavar = "FILE PATH,...")
     
     parser.add_option("-x", "--tests", dest = "tests",
-                      help = "Comma separated list of tests which should be executed.", metavar = "TESTS")
+                      help = "Comma separated list of tests which should be executed.", metavar = "[+-~]TEST,...")
     
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help = "Verbose mode." )
     
@@ -84,10 +106,7 @@ class TestsOptions( object ):
   
   def  __parseTests( self, tests ):
     
-    if tests is not None:
-      tests = tests.split(',')
-    else:
-      tests = []
+    tests = _toSequence( tests )
     
     run_tests = None
     add_tests = set()
@@ -116,9 +135,18 @@ class TestsOptions( object ):
     self.start_from_tests = start_from_tests
 
   #//=======================================================//
+  
+  def __parseTestDirs( self, default_tests_dirs ):
+    if self.__opt.tests_dirs is None:
+      self.tests_dirs = default_tests_dirs
+    else:
+      self.tests_dirs = _toSequence( self.__opt.tests_dirs )
+  
+  #//=======================================================//
 
-  def   __parseConfig( self, config ):
-    if config is not None:
+  def   appyConfig( self, config ):
+    
+    for config in _toSequence( config ):
       if not os.path.isfile(config):
         print( "Error: Config file doesn't exist." )
         exit()
@@ -132,10 +160,12 @@ class TestsOptions( object ):
   #//=======================================================//
   
   def   setDefault( self, name, default_value ):
-    value = getattr( self.__opt, name, default_value )
+    value = getattr( self.__opt, name, None )
     if value is None:
-      value = default_value
-    setattr( self, name, value )
+      setattr( self, name, default_value )
+    else:
+      if not hasattr( self, name ):
+        setattr( self, name, value )
 
 #//===========================================================================//
 

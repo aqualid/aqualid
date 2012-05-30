@@ -41,19 +41,19 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   __iadd__( self, other ):
-    self.options.appendValue( self.option_value, other, AddValue )
+    self.options._appendValue( self.option_value, other, AddValue )
     return self
   
   #//-------------------------------------------------------//
   
   def   __isub__( self, other ):
-    self.options.appendValue( self.option_value, other, SubValue )
+    self.options._appendValue( self.option_value, other, SubValue )
     return self
   
   #//-------------------------------------------------------//
   
   def   set( self, value, operation_type = SetValue, condition = None ):
-    self.options.appendValue( self.option_value, value, operation_type, condition )
+    self.options._appendValue( self.option_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
@@ -100,21 +100,7 @@ class ConditionGenerator( object ):
   #//-------------------------------------------------------//
   
   def     __setattr__(self, name, value):
-    raise NotImplementedError("Operation is not allowed.")
-    
-    #~ options = self.__dict__['__options']
-    #~ option = options.get( name )
-    
-    #~ if option is None:
-        #~ if _is_option( value ):
-            #~ _Error( "Can't add new option '%s' within condition." % (name) )
-        #~ else:
-            #~ _Error( "Unknown option: %s" % (name) )
-    
-    #~ if option is value:
-        #~ return
-    
-    #~ option.SetIf( self.__dict__['__conditional_value'], value )
+    self.__options.appendValue( name, value, SetValue, self.__condition )
   
 #//===========================================================================//
 
@@ -351,7 +337,13 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   appendValue( self, option_value, value, operation_type = None, condition = None ):
+  def   appendValue( self, name, value, operation_type = None, condition = None ):
+    option_value = getattr( self, name ).option_value
+    self._appendValue( option_value, value, operation_type, condition )
+  
+  #//-------------------------------------------------------//
+  
+  def   _appendValue( self, option_value, value, operation_type = None, condition = None ):
     value = self.__makeCondValue( value, operation_type, condition )
     self.clearCache()
     option_value.appendValue( value )
@@ -366,3 +358,8 @@ class Options (object):
         child.clearCache()
       except ReferenceError:
         pass
+  
+  #//-------------------------------------------------------//
+  
+  def   If( self ):
+    return ConditionGenerator( self )
