@@ -1,3 +1,4 @@
+import operator
 import itertools
 import weakref
 
@@ -57,32 +58,66 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   cmp( self, other, context = None ):
+  def   cmp( self, cmp_operator, other, context = None ):
     other = _evalValue( other, self.options, context )
     
     value = self.value( context )
     
-    if value == other:
-      return 0
-    elif value < other:
-      return -1
-    else:
-      return 1
+    return cmp_operator( value, other )
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):  return self.cmp( other ) == 0
-  def   __ne__( self, other ):  return self.cmp( other ) != 0
-  def   __lt__( self, other ):  return self.cmp( other ) <  0
-  def   __le__( self, other ):  return self.cmp( other ) <= 0
-  def   __gt__( self, other ):  return self.cmp( other ) >  0
-  def   __ge__( self, other ):  return self.cmp( other ) >= 0
+  def   __eq__( self, other ):  return self.cmp( operator.eq, other )
+  def   __ne__( self, other ):  return self.cmp( operator.ne, other )
+  def   __lt__( self, other ):  return self.cmp( operator.lt, other )
+  def   __le__( self, other ):  return self.cmp( operator.le, other )
+  def   __gt__( self, other ):  return self.cmp( operator.gt, other )
+  def   __ge__( self, other ):  return self.cmp( operator.ge, other )
   
   #//-------------------------------------------------------//
   
   def   has( self, other, context = None ):
     other = _evalValue( other, self.options, context )
     return other in self.value( context )
+
+#//===========================================================================//
+
+class ConditionGeneratorHelper( object ):
+  
+  def     __init__( self, name, options, condition  ):
+    self.name  = name
+    self.options  = options
+    self.condition  = condition
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __cmpValue( options, context, cmp_operator, name, other ):
+    return options[ name ].cmp( cmp_operator, other, context )
+  
+  @staticmethod
+  def __makeCmpCondition( cmp_operator, condition, name, other ):
+    return Condition( ConditionGeneratorHelper.__cmpValue, condition, cmp_operator, name, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   cmp( self, cmp_operator, other ):
+    condition = _makeCmpCondition( cmp_operator, self.condition, self.name, other )
+    return ConditionGenerator( self.options, condition )
+  
+  def   __getitem__( self, other ):   return self.cmp( operator.eq, other )
+    
+  def   eq( self, other ):    return self.cmp( operator.eq, other )
+  def   ne( self, other ):    return self.cmp( operator.ne, other )
+  def   gt( self, other ):    return self.cmp( operator.gt, other )
+  def   ge( self, other ):    return self.cmp( operator.ge, other )
+  def   lt( self, other ):    return self.cmp( operator.lt, other )
+  def   le( self, other ):    return self.cmp( operator.le, other )
+  
+  def   has( self, value ):   return self.cmp( operator.contains, other )
+  
+  def   has_any( self, values ):    return self.__cond_options( _has_any, _ValueList( values, self.option ) )
+  def   one_of( self, values ):     return self.__cond_options( _one_of, _ValueList( values, self.option ) )
 
 #//===========================================================================//
 
@@ -102,42 +137,6 @@ class ConditionGenerator( object ):
   def     __setattr__(self, name, value):
     self.__options.appendValue( name, value, SetValue, self.__condition )
   
-#//===========================================================================//
-
-def   _cmpValue( options, context, name, other ):
-  return options[ name ].value.cmp( other, context )
-
-def _makeCmpCondition( cmp_operator, condition, name, other ):
-  return Condition( _cmpValue, condition, name, other, cmp_operator )
-
-class ConditionGeneratorHelper( object ):
-  
-  def     __init__( self, name, options, condition  ):
-    self.name  = name
-    self.options  = options
-    self.condition  = condition
-  
-  #//-------------------------------------------------------//
-  
-  def   cmp( self, other ):
-    condition = _makeCmpCondition( cmp_operator, self.condition, self.name, other )
-    return ConditionGenerator( self.options, condition )
-  
-  def   __getitem__( self, other ):   return self.cmp( other ) == 0
-    
-  def   eq( self, other ):    return self.cmp( other ) == 0
-  def   ne( self, other ):    return self.cmp( other ) != 0
-  def   gt( self, other ):    return self.cmp( other ) >  0
-  def   ge( self, other ):    return self.cmp( other ) >= 0
-  def   lt( self, other ):    return self.cmp( other ) <  0
-  def   le( self, other ):    return self.cmp( other ) <= 0
-  
-  def   has( self, value ):
-    return self.__cond_options( _has, _ValueList( value, self.option ) )
-  
-  def   has_any( self, values ):    return self.__cond_options( _has_any, _ValueList( values, self.option ) )
-  def   one_of( self, values ):     return self.__cond_options( _one_of, _ValueList( values, self.option ) )
-
 #//===========================================================================//
 
 class Options (object):
