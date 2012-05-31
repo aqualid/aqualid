@@ -26,7 +26,6 @@ class TestOptions( AqlTestCase ):
     options = Options()
     
     opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
-    opt_type2 = BoolOptionType()
     
     options.warn_level = opt_type1
     options.warning_level = options.warn_level
@@ -69,6 +68,37 @@ class TestOptions( AqlTestCase ):
     over_opts.warn_level = 4
     self.assertEqual( over_opts.warn_level, 4 )
     self.assertEqual( over_opts.warning_level, 4 )
+  
+  #//-------------------------------------------------------//
+  
+  def test_options_conditions(self):
+    options = Options()
+    
+    opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+    
+    options.warn_level = opt_type1
+    options.warning_level = options.warn_level
+    
+    opt_type2 = EnumOptionType( 'debug', 'release', 'final' )
+    
+    options.optimization = opt_type2
+    options.opt = options.optimization
+    
+    options.warning_level = 0
+    options.optimization = 'release'
+    
+    options.If().optimization.eq('debug').warning_level += 1
+    
+    self.assertEqual( options.warn_level, 0 )
+    
+    options.optimization = 'debug'
+    
+    self.assertEqual( options.warn_level, 1 )
+    
+    
+    
+    
+
 
 #//===========================================================================//
 

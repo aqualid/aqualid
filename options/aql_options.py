@@ -4,7 +4,7 @@ import weakref
 
 from aql_utils import toSequence
 from aql_option_types import OptionType, ListOptionType
-from aql_option_value import OptionValue, AddValue, SubValue, SetValue, Operation, ConditionalValue
+from aql_option_value import OptionValue, AddValue, SubValue, SetValue, Operation, ConditionalValue, Condition
 from aql_errors import InvalidOptions, InvalidOptionValueType
 
 #//===========================================================================//
@@ -92,8 +92,37 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
+  def   __hasAny( seq, values ):
+    for value in toSequence( values ):
+      if value in seq:
+        return True
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __hasAll( seq, values ):
+    for value in toSequence( values ):
+      if value not in seq:
+        return False
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __oneOf( value, values ):
+    for v in values:
+      if value == v:
+        return True
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
   def   __cmpValue( options, context, cmp_operator, name, other ):
     return options[ name ].cmp( cmp_operator, other, context )
+  
+  #//-------------------------------------------------------//
   
   @staticmethod
   def __makeCmpCondition( cmp_operator, condition, name, other ):
@@ -102,22 +131,30 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other ):
-    condition = _makeCmpCondition( cmp_operator, self.condition, self.name, other )
+    condition = self.__makeCmpCondition( cmp_operator, self.condition, self.name, other )
     return ConditionGenerator( self.options, condition )
   
   def   __getitem__( self, other ):   return self.cmp( operator.eq, other )
-    
-  def   eq( self, other ):    return self.cmp( operator.eq, other )
-  def   ne( self, other ):    return self.cmp( operator.ne, other )
-  def   gt( self, other ):    return self.cmp( operator.gt, other )
-  def   ge( self, other ):    return self.cmp( operator.ge, other )
-  def   lt( self, other ):    return self.cmp( operator.lt, other )
-  def   le( self, other ):    return self.cmp( operator.le, other )
+  def   eq( self, other ):            return self.cmp( operator.eq, other )
+  def   ne( self, other ):            return self.cmp( operator.ne, other )
+  def   gt( self, other ):            return self.cmp( operator.gt, other )
+  def   ge( self, other ):            return self.cmp( operator.ge, other )
+  def   lt( self, other ):            return self.cmp( operator.lt, other )
+  def   le( self, other ):            return self.cmp( operator.le, other )
+  def   has( self, value ):           return self.cmp( operator.contains, value )
+  def   hasAny( self, values ):       return self.cmp( self.__hasAny, values )
+  def   hasAll( self, values ):       return self.cmp( self.__hasAll, values )
+  def   oneOf( self, values ):        return self.cmp( self.__oneOf, values )
   
-  def   has( self, value ):   return self.cmp( operator.contains, other )
+  #//-------------------------------------------------------//
   
-  def   has_any( self, values ):    return self.__cond_options( _has_any, _ValueList( values, self.option ) )
-  def   one_of( self, values ):     return self.__cond_options( _one_of, _ValueList( values, self.option ) )
+  def   __iadd__( self, value ):
+    return self.options._makeCondValue( value, AddValue, self.condition )
+  
+  #//-------------------------------------------------------//
+  
+  def   __isub__( self, value ):
+    return self.options._makeCondValue( value, SubValue, self.condition )
 
 #//===========================================================================//
 
@@ -135,7 +172,7 @@ class ConditionGenerator( object ):
   #//-------------------------------------------------------//
   
   def     __setattr__(self, name, value):
-    self.__options.appendValue( name, value, SetValue, self.__condition )
+    self.__dict__['__options'].appendValue( name, value, SetValue, self.__dict__['__condition'] )
   
 #//===========================================================================//
 
@@ -152,7 +189,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   __makeCondValue( self, value, operation_type = None, condition = None ):
+  def   _makeCondValue( self, value, operation_type = None, condition = None ):
     if isinstance( value, Operation ):
       return ConditionalValue( value, condition )
     
@@ -203,7 +240,7 @@ class Options (object):
       if opt_value is None:
         raise InvalidOptionValueType( value )
       
-      value = self.__makeCondValue( value, operation_type )
+      value = self._makeCondValue( value, operation_type )
     
     if from_parent:
       opt_value = opt_value.copy()
@@ -343,7 +380,7 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   _appendValue( self, option_value, value, operation_type = None, condition = None ):
-    value = self.__makeCondValue( value, operation_type, condition )
+    value = self._makeCondValue( value, operation_type, condition )
     self.clearCache()
     option_value.appendValue( value )
   
