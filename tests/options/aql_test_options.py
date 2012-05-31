@@ -95,10 +95,18 @@ class TestOptions( AqlTestCase ):
     
     self.assertEqual( options.warn_level, 1 )
     
+    options.optimization = 'release'
     
+    options.If().warning_level.ge(2).optimization = 'debug'
+    options.If().optimization.eq('release').warning_level += 2
     
+    print( options.optimization.value() )
     
-
+    self.assertEqual( options.optimization, 'debug' )
+    
+    # wl: 0, opt == debug: +1, opt == release: +2
+    # opt: release, debug, release, wl == 2: debug
+    
 
 #//===========================================================================//
 
