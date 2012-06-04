@@ -15,7 +15,7 @@ def   _ValueTypeProxy( option_type, value_type ):
     #//-------------------------------------------------------//
     
     def     __new__( cls, value = NotImplemented ):
-      if isinstance( value, _ValueTypeProxyImpl ):
+      if (cls is _ValueTypeProxyImpl) and (type(value) is cls):
         return value
       
       value = option_type._convert( value )
@@ -30,75 +30,106 @@ def   _ValueTypeProxy( option_type, value_type ):
     #//-------------------------------------------------------//
     
     if '__add__' in value_type_attr:
-      def   __add__ ( self, other ):        return self.__op( '__add__', other )
-      def   __iadd__( self, other ):        return self.__op( '__add__', other )
+      def   __add__ ( self, other ):
+        return self.__op( '__add__', other )
+      def   __iadd__( self, other ):
+        return self.__op( '__add__', other )
     
     if '__sub__' in value_type_attr:
-      def   __sub__ ( self, other ):        return self.__op( '__sub__', other )
-      def   __isub__( self, other ):        return self.__op( '__sub__', other )
+      def   __sub__ ( self, other ):
+        return self.__op( '__sub__', other )
+      def   __isub__( self, other ):
+        return self.__op( '__sub__', other )
     
     if '__mul__' in value_type_attr:
-      def   __mul__ ( self, other ):        return self.__op( '__mul__', other )
-      def   __imul__( self, other ):        return self.__op( '__mul__', other )
+      def   __mul__ ( self, other ):
+        return self.__op( '__mul__', other )
+      def   __imul__( self, other ):
+        return self.__op( '__mul__', other )
     
     if '__mod__' in value_type_attr:
-      def   __mod__ ( self, other ):        return self.__op( '__mod__', other )
-      def   __imod__( self, other ):        return self.__op( '__mod__', other )
+      def   __mod__ ( self, other ):
+        return self.__op( '__mod__', other )
+      def   __imod__( self, other ):
+        return self.__op( '__mod__', other )
     
     if '__pow__' in value_type_attr:
-      def   __pow__ ( self, other ):        return self.__op( '__pow__', other )
-      def   __ipow__( self, other ):        return self.__op( '__pow__', other )
+      def   __pow__ ( self, other ):
+        return self.__op( '__pow__', other )
+      def   __ipow__( self, other ):
+        return self.__op( '__pow__', other )
     
     if '__and__' in value_type_attr:
-      def   __and__ ( self, other ):        return self.__op( '__and__', other )
-      def   __iand__( self, other ):        return self.__op( '__and__', other )
+      def   __and__ ( self, other ):
+        return self.__op( '__and__', other )
+      def   __iand__( self, other ):
+        return self.__op( '__and__', other )
     
     if '__xor__' in value_type_attr:
-      def   __xor__ ( self, other ):        return self.__op( '__xor__', other )
-      def   __ixor__( self, other ):        return self.__op( '__xor__', other )
+      def   __xor__ ( self, other ):
+        return self.__op( '__xor__', other )
+      def   __ixor__( self, other ):
+        return self.__op( '__xor__', other )
     
     if '__or__' in value_type_attr:
-      def   __or__ ( self, other ):         return self.__op( '__or__', other )
-      def   __ior__( self, other ):         return self.__op( '__or__', other )
+      def   __or__ ( self, other ):
+        return self.__op( '__or__', other )
+      def   __ior__( self, other ):
+        return self.__op( '__or__', other )
     
     if '__truediv__' in value_type_attr:
-      def   __truediv__ ( self, other ):    return self.__op( '__truediv__', other )
-      def   __itruediv__( self, other ):    return self.__op( '__truediv__', other )
+      def   __truediv__ ( self, other ):
+        return self.__op( '__truediv__', other )
+      def   __itruediv__( self, other ):
+        return self.__op( '__truediv__', other )
     
     if '__floordiv__' in value_type_attr:
-      def   __floordiv__ ( self, other ):   return self.__op( '__floordiv__', other )
-      def   __ifloordiv__( self, other ):   return self.__op( '__floordiv__', other )
+      def   __floordiv__ ( self, other ):
+        return self.__op( '__floordiv__', other )
+      def   __ifloordiv__( self, other ):
+        return self.__op( '__floordiv__', other )
     
     if '__lshift__' in value_type_attr:
-      def   __lshift__ ( self, other ):     return self.__op( '__lshift__', other )
-      def   __ilshift__( self, other ):     return self.__op( '__lshift__', other )
+      def   __lshift__ ( self, other ):
+        return self.__op( '__lshift__', other )
+      def   __ilshift__( self, other ):
+        return self.__op( '__lshift__', other )
     
     if '__rshift__' in value_type_attr:
-      def   __rshift__ ( self, other ):     return self.__op( '__rshift__', other )
-      def   __irshift__( self, other ):     return self.__op( '__rshift__', other )
+      def   __rshift__ ( self, other ):
+        return self.__op( '__rshift__', other )
+      def   __irshift__( self, other ):
+        return self.__op( '__rshift__', other )
     
     #//-------------------------------------------------------//
     
     if '__cmp__' in value_type_attr:
-      def   __cmp__( self, other ):  return super(_ValueTypeProxyImpl,self).__cmp__( _ValueTypeProxyImpl( other ) )
+      def   __cmp__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__cmp__( _ValueTypeProxyImpl( other ) )
     
     if '__eq__' in value_type_attr:
-      def   __eq__( self, other ):  return super(_ValueTypeProxyImpl,self).__eq__( _ValueTypeProxyImpl( other ) )
+      def   __eq__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__eq__( _ValueTypeProxyImpl( other ) )
     
     if '__ne__' in value_type_attr:
-      def   __ne__( self, other ):  return super(_ValueTypeProxyImpl,self).__ne__( _ValueTypeProxyImpl( other ) )
+      def   __ne__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__ne__( _ValueTypeProxyImpl( other ) )
     
     if '__gt__' in value_type_attr:
-      def   __gt__( self, other ):  return super(_ValueTypeProxyImpl,self).__gt__( _ValueTypeProxyImpl( other ) )
+      def   __gt__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__gt__( _ValueTypeProxyImpl( other ) )
     
     if '__ge__' in value_type_attr:
-      def   __ge__( self, other ):  return super(_ValueTypeProxyImpl,self).__ge__( _ValueTypeProxyImpl( other ) )
+      def   __ge__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__ge__( _ValueTypeProxyImpl( other ) )
     
     if '__lt__' in value_type_attr:
-      def   __lt__( self, other ):  return super(_ValueTypeProxyImpl,self).__lt__( _ValueTypeProxyImpl( other ) )
+      def   __lt__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__lt__( _ValueTypeProxyImpl( other ) )
     
     if '__le__' in value_type_attr:
-      def   __le__( self, other ):  return super(_ValueTypeProxyImpl,self).__le__( _ValueTypeProxyImpl( other ) )
+      def   __le__( self, other ):
+        return super(_ValueTypeProxyImpl,self).__le__( _ValueTypeProxyImpl( other ) )
     
     def   __hash__( self ):
       return super(_ValueTypeProxyImpl,self).__hash__()
@@ -119,7 +150,7 @@ def   _ValueBoolTypeProxy( option_type ):
     #//-------------------------------------------------------//
     
     def     __new__( cls, value = NotImplemented ):
-      if isinstance( value, _ValueBoolTypeProxyImpl ):
+      if (cls is _ValueBoolTypeProxyImpl) and (type(value) is cls):
         return value
       
       value = option_type._convert( value )
@@ -134,16 +165,22 @@ def   _ValueBoolTypeProxy( option_type ):
     #//-------------------------------------------------------//
     
     if '__and__' in value_type_attr:
-      def   __and__ ( self, other ):        return self.__op( '__and__', other )
-      def   __iand__( self, other ):        return self.__op( '__and__', other )
+      def   __and__ ( self, other ):
+        return self.__op( '__and__', other )
+      def   __iand__( self, other ):
+        return self.__op( '__and__', other )
     
     if '__xor__' in value_type_attr:
-      def   __xor__ ( self, other ):        return self.__op( '__xor__', other )
-      def   __ixor__( self, other ):        return self.__op( '__xor__', other )
+      def   __xor__ ( self, other ):
+        return self.__op( '__xor__', other )
+      def   __ixor__( self, other ):
+        return self.__op( '__xor__', other )
     
     if '__or__' in value_type_attr:
-      def   __or__ ( self, other ):         return self.__op( '__or__', other )
-      def   __ior__( self, other ):         return self.__op( '__or__', other )
+      def   __or__ ( self, other ):
+        return self.__op( '__or__', other )
+      def   __ior__( self, other ):
+        return self.__op( '__or__', other )
     
     #//-------------------------------------------------------//
     
@@ -169,25 +206,32 @@ def   _ValueBoolTypeProxy( option_type ):
     #//-------------------------------------------------------//
     
     if '__cmp__' in value_type_attr:
-      def   __cmp__( self, other ): return super(_ValueBoolTypeProxyImpl,self).__cmp__( _ValueBoolTypeProxyImpl( other ) )
+      def   __cmp__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__cmp__( _ValueBoolTypeProxyImpl( other ) )
     
     if '__eq__' in value_type_attr:
-      def   __eq__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__eq__( _ValueBoolTypeProxyImpl( other ) )
+      def   __eq__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__eq__( _ValueBoolTypeProxyImpl( other ) )
     
     if '__ne__' in value_type_attr:
-      def   __ne__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__ne__( _ValueBoolTypeProxyImpl( other ) )
+      def   __ne__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__ne__( _ValueBoolTypeProxyImpl( other ) )
     
     if '__gt__' in value_type_attr:
-      def   __gt__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__gt__( _ValueBoolTypeProxyImpl( other ) )
+      def   __gt__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__gt__( _ValueBoolTypeProxyImpl( other ) )
     
     if '__ge__' in value_type_attr:
-      def   __ge__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__ge__( _ValueBoolTypeProxyImpl( other ) )
+      def   __ge__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__ge__( _ValueBoolTypeProxyImpl( other ) )
     
     if '__lt__' in value_type_attr:
-      def   __lt__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__lt__( _ValueBoolTypeProxyImpl( other ) )
+      def   __lt__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__lt__( _ValueBoolTypeProxyImpl( other ) )
     
     if '__le__' in value_type_attr:
-      def   __le__( self, other ):  return super(_ValueBoolTypeProxyImpl,self).__le__( _ValueBoolTypeProxyImpl( other ) )
+      def   __le__( self, other ):
+        return super(_ValueBoolTypeProxyImpl,self).__le__( _ValueBoolTypeProxyImpl( other ) )
     
     def   __hash__( self ):
       return super(_ValueBoolTypeProxyImpl,self).__hash__()
@@ -242,6 +286,7 @@ class   OptionType (object):
     """
     Converts a value to options' value
     """
+    
     try:
       if value is NotImplemented:
         return self.value_type()
@@ -379,7 +424,8 @@ class   EnumOptionType (OptionType):
     setDefaultValue = self.__values.setdefault
     value_type = self.value_type
     
-    for value in values:
+    for value in toSequence(values):
+      
       it = iter( toSequence( value ) )
       
       value = value_type( next( it ) )
@@ -395,7 +441,7 @@ class   EnumOptionType (OptionType):
             raise EnumOptionValueIsAlreadySet( self, alias, value )
           else:
             raise EnumOptionAliasIsAlreadySet( self, alias, v, value )
-    
+  
   #//-------------------------------------------------------//
   
   def   _convert( self, value = NotImplemented ):

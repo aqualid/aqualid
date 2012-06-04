@@ -67,19 +67,29 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):  return self.cmp( operator.eq, other )
-  def   __ne__( self, other ):  return self.cmp( operator.ne, other )
-  def   __lt__( self, other ):  return self.cmp( operator.lt, other )
-  def   __le__( self, other ):  return self.cmp( operator.le, other )
-  def   __gt__( self, other ):  return self.cmp( operator.gt, other )
-  def   __ge__( self, other ):  return self.cmp( operator.ge, other )
+  def   __eq__( self, other ):
+    return self.cmp( operator.eq, other )
+  def   __ne__( self, other ):
+    return self.cmp( operator.ne, other )
+  def   __lt__( self, other ):
+    return self.cmp( operator.lt, other )
+  def   __le__( self, other ):
+    return self.cmp( operator.le, other )
+  def   __gt__( self, other ):
+    return self.cmp( operator.gt, other )
+  def   __ge__( self, other ):
+    return self.cmp( operator.ge, other )
   
   #//-------------------------------------------------------//
   
   def   has( self, other, context = None ):
-    other = _evalValue( other, self.options, context )
-    return other in self.value( context )
-
+    return self.cmp( operator.contains, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   optionType( self ):
+    return self.option_value.option_type
+  
 #//===========================================================================//
 
 class ConditionGeneratorHelper( object ):
@@ -134,17 +144,28 @@ class ConditionGeneratorHelper( object ):
     condition = self.__makeCmpCondition( cmp_operator, self.condition, self.name, other )
     return ConditionGenerator( self.options, condition )
   
-  def   __getitem__( self, other ):   return self.cmp( operator.eq, other )
-  def   eq( self, other ):            return self.cmp( operator.eq, other )
-  def   ne( self, other ):            return self.cmp( operator.ne, other )
-  def   gt( self, other ):            return self.cmp( operator.gt, other )
-  def   ge( self, other ):            return self.cmp( operator.ge, other )
-  def   lt( self, other ):            return self.cmp( operator.lt, other )
-  def   le( self, other ):            return self.cmp( operator.le, other )
-  def   has( self, value ):           return self.cmp( operator.contains, value )
-  def   hasAny( self, values ):       return self.cmp( self.__hasAny, values )
-  def   hasAll( self, values ):       return self.cmp( self.__hasAll, values )
-  def   oneOf( self, values ):        return self.cmp( self.__oneOf, values )
+  def   __getitem__( self, other ):
+    return self.cmp( operator.eq, other )
+  def   eq( self, other ):
+    return self.cmp( operator.eq, other )
+  def   ne( self, other ):
+    return self.cmp( operator.ne, other )
+  def   gt( self, other ):
+    return self.cmp( operator.gt, other )
+  def   ge( self, other ):
+    return self.cmp( operator.ge, other )
+  def   lt( self, other ):
+    return self.cmp( operator.lt, other )
+  def   le( self, other ):
+    return self.cmp( operator.le, other )
+  def   has( self, value ):
+    return self.cmp( operator.contains, value )
+  def   hasAny( self, values ):
+    return self.cmp( self.__hasAny, values )
+  def   hasAll( self, values ):
+    return self.cmp( self.__hasAll, values )
+  def   oneOf( self, values ):
+    return self.cmp( self.__oneOf, values )
   
   #//-------------------------------------------------------//
   

@@ -8,7 +8,7 @@ class   IgnoreCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if isinstance(value, IgnoreCaseString):
+    if (cls is IgnoreCaseString) and (type(value) is cls):
         return value
     
     if value is None:
@@ -23,14 +23,21 @@ class   IgnoreCaseString (str):
   
   #//-------------------------------------------------------//
   
-  def   __hash__(self):         return hash(self.__value)
+  def   __hash__(self):
+    return hash(self.__value)
   
-  def   __eq__( self, other):   return self.__value == IgnoreCaseString( other ).__value
-  def   __ne__( self, other):   return self.__value != IgnoreCaseString( other ).__value
-  def   __lt__( self, other):   return self.__value <  IgnoreCaseString( other ).__value
-  def   __le__( self, other):   return self.__value <= IgnoreCaseString( other ).__value
-  def   __gt__( self, other):   return self.__value >  IgnoreCaseString( other ).__value
-  def   __ge__( self, other):   return self.__value >= IgnoreCaseString( other ).__value
+  def   __eq__( self, other):
+    return self.__value == IgnoreCaseString( other ).__value
+  def   __ne__( self, other):
+    return self.__value != IgnoreCaseString( other ).__value
+  def   __lt__( self, other):
+    return self.__value <  IgnoreCaseString( other ).__value
+  def   __le__( self, other):
+    return self.__value <= IgnoreCaseString( other ).__value
+  def   __gt__( self, other):
+    return self.__value >  IgnoreCaseString( other ).__value
+  def   __ge__( self, other):
+    return self.__value >= IgnoreCaseString( other ).__value
 
 #//===========================================================================//
 #//===========================================================================//
@@ -39,7 +46,7 @@ class   LowerCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if isinstance(value, cls):
+    if (cls is LowerCaseString) and (type(value) is cls):
         return value
     
     if value is None:
@@ -56,7 +63,7 @@ class   UpperCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if isinstance(value, cls):
+    if (cls is UpperCaseString) and (type(value) is cls):
         return value
     
     if value is None:
@@ -75,7 +82,7 @@ class   Version (str):
   
   def     __new__(cls, version = None, _ver_re = __ver_re ):
     
-    if isinstance(version, cls):
+    if (cls is Version) and (type(version) is cls):
         return version
     
     if version is None:
@@ -105,14 +112,21 @@ class   Version (str):
   
   #//-------------------------------------------------------//
   
-  def   __hash__(self):         return hash(self.__version)
+  def   __hash__(self):
+    return hash(self.__version)
   
-  def   __eq__( self, other):   return self.__version == Version( other ).__version
-  def   __lt__( self, other):   return self.__version <  Version( other ).__version
-  def   __le__( self, other):   return self.__version <= Version( other ).__version
-  def   __ne__( self, other):   return self.__version != Version( other ).__version
-  def   __gt__( self, other):   return self.__version >  Version( other ).__version
-  def   __ge__( self, other):   return self.__version >= Version( other ).__version
+  def   __eq__( self, other):
+    return self.__version == Version( other ).__version
+  def   __lt__( self, other):
+    return self.__version <  Version( other ).__version
+  def   __le__( self, other):
+    return self.__version <= Version( other ).__version
+  def   __ne__( self, other):
+    return self.__version != Version( other ).__version
+  def   __gt__( self, other):
+    return self.__version >  Version( other ).__version
+  def   __ge__( self, other):
+    return self.__version >= Version( other ).__version
 
 #//===========================================================================//
 
@@ -126,7 +140,7 @@ class   FilePath (FilePathBase):
   #//-------------------------------------------------------//
   
   def     __new__(cls, value = None ):
-    if isinstance( value, cls ):
+    if (cls is FilePath) and (type(value) is cls):
       return value
     
     if value is None:
@@ -138,10 +152,16 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):  return super(FilePath,self).__eq__( FilePath( other ) )
-  def   __ne__( self, other ):  return super(FilePath,self).__ne__( FilePath( other ) )
-  def   __lt__( self, other ):  return super(FilePath,self).__lt__( FilePath( other ) )
-  def   __le__( self, other ):  return super(FilePath,self).__le__( FilePath( other ) )
-  def   __gt__( self, other ):  return super(FilePath,self).__gt__( FilePath( other ) )
-  def   __ge__( self, other ):  return super(FilePath,self).__ge__( FilePath( other ) )
+  def   __eq__( self, other ):
+    return super(FilePath,self).__eq__( FilePath( other ) )
+  def   __ne__( self, other ):
+    return super(FilePath,self).__ne__( FilePath( other ) )
+  def   __lt__( self, other ):
+    return super(FilePath,self).__lt__( FilePath( other ) )
+  def   __le__( self, other ):
+    return super(FilePath,self).__le__( FilePath( other ) )
+  def   __gt__( self, other ):
+    return super(FilePath,self).__gt__( FilePath( other ) )
+  def   __ge__( self, other ):
+    return super(FilePath,self).__ge__( FilePath( other ) )
 

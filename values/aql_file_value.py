@@ -24,7 +24,7 @@ class   FileContentChecksum (object):
     if path is None:
       return NoContent()
     
-    if isinstance( path, FileContentChecksum ):
+    if (cls is FileContentChecksum) and (type(path) is cls):
       return path
     
     try:
@@ -58,11 +58,15 @@ class   FileContentChecksum (object):
            (self.size == other.size) and \
            (self.checksum == other.checksum)
   
-  def   __ne__( self, other ):        return not self.__eq__( other )
-  def   __getnewargs__(self):         return ( None, self.size, self.checksum )
-  def   __getstate__(self):           return {}
+  def   __ne__( self, other ):
+    return not self.__eq__( other )
+  def   __getnewargs__(self):
+    return ( None, self.size, self.checksum )
+  def   __getstate__(self):
+    return {}
   def   __setstate__(self,state):     pass
-  def   __str__( self ):              return str(self.checksum)
+  def   __str__( self ):
+    return str(self.checksum)
 
 #//===========================================================================//
 
@@ -82,7 +86,7 @@ class   FileContentTimeStamp (object):
     if path is None:
       return NoContent()
     
-    if isinstance( path, FileContentTimeStamp ):
+    if (cls is FileContentTimeStamp) and (type(path) is cls):
       return path
     
     try:
@@ -100,13 +104,18 @@ class   FileContentTimeStamp (object):
 
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):        return type(self) == type(other) and (self.size == other.size) and (self.modify_time == other.modify_time)
-  def   __ne__( self, other ):        return not self.__eq__( other )
+  def   __eq__( self, other ):
+    return type(self) == type(other) and (self.size == other.size) and (self.modify_time == other.modify_time)
+  def   __ne__( self, other ):
+    return not self.__eq__( other )
   
-  def   __getnewargs__(self):         return ( None, self.size, self.modify_time )
-  def   __getstate__(self):           return {}
+  def   __getnewargs__(self):
+    return ( None, self.size, self.modify_time )
+  def   __getstate__(self):
+    return {}
   def   __setstate__(self,state):     pass
-  def   __str__( self ):              return str( datetime.datetime.fromtimestamp( self.modify_time ) )
+  def   __str__( self ):
+    return str( datetime.datetime.fromtimestamp( self.modify_time ) )
   
 
 #//===========================================================================//
@@ -114,7 +123,7 @@ class   FileContentTimeStamp (object):
 @pickleable
 class   FileName (str):
   def     __new__(cls, path = None, full_path = None ):
-    if isinstance( path, FileName ):
+    if (cls is FileName) and (type(path) is cls):
       return path
     
     if full_path is None:

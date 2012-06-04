@@ -128,7 +128,7 @@ class   ConditionalValue (object):
     condition = self.condition
     if (condition is None) or condition( options, context ):
       if self.operation is not None:
-        new_value = ( self.operation( value, options, context ) )
+        new_value = self.operation( value, options, context )
         value_type = type(value)
         if type(new_value) is not value_type:
           new_value = value_type( new_value )

@@ -79,13 +79,17 @@ class TestOptions( AqlTestCase ):
     options.warn_level = opt_type1
     options.warning_level = options.warn_level
     
-    opt_type2 = EnumOptionType( 'debug', 'release', 'final' )
+    opt_type2 = EnumOptionType( values = ('debug', 'release', 'final') )
     
     options.optimization = opt_type2
     options.opt = options.optimization
     
+    print( "options.optimization: %s " % options.optimization.value() )
+    
     options.warning_level = 0
     options.optimization = 'release'
+    
+    print( "options.optimization: %s " % options.optimization.value() )
     
     options.If().optimization.eq('debug').warning_level += 1
     
@@ -107,6 +111,24 @@ class TestOptions( AqlTestCase ):
     # wl: 0, opt == debug: +1, opt == release: +2
     # opt: release, debug, release, wl == 2: debug
     
+  #//-------------------------------------------------------//
+  
+  def test_options_conditions2(self):
+    options = Options()
+    
+    options.warning_level = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+    
+    options.optimization = EnumOptionType( values = ('debug', 'release', 'final') )
+    
+    options.build_variants = ListOptionType( value_type = options.optimization.optionType() )
+    
+    options.If().build_variants.has('release').warning_level = 5
+    
+    self.assertEqual( options.warning_level, 0 )
+    
+    options.build_variants += 'release'
+    
+    self.assertEqual( options.warning_level, 5 )
 
 #//===========================================================================//
 

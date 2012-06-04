@@ -130,7 +130,8 @@ class   UniqueList (object):
   
   #//-------------------------------------------------------//
   
-  def   __str__( self ):        return str(self.__values_list)
+  def   __str__( self ):
+      return str(self.__values_list)
   
   #//-------------------------------------------------------//
   
@@ -355,12 +356,18 @@ def   SplitListType( list_type, separators ):
     
     #//-------------------------------------------------------//
     
-    def   __eq__( self, other ):  return super(SplitList,self).__eq__( self.__toSplitList( other ) )
-    def   __ne__( self, other ):  return super(SplitList,self).__ne__( self.__toSplitList( other ) )
-    def   __lt__( self, other ):  return super(SplitList,self).__lt__( self.__toSplitList( other ) )
-    def   __le__( self, other ):  return super(SplitList,self).__le__( self.__toSplitList( other ) )
-    def   __gt__( self, other ):  return super(SplitList,self).__gt__( self.__toSplitList( other ) )
-    def   __ge__( self, other ):  return super(SplitList,self).__ge__( self.__toSplitList( other ) )
+    def   __eq__( self, other ):
+      return super(SplitList,self).__eq__( self.__toSplitList( other ) )
+    def   __ne__( self, other ):
+      return super(SplitList,self).__ne__( self.__toSplitList( other ) )
+    def   __lt__( self, other ):
+      return super(SplitList,self).__lt__( self.__toSplitList( other ) )
+    def   __le__( self, other ):
+      return super(SplitList,self).__le__( self.__toSplitList( other ) )
+    def   __gt__( self, other ):
+      return super(SplitList,self).__gt__( self.__toSplitList( other ) )
+    def   __ge__( self, other ):
+      return super(SplitList,self).__ge__( self.__toSplitList( other ) )
     
     #//-------------------------------------------------------//
     
@@ -420,12 +427,18 @@ def   ValueListType( list_type, value_type ):
     
     #//-------------------------------------------------------//
     
-    def   __eq__( self, other ):  return super(_ValueList,self).__eq__( self.__toValueList( other ) )
-    def   __ne__( self, other ):  return super(_ValueList,self).__ne__( self.__toValueList( other ) )
-    def   __lt__( self, other ):  return super(_ValueList,self).__lt__( self.__toValueList( other ) )
-    def   __le__( self, other ):  return super(_ValueList,self).__le__( self.__toValueList( other ) )
-    def   __gt__( self, other ):  return super(_ValueList,self).__gt__( self.__toValueList( other ) )
-    def   __ge__( self, other ):  return super(_ValueList,self).__ge__( self.__toValueList( other ) )
+    def   __eq__( self, other ):
+      return super(_ValueList,self).__eq__( self.__toValueList( other ) )
+    def   __ne__( self, other ):
+      return super(_ValueList,self).__ne__( self.__toValueList( other ) )
+    def   __lt__( self, other ):
+      return super(_ValueList,self).__lt__( self.__toValueList( other ) )
+    def   __le__( self, other ):
+      return super(_ValueList,self).__le__( self.__toValueList( other ) )
+    def   __gt__( self, other ):
+      return super(_ValueList,self).__gt__( self.__toValueList( other ) )
+    def   __ge__( self, other ):
+      return super(_ValueList,self).__ge__( self.__toValueList( other ) )
     
     #//-------------------------------------------------------//
   
