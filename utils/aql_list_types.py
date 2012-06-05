@@ -405,25 +405,35 @@ def   ValueListType( list_type, value_type ):
     def     __init__( self, values = None ):
       super(_ValueList,self).__init__( self.__toSequence( values ) )
     
-    #//-------------------------------------------------------//
-    
     def   __iadd__( self, values ):
       return super(_ValueList,self).__iadd__( self.__toSequence( values ) )
-    
-    #//-------------------------------------------------------//
     
     def   __isub__( self, values ):
       return super(_ValueList,self).__isub__( self.__toSequence( values ) )
     
-    #//-------------------------------------------------------//
-    
     def   extend( self, values ):
       super(_ValueList,self).extend( self.__toSequence( values ) )
     
-    #//-------------------------------------------------------//
-    
     def   extend_front( self, values ):
       super(_ValueList,self).extend_front( self.__toSequence( values ) )
+    
+    def   append( self, value ):
+      super(_ValueList,self).append( value_type(value) )
+    
+    def   count( self, value ):
+      return super(_ValueList,self).count( value_type(value) )
+    
+    def   index( self, value, i = 0, j = -1 ):
+      return super(_ValueList,self).index( value_type(value), i, j )
+    
+    def   insert( self, i, value ):
+      return super(_ValueList,self).insert( i, value_type(value) )
+    
+    def   remove( self, value ):
+      return super(_ValueList,self).remove( value_type(value) )
+    
+    def   __setitem__( self, index, value ):
+      return super(_ValueList,self).__setitem__( index, value_type(value) )
     
     #//-------------------------------------------------------//
     
@@ -444,7 +454,6 @@ def   ValueListType( list_type, value_type ):
   
     def   __contains__( self, other ):
       return super(_ValueList,self).__contains__( value_type(other) )
-
   
   #//=======================================================//
   
