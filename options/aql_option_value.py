@@ -1,3 +1,5 @@
+import operator
+
 from aql_utils import toSequence
 from aql_list_types import UniqueList, List
 
@@ -13,7 +15,7 @@ class   Condition(object):
     'kw',
   )
   
-  def   __init__( self, predicate, condition = None, *args, **kw ):
+  def   __init__( self, condition, predicate, *args, **kw ):
     self.condition = condition
     self.predicate = predicate
     self.args = args
@@ -30,84 +32,54 @@ class   Condition(object):
 
 #//===========================================================================//
 
-class   OperationValue( object ):
-  __slots__ = (
-    'value',
-  )
-  
-  def   __init__( self, value ):
-    self.value = value
-  
-  def   __call__( self, options, context ):
-    return self.value
-
-#//===========================================================================//
-
-class   OperationOptionValue( OperationValue ):
-  def   __call__( self, options, context ):
-    return self.value.value( options, context )
-
-#//===========================================================================//
-
 class   Operation( object ):
   __slots__ = (
-    'value',
+    'action',
+    'kw',
+    'args',
     'operation'
   )
   
-  def   __init__( self, value, operation = None ):
-    if not isinstance( value, OperationValue):
-      value = OperationValue( value )
+  def   __init__( self, operation, action, *args, **kw ):
     
-    self.value = value
     self.operation = operation
+    self.action = action
+    self.args = args
+    self.kw = kw
   
-  def   __call__( self, dest_value, options, context ):
+  def   __call__( self, options, context, dest_value ):
     if self.operation is not None:
-      dest_value = self.operation( dest_value, options, context )
+      dest_value = self.operation( options, context, dest_value )
     
-    op_value = self.value( options, context )
-    
-    return self._exec( dest_value, op_value, options, context )
-  
-  def   _exec( self, dest_value, op_value, options, context ):
-    raise NotImplementedError()
-
-#//===========================================================================//
-
-class   SetValue( Operation ):
-  def   _exec( self, dest_value, op_value, options, context ):
-    return op_value
-
-#//===========================================================================//
-
-class   AddValue( Operation ):
-  def   _exec( self, dest_value, op_value, options, context ):
-    dest_value += op_value
-    return dest_value
-
-#//===========================================================================//
-
-class   SubValue( Operation ):
-  def   _exec( self, dest_value, op_value, options, context ):
-    dest_value -= op_value
-    return dest_value
-
-#//===========================================================================//
-
-class   UpdateValue( Operation ):
-  def   _exec( self, dest_value, op_value, options, context ):
-    if isinstance( dest_value, ( UniqueList, List ) ):
-      dest_value += op_value
+    if self.action is None:
       return dest_value
     
-    return op_value
+    return self.action( options, context, dest_value, *self.args, **self.kw )
 
 #//===========================================================================//
 
-class   CallValue( Operation ):
-  def   _exec( self, dest_value, op_value, options, context ):
-    return op_value( dest_value )
+def   _setOperator( dest_value, value ):
+  return value
+
+def   _doAction( options, context, dest_value, op, value ):
+  if isinstance( value, OptionValue ):
+    value = value.value( options, context )
+  return op( dest_value, value )
+
+def   SetValue( value, operation = None ):
+  return Operation( operation, _doAction, _setOperator, value )
+
+def   AddValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.iadd, value )
+
+def   SubValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.isub, value )
+
+def   _simpleAction( options, context, dest_value, action, *args, **kw ):
+  return action( dest_value, *args, **kw )
+
+def   SimpleOperation( action, *args, **kw ):
+  return Operation( None, _simpleAction, action, *args, **kw )
 
 #//===========================================================================//
 
@@ -128,7 +100,7 @@ class   ConditionalValue (object):
     condition = self.condition
     if (condition is None) or condition( options, context ):
       if self.operation is not None:
-        new_value = self.operation( value, options, context )
+        new_value = self.operation( options, context, value )
         value_type = type(value)
         if type(new_value) is not value_type:
           new_value = value_type( new_value )
