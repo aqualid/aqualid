@@ -304,7 +304,7 @@ class   OptionType (object):
     if self.range_help:
       return toSequence( self.range_help )
     
-    return ["Value of type %s" % self.value_type]
+    return ["Value of type '%s'" % self.value_type.__name__]
 
 #//===========================================================================//
 #//===========================================================================//
@@ -344,7 +344,7 @@ class   BoolOptionType (OptionType):
     if style is None:
       style = ('True', 'False')
     else:
-      style = map(str, style)
+      style = map(IgnoreCaseString, style)
     
     if true_values is None:
       true_values = self.__true_values
@@ -357,8 +357,11 @@ class   BoolOptionType (OptionType):
       false_values = toSequence( false_values )
     
     self.true_value, self.false_value = style
-    self.true_values  = set( map( lambda v: str(v).lower(), true_values  ) )
-    self.false_values = set( map( lambda v: str(v).lower(), false_values ) )
+    self.true_values  = set()
+    self.false_values = set()
+    
+    self.addValues( true_values, false_values )
+    self.addValues( self.true_value, self.false_value )
   
   #//-------------------------------------------------------//
   
@@ -367,7 +370,7 @@ class   BoolOptionType (OptionType):
     if value is NotImplemented:
       value = False
     
-    value_str = str(value).lower()
+    value_str = IgnoreCaseString(value)
     if value_str in self.true_values:
       value = True
     
@@ -387,14 +390,14 @@ class   BoolOptionType (OptionType):
     true_values = toSequence( true_values )
     false_values = toSequence( false_values )
     
-    self.true_values.update( map( lambda v: str(v).lower(),  true_values  ) )
-    self.false_values.update( map( lambda v: str(v).lower(), false_values  ) )
+    self.true_values.update( map( lambda v: IgnoreCaseString(v),  true_values  ) )
+    self.false_values.update( map( lambda v: IgnoreCaseString(v), false_values  ) )
   
   #//-------------------------------------------------------//
   
   def     rangeHelp( self ):
-    return  [ self.true_value + ': [' + ', '.join( sorted( self.true_values ) ) + ']',
-              self.false_value + ': [' + ', '.join( sorted( self.false_values ) ) + ']' ]
+    return  [ ', '.join( sorted( self.true_values ) ),
+              ', '.join( sorted( self.false_values ) ) ]
 
 #//===========================================================================//
 #//===========================================================================//

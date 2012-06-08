@@ -135,13 +135,13 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def __makeCmpCondition( cmp_operator, condition, name, other ):
-    return Condition( ConditionGeneratorHelper.__cmpValue, condition, cmp_operator, name, other )
+  def __makeCmpCondition( condition, cmp_operator, name, other ):
+    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_operator, name, other )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other ):
-    condition = self.__makeCmpCondition( cmp_operator, self.condition, self.name, other )
+    condition = self.__makeCmpCondition( self.condition, cmp_operator, self.name, other )
     return ConditionGenerator( self.options, condition )
   
   def   __getitem__( self, other ):
@@ -227,7 +227,7 @@ class Options (object):
       if value.options is not self:
         raise InvalidOptionValueType( value )
       
-      value = OperationOptionValue( value.option_value )
+      value = value.option_value
     
     return ConditionalValue( operation_type( value ), condition )
   
@@ -255,7 +255,7 @@ class Options (object):
         self.__dict__['__opt_values'][ name ] = value.option_value
         return
       
-      value = ConditionalValue( operation_type( OperationOptionValue( value.option_value ) ) )
+      value = ConditionalValue( operation_type( value.option_value ) )
     
     else:
       if opt_value is None:

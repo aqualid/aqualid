@@ -9,7 +9,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_option_value import OptionValue, ConditionalValue, Condition, AddValue, SubValue, CallValue
+from aql_option_value import OptionValue, ConditionalValue, Condition, AddValue, SubValue
 from aql_options import Options
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue

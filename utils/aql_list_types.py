@@ -406,16 +406,16 @@ def   ValueListType( list_type, value_type ):
       super(_ValueList,self).__init__( self.__toSequence( values ) )
     
     def   __iadd__( self, values ):
-      return super(_ValueList,self).__iadd__( self.__toSequence( values ) )
+      return super(_ValueList,self).__iadd__( self.__toValueList( values ) )
     
     def   __isub__( self, values ):
-      return super(_ValueList,self).__isub__( self.__toSequence( values ) )
+      return super(_ValueList,self).__isub__( self.__toValueList( values ) )
     
     def   extend( self, values ):
-      super(_ValueList,self).extend( self.__toSequence( values ) )
+      super(_ValueList,self).extend( self.__toValueList( values ) )
     
     def   extend_front( self, values ):
-      super(_ValueList,self).extend_front( self.__toSequence( values ) )
+      super(_ValueList,self).extend_front( self.__toValueList( values ) )
     
     def   append( self, value ):
       super(_ValueList,self).append( value_type(value) )
@@ -433,7 +433,12 @@ def   ValueListType( list_type, value_type ):
       return super(_ValueList,self).remove( value_type(value) )
     
     def   __setitem__( self, index, value ):
-      return super(_ValueList,self).__setitem__( index, value_type(value) )
+      if type(index) is slice:
+        value = self.__toValueList( value )
+      else:
+        value = value_type(value)
+      
+      return super(_ValueList,self).__setitem__( index, value )
     
     #//-------------------------------------------------------//
     

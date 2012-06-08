@@ -41,7 +41,24 @@ class TestOptionTypes( AqlTestCase ):
     v = debug_symbols( 0 )
     self.assertFalse( v ); self.assertEqual( str(v), 'OFF' )
     
-    #~ print( debug_symbols.rangeHelp() )
+    opt_type = BoolOptionType( style = ('Yes', 'No'), true_values = [], false_values = [])
+    
+    self.assertEqual( opt_type.rangeHelp(), ['Yes', 'No'] )
+    
+    opt_type.addValues('Y', 'N')
+    opt_type.addValues('y', 'n')
+    self.assertEqual( opt_type.rangeHelp(), ['Y, Yes', 'N, No'] )
+    
+    opt_type.addValues('1', '0')
+    
+    v = opt_type('1')
+    v |= 3; self.assertEqual( v, 'y' ); self.assertIs( type(v), type(opt_type()) )
+    v &= 100; self.assertEqual( v, 1 ); self.assertIs( type(v), type(opt_type()) )
+    v = v & 0; self.assertEqual( v, 0 ); self.assertIs( type(v), type(opt_type()) )
+    v = v | 5; self.assertEqual( v, 1 ); self.assertIs( type(v), type(opt_type()) )
+    v ^= 2; self.assertEqual( v, 0 ); self.assertIs( type(v), type(opt_type()) )
+    v = v ^ 2; self.assertEqual( v, 1 ); self.assertIs( type(v), type(opt_type()) )
+    
 
   #//===========================================================================//
 
@@ -74,7 +91,8 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( optimization( 'ULTRA' ), 'ultra' )
     
     self.assertEqual( sorted(optimization.values()), sorted(['slow', 'off', 'ultra', 'speed', 'final', 'size']) )
-    #~ print( optimization.values() )
+    
+    print( optimization.values() )
 
   #//===========================================================================//
 
@@ -121,7 +139,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( warn_level( -100 ), 0 )
     self.assertEqual( warn_level( 100 ), 5 )
     
-    #~ print( warn_level.rangeHelp() )
+    print( warn_level.rangeHelp() )
 
   #//===========================================================================//
 
@@ -135,7 +153,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( 'efg' ), 'EFG' )
     self.assertEqual( opt1( None ), '' )
     
-    #~ print( opt1.rangeHelp() )
+    print( opt1.rangeHelp() )
     
   #//===========================================================================//
 
@@ -147,10 +165,51 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( 0 ), 0 )
     self.assertEqual( opt1( '2' ), 2 )
     
-    with self.assertRaises( InvalidOptionValue ):
-      opt1( 'a1' )
+    self.assertRaises( InvalidOptionValue, opt1, 'a1' )
     
-    #~ print( opt1.rangeHelp() )
+    self.assertEqual( opt1.rangeHelp(), ["Value of type 'int'"] )
+    
+    self.assertEqual( opt1(), 0 )
+    self.assertEqual( opt1(1), opt1(1) )
+    
+    v = opt1(1)
+    v += '1'; self.assertEqual( v, 2 ); self.assertIs( type(v), type(opt1()) )
+    v = v + '2'; self.assertEqual( v, 4 ); self.assertIs( type(v), type(opt1()) )
+    v = v - '3'; self.assertEqual( v, 1 ); self.assertIs( type(v), type(opt1()) )
+    v -= '1'; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
+    v = v + '5'; self.assertEqual( v, '5' ); self.assertIs( type(v), type(opt1()) )
+    v = v * '2'; self.assertEqual( v, '10' ); self.assertIs( type(v), type(opt1()) )
+    v *= '0'; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
+    v += '2'; self.assertEqual( v, '2' ); self.assertIs( type(v), type(opt1()) )
+    v /= '2'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v = v / '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v //= '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v = v // '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v += 4; self.assertEqual( v, '5' ); self.assertIs( type(v), type(opt1()) )
+    v %= 2; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v = v % 2; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v |= 3; self.assertEqual( v, '3' ); self.assertIs( type(v), type(opt1()) )
+    v = v | 7; self.assertEqual( v, '7' ); self.assertIs( type(v), type(opt1()) )
+    v &= 5; self.assertEqual( v, '5' ); self.assertIs( type(v), type(opt1()) )
+    v = v & 2; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
+    v ^= 2; self.assertEqual( v, '2' ); self.assertIs( type(v), type(opt1()) )
+    v = v ^ 2; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
+    v = (v + 2) ** 2; self.assertEqual( v, '4' ); self.assertIs( type(v), type(opt1()) )
+    v **= 1; self.assertEqual( v, '4' ); self.assertIs( type(v), type(opt1()) )
+    v >>= 2; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v <<= 3; self.assertEqual( v, '8' ); self.assertIs( type(v), type(opt1()) )
+    v = v << 2; self.assertEqual( v, '32' ); self.assertIs( type(v), type(opt1()) )
+    v = v >> 2; self.assertEqual( v, '8' ); self.assertIs( type(v), type(opt1()) )
+    
+    self.assertNotEqual( v, '7' )
+    self.assertLess( v, '9' )
+    self.assertLessEqual( v, '9' )
+    self.assertLessEqual( v, '8' )
+    self.assertGreater( v, '7' )
+    self.assertGreaterEqual( v, '7' )
+    self.assertGreaterEqual( v, '8' )
+    
+    self.assertEqual( set([opt1(7), opt1(5)]), set([opt1(5), opt1(7), opt1(5)]) )
 
   #//===========================================================================//
 
@@ -163,7 +222,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( '../abc/../123' ), '../123' )
     self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
     
-    #~ print( opt1.rangeHelp() )
+    print( opt1.rangeHelp() )
 
   #//===========================================================================//
 
@@ -176,6 +235,8 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( '../abc/../123' ), '../123' )
     self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
     self.assertEqual( opt1( [1,2,3,4] ), [1,2,3,4] )
+    self.assertEqual( opt1(), [] )
+    self.assertEqual( opt1( NotImplemented ), [] )
     
     b = BoolOptionType( description = 'Test1', group = "Debug", style = ("On", "Off") )
     ob = ListOptionType( value_type = b, unique = True )
@@ -187,8 +248,7 @@ class TestOptionTypes( AqlTestCase ):
     
     self.assertEqual( on( '1,0,2,1,1,2,0' ), [1,0,2] )
     
-    #~ print( ob.rangeHelp() )
-    #~ print( ob("no,yes,yes,no") )
+    print( ob.rangeHelp() )
 
 
 #//===========================================================================//
