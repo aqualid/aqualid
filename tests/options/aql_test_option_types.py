@@ -59,6 +59,29 @@ class TestOptionTypes( AqlTestCase ):
     v ^= 2; self.assertEqual( v, 0 ); self.assertIs( type(v), type(opt_type()) )
     v = v ^ 2; self.assertEqual( v, 1 ); self.assertIs( type(v), type(opt_type()) )
     
+    self.assertNotEqual( opt_type('1'), 0 )
+    self.assertLess( opt_type('0'), 1 )
+    self.assertLessEqual( opt_type('0'), 1 )
+    self.assertLessEqual( opt_type('1'), 1 )
+    self.assertGreater( opt_type('1'), 0 )
+    self.assertGreaterEqual( opt_type('1'), 1 )
+    self.assertGreaterEqual( opt_type('1'), 0 )
+    
+    bt = OptionType( value_type = bool )
+    
+    self.assertEqual( bt('1'), 1 )
+    self.assertNotEqual( bt('1'), 0 )
+    self.assertNotEqual( bt('0'), 0 )
+    self.assertEqual( bt(1), True )
+    self.assertEqual( bt(0), False )
+    
+    self.assertEqual( str(bt(1)), str(True) )
+    self.assertEqual( str(bt(0)), str(False) )
+    
+    bt = BoolOptionType()
+    self.assertEqual( str(bt(1)), 'True' )
+    self.assertEqual( str(bt('disabled')), 'False' )
+    
 
   #//===========================================================================//
 
@@ -90,9 +113,9 @@ class TestOptionTypes( AqlTestCase ):
     optimization.addValues( ('ultra', 'speed') )
     self.assertEqual( optimization( 'ULTRA' ), 'ultra' )
     
-    self.assertEqual( sorted(optimization.values()), sorted(['slow', 'off', 'ultra', 'speed', 'final', 'size']) )
+    self.assertEqual( sorted(optimization.range()), sorted(['slow', 'off', 'ultra', 'speed', 'final', 'size']) )
     
-    print( optimization.values() )
+    self.assertEqual( optimization.rangeHelp(), ['slow', 'off (or 0)', 'ultra', 'speed (or fast, 2)', 'final (or 99, 3)', 'size (or 1)'] )
 
   #//===========================================================================//
 
@@ -109,28 +132,29 @@ class TestOptionTypes( AqlTestCase ):
     for v, base in zip( values, base_values ):
       self.assertEqual( optimization( v ), base )
     
-    with self.assertRaises( InvalidOptionValue ):
-      optimization( 3 )
+    self.assertEqual( optimization(), 0 )
+    
+    self.assertRaises( InvalidOptionValue, optimization, 3 )
+    
+    et = EnumOptionType( values = [] )
+    self.assertRaises( InvalidOptionValue, et )
 
   #//===========================================================================//
 
   def test_range_option(self):
     event_manager.setHandlers( EventHandler() )
     
-    warn_level = RangeOptionType( min_value = 0, max_value = 5,
+    warn_level = RangeOptionType( min_value = 0, max_value = 5, auto_correct = False,
                                   description = 'Warning level', group = "Diagnostics" )
     
     self.assertEqual( warn_level( 0 ), 0 )
     self.assertEqual( warn_level( 5 ), 5 )
     self.assertEqual( warn_level( 3 ), 3 )
     
-    with self.assertRaises( InvalidOptionValue ):
-      warn_level( 10 )
+    self.assertRaises( InvalidOptionValue, warn_level, 10 )
+    self.assertRaises( InvalidOptionValue, warn_level, -1 )
     
-    with self.assertRaises( InvalidOptionValue ):
-      warn_level( -1 )
-    
-    warn_level = RangeOptionType( min_value = 0, max_value = 5, fix_value = True,
+    warn_level = RangeOptionType( min_value = 0, max_value = 5, auto_correct = True,
                                   description = 'Warning level', group = "Diagnostics" )
     
     self.assertEqual( warn_level( 0 ), 0 )
@@ -139,7 +163,8 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( warn_level( -100 ), 0 )
     self.assertEqual( warn_level( 100 ), 5 )
     
-    print( warn_level.rangeHelp() )
+    self.assertEqual( warn_level.rangeHelp(), ['0 ... 5'] )
+    self.assertEqual( warn_level.range(), [0, 5] )
 
   #//===========================================================================//
 

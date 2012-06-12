@@ -239,9 +239,10 @@ def   _ValueBoolTypeProxy( option_type ):
     #//-------------------------------------------------------//
     
     def   __str__(self):
-      if self:
-        return option_type.true_value
-      return option_type.false_value
+      try:
+        return option_type.true_value if self else option_type.false_value
+      except AttributeError:
+        return str(True) if self else str(False)
   
   #//=======================================================//
   
@@ -318,17 +319,6 @@ class   BoolOptionType (OptionType):
     'false_values',
     'aliases',
   )
-  
-  class   _Value( int ):
-    
-    def   __new__( cls, value, str_value ):
-      self = super(BoolOptionType._Value, cls).__new__( cls, value )
-      self.__value = str(str_value)
-      
-      return self
-    
-    def   __str__( self ):
-      return self.__value
   
   #//-------------------------------------------------------//
   
@@ -484,7 +474,7 @@ class   EnumOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
+  def   range( self ):
     values = []
     
     for alias, value in self.__values.items():
@@ -501,56 +491,63 @@ class   RangeOptionType (OptionType):
   __slots__ = (
     'min_value',
     'max_value',
-    'fix_value',
+    'auto_correct',
   )
   
-  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, fix_value = False):
+  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, auto_correct = True ):
     
     super(RangeOptionType,self).__init__( value_type, description, group )
     
-    self.setRange( min_value, max_value, fix_value )
+    self.setRange( min_value, max_value, auto_correct )
   
   #//-------------------------------------------------------//
   
-  def   setRange( self, min_value, max_value, fix_value = None ):
+  def   setRange( self, min_value, max_value, auto_correct = True ):
     
     if min_value is not None:
       try:
-        self.min_value = self.value_type( min_value )
+        min_value = self.value_type( min_value )
       except TypeError:
         raise InvalidOptionValue( self, min_value )
     else:
-      self.min_value = None
+      min_value = self.value_type()
       
     if max_value is not None:
       try:
-        self.max_value = self.value_type( max_value )
+        max_value = self.value_type( max_value )
       except TypeError:
         raise InvalidOptionValue( self, max_value )
     else:
-      self.max_value = None
+      max_value = self.value_type()
     
-    if fix_value is not None:
-      self.fix_value = fix_value
+    self.min_value = min_value
+    self.max_value = max_value
+    
+    if auto_correct is not None:
+      self.auto_correct = auto_correct
     
   #//-------------------------------------------------------//
   
   def   _convert( self, value = NotImplemented):
     try:
+      min_value = self.min_value
+      
       if value is NotImplemented:
-        value = self.min_value
+        value = min_value
       
       value = self.value_type( value )
       
-      if value < self.min_value:
-        if self.fix_value:
-          value = self.min_value
+      if value < min_value:
+        if self.auto_correct:
+          value = min_value
         else:
           raise TypeError()
       
-      if value > self.max_value:
-        if self.fix_value:
-          value = self.max_value
+      max_value = self.max_value
+      
+      if value > max_value:
+        if self.auto_correct:
+          value = max_value
         else:
           raise TypeError()
       
@@ -566,8 +563,8 @@ class   RangeOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
-    return (self.min_value, self.max_value)
+  def   range( self ):
+    return [self.min_value, self.max_value]
 
 #//===========================================================================//
 #//===========================================================================//
