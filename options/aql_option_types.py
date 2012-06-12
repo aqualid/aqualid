@@ -303,7 +303,7 @@ class   OptionType (object):
     Returns a description (list of strings) about range of allowed values
     """
     if self.range_help:
-      return toSequence( self.range_help )
+      return list(toSequence( self.range_help ))
     
     return ["Value of type '%s'" % self.value_type.__name__]
 
@@ -507,7 +507,7 @@ class   RangeOptionType (OptionType):
     if min_value is not None:
       try:
         min_value = self.value_type( min_value )
-      except TypeError:
+      except (TypeError, ValueError):
         raise InvalidOptionValue( self, min_value )
     else:
       min_value = self.value_type()
@@ -515,7 +515,7 @@ class   RangeOptionType (OptionType):
     if max_value is not None:
       try:
         max_value = self.value_type( max_value )
-      except TypeError:
+      except (TypeError, ValueError):
         raise InvalidOptionValue( self, max_value )
     else:
       max_value = self.value_type()
@@ -582,6 +582,8 @@ class   RangeOptionType (OptionType):
 
 class   ListOptionType (OptionType):
   
+  __slots__ = ('item_type')
+  
   #//=======================================================//
   
   def   __init__( self, value_type, unique = False, separators = ', ', description = None, group = None, range_help = None ):
@@ -610,6 +612,7 @@ class   ListOptionType (OptionType):
     
     super(ListOptionType,self).__init__( list_type, description, group, range_help )
     self.value_type_proxy = list_type
+    self.item_type = value_type
   
   #//-------------------------------------------------------//
   
@@ -627,8 +630,10 @@ class   ListOptionType (OptionType):
   
   def     rangeHelp( self ):
     
-    if not self.range_help:
-      if isinstance(self.value_type, OptionType):
-        return self.value_type.rangeHelp()
+    if self.range_help:
+      return list(toSequence( self.range_help ))
     
-    return super(ListOptionType, self).rangeHelp()
+    if isinstance(self.item_type, OptionType):
+      return self.item_type.rangeHelp()
+    
+    return ["List of type '%s'" % self.item_type.__name__]

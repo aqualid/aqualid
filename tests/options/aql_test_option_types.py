@@ -158,6 +158,7 @@ class TestOptionTypes( AqlTestCase ):
                                   description = 'Warning level', group = "Diagnostics" )
     
     self.assertEqual( warn_level( 0 ), 0 )
+    self.assertEqual( warn_level(), 0 )
     self.assertEqual( warn_level( 3 ), 3 )
     self.assertEqual( warn_level( 5 ), 5 )
     self.assertEqual( warn_level( -100 ), 0 )
@@ -165,20 +166,35 @@ class TestOptionTypes( AqlTestCase ):
     
     self.assertEqual( warn_level.rangeHelp(), ['0 ... 5'] )
     self.assertEqual( warn_level.range(), [0, 5] )
+    
+    warn_level.setRange( min_value = None, max_value = None, auto_correct = False )
+    self.assertEqual( warn_level( 0 ), 0 )
+    self.assertRaises( InvalidOptionValue, warn_level, 1 )
+    
+    warn_level.setRange( min_value = None, max_value = None, auto_correct = True )
+    self.assertEqual( warn_level( 0 ), 0 )
+    self.assertEqual( warn_level( 10 ), 0 )
+    self.assertEqual( warn_level( -10 ), 0 )
+    
+    self.assertRaises( InvalidOptionValue, warn_level.setRange, min_value = "abc", max_value = None )
+    self.assertRaises( InvalidOptionValue, warn_level.setRange, min_value = None, max_value = "efg" )
+    
 
   #//===========================================================================//
 
   def test_str_option(self):
     event_manager.setHandlers( EventHandler() )
     
-    opt1 = OptionType( value_type = IgnoreCaseString, description = 'Option 1', group = "group1", range_help = "<Case-insensitive string>")
+    range_help = "<Case-insensitive string>"
+    
+    opt1 = OptionType( value_type = IgnoreCaseString, description = 'Option 1', group = "group1", range_help = range_help )
     
     self.assertEqual( opt1( 0 ), '0' )
     self.assertEqual( opt1( 'ABC' ), 'abc' )
     self.assertEqual( opt1( 'efg' ), 'EFG' )
     self.assertEqual( opt1( None ), '' )
     
-    print( opt1.rangeHelp() )
+    self.assertEqual( opt1.rangeHelp(), [ range_help ] )
     
   #//===========================================================================//
 
@@ -247,7 +263,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( '../abc/../123' ), '../123' )
     self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
     
-    print( opt1.rangeHelp() )
+    self.assertEqual( opt1.rangeHelp(), ["Value of type 'FilePath'"])
 
   #//===========================================================================//
 
