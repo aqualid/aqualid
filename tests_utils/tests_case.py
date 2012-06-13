@@ -78,7 +78,7 @@ class TestCaseBase(unittest.TestCase):
   #//-------------------------------------------------------//
   
   @classmethod
-  def tearDownClass(self):
+  def tearDownClass(cls):
     pass
   
   #//-------------------------------------------------------//

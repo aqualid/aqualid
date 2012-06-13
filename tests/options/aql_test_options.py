@@ -18,14 +18,17 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 
 class TestOptions( AqlTestCase ):
   
-  @staticmethod
-  def   setUpClass():
+  @classmethod
+  def   setUpClass( cls ):
+    super(TestOptions, cls).setUpClass()
     event_manager.setHandlers( EventHandler() )
+  
+  #//---------------------------------------------------------------------------//
   
   def test_options(self):
     options = Options()
     
-    opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+    opt_type1 = RangeOptionType( min_value = 0, max_value = 5 )
     
     options.warn_level = opt_type1
     options.warning_level = options.warn_level
@@ -74,7 +77,7 @@ class TestOptions( AqlTestCase ):
   def test_options_conditions(self):
     options = Options()
     
-    opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+    opt_type1 = RangeOptionType( min_value = 0, max_value = 5 )
     
     options.warn_level = opt_type1
     options.warning_level = options.warn_level
@@ -84,12 +87,8 @@ class TestOptions( AqlTestCase ):
     options.optimization = opt_type2
     options.opt = options.optimization
     
-    print( "options.optimization: %s " % options.optimization.value() )
-    
     options.warning_level = 0
     options.optimization = 'release'
-    
-    print( "options.optimization: %s " % options.optimization.value() )
     
     options.If().optimization.eq('debug').warning_level += 1
     
@@ -116,7 +115,7 @@ class TestOptions( AqlTestCase ):
   def test_options_conditions2(self):
     options = Options()
     
-    options.warning_level = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+    options.warning_level = RangeOptionType( min_value = 0, max_value = 5 )
     
     options.optimization = EnumOptionType( values = ('debug', 'release', 'final') )
     

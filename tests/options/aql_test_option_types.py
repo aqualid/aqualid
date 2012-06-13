@@ -279,17 +279,24 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1(), [] )
     self.assertEqual( opt1( NotImplemented ), [] )
     
-    b = BoolOptionType( description = 'Test1', group = "Debug", style = ("On", "Off") )
+    b = BoolOptionType( description = 'Test1', group = "Debug", style = ("On", "Off"), true_values = ["Yes","enabled"], false_values = ["No","disabled"] )
     ob = ListOptionType( value_type = b, unique = True )
     
-    self.assertEqual( ob( 'yes,no,1,0' ), 'on,no' )
-    self.assertIn( 'yes', ob( 'yes,no,1,0' ) )
+    self.assertEqual( ob( 'yes,no' ), 'on,disabled' )
+    self.assertIn( 'yes', ob( 'yes,no' ) )
     
-    on = ListOptionType( value_type = int, unique = True )
+    self.assertEqual( ob.rangeHelp(), ['enabled, On, Yes', 'disabled, No, Off'] )
+    
+    on = ListOptionType( value_type = int, unique = True, range_help = "List of integers" )
     
     self.assertEqual( on( '1,0,2,1,1,2,0' ), [1,0,2] )
+    self.assertRaises( InvalidOptionValue, on, [1,'abc'] )
     
-    print( ob.rangeHelp() )
+    self.assertEqual( on.rangeHelp(), ["List of integers"] )
+    
+    on = ListOptionType( value_type = int )
+    self.assertEqual( on.rangeHelp(), ["List of type 'int'"] )
+    
 
 
 #//===========================================================================//

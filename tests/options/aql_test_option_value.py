@@ -28,7 +28,7 @@ class TestOptionValue( AqlTestCase ):
   #//---------------------------------------------------------------------------//
   
   def test_option_value(self):
-    opt_type1 = RangeOptionType( min_value = 0, max_value = 5, fix_value = True )
+    opt_type1 = RangeOptionType( min_value = 0, max_value = 5 )
     
     opt_value = OptionValue( opt_type1 )
     
@@ -138,7 +138,7 @@ class TestOptionValue( AqlTestCase ):
   
   def test_option_value_cyclic(self):
     opt_value1 = OptionValue( OptionType( value_type = int ) )
-    opt_value2 = OptionValue( RangeOptionType( min_value = 0, max_value = 5, fix_value = True ) )
+    opt_value2 = OptionValue( RangeOptionType( min_value = 0, max_value = 5 ) )
     
     opt_value1.appendValue( ConditionalValue( SetValue( 1 ) ) )
     self.assertEqual( opt_value1.value( None ), 1 )

@@ -83,6 +83,12 @@ def   _ValueTypeProxy( option_type, value_type ):
       def   __itruediv__( self, other ):
         return self.__op( '__truediv__', other )
     
+    if '__div__' in value_type_attr:
+      def   __div__ ( self, other ):
+        return self.__op( '__div__', other )
+      def   __idiv__( self, other ):
+        return self.__op( '__div__', other )
+    
     if '__floordiv__' in value_type_attr:
       def   __floordiv__ ( self, other ):
         return self.__op( '__floordiv__', other )
