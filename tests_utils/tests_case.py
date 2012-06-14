@@ -92,3 +92,51 @@ class TestCaseBase(unittest.TestCase):
   def   setUp(self):
     if not (self.keep_going or self.result.wasSuccessful()):
       self.result.stop()
+  
+  #//-------------------------------------------------------//
+  
+  if not hasattr( unittest.TestCase, 'assertIn' ):
+    def assertIn( self, a, b, msg = None):
+      if msg is None: str(a) + " in " + str(b) + ' is False'
+      self.assertTrue( a in b, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertNotIn' ):
+    def assertNotIn( self, a, b, msg = None):
+      if msg is None: str(a) + " not in " + str(b) + ' is False'
+      self.assertTrue( a not in b, msg)
+  
+  if not hasattr( unittest.TestCase, 'assertGreater' ):
+    def assertGreater( self, a, b, msg = None):
+      if msg is None: msg = str(a) + " > " + str(b) + ' is False'
+      self.assertTrue( a > b, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertGreaterEqual' ):
+    def assertGreaterEqual( self, a, b, msg = None):
+      if msg is None: msg = str(a) + " >= " + str(b) + ' is False'
+      self.assertTrue( a >= b, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertLess' ):
+    def assertLess( self, a, b, msg = None):
+      if msg is None: msg = str(a) + " < " + str(b) + ' is False'
+      self.assertTrue( a < b, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertLessEqual' ):
+    def assertLessEqual( self, a, b, msg = None):
+      if msg is None: msg = str(a) + " <= " + str(b) + ' is False'
+      self.assertTrue( a <= b, msg)
+  
+  if not hasattr( unittest.TestCase, 'assertItemsEqual' ):
+    def assertItemsEqual( self, actual, expected, msg = None):
+      def _valueCounts( seq ):
+        counts = dict()
+        for value in seq:
+          counts.setdefault( value, 0 )
+          counts[ value ] += 1
+        return counts
+      
+      actual_counts = _valueCounts( actual )
+      expected_counts = _valueCounts( expected )
+      
+      if msg is None: msg = str(actual) + " != " + str(expected)
+      
+      self.assertTrue( actual_counts == expected_counts, msg )

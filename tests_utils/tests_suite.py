@@ -8,10 +8,15 @@ __all__ = ('testsSuite', 'localTestsSuite', 'skip', 'runSuite', 'runTests', 'run
 
 #//===========================================================================//
 
+try:
+  unicode("test")
+except NameError:
+  unicode = str
+
 def   _toSequence( value ):
   
   try:
-    if not isinstance( value, str ):
+    if not isinstance( value, (str, unicode) ):
       iter( value )
       return value
   except TypeError:

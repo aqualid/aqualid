@@ -57,6 +57,8 @@ class TestsOptions( object ):
     
     return self
     
+  #//=======================================================//
+  
   @staticmethod
   def   __getOptArgs():
     parser = optparse.OptionParser("usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]")
@@ -166,6 +168,11 @@ class TestsOptions( object ):
     else:
       if not hasattr( self, name ):
         setattr( self, name, value )
+  
+  #//=======================================================//
+  
+  def   __getattr__(self, name ):
+    return None
 
 #//===========================================================================//
 
