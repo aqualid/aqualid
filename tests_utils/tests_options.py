@@ -3,10 +3,17 @@ import optparse
 
 __all__ = ( 'TestsOptions', )
 
+try:
+  unicode("test")
+except NameError:
+  unicode = str
+
 def   _toSequence( value ):
+  if value is None:
+    return None
   
   try:
-    if isinstance( value, str ):
+    if isinstance( value, (str, unicode) ):
       return value.split(',')
     else:
       iter( value )
@@ -14,11 +21,15 @@ def   _toSequence( value ):
   except TypeError:
     pass
   
-  if value is None:
-    return tuple()
-  
   return ( value, )
 
+#//===========================================================================//
+
+def   _toBool( value ):
+  if isinstance( value, (str, unicode) ):
+    return value.lower() == 'true'
+  
+  return bool( value )
 
 #//===========================================================================//
 
@@ -36,27 +47,27 @@ class TestsOptions( object ):
     
     opt, args = self.__getOptArgs()
     
-    self.__opt = opt
+    self.setOption( 'test_modules_prefix',  opt.test_modules_prefix,        'test_' )
+    self.setOption( 'test_methods_prefix',  opt.test_methods_prefix,        'test'  )
+    self.setOption( 'verbose',              opt.verbose,                    False   )
+    self.setOption( 'keep_going',           opt.keep_going,                 False   )
+    self.setOption( 'reset',                opt.reset,                      False   )
+    self.setOption( 'list_tests',           opt.list_tests,                 False   )
+    self.setOption( 'tests_dirs',           _toSequence( opt.tests_dirs ),  '.'     )
+    
+    self.__parseTests( opt.tests )
+    self.__parseArguments( args )
     
     for name,value in kw.items():
-      setattr( self, name, value )
-    
-    self.appyConfig( configs )
+      self.setOption( name, value )
     
     self.appyConfig( opt.configs )
-    self.__parseArguments( args )
-    self.__parseTests( opt.tests )
-    self.__parseTestDirs('.')
+    self.appyConfig( configs )
     
-    self.setDefault( 'test_modules_prefix', 'test_' )
-    self.setDefault( 'test_methods_prefix', 'test'  )
-    self.setDefault( 'verbose',             False   )
-    self.setDefault( 'keep_going',          False   )
-    self.setDefault( 'reset',               False   )
-    self.setDefault( 'list_tests',          False   )
+    self.normalizeKnownOptions()
     
     return self
-    
+  
   #//=======================================================//
   
   @staticmethod
@@ -99,16 +110,18 @@ class TestsOptions( object ):
     for arg in args:
       name, sep, value = arg.partition('=')
       if not sep:
-        print("Error: Invalid argument.")
-        exit()
+        raise Exception("Error: Invalid commmand line argument.")
       
-      setattr( self, name.strip(), value.strip() )
+      self.setOption( name.strip(), value.strip() )
   
   #//=======================================================//
   
   def  __parseTests( self, tests ):
     
-    tests = _toSequence( tests )
+    if tests is not None:
+      tests = _toSequence( tests )
+    else:
+      tests = ()
     
     run_tests = None
     add_tests = set()
@@ -131,43 +144,73 @@ class TestsOptions( object ):
           run_tests = set()
         run_tests.add( test )
     
-    self.run_tests = run_tests
-    self.add_tests = add_tests
-    self.skip_tests = skip_tests
-    self.start_from_tests = start_from_tests
+    self.setOption( 'run_tests', run_tests )
+    self.setOption( 'add_tests', add_tests )
+    self.setOption( 'skip_tests', skip_tests )
+    self.setOption( 'start_from_tests', start_from_tests )
 
   #//=======================================================//
   
-  def __parseTestDirs( self, default_tests_dirs ):
-    if self.__opt.tests_dirs is None:
-      self.tests_dirs = default_tests_dirs
-    else:
-      self.tests_dirs = _toSequence( self.__opt.tests_dirs )
-  
-  #//=======================================================//
-
   def   appyConfig( self, config ):
+    if config is None:
+      return
     
     for config in _toSequence( config ):
       if not os.path.isfile(config):
-        print( "Error: Config file doesn't exist." )
-        exit()
+        raise Exception( "Error: Config file doesn't exist." )
       
       settings = {}
       execfile( config, {}, settings )
       
-      for key,value in settings:
-        setattr( self, key, value )
+      for key,value in settings.items():
+        self.setOption( key, value )
+  
+  #//=======================================================//
+  
+  def   setOption( self, name, value, default_value = None ):
+    
+    options = self.__dict__.setdefault('__options', {} )
+    
+    current_value = options.get( name, None )
+    
+    if current_value is None:
+      if value is not None:
+        options[ name ] = value
+        setattr( self, name, value )
+      
+      elif default_value is not None:
+        setattr( self, name, default_value )
   
   #//=======================================================//
   
   def   setDefault( self, name, default_value ):
-    value = getattr( self.__opt, name, None )
-    if value is None:
-      setattr( self, name, default_value )
-    else:
-      if not hasattr( self, name ):
-        setattr( self, name, value )
+    options = self.__dict__.setdefault('__options', {} )
+    current_value = options.get( name, None )
+    if current_value is None:
+      setattr( self, name, value )
+  
+  #//=======================================================//
+  
+  def  __normOption( self, name, normalizer ):
+    try:
+      setattr( self, name, normalizer(getattr( self, name )) )
+    except AttributeError:
+      pass
+  
+  #//=======================================================//
+  
+  def   normalizeKnownOptions( self ):
+    self.__normOption( 'test_modules_prefix', str )
+    self.__normOption( 'test_methods_prefix', str )
+    self.__normOption( 'verbose',             _toBool )
+    self.__normOption( 'list_tests',          _toBool )
+    self.__normOption( 'reset',               _toBool )
+    self.__normOption( 'keep_going',          _toBool )
+    self.__normOption( 'tests_dirs',          _toSequence )
+    self.__normOption( 'run_tests',           _toSequence )
+    self.__normOption( 'add_tests',           _toSequence )
+    self.__normOption( 'skip_tests',          _toSequence )
+    self.__normOption( 'start_from_tests',    _toSequence )
   
   #//=======================================================//
   
