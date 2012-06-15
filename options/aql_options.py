@@ -59,9 +59,8 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other, context = None ):
-    other = _evalValue( other, self.options, context )
-    
     value = self.value( context )
+    other = _evalValue( other, self.options, context )
     
     return cmp_operator( value, other )
   
@@ -129,19 +128,20 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __cmpValue( options, context, cmp_operator, name, other ):
-    return options[ name ].cmp( cmp_operator, other, context )
+  def   __cmpValue( options, context, cmp_operator, option_value_proxy, other ):
+    return option_value_proxy.cmp( cmp_operator, other, context )
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def __makeCmpCondition( condition, cmp_operator, name, other ):
-    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_operator, name, other )
+  def __makeCmpCondition( condition, cmp_operator, option_value_proxy, other ):
+    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_operator, option_value_proxy, other )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other ):
-    condition = self.__makeCmpCondition( self.condition, cmp_operator, self.name, other )
+    option_value_proxy = self.options[ self.name ]
+    condition = self.__makeCmpCondition( self.condition, cmp_operator, option_value_proxy, other )
     return ConditionGenerator( self.options, condition )
   
   def   __getitem__( self, other ):

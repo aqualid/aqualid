@@ -74,6 +74,21 @@ class TestOptions( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
+  def test_options_2(self):
+    options = Options()
+    options2 = Options()
+    
+    options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
+    options2.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
+    
+    options.warn_level = 1
+    options2.warn_level = 1
+    
+    self.assertEqual( options.warn_level, options2.warn_level )
+    self.assertEqual( options.warn_level, options2.warn_level.option_value )
+  
+  #//-------------------------------------------------------//
+  
   def test_options_conditions(self):
     options = Options()
     
