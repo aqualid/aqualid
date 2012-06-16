@@ -86,6 +86,11 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   __contains__( self, other ):
+    return self.has( other )
+  
+  #//-------------------------------------------------------//
+  
   def   optionType( self ):
     return self.option_value.option_type
   
@@ -385,10 +390,18 @@ class Options (object):
   
   def   value( self, option_value, context = None ):
     try:
-      value = self.__dict__['__cache'][ id(option_value) ]
+      if context is not None:
+        return context[ option_value ]
+    except KeyError:
+      pass
+    
+    cache = self.__dict__['__cache']
+    
+    try:
+      value = cache[ option_value ]
     except KeyError:
       value = option_value.value( self, context )
-      self.__dict__['__cache'][ id(option_value) ] = value
+      cache[ option_value ] = value
     
     return value
   

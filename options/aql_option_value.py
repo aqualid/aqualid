@@ -145,17 +145,22 @@ class OptionValue (object):
   #//-------------------------------------------------------//
   
   def   value( self, options, context = None ):
+    
     value = self.option_type()
-    self_id = id(self)
     
     if context is None:
       context = {}
-    elif self_id in context:
-      return context[ self_id ]
+    else:
+      try:
+        return context[ self ]
+      except KeyError:
+        pass
+    
+    context[ self ] = value
     
     for conditional_value in self.conditional_values:
-      context[ self_id ] = value
       value = conditional_value.updateValue( value, options, context )
+      context[ self ] = value
     
     return value
 
