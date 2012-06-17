@@ -187,7 +187,7 @@ class TestsOptions( object ):
     options = self.__dict__.setdefault('__options', {} )
     current_value = options.get( name, None )
     if current_value is None:
-      setattr( self, name, value )
+      setattr( self, name, default_value )
   
   #//=======================================================//
   

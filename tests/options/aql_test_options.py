@@ -9,10 +9,10 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_option_value import OptionValue, ConditionalValue, Condition, AddValue, SubValue
-from aql_options import Options
+from aql_option_value import OptionValue, ConditionalValue, Condition
+from aql_options import Options, AddValue, SubValue
 
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionValueType
 
 #//===========================================================================//
 
@@ -103,7 +103,7 @@ class TestOptions( AqlTestCase ):
     
     self.assertIn( 1, options.warn_levels )
     self.assertNotIn( 5, options.warn_levels )
-    
+  
   #//-------------------------------------------------------//
   
   def test_options_conditions(self):
@@ -201,7 +201,7 @@ class TestOptions( AqlTestCase ):
     
     options.opt = 1
     options.If().warn_level[3].opt += 10
-    options.If().warn_level.eq(3).opt += 10
+    options.If().warn_level.ge(3).opt += 10
     
     options.warn_level = 3
     
@@ -209,6 +209,46 @@ class TestOptions( AqlTestCase ):
     options.If().opt.oneOf([1,11,21,31]).opt -= 1
     
     self.assertEqual( options.opt, 20 )
+    
+    options.If().warn_level.ne(3).opt -= 1
+    self.assertEqual( options.opt, 20 )
+    options.If().warn_level.ne(2).opt += 1
+    self.assertEqual( options.opt, 21 )
+    
+    options.If().warn_level.gt(3).opt += 1
+    self.assertEqual( options.opt, 21 )
+    options.If().warn_level.gt(2).opt += 4
+    self.assertEqual( options.opt, 25 )
+    
+    options.If().warn_level.lt(3).opt += 1
+    self.assertEqual( options.opt, 25 )
+    options.If().warn_level.lt(4).opt += 5
+    self.assertEqual( options.opt, 30 )
+    
+    options.If().warn_level.le(2).opt += 1
+    self.assertEqual( options.opt.value(), 30 )
+    options.If().warn_level.le(4).opt += 5
+    self.assertEqual( options.opt, 35 )
+  
+  #//-------------------------------------------------------//
+  
+  def   test_options_refs(self):
+    options = Options()
+    
+    options.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
+    
+    options.warn_level = AddValue( options.opt )
+    self.assertEqual( options.warn_level, 1 )
+    
+    options.If().warn_level[ options.opt ].warn_level += 1
+    self.assertEqual( options.warn_level, 2 )
+    
+    options.opt = 2
+    
+    self.assertEqual( options.warn_level, 3 )
+    
+    self.assertRaises( InvalidOptionValueType, options.warn_level.set, options.opt.option_value )
 
 
 #//===========================================================================//

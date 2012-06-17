@@ -2,6 +2,7 @@
 import sys
 import os.path
 import timeit
+import operator
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -10,9 +11,28 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_option_value import OptionValue, ConditionalValue, Condition, AddValue, SubValue, SetValue, Operation, SimpleOperation
+from aql_option_value import OptionValue, ConditionalValue, Condition, Operation, SimpleOperation
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
+
+#//===========================================================================//
+
+def   _setOperator( dest_value, value ):
+  return value
+
+def   _doAction( options, context, dest_value, op, value ):
+  if isinstance( value, OptionValue ):
+    value = value.value( options, context )
+  return op( dest_value, value )
+
+def   SetValue( value, operation = None ):
+  return Operation( operation, _doAction, _setOperator, value )
+
+def   AddValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.iadd, value )
+
+def   SubValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.isub, value )
 
 #//===========================================================================//
 
@@ -154,8 +174,13 @@ class TestOptionValue( AqlTestCase ):
     self.assertEqual( opt_value2.value( None ), 5 )
     
     opt_value1.appendValue( ConditionalValue( AddValue( opt_value2 ) ) )
-    self.assertEqual( opt_value1.value( None ), 6 )
-
+    
+    self.assertEqual( opt_value2.value( None ), 7 )
+    self.assertEqual( opt_value1.value( None ), 7 )
+    
+    # opt1: 1 + opt2 + opt2 = 1 + 3 + 3
+    # opt2: 2 + opt1 = 2 + 1 + 2 + 2
+    
   
   #//---------------------------------------------------------------------------//
   

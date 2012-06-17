@@ -4,12 +4,12 @@ import weakref
 
 from aql_utils import toSequence
 from aql_option_types import OptionType, ListOptionType
-from aql_option_value import OptionValue, AddValue, SubValue, SetValue, Operation, ConditionalValue, Condition
+from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
 from aql_errors import InvalidOptions, InvalidOptionValueType
 
 #//===========================================================================//
 
-def   _evalValue( other, options, context = None ):
+def   _evalValue( other, options, context ):
   if isinstance( other, OptionValueProxy ):
     if other.options is not options:
       return other.value()
@@ -20,6 +20,24 @@ def   _evalValue( other, options, context = None ):
     return options.value( other, context )
   
   return other
+
+#//===========================================================================//
+
+def   _setOperator( dest_value, value ):
+  return value
+
+def   _doAction( options, context, dest_value, op, value ):
+  value = _evalValue( value, options, context )
+  return op( dest_value, value )
+
+def   SetValue( value, operation = None ):
+  return Operation( operation, _doAction, _setOperator, value )
+
+def   AddValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.iadd, value )
+
+def   SubValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.isub, value )
 
 #//===========================================================================//
 

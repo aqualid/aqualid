@@ -58,23 +58,6 @@ class   Operation( object ):
 
 #//===========================================================================//
 
-def   _setOperator( dest_value, value ):
-  return value
-
-def   _doAction( options, context, dest_value, op, value ):
-  if isinstance( value, OptionValue ):
-    value = value.value( options, context )
-  return op( dest_value, value )
-
-def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
-
-def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, value )
-
-def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, value )
-
 def   _simpleAction( options, context, dest_value, action, *args, **kw ):
   return action( dest_value, *args, **kw )
 
