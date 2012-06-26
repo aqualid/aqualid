@@ -65,7 +65,7 @@ def  _findTestModuleFiles( path, test_modules_prefix ):
 
 #//===========================================================================//
 
-def   _loadTestModule( module_file ):
+def   _loadTestModule( module_file, verbose ):
   
   module_dir = os.path.normpath( os.path.dirname( module_file ) )
   module_name = os.path.splitext( os.path.basename( module_file ) )[0]
@@ -73,12 +73,13 @@ def   _loadTestModule( module_file ):
   fp, pathname, description = imp.find_module( module_name, [ module_dir ] )
   
   with fp:
-    print( "Loading test module: %s" % module_file )
+    if verbose:
+      print( "Loading test module: %s" % module_file )
     return imp.load_module( module_name, fp, pathname, description )
 
 #//===========================================================================//
 
-def   _loadTestModules( path, test_modules_prefix ):
+def   _loadTestModules( path, test_modules_prefix, verbose ):
   
   test_modules = []
   module_files = []
@@ -90,7 +91,7 @@ def   _loadTestModules( path, test_modules_prefix ):
       module_files.append( path )
   
   for module_file in module_files:
-    test_modules.append( _loadTestModule( module_file ) )
+    test_modules.append( _loadTestModule( module_file, verbose ) )
   
   return test_modules
 
@@ -117,8 +118,8 @@ def   _getTestCaseClasses( test_modules ):
 
 #//===========================================================================//
 
-def   _loadTestCaseClasses( path, test_modules_prefix ):
-  return _getTestCaseClasses( _loadTestModules( path, test_modules_prefix ) )
+def   _loadTestCaseClasses( path, test_modules_prefix, verbose ):
+  return _getTestCaseClasses( _loadTestModules( path, test_modules_prefix, verbose ) )
 
 #//===========================================================================//
 
@@ -142,9 +143,7 @@ class Tests(dict):
   def   __init__( self, test_classes = None, test_methods_prefix = 'test' ):
     
     if isinstance(test_classes, Tests.SortedClassesAndMethods ):
-      print( "test_classes: %s" % str(test_classes) )
       for test_class, methods in test_classes:
-        
         module_name, cls_name = test_class.__module__, test_class.__name__
         
         for method in methods:
@@ -168,7 +167,7 @@ class Tests(dict):
     norm_names = set()
     
     for name in _toSequence( names ):
-      if isinstance( name, str ):
+      if isinstance( name, (str, unicode) ):
         name = tuple( name.split('.')[-3:] )
       else:
         name = tuple( _toSequence( name ) )
@@ -329,8 +328,8 @@ class TestsSuiteMaker(object):
   
   #//-------------------------------------------------------//
   
-  def   load( self, path = None, test_modules_prefix = 'test', test_methods_prefix = 'test' ):
-    test_classes = _loadTestCaseClasses( path, test_modules_prefix )
+  def   load( self, path = None, test_modules_prefix = 'test', test_methods_prefix = 'test', verbose = False ):
+    test_classes = _loadTestCaseClasses( path, test_modules_prefix, verbose )
     
     return Tests( test_classes )
   
@@ -362,13 +361,26 @@ class TestsSuiteMaker(object):
   
   #//-------------------------------------------------------//
   
-  def   suite( self, tests, suite_class = TestCaseSuite ):
+  def   suite( self, tests, suite_class = TestCaseSuite, options = None ):
+    
+    from tests_case import TestCaseBase
+    
+    keep_going = False
+    if options is not None:
+      keep_going = options.keep_going
     
     main_suite = suite_class()
     for test_class, methods in tests.sorted():
+      test_class.options = options
       suite = suite_class()
+      
       for method in methods:
-        suite.addTest( test_class( method.__name__ ) )
+        if issubclass( test_class, TestCaseBase ):
+          test_case = test_class( method.__name__, keep_going = keep_going )
+        else:
+          test_case = test_class( method.__name__ )
+        
+        suite.addTest( test_case )
       
       main_suite.addTest( suite )
     
@@ -399,23 +411,38 @@ def   _printTestsAndExit( tests ):
 
 #//===========================================================================//
 
+def   _printOptionsAndExit( options ):
+  print("\n  Options:\n==================")
+  for name, value in options.dump():
+    if isinstance(value, (set, frozenset, tuple)):
+      value = list(value)
+    
+    print( '    {name:<25}:  {value}'.format(name = name, value = value) )
+  exit()
+
+#//===========================================================================//
+
 def   testsSuite( path = None, test_modules_prefix = 'test_', test_methods_prefix = 'test',
-             run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False):
+             run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False, options = None ):
   
   global _suite_maker
   
-  all_tests = _suite_maker.load( path, test_modules_prefix, test_methods_prefix )
+  verbose = False
+  if options is not None:
+    verbose = options.verbose
+  
+  all_tests = _suite_maker.load( path, test_modules_prefix, test_methods_prefix, verbose )
   tests = _suite_maker.tests( all_tests, run_tests, add_tests, skip_tests, start_from_test )
   
   if list_tests:
     _printTestsAndExit(tests)
   
-  return _suite_maker.suite( tests, suite_class )
+  return _suite_maker.suite( tests, suite_class, options )
 
 #//===========================================================================//
 
 def   localTestsSuite( test_methods_prefix = 'test',
-                  run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False ):
+                  run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False, options = None ):
   
   global _suite_maker
   
@@ -425,7 +452,7 @@ def   localTestsSuite( test_methods_prefix = 'test',
   if list_tests:
     _printTestsAndExit( tests )
   
-  return _suite_maker.suite( tests, suite_class )
+  return _suite_maker.suite( tests, suite_class, options )
 
 #//===========================================================================//
 
@@ -434,23 +461,31 @@ def   runSuite( suite ):
 
 #//===========================================================================//
 
-def   runTests( suite_class = TestCaseSuite ):
-  from tests_options import TestsOptions
-  options = TestsOptions()
+def   runTests( suite_class = TestCaseSuite, options = None ):
+  if options is None:
+    from tests_options import TestsOptions
+    options = TestsOptions()
   
   suite = testsSuite( options.tests_dirs, options.test_modules_prefix, options.test_methods_prefix,
-                      options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests )
+                      options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options )
+  
+  if options.list_options:
+    _printOptionsAndExit( options )
   
   runSuite( suite )
 
 #//===========================================================================//
 
-def   runLocalTests( suite_class = TestCaseSuite ):
-  from tests_options import TestsOptions
-  options = TestsOptions()
+def   runLocalTests( suite_class = TestCaseSuite, options = None ):
+  if options is None:
+    from tests_options import TestsOptions
+    options = TestsOptions()
   
   suite = localTestsSuite( options.test_methods_prefix,
-                           options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests )
+                           options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options )
+  
+  if options.list_options:
+    _printOptionsAndExit( options )
   
   runSuite( suite )
 

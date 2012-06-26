@@ -50,11 +50,7 @@ class TestCaseSuite(unittest.TestSuite):
 
 class TestCaseBase(unittest.TestCase):
   
-  def __init__(self, methodName = 'runTest', keep_going = NotImplemented ):
-    
-    if keep_going is NotImplemented:
-      from tests_options import TestsOptions
-      keep_going = TestsOptions().keep_going
+  def __init__(self, methodName = 'runTest', keep_going = False ):
     
     self.keep_going = keep_going
     super( TestCaseBase, self).__init__( methodName )
@@ -92,6 +88,8 @@ class TestCaseBase(unittest.TestCase):
   def   setUp(self):
     if not (self.keep_going or self.result.wasSuccessful()):
       self.result.stop()
+    
+    print( "\n*** RUN TEST: %s ***" % self.id() )
   
   #//-------------------------------------------------------//
   
@@ -104,6 +102,16 @@ class TestCaseBase(unittest.TestCase):
     def assertNotIn( self, a, b, msg = None):
       if msg is None: str(a) + " not in " + str(b) + ' is False'
       self.assertTrue( a not in b, msg)
+  
+  if not hasattr( unittest.TestCase, 'assertIsNone' ):
+    def assertIsNone( self, a, msg = None):
+      if msg is None: str(a) + " is " + str(None) + ' is False'
+      self.assertTrue( a is None, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertIsNotNone' ):
+    def assertIsNotNone( self, a, msg = None):
+      if msg is None: str(a) + " is not " + str(None) + ' is False'
+      self.assertTrue( a is not None, msg )
   
   if not hasattr( unittest.TestCase, 'assertGreater' ):
     def assertGreater( self, a, b, msg = None):

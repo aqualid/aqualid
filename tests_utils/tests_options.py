@@ -35,24 +35,26 @@ def   _toBool( value ):
 
 class TestsOptions( object ):
   
-  _instance = None
+  _instance = __import__('__main__').__dict__.setdefault( '__TestsOptions_instance', [None] )
   
   def   __new__( cls, configs = None, **kw):
     
-    if TestsOptions._instance is not None:
-      return TestsOptions._instance
+    if TestsOptions._instance[0] is not None:
+      return TestsOptions._instance[0]
     
     self = super(TestsOptions,cls).__new__(cls)
-    TestsOptions._instance = self
+    TestsOptions._instance[0] = self
     
     opt, args = self.__getOptArgs()
     
     self.setOption( 'test_modules_prefix',  opt.test_modules_prefix,        'test_' )
     self.setOption( 'test_methods_prefix',  opt.test_methods_prefix,        'test'  )
     self.setOption( 'verbose',              opt.verbose,                    False   )
+    self.setOption( 'quiet',                opt.quiet,                      False   )
     self.setOption( 'keep_going',           opt.keep_going,                 False   )
     self.setOption( 'reset',                opt.reset,                      False   )
     self.setOption( 'list_tests',           opt.list_tests,                 False   )
+    self.setOption( 'list_options',         opt.list_options,               False   )
     self.setOption( 'tests_dirs',           _toSequence( opt.tests_dirs ),  '.'     )
     
     self.__parseTests( opt.tests )
@@ -91,6 +93,8 @@ class TestsOptions( object ):
     
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help = "Verbose mode." )
     
+    parser.add_option("-q", "--quiet", action="store_true", dest="quiet", help = "Quiet mode." )
+    
     parser.add_option("-k", "--keep-going", action="store_true", dest="keep_going",
                       help = "Keep going even if any test case failed." )
     
@@ -99,6 +103,9 @@ class TestsOptions( object ):
     
     parser.add_option("-l", "--list", action="store_true", dest="list_tests",
                       help = "List test cases and exit." )
+    
+    parser.add_option("-o", "--list_options", action="store_true", dest="list_options",
+                      help = "List options and exit." )
     
     opt, args = parser.parse_args()
     
@@ -204,6 +211,7 @@ class TestsOptions( object ):
     self.__normOption( 'test_methods_prefix', str )
     self.__normOption( 'verbose',             _toBool )
     self.__normOption( 'list_tests',          _toBool )
+    self.__normOption( 'list_options',        _toBool )
     self.__normOption( 'reset',               _toBool )
     self.__normOption( 'keep_going',          _toBool )
     self.__normOption( 'tests_dirs',          _toSequence )
@@ -214,12 +222,23 @@ class TestsOptions( object ):
   
   #//=======================================================//
   
+  def   dump( self ):
+    values = []
+    for name in sorted( self.__dict__ ):
+      if not name.startswith('__'):
+        values.append( [ name, getattr(self, name) ] )
+    
+    return values
+  
+  #//=======================================================//
+  
   def   __getattr__(self, name ):
     return None
 
 #//===========================================================================//
 
 if __name__ == "__main__":
+  
   import pprint
   pprint.pprint( TestsOptions().__dict__ )
   
