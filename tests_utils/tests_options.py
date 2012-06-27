@@ -145,25 +145,32 @@ class TestsOptions( object ):
   
   def  __parseTests( self, tests ):
     
+    run_tests = None
+    add_tests = None
+    skip_tests = None
+    start_from_tests = None
+    
     if tests is not None:
       tests = _toSequence( tests )
     else:
       tests = ()
     
-    run_tests = None
-    add_tests = set()
-    skip_tests = set()
-    start_from_tests = set()
-    
     for test in tests:
       test = test.strip()
       if test.startswith('+'):
+        if add_tests is None:
+          add_tests = set()
+        
         add_tests.add( test[1:] )
       
       elif test.startswith('-'):
+        if skip_tests is None:
+          skip_tests = set()
         skip_tests.add( test[1:] )
       
       elif test.startswith('~'):
+        if start_from_tests is None:
+          start_from_tests = set()
         start_from_tests.add( test[1:] )
       
       elif test:
@@ -183,14 +190,14 @@ class TestsOptions( object ):
       return
     
     for config in _toSequence( config ):
-      if not os.path.isfile(config):
-        raise Exception( "Error: Config file doesn't exist." )
-      
-      settings = {}
-      execfile( config, {}, settings )
-      
-      for key,value in settings.items():
-        self.setOption( key, value )
+      with open(config) as f:
+        source = f.read()
+        code = compile( source, config, 'exec' )
+        settings = {}
+        exec( code, {}, settings )
+        
+        for key,value in settings.items():
+          self.setOption( key, value )
   
   #//=======================================================//
   
