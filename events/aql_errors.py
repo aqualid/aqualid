@@ -120,6 +120,14 @@ class   InvalidOptionValueType( TypeError ):
   def   __init__( self, option ):
     msg = "Invalid option value type: '%s'" % (option, )
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   UnknownOptionType( TypeError ):
+  def   __init__( self, name, value ):
+    msg = "Unknown option type, attribute: %s, value: %s" % (name, value)
+    super(type(self), self).__init__( msg )
+
 #//-------------------------------------------------------//
 
 class   InvalidOptions( TypeError ):

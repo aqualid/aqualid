@@ -12,7 +12,7 @@ from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOp
 from aql_option_value import OptionValue, ConditionalValue, Condition
 from aql_options import Options, AddValue, SubValue
 
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionValueType
+from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionValueType, UnknownOptionType
 
 #//===========================================================================//
 
@@ -249,6 +249,62 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.warn_level, 3 )
     
     self.assertRaises( InvalidOptionValueType, options.warn_level.set, options.opt.option_value )
+    
+    options2 = Options()
+    options2.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    self.assertRaises( InvalidOptionValueType, options.warn_level.set, options2.opt )
+    
+    options.warn_level.set( options.opt )
+    self.assertEqual( options.warn_level, 2 )
+    
+    self.assertRaises( InvalidOptionValueType, options.appendValue, 'warn_level', 1 )
+    self.assertRaises( UnknownOptionType, options.__setattr__, 'test', 1 )
+    
+  #//-------------------------------------------------------//
+  
+  def   test_options_errors(self):
+    options = Options()
+    options2 = Options()
+    
+    options.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
+    
+    self.assertRaises( InvalidOptionValueType, options.__setattr__, 'opt', options.opt.option_value.optionType() )
+    self.assertRaises( InvalidOptionValueType, options2.__setattr__, 'opt', options.opt )
+    self.assertRaises( AttributeError, options.__getattr__, 'debug_on' )
+    
+    options.opt = options.warn_level
+    options['warn_level'] = 2
+    self.assertEqual( options.opt, options.warn_level )
+    self.assertEqual( options.opt, 2 )
+    self.assertIn( 'opt', options )
+    self.assertNotIn( 'debug_on', options )
+    self.assertEqual( sorted(options), sorted(['opt','warn_level']) )
+    
+  #//-------------------------------------------------------//
+  
+  def   test_options_update(self):
+    options = Options()
+    
+    options.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
+    
+    args = {'opt':5, 'warn_level':3, 'debug_on': True }
+    options.update( args )
+    self.assertEqual( options.opt, args['opt'] )
+    self.assertEqual( options.warn_level, args['warn_level'] )
+    self.assertNotIn( 'debug_on', options )
+    
+    options.update( {} )
+    
+    options2 = Options()
+    options2.debug_on = BoolOptionType()
+    options2.debug_on = False
+    options2.bv = ListOptionType( value_type = str )
+    options2.bv += 'debug,release,final'
+    options += options2
+    self.assertEqual( options.debug_on, options2.debug_on )
+    self.assertEqual( options.bv, options2.bv )
 
 
 #//===========================================================================//

@@ -23,9 +23,10 @@ import itertools
 import weakref
 
 from aql_utils import toSequence
+from aql_list_types import UniqueList, List
 from aql_option_types import OptionType, ListOptionType
 from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
-from aql_errors import InvalidOptions, InvalidOptionValueType
+from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType
 
 #//===========================================================================//
 
@@ -46,6 +47,12 @@ def   _evalValue( other, options, context ):
 def   _setOperator( dest_value, value ):
   return value
 
+def   _updateOperator( dest_value, value ):
+  if isinstance( dest_value, (UniqueList, List) ):
+    dest_value += value
+  else:
+    return value
+
 def   _doAction( options, context, dest_value, op, value ):
   value = _evalValue( value, options, context )
   return op( dest_value, value )
@@ -58,6 +65,9 @@ def   AddValue( value, operation = None ):
 
 def   SubValue( value, operation = None ):
   return Operation( operation, _doAction, operator.isub, value )
+
+def   UpdateValue( value, operation = None ):
+  return Operation( operation, _doAction, _updateOperator, value )
 
 #//===========================================================================//
 
@@ -171,20 +181,19 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __cmpValue( options, context, cmp_operator, option_value_proxy, other ):
-    return option_value_proxy.cmp( cmp_operator, other, context )
+  def   __cmpValue( options, context, cmp_operator, name, other ):
+    return options[ name ].cmp( cmp_operator, other, context )
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def __makeCmpCondition( condition, cmp_operator, option_value_proxy, other ):
-    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_operator, option_value_proxy, other )
+  def __makeCmpCondition( condition, cmp_operator, name, other ):
+    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_operator, name, other )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other ):
-    option_value_proxy = self.options[ self.name ]
-    condition = self.__makeCmpCondition( self.condition, cmp_operator, option_value_proxy, other )
+    condition = self.__makeCmpCondition( self.condition, cmp_operator, self.name, other )
     return ConditionGenerator( self.options, condition )
   
   def   __getitem__( self, other ):
@@ -302,7 +311,7 @@ class Options (object):
     
     else:
       if opt_value is None:
-        raise InvalidOptionValueType( value )
+        raise UnknownOptionType( name, value )
       
       value = self._makeCondValue( value, operation_type )
     
@@ -351,7 +360,7 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   __contains__( self, name ):
-    return self._get_value( name )[0] is None
+    return self._get_value( name )[0] is not None
   
   #//-------------------------------------------------------//
   
@@ -393,7 +402,7 @@ class Options (object):
     for name, value in other.items():
       try:
         self.__set_value( name, value, UpdateValue )
-      except KeyError:
+      except UnknownOptionType:
         pass
   
   #//-------------------------------------------------------//
