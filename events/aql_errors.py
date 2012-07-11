@@ -123,9 +123,23 @@ class   InvalidOptionValueType( TypeError ):
 
 #//-------------------------------------------------------//
 
+class   ExistingOptionValue( TypeError ):
+  def   __init__( self, name, value ):
+    msg = "Can't create existing option value '%s' to '%s'" % (name, value)
+    super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
 class   UnknownOptionType( TypeError ):
   def   __init__( self, name, value ):
     msg = "Unknown option type, attribute: %s, value: %s" % (name, value)
+    super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   ForeignOptionValue( TypeError ):
+  def   __init__( self, name, value ):
+    msg = "Option value is already attached to another options, attribute: %s, value: %s" % (name, value)
     super(type(self), self).__init__( msg )
 
 #//-------------------------------------------------------//

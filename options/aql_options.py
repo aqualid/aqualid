@@ -26,7 +26,7 @@ from aql_utils import toSequence
 from aql_list_types import UniqueList, List
 from aql_option_types import OptionType, ListOptionType
 from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
-from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType
+from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType, ExistingOptionValue, ForeignOptionValue
 
 #//===========================================================================//
 
@@ -272,12 +272,9 @@ class Options (object):
     if operation_type is None:
       raise InvalidOptionValueType( value )
     
-    if isinstance( value, OptionValue ):
-      raise InvalidOptionValueType( value )
-    
     if isinstance( value, OptionValueProxy ):
       if value.options is not self:
-        raise InvalidOptionValueType( value )
+        raise ForeignOptionValue( None, value )
       
       value = value.option_value
     
@@ -289,37 +286,36 @@ class Options (object):
     
     opt_value, from_parent = self._get_value( name )
     
-    if isinstance( value, OptionType ):
-      if opt_value is None:
-        self.__dict__['__opt_values'][ name ] = OptionValue( value )
-        return
-      else:
-        raise InvalidOptionValueType( value )
+    #//-------------------------------------------------------//
+    #// New option
+    if opt_value is None:
+      if isinstance( value, OptionType ):
+        value = OptionValue( value )
       
-    if isinstance( value, OptionValueProxy ):
-      if value.options is not self:
-        raise InvalidOptionValueType( value )
+      elif isinstance( value, OptionValueProxy ):
+        if value.options is not self:
+          raise ForeignOptionValue( name, value )
+        
+        value = value.option_value
       
-      if opt_value is value.option_value:
-        return
-      
-      if opt_value is None:
-        self.__dict__['__opt_values'][ name ] = value.option_value
-        return
-      
-      value = ConditionalValue( operation_type( value.option_value ) )
-    
-    else:
-      if opt_value is None:
+      elif not isinstance( value, OptionValue):
         raise UnknownOptionType( name, value )
       
+      self.__dict__['__opt_values'][ name ] = value
+    
+    #//-------------------------------------------------------//
+    #// Existing option
+    else:
+      if isinstance( value, OptionType ):
+        raise ExistingOptionValue( name, value )
+      
       value = self._makeCondValue( value, operation_type )
-    
-    if from_parent:
-      opt_value = opt_value.copy()
-      self.__dict__['__opt_values'][ name ] = opt_value
-    
-    opt_value.appendValue( value )
+      
+      if from_parent:
+        opt_value = opt_value.copy()
+        self.__dict__['__opt_values'][ name ] = opt_value
+      
+      opt_value.appendValue( value )
   
   #//-------------------------------------------------------//
   
@@ -397,10 +393,21 @@ class Options (object):
     if not other:
       return
     
+    if self is other:
+      return
+    
     self.clearCache()
     
     for name, value in other.items():
       try:
+        if isinstance( value, OptionValue ):
+          v = ConditionalValue( SetValue( value.value( other ) ) )
+          value = OptionValue( value.option_type, v )
+        
+        elif isinstance( value, OptionValueProxy ):
+          v = ConditionalValue( SetValue( value.value() ) )
+          value = OptionValue( value.option_type, v )
+        
         self.__set_value( name, value, UpdateValue )
       except UnknownOptionType:
         pass
