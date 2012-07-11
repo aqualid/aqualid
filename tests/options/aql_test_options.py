@@ -230,6 +230,17 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.opt.value(), 30 )
     options.If().warn_level.le(4).opt += 5
     self.assertEqual( options.opt, 35 )
+    
+    tc = options.If().warn_level.le(4)
+    tc.opt += 5
+    self.assertEqual( options.opt, 40 )
+    tc.opt += 5
+    self.assertEqual( options.opt, 45 )
+    
+    to = tc.opt
+    to += 5
+    
+    self.assertEqual( options.opt.value(), 50 )
   
   #//-------------------------------------------------------//
   
@@ -260,6 +271,11 @@ class TestOptions( AqlTestCase ):
     
     self.assertRaises( InvalidOptionValueType, options.appendValue, 'warn_level', 1 )
     self.assertRaises( UnknownOptionType, options.__setattr__, 'test', 1 )
+    
+    print("-"*32)
+    options.opt += options.opt
+    print("-"*32)
+    self.assertEqual( options.opt, 4 )
     
   #//-------------------------------------------------------//
   
@@ -297,15 +313,22 @@ class TestOptions( AqlTestCase ):
     self.assertNotIn( 'debug_on', options )
     
     options.update( {} )
+    options.update( options )
     
     options2 = Options()
     options2.debug_on = BoolOptionType()
     options2.debug_on = False
     options2.bv = ListOptionType( value_type = str )
+    print("*"*32)
     options2.bv += 'debug,release,final'
+    print("*"*32)
     options += options2
     self.assertEqual( options.debug_on, options2.debug_on )
     self.assertEqual( options.bv, options2.bv )
+    
+    options += options2
+    self.assertEqual( options.debug_on, options2.debug_on )
+    self.assertEqual( options.bv, "debug,release,final,debug,release,final" )
 
 
 #//===========================================================================//

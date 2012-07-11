@@ -50,6 +50,7 @@ def   _setOperator( dest_value, value ):
 def   _updateOperator( dest_value, value ):
   if isinstance( dest_value, (UniqueList, List) ):
     dest_value += value
+    return dest_value
   else:
     return value
 
@@ -222,12 +223,14 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   def   __iadd__( self, value ):
-    return self.options._makeCondValue( value, AddValue, self.condition )
+   self.options.appendValue( self.name, value, AddValue, self.condition )
+   return self
   
   #//-------------------------------------------------------//
   
   def   __isub__( self, value ):
-    return self.options._makeCondValue( value, SubValue, self.condition )
+    self.options.appendValue( self.name, value, SubValue, self.condition )
+    return self
 
 #//===========================================================================//
 
@@ -245,7 +248,8 @@ class ConditionGenerator( object ):
   #//-------------------------------------------------------//
   
   def     __setattr__(self, name, value):
-    self.__dict__['__options'].appendValue( name, value, SetValue, self.__dict__['__condition'] )
+    if not isinstance(value, ConditionGeneratorHelper):
+      self.__dict__['__options'].appendValue( name, value, SetValue, self.__dict__['__condition'] )
   
 #//===========================================================================//
 
@@ -308,6 +312,13 @@ class Options (object):
     else:
       if isinstance( value, OptionType ):
         raise ExistingOptionValue( name, value )
+      
+      elif isinstance( value, OptionValueProxy ):
+        if value.option_value is opt_value:
+          return
+      
+      elif value is opt_value:
+        return
       
       value = self._makeCondValue( value, operation_type )
       
