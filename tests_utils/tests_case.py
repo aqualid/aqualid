@@ -115,22 +115,22 @@ class TestCaseBase(unittest.TestCase):
   
   if not hasattr( unittest.TestCase, 'assertIn' ):
     def assertIn( self, a, b, msg = None):
-      if msg is None: str(a) + " in " + str(b) + ' is False'
+      if msg is None: msg = str(a) + " in " + str(b) + ' is False'
       self.assertTrue( a in b, msg )
   
   if not hasattr( unittest.TestCase, 'assertNotIn' ):
     def assertNotIn( self, a, b, msg = None):
-      if msg is None: str(a) + " not in " + str(b) + ' is False'
+      if msg is None: msg = str(a) + " not in " + str(b) + ' is False'
       self.assertTrue( a not in b, msg)
   
   if not hasattr( unittest.TestCase, 'assertIsNone' ):
     def assertIsNone( self, a, msg = None):
-      if msg is None: str(a) + " is " + str(None) + ' is False'
+      if msg is None: msg = str(a) + " is " + str(None) + ' is False'
       self.assertTrue( a is None, msg )
   
   if not hasattr( unittest.TestCase, 'assertIsNotNone' ):
     def assertIsNotNone( self, a, msg = None):
-      if msg is None: str(a) + " is not " + str(None) + ' is False'
+      if msg is None: msg = str(a) + " is not " + str(None) + ' is False'
       self.assertTrue( a is not None, msg )
   
   if not hasattr( unittest.TestCase, 'assertGreater' ):
