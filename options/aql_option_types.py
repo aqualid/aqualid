@@ -20,7 +20,7 @@
 
 from aql_utils import toSequence
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionType
-from aql_simple_types import IgnoreCaseString
+from aql_simple_types import IgnoreCaseString, Version, FilePath
 from aql_list_types import UniqueList, List, SplitListType, ValueListType
 
 #//===========================================================================//
@@ -288,7 +288,7 @@ class   OptionType (object):
   
   #//-------------------------------------------------------//
   
-  def     __init__( self, value_type, description = None, group = None, range_help = None ):
+  def     __init__( self, value_type = str, description = None, group = None, range_help = None ):
     
     self.value_type = value_type
     
@@ -331,6 +331,28 @@ class   OptionType (object):
       return list(toSequence( self.range_help ))
     
     return ["Value of type '%s'" % self.value_type.__name__]
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   StrOptionType (OptionType):
+  def     __init__( self, ignore_case = False, description = None, group = None, range_help = None ):
+    value_type = IgnoreCaseString if ignore_case else str
+    super(StrOptionType, self).__init__( value_type, description, group, range_help )
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   VersionOptionType (OptionType):
+  def     __init__( self, description = None, group = None, range_help = None ):
+    super(StrOptionType, self).__init__( Version, description, group, range_help )
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   PathOptionType (OptionType):
+  def     __init__( self, description = None, group = None, range_help = None ):
+    super(StrOptionType, self).__init__( FilePath, description, group, range_help )
 
 #//===========================================================================//
 #//===========================================================================//
@@ -611,7 +633,7 @@ class   ListOptionType (OptionType):
   
   #//=======================================================//
   
-  def   __init__( self, value_type, unique = False, separators = ', ', description = None, group = None, range_help = None ):
+  def   __init__( self, value_type = str, unique = False, separators = ', ', description = None, group = None, range_help = None ):
     
     if isinstance(value_type, OptionType):
       if description is None:

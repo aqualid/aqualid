@@ -19,6 +19,7 @@
 
 
 import imp
+import sys
 import os.path
 import unittest
 
@@ -95,7 +96,15 @@ def   _loadTestModule( module_file, verbose ):
   with fp:
     if verbose:
       print( "Loading test module: %s" % module_file )
-    return imp.load_module( module_name, fp, pathname, description )
+    
+    m = imp.load_module( module_name, fp, pathname, description )
+    sys_path = sys.path
+    try:
+      sys_path.remove( module_dir )
+    except ValueError:
+      pass
+    sys_path.insert( 0, module_dir )
+    return m
 
 #//===========================================================================//
 

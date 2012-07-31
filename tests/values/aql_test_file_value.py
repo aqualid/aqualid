@@ -63,16 +63,16 @@ class TestFileValue( AqlTestCase ):
       
       temp_file.write( test_string.encode() )
       temp_file.flush()
-
+      
       temp_file_value1 = FileValue( temp_file.name, FileContentTimeStamp )
       temp_file_value2 = FileValue( temp_file.name, FileContentTimeStamp )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
       
-      time.sleep(1)
+      time.sleep(2)
       temp_file.seek( 0 )
       temp_file.write( test_string.encode() )
-      temp_file.flush()
+      temp_file.close()
       
       temp_file_value2 = FileValue( temp_file_value1, FileContentTimeStamp )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )

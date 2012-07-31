@@ -318,7 +318,7 @@ class Node (object):
     try:
       source_values = self.source_values
       
-      if not self.source_values:
+      if not source_values:
         source_values = self.sources()
         many_sources = (len(source_values) > 1)
       else:
@@ -330,7 +330,7 @@ class Node (object):
       if source_values:
         first_source = min( source_values, key = lambda v: v.name ).name
       else:
-        first_source = []
+        first_source = ''
       
     except AttributeError:
       return None
