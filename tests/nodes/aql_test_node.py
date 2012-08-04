@@ -21,18 +21,12 @@ from aql_builder import Builder
 
 class ChecksumBuilder (Builder):
   
-  __slots__ = ('name', 'long_name')
-  
   def   __init__(self, name ):
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
+    self.name = [ name ]
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     target_values = []
     itarget_values = []
     
@@ -50,37 +44,33 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return [Value(self.name, "")]
+    return [Value(self.name_key, "")]
   
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return ' '.join( self.name )
 
 
 #//===========================================================================//
 
 class CopyBuilder (Builder):
   
-  __slots__ = ('name', 'long_name', 'ext', 'iext')
+  __slots__ = ('ext', 'iext')
   
   def   __init__(self, name, ext, iext ):
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
+    self.name = [ name ]
     self.ext = ext
     self.iext = iext
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     target_values = []
     itarget_values = []
     idep_values = []
     
-    idep = Value( ",".join(node.long_name) + "CopyBuilderDep", node.name )
+    idep = Value( ",".join(node.name) + "CopyBuilderDep", node.name_key )
     
     for source_value in node.sources():
       new_name = source_value.name + '.' + self.ext
@@ -97,12 +87,12 @@ class CopyBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return [Value(self.name, self.ext + '|' + self.iext)]
+    return [Value(self.name_key, self.ext + '|' + self.iext)]
   
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return ' '.join( self.name )
 
 #//===========================================================================//
 
@@ -125,12 +115,12 @@ class TestNodes( AqlTestCase ):
       node = Node( builder, [value1, value2, value3] )
       
       self.assertFalse( node.actual( vfile ) )
-      node.build( vfile )
+      node.build( None, vfile )
       self.assertTrue( node.actual( vfile ) )
       
       node = Node( builder, [value1, value2, value3] )
       self.assertTrue( node.actual( vfile ) )
-      node.build( vfile )
+      node.build( None, vfile )
       self.assertTrue( node.actual( vfile ) )
 
   #//===========================================================================//
@@ -140,14 +130,14 @@ class TestNodes( AqlTestCase ):
     node.addDeps( deps )
     
     self.assertFalse( node.actual( vfile ) )
-    node.build( vfile )
+    node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
     node = Node( builder, values )
     node.addDeps( deps )
     
     self.assertTrue( node.actual( vfile ) )
-    node.build( vfile )
+    node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
     for tmp_file in node.target_values:
@@ -240,20 +230,16 @@ _FileContentType = FileContentChecksum
 
 class TestSpeedBuilder (Builder):
   
-  __slots__ = ('name', 'long_name', 'ext', 'idep')
+  __slots__ = ('ext', 'idep')
   
   def   __init__(self, name, ext, idep ):
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
+    self.name = [ name ]
     self.ext = ext
     self.idep = idep
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     target_values = []
     itarget_values = []
     idep_values = []
@@ -277,7 +263,7 @@ class TestSpeedBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return ' '.join( self.name )
 
 #//===========================================================================//
 
@@ -330,7 +316,7 @@ class TestNodesSpeed ( AqlTestCase ):
         for source in source_files:
           node = Node( builder, [ FileValue( source, _FileContentType ) ] )
           self.assertFalse( node.actual( vfile ) )
-          node.build( vfile )
+          node.build( None, vfile )
           for tmp_file in node.target_values:
             tmp_files.append( tmp_file.name )
         

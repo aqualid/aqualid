@@ -119,10 +119,10 @@ class _Nodes (object):
       for node in nodes:
         
         if node not in node_deps:
-          if node.name in self.node_names:
+          if node.name_key in self.node_names:
             raise NodeAlreadyExists( node )
           
-          self.node_names.add( node.name )
+          self.node_names.add( node.name_key )
           self.node_deps[ node ] = set()
           self.dep_nodes[ node ] = set()
           self.tail_nodes.add( node )
@@ -162,7 +162,7 @@ class _Nodes (object):
       
       tail_nodes = self.tail_nodes
       
-      self.node_names.remove( node.name )
+      self.node_names.remove( node.name_key )
       del node_deps[node]
       tail_nodes.remove( node )
       
@@ -191,30 +191,30 @@ class _Nodes (object):
       all_dep_nodes = set()
       
       for node in self.dep_nodes:
-        if node.name not in self.node_names:
-          raise AssertionError("Missed node's name: %s" % str(node.long_name) )
+        if node.name_key not in self.node_names:
+          raise AssertionError("Missed node's name: %s" % str(node.name) )
         
         if node not in self.node_deps:
-          raise AssertionError("Missed node: %s" % str(node.long_name) )
+          raise AssertionError("Missed node: %s" % str(node.name) )
         
         #~ node_deps = node.source_nodes | node.dep_nodes
         node_deps = self.node_deps[node]
         
         if not node_deps:
           if node not in self.tail_nodes:
-            raise AssertionError("Missed tail node: %s"  % str(node.long_name) )
+            raise AssertionError("Missed tail node: %s"  % str(node.name) )
         else:
           if node in self.tail_nodes:
-            raise AssertionError("Invalid tail node: %s"  % str(node.long_name) )
+            raise AssertionError("Invalid tail node: %s"  % str(node.name) )
         
         all_dep_nodes |= node_deps
         
         #~ if (node_deps - (node.source_nodes | node.dep_nodes)):
-          #~ raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node.long_name) )
+          #~ raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node.name) )
         
         for dep in node_deps:
           if node not in self.dep_nodes[dep]:
-            raise AssertionError("node not in self.dep_nodes[dep]: dep: %s, node: %s"  % (dep.long_name, node.long_name) )
+            raise AssertionError("node not in self.dep_nodes[dep]: dep: %s, node: %s"  % (dep.name, node.name) )
       
       if (all_dep_nodes - set(self.dep_nodes)):
         raise AssertionError("Not all deps are added")
@@ -257,7 +257,7 @@ class _NodesBuilder (object):
     
   #//-------------------------------------------------------//
   
-  def   build( self, nodes ):
+  def   build( self, build_manager, nodes ):
     completed_nodes = []
     failed_nodes = {}
     rebuild_nodes = []
@@ -272,7 +272,7 @@ class _NodesBuilder (object):
         completed_nodes.append( node )
       else:
         event_manager.eventOutdateNode( node )
-        addTask( node, node.build, vfile )
+        addTask( node, node.build, build_manager, vfile )
     
     if not completed_nodes:
       for node, exception in self.task_manager.completedTasks():
@@ -373,7 +373,7 @@ class BuildManager (object):
       if not tails and not waiting_nodes:
         break
       
-      completed_nodes, tmp_failed_nodes, rebuild_nodes = buildNodes( tails )
+      completed_nodes, tmp_failed_nodes, rebuild_nodes = buildNodes( self, tails )
       
       failed_nodes.update( tmp_failed_nodes )
       

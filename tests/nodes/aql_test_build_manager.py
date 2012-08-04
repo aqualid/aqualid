@@ -1,6 +1,5 @@
 ﻿import sys
 import os.path
-import hashlib
 import shutil
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
@@ -24,15 +23,11 @@ from aql_event_handler import EventHandler
 class CopyValueBuilder (Builder):
   
   def   __init__(self, name ):
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
+    self.name = [ name ]
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     target_values = []
     
     for source_value in node.sources():
@@ -43,12 +38,12 @@ class CopyValueBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return [Value(self.name, "")]
+    return [Value(self.name_key, "")]
   
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return ' '.join( self.name )
 
 #//===========================================================================//
 
@@ -62,11 +57,7 @@ class ChecksumBuilder (Builder):
   
   def   __init__(self, name, offset, length, replace_ext = False ):
     
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
+    self.name = [ name ]
     
     self.offset = offset
     self.length = length
@@ -74,7 +65,7 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     target_values = []
     
     for source_value in node.sources():
@@ -101,12 +92,12 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return [ Value(self.name, (self.offset, self.length) ) ]
+    return [ Value(self.name_key, (self.offset, self.length) ) ]
   
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return ' '.join( self.name )
 
 
 #//===========================================================================//
@@ -202,22 +193,18 @@ class MultiChecksumBuilder (Builder):
   
   def   __init__(self, env, name, offset, length ):
     
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
+    self.name = [ name ]
     
     self.env = env
     self.builder = ChecksumBuilder( "ChecksumBuilder", offset, length )
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     target_values = []
     
-    bm = self.env.build_manager
-    vfile = bm.valuesFile()
+    print(type(build_manager))
+    vfile = build_manager.valuesFile()
     
     sub_nodes = []
     
@@ -230,7 +217,7 @@ class MultiChecksumBuilder (Builder):
         sub_nodes.append( n )
     
     if sub_nodes:
-      bm.addDeps( node, sub_nodes ); bm.selfTest()
+      build_manager.addDeps( node, sub_nodes ); build_manager.selfTest()
       raise RebuildNode()
     
     return target_values, [], []
@@ -249,7 +236,7 @@ class MultiChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return ' '.join( self.name )
 
 #//===========================================================================//
 

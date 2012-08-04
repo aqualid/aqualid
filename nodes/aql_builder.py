@@ -17,6 +17,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+import hashlib
+
+from aql_utils import toSequence
 
 class RebuildNode( Exception ):
   pass
@@ -32,18 +35,35 @@ class Builder (object):
     'env',
     'options',
     'name',
-    'long_name',
+    'name_key',
   )
    
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, build_manager, node ):
     """
     Builds the node and returns values: targets, intermediate targets, impicit dependencies
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    if attr == 'name_key':
+      chcksum = hashlib.md5()
+      
+      for name in toSequence( self.name ):
+        chcksum.update( name.encode() )
+      
+      name_key = chcksum.digest()
+      
+      self.name_key = name_key
+      return name_key
+    
+    raise UnknownAttribute( self, attr )
+  
+  #//-------------------------------------------------------//
+  
   
   def   values( self ):
     """

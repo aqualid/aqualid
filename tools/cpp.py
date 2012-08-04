@@ -16,6 +16,61 @@ from aql_simple_types import FilePath
 
 #//===========================================================================//
 
+class CompileCppBuilder (Builder):
+  
+  def   __init__(self, env, options ):
+    
+    chcksum = hashlib.md5()
+    chcksum.update( name.encode() )
+    
+    self.name = chcksum.digest()
+    self.long_name = [ name ]
+    
+    self.env = env
+    self.builder = ChecksumBuilder( "ChecksumBuilder", offset, length )
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target_values = []
+    
+    bm = self.env.build_manager
+    vfile = bm.valuesFile()
+    
+    sub_nodes = []
+    
+    for source_value in node.sources():
+      
+      n = Node( self.builder, source_value )
+      if n.actual( vfile ):
+        target_values += n.targets()
+      else:
+        sub_nodes.append( n )
+    
+    if sub_nodes:
+      bm.addDeps( node, sub_nodes ); bm.selfTest()
+      raise RebuildNode()
+    
+    return target_values, [], []
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self, node, target_values, itarget_values ):
+    for value in target_values:
+      value.remove()
+  
+  #//-------------------------------------------------------//
+  
+  def   values( self ):
+    return self.builder.values()
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__( self ):
+    return ' '.join( self.long_name )
+
+#//===========================================================================//
+
 class ToolCxx( Tool ):
   
   def   __init__( self, env ):
@@ -26,31 +81,30 @@ class ToolCxx( Tool ):
   @staticmethod
   def   __compilerOptions( options ):
     
-    _options.cflags = ListOptionType( description = "C compiler options" )
-    _options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
-    _options.cxxflags = ListOptionType( description = "C++ compiler options" )
+    options.cflags = ListOptionType( description = "C compiler options" )
+    options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
+    options.cxxflags = ListOptionType( description = "C++ compiler options" )
     
-    _options.ocflags = ListOptionType( description = "C compiler optimization options" )
-    _options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
-    _options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
+    options.ocflags = ListOptionType( description = "C compiler optimization options" )
+    options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
+    options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
     
-    _options.cflags += _options.ocflags
-    _options.ccflags += _options.occflags
-    _options.cxxflags += _options.ocxxflags
+    options.cflags += options.ocflags
+    options.ccflags += options.occflags
+    options.cxxflags += options.ocxxflags
     
-    _options.cc_name = StrOptionType( ignore_case = True, help = "C/C++ compiler name" )
-    _options.cc = _options.cc_name
+    options.cc_name = StrOptionType( ignore_case = True, help = "C/C++ compiler name" )
+    options.cc = options.cc_name
     
-    _options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
+    options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
     
-    _options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
-    _options.defines = _options.cppdefines
+    options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
+    options.defines = options.cppdefines
     
-    _options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers" )
-    _options.include = _options.cpppath
+    options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers" )
+    options.include = options.cpppath
     
-    _options.cpppath_const = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
-    _options.cpppath_lib = _options.cpppath_const
+    options.extcpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
   
   #//-------------------------------------------------------//
   @staticmethod
@@ -70,18 +124,9 @@ class ToolCxx( Tool ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   options( _options = Options() ):
-    
-    if not _options:
-      ToolCxxCompiler.__compilerOptions( _options )
-      ToolCxxCompiler.__linkerOptions( _options )
-      
-      cpp_group = "C/C++ compiler"
-      
-      for name in _options:
-        _options[ name ].option_type.group = cpp_group
-    
-    return _options
+  def   _options( options ):
+    ToolCxxCompiler.__compilerOptions( options )
+    ToolCxxCompiler.__linkerOptions( options )
   
   #//-------------------------------------------------------//
   
@@ -117,15 +162,26 @@ class ToolGcc( ToolCxx ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   options( _options = Options() ):
+  def   options( _options = [ None ] ):
     
-    options.gcc_path = StrOptionType()
-    options.gcc_target = _StrOption()
-    options.gcc_prefix = _StrOption( help = "GCC C/C++ compiler prefix", group = "C/C++ compiler" )
-    options.gcc_suffix = _StrOption( help = "GCC C/C++ compiler suffix", group = "C/C++ compiler" )
+    options = _options[0]
     
+    if options is not None:
+      return options
     
-    return True
+    options = Options()
+    _options[0] = options
+    
+    super( ToolGcc, self)._options( options )
+    
+    options.gcc_path = PathOptionType()
+    options.gcc_target = StrOptionType( ignore_case = True )
+    options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
+    options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
+    
+    options.setGroup( "C/C++ compiler" )
+    
+    return options
   
   #//-------------------------------------------------------//
   

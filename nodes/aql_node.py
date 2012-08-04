@@ -41,11 +41,11 @@ class Node (object):
     'itarget_values',
     
     'name',
-    'long_name',
-    'targets_name',
-    'itargets_name',
-    'deps_name',
-    'ideps_name',
+    'name_key',
+    'targets_key',
+    'itargets_key',
+    'deps_key',
+    'ideps_key',
     
     'sources_value',
     'deps_value',
@@ -82,42 +82,44 @@ class Node (object):
     
   #//=======================================================//
   
-  def   __getLongName( self ):
-    names = list( self.builder.long_name )
+  def   __getName( self ):
+    names = list( toSequence( self.builder.name ) )
     names_append = names.append
     
     for source in self.source_nodes:
-      names += source.long_name
+      names += source.name
     
     for source in self.source_values:
       names_append( source.name )
     
     names.sort()
     
+    print(str(names))
+    
     return names
 
   #//=======================================================//
   
-  def   __getNames( self ):
+  def   __getNameKeys( self ):
      chcksum = hashlib.md5()
      
-     for name in self.long_name:
+     for name in self.name:
        chcksum.update( name.encode() )
      
-     name = chcksum.digest()
+     name_key = chcksum.digest()
      chcksum.update( b'target_values' )
-     targets_name = chcksum.digest()
+     targets_key = chcksum.digest()
      
      chcksum.update( b'itarget_values' )
-     itargets_name = chcksum.digest()
+     itargets_key = chcksum.digest()
      
      chcksum.update( b'dep_values' )
-     deps_name = chcksum.digest()
+     deps_key = chcksum.digest()
      
      chcksum.update( b'idep_values' )
-     ideps_name = chcksum.digest()
+     ideps_key = chcksum.digest()
      
-     return name, targets_name, itargets_name, deps_name, ideps_name
+     return name_key, targets_key, itargets_key, deps_key, ideps_key
   
   #//=======================================================//
   
@@ -127,7 +129,7 @@ class Node (object):
     for node in self.source_nodes:
       source_values += node.target_values
     
-    return DependsValue( self.name, source_values )
+    return DependsValue( self.name_key, source_values )
   
   #//=======================================================//
   
@@ -139,19 +141,19 @@ class Node (object):
     
     dep_values += self.builder.values()
     
-    return DependsValue( self.deps_name, dep_values )
+    return DependsValue( self.deps_key, dep_values )
   
   #//=======================================================//
   
   def   __getattr__( self, attr ):
-    if attr in ('name', 'targets_name', 'itargets_name', 'deps_name', 'ideps_name'):
-      self.name, self.targets_name, self.itargets_name, self.deps_name, self.ideps_name = self.__getNames()
+    if attr in ('name_key', 'targets_key', 'itargets_key', 'deps_key', 'ideps_key'):
+      self.name_key, self.targets_key, self.itargets_key, self.deps_key, self.ideps_key = self.__getNameKeys()
       return getattr(self, attr)
     
-    elif attr == 'long_name':
-      long_name = self.__getLongName()
-      self.long_name = long_name
-      return long_name
+    elif attr == 'name':
+      name = self.__getName()
+      self.name = name
+      return name
     
     elif attr == 'sources_value':
       self.sources_value = self.__sourcesValue()
@@ -177,9 +179,9 @@ class Node (object):
     
     values.append( self.sources_value )
     values.append( self.deps_value )
-    values.append( DependsValue( self.ideps_name,     self.idep_values )    )
-    values.append( DependsValue( self.targets_name,   self.target_values )  )
-    values.append( DependsValue( self.itargets_name,  self.itarget_values ) )
+    values.append( DependsValue( self.ideps_key,     self.idep_values )    )
+    values.append( DependsValue( self.targets_key,   self.target_values )  )
+    values.append( DependsValue( self.itargets_key,  self.itarget_values ) )
     
     vfile.addValues( values )
   
@@ -195,9 +197,9 @@ class Node (object):
   
   #//=======================================================//
   
-  def   _build( self ):
+  def   _build( self, build_manager ):
     
-    target_values, itarget_values, idep_values = self.builder.build( self )
+    target_values, itarget_values, idep_values = self.builder.build( build_manager, self )
     
     self.__checkValues( target_values )
     self.__checkValues( itarget_values )
@@ -209,11 +211,11 @@ class Node (object):
   
   #//=======================================================//
   
-  def   build( self, vfile ):
+  def   build( self, build_manager, vfile ):
     
     event_manager.eventBuildingNode( self )
     
-    self._build()
+    self._build( build_manager )
     
     self.__save( vfile )
     
@@ -225,9 +227,9 @@ class Node (object):
     sources_value = self.sources_value
     deps_value    = self.deps_value
     
-    targets_value   = DependsValue( self.targets_name   )
-    itargets_value  = DependsValue( self.itargets_name  )
-    ideps_value     = DependsValue( self.ideps_name     )
+    targets_value   = DependsValue( self.targets_key   )
+    itargets_value  = DependsValue( self.itargets_key  )
+    ideps_value     = DependsValue( self.ideps_key     )
     
     values = [ sources_value, deps_value, targets_value, itargets_value, ideps_value ]
     values = vfile.findValues( values )
@@ -259,7 +261,7 @@ class Node (object):
   
   def   clear( self, vfile ):
     
-    values = [ DependsValue( self.targets_name  ), DependsValue( self.itargets_name  ) ]
+    values = [ DependsValue( self.targets_key  ), DependsValue( self.itargets_key  ) ]
     
     targets_value, itargets_value = vfile.findValues( values )
     target_values = targets_value.content
@@ -352,28 +354,28 @@ class Node (object):
       return name
     
     depth = 0
-    long_name = []
+    name = []
     
     node = self
     
     while True:
       node = next(iter(node.source_nodes))
       
-      long_name.append( str( node.builder ) + ': ['  )
+      name.append( str( node.builder ) + ': ['  )
       depth += 1
       
       first_source = node.__friendlyName()
       if first_source is not None:
-        long_name.append( first_source )
+        name.append( first_source )
         break
     
-    long_name += [']'] * depth
+    name += [']'] * depth
     
     # g++: [ moc: [ m4: src1.m4 ... ] ]
     
-    return ' '.join( long_name )
+    return ' '.join( name )
   
   #//-------------------------------------------------------//
   
   def   __repr__(self):
-    return str( self.long_name )
+    return str( self.name )

@@ -386,9 +386,28 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   values( self ):
+    values = set( self.__dict__['__opt_values'].values() )
+    parent = self.__dict__['__parent']
+    if parent:
+      values.update( parent.values() )
+    
+    return values
+  
+  #//-------------------------------------------------------//
+  
   def   items( self ):
     for name in self.keys():
       yield ( name, self._get_value( name )[0] )
+  
+  #//-------------------------------------------------------//
+  
+  def   setGroup( group, opt_values = None ):
+    if opt_values is None:
+      opt_values = self.values()
+    
+    for opt_value in opt_values:
+      opt_value.option_type.group = group
   
   #//-------------------------------------------------------//
   
@@ -399,7 +418,7 @@ class Options (object):
     return bool(self.__dict__['__opt_values']) or bool(self.__dict__['__parent'])
   
   #//-------------------------------------------------------//
-
+  
   def     update( self, other ):
     if not other:
       return
