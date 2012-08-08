@@ -17,42 +17,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
 import os
 import tempfile
 
 class Tempfile (object):
-    
-  __slots__ = ('__handle','name')
-
-  def   __init__(self):
-    self.__handle = tempfile.NamedTemporaryFile( mode = 'w+b', delete = False )
+  
+  __slots__ = ('__handle', 'name')
+  
+  def   __init__(self, prefix = 'tmp', suffix = ''):
+    self.__handle = tempfile.NamedTemporaryFile( mode = 'w+b', suffix = suffix, prefix = prefix, delete = False )
     self.name = self.__handle.name
-
+  
   def   __enter__(self):
     return self
-
+  
   def   __exit__(self, exc_type, exc_value, traceback):
     self.remove()
-
+  
   def write( self, buffer ):
     self.__handle.write( buffer )
-
+  
   def read( self, buffer ):
     self.__handle.read( buffer )
-
+  
   def seek( self, offset, whence = os.SEEK_SET ):
     self.__handle.seek( offset )
-
+  
   def tell( self ):
     return self.__handle.tell()
-
+  
   def flush( self ):
     self.__handle.flush()
-
+  
   def close( self ):
     self.__handle.close()
-
+    return self
+  
   def remove( self ):
     self.__handle.close()
     try:
@@ -61,4 +61,34 @@ class Tempfile (object):
       pass
     
     return self
+
+#//===========================================================================//
+
+class Tempfiles( object ):
+  __slots__ = ('tmpfilenames')
+  
+  def   __init__(self, tmpfilenames = None ):
+    
+    if isinstance( tmpfilenames, str ):
+      tmpfilenames = [ tmpfilenames ]
+    else:
+      try:
+        iter( tmpfilenames )
+      except TypeError:
+        tmpfilenames = [ tmpfilenames ]
+    
+    self.tmpfilenames = lsist( map( str, tmpfilenames ) )
+  
+  def   __enter__(self):
+    return self
+  
+  def   __exit__(self, exc_type, exc_value, traceback):
+    self.remove()
+  
+  def remove( self ):
+    for tmpfname in self.tmpfilenames:
+      try:
+        os.remove( self.name )
+      except OSError:
+        pass
 

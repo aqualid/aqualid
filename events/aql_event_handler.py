@@ -106,7 +106,10 @@ class EventHandler( object ):
   def   eventFailedNode( self, node, error ):
     logError("Failed node: %s" % str(node) )
     logError("Error: %s" % str(error) )
-    traceback.print_tb( error.__traceback__ )
+    try:
+      traceback.print_tb( error.__traceback__ )
+    except AttrinuteError:
+      pass
 
 
 #//===========================================================================//

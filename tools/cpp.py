@@ -3,8 +3,9 @@ from aql_node import Node
 from aql_builder import Builder
 from aql_value import Value, NoContent
 from aql_file_value import FileValue
-from aql_utils import toSequence, isSequence
+from aql_utils import toSequence, isSequence, execCommand
 from aql_simple_types import FilePath
+from aql_errors import InvalidSourceValueType
 
 # 1. Env( tools = ['c++'] )
 # 2. Tool 'c++': ToolGcc, ToolMSVS, ToolIntelC, ToolClang, ...
@@ -16,26 +17,181 @@ from aql_simple_types import FilePath
 
 #//===========================================================================//
 
-class CompileCppBuilder (Builder):
+def   _getSourceFiles( values ):
   
-  def   __init__(self, env, options ):
+  src_files = []
+  
+  for value in values:
+    if not isinstance( value, FileValue ):
+      raise InvalidSourceValueType( value )
     
-    chcksum = hashlib.md5()
-    chcksum.update( name.encode() )
-    
-    self.name = chcksum.digest()
-    self.long_name = [ name ]
-    
-    self.env = env
-    self.builder = ChecksumBuilder( "ChecksumBuilder", offset, length )
+    src_files.append( value.name )
+  
+  return src_files
+
+#//===========================================================================//
+
+def   _addPrefix( prefix, values ):
+  return map( lambda v, prefix = prefix: prefix + v, values )
+
+#//===========================================================================//
+
+def   _mapToBuildDir( build_dir, source_file ):
+  
+  build_dir = os.path.normpath( build_dir )
+  source_file = os.path.abspath( os.path.normpath( source_file ) )
+  
+  drive, build_dir = os.path.splitdrive( build_dir )
+  
+  build_dir = list( filter( None, build_dir.split( os.path.sep ) ) )
+  build_dir = list( filter( None, build_dir.split( os.path.sep ) ) )
+  
+  for a, b in zip( )
+
+class BuildPathMapper( object ):
+  
+  __slots__ = ( 'build_dir_map', 'build_dir_default' )
+  
+  def   __init__( self ):
+    self.build_dir_map = {}
+    self.build_dir_default = None
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    target_values = []
+  @staticmethod
+  def   __splitPath( path ):
+    drive, path = os.path.splitdrive( os.path.normcase( path ) )
+    path = list( filter( None, path.split( os.path.sep ) ) )
+    path[0:1] = drive + os.path.sep
     
-    bm = self.env.build_manager
-    vfile = bm.valuesFile()
+    return path
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def __isBasePath( base_path, path ):
+    return path[0 : 0 + len(base_path)] == base_path
+  
+  #//-------------------------------------------------------//
+  
+  def   buildDir( self, build_dir, src_dir = None ):
+    build_dir = FileAbsPath( build_dir )
+    build_dir_seq = self.__splitPath( build_dir )
+    
+    if src_dir is None:
+      self.build_dir_default = (build_dir, build_dir_seq)
+    else:
+      if self.build_dir_default is None:
+        self.build_dir_default = (build_dir, build_dir_seq)
+      
+      src_dir = FileAbsPath( src_dir )
+      src_dir_seq = self.__splitPath( src_dir )
+      self.build_dir_map[ src_dir ] = ( src_dir_seq, build_dir, build_dir_seq )
+  
+  #//-------------------------------------------------------//
+  
+  def   mapPath( self, src_path ):
+    src_path = FileAbsPath( src_path )
+    src_path_seq = self.__splitPath( src_path )
+    
+    src_path_base = None
+    build_path = self.build_dir_default
+    
+    for src_dir, build_dir in self.build_dir_map.items():
+      if src_path.startswith( src_dir ):
+        build_path = build_dir
+        src_path_base = src_dir
+        break
+      
+      elif src_path.startswith( build_dir ):
+        build_path = build_dir  # keep looking for the specific mapping
+        src_path_base = build_dir
+    
+    if src_path_base is None:
+      
+    
+#//===========================================================================//
+
+def   _buildSingleSource( cmd, build_dir, source_file ):
+  with Tempfile() as dep_file:
+    cmd += [ '-MF', dep_file ]
+    
+    obj_file = os.path.relpath( )
+    
+    cmd += [ '-o', dep_files[0] ]
+
+#//===========================================================================//
+
+class CompileCppBuilder (Builder):
+  
+  def   __init__(self, name, env, options ):
+    
+    self.name = [ name ]
+    self.env = env
+    self.options = options
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, node ):
+    
+    options = self.options
+    
+    build_dir = options.build_dir().value()
+    
+    cmd = [options.cxx.value(), '-c', '-MMD', '-x', 'c++']
+    cmd += options.cxxflags.value()
+    cmd += options.ccflags.value()
+    cmd += _addPrefix( '-D', options.cppdefines.value() )
+    cmd += _addPrefix( '-I', options.cpppath.value() )
+    cmd += _addPrefix( '-I', options.ext_cpppath.value() )
+    
+    with Tempfiles() as dep_files:
+      src_files = _getSourceFiles( node.sources() )
+      if len(src_files) == 1:
+        src_file = src_files[0]
+        dep_files.append( Tempfile().close().name )
+        cmd += [ '-MF', dep_files[0] ]
+        cmd += [ '-o', dep_files[0] ]
+    
+    #'../build/<target OS>_<target CPU>_<cc name><cc ver>/<build variant>/tests'
+    #<build_dir_prefix>/<build_target>/<build_dir_suffix>/<prefix>
+    
+    CompileCpp( src_files, build_dir_suffix = 'sbe_sdk' )
+    
+    #// C:\work\src\sbe\build_dir
+    #// C:\work\src\sbe\tests\list\test_list.cpp
+    #// C:\work\src\sbe\sbe\path_finder\foo.cpp
+    #// C:\work\src\sbe\sbe\path_finder\bar.cpp
+    #// C:\work\src\sbe\sbe\hash\foo.cpp
+    #// C:\3rdparty\foo\src\foo.cpp
+    #// D:\TEMP\foo.cpp
+    #// C:\TEMP\foo.cpp
+    
+    #// C:\work\src\sbe\build_dir\tests\list\test_list.o
+    #// C:\work\src\sbe\build_dir\sbe\path_finder\foo.o
+    #// C:\work\src\sbe\build_dir\sbe\path_finder\bar.o
+    #// C:\work\src\sbe\build_dir\sbe\hash\foo.o
+    #// C:\work\src\sbe\build_dir\3rdparty\foo\src\foo.o
+    #// C:\work\src\sbe\build_dir\__D\TEMP\foo.o
+    #// C:\work\src\sbe\build_dir\__C\TEMP\foo.o
+    
+    # > cd C:\work\src\sbe\build_dir\tmp_1234
+    # > g++ -c -MMD -O3 tests\list\test_list.cpp sbe\path_finder\foo.cpp sbe\path_finder\bar.cpp
+    # > mv test_list.o tests\list\test_list.o
+    # > mv foo.o sbe\path_finder\foo.o
+    # > mv bar.o sbe\path_finder\bar.o
+    # > g++ -c -MMD -O3 tests\list\test_list.cpp sbe\path_finder\foo.cpp sbe\path_finder\bar.cpp
+    
+    cmd += src_files
+    
+    cmd = ' '.join( map(str, cmd ) )
+    
+    cwd = options.build_dir.value()
+    
+    #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
+    result = execCommand( cmd, cwd = cwd, env = None )
+    
+    target_values = []
     
     sub_nodes = []
     
@@ -94,8 +250,6 @@ class ToolCxx( Tool ):
     options.cxxflags += options.ocxxflags
     
     options.cc_name = StrOptionType( ignore_case = True, help = "C/C++ compiler name" )
-    options.cc = options.cc_name
-    
     options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
     
     options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
@@ -104,7 +258,7 @@ class ToolCxx( Tool ):
     options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers" )
     options.include = options.cpppath
     
-    options.extcpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
+    options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
   
   #//-------------------------------------------------------//
   @staticmethod

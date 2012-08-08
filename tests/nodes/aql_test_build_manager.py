@@ -163,9 +163,12 @@ def   _buildChecksums( vfilename, builder, src_files ):
   
   failed_nodes = bm.build()
   for node,err in failed_nodes:
-    import traceback
     print("err: %s" % str(err) )
-    traceback.print_tb( err.__traceback__ )
+    try:
+      import traceback
+      traceback.print_tb( err.__traceback__ )
+    except AttributeError:
+      pass
 
 #//===========================================================================//
 

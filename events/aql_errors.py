@@ -148,3 +148,17 @@ class   InvalidOptions( TypeError ):
   def   __init__( self, options ):
     msg = "Invalid options: '%s'" % (options, )
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   InvalidSourceValueType( TypeError ):
+  def   __init__( self, value ):
+    msg = "Invalid source value type: '%s'(%s)" % (type(value), value)
+    super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   CommandExecFailed( Exception ):
+  def   __init__( self, ex ):
+    msg = "Execution failure: '%s'" % str(ex)
+    super(type(self), self).__init__( msg )

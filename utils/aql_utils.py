@@ -25,6 +25,9 @@ import hashlib
 import threading
 import traceback
 import inspect
+import subprocess
+
+from aql_errors import CommandExecFailed
 
 #//===========================================================================//
 
@@ -144,8 +147,6 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
   
   if not f_varargs and not f_varkw:
     if current_args_num > args_num:
-      #~ print("current_args_num: %s" % current_args_num )
-      #~ print("max_args_num: %s" % args_num )
       return False
   
   if f_defaults:
@@ -155,15 +156,12 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
   
   min_args_num = args_num - def_args_num
   if current_args_num < min_args_num:
-    #~ print("current_args_num: %s" % current_args_num )
-    #~ print("min_args_num: %s" % min_args_num )
     return False
   
   kw = set(kw)
   unknown_args = kw - set(f_args)
   
   if unknown_args and not f_varkw:
-    #~ print("unknown_args: %s" % str(unknown_args))
     return False
   
   def_args = f_args[args_num - def_args_num:]
@@ -171,15 +169,77 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
   
   non_def_args_num = len(args) + len(non_def_kw)
   if non_def_args_num < min_args_num:
-    #~ print("non_def_args_num (%s) < min_args_num(%s)" % (non_def_args_num, min_args_num) )
     return False
   
   twice_args = set(f_args[:len(args)]) & kw
   if twice_args:
-    #~ print("twice_args: %s" % str(twice_args))
     return False
   
   return True
+
+#//===========================================================================//
+
+def  findFiles( path = ".", prefix = "", suffix = "", ignore_dir_prefixes = ('__', '.') ):
+  
+  found_files = []
+  
+  ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
+  
+  for root, dirs, files in os.walk( path ):
+    for file_name in files:
+      file_name = file_name.lower()
+      if file_name.startswith( prefix ) and file_name.endswith( suffix ):
+        found_files.append( os.path.join(root, file_name))
+    
+    tmp_dirs = []
+    
+    for dir in dirs:
+      for dir_prefix in ignore_dir_prefixes:
+        if not dir.startswith( dir_prefix ):
+          tmp_dirs.append( dir )
+    
+    dirs[:] = tmp_dirs
+  
+  return found_files
+
+#//===========================================================================//
+
+def _decodeData( data ):
+  if not data:
+    return str()
+  
+  try:
+    codec = sys.stdout.encoding
+  except AttributeError:
+    codec = None
+  
+  if not codec:
+    codec = 'utf_8'
+  
+  if not isinstance(data, str):
+    data = data.decode( codec )
+  
+  return data
+
+#//===========================================================================//
+
+def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = None, env = None ):
+  try:
+    p = subprocess.Popen( cmd, stdout = stdout, stderr = stderr, cwd = cwd, env = env )
+    (stdoutdata, stderrdata) = p.communicate()
+    result = p.returncode
+  except Exception as ex:
+    raise CommandExecFailed( ex )
+  
+  stdoutdata = _decodeData( stdoutdata )
+  stderrdata = _decodeData( stderrdata )
+
+  return result, stdoutdata, stderrdata
+
+#//===========================================================================//
+
+def   mergePath( dir, path ):
+  
 
 #//===========================================================================//
 

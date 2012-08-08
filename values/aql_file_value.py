@@ -149,7 +149,7 @@ class   FileName (str):
       if path is None:
         return super(FileName,cls).__new__(cls)
     
-      full_path = os.path.normcase( os.path.normpath( os.path.abspath( str(path) ) ) )
+      full_path = os.path.normcase( os.path.abspath( str(path) ) )
     
     return super(FileName,cls).__new__(cls, full_path)
   

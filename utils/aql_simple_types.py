@@ -159,16 +159,16 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def     __new__(cls, value = None ):
-    if (cls is FilePath) and (type(value) is cls):
-      return value
+  def     __new__(cls, path = None ):
+    if (cls is FilePath) and (type(path) is cls):
+      return path
     
-    if value is None:
-        value = ''
+    if path is None:
+        path = ''
     
-    value = os.path.normpath( str(value) )
+    path = os.path.normpath( str(path) )
     
-    return super(FilePath,cls).__new__( cls, value )
+    return super(FilePath,cls).__new__( cls, path )
   
   #//-------------------------------------------------------//
   
@@ -184,4 +184,34 @@ class   FilePath (FilePathBase):
     return super(FilePath,self).__gt__( FilePath( other ) )
   def   __ge__( self, other ):
     return super(FilePath,self).__ge__( FilePath( other ) )
+
+#//===========================================================================//
+
+class   FileAbsPath (FilePathBase):
+  
+  def     __new__(cls, path = None ):
+    if (cls is FileAbsPath) and (type(path) is cls):
+      return path
+    
+    if path is None:
+        path = ''
+    
+    path = os.path.abspath( str(path) )
+    
+    return super(FileAbsPath,cls).__new__( cls, path )
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):
+    return super(FileAbsPath,self).__eq__( FileAbsPath( other ) )
+  def   __ne__( self, other ):
+    return super(FileAbsPath,self).__ne__( FileAbsPath( other ) )
+  def   __lt__( self, other ):
+    return super(FileAbsPath,self).__lt__( FileAbsPath( other ) )
+  def   __le__( self, other ):
+    return super(FileAbsPath,self).__le__( FileAbsPath( other ) )
+  def   __gt__( self, other ):
+    return super(FileAbsPath,self).__gt__( FileAbsPath( other ) )
+  def   __ge__( self, other ):
+    return super(FileAbsPath,self).__ge__( FileAbsPath( other ) )
 
