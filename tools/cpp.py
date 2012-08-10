@@ -44,11 +44,7 @@ class BuildPathMapper( object ):
     'has_suffix',
   )
   
-  def   __init__( self, options ):
-    
-    build_dir_prefix = options.build_dir_prefix.value()
-    build_dir_suffix = options.build_dir_suffix.value()
-    build_dir_name = options.build_dir_name.value()
+  def   __init__( self, build_dir_prefix, build_dir_name, build_dir_suffix ):
     
     build_dir = os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) )
     
@@ -92,31 +88,6 @@ class BuildPathMapper( object ):
     src_build_path = os.path.join( *[ [self.build_dir] + src_path_seq ] )
     
     return src_build_path
-
-#//===========================================================================//
-
-def   buildDirOptions( options )
-    
-    #'../build/<target OS>_<target CPU>_<cc name><cc ver>/<build variant>/tests'
-    #<build_dir_prefix>/<build_target>/<build_dir_suffix>/<prefix>
-    
-    build_dir_options = []
-    options.build_dir = PathOptionType( description = "The building directory full path." )
-    build_dir_options.append( options.build_dir )
-    
-    options.build_dir_prefix = PathOptionType( description = "The building directory prefix." )
-    build_dir_options.append( options.build_dir_prefix )
-    
-    options.build_dir_suffix = PathOptionType( description = "The building directory suffix." )
-    build_dir_options.append( options.build_dir_suffix )
-    
-    options.build_dir_name = StrOptionType( description = "The building directory name." )
-    build_dir_options.append( options.build_dir_name )
-    
-    options.prefix = StrOptionType( description = "Output files prefix." )
-    build_dir_options.append( options.prefix )
-    
-    options.setGroup( "Build output", build_dir_options )
 
 #//===========================================================================//
 
