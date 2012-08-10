@@ -402,11 +402,15 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   setGroup( group, opt_values = None ):
+  def   setGroup( self, group, opt_values = None ):
     if opt_values is None:
       opt_values = self.values()
     
-    for opt_value in opt_values:
+    for opt_value in toSequence(opt_values):
+      #~ print("setGroup: opt_value: %s" % str(opt_value))
+      if isinstance( opt_value, OptionValueProxy ):
+        opt_value = opt_value.option_value
+      
       opt_value.option_type.group = group
   
   #//-------------------------------------------------------//
@@ -419,7 +423,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def     update( self, other ):
+  def   update( self, other ):
     if not other:
       return
     
@@ -429,15 +433,14 @@ class Options (object):
     self.clearCache()
     
     for name, value in other.items():
+      
+      if isinstance( value, OptionValue ):
+        value = value.copy()
+      
+      elif isinstance( value, OptionValueProxy ):
+        value = value.option_value.copy()
+      
       try:
-        if isinstance( value, OptionValue ):
-          v = ConditionalValue( SetValue( value.value( other ) ) )
-          value = OptionValue( value.option_type, v )
-        
-        elif isinstance( value, OptionValueProxy ):
-          v = ConditionalValue( SetValue( value.value() ) )
-          value = OptionValue( value.option_type, v )
-        
         self.__set_value( name, value, UpdateValue )
       except UnknownOptionType:
         pass

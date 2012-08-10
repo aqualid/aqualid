@@ -36,80 +36,88 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
-def   _mapToBuildDir( build_dir, source_file ):
-  
-  build_dir = os.path.normpath( build_dir )
-  source_file = os.path.abspath( os.path.normpath( source_file ) )
-  
-  drive, build_dir = os.path.splitdrive( build_dir )
-  
-  build_dir = list( filter( None, build_dir.split( os.path.sep ) ) )
-  build_dir = list( filter( None, build_dir.split( os.path.sep ) ) )
-  
-  for a, b in zip( )
-
 class BuildPathMapper( object ):
   
-  __slots__ = ( 'build_dir_map', 'build_dir_default' )
+  __slots__ = (
+    'build_dir',
+    'build_dir_seq',
+    'has_suffix',
+  )
   
-  def   __init__( self ):
-    self.build_dir_map = {}
-    self.build_dir_default = None
+  def   __init__( self, options ):
+    
+    build_dir_prefix = options.build_dir_prefix.value()
+    build_dir_suffix = options.build_dir_suffix.value()
+    build_dir_name = options.build_dir_name.value()
+    
+    build_dir = os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) )
+    
+    has_suffix = bool(build_dir_suffix)
+    
+    self.build_dir = build_dir
+    self.build_dir_seq = self.__seqPath( build_dir )
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __splitPath( path ):
-    drive, path = os.path.splitdrive( os.path.normcase( path ) )
-    path = list( filter( None, path.split( os.path.sep ) ) )
-    path[0:1] = drive + os.path.sep
+  def   __seqPath( path ):
+    path = path.replace(':', os.path.sep)
+    path = list( map( FilePath, filter( None, path.split( os.path.sep ) ) ) )
     
     return path
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def __isBasePath( base_path, path ):
-    return path[0 : 0 + len(base_path)] == base_path
+  def __commonSeqPathSize( seq_path1, seq_path2 ):
+    for i, parts in enumerate( zip( seq_path1, seq_path2 ) ):
+      if parts[0] != parts[1]:
+        return i
+    
+    return i + 1
   
   #//-------------------------------------------------------//
   
-  def   buildDir( self, build_dir, src_dir = None ):
-    build_dir = FileAbsPath( build_dir )
-    build_dir_seq = self.__splitPath( build_dir )
+  def   getBuildPath( self, src_path ):
+    if self.has_suffix:
+      return self.build_dir
     
-    if src_dir is None:
-      self.build_dir_default = (build_dir, build_dir_seq)
-    else:
-      if self.build_dir_default is None:
-        self.build_dir_default = (build_dir, build_dir_seq)
-      
-      src_dir = FileAbsPath( src_dir )
-      src_dir_seq = self.__splitPath( src_dir )
-      self.build_dir_map[ src_dir ] = ( src_dir_seq, build_dir, build_dir_seq )
-  
-  #//-------------------------------------------------------//
-  
-  def   mapPath( self, src_path ):
-    src_path = FileAbsPath( src_path )
-    src_path_seq = self.__splitPath( src_path )
+    src_path = os.path.abspath( src_path )
+    src_path_seq = self.__seqPath( src_path )
     
-    src_path_base = None
-    build_path = self.build_dir_default
+    common_size = self.__commonSeqPathSize( self.build_dir_seq, src_path_seq )
     
-    for src_dir, build_dir in self.build_dir_map.items():
-      if src_path.startswith( src_dir ):
-        build_path = build_dir
-        src_path_base = src_dir
-        break
-      
-      elif src_path.startswith( build_dir ):
-        build_path = build_dir  # keep looking for the specific mapping
-        src_path_base = build_dir
+    del src_path_seq[ 0 : common_size ]
     
-    if src_path_base is None:
-      
+    src_build_path = os.path.join( *[ [self.build_dir] + src_path_seq ] )
     
+    return src_build_path
+
+#//===========================================================================//
+
+def   buildDirOptions( options )
+    
+    #'../build/<target OS>_<target CPU>_<cc name><cc ver>/<build variant>/tests'
+    #<build_dir_prefix>/<build_target>/<build_dir_suffix>/<prefix>
+    
+    build_dir_options = []
+    options.build_dir = PathOptionType( description = "The building directory full path." )
+    build_dir_options.append( options.build_dir )
+    
+    options.build_dir_prefix = PathOptionType( description = "The building directory prefix." )
+    build_dir_options.append( options.build_dir_prefix )
+    
+    options.build_dir_suffix = PathOptionType( description = "The building directory suffix." )
+    build_dir_options.append( options.build_dir_suffix )
+    
+    options.build_dir_name = StrOptionType( description = "The building directory name." )
+    build_dir_options.append( options.build_dir_name )
+    
+    options.prefix = StrOptionType( description = "Output files prefix." )
+    build_dir_options.append( options.prefix )
+    
+    options.setGroup( "Build output", build_dir_options )
+
 #//===========================================================================//
 
 def   _buildSingleSource( cmd, build_dir, source_file ):
@@ -163,7 +171,7 @@ class CompileCppBuilder (Builder):
     #// C:\work\src\sbe\sbe\path_finder\foo.cpp
     #// C:\work\src\sbe\sbe\path_finder\bar.cpp
     #// C:\work\src\sbe\sbe\hash\foo.cpp
-    #// C:\3rdparty\foo\src\foo.cpp
+    #// C:\work\3rdparty\foo\src\foo.cpp
     #// D:\TEMP\foo.cpp
     #// C:\TEMP\foo.cpp
     
@@ -259,10 +267,14 @@ class ToolCxx( Tool ):
     options.include = options.cpppath
     
     options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
+    
+    options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
+    options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
   
   #//-------------------------------------------------------//
   @staticmethod
   def   __linkerOptions( options ):
+    
     options.linkflags = ListOptionType( description = "Linker options" )
     options.libflags = ListOptionType( description = "Archiver options" )
     

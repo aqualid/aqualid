@@ -11,6 +11,7 @@ from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
 from aql_option_value import OptionValue, ConditionalValue, Condition
 from aql_options import Options, AddValue, SubValue
+from aql_builtin_options import builtinOptions
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, \
                        InvalidOptionValueType, UnknownOptionType, ExistingOptionValue, ForeignOptionValue
@@ -330,6 +331,25 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.debug_on, options2.debug_on )
     self.assertEqual( options.bv, "debug,release,final,debug,release,final" )
 
+  #//-------------------------------------------------------//
+  
+  def   test_builtin_options(self):
+    options = builtinOptions()
+    self.assertEqual( options.build_variant, 'debug' )
+    self.assertEqual( options.optimization, 'off' )
+    
+    options.build_variant = 'release'
+    self.assertEqual( options.optimization, 'speed' )
+    
+    options.build_variant = 'release_size'
+    self.assertEqual( options.optimization, 'size' )
+    
+    options.build_variant = 'final'
+    self.assertEqual( options.optimization, 'speed' )
+    
+    self.assertEqual( options.build_variant.optionType().group, "Build output" )
+    
+    
 
 #//===========================================================================//
 

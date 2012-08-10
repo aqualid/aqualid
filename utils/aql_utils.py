@@ -238,11 +238,6 @@ def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = 
 
 #//===========================================================================//
 
-def   mergePath( dir, path ):
-  
-
-#//===========================================================================//
-
 def     getShellScriptEnv( os_env, script ):
     
     import sys

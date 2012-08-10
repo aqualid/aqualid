@@ -345,14 +345,14 @@ class   StrOptionType (OptionType):
 
 class   VersionOptionType (OptionType):
   def     __init__( self, description = None, group = None, range_help = None ):
-    super(StrOptionType, self).__init__( Version, description, group, range_help )
+    super(VersionOptionType, self).__init__( Version, description, group, range_help )
 
 #//===========================================================================//
 #//===========================================================================//
 
 class   PathOptionType (OptionType):
   def     __init__( self, description = None, group = None, range_help = None ):
-    super(StrOptionType, self).__init__( FilePath, description, group, range_help )
+    super(PathOptionType, self).__init__( FilePath, description, group, range_help )
 
 #//===========================================================================//
 #//===========================================================================//
