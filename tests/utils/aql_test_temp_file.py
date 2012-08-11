@@ -5,7 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_temp_file import Tempfile
+from aql_temp_file import Tempfile, Tempdir
 
 #//===========================================================================//
 
@@ -39,6 +39,15 @@ class TestTempFile( AqlTestCase ):
       with open(temp_file_name, "r") as temp_file_rh:
         test_string_read = temp_file_rh.read()
         self.assertEqual( test_string,test_string_read )
+  
+  #//=======================================================//
+  
+  def test_temp_dir(self):
+    with Tempdir() as tmp_dir:
+      for i in range(10):
+        Tempfile( dir = tmp_dir.path, suffix = '.tmp' )
+      
+    self.assertFalse( os.path.exists(tmp_dir.path) )
     
 #//===========================================================================//
 

@@ -291,8 +291,6 @@ class TestBuildManager( AqlTestCase ):
     event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as tmp:
-      #~ tmp = Tempfile()
-      
       src_files = _generateSourceFiles( 3, 201 )
       try:
         builder = ChecksumBuilder("ChecksumBuilder", 0, 256 )
@@ -314,13 +312,11 @@ class TestBuildManager( AqlTestCase ):
     event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as tmp:
-      #~ tmp = Tempfile()
       
       src_files = _generateSourceFiles( 3, 201 )
       try:
         builder = ChecksumBuilder("ChecksumBuilder", 0, 256, replace_ext = True )
         _buildChecksums( tmp.name, builder, src_files )
-        #~ _buildChecksums( tmp.name, builder, src_files )
         
         bm = _addNodesToBM( tmp.name, builder, src_files )
         bm.status(); bm.selfTest()
@@ -337,7 +333,6 @@ class TestBuildManager( AqlTestCase ):
     event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as vfilename:
-      #~ tmp = Tempfile()test_bm_node_names
       
       src_files = _generateSourceFiles( 3, 201 )
       try:

@@ -19,14 +19,22 @@
 
 import os
 import tempfile
+import shutil
 
 class Tempfile (object):
   
   __slots__ = ('__handle', 'name')
   
-  def   __init__(self, prefix = 'tmp', suffix = ''):
-    self.__handle = tempfile.NamedTemporaryFile( mode = 'w+b', suffix = suffix, prefix = prefix, delete = False )
-    self.name = self.__handle.name
+  def   __init__(self, prefix = 'tmp', suffix = '', dir = None, filename = None ):
+    if filename is None:
+      handle = tempfile.NamedTemporaryFile( mode = 'w+b', suffix = suffix, prefix = prefix, dir = dir, delete = False )
+      filename = handle.name
+      handle.close()
+    else:
+      filename = os.path.absname( filename )
+    
+    self.name = filename
+    self.__handle = None
   
   def   __enter__(self):
     return self
@@ -35,26 +43,38 @@ class Tempfile (object):
     self.remove()
   
   def write( self, buffer ):
+    self.open()
     self.__handle.write( buffer )
   
   def read( self, buffer ):
+    self.open()
     self.__handle.read( buffer )
   
   def seek( self, offset, whence = os.SEEK_SET ):
+    self.open()
     self.__handle.seek( offset )
   
   def tell( self ):
+    self.open()
     return self.__handle.tell()
   
   def flush( self ):
-    self.__handle.flush()
+    if self.__handle is not None:
+      self.__handle.flush()
+  
+  def open( self ):
+    if self.__handle is None:
+      self.__handle = open( self.name, 'w+b' )
+    return self
   
   def close( self ):
-    self.__handle.close()
+    if self.__handle is not None:
+      self.__handle.close()
+      self.__handle = None
     return self
   
   def remove( self ):
-    self.__handle.close()
+    self.close()
     try:
       os.remove( self.name )
     except OSError:
@@ -64,20 +84,23 @@ class Tempfile (object):
 
 #//===========================================================================//
 
-class Tempfiles( object ):
-  __slots__ = ('tmpfilenames')
+class Tempdir( object ):
+  __slots__ = ('path')
   
-  def   __init__(self, tmpfilenames = None ):
+  def   __init__( self, prefix = 'tmp', suffix = '', dir = None, name = None ):
     
-    if isinstance( tmpfilenames, str ):
-      tmpfilenames = [ tmpfilenames ]
+    if name is None:
+      self.path = tempfile.mkdtemp( prefix = prefix, suffix = suffix, dir = dir )
     else:
-      try:
-        iter( tmpfilenames )
-      except TypeError:
-        tmpfilenames = [ tmpfilenames ]
-    
-    self.tmpfilenames = lsist( map( str, tmpfilenames ) )
+      if dir is not None:
+        name = os.path.join( dir, name )
+      
+      name = os.path.absname( name )
+      
+      if not os.path.isdir( name ):
+        os.makedirs( name )
+      
+      self.path = name
   
   def   __enter__(self):
     return self
@@ -86,9 +109,5 @@ class Tempfiles( object ):
     self.remove()
   
   def remove( self ):
-    for tmpfname in self.tmpfilenames:
-      try:
-        os.remove( self.name )
-      except OSError:
-        pass
+    shutil.rmtree( self.path, ignore_errors = True )
 

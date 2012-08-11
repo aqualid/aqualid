@@ -162,3 +162,10 @@ class   CommandExecFailed( Exception ):
   def   __init__( self, ex ):
     msg = "Execution failure: '%s'" % str(ex)
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   BuildError( Exception ):
+  def   __init__( self, msg ):
+    msg = "Build error: '%s'" % str(msg)
+    super(type(self), self).__init__( msg )

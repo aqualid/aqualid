@@ -36,68 +36,51 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
-class BuildPathMapper( object ):
-  
-  __slots__ = (
-    'build_dir',
-    'build_dir_seq',
-    'has_suffix',
-  )
-  
-  def   __init__( self, build_dir_prefix, build_dir_name, build_dir_suffix ):
-    
-    build_dir = os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) )
-    
-    has_suffix = bool(build_dir_suffix)
-    
-    self.build_dir = build_dir
-    self.build_dir_seq = self.__seqPath( build_dir )
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __seqPath( path ):
-    path = path.replace(':', os.path.sep)
-    path = list( map( FilePath, filter( None, path.split( os.path.sep ) ) ) )
-    
-    return path
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def __commonSeqPathSize( seq_path1, seq_path2 ):
-    for i, parts in enumerate( zip( seq_path1, seq_path2 ) ):
-      if parts[0] != parts[1]:
-        return i
-    
-    return i + 1
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildPath( self, src_path ):
-    if self.has_suffix:
-      return self.build_dir
-    
-    src_path = os.path.abspath( src_path )
-    src_path_seq = self.__seqPath( src_path )
-    
-    common_size = self.__commonSeqPathSize( self.build_dir_seq, src_path_seq )
-    
-    del src_path_seq[ 0 : common_size ]
-    
-    src_build_path = os.path.join( *[ [self.build_dir] + src_path_seq ] )
-    
-    return src_build_path
-
-#//===========================================================================//
-
-def   _buildSingleSource( cmd, build_dir, source_file ):
+def   _buildSingleSource( cmd, outdir_mapper, source_file ):
   with Tempfile() as dep_file:
     cmd += [ '-MF', dep_file ]
     
-    obj_file = os.path.relpath( )
+    obj_file = outdir_mapper.getBuildPath( source_file ) + '.o'
+    cmd += [ '-o', obj_file ]
     
-    cmd += [ '-o', dep_files[0] ]
+    cmd = ' '.join( map(str, cmd ) )
+    
+    cwd = outdir_mapper.getBuildPath()
+    
+    #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
+    result, out, err = execCommand( cmd, cwd = cwd, env = None )
+    if result:
+      raise BuildError( out + '\n' + err )
+    
+    #TODO: add dependecies
+    
+    return [ FileValue( obj_file ) ], [], []
+
+#//===========================================================================//
+
+def   _buildSources( cmd, outdir_mapper, source_files ):
+  build_dir = outdir_mapper.getBuildPath()
+  
+  tmpdir = tempfile.mkdtemp( dir = build_dir )
+  
+  with Tempfile() as dep_file:
+    cmd += [ '-MF', dep_file ]
+    
+    obj_file = outdir_mapper.getBuildPath( source_file ) + '.o'
+    cmd += [ '-o', obj_file ]
+    
+    cmd = ' '.join( map(str, cmd ) )
+    
+    cwd = outdir_mapper.getBuildPath()
+    
+    #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
+    result, out, err = execCommand( cmd, cwd = cwd, env = None )
+    if result:
+      raise BuildError( out + '\n' + err )
+    
+    #TODO: add dependecies
+    
+    return [ FileValue( obj_file ) ], [], []
 
 #//===========================================================================//
 

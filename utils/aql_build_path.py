@@ -58,7 +58,10 @@ class BuildPathMapper( object ):
   
   #//-------------------------------------------------------//
   
-  def   getBuildPath( self, src_path ):
+  def   getBuildPath( self, src_path = None ):
+    if src_path is None:
+      return self.build_dir
+    
     if self.has_suffix:
       return os.path.join( self.build_dir, os.path.basename( src_path ) )
     
@@ -67,8 +70,7 @@ class BuildPathMapper( object ):
     
     common_size = self.__commonSeqPathSize( self.build_dir_seq, src_path_seq )
     
-    del src_path_seq[ 0 : common_size ]
-    
-    src_build_path = os.path.join( *( [self.build_dir] + src_path_seq ) )
+    src_path_seq[ 0 : common_size ] = [ self.build_dir ]
+    src_build_path = os.path.join( *src_path_seq )
     
     return src_build_path
