@@ -43,21 +43,27 @@ class   IgnoreCaseString (str):
   
   #//-------------------------------------------------------//
   
+  @staticmethod
+  def   __convert(other ):
+    return other if isinstance( other, IgnoreCaseString ) else IgnoreCaseString( other )
+  
+  #//-------------------------------------------------------//
+  
   def   __hash__(self):
     return hash(self.__value)
   
   def   __eq__( self, other):
-    return self.__value == IgnoreCaseString( other ).__value
+    return self.__value == self.__convert( other ).__value
   def   __ne__( self, other):
-    return self.__value != IgnoreCaseString( other ).__value
+    return self.__value != self.__convert( other ).__value
   def   __lt__( self, other):
-    return self.__value <  IgnoreCaseString( other ).__value
+    return self.__value <  self.__convert( other ).__value
   def   __le__( self, other):
-    return self.__value <= IgnoreCaseString( other ).__value
+    return self.__value <= self.__convert( other ).__value
   def   __gt__( self, other):
-    return self.__value >  IgnoreCaseString( other ).__value
+    return self.__value >  self.__convert( other ).__value
   def   __ge__( self, other):
-    return self.__value >= IgnoreCaseString( other ).__value
+    return self.__value >= self.__convert( other ).__value
 
 #//===========================================================================//
 #//===========================================================================//
@@ -132,21 +138,27 @@ class   Version (str):
   
   #//-------------------------------------------------------//
   
+  @staticmethod
+  def   __convert( other ):
+    return other if isinstance( other, Version ) else Version( other )
+  
+  #//-------------------------------------------------------//
+  
   def   __hash__(self):
     return hash(self.__version)
   
   def   __eq__( self, other):
-    return self.__version == Version( other ).__version
+    return self.__version == self.__convert( other ).__version
   def   __lt__( self, other):
-    return self.__version <  Version( other ).__version
+    return self.__version <  self.__convert( other ).__version
   def   __le__( self, other):
-    return self.__version <= Version( other ).__version
+    return self.__version <= self.__convert( other ).__version
   def   __ne__( self, other):
-    return self.__version != Version( other ).__version
+    return self.__version != self.__convert( other ).__version
   def   __gt__( self, other):
-    return self.__version >  Version( other ).__version
+    return self.__version >  self.__convert( other ).__version
   def   __ge__( self, other):
-    return self.__version >= Version( other ).__version
+    return self.__version >= self.__convert( other ).__version
 
 #//===========================================================================//
 
@@ -172,46 +184,84 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):
-    return super(FilePath,self).__eq__( FilePath( other ) )
-  def   __ne__( self, other ):
-    return super(FilePath,self).__ne__( FilePath( other ) )
-  def   __lt__( self, other ):
-    return super(FilePath,self).__lt__( FilePath( other ) )
-  def   __le__( self, other ):
-    return super(FilePath,self).__le__( FilePath( other ) )
-  def   __gt__( self, other ):
-    return super(FilePath,self).__gt__( FilePath( other ) )
-  def   __ge__( self, other ):
-    return super(FilePath,self).__ge__( FilePath( other ) )
-
-#//===========================================================================//
-
-class   FileAbsPath (FilePathBase):
-  
-  def     __new__(cls, path = None ):
-    if (cls is FileAbsPath) and (type(path) is cls):
-      return path
-    
-    if path is None:
-        path = ''
-    
-    path = os.path.abspath( str(path) )
-    
-    return super(FileAbsPath,cls).__new__( cls, path )
+  @staticmethod
+  def   __convert( other ):
+    return other if isinstance( other, FilePath ) else FilePath( other )
   
   #//-------------------------------------------------------//
   
   def   __eq__( self, other ):
-    return super(FileAbsPath,self).__eq__( FileAbsPath( other ) )
+    return super(FilePath,self).__eq__( self.__convert( other ) )
   def   __ne__( self, other ):
-    return super(FileAbsPath,self).__ne__( FileAbsPath( other ) )
+    return super(FilePath,self).__ne__( self.__convert( other ) )
   def   __lt__( self, other ):
-    return super(FileAbsPath,self).__lt__( FileAbsPath( other ) )
+    return super(FilePath,self).__lt__( self.__convert( other ) )
   def   __le__( self, other ):
-    return super(FileAbsPath,self).__le__( FileAbsPath( other ) )
+    return super(FilePath,self).__le__( self.__convert( other ) )
   def   __gt__( self, other ):
-    return super(FileAbsPath,self).__gt__( FileAbsPath( other ) )
+    return super(FilePath,self).__gt__( self.__convert( other ) )
   def   __ge__( self, other ):
-    return super(FileAbsPath,self).__ge__( FileAbsPath( other ) )
-
+    return super(FilePath,self).__ge__( self.__convert( other ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    if attr == 'name_ext':
+      self.name_ext = FilePathBase( os.path.basename(self) )
+      return self.name_ext
+    
+    elif attr == 'ext':
+      self.ext = FilePathBase( os.path.splitext( self.name_ext )[1] )
+      return self.ext
+    
+    elif attr == 'name':
+      self.name = FilePathBase( os.path.splitext( self.name_ext )[0] )
+      return self.name
+    
+    elif attr == 'dir':
+      self.dir = FilePathBase( os.path.dirname( self ) )
+      return self.dir
+    
+    elif attr in ['seq', 'drive']:
+      self.drive, self.seq = self.__makeSeq( self.dir )
+      return getattr( self, attr )
+    
+    raise AttributeError( attr )
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __makeSeq( path ):
+    drive, path = os.path.splitdrive( path )
+    if not drive:
+      drive, path = os.path.splitunc( path )
+    
+    path = tuple( map( FilePathBase, filter( None, path.split( os.path.sep ) ) ) )
+    
+    return drive, path
+  
+  #//-------------------------------------------------------//
+  
+  def   mergePaths( self, other ):
+    other = FilePath( other )
+    
+    seq = self.seq
+    other_seq = other.seq
+    
+    path = self.dir
+    
+    if self.drive == other.drive:
+      for i, parts in enumerate( zip( seq, other.seq ) ):
+        if parts[0] != parts[1]:
+          break
+      
+      path = os.path.join( path, *other_seq[i:] )
+      
+    else:
+      drive = other.drive.replace(':','')
+      filter( None, drive.split( os.path.sep ) )
+      path = os.path.join( path, *filter( None, drive.split( os.path.sep ) ) )
+      path = os.path.join( path, *other_seq )
+    
+    path = os.path.join( path, other.name_ext )
+    return FilePath( path )

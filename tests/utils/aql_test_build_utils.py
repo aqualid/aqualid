@@ -11,7 +11,7 @@ from aql_build_path import BuildPathMapper
 
 #//===========================================================================//
 
-class TestBuildPath( AqlTestCase ):
+class TestBuildUtils( AqlTestCase ):
   
   #//---------------------------------------------------------------------------//
   

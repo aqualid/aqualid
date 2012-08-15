@@ -36,12 +36,41 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
-def   _buildSingleSource( cmd, outdir_mapper, source_file ):
+def   _getOutFiles( src_files, our_dir, out_exts ):
+  
+  out_exts = tuple( toSequence( out_exts ) )
+  
+  out_files_lists = [ [] * len(out_exts) ]
+  
+  for src_file in toSequence( src_files ):
+    name = os.path.splitext( os.path.basename( src_file ) )[0]
+    for i, ext in enumerate( out_exts ):
+      out_files_lists[i].append( os.path.join( out_dir, name ) + ext )
+  
+  return out_files_lists
+
+#//===========================================================================//
+
+def   _moveFiles( )
+
+    for src_file, obj_file in zip( src_files, obj_files ):
+        if os.path.isfile( obj_file ):
+          target_obj_file = outdir_mapper.getBuildPath( src_file )
+          target_dir = os.path.dirname( target_obj_file )
+          if not os.path.isdir( target_dir ):
+            os.makedirs( os.path.basename( target_obj_file ) )
+          shutil.move( obj_file, target_obj_file )
+
+
+#//===========================================================================//
+
+def   _buildSingleSource( cmd, outdir_mapper, src_file ):
   with Tempfile() as dep_file:
     cmd += [ '-MF', dep_file ]
     
-    obj_file = outdir_mapper.getBuildPath( source_file ) + '.o'
+    obj_file = outdir_mapper.getBuildPath( src_file ) + '.o'
     cmd += [ '-o', obj_file ]
+    cmd += [ src_file ]
     
     cmd = ' '.join( map(str, cmd ) )
     
@@ -58,24 +87,36 @@ def   _buildSingleSource( cmd, outdir_mapper, source_file ):
 
 #//===========================================================================//
 
-def   _buildSources( cmd, outdir_mapper, source_files ):
+
+#//===========================================================================//
+
+def   _buildSources( cmd, outdir_mapper, src_files ):
   build_dir = outdir_mapper.getBuildPath()
   
-  tmpdir = tempfile.mkdtemp( dir = build_dir )
-  
-  with Tempfile() as dep_file:
-    cmd += [ '-MF', dep_file ]
+  with Tempdir( dir = build_dir ) as tmp_dir:
+    cwd = tmp_dir.path
     
-    obj_file = outdir_mapper.getBuildPath( source_file ) + '.o'
-    cmd += [ '-o', obj_file ]
+    cmd += src_files
     
     cmd = ' '.join( map(str, cmd ) )
     
-    cwd = outdir_mapper.getBuildPath()
+    obj_files, dep_files = _getOutFiles( src_files, cwd, ['.o', '.d'] )
     
     #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
     result, out, err = execCommand( cmd, cwd = cwd, env = None )
+    
+    for src_file, obj_file in zip( src_files, obj_files ):
+        if os.path.isfile( obj_file ):
+          target_obj_file = outdir_mapper.getBuildPath( src_file )
+          target_dir = os.path.dirname( target_obj_file )
+          if not os.path.isdir( target_dir ):
+            os.makedirs( os.path.basename( target_obj_file ) )
+          shutil.move( obj_file, target_obj_file )
+    
     if result:
+      for src_file, obj_file in zip( src_files, obj_files ):
+        
+      
       raise BuildError( out + '\n' + err )
     
     #TODO: add dependecies
