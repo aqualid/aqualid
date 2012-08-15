@@ -122,6 +122,9 @@ class TestSimpleTypes( AqlTestCase ):
     file2 = os.path.abspath('bar/file2.txt')
     host_file = '//host/share/bar/file3.txt'
     
+    if file1[0].isalpha():
+      disk_file = os.path.join( 'a:', os.path.splitdrive( file1 )[1] )
+    
     p = FilePath( file1 )
     p2 = FilePath( file2 )
     self.assertEqual( p.name_ext, os.path.basename(file1) )
@@ -132,6 +135,8 @@ class TestSimpleTypes( AqlTestCase ):
     
     self.assertEqual( p.mergePaths( p2 ), os.path.join( p.dir, os.path.basename(p2.dir), p2.name_ext ) )
     self.assertEqual( p.mergePaths( host_file ), os.path.join( p.dir, *(filter(None, host_file.split('/'))) ) )
+    
+    self.assertEqual( p.mergePaths( disk_file ), os.path.join( p.dir, 'a', os.path.splitdrive( file1 )[1].strip( os.path.sep ) ) )
 
 #//===========================================================================//
 
