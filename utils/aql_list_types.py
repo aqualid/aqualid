@@ -406,7 +406,7 @@ def   ValueListType( list_type, value_type ):
     #//-------------------------------------------------------//
     
     def   __toSequence( self, values ):
-      if isinstance( values, _ValueList):
+      if isinstance( values, _ValueList ):
         return values
       
       return map( value_type, toSequence(values) )

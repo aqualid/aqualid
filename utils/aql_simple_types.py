@@ -223,10 +223,23 @@ class   FilePath (FilePathBase):
       return self.dir
     
     elif attr in ['seq', 'drive']:
-      self.drive, self.seq = self.__makeSeq( self.dir )
+      self.drive, self.seq = self.__makeSeq( self )
       return getattr( self, attr )
     
     raise AttributeError( attr )
+  
+  #//-------------------------------------------------------//
+  
+  def   replaceExt( self, new_ext ):
+    return FilePath( os.path.join( self.dir, self.name + new_ext ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   replaceDir( self, files ):
+    if isSequence( files ):
+      return map( lambda f, d = self.dir : FilePath( os.path.join( d, FilePath(f).name_ext ) ), toSequence( files ) )
+    
+    return FilePath( os.path.join( self.dir, files.name_ext) ) )
   
   #//-------------------------------------------------------//
   
@@ -248,7 +261,7 @@ class   FilePath (FilePathBase):
     seq = self.seq
     other_seq = other.seq
     
-    path = self.dir
+    path = self
     
     if self.drive == other.drive:
       for i, parts in enumerate( zip( seq, other.seq ) ):
@@ -263,5 +276,4 @@ class   FilePath (FilePathBase):
       path = os.path.join( path, *filter( None, drive.split( os.path.sep ) ) )
       path = os.path.join( path, *other_seq )
     
-    path = os.path.join( path, other.name_ext )
     return FilePath( path )

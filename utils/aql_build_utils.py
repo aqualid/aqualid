@@ -31,30 +31,8 @@ class BuildPathMapper( object ):
   
   def   __init__( self, build_dir_prefix, build_dir_name, build_dir_suffix ):
     
-    build_dir = os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) )
-    
-    self.build_dir      = build_dir
-    self.build_dir_seq  = self.__seqPath( build_dir )
-    self.has_suffix     = bool(build_dir_suffix)
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __seqPath( path ):
-    path = path.replace(':', os.path.sep)
-    path = list( map( FilePath, filter( None, path.split( os.path.sep ) ) ) )
-    
-    return path
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def __commonSeqPathSize( seq_path1, seq_path2 ):
-    for i, parts in enumerate( zip( seq_path1, seq_path2 ) ):
-      if parts[0] != parts[1]:
-        return i
-    
-    return i + 1
+    self.build_dir  = FilePath( os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) ) )
+    self.has_suffix = bool(build_dir_suffix)
   
   #//-------------------------------------------------------//
   
@@ -62,20 +40,15 @@ class BuildPathMapper( object ):
     if src_path is None:
       return self.build_dir
     
+    src_path = FilePath( src_path )
+    
     if self.has_suffix:
-      return os.path.join( self.build_dir, os.path.basename( src_path ) )
+      return os.path.join( self.build_dir, src_path.name_ext )
     
-    src_path = os.path.abspath( src_path )
-    src_path_seq = self.__seqPath( src_path )
-    
-    common_size = self.__commonSeqPathSize( self.build_dir_seq, src_path_seq )
-    
-    src_path_seq[ 0 : common_size ] = [ self.build_dir ]
-    src_build_path = os.path.join( *src_path_seq )
-    
-    return src_build_path
+    return self.build_dir.mergePath( src_path )
   
   #//-------------------------------------------------------//
+  
   def   getBuildPaths( self, src_paths ):
     
     paths = []
@@ -86,7 +59,7 @@ class BuildPathMapper( object ):
   
   #//-------------------------------------------------------//
   
-  def   getBuildFiles( self, src_files, exts, tmp_dir = None,
+  def   getBuildFiles( self, src_files, out_exts, tmp_dir = None,
                         _splitext = os.path.splitext, _join = os.path.join, _basename = os.path.basename ):
     
     out_exts = tuple( toSequence( out_exts ) )
@@ -94,13 +67,17 @@ class BuildPathMapper( object ):
     out_files_lists = [ [] * len(out_exts) ]
     tmp_files_lists = [ [] * len(out_exts) ]
     
+    if tmp_dir:
+      tmp_dir = FilePath( tmp_dir )
+    
     for src_file in toSequence( src_files ):
-      name = _splitext( src_file )[0]
-      dst_file = self.getBuildPath( name )
-      if tmp_dir:
-        tmp_dst_file = _join( tmp_dir, _basename( src_file ) )
+      src_file = FilePath( src_file )
       
-      for i, ext in enumerate( exts ):
+      dst_file = self.getBuildPath( src_file )
+      if tmp_dir:
+        tmp_dst_file = _join( tmp_dir, src_file.name_ext )
+      
+      for i, ext in enumerate( out_exts ):
         out_files_lists[i].append( dst_file + ext )
         if tmp_dir:
           tmp_files_lists[i].append( tmp_dst_file + ext )
@@ -126,22 +103,6 @@ def   getFilesFromValues( values ):
 
 def   addPrefix( prefix, values ):
   return map( lambda v, prefix = prefix: prefix + v, values )
-
-#//===========================================================================//
-
-def   getOutputFiles( src_files, our_dir, out_exts,
-                      _splitext = os.path.splitext, _join = os.path.join, _basename = os.path.basename ):
-  
-  out_exts = tuple( toSequence( out_exts ) )
-  
-  out_files_lists = [ [] * len(out_exts) ]
-  
-  for src_file in toSequence( src_files ):
-    name = _splitext( _basename( src_file ) )[0]
-    for i, ext in enumerate( out_exts ):
-      out_files_lists[i].append( _join( out_dir, name ) + ext )
-  
-  return out_files_lists
 
 #//===========================================================================//
 
