@@ -38,11 +38,9 @@ class GccCompileCppBuilder (Builder):
       
       cwd = self.buildPath()
       
-      #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
-      result, out, err = execCommand( cmd, cwd = cwd, env = None )
+      result, out, err = execCommand( cmd, cwd = cwd, env = None )    # TODO: env = options.os_env
       if result:
         raise BuildError( out + '\n' + err )
-      
       
       src_node_targets = [ FileValue(obj_file) ]
       src_node_itargets = []
@@ -93,20 +91,17 @@ class GccCompileCppBuilder (Builder):
       if result:
         raise BuildError( out + '\n' + err )
       
-      #TODO: add dependecies
-      
       return targets, itargets, ideps
   
   #//-------------------------------------------------------//
   
-  def   __buildSources( self, cmd, node, vfile ):
-    src_files = FilePaths( node.sources() )
+  def   __buildSources( self, vfile, cmd, src_files ):
     
     targets = []
     itargets = []
     ideps = []
     
-    src_nodes = map( lambda src_file, builder = self: Node( builder, FileValue( src_file) ), src_files )
+    src_nodes = map( lambda src_file, builder = self: Node( builder, FileValue( src_file ) ), src_files )
     
     while src_files:
       batch_src_nodes = []
@@ -140,13 +135,10 @@ class GccCompileCppBuilder (Builder):
       targets += tmp_targets
       itargets += tmp_itargets
       ideps += tmp_ideps
-    
-    src_nodes = list( map( lambda src_file, builder = self: Node( builder, FileValue( src_file) ), src_files ))
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
-    
+  def   __cmd( self ):
     options = self.options
     
     cmd = [options.cxx.value(), '-c', '-MMD', '-x', 'c++']
@@ -156,61 +148,32 @@ class GccCompileCppBuilder (Builder):
     cmd += _addPrefix( '-I', options.cpppath.value() )
     cmd += _addPrefix( '-I', options.ext_cpppath.value() )
     
-    node
+    return cmd
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, vfile, node ):
     
-    with Tempfiles() as dep_files:
-      src_files = _getSourceFiles( node.sources() )
-      if len(src_files) == 1:
-        src_file = src_files[0]
-        dep_files.append( Tempfile().close().name )
-        cmd += [ '-MF', dep_files[0] ]
-        cmd += [ '-o', dep_files[0] ]
+    cmd       = self.__cmd()
+    src_files = FilePaths( node.sources() )
     
+    targets, itargets, ideps = self.__buildSources( cmd, vfile, cmd, src_files )
     
-    # > cd C:\work\src\sbe\build_dir\tmp_1234
-    # > g++ -c -MMD -O3 tests\list\test_list.cpp sbe\path_finder\foo.cpp sbe\path_finder\bar.cpp
-    # > mv test_list.o tests\list\test_list.o
-    # > mv foo.o sbe\path_finder\foo.o
-    # > mv bar.o sbe\path_finder\bar.o
-    # > g++ -c -MMD -O3 tests\list\test_list.cpp sbe\path_finder\foo.cpp sbe\path_finder\bar.cpp
-    
-    cmd += src_files
-    
-    cmd = ' '.join( map(str, cmd ) )
-    
-    cwd = options.build_dir.value()
-    
-    #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
-    result = execCommand( cmd, cwd = cwd, env = None )
-    
-    target_values = []
-    
-    sub_nodes = []
-    
-    for source_value in node.sources():
-      
-      n = Node( self.builder, source_value )
-      if n.actual( vfile ):
-        target_values += n.targets()
-      else:
-        sub_nodes.append( n )
-    
-    if sub_nodes:
-      bm.addDeps( node, sub_nodes ); bm.selfTest()
-      raise RebuildNode()
-    
-    return target_values, [], []
+    return targets, itargets, ideps
   
   #//-------------------------------------------------------//
   
   def   clear( self, node, target_values, itarget_values ):
     for value in target_values:
       value.remove()
+    
+    for value in itarget_values:
+      value.remove()
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
-    return self.builder.values()
+  def   signatures( self ):
+    return hashlib.md5( ' '.join( map(str, self.__cmd() ) ) )
   
   #//-------------------------------------------------------//
   

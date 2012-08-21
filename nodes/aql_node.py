@@ -46,9 +46,11 @@ class Node (object):
     'itargets_key',
     'deps_key',
     'ideps_key',
+    'builder_key',
     
     'sources_value',
     'deps_value',
+    'builder_value',
   )
   
   #//-------------------------------------------------------//
@@ -117,7 +119,10 @@ class Node (object):
      chcksum.update( b'idep_values' )
      ideps_key = chcksum.digest()
      
-     return name_key, targets_key, itargets_key, deps_key, ideps_key
+     chcksum.update( b'builder_key' )
+     builder_key = chcksum.digest()
+     
+     return name_key, targets_key, itargets_key, deps_key, ideps_key, builder_key
   
   #//=======================================================//
   
@@ -137,15 +142,15 @@ class Node (object):
     for node in self.dep_nodes:
       dep_values += node.target_values
     
-    dep_values += self.builder.values()
+    dep_values.append( self.builder_value )
     
     return DependsValue( self.deps_key, dep_values )
   
   #//=======================================================//
   
   def   __getattr__( self, attr ):
-    if attr in ('name_key', 'targets_key', 'itargets_key', 'deps_key', 'ideps_key'):
-      self.name_key, self.targets_key, self.itargets_key, self.deps_key, self.ideps_key = self.__getNameKeys()
+    if attr in ('name_key', 'targets_key', 'itargets_key', 'deps_key', 'ideps_key', 'builder_key'):
+      self.name_key, self.targets_key, self.itargets_key, self.deps_key, self.ideps_key, self.builder_key = self.__getNameKeys()
       return getattr(self, attr)
     
     elif attr == 'name':
@@ -161,16 +166,19 @@ class Node (object):
       self.deps_value = self.__depsValue()
       return self.deps_value
     
+    elif attr == 'builder_value':
+      self.builder_value = Value( self.builder_key, self.builder.signature() )
+      return self.builder_value
+    
     raise UnknownAttribute( self, attr )
   
   #//=======================================================//
   
   def   __save( self, vfile ):
     
-    values = []
+    values = [ self.builder_value ]
     values += self.source_values
     values += self.dep_values
-    values += self.builder.values()
     values += self.idep_values
     values += self.target_values
     values += self.itarget_values
@@ -209,9 +217,9 @@ class Node (object):
   
   #//=======================================================//
   
-  def   _build( self, build_manager ):
+  def   _build( self, build_manager, vfile ):
     
-    target_values, itarget_values, idep_values = self.builder.build( build_manager, self )
+    target_values, itarget_values, idep_values = self.builder.build( build_manager, vfile, self )
     
     self.__checkValues( target_values )
     self.__checkValues( itarget_values )

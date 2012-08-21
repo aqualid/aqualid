@@ -96,12 +96,15 @@ class   Value (object):
   
   def   __getstate__(self):
     return {}
-  def   __setstate__(self,state):   pass
+  
+  def   __setstate__(self, state):
+    pass
   
   #//-------------------------------------------------------//
   
   def   copy( self ):
     return type(self)( self.name, self.content )
+  
   #//-------------------------------------------------------//
   
   def   __copy__( self ):

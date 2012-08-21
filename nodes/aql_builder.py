@@ -43,7 +43,7 @@ class Builder (object):
    
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     """
     Builds the node and returns values: targets, intermediate targets, impicit dependencies
     """
@@ -75,15 +75,15 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
+  def   signature( self ):
     """
-    Returns builder values
+    Returns builder signature which uniquely identify builder's parameters
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
-  def   clean( self, node, target_values, itarget_values ):
+  def   clear( self, node, target_values, itarget_values ):
     """
     Cleans produced values
     """
