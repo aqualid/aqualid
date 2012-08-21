@@ -9,7 +9,8 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_simple_types import IgnoreCaseString, FilePath
+from aql_simple_types import IgnoreCaseString
+from aql_path_types import FilePath
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 

@@ -235,7 +235,7 @@ class Node (object):
     
     event_manager.eventBuildingNode( self )
     
-    self._build( build_manager )
+    self._build( build_manager, vfile )
     
     self.__save( vfile )
     

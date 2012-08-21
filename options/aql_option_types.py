@@ -20,7 +20,7 @@
 
 from aql_utils import toSequence
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionType
-from aql_simple_types import IgnoreCaseString, Version, FilePath
+from aql_simple_types import IgnoreCaseString, Version
 from aql_path_types import FilePath
 from aql_list_types import UniqueList, List, SplitListType, ValueListType
 

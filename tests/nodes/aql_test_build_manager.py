@@ -27,7 +27,7 @@ class CopyValueBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     target_values = []
     
     for source_value in node.sources():
@@ -37,8 +37,8 @@ class CopyValueBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
-    return [Value(self.name_key, "")]
+  def   signature( self ):
+    return str()
   
   #//-------------------------------------------------------//
   
@@ -65,7 +65,7 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     target_values = []
     
     for source_value in node.sources():
@@ -85,14 +85,8 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, node, target_values, itarget_values ):
-    for value in target_values:
-      value.remove()
-  
-  #//-------------------------------------------------------//
-  
-  def   values( self ):
-    return [ Value(self.name_key, (self.offset, self.length) ) ]
+  def   signature( self ):
+    return [ self.offset, self.length ]
   
   #//-------------------------------------------------------//
   
@@ -203,11 +197,8 @@ class MultiChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     target_values = []
-    
-    print(type(build_manager))
-    vfile = build_manager.valuesFile()
     
     sub_nodes = []
     
@@ -227,14 +218,8 @@ class MultiChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, node, target_values, itarget_values ):
-    for value in target_values:
-      value.remove()
-  
-  #//-------------------------------------------------------//
-  
-  def   values( self ):
-    return self.builder.values()
+  def   signature( self ):
+    return self.builder.signature()
   
   #//-------------------------------------------------------//
   

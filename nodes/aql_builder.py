@@ -17,7 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-import hashlib
+import shutil
 
 from aql_utils import toSequence
 from aql_path_types import FilePath, FilePaths
@@ -36,7 +36,6 @@ class Builder (object):
     'env',
     'options',
     'name',
-    'name_key',
     'build_dir',
     'do_path_merge',
   )
@@ -52,18 +51,8 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
-    if attr == 'name_key':
-      chcksum = hashlib.md5()
-      
-      for name in toSequence( self.name ):
-        chcksum.update( name.encode() )
-      
-      name_key = chcksum.digest()
-      
-      self.name_key = name_key
-      return name_key
     
-    if attr = 'build_dir':
+    if attr == 'build_dir':
       build_dir_prefix  = self.options.build_dir_prefix.value()
       build_dir_name    = self.options.build_dir_name.value()
       build_dir_suffix  = self.options.build_dir_suffix.value()
@@ -87,7 +76,11 @@ class Builder (object):
     """
     Cleans produced values
     """
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+    for value in target_values:
+      value.remove()
+    
+    for value in itarget_values:
+      value.remove()
   
   #//-------------------------------------------------------//
   
@@ -111,4 +104,13 @@ class Builder (object):
   
   def   buildPaths( self, src_paths ):
     return FilePaths( map(self.getBuildPath, toSequence( src_paths ) ) )
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   moveFile( src_file, dst_file ):
+    dst_file = FilePath( dst_file )
+    if not os.path.isdir( dst_file.dir ):
+      os.makedirs( dst_file.dir )
+    shutil.move( src_file, dst_file )
 

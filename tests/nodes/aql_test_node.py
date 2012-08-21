@@ -26,7 +26,7 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     target_values = []
     itarget_values = []
     
@@ -43,8 +43,8 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
-    return [Value(self.name_key, "")]
+  def   signature( self ):
+    return ""
   
   #//-------------------------------------------------------//
   
@@ -65,7 +65,7 @@ class CopyBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     target_values = []
     itarget_values = []
     idep_values = []
@@ -86,8 +86,8 @@ class CopyBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
-    return [Value(self.name_key, self.ext + '|' + self.iext)]
+  def   signature( self ):
+    return [self.ext, self.iext]
   
   #//-------------------------------------------------------//
   
@@ -239,7 +239,7 @@ class TestSpeedBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, node ):
+  def   build( self, build_manager, vfile, node ):
     target_values = []
     itarget_values = []
     idep_values = []
@@ -257,8 +257,8 @@ class TestSpeedBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   values( self ):
-    return [Value(self.name, self.ext + '|' + self.idep)]
+  def   signature( self ):
+    return [self.ext, self.idep]
   
   #//-------------------------------------------------------//
   

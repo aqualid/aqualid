@@ -77,7 +77,7 @@ class GccCompileCppBuilder (Builder):
       
       for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):
-          moveFile( tmp_obj_file, obj_file )
+          self.moveFile( tmp_obj_file, obj_file )
           
           src_node_targets = [ FileValue(obj_file) ]
           src_node_itargets = []

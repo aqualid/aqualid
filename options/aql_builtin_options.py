@@ -1,6 +1,7 @@
 
 from aql_options import Options
-from aql_simple_types import IgnoreCaseString, FilePath
+from aql_simple_types import IgnoreCaseString
+from aql_path_types import FilePath
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//
