@@ -64,64 +64,77 @@ def   _moveFiles( )
 
 #//===========================================================================//
 
-def   _buildSingleSource( cmd, outdir_mapper, src_file ):
+def   _buildSingleSource( self, cmd, src_node ):
   with Tempfile() as dep_file:
     cmd += [ '-MF', dep_file ]
     
-    obj_file = outdir_mapper.getBuildPath( src_file ) + '.o'
+    src_file = FilePath( src_node.sources()[0] )
+    
+    obj_file = self.buildPath( src_file ) + '.o'
     cmd += [ '-o', obj_file ]
     cmd += [ src_file ]
     
     cmd = ' '.join( map(str, cmd ) )
     
-    cwd = outdir_mapper.getBuildPath()
+    cwd = self.buildPath()
     
     #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
     result, out, err = execCommand( cmd, cwd = cwd, env = None )
     if result:
       raise BuildError( out + '\n' + err )
     
-    #TODO: add dependecies
     
-    return [ FileValue( obj_file ) ], [], []
+    src_node_targets = [ FileValue(obj_file) ]
+    src_node_itargets = []
+    src_node_ideps = [] # TODO add dependecies
+    src_node.save( src_node_targets, src_node_itargets, src_node_ideps )
+    
+    return src_node_targets, src_node_itargets, src_node_ideps
 
 #//===========================================================================//
 
-
-#//===========================================================================//
-
-def   _buildSources( cmd, outdir_mapper, src_files ):
+def   _buildSources( self, cmd, src_nodes ):
   build_dir = outdir_mapper.getBuildPath()
   
   with Tempdir( dir = build_dir ) as tmp_dir:
     cwd = tmp_dir.path
     
+    src_files = FilePaths( map(lambda node: node.sources[0], src_nodes ) )
+    
     cmd += src_files
     
     cmd = ' '.join( map(str, cmd ) )
     
-    obj_files, dep_files = _getOutFiles( src_files, cwd, ['.o', '.d'] )
+    tmp_obj_files = src_files.replaceDirAndExt( cwd, '.o' )
+    tmp_dep_files = tmp_obj_files.replaceExt( '.d' )
     
-    #~ result = execCommand( cmd, cwd = cwd, env = options.os_env )
-    result, out, err = execCommand( cmd, cwd = cwd, env = None )
+    obj_files = src_files.addExt( '.o' )
+    obj_files = self.getBuildPaths( obj_files )
     
-    for src_file, obj_file in zip( src_files, obj_files ):
-        if os.path.isfile( obj_file ):
-          target_obj_file = outdir_mapper.getBuildPath( src_file )
-          target_dir = os.path.dirname( target_obj_file )
-          if not os.path.isdir( target_dir ):
-            os.makedirs( os.path.basename( target_obj_file ) )
-          shutil.move( obj_file, target_obj_file )
+    result, out, err = execCommand( cmd, cwd = cwd, env = None )  # TODO: env = options.os_env
     
-    if result:
-      for src_file, obj_file in zip( src_files, obj_files ):
+    targets = []
+    itargets = []
+    ideps = []
+    
+    for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
+      if os.path.isfile( tmp_obj_file ):
+        moveFile( tmp_obj_file, obj_file )
         
+        src_node_targets = [ FileValue(obj_file) ]
+        src_node_itargets = []
+        src_node_ideps = [] # TODO add dependecies
+        src_node.save( src_node_targets, src_node_itargets, src_node_ideps )
+        
+        targets += src_node_targets
+        ideps += src_node_ideps
       
+    if result:
       raise BuildError( out + '\n' + err )
     
     #TODO: add dependecies
     
-    return [ FileValue( obj_file ) ], [], []
+    return targets, itargets, ideps
 
 #//===========================================================================//
 

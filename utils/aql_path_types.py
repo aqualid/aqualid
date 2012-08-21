@@ -20,7 +20,8 @@
 import os.path
 
 from aql_simple_types import IgnoreCaseString
-from aql_list_types import ValueListType
+from aql_list_types import UniqueList, ValueListType
+from aql_file_value import FileValue
 
 #//===========================================================================//
 
@@ -39,6 +40,9 @@ class   FilePath (FilePathBase):
     
     if path is None:
         path = ''
+    
+    if isinstance( path, FileValue ):
+      path = path.name
     
     path = os.path.normpath( str(path) )
     
@@ -151,5 +155,25 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     
     for path in self:
       paths.append( path.dir_name + new_ext )
+    
+    return paths
+  
+  #//-------------------------------------------------------//
+  
+  def   replaceDirAndExt( self, new_dir, new_ext ):
+    paths = FilePaths()
+    
+    for path in self:
+      paths.append( os.path.join( new_dir, path.name + new_ext ) )
+    
+    return paths
+  
+  #//-------------------------------------------------------//
+  
+  def   addExt( self, new_ext ):
+    paths = FilePaths()
+    
+    for path in self:
+      paths.append( path.name + new_ext )
     
     return paths

@@ -19,13 +19,12 @@
 
 import os.path
 
-from aql_simple_types import FilePath
+from aql_path_types import FilePath
 
 class BuildPathMapper( object ):
   
   __slots__ = (
     'build_dir',
-    'build_dir_seq',
     'has_suffix',
   )
   
@@ -50,54 +49,7 @@ class BuildPathMapper( object ):
   #//-------------------------------------------------------//
   
   def   getBuildPaths( self, src_paths ):
-    
-    paths = []
-    for src_path in toSequence( src_paths ):
-      paths.append( self.getBuildPath( src_path ) )
-    
-    return paths
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildFiles( self, src_files, out_exts, tmp_dir = None,
-                        _splitext = os.path.splitext, _join = os.path.join, _basename = os.path.basename ):
-    
-    out_exts = tuple( toSequence( out_exts ) )
-    
-    out_files_lists = [ [] * len(out_exts) ]
-    tmp_files_lists = [ [] * len(out_exts) ]
-    
-    if tmp_dir:
-      tmp_dir = FilePath( tmp_dir )
-    
-    for src_file in toSequence( src_files ):
-      src_file = FilePath( src_file )
-      
-      dst_file = self.getBuildPath( src_file )
-      if tmp_dir:
-        tmp_dst_file = _join( tmp_dir, src_file.name_ext )
-      
-      for i, ext in enumerate( out_exts ):
-        out_files_lists[i].append( dst_file + ext )
-        if tmp_dir:
-          tmp_files_lists[i].append( tmp_dst_file + ext )
-    
-    return out_files_lists + tmp_files_lists
-
-
-#//===========================================================================//
-
-def   getFilesFromValues( values ):
-  
-  files = []
-  
-  for value in values:
-    if not isinstance( value, FileValue ):
-      raise InvalidSourceValueType( value )
-    
-    files.append( value.name )
-  
-  return files
+    return FilePaths( map(self.getBuildPath, toSequence( src_paths ) ) )
 
 #//===========================================================================//
 
@@ -106,17 +58,19 @@ def   addPrefix( prefix, values ):
 
 #//===========================================================================//
 
-def   moveFile( src_file, dst_file, _isdir = os.path.isdir, _makedirs = os.makedirs, _dirname = os.path.dirname ):
-  dst_dir = _dirname( dst_file )
-  if not _isdir( dst_dir ):
-    _makedirs( dst_dir )
+def   moveFile( src_file, dst_file ):
+  dst_file = FilePath( dst_file )
+  if not os.path.isdir( dst_file.dir ):
+    os.makedirs( dst_file.dir )
   shutil.move( src_file, dst_file )
 
 #//===========================================================================//
 
-def   _moveTempFiles( src_files, *tmp_dst_files)
-  for src_file, obj_file in zip( src_files, obj_files ):
-      if os.path.isfile( obj_file ):
-        target_obj_file = outdir_mapper.getBuildPath( src_file )
-        moveFile( target_obj_file, src_file )
-
+def   moveFiles( src_files, dst_files ):
+  moved_files = FilePaths()
+  for src_file, dst_file in zip( src_files, dst_files ):
+    if os.path.isfile( src_file ):
+      moveFile( src_file, dst_file )
+      moved_files.append( dst_file )
+  
+  return moved_files

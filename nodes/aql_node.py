@@ -94,8 +94,6 @@ class Node (object):
     
     names.sort()
     
-    print(str(names))
-    
     return names
 
   #//=======================================================//
@@ -194,6 +192,20 @@ class Node (object):
     for value in values:
       if not isinstance( value, Value ):
         raise InvalidBuilderResults( self, values )
+  
+  #//=======================================================//
+  
+  def   save( self, vfile, target_values, itarget_values, idep_values ):
+    
+    self.__checkValues( target_values )
+    self.__checkValues( itarget_values )
+    self.__checkValues( idep_values )
+    
+    self.target_values = target_values
+    self.itarget_values = itarget_values
+    self.idep_values = idep_values
+    
+    self.__save( vfile )
   
   #//=======================================================//
   

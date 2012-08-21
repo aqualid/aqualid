@@ -20,6 +20,7 @@
 import hashlib
 
 from aql_utils import toSequence
+from aql_path_types import FilePath, FilePaths
 
 class RebuildNode( Exception ):
   pass
@@ -36,6 +37,8 @@ class Builder (object):
     'options',
     'name',
     'name_key',
+    'build_dir',
+    'do_path_merge',
   )
    
   #//-------------------------------------------------------//
@@ -60,10 +63,17 @@ class Builder (object):
       self.name_key = name_key
       return name_key
     
+    if attr = 'build_dir':
+      build_dir_prefix  = self.options.build_dir_prefix.value()
+      build_dir_name    = self.options.build_dir_name.value()
+      build_dir_suffix  = self.options.build_dir_suffix.value()
+      self.build_dir = FilePath( os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) ) )
+      self.do_path_merge = not build_dir_suffix
+      return self.build_dir
+    
     raise UnknownAttribute( self, attr )
   
   #//-------------------------------------------------------//
-  
   
   def   values( self ):
     """
@@ -83,3 +93,22 @@ class Builder (object):
   
   def   __str__( self ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildPath( self, src_path ):
+    if src_path is None:
+      return self.build_dir
+    
+    src_path = FilePath( src_path )
+    
+    if self.do_path_merge:
+      return self.build_dir.mergePath( src_path )
+    
+    return FilePath( os.path.join( self.build_dir, src_path.name_ext ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildPaths( self, src_paths ):
+    return FilePaths( map(self.getBuildPath, toSequence( src_paths ) ) )
+
