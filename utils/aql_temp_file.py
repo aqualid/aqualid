@@ -36,6 +36,9 @@ class Tempfile (object):
     self.name = filename
     self.__handle = None
   
+  def   __str__(self):
+    return self.name
+  
   def   __enter__(self):
     return self
   
@@ -102,6 +105,9 @@ class Tempdir( object ):
       
       self.path = name
   
+  def   __str__(self):
+    return self.path
+  
   def   __enter__(self):
     return self
   
@@ -110,4 +116,3 @@ class Tempdir( object ):
   
   def remove( self ):
     shutil.rmtree( self.path, ignore_errors = True )
-

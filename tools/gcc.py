@@ -16,9 +16,11 @@ def   _addPrefix( prefix, values ):
 
 class GccCompileCppBuilder (Builder):
   
-  def   __init__(self, name, env, options ):
+  __slots__ = ('cmd', )
+  
+  def   __init__(self, env, options ):
     
-    self.name = [ name ]
+    self.name = "GccCppCompiler"
     self.env = env
     self.options = options
   
