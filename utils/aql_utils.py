@@ -18,14 +18,15 @@
 #
 
 
+import os
 import sys
-import os.path
 import fnmatch
 import hashlib
 import threading
 import traceback
 import inspect
 import subprocess
+import shutil
 
 from aql_errors import CommandExecFailed
 
@@ -235,6 +236,14 @@ def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = 
   stderrdata = _decodeData( stderrdata )
 
   return result, stdoutdata, stderrdata
+
+#//===========================================================================//
+
+def   moveFile( src_file, dst_file ):
+  dst_file = FilePath( dst_file )
+  if not os.path.isdir( dst_file.dir ):
+    os.makedirs( dst_file.dir )
+  shutil.move( src_file, dst_file )
 
 #//===========================================================================//
 

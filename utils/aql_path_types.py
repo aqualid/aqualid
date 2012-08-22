@@ -18,7 +18,9 @@
 #
 
 import os.path
+import itertools
 
+from aql_utils import toSequence
 from aql_simple_types import IgnoreCaseString
 from aql_list_types import UniqueList, ValueListType
 from aql_file_value import FileValue
@@ -110,6 +112,17 @@ class   FilePath (FilePathBase):
     path = tuple( map( FilePathBase, filter( None, path.split( os.path.sep ) ) ) )
     
     return drive, path
+  
+  #//-------------------------------------------------------//
+  
+  def   join( self, path, *paths ):
+    paths = itertools.chain( toSequence( path ), paths )
+    return FilePath( os.path.join( self, *paths ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   abs( self ):
+    return FilePath( os.path.abspath( self ) )
   
   #//-------------------------------------------------------//
   

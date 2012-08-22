@@ -53,11 +53,8 @@ class Builder (object):
   def   __getattr__( self, attr ):
     
     if attr == 'build_dir':
-      build_dir_prefix  = self.options.build_dir_prefix.value()
-      build_dir_name    = self.options.build_dir_name.value()
-      build_dir_suffix  = self.options.build_dir_suffix.value()
-      self.build_dir = FilePath( os.path.abspath( os.path.join( build_dir_prefix, build_dir_name, build_dir_suffix ) ) )
-      self.do_path_merge = not build_dir_suffix
+      self.build_dir = self.options.build_dir.value()
+      self.do_path_merge = self.options.do_build_path_merge
       return self.build_dir
     
     raise UnknownAttribute( self, attr )
@@ -105,12 +102,4 @@ class Builder (object):
   def   buildPaths( self, src_paths ):
     return FilePaths( map(self.getBuildPath, toSequence( src_paths ) ) )
   
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   moveFile( src_file, dst_file ):
-    dst_file = FilePath( dst_file )
-    if not os.path.isdir( dst_file.dir ):
-      os.makedirs( dst_file.dir )
-    shutil.move( src_file, dst_file )
 

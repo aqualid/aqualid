@@ -47,6 +47,12 @@ def   _evalValue( other, options, context ):
 def   _setOperator( dest_value, value ):
   return value
 
+def   _notOperator( dest_value, value ):
+  return not value
+
+def   _truthOperator( dest_value, value ):
+  return bool(value)
+
 def   _updateOperator( dest_value, value ):
   if isinstance( dest_value, (UniqueList, List) ):
     dest_value += value
@@ -69,6 +75,12 @@ def   SubValue( value, operation = None ):
 
 def   UpdateValue( value, operation = None ):
   return Operation( operation, _doAction, _updateOperator, value )
+
+def   NotValue( value, operation = None ):
+  return Operation( operation, _doAction, _notOperator, value )
+
+def   TruthValue( value, operation = None ):
+  return Operation( operation, _doAction, _notOperator, value )
 
 #//===========================================================================//
 
@@ -127,6 +139,14 @@ class OptionValueProxy (object):
     return self.cmp( operator.gt, other )
   def   __ge__( self, other ):
     return self.cmp( operator.ge, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   __bool__(self):
+    return bool( self.value() )
+  
+  def   __nonzero__(self):
+    return bool( self.value() )
   
   #//-------------------------------------------------------//
   

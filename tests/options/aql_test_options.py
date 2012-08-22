@@ -273,9 +273,8 @@ class TestOptions( AqlTestCase ):
     self.assertRaises( InvalidOptionValueType, options.appendValue, 'warn_level', 1 )
     self.assertRaises( UnknownOptionType, options.__setattr__, 'test', 1 )
     
-    print("-"*32)
     options.opt += options.opt
-    print("-"*32)
+    
     self.assertEqual( options.opt, 4 )
     
   #//-------------------------------------------------------//
@@ -320,9 +319,7 @@ class TestOptions( AqlTestCase ):
     options2.debug_on = BoolOptionType()
     options2.debug_on = False
     options2.bv = ListOptionType( value_type = str )
-    print("*"*32)
     options2.bv += 'debug,release,final'
-    print("*"*32)
     options += options2
     self.assertEqual( options.debug_on, options2.debug_on )
     self.assertEqual( options.bv, options2.bv )
@@ -348,6 +345,16 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.optimization, 'speed' )
     
     self.assertEqual( options.build_variant.optionType().group, "Build output" )
+    
+    self.assertTrue( options.do_build_path_merge )
+    
+    options.build_dir_suffix = 'syslib'
+    
+    self.assertFalse( options.do_build_path_merge )
+    
+    options.build_dir_suffix = None
+    
+    self.assertTrue( options.do_build_path_merge )
     
     
 

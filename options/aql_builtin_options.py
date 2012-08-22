@@ -1,5 +1,6 @@
 
-from aql_options import Options
+from aql_options import Options, NotValue
+from aql_option_value import ConditionalValue
 from aql_simple_types import IgnoreCaseString
 from aql_path_types import FilePath
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
@@ -14,6 +15,7 @@ def   _build_options():
     options.build_dir_suffix  = PathOptionType( description = "The building directory suffix." )
     options.build_dir_name    = StrOptionType( description = "The building directory name." )
     options.prefix            = StrOptionType( description = "Output files prefix." )
+    options.do_build_path_merge = BoolOptionType( description = "Should we merge source paths with build directory." )
     
     build_variant = EnumOptionType( values =  [
                                                 ('debug', 'dbg', 'd' ),
@@ -194,6 +196,17 @@ def   _init_defaults( options ):
     options.build_dir_name += options.target_arch
     options.build_dir_name += '_'
     options.build_dir_name += options.build_variant
+    
+    
+    def   _joinBuildDir( options, context, current_value ):
+      build_dir_prefix  = options.build_dir_prefix.value()
+      build_dir_name    = options.build_dir_name.value()
+      build_dir_suffix  = options.build_dir_suffix.value()
+      
+      return build_dir_prefix.join( build_dir_name, build_dir_suffix ).abs()
+    
+    options.build_dir = ConditionalValue( _joinBuildDir )
+    options.If().build_dir_suffix[ FilePath() ].do_build_path_merge = True
     
     #//-------------------------------------------------------//
     

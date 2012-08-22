@@ -4,7 +4,7 @@ from aql_builder import Builder
 from aql_value import Value, NoContent
 from aql_file_value import FileValue
 from aql_utils import toSequence, isSequence, execCommand
-from aql_simple_types import FilePath
+from aql_path_types import FilePath
 from aql_errors import InvalidSourceValueType
 
 #//===========================================================================//
