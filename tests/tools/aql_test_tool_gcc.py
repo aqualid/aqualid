@@ -9,13 +9,14 @@ from aql_utils import fileChecksum, printStacks
 from aql_temp_file import Tempfile, Tempdir
 from aql_path_types import FilePath, FilePaths
 from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
+from aql_values_file import ValuesFile
 from aql_node import Node
 from aql_build_manager import BuildManager
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_builtin_options import builtinOptions
 
-from gcc import GccCompileCppBuilder
+from gcc import GccCompileCppBuilder, gccOptions
 
 #//===========================================================================//
 
@@ -69,20 +70,37 @@ class TestToolGcc( AqlTestCase ):
 
   def test_gcc_compile(self):
     
-    event_manager.setHandlers( EventHandler() )
+      event_manager.setHandlers( EventHandler() )
     
-    with Tempdir() as tmp_dir:
-      build_dir = FilePath(tmp_dir).join('build')
+    #~ with Tempdir() as tmp_dir:
+      tmp_dir = Tempdir()
       
-      src_dir   = FilePath(tmp_dir).join('src')
+      root_dir = FilePath(tmp_dir)
+      build_dir = root_dir.join('build')
+      
+      src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
       src_files = _generateSrcFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.build_dir_prefix = 'build_dir'
+      options.update( gccOptions() )
+      
+      options.cxx = "C:\\MinGW32\\bin\\g++.exe"
+      
+      options.build_dir_prefix = build_dir
       
       cpp_compiler = GccCompileCppBuilder( None, options )
+      
+      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+      
+      vfile = ValuesFile( vfilename )
+      
+      obj = Node( cpp_compiler, map( FileValue, src_files ) )
+      obj.build( None, vfile )
+      
+      obj = Node( cpp_compiler, map( FileValue, src_files ) )
+      print( obj.actual( vfile ) )
   
 #//===========================================================================//
 

@@ -92,6 +92,10 @@ class Tempdir( object ):
   
   def   __init__( self, prefix = 'tmp', suffix = '', dir = None, name = None ):
     
+    if dir is not None:
+      if not os.path.isdir( dir ):
+        os.makedirs( dir )
+    
     if name is None:
       self.path = tempfile.mkdtemp( prefix = prefix, suffix = suffix, dir = dir )
     else:

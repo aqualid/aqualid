@@ -1,16 +1,94 @@
+import os
+import hashlib
 
 from aql_node import Node
 from aql_builder import Builder
 from aql_value import Value, NoContent
 from aql_file_value import FileValue
-from aql_utils import toSequence, isSequence, execCommand
-from aql_path_types import FilePath
+from aql_utils import toSequence, isSequence, execCommand, moveFile
+from aql_path_types import FilePath, FilePaths
 from aql_errors import InvalidSourceValueType
+from aql_options import Options
+from aql_temp_file import Tempfile, Tempdir
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//
 
 def   _addPrefix( prefix, values ):
   return map( lambda v, prefix = prefix: prefix + v, values )
+
+#//===========================================================================//
+
+def   _cppCompilerOptions():
+  
+  options = Options()
+  
+  options.cc = PathOptionType( description = "C compiler program" )
+  options.cxx = PathOptionType( description = "C++ compiler program" )
+  options.cflags = ListOptionType( description = "C compiler options" )
+  options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
+  options.cxxflags = ListOptionType( description = "C++ compiler options" )
+  
+  options.ocflags = ListOptionType( description = "C compiler optimization options" )
+  options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
+  options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
+  
+  options.cflags += options.ocflags
+  options.ccflags += options.occflags
+  options.cxxflags += options.ocxxflags
+  
+  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
+  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
+  
+  options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
+  options.defines = options.cppdefines
+  
+  options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers" )
+  options.include = options.cpppath
+  
+  options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
+  
+  options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
+  options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
+  
+  return options
+
+#//===========================================================================//
+
+def   _linkerOptions():
+  
+  options = Options()
+  
+  options.linkflags = ListOptionType( description = "Linker options" )
+  options.libflags = ListOptionType( description = "Archiver options" )
+  
+  options.olinkflags = ListOptionType( description = "Linker optimization options" )
+  options.olibflags = ListOptionType( description = "Archiver optimization options" )
+  
+  options.linkflags += options.olinkflags
+  options.libflags += options.olibflags
+  
+  options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to extenal libraries" )
+  options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking extenal libraries" )
+  
+  return options
+
+#//===========================================================================//
+
+def   gccOptions():
+  options = Options()
+  
+  options.gcc_path = PathOptionType()
+  options.gcc_target = StrOptionType( ignore_case = True )
+  options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
+  options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
+  
+  options.update( _cppCompilerOptions() )
+  options.update( _linkerOptions() )
+  
+  options.setGroup( "C/C++ compiler" )
+  
+  return options
 
 #//===========================================================================//
 
@@ -54,10 +132,10 @@ class GccCompileCppBuilder (Builder):
   #//===========================================================================//
 
   def   __buildManySources( self, vfile, cmd, src_nodes ):
-    build_dir = outdir_mapper.getBuildPath()
+    build_dir = self.buildPath()
     
     with Tempdir( dir = build_dir ) as tmp_dir:
-      cwd = tmp_dir.path
+      cwd = FilePath( tmp_dir )
       
       src_files = FilePaths( map(lambda node: node.sources()[0], src_nodes ) )
       
@@ -65,11 +143,13 @@ class GccCompileCppBuilder (Builder):
       
       cmd = ' '.join( map(str, cmd ) )
       
+      print( src_files )
+      
       tmp_obj_files = src_files.replaceDirAndExt( cwd, '.o' )
       tmp_dep_files = tmp_obj_files.replaceExt( '.d' )
       
       obj_files = src_files.addExt( '.o' )
-      obj_files = self.getBuildPaths( obj_files )
+      obj_files = self.buildPaths( obj_files )
       
       result, out, err = execCommand( cmd, cwd = cwd, env = None )  # TODO: env = options.os_env
       
@@ -77,9 +157,13 @@ class GccCompileCppBuilder (Builder):
       itargets = []
       ideps = []
       
+      print( tmp_obj_files )
+      print( obj_files )
+      
       for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):
-          self.moveFile( tmp_obj_file, obj_file )
+          moveFile( tmp_obj_file, obj_file )
+          moveFile( tmp_dep_file, obj_file.replaceExt('.d') )
           
           src_node_targets = [ FileValue(obj_file) ]
           src_node_itargets = []
@@ -124,12 +208,12 @@ class GccCompileCppBuilder (Builder):
             rest_src_nodes.append( src_node )
           else:
             batch_src_names.add( src_file.name )
-            batch_src_files.add( src_file )
+            batch_src_nodes.append( src_node )
       
       src_files = rest_src_files
       src_nodes = rest_src_nodes
       
-      if len(batch_src_files) > 1:
+      if len(batch_src_nodes) > 1:
         tmp_targets, tmp_itargets, tmp_ideps = self.__buildManySources( vfile, cmd, batch_src_nodes )
       else:
         tmp_targets, tmp_itargets, tmp_ideps = self.__buildSingleSource( vfile, cmd, batch_src_nodes[0] )
@@ -137,6 +221,8 @@ class GccCompileCppBuilder (Builder):
       targets += tmp_targets
       itargets += tmp_itargets
       ideps += tmp_ideps
+    
+    return targets, itargets, ideps
   
   #//-------------------------------------------------------//
   
@@ -159,7 +245,7 @@ class GccCompileCppBuilder (Builder):
     cmd       = self.__cmd()
     src_files = FilePaths( node.sources() )
     
-    targets, itargets, ideps = self.__buildSources( cmd, vfile, cmd, src_files )
+    targets, itargets, ideps = self.__buildSources( vfile, cmd, src_files )
     
     return targets, itargets, ideps
   
@@ -174,11 +260,11 @@ class GccCompileCppBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   signatures( self ):
-    return hashlib.md5( ' '.join( map(str, self.__cmd() ) ) )
+  def   signature( self ):
+    return hashlib.md5( ' '.join( map(str, self.__cmd() ) ) ).digest()
   
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return ' '.join( self.long_name )
+    return self.name
 

@@ -54,10 +54,13 @@ class Builder (object):
     
     if attr == 'build_dir':
       self.build_dir = self.options.build_dir.value()
-      self.do_path_merge = self.options.do_build_path_merge
       return self.build_dir
     
-    raise UnknownAttribute( self, attr )
+    if attr == 'do_path_merge':
+      self.do_path_merge = self.options.do_build_path_merge.value()
+      return self.do_path_merge
+    
+    raise AttributeError( self, attr )
   
   #//-------------------------------------------------------//
   
@@ -86,20 +89,20 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   buildPath( self, src_path ):
+  def   buildPath( self, src_path = None ):
     if src_path is None:
       return self.build_dir
     
     src_path = FilePath( src_path )
     
     if self.do_path_merge:
-      return self.build_dir.mergePath( src_path )
+      return self.build_dir.merge( src_path )
     
     return FilePath( os.path.join( self.build_dir, src_path.name_ext ) )
   
   #//-------------------------------------------------------//
   
   def   buildPaths( self, src_paths ):
-    return FilePaths( map(self.getBuildPath, toSequence( src_paths ) ) )
+    return FilePaths( map(self.buildPath, toSequence( src_paths ) ) )
   
 

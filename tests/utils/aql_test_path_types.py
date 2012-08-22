@@ -34,16 +34,16 @@ class TestPathTypes( AqlTestCase ):
     self.assertEqual( p.ext, os.path.splitext( os.path.basename(file1) )[1] )
     self.assertIn( p.drive, [ os.path.splitdrive( file1 )[0], os.path.splitunc( file1 )[0] ] )
     
-    self.assertEqual( p.mergePaths( p2 ), os.path.join( p, os.path.basename(p2.dir), p2.name_ext ) )
-    self.assertEqual( p.mergePaths( host_file ), os.path.join( p, *(filter(None, host_file.split('/'))) ) )
+    self.assertEqual( p.merge( p2 ), os.path.join( p, os.path.basename(p2.dir), p2.name_ext ) )
+    self.assertEqual( p.merge( host_file ), os.path.join( p, *(filter(None, host_file.split('/'))) ) )
     
     if disk_file:
-      self.assertEqual( p.mergePaths( disk_file ), os.path.join( p, 'a', os.path.splitdrive( file1 )[1].strip( os.path.sep ) ) )
-    self.assertEqual( p.mergePaths( '' ), file1 )
-    self.assertEqual( p.mergePaths( '.' ), file1 )
-    self.assertEqual( p.mergePaths( '..' ), p.dir )
-    self.assertEqual( FilePath('foo/bar').mergePaths( 'bar/foo/file.txt' ), 'foo/bar/bar/foo/file.txt' )
-    self.assertEqual( FilePath('foo/bar').mergePaths( 'foo/file.txt' ), 'foo/bar/file.txt' )
+      self.assertEqual( p.merge( disk_file ), os.path.join( p, 'a', os.path.splitdrive( file1 )[1].strip( os.path.sep ) ) )
+    self.assertEqual( p.merge( '' ), file1 )
+    self.assertEqual( p.merge( '.' ), file1 )
+    self.assertEqual( p.merge( '..' ), p.dir )
+    self.assertEqual( FilePath('foo/bar').merge( 'bar/foo/file.txt' ), 'foo/bar/bar/foo/file.txt' )
+    self.assertEqual( FilePath('foo/bar').merge( 'foo/file.txt' ), 'foo/bar/file.txt' )
     
     self.assertEqual( FilePath('foo/bar').join( 'foo/file.txt' ), 'foo/bar/foo/file.txt' )
     self.assertEqual( FilePath('foo/bar').join( ['foo'], 'file.txt' ), 'foo/bar/foo/file.txt' )

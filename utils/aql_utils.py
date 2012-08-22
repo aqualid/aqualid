@@ -230,7 +230,7 @@ def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = 
     (stdoutdata, stderrdata) = p.communicate()
     result = p.returncode
   except Exception as ex:
-    raise CommandExecFailed( ex )
+    raise CommandExecFailed( str(ex) + ': ' + cmd )
   
   stdoutdata = _decodeData( stdoutdata )
   stderrdata = _decodeData( stderrdata )
@@ -240,9 +240,9 @@ def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = 
 #//===========================================================================//
 
 def   moveFile( src_file, dst_file ):
-  dst_file = FilePath( dst_file )
-  if not os.path.isdir( dst_file.dir ):
-    os.makedirs( dst_file.dir )
+  dst_dir = os.path.dirname( dst_file )
+  if not os.path.isdir( dst_dir ):
+    os.makedirs( dst_dir )
   shutil.move( src_file, dst_file )
 
 #//===========================================================================//

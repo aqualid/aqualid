@@ -126,7 +126,7 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   mergePaths( self, other ):
+  def   merge( self, other ):
     other = FilePath( other )
     
     seq = self.seq
@@ -187,6 +187,6 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     paths = FilePaths()
     
     for path in self:
-      paths.append( path.name + new_ext )
+      paths.append( path + new_ext )
     
     return paths
