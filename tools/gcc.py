@@ -14,97 +14,27 @@ from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOp
 
 #//===========================================================================//
 
-def remove_makefile_rule_lhs(line):
-  # Splitting on a plain colon would accidentally match inside a
-  # Windows absolute-path filename, so we must search for a colon
-  # followed by whitespace to find the divider between LHS and RHS
-  # of the Makefile rule.
-  rulesep = ': '
-
-  sep_idx = line.find(rulesep)
-  if sep_idx >= 0:
-    return line[sep_idx + 2:]
-  else:
-    return line
-
-def   _readDeps( dep_file ):
+def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
   
-  text = readTextFile( dep_file )
-
-  # Compilers have the choice to either output the file's dependencies
-  # as one large Makefile rule:
-  #
-  #   /path/to/file.o: /path/to/dep1.h \
-  #                    /path/to/dep2.h \
-  #                    /path/to/dep3.h \
-  #                    ...
-  #
-  # or as many individual rules:
-  #
-  #   /path/to/file.o: /path/to/dep1.h
-  #   /path/to/file.o: /path/to/dep2.h
-  #   /path/to/file.o: /path/to/dep3.h
-  #   ...
-  #
-  # So the first step is to sanitize the input by stripping out the left-
-  # hand side of all these lines. After that, whatever remains are the
-  # implicit dependencies of task.outputs[0]
-  txt = '\n'.join([remove_makefile_rule_lhs(line) for line in txt.splitlines()])
-
-  # Now join all the lines together
-  txt = txt.replace('\\\n', '')
+  deps = readTextFile( dep_file )
   
-  re_splitter = re.compile(r'(?<!\\)\s+') # split by space, except when spaces are escaped
+  dep_files = FilePaths()
   
-  val = txt.strip()
-  lst = val.split(':')
-  val = [x.replace('\\ ', ' ') for x in re_splitter.split(val) if x]
-
-  nodes = []
-  bld = self.generator.bld
-
-  for x in val:
-
-    node = None
-    if os.path.isabs(x):
-      lock.acquire()
-      try:
-        node = bld.root.find_resource(x)
-      finally:
-        lock.release()
-    else:
-      path = bld.bldnode
-      x = [k for k in Utils.split_path(x) if k and k != '.']
-      while lst and x[0] == '..':
-        x = x[1:]
-        path = path.parent
-
-      # when calling find_resource, make sure the path does not begin by '..'
-      try:
-        lock.acquire()
-        node = path.find_resource(x)
-      finally:
-        lock.release()
-
-    if not node:
-      raise ValueError('could not find %r for %r' % (x, self))
-    else:
-      if not c_preproc.go_absolute:
-        if not (node.is_child_of(bld.srcnode) or node.is_child_of(bld.bldnode)):
-          continue
-
-      if id(node) == id(self.inputs[0]):
-        # ignore the source file, it is already in the dependencies
-        # this way, successful config tests may be retrieved from the cache
-        continue
-
-      nodes.append(node)
-
-  Logs.debug('deps: real scanner for %s returned %s' % (str(self), str(nodes)))
-
-  bld.node_deps[self.uid()] = nodes
-  bld.raw_deps[self.uid()] = []
-
+  target_sep = ': '
+  target_sep_len = len(target_sep)
+  
+  for line in deps.splitlines():
+    pos = line.find( target_sep )
+    if pos >= 0:
+      line = line[ pos + target_sep_len: ]
+    
+    line = line.rstrip('\\ ').strip()
+    tmp_dep_files = filter( None, _space_splitter_re.split( line ) )
+    tmp_dep_files = [dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files ]
+    
+    dep_files += tmp_dep_files
+  
+  return dep_files
 
 #//===========================================================================//
 
