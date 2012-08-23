@@ -97,6 +97,13 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5', chunk_size = 2
 
 #//===========================================================================//
 
+def readTextFile( filename ):
+  with open(fname, 'r') as f:
+    content = f.read()
+    return content
+
+#//===========================================================================//
+
 def   getFunctionName( currentframe = inspect.currentframe ):
   
   frame = currentframe()

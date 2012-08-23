@@ -5,12 +5,106 @@ from aql_node import Node
 from aql_builder import Builder
 from aql_value import Value, NoContent
 from aql_file_value import FileValue
-from aql_utils import toSequence, isSequence, execCommand, moveFile
+from aql_utils import toSequence, isSequence, execCommand, moveFile, readTextFile
 from aql_path_types import FilePath, FilePaths
 from aql_errors import InvalidSourceValueType
 from aql_options import Options
 from aql_temp_file import Tempfile, Tempdir
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
+
+#//===========================================================================//
+
+def remove_makefile_rule_lhs(line):
+  # Splitting on a plain colon would accidentally match inside a
+  # Windows absolute-path filename, so we must search for a colon
+  # followed by whitespace to find the divider between LHS and RHS
+  # of the Makefile rule.
+  rulesep = ': '
+
+  sep_idx = line.find(rulesep)
+  if sep_idx >= 0:
+    return line[sep_idx + 2:]
+  else:
+    return line
+
+def   _readDeps( dep_file ):
+  
+  text = readTextFile( dep_file )
+
+  # Compilers have the choice to either output the file's dependencies
+  # as one large Makefile rule:
+  #
+  #   /path/to/file.o: /path/to/dep1.h \
+  #                    /path/to/dep2.h \
+  #                    /path/to/dep3.h \
+  #                    ...
+  #
+  # or as many individual rules:
+  #
+  #   /path/to/file.o: /path/to/dep1.h
+  #   /path/to/file.o: /path/to/dep2.h
+  #   /path/to/file.o: /path/to/dep3.h
+  #   ...
+  #
+  # So the first step is to sanitize the input by stripping out the left-
+  # hand side of all these lines. After that, whatever remains are the
+  # implicit dependencies of task.outputs[0]
+  txt = '\n'.join([remove_makefile_rule_lhs(line) for line in txt.splitlines()])
+
+  # Now join all the lines together
+  txt = txt.replace('\\\n', '')
+  
+  re_splitter = re.compile(r'(?<!\\)\s+') # split by space, except when spaces are escaped
+  
+  val = txt.strip()
+  lst = val.split(':')
+  val = [x.replace('\\ ', ' ') for x in re_splitter.split(val) if x]
+
+  nodes = []
+  bld = self.generator.bld
+
+  for x in val:
+
+    node = None
+    if os.path.isabs(x):
+      lock.acquire()
+      try:
+        node = bld.root.find_resource(x)
+      finally:
+        lock.release()
+    else:
+      path = bld.bldnode
+      x = [k for k in Utils.split_path(x) if k and k != '.']
+      while lst and x[0] == '..':
+        x = x[1:]
+        path = path.parent
+
+      # when calling find_resource, make sure the path does not begin by '..'
+      try:
+        lock.acquire()
+        node = path.find_resource(x)
+      finally:
+        lock.release()
+
+    if not node:
+      raise ValueError('could not find %r for %r' % (x, self))
+    else:
+      if not c_preproc.go_absolute:
+        if not (node.is_child_of(bld.srcnode) or node.is_child_of(bld.bldnode)):
+          continue
+
+      if id(node) == id(self.inputs[0]):
+        # ignore the source file, it is already in the dependencies
+        # this way, successful config tests may be retrieved from the cache
+        continue
+
+      nodes.append(node)
+
+  Logs.debug('deps: real scanner for %s returned %s' % (str(self), str(nodes)))
+
+  bld.node_deps[self.uid()] = nodes
+  bld.raw_deps[self.uid()] = []
+
 
 #//===========================================================================//
 
@@ -229,7 +323,7 @@ class GccCompileCppBuilder (Builder):
   def   __cmd( self ):
     options = self.options
     
-    cmd = [options.cxx.value(), '-c', '-MMD', '-x', 'c++']
+    cmd = [options.cxx.value(), '-c', '-MD', '-x', 'c++']
     cmd += options.cxxflags.value()
     cmd += options.ccflags.value()
     cmd += _addPrefix( '-D', options.cppdefines.value() )
