@@ -35,7 +35,6 @@ class Builder (object):
   __slots__ = (
     'env',
     'options',
-    'name',
     'build_dir',
     'do_path_merge',
   )
@@ -64,6 +63,15 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   name( self ):
+    """
+    Returns name of builder.By default it's <ModuleName>.<ClassName>
+    """
+    cls = self.__class__
+    return cls.__module__ + '.' + cls.__name__
+  
+  #//-------------------------------------------------------//
+  
   def   signature( self ):
     """
     Returns builder signature which uniquely identify builder's parameters
@@ -85,7 +93,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+    return self.name()
   
   #//-------------------------------------------------------//
   

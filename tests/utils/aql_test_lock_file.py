@@ -12,13 +12,14 @@ from aql_lock_file import FileLock, GeneralFileLock
 
 #//===========================================================================//
 
-def   writeProcess( filename, delay, LockType ):
+def   writeProcess( filename, event, LockType ):
   
   flock = LockType( filename )
   
   with flock.writeLock():
+    event.set()
     
-    time.sleep( delay )
+    time.sleep( 2 )
     
     with open( filename, 'w+b' ) as file:
       file.write( b"123" )
@@ -26,13 +27,14 @@ def   writeProcess( filename, delay, LockType ):
 
 #//===========================================================================//
 
-def   readProcess( filename, delay, LockType ):
+def   readProcess( filename, event, LockType ):
   
   flock = LockType( filename )
   
   with flock.readLock():
+    event.set()
     
-    time.sleep( delay )
+    time.sleep( 2 )
     
     with open( filename, 'r+b' ) as file:
       file.read()
@@ -48,18 +50,17 @@ class TestFileLock( AqlTestCase ):
       flock.releaseLock()
       flock.releaseLock()
       
-      delay = 3
+      event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file.name, delay, LockType) )
+      p = mp.Process( target = writeProcess, args = (temp_file.name, event, LockType) )
       p.start()
       
-      time.sleep(1)
+      event.wait()
       
       start_time = time.time()
-      
       with flock.writeLock():
         
-        self.assertGreaterEqual( time.time() - start_time, delay - 1 )
+        self.assertGreaterEqual( time.time() - start_time, 1 )
         
         with open( temp_file.name, 'w+b' ) as file:
           file.write( b'345' )
@@ -123,18 +124,18 @@ class TestFileLock( AqlTestCase ):
       
       flock = FileLock( temp_file.name )
       
-      delay = 3
+      event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file.name, delay, FileLock) )
+      p = mp.Process( target = writeProcess, args = (temp_file.name, event, FileLock) )
       p.start()
       
-      time.sleep(1)
+      event.wait()
       
       start_time = time.time()
       
       with flock.readLock():
         
-        self.assertGreaterEqual( time.time() - start_time, delay - 1 )
+        self.assertGreaterEqual( time.time() - start_time, 1 )
         
         with open( temp_file.name, 'w+b' ) as file:
           file.write( b'345' )
@@ -153,18 +154,18 @@ class TestFileLock( AqlTestCase ):
       
       flock = FileLock( temp_file.name )
       
-      delay = 3
+      event = mp.Event()
       
-      p = mp.Process( target = readProcess, args = (temp_file.name, delay, FileLock) )
+      p = mp.Process( target = readProcess, args = (temp_file.name, event, FileLock) )
       p.start()
       
-      time.sleep(1)
+      event.wait()
       
       start_time = time.time()
       
       with flock.writeLock():
         
-        self.assertGreaterEqual( time.time() - start_time, delay - 1 )
+        self.assertGreaterEqual( time.time() - start_time, 1 )
         
         with open( temp_file.name, 'w+b' ) as file:
           file.write( b'345' )

@@ -85,7 +85,7 @@ class Node (object):
   #//=======================================================//
   
   def   __getName( self ):
-    names = list( toSequence( self.builder.name ) )
+    names = [ self.builder.name() ]
     names_append = names.append
     
     for source in self.source_nodes:

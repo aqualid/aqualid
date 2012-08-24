@@ -22,11 +22,6 @@ from aql_event_handler import EventHandler
 
 class CopyValueBuilder (Builder):
   
-  def   __init__(self, name ):
-    self.name = [ name ]
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, build_manager, vfile, node ):
     target_values = []
     
@@ -39,11 +34,6 @@ class CopyValueBuilder (Builder):
   
   def   signature( self ):
     return str()
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return ' '.join( self.name )
 
 #//===========================================================================//
 
@@ -55,9 +45,7 @@ class ChecksumBuilder (Builder):
     'replace_ext',
   )
   
-  def   __init__(self, name, offset, length, replace_ext = False ):
-    
-    self.name = [ name ]
+  def   __init__(self, offset, length, replace_ext = False ):
     
     self.offset = offset
     self.length = length
@@ -87,11 +75,6 @@ class ChecksumBuilder (Builder):
   
   def   signature( self ):
     return [ self.offset, self.length ]
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return ' '.join( self.name )
 
 
 #//===========================================================================//
@@ -188,12 +171,10 @@ class MultiChecksumBuilder (Builder):
     'builder',
   )
   
-  def   __init__(self, env, name, offset, length ):
-    
-    self.name = [ name ]
+  def   __init__(self, env, offset, length ):
     
     self.env = env
-    self.builder = ChecksumBuilder( "ChecksumBuilder", offset, length )
+    self.builder = ChecksumBuilder( offset, length )
   
   #//-------------------------------------------------------//
   
@@ -220,11 +201,6 @@ class MultiChecksumBuilder (Builder):
   
   def   signature( self ):
     return self.builder.signature()
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return ' '.join( self.name )
 
 #//===========================================================================//
 
@@ -238,7 +214,7 @@ class TestBuildManager( AqlTestCase ):
     value2 = Value( "target_url2", "http://aql.org/download2" )
     value3 = Value( "target_url3", "http://aql.org/download3" )
     
-    builder = CopyValueBuilder("CopyValueBuilder")
+    builder = CopyValueBuilder()
     
     node0 = Node( builder, value1 )
     node1 = Node( builder, node0 )
@@ -278,10 +254,10 @@ class TestBuildManager( AqlTestCase ):
     with Tempfile() as tmp:
       src_files = _generateSourceFiles( 3, 201 )
       try:
-        builder = ChecksumBuilder("ChecksumBuilder", 0, 256 )
+        builder = ChecksumBuilder(0, 256 )
         _buildChecksums( tmp.name, builder, src_files )
         _buildChecksums( tmp.name, builder, src_files )
-        builder = ChecksumBuilder("ChecksumBuilder", 32, 1024 )
+        builder = ChecksumBuilder(32, 1024 )
         _buildChecksums( tmp.name, builder, src_files )
         _buildChecksums( tmp.name, builder, src_files )
         
@@ -300,7 +276,7 @@ class TestBuildManager( AqlTestCase ):
       
       src_files = _generateSourceFiles( 3, 201 )
       try:
-        builder = ChecksumBuilder("ChecksumBuilder", 0, 256, replace_ext = True )
+        builder = ChecksumBuilder( 0, 256, replace_ext = True )
         _buildChecksums( tmp.name, builder, src_files )
         
         bm = _addNodesToBM( tmp.name, builder, src_files )
@@ -324,7 +300,7 @@ class TestBuildManager( AqlTestCase ):
         bm = BuildManager( vfilename.name, 4, True )
         env = TestEnv( bm )
         
-        builder = MultiChecksumBuilder( env, "MultiChecksumBuilder", 0, 256 )
+        builder = MultiChecksumBuilder( env, 0, 256 )
         
         src_values = []
         for s in src_files:
@@ -339,7 +315,7 @@ class TestBuildManager( AqlTestCase ):
         
         bm = BuildManager( vfilename.name, 4, True )
         env = TestEnv( bm )
-        builder = MultiChecksumBuilder( env, "MultiChecksumBuilder", 0, 256 )
+        builder = MultiChecksumBuilder( env, 0, 256 )
         
         node = Node( builder, src_values )
         bm.addNodes( node ); bm.selfTest()
@@ -363,7 +339,7 @@ class TestBuildManager( AqlTestCase ):
       
       src_files = _generateSourceFiles( 3, 201 )
       try:
-        builder = ChecksumBuilder("ChecksumBuilder", 0, 256, replace_ext = False )
+        builder = ChecksumBuilder( 0, 256, replace_ext = False )
         bm = BuildManager( tmp.name, 4, True )
         
         src_values = []
@@ -414,7 +390,7 @@ class TestBuildManagerSpeed( AqlTestCase ):
     bm = BuildManager()
     
     value = Value( "target_url1", "http://aql.org/download" )
-    builder = CopyValueBuilder("CopyValueBuilder")
+    builder = CopyValueBuilder()
     
     node = Node( builder, value )
     bm.addNodes( node )

@@ -20,10 +20,6 @@ from aql_builder import Builder
 #//===========================================================================//
 
 class ChecksumBuilder (Builder):
-  
-  def   __init__(self, name ):
-    self.name = [ name ]
-  
   #//-------------------------------------------------------//
   
   def   build( self, build_manager, vfile, node ):
@@ -46,11 +42,6 @@ class ChecksumBuilder (Builder):
   def   signature( self ):
     return ""
   
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return ' '.join( self.name )
-
 
 #//===========================================================================//
 
@@ -58,8 +49,7 @@ class CopyBuilder (Builder):
   
   __slots__ = ('ext', 'iext')
   
-  def   __init__(self, name, ext, iext ):
-    self.name = [ name ]
+  def   __init__(self, ext, iext ):
     self.ext = ext
     self.iext = iext
   
@@ -88,11 +78,6 @@ class CopyBuilder (Builder):
   
   def   signature( self ):
     return [self.ext, self.iext]
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return ' '.join( self.name )
 
 #//===========================================================================//
 
@@ -110,7 +95,7 @@ class TestNodes( AqlTestCase ):
       value2 = Value( "target_url2", "http://aql.org/download2" )
       value3 = Value( "target_url3", "http://aql.org/download3" )
       
-      builder = ChecksumBuilder("ChecksumBuilder")
+      builder = ChecksumBuilder()
       
       node = Node( builder, [value1, value2, value3] )
       
@@ -166,13 +151,13 @@ class TestNodes( AqlTestCase ):
             value1 = FileValue( tmp1.name )
             value2 = FileValue( tmp2.name )
             
-            builder = CopyBuilder("CopyBuilder", "tmp", "i")
+            builder = CopyBuilder("tmp", "i")
             node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
             
-            builder = CopyBuilder("CopyBuilder", "ttt", "i")
+            builder = CopyBuilder("ttt", "i")
             node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
             
-            builder = CopyBuilder("CopyBuilder", "ttt", "d")
+            builder = CopyBuilder("ttt", "d")
             node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
             
             tmp1.write(b'123')
@@ -185,7 +170,7 @@ class TestNodes( AqlTestCase ):
               node3 = self._rebuildNode( vfile, builder, [value3], [], tmp_files )
               node = self._rebuildNode( vfile, builder, [value1, node3], [], tmp_files )
               
-              builder3 = CopyBuilder("CopyBuilder", "xxx", "3")
+              builder3 = CopyBuilder("xxx", "3")
               node3 = self._rebuildNode( vfile, builder3, [value3], [], tmp_files )
               node = self._rebuildNode( vfile, builder, [value1, node3], [], tmp_files )
               node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
