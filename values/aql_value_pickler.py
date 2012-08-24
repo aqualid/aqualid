@@ -17,8 +17,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
+import binascii
 import io
+
 try:
   import cPickle as pickle
 except ImportError:
@@ -26,7 +27,8 @@ except ImportError:
 
 #//===========================================================================//
 
-_known_types = {}
+_known_type_names = {}
+_known_type_ids = {}
 
 #//===========================================================================//
 
@@ -52,23 +54,26 @@ class   ValuePickler (object):
   
   #//-------------------------------------------------------//
   @staticmethod
-  def persistent_id( value, known_types = _known_types ):
+  def persistent_id( value, known_type_names = _known_type_names ):
     
     value_type = type(value)
-    type_name = value_type.__name__
-    if type_name in known_types:
-      return (type_name, value.__getnewargs__())
-    else:
+    type_name = _typeName( value_type )
+    
+    try:
+      type_id = known_type_names[ type_name ]
+      
+      return (type_id, value.__getnewargs__())
+    except KeyError:
       return None
   
   #//-------------------------------------------------------//
   @staticmethod
-  def persistent_load( pid, known_types = _known_types ):
+  def persistent_load( pid, known_type_ids = _known_type_ids ):
     
-    type_name, new_args = pid
+    type_id, new_args = pid
     
     try:
-      value_type = known_types[ type_name ]
+      value_type = known_type_ids[ type_id ]
       return value_type.__new__(value_type, *new_args )
     
     except KeyError:
@@ -97,9 +102,21 @@ class   ValuePickler (object):
 
 #//===========================================================================//
 
-def  pickleable( value_class, known_types = _known_types ):
-  if type(value_class) is type:
-    known_types[ value_class.__name__ ] = value_class
+def   _typeName( value_type ):
+  return value_type.__module__ + '.' + value_type.__name__
+
+#//===========================================================================//
+
+def  pickleable( value_type, known_type_names = _known_type_names, known_type_ids = _known_type_ids ):
+  if type(value_type) is type:
+    type_name = _typeName( value_type )
+    type_id = binascii.crc32( type_name.encode( encoding = "utf-8" ) ) & 0xFFFFFFFF;
+    
+    other_type = known_type_ids.setdefault( type_id, value_type )
+    if other_type is not value_type:
+      raise Exception( "Two different type names have identical CRC32 checksum: '%s' and '%s'" % (_typeName( other_type ), type_name ) )
+    
+    known_type_names[ type_name ] = type_id
   
-  return value_class
+  return value_type
 

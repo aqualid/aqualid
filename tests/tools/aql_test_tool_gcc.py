@@ -76,6 +76,8 @@ class TestToolGcc( AqlTestCase ):
     
     with Tempdir() as tmp_dir:
       
+      #~ tmp_dir = Tempdir()
+      
       root_dir = FilePath(tmp_dir)
       build_dir = root_dir.join('build')
       

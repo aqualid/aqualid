@@ -19,7 +19,7 @@ def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
   
   deps = readTextFile( dep_file )
   
-  dep_files = FilePaths()
+  dep_files = []
   
   target_sep = ': '
   target_sep_len = len(target_sep)
@@ -30,12 +30,13 @@ def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
       line = line[ pos + target_sep_len: ]
     
     line = line.rstrip('\\ ').strip()
+    
     tmp_dep_files = filter( None, _space_splitter_re.split( line ) )
     tmp_dep_files = [dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files ]
     
-    dep_files += tmp_dep_files[1:]
+    dep_files += tmp_dep_files
   
-  return dep_files
+  return dep_files[1:]  # skip the source file
 
 #//===========================================================================//
 
@@ -149,7 +150,7 @@ class GccCompileCppBuilder (Builder):
       
       src_node_targets = [ FileValue(obj_file) ]
       src_node_itargets = []
-      src_node_ideps = list( map( FileValue, _readDeps( dep_file ) ) )
+      src_node_ideps = list( map( FileValue, _readDeps( dep_file.name ) ) )
       src_node.save( vfile, src_node_targets, src_node_itargets, src_node_ideps )
       
       return src_node_targets, src_node_itargets, src_node_ideps
@@ -179,9 +180,6 @@ class GccCompileCppBuilder (Builder):
       targets = []
       itargets = []
       ideps = []
-      
-      print( tmp_obj_files )
-      print( obj_files )
       
       for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):

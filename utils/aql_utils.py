@@ -233,7 +233,7 @@ def _decodeData( data ):
 
 def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = None, env = None ):
   try:
-    print( "execCommand: %s" % cmd )
+    # print( "execCommand: %s" % cmd )
     p = subprocess.Popen( cmd, stdout = stdout, stderr = stderr, cwd = cwd, env = env )
     (stdoutdata, stderrdata) = p.communicate()
     result = p.returncode
