@@ -58,11 +58,13 @@ def   _generateSrcFile( dir, name ):
 
 def   _generateSrcFiles( dir, name, count ):
   src_files = FilePaths()
+  hdr_files = FilePaths()
   for i in range( count ):
-    src_file = _generateSrcFile( dir, name + str(i) )[0]
+    src_file, hdr_file = _generateSrcFile( dir, name + str(i) )
     src_files.append( src_file )
+    hdr_files.append( hdr_file )
   
-  return src_files
+  return src_files, hdr_files
 
 #//===========================================================================//
 
@@ -70,10 +72,9 @@ class TestToolGcc( AqlTestCase ):
 
   def test_gcc_compile(self):
     
-      event_manager.setHandlers( EventHandler() )
+    event_manager.setHandlers( EventHandler() )
     
-    #~ with Tempdir() as tmp_dir:
-      tmp_dir = Tempdir()
+    with Tempdir() as tmp_dir:
       
       root_dir = FilePath(tmp_dir)
       build_dir = root_dir.join('build')
@@ -81,7 +82,7 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
       options.update( gccOptions() )
@@ -95,12 +96,28 @@ class TestToolGcc( AqlTestCase ):
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
       
       vfile = ValuesFile( vfilename )
-      
-      obj = Node( cpp_compiler, map( FileValue, src_files ) )
-      obj.build( None, vfile )
-      
-      obj = Node( cpp_compiler, map( FileValue, src_files ) )
-      print( obj.actual( vfile ) )
+      try:
+        
+        obj = Node( cpp_compiler, map( FileValue, src_files ) )
+        obj.build( None, vfile )
+        
+        vfile.close(); vfile.open( vfilename )
+        
+        obj = Node( cpp_compiler, map( FileValue, src_files ) )
+        self.assertTrue( obj.actual( vfile ) )
+        
+        vfile.close(); vfile.open( vfilename )
+        
+        with open( hdr_files[0], 'a' ) as f:
+          f.write("// end of file")
+        
+        obj = Node( cpp_compiler, map( FileValue, src_files ) )
+        self.assertFalse( obj.actual( vfile ) )
+        obj.build( None, vfile )
+        self.assertTrue( obj.actual( vfile ) )
+        
+      finally:
+        vfile.close()
   
 #//===========================================================================//
 

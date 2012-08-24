@@ -98,7 +98,7 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5', chunk_size = 2
 #//===========================================================================//
 
 def readTextFile( filename ):
-  with open(fname, 'r') as f:
+  with open(filename, 'r') as f:
     content = f.read()
     return content
 
@@ -233,6 +233,7 @@ def _decodeData( data ):
 
 def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = None, env = None ):
   try:
+    print( "execCommand: %s" % cmd )
     p = subprocess.Popen( cmd, stdout = stdout, stderr = stderr, cwd = cwd, env = env )
     (stdoutdata, stderrdata) = p.communicate()
     result = p.returncode

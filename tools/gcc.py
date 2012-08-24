@@ -1,4 +1,5 @@
 import os
+import re
 import hashlib
 
 from aql_node import Node
@@ -32,7 +33,7 @@ def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
     tmp_dep_files = filter( None, _space_splitter_re.split( line ) )
     tmp_dep_files = [dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files ]
     
-    dep_files += tmp_dep_files
+    dep_files += tmp_dep_files[1:]
   
   return dep_files
 
@@ -148,7 +149,7 @@ class GccCompileCppBuilder (Builder):
       
       src_node_targets = [ FileValue(obj_file) ]
       src_node_itargets = []
-      src_node_ideps = [] # TODO add dependecies
+      src_node_ideps = list( map( FileValue, _readDeps( dep_file ) ) )
       src_node.save( vfile, src_node_targets, src_node_itargets, src_node_ideps )
       
       return src_node_targets, src_node_itargets, src_node_ideps
@@ -166,8 +167,6 @@ class GccCompileCppBuilder (Builder):
       cmd += src_files
       
       cmd = ' '.join( map(str, cmd ) )
-      
-      print( src_files )
       
       tmp_obj_files = src_files.replaceDirAndExt( cwd, '.o' )
       tmp_dep_files = tmp_obj_files.replaceExt( '.d' )
@@ -187,11 +186,11 @@ class GccCompileCppBuilder (Builder):
       for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):
           moveFile( tmp_obj_file, obj_file )
-          moveFile( tmp_dep_file, obj_file.replaceExt('.d') )
           
           src_node_targets = [ FileValue(obj_file) ]
           src_node_itargets = []
-          src_node_ideps = [] # TODO add dependecies
+          src_node_ideps = list( map( FileValue, _readDeps( tmp_dep_file ) ) )
+          
           src_node.save( vfile, src_node_targets, src_node_itargets, src_node_ideps )
           
           if not result:
@@ -253,7 +252,7 @@ class GccCompileCppBuilder (Builder):
   def   __cmd( self ):
     options = self.options
     
-    cmd = [options.cxx.value(), '-c', '-MD', '-x', 'c++']
+    cmd = [options.cxx.value(), '-c', '-MMD', '-x', 'c++']
     cmd += options.cxxflags.value()
     cmd += options.ccflags.value()
     cmd += _addPrefix( '-D', options.cppdefines.value() )
