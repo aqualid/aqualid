@@ -92,6 +92,14 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   buildStr( self, node ):
+    """
+    Returns user friendly builder action string
+    """
+    return str(self) + ': ' + ','.join( map( str, node.sources() ) )
+  
+  #//-------------------------------------------------------//
+  
   def   __str__( self ):
     return self.name()
   

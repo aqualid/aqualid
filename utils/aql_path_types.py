@@ -190,3 +190,28 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       paths.append( path + new_ext )
     
     return paths
+  
+  #//-------------------------------------------------------//
+  
+  def   groupUniqueNames( self ):
+    files = self
+    
+    groups = []
+    
+    while files:
+      group_names = set()
+      group_files = FilePaths()
+      rest_files = FilePaths()
+      
+      for file in files:
+        if file.name in group_names:
+          rest_files.append( file )
+        else:
+          group_names.add( file.name )
+          group_files.append( file )
+      
+      groups.append( group_files )
+      
+      files = rest_files
+    
+    return groups

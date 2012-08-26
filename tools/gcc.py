@@ -118,98 +118,14 @@ def   gccOptions():
 
 #//===========================================================================//
 
-#~ class GccCompileCppBuilderImpl (Builder):
+class _GccCompileCppBuilderImpl (Builder):
   
-  #~ __slots__ = ('cmd', )
+  __slots__ = ('cmd', '_signature')
   
-  #~ def   __init__(self, env, options ):
+  def   __init__( self, cmd, signature, env, options ):
     
-    #~ self.name = "GccCppCompiler"
-    #~ self.env = env
-    #~ self.options = options
-  
-  #~ #//-------------------------------------------------------//
-  
-  #~ def   __buildSingleSource( self, vfile, cmd, src_node ):
-    #~ with Tempfile() as dep_file:
-      #~ cmd += [ '-MF', dep_file ]
-      
-      #~ src_file = FilePath( src_node.sources()[0] )
-      
-      #~ obj_file = self.buildPath( src_file ) + '.o'
-      #~ cmd += [ '-o', obj_file ]
-      #~ cmd += [ src_file ]
-      
-      #~ cmd = ' '.join( map(str, cmd ) )
-      
-      #~ cwd = self.buildPath()
-      
-      #~ result, out, err = execCommand( cmd, cwd = cwd, env = None )    # TODO: env = options.os_env
-      #~ if result:
-        #~ raise BuildError( out + '\n' + err )
-      
-      #~ src_node_targets = [ FileValue(obj_file) ]
-      #~ src_node_itargets = []
-      #~ src_node_ideps = list( map( FileValue, _readDeps( dep_file.name ) ) )
-      #~ src_node.save( vfile, src_node_targets, src_node_itargets, src_node_ideps )
-      
-      #~ return src_node_targets, src_node_itargets, src_node_ideps
-
-  #~ #//===========================================================================//
-
-  #~ def   __buildManySources( self, vfile, cmd, src_nodes ):
-    #~ build_dir = self.buildPath()
-    
-    #~ with Tempdir( dir = build_dir ) as tmp_dir:
-      #~ cwd = FilePath( tmp_dir )
-      
-      #~ src_files = FilePaths( map(lambda node: node.sources()[0], src_nodes ) )
-      
-      #~ cmd += src_files
-      
-      #~ cmd = ' '.join( map(str, cmd ) )
-      
-      #~ tmp_obj_files = src_files.replaceDirAndExt( cwd, '.o' )
-      #~ tmp_dep_files = tmp_obj_files.replaceExt( '.d' )
-      
-      #~ obj_files = src_files.addExt( '.o' )
-      #~ obj_files = self.buildPaths( obj_files )
-      
-      #~ result, out, err = execCommand( cmd, cwd = cwd, env = None )  # TODO: env = options.os_env
-      
-      #~ targets = []
-      #~ itargets = []
-      #~ ideps = []
-      
-      #~ for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
-        #~ if os.path.isfile( tmp_obj_file ):
-          #~ moveFile( tmp_obj_file, obj_file )
-          
-          #~ src_node_targets = [ FileValue(obj_file) ]
-          #~ src_node_itargets = []
-          #~ src_node_ideps = list( map( FileValue, _readDeps( tmp_dep_file ) ) )
-          
-          #~ src_node.save( vfile, src_node_targets, src_node_itargets, src_node_ideps )
-          
-          #~ if not result:
-            #~ targets += src_node_targets
-            #~ ideps += src_node_ideps
-        
-      #~ if result:
-        #~ raise BuildError( out + '\n' + err )
-      
-      #~ return targets, itargets, ideps
-  
-  #~ #//-------------------------------------------------------//
-
-#//===========================================================================//
-
-class GccCompileCppBuilder (Builder):
-  
-  __slots__ = ('cmd', )
-  
-  def   __init__(self, env, options ):
-    
+    self.cmd = cmd
+    self._signature = cmd
     self.env = env
     self.options = options
   
@@ -217,6 +133,9 @@ class GccCompileCppBuilder (Builder):
   
   def   __buildSingleSource( self, vfile, cmd, src_node ):
     with Tempfile() as dep_file:
+      
+      cmd = list(self.cmd)
+      
       cmd += [ '-MF', dep_file ]
       
       src_file = FilePath( src_node.sources()[0] )
@@ -233,17 +152,18 @@ class GccCompileCppBuilder (Builder):
       if result:
         raise BuildError( out + '\n' + err )
       
-      src_node_targets = [ FileValue(obj_file) ]
-      src_node_itargets = []
-      src_node_ideps = list( map( FileValue, _readDeps( dep_file.name ) ) )
-      src_node.save( vfile, src_node_targets, src_node_itargets, src_node_ideps )
+      targets = [ FileValue(obj_file) ]
+      itargets = []
+      ideps = list( map( FileValue, _readDeps( dep_file.name ) ) )
       
       return src_node_targets, src_node_itargets, src_node_ideps
 
   #//===========================================================================//
 
-  def   __buildManySources( self, vfile, cmd, src_nodes ):
+  def   __buildManySources( self, vfile, src_nodes ):
     build_dir = self.buildPath()
+    
+    cmd = list(self.cmd)
     
     with Tempdir( dir = build_dir ) as tmp_dir:
       cwd = FilePath( tmp_dir )
@@ -287,48 +207,60 @@ class GccCompileCppBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   __buildSources( self, vfile, cmd, src_files ):
+  def   build( self, build_manager, vfile, node ):
     
     targets = []
     itargets = []
     ideps = []
     
-    src_nodes = [ Node( self, FileValue( src_file ) ) for src_file in src_files ]
+    src_nodes = []
     
-    while src_files:
-      batch_src_nodes = []
-      batch_src_names = set()
-      
-      rest_src_files = FilePaths()
-      rest_src_nodes = FilePaths()
-      
-      for src_file, src_node in zip( src_files, src_nodes ):
-        if src_node.actual( vfile ):
-          targets += src_node.target_values
-          itargets += src_node.itarget_values
-          ideps += src_node.idep_values
-        
-        else:
-          if src_file.name in batch_src_names:
-            rest_src_files.append( src_file )
-            rest_src_nodes.append( src_node )
-          else:
-            batch_src_names.add( src_file.name )
-            batch_src_nodes.append( src_node )
-      
-      src_files = rest_src_files
-      src_nodes = rest_src_nodes
-      
-      if len(batch_src_nodes) > 1:
-        tmp_targets, tmp_itargets, tmp_ideps = self.__buildManySources( vfile, cmd, batch_src_nodes )
-      else:
-        tmp_targets, tmp_itargets, tmp_ideps = self.__buildSingleSource( vfile, cmd, batch_src_nodes[0] )
-      
-      targets += tmp_targets
-      itargets += tmp_itargets
-      ideps += tmp_ideps
+    for src_file_value in node.sources():
+      src_node = Node( self, src_file_value )
+      if not src_node.actual( vfile ):
+        src_nodes.append( src_node )
     
-    return targets, itargets, ideps
+    if len(src_nodes) > 1:
+      tmp_targets, tmp_itargets, tmp_ideps = self.__buildManySources( vfile, src_files )
+    else:
+      tmp_targets, tmp_itargets, tmp_ideps = self.__buildSingleSource( vfile, src_file )
+    
+    targets += tmp_targets
+    itargets += tmp_itarget_values
+    ideps += tmp_idep_values
+
+  
+  #//-------------------------------------------------------//
+  
+  def   signature( self ):
+    return self._signature
+  
+  #//-------------------------------------------------------//
+
+#//===========================================================================//
+
+class GccCompileCppBuilder (Builder):
+  
+  __slots__ = ('cmd', '_signature')
+  
+  def   __init__(self, env, options ):
+    
+    self.env = env
+    self.options = options
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    
+    if attr == 'cmd':
+      self.cmd = self.__cmd()
+      return self.cmd
+    
+    if attr == '_signature':
+      self._signature = self.__signature()
+      return self._signature
+    
+    return super(GccCompileCppBuilder,self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   
@@ -346,27 +278,68 @@ class GccCompileCppBuilder (Builder):
   
   #//-------------------------------------------------------//
   
+  def   __signature( self ):
+    values = list( self.cmd )
+    values.append( self.build_dir )
+    values.append( self.do_path_merge )
+    values = ''.join( map( str, values ) )
+    
+    return hashlib.md5( values ).digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   signature( self ):
+    return self._signature;
+  
+  #//-------------------------------------------------------//
+  
+  def   __makeNodes( self, src_files ):
+    nodes = []
+    
+    builder = _GccCompileCppBuilderImpl( self.cmd, self._signature, self.env, self.options )
+    
+    for src_files in src_files.groupUniqueNames():
+      node = Node( builder, map( FileValue, src_files ) )
+      nodes.append( node )
+    
+    return nodes
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, build_manager, vfile, node ):
+    targets = []
+    itargets = []
+    ideps = []
     
-    cmd       = self.__cmd()
     src_files = FilePaths( node.sources() )
+    src_nodes = self.__makeNodes( src_files )
     
-    targets, itargets, ideps = self.__buildSources( vfile, cmd, src_files )
+    while src_nodes:
+      src_node = src_nodes.pop()
+      if not src_node.actual( vfile ):
+        break
+      
+      targets += src_node.target_values
+      itargets += src_node.itarget_values
+      ideps += src_node.idep_values
+    else:
+      return targets, itargets, ideps
+    
+    if src_nodes:
+      build_manager.addDeps( node, src_nodes )
+    
+    tmp_targets, tmp_itargets, tmp_ideps = src_node.build( build_manager, vfile )
+    
+    targets += src_node.target_values
+    itargets += src_node.itarget_values
+    ideps += src_node.idep_values
+    
+    if src_nodes:
+      raise RebuildNode()
     
     return targets, itargets, ideps
   
   #//-------------------------------------------------------//
   
-  def   clear( self, node, target_values, itarget_values ):
-    for value in target_values:
-      value.remove()
-    
-    for value in itarget_values:
-      value.remove()
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    return hashlib.md5( ' '.join( map(str, self.__cmd() ) ) ).digest()
-  
-
+  def   buildStr( self, node ):
+    return self.options.cxx.value() + ': ' + ' '.join( map( str, node.sources() ) )

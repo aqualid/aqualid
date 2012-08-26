@@ -59,6 +59,16 @@ class TestPathTypes( AqlTestCase ):
     print( paths.replaceExt('.ttt') )
     print( paths.replaceDir('foo/bar') )
   
+  #//=======================================================//
+  
+  def   test_file_path_groups( self ):
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file0.txt', 'klm/file0.txt', 'ghi/file1.txt' ])
+    
+    groups = paths.groupUniqueNames()
+    groups = paths.groupUniqueNames()
+    
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+  
 #//===========================================================================//
 
 if __name__ == "__main__":
