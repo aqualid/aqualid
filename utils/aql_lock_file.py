@@ -21,6 +21,9 @@
 import os
 import time
 import errno
+import threading
+
+from aql_utils import printStacks
 
 #//===========================================================================//
 #   General implementation
@@ -29,16 +32,13 @@ class GeneralFileLock (object):
   
   class Timeout( Exception ): pass
   
-  __slots__ = ('lockfilename', 'fd', 'retries', 'interval')
+  __slots__ = ('lockfilename', 'locked', 'retries', 'interval')
   
-  def   __init__( self, filename, interval = 1, timeout = 3 * 60):
+  def   __init__( self, filename, interval = 1, timeout = 30 * 60 ):
     self.lockfilename = os.path.normcase( os.path.normpath( os.path.abspath( str(filename) ) ) ) + '.lock'
-    self.fd = None
+    self.locked = False
     self.interval = interval
     self.retries = int(timeout / interval)
-  
-  def   __del__(self):
-    self.releaseLock()
   
   def   __enter__(self):
     return self
@@ -49,35 +49,40 @@ class GeneralFileLock (object):
   def   readLock( self ):
     return self.writeLock()
   
-  def   writeLock( self, os_open = os.open, open_flags = os.O_CREAT| os.O_EXCL | os.O_RDWR ):
-    if self.fd is not None:
-      return self
+  def   writeLock( self, os_open = os.open, open_flags = os.O_CREAT | os.O_EXCL | os.O_RDWR ):
+    #~ print("writeLock: %s" % threading.current_thread() )
+    if self.locked:
+      printStacks()
+      raise AssertionError( 'file: %s is locked already' % self.lockfilename )
       
     index = self.retries
     
     while True:
       try:
-        self.fd = os_open( self.lockfilename, open_flags )
+        os.close( os_open( self.lockfilename, open_flags ) )
         break
       except OSError as ex:
-        self.fd = None
         if ex.errno != errno.EEXIST:
           raise
         if not index:
             raise self.Timeout("Lock file '%s' timeout." % self.lockfilename )
         
         index -= 1
+      except:
+        printStacks()
         
       time.sleep( self.interval )
     
+    self.locked = True
     return self
   
   def   releaseLock( self, close = os.close, remove = os.remove ):
-    if self.fd is not None:
-      close(self.fd)
-      remove(self.lockfilename)
-      self.fd = None
-
+    #~ print("releaseLock: %s" % threading.current_thread() )
+    if not self.locked:
+      raise AssertionError( 'file: %s is not locked' % self.lockfilename )
+    
+    self.locked = False
+    remove(self.lockfilename)
 
 try:
   #//===========================================================================//

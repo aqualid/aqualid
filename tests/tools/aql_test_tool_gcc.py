@@ -72,11 +72,11 @@ class TestToolGcc( AqlTestCase ):
 
   def test_gcc_compile(self):
     
-    event_manager.setHandlers( EventHandler() )
+      event_manager.setHandlers( EventHandler() )
     
-    with Tempdir() as tmp_dir:
+    #~ with Tempdir() as tmp_dir:
       
-      #~ tmp_dir = Tempdir()
+      tmp_dir = Tempdir()
       
       root_dir = FilePath(tmp_dir)
       build_dir = root_dir.join('build')
@@ -116,11 +116,54 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, map( FileValue, src_files ) )
         self.assertFalse( obj.actual( vfile ) )
         obj.build( None, vfile )
+        
+        vfile.close(); vfile.open( vfilename )
+        
+        obj = Node( cpp_compiler, map( FileValue, src_files ) )
         self.assertTrue( obj.actual( vfile ) )
         
       finally:
         vfile.close()
   
+#//===========================================================================//
+
+@skip
+class TestToolGccSpeed( AqlTestCase ):
+
+  def test_gcc_compiler_speed(self):
+    
+    event_manager.setHandlers( EventHandler() )
+    
+    root_dir = FilePath("D:\\build_bench")
+    build_dir = root_dir.join('build')
+    
+    #//-------------------------------------------------------//
+    
+    options = builtinOptions()
+    options.update( gccOptions() )
+    
+    options.cxx = "C:\\MinGW32\\bin\\g++.exe"
+    
+    options.build_dir_prefix = build_dir
+    
+    cpp_compiler = GccCompileCppBuilder( None, options )
+  
+    #//-------------------------------------------------------//
+    
+    vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+    
+    bm = BuildManager( vfilename, 4, True )
+    
+    options.cpppath += root_dir
+    
+    for i in range(200):
+      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
+      obj = Node( cpp_compiler, map( FileValue, src_files ) )
+      bm.addNodes( obj )
+    
+    bm.build()
+    
+
 #//===========================================================================//
 
 if __name__ == "__main__":

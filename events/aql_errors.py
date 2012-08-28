@@ -166,6 +166,6 @@ class   CommandExecFailed( Exception ):
 #//-------------------------------------------------------//
 
 class   BuildError( Exception ):
-  def   __init__( self, msg ):
-    msg = "Build error: '%s'" % str(msg)
+  def   __init__( self, out, err ):
+    msg = "Build error: '%s'" % str(err)
     super(type(self), self).__init__( msg )

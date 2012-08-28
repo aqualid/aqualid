@@ -108,7 +108,7 @@ class EventHandler( object ):
     logError("Error: %s" % str(error) )
     try:
       traceback.print_tb( error.__traceback__ )
-    except AttrinuteError:
+    except AttributeError:
       pass
 
 
