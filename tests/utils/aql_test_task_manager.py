@@ -103,6 +103,35 @@ class TestTaskManager( AqlTestCase ):
     self.assertIsInstance( done_tasks[3][1], Exception )
     
     self.assertEqual( done_tasks[4:], expected_tasks[4:] )
+  
+  #//===========================================================================//
+
+  def test_task_manager_stop_on_fail(self):
+    tm = TaskManager( 4 )
+    
+    results = set()
+    
+    for i in range(0,3):
+      tm.addTask( i, _doAppend, i, results, 0.3 )
+    
+    tm.addTask( 3, _doFail, 0.1 )
+    
+    for i in range(4,8):
+      tm.addTask( i, _doAppend, i, results, 0 )
+    
+    time.sleep(1)
+    
+    done_tasks = sorted( tm.completedTasks() )
+    self.assertEqual( len(done_tasks), 8 )
+    
+    expected_tasks = sorted( zip( range(0,8), [None] * 8 ) )
+    
+    self.assertEqual( done_tasks[:3], expected_tasks[:3] )
+    
+    self.assertEqual( done_tasks[3][0], 3 )
+    self.assertIsInstance( done_tasks[3][1], Exception )
+    
+    self.assertEqual( done_tasks[4:], expected_tasks[4:] )
 
 #//===========================================================================//
 

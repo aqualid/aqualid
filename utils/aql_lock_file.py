@@ -21,9 +21,6 @@
 import os
 import time
 import errno
-import threading
-
-from aql_utils import printStacks
 
 #//===========================================================================//
 #   General implementation
@@ -49,17 +46,15 @@ class GeneralFileLock (object):
   def   readLock( self ):
     return self.writeLock()
   
-  def   writeLock( self, os_open = os.open, open_flags = os.O_CREAT | os.O_EXCL | os.O_RDWR ):
-    #~ print("writeLock: %s" % threading.current_thread() )
+  def   writeLock( self, open_flags = os.O_CREAT | os.O_EXCL | os.O_RDWR ):
     if self.locked:
-      printStacks()
       raise AssertionError( 'file: %s is locked already' % self.lockfilename )
       
     index = self.retries
     
     while True:
       try:
-        os.close( os_open( self.lockfilename, open_flags ) )
+        os.close( os.open( self.lockfilename, open_flags ) )
         break
       except OSError as ex:
         if ex.errno != errno.EEXIST:
@@ -68,21 +63,18 @@ class GeneralFileLock (object):
             raise self.Timeout("Lock file '%s' timeout." % self.lockfilename )
         
         index -= 1
-      except:
-        printStacks()
-        
+      
       time.sleep( self.interval )
     
     self.locked = True
     return self
   
-  def   releaseLock( self, close = os.close, remove = os.remove ):
-    #~ print("releaseLock: %s" % threading.current_thread() )
+  def   releaseLock( self ):
     if not self.locked:
       raise AssertionError( 'file: %s is not locked' % self.lockfilename )
     
     self.locked = False
-    remove(self.lockfilename)
+    os.remove(self.lockfilename)
 
 try:
   #//===========================================================================//
@@ -96,9 +88,6 @@ try:
   
     def   __init__( self, filename ):
       self.fd = os.open( filename, os.O_RDWR | os.O_CREAT )
-    
-    def   __del__(self):
-      os.close( self.fd )
     
     def   __enter__(self):
       return self
@@ -145,9 +134,6 @@ except ImportError:
                                            0,
                                            None )
         self.locked = False
-      
-      def   __del__(self):
-        self.hfile.Close()
       
       def   __enter__(self):
         return self

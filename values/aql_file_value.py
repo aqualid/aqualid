@@ -25,6 +25,8 @@ import datetime
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
 
+_file_content_chache = {}
+
 #//===========================================================================//
 
 @pickleable
@@ -32,7 +34,15 @@ class   FileContentChecksum (object):
   
   __slots__ = ( 'size', 'checksum' )
   
-  def   __new__( cls, path = None, size = None, checksum = None ):
+  def   __new__( cls, path = None, size = None, checksum = None, use_cache = False, file_content_chache = _file_content_chache ):
+    
+    if use_cache:
+      try:
+        content = file_content_chache[ path ]
+        if type(content) is FileContentChecksum:
+          return content
+      except KeyError:
+        pass
     
     if (size is not None) and (checksum is not None):
       self = super(FileContentChecksum,cls).__new__(cls)
@@ -64,6 +74,8 @@ class   FileContentChecksum (object):
       
       self.size     = size
       self.checksum = checksum.digest()
+      
+      file_content_chache[ path ] = self
       
       return self
     
@@ -185,7 +197,7 @@ class   FileValue (Value):
   
   def   actual( self ):
     content = self.content
-    return content == type(content)( self.name )
+    return content == type(content)( self.name, use_cache = True )
   
   #//-------------------------------------------------------//
   

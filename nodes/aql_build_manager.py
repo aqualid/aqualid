@@ -248,7 +248,7 @@ class _NodesBuilder (object):
       return vfile
     
     elif attr == 'task_manager':
-      tm = TaskManager( self.jobs )
+      tm = TaskManager( num_threads = self.jobs, stop_on_error = self.stop_on_error )
       
       self.task_manager = tm
       return tm
@@ -271,7 +271,7 @@ class _NodesBuilder (object):
         event_manager.eventActualNode( node )
         completed_nodes.append( node )
       else:
-        event_manager.eventOutdateNode( node )
+        event_manager.eventOutdatedNode( node )
         addTask( node, node.build, build_manager, vfile )
     
     if not completed_nodes:
@@ -283,8 +283,6 @@ class _NodesBuilder (object):
             event_manager.eventRebuildNode( node )
             rebuild_nodes.append( node )
           else:
-            if self.stop_on_error:
-              self.task_manager.stop()
             event_manager.eventFailedNode( node, exception )
             failed_nodes[ node ] = exception
     

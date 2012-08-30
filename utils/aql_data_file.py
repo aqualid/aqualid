@@ -305,11 +305,6 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   __del__(self):
-    self.close()
-  
-  #//-------------------------------------------------------//
-  
   def   clear(self):
     stream = self.stream
     if stream is not None:

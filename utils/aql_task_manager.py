@@ -40,13 +40,14 @@ _exit_task = ( None, _exitEventFunction, [], {} )
 
 class _TaskProcessor( threading.Thread ):
   
-  def __init__(self, tasks, completed_tasks, exit_event ):
+  def __init__(self, tasks, completed_tasks, exit_event, stop_on_error ):
     
     super(_TaskProcessor,self).__init__()
     
     self.tasks            = tasks
     self.completed_tasks  = completed_tasks
     self.exit_event       = exit_event
+    self.stop_on_error    = stop_on_error
     self.daemon           = True  # let that main thread to exit even if task threads are still active
     
     self.start()
@@ -74,6 +75,8 @@ class _TaskProcessor( threading.Thread ):
         if id is not None:
           fail = ( id, err )
           completed_tasks.put( fail )
+          if self.stop_on_error:
+            exit_event.set()
         else:
           logWarning("Task failed with error: %s" % str(err) )
       
@@ -91,15 +94,17 @@ class TaskManager (object):
     'threads',
     'completed_tasks',
     'exit_event',
+    'stop_on_error',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__(self, num_threads ):
+  def   __init__(self, num_threads, stop_on_error = False ):
     self.tasks            = queue.Queue()
     self.completed_tasks  = queue.Queue()
     self.exit_event       = threading.Event()
     self.threads          = []
+    self.stop_on_error    = stop_on_error
     
     self.start( num_threads )
   
@@ -114,7 +119,7 @@ class TaskManager (object):
     
     while num_threads > 0:
       num_threads -= 1
-      t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event )
+      t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event, self.stop_on_error )
       threads.append( t )
   
   #//-------------------------------------------------------//

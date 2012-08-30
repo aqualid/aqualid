@@ -127,10 +127,75 @@ class TestToolGcc( AqlTestCase ):
   
 #//===========================================================================//
 
+from time import time
+import threading
+import sys
+from collections import deque
+try:
+    from resource import getrusage, RUSAGE_SELF
+except ImportError:
+    RUSAGE_SELF = 0
+    def getrusage(who=0):
+        return [0.0, 0.0] # on non-UNIX platforms cpu_time always 0.0
+
+p_stats = None
+p_start_time = None
+
+def profiler(frame, event, arg):
+    if event not in ('call','return'): return profiler
+    #### gather stats ####
+    rusage = getrusage(RUSAGE_SELF)
+    t_cpu = rusage[0] + rusage[1] # user time + system time
+    code = frame.f_code 
+    fun = (code.co_name, code.co_filename, code.co_firstlineno)
+    #### get stack with functions entry stats ####
+    ct = threading.currentThread()
+    try:
+        p_stack = ct.p_stack
+    except AttributeError:
+        ct.p_stack = deque()
+        p_stack = ct.p_stack
+    #### handle call and return ####
+    if event == 'call':
+        p_stack.append((time(), t_cpu, fun))
+    elif event == 'return':
+        try:
+            t,t_cpu_prev,f = p_stack.pop()
+            assert f == fun
+        except IndexError: # TODO investigate
+            t,t_cpu_prev,f = p_start_time, 0.0, None
+        call_cnt, t_sum, t_cpu_sum = p_stats.get(fun, (0, 0.0, 0.0))
+        p_stats[fun] = (call_cnt+1, t_sum+time()-t, t_cpu_sum+t_cpu-t_cpu_prev)
+    return profiler
+
+
+def profile_on():
+    global p_stats, p_start_time
+    p_stats = {}
+    p_start_time = time()
+    threading.setprofile(profiler)
+    sys.setprofile(profiler)
+
+
+def profile_off():
+    threading.setprofile(None)
+    sys.setprofile(None)
+
+def get_profile_stats():
+    """
+    returns dict[function_tuple] -> stats_tuple
+    where
+      function_tuple = (function_name, filename, lineno)
+      stats_tuple = (call_cnt, real_time, cpu_time)
+    """
+    return p_stats
+
 @skip
 class TestToolGccSpeed( AqlTestCase ):
 
   def test_gcc_compiler_speed(self):
+    
+    #~ profile_on()
     
     event_manager.setHandlers( EventHandler() )
     
@@ -150,19 +215,27 @@ class TestToolGccSpeed( AqlTestCase ):
   
     #//-------------------------------------------------------//
     
-    vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+    vfilename = root_dir.join( '.aql.values' )
     
     bm = BuildManager( vfilename, 4, True )
     
     options.cpppath += root_dir
     
-    for i in range(200):
-      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
-      obj = Node( cpp_compiler, map( FileValue, src_files ) )
-      bm.addNodes( obj )
+    for i in range(1):
+      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(1)]
+      for src_file in src_files:
+        obj = Node( cpp_compiler, FileValue( src_file ) )
+        bm.addNodes( obj )
     
     bm.build()
     
+    #~ profile_off()
+    
+    #~ stats = list( get_profile_stats().copy().items() )
+    #~ stats.sort( key = lambda location: location[1][1], reverse = True )
+    
+    #~ for location, times in stats[:40]:
+      #~ print( ' {location:<70}:  {times}'.format(location = str(location), times = str(times)) )
 
 #//===========================================================================//
 
