@@ -31,22 +31,30 @@ except ImportError:
 class _ExitException( Exception ):
   pass
 
+class _FinishingException( Exception ):
+  pass
+
 def   _exitEventFunction():
   raise _ExitException()
 
+def   _finishingEventFunction():
+  raise _FinishingException()
+
 _exit_task = ( None, _exitEventFunction, [], {} )
+_finishing_task = ( None, _exitEventFunction, [], {} )
 
 #//===========================================================================//
 
 class _TaskProcessor( threading.Thread ):
   
-  def __init__(self, tasks, completed_tasks, exit_event, stop_on_error ):
+  def __init__(self, tasks, completed_tasks, exit_event, finish_event, stop_on_error ):
     
     super(_TaskProcessor,self).__init__()
     
     self.tasks            = tasks
     self.completed_tasks  = completed_tasks
     self.exit_event       = exit_event
+    self.finish_event     = finish_event
     self.stop_on_error    = stop_on_error
     self.daemon           = True  # let that main thread to exit even if task threads are still active
     
@@ -59,14 +67,21 @@ class _TaskProcessor( threading.Thread ):
     tasks             = self.tasks
     completed_tasks   = self.completed_tasks
     exit_event        = self.exit_event
+    is_finishing      = self.finish_event.is_set
     
     while not exit_event.is_set():
-      id, func, args, kw = tasks.get()
+      id, func, args, kw = tasks.get( block = not is_finishing() )
       try:
         func(*args, **kw)
         if id is not None:
           success = (id, None)
           completed_tasks.put( success )
+      
+      except queue.Empty:
+        return
+      
+      except _FinishingException:
+        pass
       
       except _ExitException:
         exit_event.set()
@@ -94,6 +109,7 @@ class TaskManager (object):
     'threads',
     'completed_tasks',
     'exit_event',
+    'finish_event',
     'stop_on_error',
   )
   
@@ -103,6 +119,7 @@ class TaskManager (object):
     self.tasks            = queue.Queue()
     self.completed_tasks  = queue.Queue()
     self.exit_event       = threading.Event()
+    self.finish_event     = threading.Event()
     self.threads          = []
     self.stop_on_error    = stop_on_error
     
@@ -119,15 +136,34 @@ class TaskManager (object):
     
     while num_threads > 0:
       num_threads -= 1
-      t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event, self.stop_on_error )
+      t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event, self.finish_event, self.stop_on_error )
       threads.append( t )
   
   #//-------------------------------------------------------//
   
   def   stop(self):
     
+    if not self.threads:
+      return
+    
     self.exit_event.set()
     self.tasks.put( _exit_task )
+    
+    for t in self.threads:
+      t.join()
+    
+    self.threads = []
+    self.tasks = queue.Queue()
+  
+  #//-------------------------------------------------------//
+  
+  def   finish(self):
+    
+    if not self.threads:
+      return
+    
+    self.finish_event.set()
+    self.tasks.put( _finishing_task )
     
     for t in self.threads:
       t.join()
@@ -145,11 +181,14 @@ class TaskManager (object):
   
   def   completedTasks( self ):
     completed_tasks = []
-    isExit = self.exit_event.is_set
+    is_exit = self.exit_event.is_set
+    
+    if is_exit():
+      self.stop()
     
     while True:
       try:
-        block = (not completed_tasks) and (not isExit())
+        block = (not completed_tasks) and (not is_exit())
         task_result = self.completed_tasks.get( block = block )
         
         completed_tasks.append( task_result )

@@ -268,10 +268,10 @@ class _NodesBuilder (object):
     
     for node in nodes:
       if node.actual( vfile ):
-        event_manager.eventActualNode( node )
+        #event_manager.eventActualNode( node )
         completed_nodes.append( node )
       else:
-        event_manager.eventOutdatedNode( node )
+        #event_manager.eventOutdatedNode( node )
         addTask( node, node.build, build_manager, vfile )
     
     if not completed_nodes:
@@ -354,7 +354,7 @@ class BuildManager (object):
     
     getTails = self.__nodes.tails
     
-    buildNodes = self.__nodes_builder.build
+    build_nodes = self.__nodes_builder.build
     removeTailNode = self.__nodes.removeTail
     
     waiting_nodes = set()
@@ -371,7 +371,9 @@ class BuildManager (object):
       if not tails and not waiting_nodes:
         break
       
-      completed_nodes, tmp_failed_nodes, rebuild_nodes = buildNodes( self, tails )
+      completed_nodes, tmp_failed_nodes, rebuild_nodes = build_nodes( self, tails )
+      if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
+        break
       
       failed_nodes.update( tmp_failed_nodes )
       

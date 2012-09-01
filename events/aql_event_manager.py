@@ -149,6 +149,12 @@ class EventManager( object ):
       self.ignored_events.clear()
       self.handlers.clear()
       self.tm.stop()
+  
+  #//-------------------------------------------------------//
+  
+  def   finish( self ):
+    with self.lock:
+      self.tm.finish()
 
 #//===========================================================================//
 

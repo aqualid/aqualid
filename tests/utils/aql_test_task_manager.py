@@ -79,6 +79,25 @@ class TestTaskManager( AqlTestCase ):
     self.assertEqual( results, set(range(0,4)) )
 
   #//===========================================================================//
+  
+  def test_task_manager_finish(self):
+    tm = TaskManager( 1 )
+    
+    results = set()
+    
+    for i in range(8):
+      tm.addTask( i, _doAppend, i, results, 0.2 )
+    
+    tm.finish()
+    
+    self.assertEqual( results, set(range(8)) )
+    
+    done_tasks = tm.completedTasks()
+    expected_tasks = sorted(enumerate( [None] * 8 ))
+    
+    self.assertEqual( sorted(done_tasks), expected_tasks )
+
+  #//===========================================================================//
 
   def test_task_manager_one_fail(self):
     tm = TaskManager( 4 )
