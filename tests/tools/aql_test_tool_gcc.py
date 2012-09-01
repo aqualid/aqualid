@@ -222,12 +222,14 @@ class TestToolGccSpeed( AqlTestCase ):
     options.cpppath += root_dir
     
     for i in range(1):
-      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(1)]
+      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
       for src_file in src_files:
         obj = Node( cpp_compiler, FileValue( src_file ) )
         bm.addNodes( obj )
     
     bm.build()
+    
+    event_manager.finish()
     
     #~ profile_off()
     
