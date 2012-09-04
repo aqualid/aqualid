@@ -55,7 +55,7 @@ class TestValuesFile( AqlTestCase ):
       vfile.addValues( values ); vfile.selfTest()
       s_values = vfile.findValues( values ); vfile.selfTest()
       
-      self.assertEqual( values, s_values )
+      self.assertEqual( values[0].content, s_values[0].content )
       
       #//-------------------------------------------------------//
       
@@ -117,8 +117,7 @@ class TestValuesFile( AqlTestCase ):
   #//===========================================================================//
 
   def test_value_file_2(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
+    event_manager.setHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp.name )
@@ -141,13 +140,12 @@ class TestValuesFile( AqlTestCase ):
       value6 = Value( "target_url6", "http://aql.org/download6" )
       dep_value4 = DependsValue( "urls4", [ dep_value1, dep_value2, dep_value3, value6 ] )
       
-      
       all_dep_values = [dep_value4, dep_value3, dep_value2, dep_value1]
       
       all_values = all_dep_values + values +[ value4, value5, value6 ]
       
       vfile.addValues( all_values ); vfile.selfTest()
-      self.assertTrue( vfile.actual( all_values ) )
+      self.assertEqual( vfile.findValues( all_values ), all_values )
       
       vfile.close()
       vfile.open( tmp.name ); vfile.selfTest()
@@ -161,7 +159,7 @@ class TestValuesFile( AqlTestCase ):
       vfile.addValues( [value3] ); vfile.selfTest()
       
       s_all_dep_values = vfile.findValues( all_dep_values ); vfile.selfTest()
-      self.assertFalse( vfile.actual( all_dep_values ) )
+      self.assertNotEqual( vfile.findValues( all_dep_values ), all_dep_values )
       for value, s_value in zip( all_dep_values, s_all_dep_values ):
         self.assertEqual( value.name, s_value.name )
         self.assertNotEqual( value.content, s_value.content )

@@ -20,6 +20,7 @@
 
 import os
 import hashlib
+import struct
 import datetime
 
 from aql_value import Value, NoContent
@@ -32,7 +33,7 @@ _file_content_chache = {}
 @pickleable
 class   FileContentChecksum (object):
   
-  __slots__ = ( 'size', 'checksum' )
+  __slots__ = ( 'size', 'checksum', 'signature' )
   
   def   __new__( cls, path = None, size = None, checksum = None, use_cache = False, file_content_chache = _file_content_chache ):
     
@@ -74,13 +75,12 @@ class   FileContentChecksum (object):
       
       self.size     = size
       self.checksum = checksum.digest()
-      
-      file_content_chache[ path ] = self
-      
-      return self
     
     except (OSError, IOError):
-      return NoContent()
+      self = NoContent()
+    
+    file_content_chache[ path ] = self
+    return self
   
   #//-------------------------------------------------------//
   
@@ -95,18 +95,37 @@ class   FileContentChecksum (object):
     return ( None, self.size, self.checksum )
   def   __getstate__(self):
     return {}
-  def   __setstate__(self,state):     pass
+  def   __setstate__(self,state):
+    pass
   def   __str__( self ):
     return str(self.checksum)
+  
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
+      self.signature = self.__signature()
+      return self.signature
+    
+    return super(FileContentChecksum,self).__getattr__( attr )
+  
+  def   __signature( self ):
+    return struct.pack( ">Q", self.size ) + self.checksum
 
 #//===========================================================================//
 
 @pickleable
 class   FileContentTimeStamp (object):
   
-  __slots__ = ( 'size', 'modify_time' )
+  __slots__ = ( 'size', 'modify_time', 'signature' )
   
-  def   __new__( cls, path = None, size = None, modify_time = None ):
+  def   __new__( cls, path = None, size = None, modify_time = None, use_cache = False, file_content_chache = _file_content_chache ):
+    
+    if use_cache:
+      try:
+        content = file_content_chache[ path ]
+        if type(content) is FileContentTimeStamp:
+          return content
+      except KeyError:
+        pass
     
     if (size is not None) and (modify_time is not None):
       self = super(FileContentTimeStamp,cls).__new__(cls)
@@ -127,12 +146,14 @@ class   FileContentTimeStamp (object):
       
       self.size = stat.st_size
       self.modify_time = stat.st_mtime
-      
-      return self
     
     except OSError:
-        return NoContent()
-
+        self = NoContent()
+    
+    file_content_chache[ path ] = self
+    
+    return self
+  
   #//-------------------------------------------------------//
   
   def   __eq__( self, other ):
@@ -144,10 +165,20 @@ class   FileContentTimeStamp (object):
     return ( None, self.size, self.modify_time )
   def   __getstate__(self):
     return {}
-  def   __setstate__(self,state):     pass
+  def   __setstate__(self,state):
+    pass
   def   __str__( self ):
     return str( datetime.datetime.fromtimestamp( self.modify_time ) )
   
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
+      self.signature = self.__signature()
+      return self.signature
+    
+    return super(FileContentTimeStamp,self).__getattr__( attr )
+  
+  def   __signature( self ):
+    return struct.pack( ">Qd", self.size, self.modify_time )
 
 #//===========================================================================//
 
@@ -175,7 +206,7 @@ class   FileName (str):
 @pickleable
 class   FileValue (Value):
   
-  def   __new__( cls, name, content = NotImplemented ):
+  def   __new__( cls, name, content = NotImplemented, use_cache = False ):
     
     if isinstance( name, FileValue ):
       other = name
@@ -187,9 +218,9 @@ class   FileValue (Value):
       name = FileName( name )
     
     if content is NotImplemented:
-      content = FileContentChecksum( name )
+      content = FileContentChecksum( name, use_cache = use_cache )
     elif type(content) is type:
-      content = content( name )
+      content = content( name, use_cache = use_cache )
     
     return super(FileValue, cls).__new__( cls, name, content )
   

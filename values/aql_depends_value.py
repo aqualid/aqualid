@@ -57,7 +57,7 @@ class   DependsValueContent (tuple):
     except TypeError:
       values = [values]
     
-    values.sort( key = lambda value: str(value.name) )
+    values.sort( key = lambda value: value.name )
     
     self = super(DependsValueContent,cls).__new__(cls, tuple(values) )
     
@@ -94,7 +94,7 @@ class   DependsValueContent (tuple):
 @pickleable
 class   DependsValue (Value):
   
-  def   __new__( cls, name, content = None ):
+  def   __new__( cls, name, content = None, use_cache = False ):
     
     if isinstance( name, DependsValue ):
       other = name

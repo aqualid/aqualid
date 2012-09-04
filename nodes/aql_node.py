@@ -44,13 +44,9 @@ class Node (object):
     'name_key',
     'targets_key',
     'itargets_key',
-    'deps_key',
     'ideps_key',
-    'builder_key',
     
-    'sources_value',
-    'deps_value',
-    'builder_value',
+    'signature',
   )
   
   #//-------------------------------------------------------//
@@ -100,29 +96,47 @@ class Node (object):
 
   #//=======================================================//
   
-  def   __getNameKeys( self ):
+  def   __signature( self ):
+    
+    sign = []
+    sign_append = sign.append
+    
+    for value in self.source_values:
+      sign_append( value.signature() )
+    
+    for node in self.source_nodes:
+      sign += node.signature()
+    
+    for value in self.dep_values:
+      sign += value.signature()
+    
+    for node in self.dep_nodes:
+      sign += node.signature()
+    
+    sign += self.builder.signature()
+    
+    return hashlib.md5( sign ).digest()
+  
+  #//=======================================================//
+  
+  def   __keys( self ):
      chcksum = hashlib.md5()
      
      for name in self.name:
        chcksum.update( name.encode() )
      
      name_key = chcksum.digest()
+     
      chcksum.update( b'target_values' )
      targets_key = chcksum.digest()
      
      chcksum.update( b'itarget_values' )
      itargets_key = chcksum.digest()
      
-     chcksum.update( b'dep_values' )
-     deps_key = chcksum.digest()
-     
      chcksum.update( b'idep_values' )
      ideps_key = chcksum.digest()
      
-     chcksum.update( b'builder_key' )
-     builder_key = chcksum.digest()
-     
-     return name_key, targets_key, itargets_key, deps_key, ideps_key, builder_key
+     return name_key, targets_key, itargets_key, ideps_key
   
   #//=======================================================//
   
@@ -149,8 +163,8 @@ class Node (object):
   #//=======================================================//
   
   def   __getattr__( self, attr ):
-    if attr in ('name_key', 'targets_key', 'itargets_key', 'deps_key', 'ideps_key', 'builder_key'):
-      self.name_key, self.targets_key, self.itargets_key, self.deps_key, self.ideps_key, self.builder_key = self.__getNameKeys()
+    if attr in ('name_key', 'targets_key', 'itargets_key', 'ideps_key'):
+      self.name_key, self.targets_key, self.itargets_key, self.ideps_key, = self.__keys()
       return getattr(self, attr)
     
     elif attr == 'name':
