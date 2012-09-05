@@ -206,7 +206,7 @@ class ValuesFile (object):
   
   def   findValues( self, values ):
     with self.lock:
-      with self.file_lock.writeLock():
+      with self.file_lock.readLock():
         self.__update()
       
       out_values = []
@@ -273,7 +273,7 @@ class ValuesFile (object):
   
   def   selfTest(self):
     with self.lock:
-      with self.file_lock.writeLock():
+      with self.file_lock.readLock():
         self.__update()
       
         if self.data_file is not None:

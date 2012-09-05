@@ -18,6 +18,8 @@ from aql_builtin_options import builtinOptions
 
 from gcc import GccCompileCppBuilder, gccOptions
 
+FileContentType = FileContentChecksum
+
 #//===========================================================================//
 
 SRC_FILE_TEMPLATE = """
@@ -195,7 +197,7 @@ class TestToolGccSpeed( AqlTestCase ):
 
   def test_gcc_compiler_speed(self):
     
-    #~ profile_on()
+    profile_on()
     
     event_manager.setHandlers( EventHandler() )
     
@@ -223,21 +225,20 @@ class TestToolGccSpeed( AqlTestCase ):
     
     for i in range(200):
       src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
-      for src_file in src_files:
-        obj = Node( cpp_compiler, FileValue( src_file ) )
-        bm.addNodes( obj )
+      obj = Node( cpp_compiler, [ FileValue( src_file, FileContentType ) for src_file in src_files ] )
+      bm.addNodes( obj )
     
     bm.build()
     
     event_manager.finish()
     
-    #~ profile_off()
+    profile_off()
     
-    #~ stats = list( get_profile_stats().copy().items() )
-    #~ stats.sort( key = lambda location: location[1][1], reverse = True )
+    stats = list( get_profile_stats().copy().items() )
+    stats.sort( key = lambda location: location[1][1], reverse = True )
     
-    #~ for location, times in stats[:40]:
-      #~ print( ' {location:<70}:  {times}'.format(location = str(location), times = str(times)) )
+    for location, times in stats[:40]:
+      print( ' {location:<70}:  {times}'.format(location = str(location), times = str(times)) )
 
 #//===========================================================================//
 

@@ -161,9 +161,9 @@ class Node (object):
     values += self.target_values
     values += self.itarget_values
     
-    values.append( DependsValue( self.ideps_key,     self.idep_values )    )
     values.append( DependsValue( self.targets_key,   self.target_values )  )
     values.append( DependsValue( self.itargets_key,  self.itarget_values ) )
+    values.append( DependsValue( self.ideps_key,     self.idep_values )    )
     
     vfile.addValues( values )
   

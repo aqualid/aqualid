@@ -6,13 +6,15 @@ import hashlib
 from aql_node import Node
 from aql_builder import Builder
 from aql_value import Value, NoContent
-from aql_file_value import FileValue
+from aql_file_value import FileValue, FileContentChecksum, FileContentTimeStamp
 from aql_utils import toSequence, isSequence, execCommand, readTextFile
 from aql_path_types import FilePath, FilePaths
 from aql_errors import InvalidSourceValueType, BuildError
 from aql_options import Options
 from aql_temp_file import Tempfile, Tempdir
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
+
+FileContentType = FileContentChecksum
 
 #//===========================================================================//
 
@@ -173,8 +175,8 @@ class GccCompileCppBuilder (Builder):
       err = self.__exec( cmd, cwd )
       if err: raise err
       
-      src_node_targets = [ FileValue(obj_file) ]
-      src_node_ideps = list( map( FileValue, _readDeps( dep_file.name ) ) )
+      src_node_targets = [ FileValue(obj_file, FileContentType ) ]
+      src_node_ideps = [ FileValue( idep, FileContentType, use_cache = True ) for idep in _readDeps( dep_file.name ) ]
       
       src_node.save( vfile, src_node_targets, [], src_node_ideps )
       
@@ -211,8 +213,8 @@ class GccCompileCppBuilder (Builder):
         if os.path.isfile( tmp_obj_file ):
           move_file( tmp_obj_file, obj_file )
           
-          src_node_targets = [ FileValue(obj_file) ]
-          src_node_ideps = list( map( FileValue, _readDeps( tmp_dep_file ) ) )
+          src_node_targets = [ FileValue(obj_file, FileContentType ) ]
+          src_node_ideps = [ FileValue( idep, FileContentType, use_cache = True ) for idep in _readDeps( tmp_dep_file ) ]
           
           src_node.save( vfile, src_node_targets, [], src_node_ideps )
           
