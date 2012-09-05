@@ -17,6 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+import hashlib
 
 from aql_value_pickler import pickleable
 
@@ -163,7 +164,7 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   actual( self, use_cache = True ):
     return not isinstance( self.content, NoContent )
   
   #//-------------------------------------------------------//
@@ -194,7 +195,9 @@ class   Value (object):
     hash = hashlib.md5()
     
     if len(buf) > hash.digest_size:
-      return hash.update( buf ).digest()
+      hash.update( buf )
+      return hash.digest()
+    
     return buf
   
   #//-------------------------------------------------------//

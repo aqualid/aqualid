@@ -1,12 +1,13 @@
 import os
 import re
+import shutil
 import hashlib
 
 from aql_node import Node
 from aql_builder import Builder
 from aql_value import Value, NoContent
 from aql_file_value import FileValue
-from aql_utils import toSequence, isSequence, execCommand, moveFile, readTextFile
+from aql_utils import toSequence, isSequence, execCommand, readTextFile
 from aql_path_types import FilePath, FilePaths
 from aql_errors import InvalidSourceValueType, BuildError
 from aql_options import Options
@@ -204,9 +205,11 @@ class GccCompileCppBuilder (Builder):
       
       err = self.__exec( cmd, cwd )
       
+      move_file = shutil.move
+      
       for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):
-          moveFile( tmp_obj_file, obj_file )
+          move_file( tmp_obj_file, obj_file )
           
           src_node_targets = [ FileValue(obj_file) ]
           src_node_ideps = list( map( FileValue, _readDeps( tmp_dep_file ) ) )

@@ -109,12 +109,12 @@ class   DependsValue (Value):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   actual( self, use_cache = True ):
     try:
       for value in self.content:
-        if not value.actual():
+        if not value.actual( use_cache ):
           return False
-        
+    
     except TypeError:
       return False
     

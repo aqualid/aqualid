@@ -40,7 +40,7 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   signature( self ):
-    return ""
+    return b""
   
 
 #//===========================================================================//
@@ -60,7 +60,7 @@ class CopyBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    idep = Value( ",".join(node.name) + "CopyBuilderDep", node.name_key )
+    idep = Value( str(node), node.name_key )
     
     for source_value in node.sources():
       new_name = source_value.name + '.' + self.ext
@@ -77,7 +77,8 @@ class CopyBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   signature( self ):
-    return [self.ext, self.iext]
+    s = self.ext + '|' + self.iext
+    return s.encode('utf-8')
 
 #//===========================================================================//
 
@@ -114,7 +115,7 @@ class TestNodes( AqlTestCase ):
     node = Node( builder, values )
     node.addDeps( deps )
     
-    self.assertFalse( node.actual( vfile ) )
+    self.assertFalse( node.actual( vfile, use_cache = False ) )
     node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
@@ -170,9 +171,18 @@ class TestNodes( AqlTestCase ):
               node3 = self._rebuildNode( vfile, builder, [value3], [], tmp_files )
               node = self._rebuildNode( vfile, builder, [value1, node3], [], tmp_files )
               
+              # node3: CopyBuilder, tmp, i, tmp3 -> tmp3.tmp, ,tmp3.i
+              # node: CopyBuilder, tmp, i, tmp1, tmp3.tmp -> tmp1.tmp, tmp3.tmp.tmp, , tmp1.i, tmp3.tmp.i
+              
               builder3 = CopyBuilder("xxx", "3")
               node3 = self._rebuildNode( vfile, builder3, [value3], [], tmp_files )
+              
+              # node3: CopyBuilder, xxx, 3, tmp3 -> tmp3.xxx, ,tmp3.3
+              
               node = self._rebuildNode( vfile, builder, [value1, node3], [], tmp_files )
+              
+              # node: CopyBuilder, tmp, i, tmp1, tmp3.xxx -> tmp1.tmp, tmp3.xxx.tmp, , tmp1.i, tmp3.xxx.i
+              
               node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
               
               dep = Value( "dep1", "1" )
@@ -185,7 +195,9 @@ class TestNodes( AqlTestCase ):
               node3 = self._rebuildNode( vfile, builder3, [value2], [], tmp_files )
               node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
               
-              with open( node.target_values[0].name, 'wb' ) as f:
+              node_tname = node.target_values[0].name
+              
+              with open( node_tname, 'wb' ) as f:
                 f.write( b'333' )
                 f.flush()
               
@@ -218,7 +230,7 @@ class TestSpeedBuilder (Builder):
   __slots__ = ('ext', 'idep')
   
   def   __init__(self, name, ext, idep ):
-    self.name = [ name ]
+    self.name = name
     self.ext = ext
     self.idep = idep
   
@@ -243,7 +255,8 @@ class TestSpeedBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   signature( self ):
-    return [self.ext, self.idep]
+    s = self.ext + '|' + self.idep
+    return s.encode('utf-8')
   
   #//-------------------------------------------------------//
   
@@ -307,7 +320,6 @@ class TestNodesSpeed ( AqlTestCase ):
         
         t = lambda vfile = vfile, builder = builder, source_files = source_files, testNoBuildSpeed = _testNoBuildSpeed: testNoBuildSpeed( vfile, builder, source_files )
         t = timeit.timeit( t, number = 1 )
-        print("load actual nodes: %s" % t)
         
     finally:
       for tmp_file in tmp_files:

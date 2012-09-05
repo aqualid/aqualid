@@ -40,7 +40,6 @@ class Node (object):
     'target_values',
     'itarget_values',
     
-    'name',
     'name_key',
     'targets_key',
     'itargets_key',
@@ -81,49 +80,19 @@ class Node (object):
   #//=======================================================//
   
   def   __getName( self ):
-    names = [ self.builder.name() ]
-    names_append = names.append
-    
-    for source in self.source_nodes:
-      names += source.name
-    
-    for source in self.source_values:
-      names_append( source.name )
-    
-    names.sort()
+    names = [ self.builder.name().encode('utf-8') ]
+    names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
+    names += sorted( map( lambda node: node.name_key, self.source_nodes ) )
     
     return names
-
-  #//=======================================================//
-  
-  def   __signature( self ):
-    
-    sign = []
-    sign_append = sign.append
-    
-    for value in self.source_values:
-      sign_append( value.signature() )
-    
-    for node in self.source_nodes:
-      sign += node.signature()
-    
-    for value in self.dep_values:
-      sign += value.signature()
-    
-    for node in self.dep_nodes:
-      sign += node.signature()
-    
-    sign += self.builder.signature()
-    
-    return hashlib.md5( sign ).digest()
   
   #//=======================================================//
   
   def   __keys( self ):
      chcksum = hashlib.md5()
      
-     for name in self.name:
-       chcksum.update( name.encode() )
+     for name in self.__getName():
+       chcksum.update( name )
      
      name_key = chcksum.digest()
      
@@ -137,28 +106,37 @@ class Node (object):
      ideps_key = chcksum.digest()
      
      return name_key, targets_key, itargets_key, ideps_key
-  
+
   #//=======================================================//
   
-  def   __sourcesValue( self ):
-    source_values = list(self.source_values)
+  def   __signature( self ):
+    
+    sign = [ self.builder.signature() ]
+    
+    def _addSign( values, sign = sign ):
+      sign += map( lambda value: value.signature, sorted( values, key = lambda value: value.name) )
+    
+    def _addName( values, sign = sign ):
+      sign += sorted( map( lambda value: value.name, values ) )
+    
+    _addSign( self.source_values )
     
     for node in self.source_nodes:
-      source_values += node.target_values
+      _addName( node.target_values )
+      _addSign( node.target_values )
     
-    return DependsValue( self.name_key, source_values )
-  
-  #//=======================================================//
-  
-  def   __depsValue( self ):
-    dep_values = list(self.dep_values)
+    _addName( self.dep_values )
+    _addSign( self.dep_values )
     
     for node in self.dep_nodes:
-      dep_values += node.target_values
+      _addName( node.target_values )
+      _addSign( node.target_values )
     
-    dep_values.append( self.builder_value )
+    hash = hashlib.md5()
+    for s in sign:
+      hash.update( s )
     
-    return DependsValue( self.deps_key, dep_values )
+    return hash.digest()
   
   #//=======================================================//
   
@@ -167,38 +145,22 @@ class Node (object):
       self.name_key, self.targets_key, self.itargets_key, self.ideps_key, = self.__keys()
       return getattr(self, attr)
     
-    elif attr == 'name':
-      name = self.__getName()
-      self.name = name
-      return name
+    if attr == 'signature':
+      self.signature = self.__signature()
+      return self.signature
     
-    elif attr == 'sources_value':
-      self.sources_value = self.__sourcesValue()
-      return self.sources_value
-    
-    elif attr == 'deps_value':
-      self.deps_value = self.__depsValue()
-      return self.deps_value
-    
-    elif attr == 'builder_value':
-      self.builder_value = Value( self.builder_key, self.builder.signature() )
-      return self.builder_value
-    
-    raise UnknownAttribute( self, attr )
+    raise AttributeError( self, attr )
   
   #//=======================================================//
   
   def   __save( self, vfile ):
     
-    values = [ self.builder_value ]
-    values += self.source_values
-    values += self.dep_values
+    values = [ Value( self.name_key, self.signature ) ]
+    
     values += self.idep_values
     values += self.target_values
     values += self.itarget_values
     
-    values.append( self.sources_value )
-    values.append( self.deps_value )
     values.append( DependsValue( self.ideps_key,     self.idep_values )    )
     values.append( DependsValue( self.targets_key,   self.target_values )  )
     values.append( DependsValue( self.itargets_key,  self.itarget_values ) )
@@ -257,25 +219,22 @@ class Node (object):
   
   #//=======================================================//
   
-  def   actual( self, vfile ):
-    sources_value = self.sources_value
-    deps_value    = self.deps_value
+  def   actual( self, vfile, use_cache = True ):
+    
+    sources_value = Value( self.name_key, self.signature )
     
     targets_value   = DependsValue( self.targets_key   )
     itargets_value  = DependsValue( self.itargets_key  )
     ideps_value     = DependsValue( self.ideps_key     )
     
-    values = [ sources_value, deps_value, targets_value, itargets_value, ideps_value ]
+    values = [ sources_value, targets_value, itargets_value, ideps_value ]
     values = vfile.findValues( values )
     
     if sources_value != values.pop(0):
       return False
     
-    if deps_value != values.pop(0):
-      return False
-    
     for value in values:
-      if not value.actual():
+      if not value.actual( use_cache ):
         return False
     
     targets_value, itargets_value, ideps_value = values
@@ -289,7 +248,11 @@ class Node (object):
   #//=======================================================//
   
   def   sources(self):
-    return self.sources_value.content
+    values = list(self.source_values)
+    for node in self.source_nodes:
+      values += node.target_values
+    
+    return values
   
   #//=======================================================//
   
@@ -322,16 +285,6 @@ class Node (object):
   
   #//=======================================================//
   
-  def   targets( self ):
-    return self.target_values
-  
-  #//=======================================================//
-  
-  def   sideEffects( self ):
-    return self.itarget_values
-  
-  #//=======================================================//
-  
   def   addDeps( self, deps ):
     
     append_node = self.dep_nodes.add
@@ -355,19 +308,15 @@ class Node (object):
       source_values = self.source_values
       
       if not source_values:
-        source_values = self.sources()
-        many_sources = (len(source_values) > 1)
-      else:
-        many_sources = (len(source_values) > 1)
-        if not many_sources:
-          if self.source_nodes:
-            many_sources = True
+        return None
       
-      if source_values:
-        first_source = min( source_values, key = lambda v: v.name ).name
-      else:
-        first_source = ''
+      many_sources = (len(source_values) > 1)
+      if not many_sources:
+        if self.source_nodes:
+          many_sources = True
       
+      first_source = min( source_values, key = lambda v: v.name ).name
+    
     except AttributeError:
       return None
     
@@ -410,6 +359,3 @@ class Node (object):
     return ' '.join( name )
   
   #//-------------------------------------------------------//
-  
-  def   __repr__(self):
-    return str( self.name )

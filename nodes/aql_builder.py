@@ -17,7 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-import shutil
+import os
 
 from aql_utils import toSequence
 from aql_path_types import FilePath, FilePaths
@@ -105,16 +105,31 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  @staticmethod
+  def   __makeDir( path_dir, _path_cache = set() ):
+    if path_dir not in _path_cache:
+      if not os.path.isdir( path_dir ):
+        os.makedirs( path_dir )
+      
+      _path_cache.add( path_dir )
+  
+  #//-------------------------------------------------------//
+  
   def   buildPath( self, src_path = None ):
     if src_path is None:
-      return self.build_dir
+      build_path = self.build_dir
+      self.__makeDir( build_path )
+    else:
+      src_path = FilePath( src_path )
+      
+      if self.do_path_merge:
+        build_path = self.build_dir.merge( src_path )
+      else:
+        build_path = FilePath( os.path.join( self.build_dir, src_path.name_ext ) )
+      
+      self.__makeDir( build_path.dir )
     
-    src_path = FilePath( src_path )
-    
-    if self.do_path_merge:
-      return self.build_dir.merge( src_path )
-    
-    return FilePath( os.path.join( self.build_dir, src_path.name_ext ) )
+    return build_path
   
   #//-------------------------------------------------------//
   

@@ -77,7 +77,7 @@ class   FileContentChecksum (object):
       self.checksum = checksum.digest()
     
     except (OSError, IOError):
-      self = NoContent()
+      return NoContent()
     
     file_content_chache[ path ] = self
     return self
@@ -226,9 +226,9 @@ class   FileValue (Value):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   actual( self, use_cache = True ):
     content = self.content
-    return content == type(content)( self.name, use_cache = True )
+    return content == type(content)( self.name, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   

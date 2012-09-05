@@ -74,8 +74,8 @@ class ChecksumBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   signature( self ):
-    return [ self.offset, self.length ]
-
+    s = str(self.offset) + '.' + str(self.length)
+    return s.encode('utf-8')
 
 #//===========================================================================//
 
@@ -140,7 +140,6 @@ def   _buildChecksums( vfilename, builder, src_files ):
   
   failed_nodes = bm.build()
   for node,err in failed_nodes:
-    print("err: %s" % str(err) )
     try:
       import traceback
       traceback.print_tb( err.__traceback__ )

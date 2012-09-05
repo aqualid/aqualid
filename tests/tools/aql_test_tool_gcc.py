@@ -114,7 +114,7 @@ class TestToolGcc( AqlTestCase ):
           f.write("// end of file")
         
         obj = Node( cpp_compiler, map( FileValue, src_files ) )
-        self.assertFalse( obj.actual( vfile ) )
+        self.assertFalse( obj.actual( vfile, use_cache = False ) )
         obj.build( None, vfile )
         
         vfile.close(); vfile.open( vfilename )
