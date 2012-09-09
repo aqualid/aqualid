@@ -268,10 +268,10 @@ class _NodesBuilder (object):
     
     for node in nodes:
       if node.actual( vfile ):
-        #event_manager.eventActualNode( node )
+        #~ event_manager.eventActualNode( node )
         completed_nodes.append( node )
       else:
-        #event_manager.eventOutdatedNode( node )
+        #~ event_manager.eventOutdatedNode( node )
         addTask( node, node.build, build_manager, vfile )
     
     if not completed_nodes:
@@ -389,6 +389,13 @@ class BuildManager (object):
     
     return tuple( failed_nodes.items() )
     
+  #//-------------------------------------------------------//
+  
+  def   close( self ):
+    self.__nodes = _Nodes()
+    self.__nodes_builder.task_manager.finish()
+    self.__nodes_builder.vfile.close()
+  
   #//-------------------------------------------------------//
   
   def   clear(self):

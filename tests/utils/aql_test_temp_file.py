@@ -6,6 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql_temp_file import Tempfile, Tempdir
+from aql_utils import openFile
 
 #//===========================================================================//
 
@@ -47,10 +48,22 @@ class TestTempFile( AqlTestCase ):
       tmp_dir = Tempdir( dir = tmp_dir.path )
       
       for i in range(10):
-        f = Tempfile( dir = tmp_dir.path, suffix = '.tmp' )
+        Tempfile( dir = tmp_dir.path, suffix = '.tmp' ).close()
       
     self.assertFalse( os.path.exists(tmp_dir.path) )
+  
+  #//=======================================================//
+  
+  def test_temp_file_in_use(self):
+    with Tempfile() as temp_file:
+      
+      temp_file.remove()
+      
+      with openFile( temp_file.name, write = True, binary = True ) as f:
+        f.write( b'1234567890' )
     
+    self.assertFalse( os.path.isfile(temp_file.name) )
+
 #//===========================================================================//
 
 if __name__ == "__main__":

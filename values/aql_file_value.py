@@ -17,7 +17,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
 import os
 import hashlib
 import struct
@@ -25,6 +24,7 @@ import datetime
 
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
+from aql_utils import fileSignature
 
 _file_content_chache = {}
 
@@ -33,9 +33,9 @@ _file_content_chache = {}
 @pickleable
 class   FileContentChecksum (object):
   
-  __slots__ = ( 'size', 'checksum', 'signature' )
+  __slots__ = ( 'signature' )
   
-  def   __new__( cls, path = None, size = None, checksum = None, use_cache = False, file_content_chache = _file_content_chache ):
+  def   __new__( cls, path = None, signature = None, use_cache = False, file_content_chache = _file_content_chache ):
     
     if use_cache:
       try:
@@ -45,10 +45,9 @@ class   FileContentChecksum (object):
       except KeyError:
         pass
     
-    if (size is not None) and (checksum is not None):
+    if signature is not None:
       self = super(FileContentChecksum,cls).__new__(cls)
-      self.size     = size
-      self.checksum = checksum
+      self.signature = signature
       return self
     
     if path is None:
@@ -58,26 +57,12 @@ class   FileContentChecksum (object):
       return path
     
     try:
-      checksum = hashlib.md5()
-      size = 0
-      
-      with open( path, mode = 'rb' ) as f:
-        read = f.read
-        checksum_update = checksum.update
-        while True:
-          chunk = read( 262144 )
-          if not chunk:
-            break
-          size += len(chunk)
-          checksum_update( chunk )
-      
-      self = super(FileContentChecksum,cls).__new__(cls)
-      
-      self.size     = size
-      self.checksum = checksum.digest()
-    
+      signature = fileSignature( path )
     except (OSError, IOError):
       return NoContent()
+    
+    self = super(FileContentChecksum,cls).__new__(cls)
+    self.signature = signature
     
     file_content_chache[ path ] = self
     return self
@@ -85,30 +70,18 @@ class   FileContentChecksum (object):
   #//-------------------------------------------------------//
   
   def   __eq__( self, other ):
-    return (type(self) == type(other)) and \
-           (self.size == other.size) and \
-           (self.checksum == other.checksum)
+    return (type(self) == type(other)) and (self.signature == other.signature)
   
   def   __ne__( self, other ):
     return not self.__eq__( other )
   def   __getnewargs__(self):
-    return ( None, self.size, self.checksum )
+    return ( None, self.signature )
   def   __getstate__(self):
     return {}
   def   __setstate__(self,state):
     pass
   def   __str__( self ):
-    return str(self.checksum)
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      self.signature = self.__signature()
-      return self.signature
-    
-    return super(FileContentChecksum,self).__getattr__( attr )
-  
-  def   __signature( self ):
-    return struct.pack( ">Q", self.size ) + self.checksum
+    return str(self.signature)
 
 #//===========================================================================//
 

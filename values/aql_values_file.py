@@ -173,7 +173,10 @@ class ValuesFile (object):
         xash = self.xash
         loads = self.loads
         for key, data in self.data_file:
-          xash[ key ] = loads( data )
+          try:
+            xash[ key ] = loads( data )
+          except ValueError:
+            del self.data_file[ key ]
   
   #//---------------------------------------------------------------------------//
   

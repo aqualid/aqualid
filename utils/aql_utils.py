@@ -18,15 +18,14 @@
 #
 
 
+import io
 import os
 import sys
-import fnmatch
 import hashlib
 import threading
 import traceback
 import inspect
 import subprocess
-import shutil
 
 from aql_errors import CommandExecFailed
 
@@ -60,16 +59,88 @@ def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, st
 
 #//===========================================================================//
 
-def     flattenList( values, isSequence = isSequence ):
+if hasattr(os, 'O_NOINHERIT'):
+  _O_NOINHERIT = os.O_NOINHERIT
+else:
+  _O_NOINHERIT = 0
+
+if hasattr(os, 'O_SYNC'):
+  _O_SYNC = os.O_SYNC
+else:
+  _O_SYNC = 0
+
+def   openFile( filename, read = True, write = False, binary = False, sync = False, flags = _O_NOINHERIT ):
   
-  flatten_list = []
-  for v in values:
-    if isSequence( v ):
-      flatten_list += flattenList( v )
+  mode = 'r'
+  
+  if not write:
+    flags |= os.O_RDONLY
+    sync = False
+  else:
+    flags |= os.O_CREAT
+    mode += '+'
+    
+    if read:
+      flags |= os.O_RDWR
     else:
-      flatten_list.append( v )
+      flags |= os.O_WRONLY
+    
+    if sync:
+      flags |= _O_SYNC
+    
+  if binary:
+    mode += 'b'
+    flags |= os.O_BINARY
+    
+  fd = os.open( filename, flags )
+  try:
+    if sync:
+      f = io.open( fd, mode, 0 )
+    else:
+      f = io.open( fd, mode )
+  except:
+    os.close( fd )
+    raise
   
-  return flatten_list
+  return f
+
+#//===========================================================================//
+
+def readTextFile( filename ):
+  with openFile( filename ) as f:
+    return f.read()
+
+def readBinFile( filename ):
+  with openFile( filename, binary = True ) as f:
+    return f.read()
+
+def writeTextFile( filename, buf ):
+  with openFile( filename, write = True ) as f:
+    f.truncate()
+    f.write( buf )
+
+def writeBinFile( filename, buf ):
+  with openFile( filename, write = True, binary = True ) as f:
+    f.truncate()
+    f.write( buf )
+
+#//===========================================================================//
+
+def   fileSignature( filename, chunk_size = hashlib.md5().block_size * (2 ** 12) ):
+  
+  checksum = hashlib.md5()
+  
+  with openFile( filename, binary = True ) as f:
+    read = f.read
+    checksum_update = checksum.update
+    
+    chunk = True
+    
+    while chunk:
+      chunk = read( chunk_size )
+      checksum_update( chunk )
+  
+  return checksum.digest()
 
 #//===========================================================================//
 
@@ -77,14 +148,16 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5', chunk_size = 2
   
   checksum = hashlib.__dict__[alg]()
   
-  with open( filename, mode = 'rb' ) as f:
+  with openFile( filename, binary = True ) as f:
     read = f.read
     f.seek( offset )
     checksum_update = checksum.update
-    while True:
+    
+    chunk = True
+    
+    while chunk:
       chunk = read( chunk_size )
-      if not chunk:
-        break
+      checksum_update( chunk )
       
       if size > 0:
         size -= len(chunk)
@@ -94,13 +167,6 @@ def   fileChecksum( filename, offset = 0, size = -1, alg = 'md5', chunk_size = 2
       checksum_update( chunk )
   
   return checksum
-
-#//===========================================================================//
-
-def readTextFile( filename ):
-  with open(filename, 'r') as f:
-    content = f.read()
-    return content
 
 #//===========================================================================//
 
@@ -244,151 +310,3 @@ def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = 
   stderrdata = _decodeData( stderrdata )
 
   return result, stdoutdata, stderrdata
-
-#//===========================================================================//
-
-def   moveFile( src_file, dst_file ):
-  dst_dir = os.path.dirname( dst_file )
-  if not os.path.isdir( dst_dir ):
-    os.makedirs( dst_dir )
-  shutil.move( src_file, dst_file )
-
-#//===========================================================================//
-
-def     getShellScriptEnv( os_env, script ):
-    
-    import sys
-    import os
-    import popen2
-    import re
-    
-    os_environ = os.environ
-    
-    if (sys.platform == "win32"):
-        shell = os_environ.get("COMSPEC", "cmd.exe")
-        script = 'call "' + script + '"'
-    else:
-        shell = '/bin/sh'
-        script = '. ' + script
-    
-    cmdout, cmdin = popen2.popen2( shell )
-    cmdin.write( script + "\n" )
-    cmdin.write( "set\n" )
-    cmdin.close()
-    env = cmdout.readlines()
-    cmdout.close()
-    
-    for arg in env:
-        
-        match = re.search(r'^\w+=', arg )
-        
-        if match:
-            index = arg.find('=')
-            name = arg[:index].upper()
-            value = arg[index + 1:].rstrip('\n \t\r')
-            
-            current = os_environ.get( name )
-            if (current is None) or (value != current):
-                os_env[ name ] = value
-
-
-#//===========================================================================//
-
-def     normPath( path,
-                  _os_path_normpath = os.path.normpath,
-                  _os_path_normcase = os.path.normcase ):
-    
-    return _os_path_normcase( _os_path_normpath( path ) )
-
-#//===========================================================================//
-
-def     prependPath( oldpaths, newpaths, sep = os.pathsep,
-                     normPath = normPath,
-                     toSequence = toSequence,
-                     isSequence = isSequence ):
-    
-    newpaths = map( normPath, toSequence( newpaths, sep ) )
-    
-    for p in toSequence( oldpaths, sep ):
-        if p:
-            p = normPath( p )
-            if p not in newpaths:
-                newpaths.append( p )
-    
-    if isSequence( oldpaths ):
-        return newpaths
-    
-    return sep.join( newpaths )
-
-#//===========================================================================//
-
-def appendPath( oldpaths, newpaths, sep = os.pathsep,
-                normPath = normPath,
-                toSequence = toSequence,
-                isSequence = isSequence ):
-    
-    newpaths = map( normPath, toSequence( newpaths, sep ) )
-    
-    unique_oldpaths = []
-    for p in toSequence( oldpaths, sep ):
-        if p:
-            p = normPath( p )
-            if (p not in newpaths) and (p not in unique_oldpaths):
-                unique_oldpaths.append( p )
-    
-    paths = unique_oldpaths + newpaths
-    
-    if isSequence( oldpaths ):
-        return paths
-    
-    return sep.join( paths )
-
-#//===========================================================================//
-
-def     appendEnvPath( os_env, names, value, sep = os.pathsep,
-                       appendPath = appendPath,
-                       toSequence = toSequence ):
-    
-    for name in toSequence( names ):
-        os_env[ name ] = appendPath( os_env.get( name, '' ), value, sep )
-
-#//===========================================================================//
-
-def     prependEnvPath( os_env, names, value, sep = os.pathsep,
-                        prependPath = prependPath,
-                        toSequence = toSequence ):
-    
-    for name in toSequence( names ):
-        os_env[ name ] = prependPath( os_env.get( name, '' ), value, sep )
-
-#//===========================================================================//
-
-def     findFiles( root, path, pattern, recursive = True ):
-    
-    abs_path = 1
-    
-    path = os.path.normpath( path )
-    
-    if not os.path.isabs( path ):
-        abs_path = 0
-        path = os.path.join( root, path )
-    
-    def     _walker( files, dirname, names ):
-        
-        match_files = fnmatch.filter( names, pattern )
-        match_files = [ os.path.join( dirname, f) for f in match_files ]
-        
-        files += match_files
-        
-        if not recursive:
-            del names[:]
-    
-    files = []
-    os.path.walk( path, _walker, files )
-    
-    if not abs_path:
-        strip_len = len(root)
-        files = [ f[ strip_len : ].lstrip( os.path.sep ) for f in files ]
-    
-    files = map( os.path.normpath, files )
-    return files

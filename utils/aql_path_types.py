@@ -73,6 +73,11 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
+  def   __hash__( self ):
+    return super(FilePath, self).__hash__()
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     if attr == 'name_ext':
       self.name_ext = FilePathBase( os.path.basename(self) )

@@ -117,7 +117,7 @@ class Node (object):
       sign += map( lambda value: value.signature, sorted( values, key = lambda value: value.name) )
     
     def _addName( values, sign = sign ):
-      sign += sorted( map( lambda value: value.name, values ) )
+      sign += sorted( map( lambda value: value.name.encode('utf-8'), values ) )
     
     _addSign( self.source_values )
     

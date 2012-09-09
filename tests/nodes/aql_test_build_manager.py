@@ -119,16 +119,19 @@ def   _generateSourceFiles( num, size ):
 
 def   _addNodesToBM( vfilename, builder, src_files ):
   bm = BuildManager( vfilename, 4, True )
-  
-  src_values = []
-  for s in src_files:
-    src_values.append( FileValue( s ) )
-  
-  checksums_node = Node( builder, src_values )
-  checksums_node2 = Node( builder, checksums_node )
-  
-  bm.addNodes( checksums_node ); bm.selfTest()
-  bm.addNodes( checksums_node2 ); bm.selfTest()
+  try:
+    
+    src_values = []
+    for s in src_files:
+      src_values.append( FileValue( s ) )
+    
+    checksums_node = Node( builder, src_values )
+    checksums_node2 = Node( builder, checksums_node )
+    
+    bm.addNodes( checksums_node ); bm.selfTest()
+    bm.addNodes( checksums_node2 ); bm.selfTest()
+  except:
+    bm.close()
   
   return bm
 
@@ -137,22 +140,26 @@ def   _addNodesToBM( vfilename, builder, src_files ):
 def   _buildChecksums( vfilename, builder, src_files ):
   
   bm = _addNodesToBM( vfilename, builder, src_files )
-  
-  failed_nodes = bm.build()
-  for node,err in failed_nodes:
-    try:
-      import traceback
-      traceback.print_tb( err.__traceback__ )
-    except AttributeError:
-      pass
+  try:
+    failed_nodes = bm.build()
+    for node,err in failed_nodes:
+      try:
+        import traceback
+        traceback.print_tb( err.__traceback__ )
+      except AttributeError:
+        pass
+  finally:
+    bm.close()
 
 #//===========================================================================//
 
 def   _clearTargets( vfilename, builder, src_files ):
   
   bm = _addNodesToBM( vfilename, builder, src_files )
-  
-  bm.clear(); bm.selfTest()
+  try:
+    bm.clear(); bm.selfTest()
+  finally:
+    bm.close()
 
 #//===========================================================================//
 
@@ -279,7 +286,10 @@ class TestBuildManager( AqlTestCase ):
         _buildChecksums( tmp.name, builder, src_files )
         
         bm = _addNodesToBM( tmp.name, builder, src_files )
-        bm.status(); bm.selfTest()
+        try:
+          bm.status(); bm.selfTest()
+        finally:
+          bm.close()
       
       finally:
         _clearTargets( tmp.name, builder, src_files )
@@ -297,28 +307,33 @@ class TestBuildManager( AqlTestCase ):
       src_files = _generateSourceFiles( 3, 201 )
       try:
         bm = BuildManager( vfilename.name, 4, True )
-        env = TestEnv( bm )
+        try:
+          env = TestEnv( bm )
+          
+          builder = MultiChecksumBuilder( env, 0, 256 )
+          
+          src_values = []
+          for s in src_files:
+            src_values.append( FileValue( s ) )
+          
+          node = Node( builder, src_values )
+          
+          bm.addNodes( node ); bm.selfTest()
+          failed_nodes = bm.build()
+          
+          #//-------------------------------------------------------//
+          bm.close()
+          
+          bm = BuildManager( vfilename.name, 4, True )
+          env = TestEnv( bm )
+          builder = MultiChecksumBuilder( env, 0, 256 )
+          
+          node = Node( builder, src_values )
+          bm.addNodes( node ); bm.selfTest()
+          bm.status(); bm.selfTest()
         
-        builder = MultiChecksumBuilder( env, 0, 256 )
-        
-        src_values = []
-        for s in src_files:
-          src_values.append( FileValue( s ) )
-        
-        node = Node( builder, src_values )
-        
-        bm.addNodes( node ); bm.selfTest()
-        failed_nodes = bm.build()
-        
-        #//-------------------------------------------------------//
-        
-        bm = BuildManager( vfilename.name, 4, True )
-        env = TestEnv( bm )
-        builder = MultiChecksumBuilder( env, 0, 256 )
-        
-        node = Node( builder, src_values )
-        bm.addNodes( node ); bm.selfTest()
-        bm.status(); bm.selfTest()
+        finally:
+          bm.close()
         
         #//-------------------------------------------------------//
       
@@ -340,34 +355,35 @@ class TestBuildManager( AqlTestCase ):
       try:
         builder = ChecksumBuilder( 0, 256, replace_ext = False )
         bm = BuildManager( tmp.name, 4, True )
-        
-        src_values = []
-        for s in src_files:
-          src_values.append( FileValue( s ) )
-        
-        node0 = Node( builder, [] )
-        node1 = Node( builder, src_values )
-        node2 = Node( builder, node1 )
-        node3 = Node( builder, node2 )
-        node4 = Node( builder, node3 )
-        
-        bm.addNodes( node0 )
-        bm.addNodes( node1 )
-        bm.addNodes( node2 )
-        bm.addNodes( node3 )
-        bm.addNodes( node4 )
-        
-        #~ bm.build()
-        
-        print("node2: %s" % str(node4) )
-        print("node2: %s" % str(node3) )
-        print("node2: %s" % str(node2) )
-        print("node1: %s" % str(node1) )
-        print("node0: %s" % str(node0) )
+        try:
+          src_values = []
+          for s in src_files:
+            src_values.append( FileValue( s ) )
+          
+          node0 = Node( builder, [] )
+          node1 = Node( builder, src_values )
+          node2 = Node( builder, node1 )
+          node3 = Node( builder, node2 )
+          node4 = Node( builder, node3 )
+          
+          bm.addNodes( node0 )
+          bm.addNodes( node1 )
+          bm.addNodes( node2 )
+          bm.addNodes( node3 )
+          bm.addNodes( node4 )
+          
+          #~ bm.build()
+          
+          print("node2: %s" % str(node4) )
+          print("node2: %s" % str(node3) )
+          print("node2: %s" % str(node2) )
+          print("node1: %s" % str(node1) )
+          print("node0: %s" % str(node0) )
+        finally:
+          bm.close()
       
       finally:
         _removeFiles( src_files )
-
 
 #//===========================================================================//
 

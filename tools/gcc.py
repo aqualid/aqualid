@@ -144,7 +144,7 @@ class GccCompileCppBuilder (Builder):
       cmd_file = None
     
     try:
-      result, out, err = execCommand( cmd, cwd = cwd, env = None )    # TODO: env = options.os_env
+      result, out, err = execCommand( cmd, cwd = cwd, env = None, stdout = None, stderr = None )    # TODO: env = options.os_env
       if result:
         return BuildError( out, err )
     finally:
@@ -175,7 +175,7 @@ class GccCompileCppBuilder (Builder):
       err = self.__exec( cmd, cwd )
       if err: raise err
       
-      src_node_targets = [ FileValue(obj_file, FileContentType ) ]
+      src_node_targets = [ FileValue( obj_file, FileContentType ) ]
       src_node_ideps = [ FileValue( idep, FileContentType, use_cache = True ) for idep in _readDeps( dep_file.name ) ]
       
       src_node.save( vfile, src_node_targets, [], src_node_ideps )
@@ -207,10 +207,12 @@ class GccCompileCppBuilder (Builder):
       
       err = self.__exec( cmd, cwd )
       
-      move_file = shutil.move
+      move_file = os.rename
       
       for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):
+          if os.path.isfile( obj_file ):
+            os.remove( obj_file )
           move_file( tmp_obj_file, obj_file )
           
           src_node_targets = [ FileValue(obj_file, FileContentType ) ]
@@ -243,7 +245,7 @@ class GccCompileCppBuilder (Builder):
   def   __cmd( self ):
     options = self.options
     
-    cmd = ['-c', '-MMD', '-x', 'c++']
+    cmd = ['-c', '-pipe', '-MMD', '-x', 'c++']
     cmd += options.cxxflags.value()
     cmd += options.ccflags.value()
     cmd += _addPrefix( '-D', options.cppdefines.value() )
@@ -260,7 +262,7 @@ class GccCompileCppBuilder (Builder):
     values.append( self.do_path_merge )
     values = ''.join( map( str, values ) )
     
-    return hashlib.md5( values ).digest()
+    return hashlib.md5( values.encode('utf-8') ).digest()
   
   #//-------------------------------------------------------//
   

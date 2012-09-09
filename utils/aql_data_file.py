@@ -17,10 +17,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
 import io
 import os
 import struct
+
+from aql_utils import openFile
 
 class   DataFileChunk (object):
   __slots__ = \
@@ -232,13 +233,19 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
+  def   __enter__(self):
+    return self
+  
+  def   __exit__(self, exc_type, exc_value, traceback):
+    print("DataFile: __exit__")
+    self.close()
+  
+  #//-------------------------------------------------------//
+  
   def  open( self, filename, loadLocation = DataFileChunk.load):
     self.close()
     
-    if os.path.isfile( filename ):
-      stream = io.open( filename, 'r+b', 0 )
-    else:
-      stream = io.open( filename, 'w+b', 0 )
+    stream = openFile( filename, write = True, binary = True, sync = True )
     
     self.filename = str(filename)
     self.stream = stream

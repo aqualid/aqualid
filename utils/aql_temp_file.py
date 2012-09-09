@@ -19,22 +19,16 @@
 
 import os
 import tempfile
+import errno
 import shutil
 
 class Tempfile (object):
   
   __slots__ = ('__handle', 'name')
   
-  def   __init__(self, prefix = 'tmp', suffix = '', dir = None, filename = None ):
-    if filename is None:
-      handle = tempfile.NamedTemporaryFile( mode = 'w+b', suffix = suffix, prefix = prefix, dir = dir, delete = False )
-      filename = handle.name
-      handle.close()
-    else:
-      filename = os.path.absname( filename )
-    
-    self.name = filename
-    self.__handle = None
+  def   __init__(self, prefix = 'tmp', suffix = '', dir = None ):
+    self.__handle = tempfile.NamedTemporaryFile( mode = 'w+b', suffix = suffix, prefix = prefix, dir = dir, delete = False )
+    self.name = self.__handle.name
   
   def   __str__(self):
     return self.name
@@ -46,29 +40,20 @@ class Tempfile (object):
     self.remove()
   
   def write( self, buffer ):
-    self.open()
     self.__handle.write( buffer )
   
   def read( self, buffer ):
-    self.open()
     self.__handle.read( buffer )
   
   def seek( self, offset, whence = os.SEEK_SET ):
-    self.open()
     self.__handle.seek( offset )
   
   def tell( self ):
-    self.open()
     return self.__handle.tell()
   
   def flush( self ):
     if self.__handle is not None:
       self.__handle.flush()
-  
-  def open( self ):
-    if self.__handle is None:
-      self.__handle = open( self.name, 'w+b' )
-    return self
   
   def close( self ):
     if self.__handle is not None:
@@ -80,8 +65,9 @@ class Tempfile (object):
     self.close()
     try:
       os.remove( self.name )
-    except OSError:
-      pass
+    except OSError as ex:
+      if ex.errno != errno.ENOENT:
+        raise
     
     return self
 
@@ -119,4 +105,4 @@ class Tempdir( object ):
     self.remove()
   
   def remove( self ):
-    shutil.rmtree( self.path, ignore_errors = True )
+    shutil.rmtree( self.path, ignore_errors = False )

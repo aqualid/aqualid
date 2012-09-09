@@ -48,10 +48,10 @@ def   _generateSrcFile( dir, name ):
   src_file = dir.join( name + '.cpp' )
   hdr_file = dir.join( name + '.h' )
   
-  with open( src_file, 'wb' ) as f:
+  with open( src_file, 'w' ) as f:
     f.write( src_content )
   
-  with open( hdr_file, 'wb' ) as f:
+  with open( hdr_file, 'w' ) as f:
     f.write( hdr_content )
   
   return src_file, hdr_file
@@ -197,11 +197,11 @@ class TestToolGccSpeed( AqlTestCase ):
 
   def test_gcc_compiler_speed(self):
     
-    profile_on()
+    #~ profile_on()
     
     event_manager.setHandlers( EventHandler() )
     
-    root_dir = FilePath("D:\\build_bench")
+    root_dir = FilePath("D:\\build_bench10k")
     build_dir = root_dir.join('build')
     
     #//-------------------------------------------------------//
@@ -223,22 +223,28 @@ class TestToolGccSpeed( AqlTestCase ):
     
     options.cpppath += root_dir
     
-    for i in range(200):
-      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
+    for i in range(100):
+      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(100)]
       obj = Node( cpp_compiler, [ FileValue( src_file, FileContentType ) for src_file in src_files ] )
       bm.addNodes( obj )
+    
+    #~ for i in range(200):
+      #~ src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
+      #~ for src_file in src_files:
+        #~ obj = Node( cpp_compiler, [ FileValue( src_file, FileContentType ) ] )
+        #~ bm.addNodes( obj )
     
     bm.build()
     
     event_manager.finish()
     
-    profile_off()
+    #~ profile_off()
     
-    stats = list( get_profile_stats().copy().items() )
-    stats.sort( key = lambda location: location[1][1], reverse = True )
+    #~ stats = list( get_profile_stats().copy().items() )
+    #~ stats.sort( key = lambda location: location[1][1], reverse = True )
     
-    for location, times in stats[:40]:
-      print( ' {location:<70}:  {times}'.format(location = str(location), times = str(times)) )
+    #~ for location, times in stats[:40]:
+      #~ print( ' {location:<70}:  {times}'.format(location = str(location), times = str(times)) )
 
 #//===========================================================================//
 
