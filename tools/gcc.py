@@ -3,7 +3,7 @@ import re
 import shutil
 import hashlib
 
-from aql_node import Node
+from aql_node import Node, FileNodeTargets
 from aql_builder import Builder
 from aql_value import Value, NoContent
 from aql_file_value import FileValue, FileContentChecksum, FileContentTimeStamp
@@ -155,7 +155,7 @@ class GccCompileCppBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   __buildSingleSource( self, vfile, cmd, src_node, targets, ideps ):
+  def   __buildSingleSource( self, vfile, cmd, src_node, targets ):
     with Tempfile( suffix = '.d' ) as dep_file:
       
       cmd = list(cmd)
@@ -175,17 +175,15 @@ class GccCompileCppBuilder (Builder):
       err = self.__exec( cmd, cwd )
       if err: raise err
       
-      src_node_targets = [ FileValue( obj_file, FileContentType ) ]
-      src_node_ideps = [ FileValue( idep, FileContentType, use_cache = True ) for idep in _readDeps( dep_file.name ) ]
+      node_targets = FileNodeTargets( obj_file, ideps = _readDeps( dep_file.name ), content_type = FileContentType )
       
-      src_node.save( vfile, src_node_targets, [], src_node_ideps )
+      src_node.save( vfile, node_targets )
       
-      targets += src_node_targets
-      ideps   += src_node_ideps
+      targets += node_targets
 
   #//===========================================================================//
 
-  def   __buildManySources( self, vfile, cmd, src_nodes, targets, ideps ):
+  def   __buildManySources( self, vfile, cmd, src_nodes, targets ):
     build_dir = self.buildPath()
     
     cmd = list(cmd)
@@ -215,14 +213,12 @@ class GccCompileCppBuilder (Builder):
             os.remove( obj_file )
           move_file( tmp_obj_file, obj_file )
           
-          src_node_targets = [ FileValue(obj_file, FileContentType ) ]
-          src_node_ideps = [ FileValue( idep, FileContentType, use_cache = True ) for idep in _readDeps( tmp_dep_file ) ]
+          node_targets = FileNodeTargets( targets = obj_file, ideps = _readDeps( tmp_dep_file ), content_type = FileContentType )
           
-          src_node.save( vfile, src_node_targets, [], src_node_ideps )
+          src_node.save( vfile, node_targets )
           
           if not err:
-            targets += src_node_targets
-            ideps += src_node_ideps
+            targets += node_targets
       
       if err: raise err
   
@@ -271,15 +267,14 @@ class GccCompileCppBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   __makeSrcNodes( self, vfile, node, targets, ideps ):
+  def   __makeSrcNodes( self, vfile, node, targets ):
     
     src_nodes = {}
     for src_file_value in node.sources():
       node = Node( self, src_file_value )
       
       if node.actual( vfile ):
-        targets += node.target_values
-        ideps += node.idep_values
+        targets += node.nodeTargets()
       else:
         src_nodes[ src_file_value.name ] = node
     
@@ -301,21 +296,20 @@ class GccCompileCppBuilder (Builder):
   
   def   build( self, build_manager, vfile, node ):
     
-    targets = []
-    ideps = []
+    targets = FileNodeTargets()
     
-    src_nodes = self.__makeSrcNodes( vfile, node, targets, ideps )
+    src_nodes = self.__makeSrcNodes( vfile, node, targets )
     src_node_groups = self.__groupSrcNodes( src_nodes )
     
     cmd = self.cmd
     
     for src_nodes in src_node_groups:
       if len(src_nodes) == 1:
-        self.__buildSingleSource( vfile, cmd,  src_nodes[0], targets, ideps )
+        self.__buildSingleSource( vfile, cmd,  src_nodes[0], targets )
       else:
-        self.__buildManySources( vfile, cmd,  src_nodes, targets, ideps )
+        self.__buildManySources( vfile, cmd,  src_nodes, targets )
     
-    return targets, [], ideps
+    return targets
   
   #//-------------------------------------------------------//
   

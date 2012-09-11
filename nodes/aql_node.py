@@ -21,10 +21,81 @@
 import hashlib
 
 from aql_event_manager import event_manager
-from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType, InvalidBuilderResults
+from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType, InvalidNodeTarget
 from aql_value import Value, NoContent
+from aql_file_value import FileValue
 from aql_depends_value import DependsValue
 from aql_utils import toSequence, isSequence
+
+#//---------------------------------------------------------------------------//
+
+def   _toValues( dst_values, values ):
+  values = toSequence( values )
+  for value in values:
+    if not isinstance( value, Value ):
+      raise InvalidNodeTarget( value )
+    dst_values.append( value )
+  
+  return dst_values
+
+#//---------------------------------------------------------------------------//
+
+class NodeTargets (object):
+  __slots__ = ( 'target_values', 'itarget_values', 'idep_values' )
+  
+  def   __init__( self, targets = None, itargets = None, ideps = None ):
+    self.target_values  = _toValues( [], targets )
+    self.itarget_values = _toValues( [], itargets )
+    self.idep_values    = _toValues( [], ideps )
+  
+  def   __iadd__(self, other):
+    if not isinstance( other, NodeTargets ):
+      raise InvalidNodeTargetsType( other )
+    
+    self.target_values  += other.target_values
+    self.itarget_values += other.itarget_values
+    self.idep_values    += other.idep_values
+    
+    return self
+  
+  def   add( targets = None, itargets = None, ideps = None ):
+    _toValues( self.target_values,  targets )
+    _toValues( self.itarget_values, itargets )
+    _toValues( self.idep_values,    idep_values )
+
+#//---------------------------------------------------------------------------//
+
+def   _toFileValues( dst_values, values, content_type = NotImplemented, use_cache = False ):
+  for value in toSequence( values ):
+    if not isinstance( value, Value ):
+      value = FileValue( value, content = content_type, use_cache = use_cache )
+      dst_values.append( value )
+  
+  return dst_values
+
+#//---------------------------------------------------------------------------//
+
+class FileNodeTargets (NodeTargets):
+  __slots__ = ( 'content_type', 'use_cache' )
+  
+  def   __init__( self, targets = None, itargets = None, ideps = None, content_type = NotImplemented, use_cache = True ):
+    self.content_type = content_type
+    self.use_cache = use_cache
+    
+    self.target_values = _toFileValues( [], targets, content_type )
+    self.itarget_values = _toFileValues( [], itargets, content_type )
+    self.idep_values = _toFileValues( [], ideps, content_type, use_cache = use_cache )
+  
+  def   add( targets = None, itargets = None, ideps = None ):
+    content_type = self.content_type
+    use_cache = self.use_cache
+    
+    _toFileValues( self.target_values, targets, content_type )
+    _toFileValues( self.itarget_values, itargets, content_type )
+    _toFileValues( self.idep_values, idep_values, content_type, use_cache = use_cache )
+
+
+#//---------------------------------------------------------------------------//
 
 class Node (object):
   
@@ -116,21 +187,20 @@ class Node (object):
     def _addSign( values, sign = sign ):
       sign += map( lambda value: value.signature, sorted( values, key = lambda value: value.name) )
     
-    def _addName( values, sign = sign ):
-      sign += sorted( map( lambda value: value.name.encode('utf-8'), values ) )
+    def _addSignAndName( values, sign_append = sign.append ):
+      for value in sorted( values, key = lambda value: value.name ):
+        sign_append( value.name.encode('utf-8') )
+        sign_append( value.signature )
     
     _addSign( self.source_values )
     
     for node in self.source_nodes:
-      _addName( node.target_values )
-      _addSign( node.target_values )
+      _addSignAndName( node.target_values )
     
-    _addName( self.dep_values )
-    _addSign( self.dep_values )
+    _addSignAndName( self.dep_values )
     
     for node in self.dep_nodes:
-      _addName( node.target_values )
-      _addSign( node.target_values )
+      _addSignAndName( node.target_values )
     
     hash = hashlib.md5()
     for s in sign:
@@ -169,41 +239,28 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __checkValues( self, values ):
-    if not isSequence( values ):
-      raise InvalidBuilderResults( self, values )
+  def   save( self, vfile, node_targets ):
     
-    for value in values:
-      if not isinstance( value, Value ):
-        raise InvalidBuilderResults( self, values )
-  
-  #//=======================================================//
-  
-  def   save( self, vfile, target_values, itarget_values, idep_values ):
+    if not isinstance( node_targets, NodeTargets ):
+      raise InvalidNodeTargetsType( node_targets )
     
-    self.__checkValues( target_values )
-    self.__checkValues( itarget_values )
-    self.__checkValues( idep_values )
-    
-    self.target_values = target_values
-    self.itarget_values = itarget_values
-    self.idep_values = idep_values
+    self.target_values = node_targets.target_values
+    self.itarget_values = node_targets.itarget_values
+    self.idep_values = node_targets.idep_values
     
     self.__save( vfile )
   
   #//=======================================================//
   
   def   _build( self, build_manager, vfile ):
+    node_targets = self.builder.build( build_manager, vfile, self )
     
-    target_values, itarget_values, idep_values = self.builder.build( build_manager, vfile, self )
+    if not isinstance( node_targets, NodeTargets ):
+      raise InvalidNodeTargetsType( node_targets )
     
-    self.__checkValues( target_values )
-    self.__checkValues( itarget_values )
-    self.__checkValues( idep_values )
-    
-    self.target_values = target_values
-    self.itarget_values = itarget_values
-    self.idep_values = idep_values
+    self.target_values = node_targets.target_values
+    self.itarget_values = node_targets.itarget_values
+    self.idep_values = node_targets.idep_values
   
   #//=======================================================//
   
@@ -253,6 +310,19 @@ class Node (object):
       values += node.target_values
     
     return values
+  
+  #//=======================================================//
+  
+  def   targets(self):
+    return self.target_values
+  
+  #//=======================================================//
+  
+  def   sideEffects(self):
+    return self.itarget_values
+  
+  def   nodeTargets(self):
+    return NodeTargets( self.target_values, self.itarget_values, self.idep_values )
   
   #//=======================================================//
   

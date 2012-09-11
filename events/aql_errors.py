@@ -81,9 +81,14 @@ class   InvalidHandlerMethodArgs ( Exception ):
 
 #//-------------------------------------------------------//
 
-class   InvalidBuilderResults( Exception ):
-  def   __init__( self, node, values ):
-    msg = "Invalid node (%s) builder results: %s" % (node, values )
+class   InvalidNodeTarget( Exception ):
+  def   __init__( self, value ):
+    msg = "Invalid node target: %s" % str(value)
+    super(type(self), self).__init__( msg )
+
+class   InvalidNodeTargetsType( Exception ):
+  def   __init__( self, targets ):
+    msg = "Invalid type of node targets: %s(%s)" % (type(targets), targets)
     super(type(self), self).__init__( msg )
 
 #//-------------------------------------------------------//

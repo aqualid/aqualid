@@ -43,7 +43,7 @@ class Builder (object):
   
   def   build( self, build_manager, vfile, node ):
     """
-    Builds the node and returns values: targets, intermediate targets, impicit dependencies
+    Builds the node and returns values: NodeTargets
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
