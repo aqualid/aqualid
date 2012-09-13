@@ -3,18 +3,13 @@ import re
 import shutil
 import hashlib
 
-from aql_node import Node, FileNodeTargets
 from aql_builder import Builder
-from aql_value import Value, NoContent
-from aql_file_value import FileValue, FileContentChecksum, FileContentTimeStamp
-from aql_utils import toSequence, isSequence, execCommand, readTextFile
+from aql_utils import execCommand, readTextFile
 from aql_path_types import FilePath, FilePaths
 from aql_errors import InvalidSourceValueType, BuildError
 from aql_options import Options
 from aql_temp_file import Tempfile, Tempdir
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
-
-FileContentType = FileContentChecksum
 
 #//===========================================================================//
 
@@ -175,7 +170,7 @@ class GccCompileCppBuilder (Builder):
       err = self.__exec( cmd, cwd )
       if err: raise err
       
-      node_targets = FileNodeTargets( obj_file, ideps = _readDeps( dep_file.name ), content_type = FileContentType )
+      node_targets = src_node.makeNodeTargets( obj_file, ideps = _readDeps( dep_file.name ) )
       
       src_node.save( vfile, node_targets )
       
@@ -213,7 +208,7 @@ class GccCompileCppBuilder (Builder):
             os.remove( obj_file )
           move_file( tmp_obj_file, obj_file )
           
-          node_targets = FileNodeTargets( targets = obj_file, ideps = _readDeps( tmp_dep_file ), content_type = FileContentType )
+          node_targets = src_node.makeNodeTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
           
           src_node.save( vfile, node_targets )
           
@@ -271,12 +266,12 @@ class GccCompileCppBuilder (Builder):
     
     src_nodes = {}
     for src_file_value in node.sources():
-      node = Node( self, src_file_value )
+      n = node.makeNode( self, src_file_value )
       
-      if node.actual( vfile ):
-        targets += node.nodeTargets()
+      if n.actual( vfile ):
+        targets += n.nodeTargets()
       else:
-        src_nodes[ src_file_value.name ] = node
+        src_nodes[ src_file_value.name ] = n
     
     return src_nodes
   
@@ -296,7 +291,7 @@ class GccCompileCppBuilder (Builder):
   
   def   build( self, build_manager, vfile, node ):
     
-    targets = FileNodeTargets()
+    targets = node.makeNodeTargets()
     
     src_nodes = self.__makeSrcNodes( vfile, node, targets )
     src_node_groups = self.__groupSrcNodes( src_nodes )

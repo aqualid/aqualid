@@ -32,7 +32,7 @@ from aql_utils import toSequence
 
 #//===========================================================================//
 
-class _Nodes (object):
+class _NodesTree (object):
   
   __slots__ = \
   (
@@ -230,6 +230,7 @@ class _NodesBuilder (object):
     'jobs',
     'stop_on_error',
     'task_manager',
+    'prebuild_nodes',
   )
   
   #//-------------------------------------------------------//
@@ -238,6 +239,7 @@ class _NodesBuilder (object):
     self.vfilename = vfilename
     self.jobs = jobs
     self.stop_on_error = stop_on_error
+    self.prebuild_nodes = {}
   
   #//-------------------------------------------------------//
   
@@ -262,19 +264,28 @@ class _NodesBuilder (object):
     failed_nodes = {}
     rebuild_nodes = []
     
-    addTask = self.task_manager.addTask
+    add_task = self.task_manager.addTask
     
     vfile = self.vfile
     
     for node in nodes:
-      if node.actual( vfile ):
-        #~ event_manager.eventActualNode( node )
-        completed_nodes.append( node )
+      pre_nodes = self.prebuild_nodes.pop( node, None )
+      if pre_nodes:
+        addTask( node, node.build, build_manager, vfile, pre_nodes )
       else:
-        #~ event_manager.eventOutdatedNode( node )
-        addTask( node, node.build, build_manager, vfile )
+        if node.actual( vfile ):
+          completed_nodes.append( node )
+        else:
+          pre_nodes = node.prebuild( vfile )
+          
+          if not pre_nodes:
+            add_task( node, node.build, build_manager, vfile )
+          else:
+            self.prebuild_nodes[ node ] = pre_nodes
+            build_manager.addDeps( node, pre_nodes )
+            rebuild_nodes.append( node )
     
-    if not completed_nodes:
+    if not completed_nodes and not rebuild_nodes:
       for node, exception in self.task_manager.completedTasks():
         if exception is None:
           completed_nodes.append( node )
@@ -301,7 +312,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   __init__(self, vfilename, jobs, stop_on_error ):
-    self.__nodes = _Nodes()
+    self.__nodes = _NodesTree()
     self.__nodes_builder = _NodesBuilder( vfilename, jobs, stop_on_error )
   
   #//-------------------------------------------------------//
@@ -392,7 +403,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   close( self ):
-    self.__nodes = _Nodes()
+    self.__nodes = _NodesTree()
     self.__nodes_builder.task_manager.finish()
     self.__nodes_builder.vfile.close()
   

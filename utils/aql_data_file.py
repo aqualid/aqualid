@@ -95,6 +95,12 @@ class   DataFileChunk (object):
   
   #//-------------------------------------------------------//
   
+  def   chunk( self, stream, header_size = header_size ):
+    stream.seek( self.offset )
+    return stream.read( header_size + self.size ) + bytearray( self.capacity - self.size )
+  
+  #//-------------------------------------------------------//
+  
   def   chunkSize( self, header_size = header_size ):
     return header_size + self.capacity
   
@@ -386,13 +392,86 @@ class DataFile (object):
     self.file_header.save( stream )
     
     stream.seek( offset )
+    stream.truncate( offset )
     stream.write( tail )
-    stream.truncate( offset + len(tail) )
     
     self.__moveLocations( offset, -chunk_size )
     self.file_size -= chunk_size
     
     del self.locations[ key ]
+  
+  #//-------------------------------------------------------//
+  
+  def   __findMinOffset( self, keys ):
+    start_offset = -1
+    
+    locations = self.locations
+    
+    for key in keys:
+      try:
+        location = locations[ key ]
+        if (start_offset == -1) or (start_offset > location.offset):
+          start_offset = location.offset
+      except KeyError:
+        pass
+      
+    return start_offset
+    
+  #//-------------------------------------------------------//
+  
+  def   __findRestLocations( self, start_offset, del_keys ):
+    
+    locations = []
+    
+    for key, location in self.locations.items():
+      if key not in del_keys:
+        if location.offset > start_offset:
+          locations.append( location )
+    
+    return locations
+  
+  #//-------------------------------------------------------//
+  
+  def   __readAndMoveRestLocations( self, locations, start_offset ):
+    
+    chunks = bytearray()
+    
+    stream = self.stream
+    
+    for location in locations:
+      chunk = location.chunk( stream )
+      location.offset = start_offset
+      start_offset += len( chunk )
+      chunks += chunk
+    
+    return chunks
+    
+  #//-------------------------------------------------------//
+  
+  def   remove(self, del_keys ):
+    
+    del_keys = frozenset( del_keys )
+    
+    start_offset = self.__findMinOffset( del_keys )
+    if start_offset == -1:
+      return
+    
+    rest_locations = self.__findRestLocations( start_offset, del_keys )
+    
+    rest_chunks = self.__readAndMoveRestLocations( rest_locations, start_offset )
+    
+    stream = self.stream
+    
+    self.file_header.save( stream )
+    stream.seek( start_offset )
+    stream.truncate( start_offset )
+    stream.write( rest_chunks )
+    
+    self.file_size = start_offset + len( rest_chunks )
+    
+    locations = self.locations
+    for key in del_keys:
+      del locations[ key ]
     
   #//-------------------------------------------------------//
   

@@ -46,8 +46,7 @@ def   printFileContent( filename ):
 class TestDataFile( AqlTestCase ):
   
   def test_data_file(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
+    event_manager.setHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       tmp.remove()
@@ -112,8 +111,7 @@ class TestDataFile( AqlTestCase ):
 
   #//-------------------------------------------------------//
   def   test_data_file_update(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
+    event_manager.setHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       
@@ -199,6 +197,55 @@ class TestDataFile( AqlTestCase ):
             df3.close()
         finally:
           df2.close()
+      finally:
+        df.close()
+  
+  #//-------------------------------------------------------//
+  
+  def test_data_file_remove(self):
+    event_manager.setHandlers( EventHandler() )
+    
+    with Tempfile() as tmp:
+      tmp.remove()
+      
+      data_list = generateDataList( 50, 50, 7, 57 )
+      data_keys = []
+      
+      df = DataFile( tmp.name )
+      try:
+        for data in data_list:
+          key = df.append( data ); df.selfTest()
+          data_keys.append( key )
+        
+        remove_keys = []
+        
+        for i, key in reversed( list( enumerate( data_keys ) ) ):
+          if (i % 2) == 0:
+            remove_keys.append( key )
+            del data_keys[i]
+            del data_list[i]
+        
+        df.remove( remove_keys ); df.selfTest()
+        
+        self.assertEqual( set(data_keys) , set( dict(df).keys() ) )
+        
+        df.close()
+        df = DataFile( tmp.name )
+        
+        for key, data in zip( data_keys, data_list ):
+          self.assertEqual( data , df[key] )
+          
+        for key in remove_keys:
+          self.assertRaises( KeyError, df.__getitem__, key )
+        
+        df.remove( data_keys[:1] ); df.selfTest()
+        data_keys = data_keys[:1]
+        data_list = data_keys[:1]
+        
+        df.remove( [ data_keys[-1] ] ); df.selfTest()
+        data_keys.pop()
+        data_list.pop()
+        
       finally:
         df.close()
   

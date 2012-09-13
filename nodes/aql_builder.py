@@ -41,7 +41,15 @@ class Builder (object):
    
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   prebuild( self, vfile, node ):
+    """
+    Could be used to dynamically generate nodes which need to be built before the passed node
+    """
+    return None
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, vfile, node, prebuild_nodes = None ):
     """
     Builds the node and returns values: NodeTargets
     """

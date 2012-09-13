@@ -94,7 +94,6 @@ class FileNodeTargets (NodeTargets):
     _toFileValues( self.itarget_values, itargets, content_type )
     _toFileValues( self.idep_values, idep_values, content_type, use_cache = use_cache )
 
-
 #//---------------------------------------------------------------------------//
 
 class Node (object):
@@ -124,13 +123,13 @@ class Node (object):
   def   __init__( self, builder, sources ):
     
     self.builder = builder
-    self.source_nodes, self.source_values = self.__getSourceNodes( sources )
+    self.source_nodes, self.source_values = self._getSourceNodes( sources )
     self.dep_values = []
     self.dep_nodes = set()
   
   #//=======================================================//
   
-  def   __getSourceNodes( self, sources ):
+  def   _getSourceNodes( self, sources ):
     
     source_nodes = set()
     source_values = []
@@ -148,6 +147,16 @@ class Node (object):
     
     return source_nodes, source_values
     
+  #//=======================================================//
+  
+  def   makeNodeTargets( self, targets = None, itargets = None, ideps = None ):
+    return NodeTargets( targets, itargets, ideps )
+  
+  #//=======================================================//
+  
+  def   makeNode( self, builder, sources ):
+    return Node( builder, sources )
+  
   #//=======================================================//
   
   def   __getName( self ):
@@ -223,54 +232,48 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __save( self, vfile ):
-    
-    values = [ Value( self.name_key, self.signature ) ]
-    
-    values += self.idep_values
-    values += self.target_values
-    values += self.itarget_values
-    
-    values.append( DependsValue( self.targets_key,   self.target_values )  )
-    values.append( DependsValue( self.itargets_key,  self.itarget_values ) )
-    values.append( DependsValue( self.ideps_key,     self.idep_values )    )
-    
-    vfile.addValues( values )
-  
-  #//=======================================================//
-  
   def   save( self, vfile, node_targets ):
     
     if not isinstance( node_targets, NodeTargets ):
       raise InvalidNodeTargetsType( node_targets )
     
-    self.target_values = node_targets.target_values
-    self.itarget_values = node_targets.itarget_values
-    self.idep_values = node_targets.idep_values
+    target_values = node_targets.target_values
+    itarget_values = node_targets.itarget_values
+    idep_values = node_targets.idep_values
     
-    self.__save( vfile )
+    self.target_values = target_values
+    self.itarget_values = itarget_values
+    self.idep_values = idep_values
+    
+    values = [ Value( self.name_key, self.signature ) ]
+    
+    values += idep_values
+    values += target_values
+    values += itarget_values
+    
+    values.append( DependsValue( self.targets_key,  target_values )  )
+    values.append( DependsValue( self.itargets_key, itarget_values ) )
+    values.append( DependsValue( self.ideps_key,    idep_values )    )
+    
+    vfile.addValues( values )
   
   #//=======================================================//
   
-  def   _build( self, build_manager, vfile ):
-    node_targets = self.builder.build( build_manager, vfile, self )
-    
-    if not isinstance( node_targets, NodeTargets ):
-      raise InvalidNodeTargetsType( node_targets )
-    
-    self.target_values = node_targets.target_values
-    self.itarget_values = node_targets.itarget_values
-    self.idep_values = node_targets.idep_values
+  def   prebuild( self, vfile ):
+    return self.builder.prebuild( vfile, self )
   
   #//=======================================================//
   
-  def   build( self, build_manager, vfile ):
+  def   build( self, build_manager, vfile, prebuild_nodes = None ):
     
     event_manager.eventBuildingNode( self )
     
-    self._build( build_manager, vfile )
+    args = [ build_manager, vfile, self ]
+    if prebuild_nodes:
+      args.append( prebuild_nodes )
     
-    self.__save( vfile )
+    node_targets = self.builder.build( *args )
+    self.save( vfile, node_targets )
     
     event_manager.eventBuildingNodeFinished( self )
   
@@ -428,4 +431,80 @@ class Node (object):
     
     return ' '.join( name )
   
+#//===========================================================================//
+
+class FileNode (Node):
+  
+  __slots__ = ( 'src_content_type', 'target_content_type' )
+  
   #//-------------------------------------------------------//
+  
+  def   __init__( self, builder, sources, src_content_type = NotImplemented, target_content_type = NotImplemented ):
+    self.src_content_type     = src_content_type
+    self.target_content_type  = target_content_type
+    
+    super(FileNode,self).__init__( builder, sources )
+  
+  #//-------------------------------------------------------//
+  
+  def   _getSourceNodes( self, sources ):
+    
+    content_type = self.src_content_type
+    
+    source_nodes = set()
+    source_values = []
+    
+    source_nodes_append = source_nodes.add
+    source_values_append = source_values.append
+    
+    for source in toSequence( sources ):
+      if isinstance(source, Node):
+        source_nodes_append( source )
+      elif isinstance(source, Value):
+        source_values_append( source )
+      else:
+        source_values_append( FileValue( source, content_type, use_cache = True ) )
+    
+    return source_nodes, source_values
+  
+  #//=======================================================//
+  
+  def   sourceFiles(self):
+    return FilePaths( self.sources() )
+  
+  #//=======================================================//
+  
+  def   targetFiles(self):
+    return FilePaths( self.target_values )
+  
+  #//=======================================================//
+  
+  def   sideEffectFiles(self):
+    return FilePaths( self.itarget_values )
+  
+  #//=======================================================//
+  
+  def   makeNodeTargets( self, targets = None, itargets = None, ideps = None, use_cache = True ):
+    return FileNodeTargets( targets, itargets, ideps, content_type = self.target_content_type, use_cache = use_cache )
+  
+  #//=======================================================//
+  
+  def   makeNode( self, builder, sources ):
+    return FileNode( builder, sources, src_content_type = self.src_content_type, target_content_type = self.target_content_type )
+  
+  #//=======================================================//
+  
+  def   addDeps( self, deps ):
+    
+    content_type = self.src_content_type
+    
+    append_node = self.dep_nodes.add
+    append_value = self.dep_values.append
+    
+    for dep in toSequence( deps ):
+      if isinstance(dep, Node):
+        append_node( dep )
+      elif isinstance(dep, Value):
+        append_value( dep )
+      else:
+        append_value( FileValue( dep, content_type ) )

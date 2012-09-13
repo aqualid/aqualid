@@ -164,19 +164,24 @@ class ValuesFile (object):
   
   def   open( self, filename ):
     
+    invalid_keys = []
+    
     with self.lock:
       self.file_lock = FileLock( filename )
       
-      with self.file_lock.readLock():
-        self.data_file = DataFile( filename )
+      with self.file_lock.writeLock():
+        data_file = DataFile( filename )
+        self.data_file = data_file
         
         xash = self.xash
         loads = self.loads
-        for key, data in self.data_file:
+        for key, data in data_file:
           try:
             xash[ key ] = loads( data )
           except ValueError:
-            del self.data_file[ key ]
+            invalid_keys.append( key )
+        
+        data_file.remove( invalid_keys )
   
   #//---------------------------------------------------------------------------//
   
@@ -192,9 +197,16 @@ class ValuesFile (object):
     for del_key in deleted_keys:
       del xash[ del_key ]
     
+    invalid_keys = []
+    
     loads = self.loads
     for key in added_keys:
-      xash[ key ] = loads( data_file[ key ] )
+      try:
+        xash[ key ] = loads( data_file[ key ] )
+      except ValueError:
+        invalid_keys.append( key )
+    
+    data_file.remove( invalid_keys )
     
   #//---------------------------------------------------------------------------//
   
@@ -209,7 +221,7 @@ class ValuesFile (object):
   
   def   findValues( self, values ):
     with self.lock:
-      with self.file_lock.readLock():
+      with self.file_lock.writeLock():
         self.__update()
       
       out_values = []
@@ -276,7 +288,7 @@ class ValuesFile (object):
   
   def   selfTest(self):
     with self.lock:
-      with self.file_lock.readLock():
+      with self.file_lock.writeLock():
         self.__update()
       
         if self.data_file is not None:
