@@ -23,15 +23,16 @@ import hashlib
 from aql_event_manager import event_manager
 from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType, InvalidNodeTarget
 from aql_value import Value, NoContent
-from aql_file_value import FileValue
 from aql_depends_value import DependsValue
-from aql_utils import toSequence, isSequence
+from aql_utils import toSequence
 
 #//---------------------------------------------------------------------------//
 
-def   _toValues( dst_values, values ):
-  values = toSequence( values )
-  for value in values:
+def   _toValues( values ):
+  
+  dst_values = []
+  
+  for value in toSequence( values ):
     if not isinstance( value, Value ):
       raise InvalidNodeTarget( value )
     dst_values.append( value )
@@ -41,12 +42,12 @@ def   _toValues( dst_values, values ):
 #//---------------------------------------------------------------------------//
 
 class NodeTargets (object):
-  __slots__ = ( 'target_values', 'itarget_values', 'idep_values' )
+  __slots__ = ( 'targets', 'itargets', 'ideps' )
   
   def   __init__( self, targets = None, itargets = None, ideps = None ):
-    self.target_values  = _toValues( [], targets )
-    self.itarget_values = _toValues( [], itargets )
-    self.idep_values    = _toValues( [], ideps )
+    self.target_values  = _toValues( targets )
+    self.itarget_values = _toValues( itargets )
+    self.idep_values    = _toValues( ideps )
   
   def   __iadd__(self, other):
     if not isinstance( other, NodeTargets ):
@@ -57,42 +58,6 @@ class NodeTargets (object):
     self.idep_values    += other.idep_values
     
     return self
-  
-  def   add( targets = None, itargets = None, ideps = None ):
-    _toValues( self.target_values,  targets )
-    _toValues( self.itarget_values, itargets )
-    _toValues( self.idep_values,    idep_values )
-
-#//---------------------------------------------------------------------------//
-
-def   _toFileValues( dst_values, values, content_type = NotImplemented, use_cache = False ):
-  for value in toSequence( values ):
-    if not isinstance( value, Value ):
-      value = FileValue( value, content = content_type, use_cache = use_cache )
-      dst_values.append( value )
-  
-  return dst_values
-
-#//---------------------------------------------------------------------------//
-
-class FileNodeTargets (NodeTargets):
-  __slots__ = ( 'content_type', 'use_cache' )
-  
-  def   __init__( self, targets = None, itargets = None, ideps = None, content_type = NotImplemented, use_cache = True ):
-    self.content_type = content_type
-    self.use_cache = use_cache
-    
-    self.target_values = _toFileValues( [], targets, content_type )
-    self.itarget_values = _toFileValues( [], itargets, content_type )
-    self.idep_values = _toFileValues( [], ideps, content_type, use_cache = use_cache )
-  
-  def   add( targets = None, itargets = None, ideps = None ):
-    content_type = self.content_type
-    use_cache = self.use_cache
-    
-    _toFileValues( self.target_values, targets, content_type )
-    _toFileValues( self.itarget_values, itargets, content_type )
-    _toFileValues( self.idep_values, idep_values, content_type, use_cache = use_cache )
 
 #//---------------------------------------------------------------------------//
 
@@ -116,6 +81,7 @@ class Node (object):
     'ideps_key',
     
     'signature',
+    'is_actual',
   )
   
   #//-------------------------------------------------------//
@@ -126,6 +92,7 @@ class Node (object):
     self.source_nodes, self.source_values = self._getSourceNodes( sources )
     self.dep_values = []
     self.dep_nodes = set()
+    self.is_actual = None
   
   #//=======================================================//
   
@@ -149,18 +116,37 @@ class Node (object):
     
   #//=======================================================//
   
-  def   makeNodeTargets( self, targets = None, itargets = None, ideps = None ):
-    return NodeTargets( targets, itargets, ideps )
+  def   depends( self, deps ):
+    
+    self.is_actual = None
+    
+    append_node = self.dep_nodes.add
+    append_value = self.dep_values.append
+    
+    for dep in toSequence( deps ):
+      if isinstance(dep, Node):
+        append_node( dep )
+      elif isinstance(dep, Value):
+        append_value( dep )
+      else:
+        raise UnknownNodeDependencyType( self, dep )
   
   #//=======================================================//
   
-  def   makeNode( self, builder, sources ):
-    return Node( builder, sources )
+  def   setTargets( self, node_targets ):
+    if not isinstance( other, NodeTargets ):
+      raise InvalidNodeTargetsType( other )
+    
+    self.is_actual = None
+    
+    self.target_values = tuple( node_targets.target_values )
+    self.itarget_values = tuple( node_targets.itarget_values )
+    self.idep_values = tuple( node_targets.ideps_values )
   
   #//=======================================================//
   
   def   __getName( self ):
-    names = [ self.builder.name().encode('utf-8') ]
+    names = [ self.builder.name.encode('utf-8') ]
     names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
     names += sorted( map( lambda node: node.name_key, self.source_nodes ) )
     
@@ -191,7 +177,7 @@ class Node (object):
   
   def   __signature( self ):
     
-    sign = [ self.builder.signature() ]
+    sign = [ self.builder.signature ]
     
     def _addSign( values, sign = sign ):
       sign += map( lambda value: value.signature, sorted( values, key = lambda value: value.name) )
@@ -232,18 +218,10 @@ class Node (object):
   
   #//=======================================================//
   
-  def   save( self, vfile, node_targets ):
+  def   save( self, vfile, node_targets = None ):
     
-    if not isinstance( node_targets, NodeTargets ):
-      raise InvalidNodeTargetsType( node_targets )
-    
-    target_values = node_targets.target_values
-    itarget_values = node_targets.itarget_values
-    idep_values = node_targets.idep_values
-    
-    self.target_values = target_values
-    self.itarget_values = itarget_values
-    self.idep_values = idep_values
+    if node_targets is not None:
+      self.setTargets( node_targets )
     
     values = [ Value( self.name_key, self.signature ) ]
     
@@ -251,11 +229,13 @@ class Node (object):
     values += target_values
     values += itarget_values
     
-    values.append( DependsValue( self.targets_key,  target_values )  )
-    values.append( DependsValue( self.itargets_key, itarget_values ) )
-    values.append( DependsValue( self.ideps_key,    idep_values )    )
+    values.append( DependsValue( self.targets_key,  self.target_values )  )
+    values.append( DependsValue( self.itargets_key, self.itarget_values ) )
+    values.append( DependsValue( self.ideps_key,    self.idep_values )    )
     
     vfile.addValues( values )
+    
+    self.is_actual = True
   
   #//=======================================================//
   
@@ -281,6 +261,11 @@ class Node (object):
   
   def   actual( self, vfile, use_cache = True ):
     
+    if self.is_actual is not None:
+      return self.is_actual
+    
+    self.is_actual = None
+    
     sources_value = Value( self.name_key, self.signature )
     
     targets_value   = DependsValue( self.targets_key   )
@@ -291,10 +276,12 @@ class Node (object):
     values = vfile.findValues( values )
     
     if sources_value != values.pop(0):
+      self.is_actual = False
       return False
     
     for value in values:
       if not value.actual( use_cache ):
+        self.is_actual = False
         return False
     
     targets_value, itargets_value, ideps_value = values
@@ -303,6 +290,7 @@ class Node (object):
     self.itarget_values = itargets_value.content
     self.idep_values    = ideps_value.content
     
+    self.is_actual = True
     return True
   
   #//=======================================================//
@@ -324,12 +312,16 @@ class Node (object):
   def   sideEffects(self):
     return self.itarget_values
   
+  #//=======================================================//
+  
   def   nodeTargets(self):
     return NodeTargets( self.target_values, self.itarget_values, self.idep_values )
   
   #//=======================================================//
   
   def   clear( self, vfile ):
+    
+    self.is_actual = None
     
     values = [ DependsValue( self.targets_key  ), DependsValue( self.itargets_key  ) ]
     
@@ -355,21 +347,6 @@ class Node (object):
         value.content = no_content
       
       vfile.addValues( values )
-  
-  #//=======================================================//
-  
-  def   addDeps( self, deps ):
-    
-    append_node = self.dep_nodes.add
-    append_value = self.dep_values.append
-    
-    for dep in toSequence( deps ):
-      if isinstance(dep, Node):
-        append_node( dep )
-      elif isinstance(dep, Value):
-        append_value( dep )
-      else:
-        raise UnknownNodeDependencyType( self, dep )
   
   #//-------------------------------------------------------//
   
@@ -430,81 +407,3 @@ class Node (object):
     # g++: [ moc: [ m4: src1.m4 ... ] ]
     
     return ' '.join( name )
-  
-#//===========================================================================//
-
-class FileNode (Node):
-  
-  __slots__ = ( 'src_content_type', 'target_content_type' )
-  
-  #//-------------------------------------------------------//
-  
-  def   __init__( self, builder, sources, src_content_type = NotImplemented, target_content_type = NotImplemented ):
-    self.src_content_type     = src_content_type
-    self.target_content_type  = target_content_type
-    
-    super(FileNode,self).__init__( builder, sources )
-  
-  #//-------------------------------------------------------//
-  
-  def   _getSourceNodes( self, sources ):
-    
-    content_type = self.src_content_type
-    
-    source_nodes = set()
-    source_values = []
-    
-    source_nodes_append = source_nodes.add
-    source_values_append = source_values.append
-    
-    for source in toSequence( sources ):
-      if isinstance(source, Node):
-        source_nodes_append( source )
-      elif isinstance(source, Value):
-        source_values_append( source )
-      else:
-        source_values_append( FileValue( source, content_type, use_cache = True ) )
-    
-    return source_nodes, source_values
-  
-  #//=======================================================//
-  
-  def   sourceFiles(self):
-    return FilePaths( self.sources() )
-  
-  #//=======================================================//
-  
-  def   targetFiles(self):
-    return FilePaths( self.target_values )
-  
-  #//=======================================================//
-  
-  def   sideEffectFiles(self):
-    return FilePaths( self.itarget_values )
-  
-  #//=======================================================//
-  
-  def   makeNodeTargets( self, targets = None, itargets = None, ideps = None, use_cache = True ):
-    return FileNodeTargets( targets, itargets, ideps, content_type = self.target_content_type, use_cache = use_cache )
-  
-  #//=======================================================//
-  
-  def   makeNode( self, builder, sources ):
-    return FileNode( builder, sources, src_content_type = self.src_content_type, target_content_type = self.target_content_type )
-  
-  #//=======================================================//
-  
-  def   addDeps( self, deps ):
-    
-    content_type = self.src_content_type
-    
-    append_node = self.dep_nodes.add
-    append_value = self.dep_values.append
-    
-    for dep in toSequence( deps ):
-      if isinstance(dep, Node):
-        append_node( dep )
-      elif isinstance(dep, Value):
-        append_value( dep )
-      else:
-        append_value( FileValue( dep, content_type ) )

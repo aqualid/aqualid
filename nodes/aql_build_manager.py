@@ -81,7 +81,7 @@ class _NodesTree (object):
   
   #//-------------------------------------------------------//
   
-  def   __addDeps( self, node, deps ):
+  def   __depends( self, node, deps ):
     
     node_deps = self.node_deps
     dep_nodes = self.dep_nodes
@@ -130,8 +130,8 @@ class _NodesTree (object):
           self.__add( node.source_nodes )   # TODO: recursively add sources and depends
           self.__add( node.dep_nodes )      # It would be better to rewrite this code to aviod the recursion
           
-          self.__addDeps( node, node.source_nodes )
-          self.__addDeps( node, node.dep_nodes )
+          self.__depends( node, node.source_nodes )
+          self.__depends( node, node.dep_nodes )
     
   #//-------------------------------------------------------//
   
@@ -141,12 +141,12 @@ class _NodesTree (object):
     
   #//-------------------------------------------------------//
   
-  def   addDeps( self, node, deps ):
+  def   depends( self, node, deps ):
     with self.lock:
       deps = toSequence( deps )
       
       self.__add( deps )
-      self.__addDeps( node, deps )
+      self.__depends( node, deps )
   
   #//-------------------------------------------------------//
   
@@ -282,7 +282,7 @@ class _NodesBuilder (object):
             add_task( node, node.build, build_manager, vfile )
           else:
             self.prebuild_nodes[ node ] = pre_nodes
-            build_manager.addDeps( node, pre_nodes )
+            build_manager.depends( node, pre_nodes )
             rebuild_nodes.append( node )
     
     if not completed_nodes and not rebuild_nodes:
@@ -317,13 +317,13 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   addNodes( self, nodes ):
+  def   add( self, nodes ):
     self.__nodes.add( nodes )
   
   #//-------------------------------------------------------//
   
-  def   addDeps( self, node, deps ):
-    self.__nodes.addDeps( node, deps )
+  def   depends( self, node, deps ):
+    self.__nodes.depends( node, deps )
   
   #//-------------------------------------------------------//
   

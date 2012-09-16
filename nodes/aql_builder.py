@@ -20,7 +20,10 @@
 import os
 
 from aql_utils import toSequence
+from aql_file_value import FileValue
 from aql_path_types import FilePath, FilePaths
+
+#//===========================================================================//
 
 class RebuildNode( Exception ):
   pass
@@ -37,8 +40,26 @@ class Builder (object):
     'options',
     'build_dir',
     'do_path_merge',
+    'name',
+    'signature',
+    'scontent_type',
+    'tcontent_type',
   )
    
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, env, options, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    
+    self.env = env
+    self.options = options
+    self.build_dir = self.options.build_dir.value()
+    self.do_path_merge = self.options.do_build_path_merge.value()
+    self.scontent_type = scontent_type
+    self.tcontent_type = tcontent_type
+    
+    cls = self.__class__
+    self.name = '.'.join( [ cls.__module__, cls.__name__, str(self.build_dir), str(self.do_path_merge) ] )
+  
   #//-------------------------------------------------------//
   
   def   prebuild( self, vfile, node ):
@@ -59,32 +80,13 @@ class Builder (object):
   
   def   __getattr__( self, attr ):
     
-    if attr == 'build_dir':
-      self.build_dir = self.options.build_dir.value()
-      return self.build_dir
-    
-    if attr == 'do_path_merge':
-      self.do_path_merge = self.options.do_build_path_merge.value()
-      return self.do_path_merge
+    if attr == 'signature':
+      """
+      Sets builder signature which uniquely identify builder's parameters
+      """
+      raise NotImplementedError( "Attribute '%s' must be set in a child class." % attr )
     
     raise AttributeError( self, attr )
-  
-  #//-------------------------------------------------------//
-  
-  def   name( self ):
-    """
-    Returns name of builder.By default it's <ModuleName>.<ClassName>
-    """
-    cls = self.__class__
-    return cls.__module__ + '.' + cls.__name__
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    """
-    Returns builder signature which uniquely identify builder's parameters
-    """
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
@@ -109,7 +111,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return self.name()
+    return self.name
   
   #//-------------------------------------------------------//
   
@@ -144,4 +146,36 @@ class Builder (object):
   def   buildPaths( self, src_paths ):
     return FilePaths( map(self.buildPath, toSequence( src_paths ) ) )
   
+  #//-------------------------------------------------------//
+  
+  def   sourceValues( self, values, use_cache = True ):
+    src_values = []
+    content_type = self.scontent_type
+    for value in toSequence( values ):
+      if not isinstance( value, Value ):
+        value = FileValue( value, content = content_type, use_cache = use_cache )
+        src_values.append( value )
+    
+    return src_values
+  
+  #//-------------------------------------------------------//
+  
+  def   targetValues( self, values, use_cache = False ):
+    content_type = self.tcontent_type
+    dst_values = []
+    for value in toSequence( values ):
+      if not isinstance( value, Value ):
+        value = FileValue( value, content = content_type, use_cache = use_cache )
+        dst_values.append( value )
+    
+    return dst_values
+  
+  #//-------------------------------------------------------//
+  
+  def   nodeTargets( self, targets = None, itargets = None, ideps = None, use_cache = True ):
+    target_values = self.targetValues( targets )
+    itarget_values = self.targetValues( itargets )
+    idep_values = self.targetValues( ideps, use_cache = use_cache )
+    
+    return NodeTargets( target_values, itarget_values, idep_values )
 

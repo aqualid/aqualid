@@ -116,164 +116,182 @@ def   gccOptions():
 
 #//===========================================================================//
 
-class GccCompileCppBuilder (Builder):
+def   execCmd( compiler, cl_options, cwd ):
+  if len( args_str ) > 4096:
+    cmd_file = Tempfile( suffix = '.cmd.args' )
+    cl_options = cl_options.replace('\\', '/')
+    cmd_file.write( cl_options )
+    cmd_file.close()
+    cmd = compiler +' @' + cmd_file.name
+  else:
+    cmd = compiler + ' ' + cl_options
+    cmd_file = None
   
-  __slots__ = ('cmd', '_signature')
+  try:
+    result, out, err = execCommand( cmd, cwd = cwd, env = None, stdout = None, stderr = None )    # TODO: env = options.os_env
+    if result:
+      return BuildError( out, err )
+  finally:
+    if cmd_file is not None:
+      cmd_file.remove()
   
-  def   __init__(self, env, options ):
+  return None
+
+#//===========================================================================//
+
+class GccCompiler (Builder):
+  
+  __slots__ = ('compiler', 'cl_options' )
+  
+  def   __init__(self, env, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    super(GccCompiler,self).__init__( env, options, scontent_type, tcontent_type )
     
-    self.env = env
-    self.options = options
+    self.compiler, self.cl_options = self.__cmdOptions( language )
+    self.signature = self.__signature()
   
   #//-------------------------------------------------------//
   
-  def   __exec( self, cmd, cwd ):
-    if len( cmd ) > 4096:
-      cmd_file = Tempfile( suffix = '.gcc.args')
-      cmd = cmd.replace('\\', '/')
-      cmd_file.write( cmd )
-      cmd_file.close()
-      cmd = self.options.cxx.value() +' @' + cmd_file.name
+  def   __cmdOptions( self, language ):
+    
+    options = self.options
+    
+    cl_options = ['-c', '-pipe', '-MMD', '-x', language ]
+    if language == 'c++':
+      cl_options += options.cxxflags.value()
+      compiler = options.cxx.value()
     else:
-      cmd = self.options.cxx.value() + ' ' + cmd
-      cmd_file = None
+      cl_options += options.cflags.value()
+      compiler = options.cc.value()
     
-    try:
-      result, out, err = execCommand( cmd, cwd = cwd, env = None, stdout = None, stderr = None )    # TODO: env = options.os_env
-      if result:
-        return BuildError( out, err )
-    finally:
-      if cmd_file is not None:
-        cmd_file.remove()
+    cl_options += options.ccflags.value()
+    cl_options += _addPrefix( '-D', options.cppdefines.value() )
+    cl_options += _addPrefix( '-I', options.cpppath.value() )
+    cl_options += _addPrefix( '-I', options.ext_cpppath.value() )
     
-    return None
+    return compiler, ' '.join( cl_options )
   
   #//-------------------------------------------------------//
   
-  def   __buildSingleSource( self, vfile, cmd, src_node, targets ):
+  def   __signature( self ):
+    values = ''.join( [ self.compiler, self.cl_options ] )
+    return hashlib.md5( values.encode('utf-8') ).digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   __buildOne( self, vfile, src_file_value ):
     with Tempfile( suffix = '.d' ) as dep_file:
       
-      cmd = list(cmd)
+      src_file = src_file_value.name
       
-      cmd += [ '-MF', dep_file.name ]
+      args = [self.cl_options]
       
-      src_file = FilePath( src_node.sources()[0] )
+      args += [ '-MF', dep_file.name ]
       
       obj_file = self.buildPath( src_file ) + '.o'
-      cmd += [ '-o', obj_file ]
-      cmd += [ src_file ]
+      args += [ '-o', obj_file ]
+      args += [ src_file ]
       
-      cmd = ' '.join( map(str, cmd ) )
+      args = ' '.join( map(str, cmd ) )
       
       cwd = self.buildPath()
       
-      err = self.__exec( cmd, cwd )
+      err = execCmd( self.cmd, args, cwd )
       if err: raise err
       
-      node_targets = src_node.makeNodeTargets( obj_file, ideps = _readDeps( dep_file.name ) )
-      
-      src_node.save( vfile, node_targets )
-      
-      targets += node_targets
-
+      return self.nodeTargets( obj_file, ideps = _readDeps( dep_file.name ) )
+  
   #//===========================================================================//
 
-  def   __buildManySources( self, vfile, cmd, src_nodes, targets ):
+  def   __buildMany( self, vfile, src_file_values ):
+    
+    targets = self.nodeTargets()
+    
     build_dir = self.buildPath()
     
-    cmd = list(cmd)
+    src_files = FilePaths( src_file_values )
     
     with Tempdir( dir = build_dir ) as tmp_dir:
       cwd = FilePath( tmp_dir )
       
-      src_files = FilePaths( map(lambda node: node.sources()[0], src_nodes ) )
+      args = [self.cl_options]
+      args += src_files
       
-      cmd += src_files
+      args = ' '.join( args )
       
-      cmd = ' '.join( map(str, cmd ) )
+      tmp_obj_files, tmp_dep_files = src_files.replace( cwd, ['.o','.d'] )
       
-      tmp_obj_files = src_files.replaceDirAndExt( cwd, '.o' )
-      tmp_dep_files = tmp_obj_files.replaceExt( '.d' )
-      
-      obj_files = src_files.addExt( '.o' )
-      obj_files = self.buildPaths( obj_files )
+      obj_files = self.buildPaths( src_files, ext = '.o' )
       
       err = self.__exec( cmd, cwd )
       
       move_file = os.rename
       
-      for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
+      for src_file_value, obj_file, tmp_obj_file, tmp_dep_file in zip( src_file_values, obj_files, tmp_obj_files, tmp_dep_files ):
         if os.path.isfile( tmp_obj_file ):
           if os.path.isfile( obj_file ):
             os.remove( obj_file )
           move_file( tmp_obj_file, obj_file )
           
-          node_targets = src_node.makeNodeTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
+          node_targets = self.nodeTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
           
+          src_node = Node( self, src_file_value )
           src_node.save( vfile, node_targets )
           
           if not err:
             targets += node_targets
       
       if err: raise err
+    
+    return node_targets
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr ):
+  def   build( self, build_manager, vfile, node ):
     
-    if attr == 'cmd':
-      self.cmd = self.__cmd()
-      return self.cmd
+    src_file_values = node.sources()
     
-    if attr == '_signature':
-      self._signature = self.__signature()
-      return self._signature
+    if len(src_file_values) == 1:
+      targets = self.__buildOne( vfile, cmd,  src_file_values[0] )
+    else:
+      targets = self.__buildMany( vfile, cmd,  src_file_values )
     
-    return super(GccCompileCppBuilder,self).__getattr__( attr )
+    return targets
   
   #//-------------------------------------------------------//
   
-  def   __cmd( self ):
-    options = self.options
+  def   buildStr( self, node ):
+    return self.compiler + ': ' + ' '.join( map( str, node.sources() ) )
+
+#//===========================================================================//
+
+class GccCompilerManager (Builder):
+  
+  __slots__ = ('compiler')
+  
+  def   __init__(self, env, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    super(GccCompiler,self).__init__( env, options, scontent_type, tcontent_type )
     
-    cmd = ['-c', '-pipe', '-MMD', '-x', 'c++']
-    cmd += options.cxxflags.value()
-    cmd += options.ccflags.value()
-    cmd += _addPrefix( '-D', options.cppdefines.value() )
-    cmd += _addPrefix( '-I', options.cpppath.value() )
-    cmd += _addPrefix( '-I', options.ext_cpppath.value() )
-    
-    return [ ' '.join( cmd ) ]
+    self.compiler = GccCompiler( env, options, language, scontent_type, tcontent_type )
+    self.signature = self.compiler.signature
   
   #//-------------------------------------------------------//
   
-  def   __signature( self ):
-    values = list( self.cmd )
-    values.append( self.build_dir )
-    values.append( self.do_path_merge )
-    values = ''.join( map( str, values ) )
+  def   __makeSrcNodes( self, vfile, src_file_values ):
     
-    return hashlib.md5( values.encode('utf-8') ).digest()
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    return self._signature;
-  
-  #//-------------------------------------------------------//
-  
-  def   __makeSrcNodes( self, vfile, node, targets ):
+    actual_nodes = []
+    
+    compiler = self.compiler
     
     src_nodes = {}
-    for src_file_value in node.sources():
-      n = node.makeNode( self, src_file_value )
+    for src_file_value in src_file_values:
+      node = Node( compiler, src_file_value )
       
-      if n.actual( vfile ):
-        targets += n.nodeTargets()
+      if node.actual( vfile ):
+        actual_nodes.append( node )
       else:
-        src_nodes[ src_file_value.name ] = n
+        src_nodes[ src_file_value.name ] = node
     
-    return src_nodes
+    return src_nodes, actual_nodes
   
   #//-------------------------------------------------------//
   
@@ -289,11 +307,9 @@ class GccCompileCppBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   prebuild( self, vfile, node ):
     
-    targets = node.makeNodeTargets()
-    
-    src_nodes = self.__makeSrcNodes( vfile, node, targets )
+    src_nodes, actual_nodes = self.__makeSrcNodes( vfile, node )
     src_node_groups = self.__groupSrcNodes( src_nodes )
     
     cmd = self.cmd
