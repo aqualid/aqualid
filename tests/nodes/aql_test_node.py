@@ -20,7 +20,11 @@ from aql_builder import Builder
 #//===========================================================================//
 
 class ChecksumBuilder (Builder):
+  
   #//-------------------------------------------------------//
+  
+  def   __init__(self):
+    self.signature = b''
   
   def   build( self, build_manager, vfile, node ):
     target_values = []
@@ -35,13 +39,7 @@ class ChecksumBuilder (Builder):
       target_values.append( Value( source_value.name + '_chksum', chcksum.digest() ) )
       itarget_values.append( Value( source_value.name + '_chcksum_sha512', chcksum_sha512.digest() ) )
     
-    return target_values, itarget_values, []
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    return b""
-  
+    return self.nodeTargets( target_values, itarget_values )
 
 #//===========================================================================//
 
@@ -52,6 +50,7 @@ class CopyBuilder (Builder):
   def   __init__(self, ext, iext ):
     self.ext = ext
     self.iext = iext
+    self.signature = str(ext + '|' + iext).encode('utf-8')
   
   #//-------------------------------------------------------//
   
@@ -72,13 +71,7 @@ class CopyBuilder (Builder):
       target_values.append( FileValue( new_name ) )
       itarget_values.append( FileValue( new_iname ) )
     
-    return target_values, itarget_values, [idep]
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    s = self.ext + '|' + self.iext
-    return s.encode('utf-8')
+    return self.nodeTargets( target_values, itarget_values, idep )
 
 #//===========================================================================//
 
@@ -116,14 +109,14 @@ class TestNodes( AqlTestCase ):
 
   def   _rebuildNode( self, vfile, builder, values, deps, tmp_files):
     node = Node( builder, values )
-    node.addDeps( deps )
+    node.depends( deps )
     
     self.assertFalse( node.actual( vfile, use_cache = False ) )
     node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
     node = Node( builder, values )
-    node.addDeps( deps )
+    node.depends( deps )
     
     self.assertTrue( node.actual( vfile ) )
     node.build( None, vfile )
@@ -237,6 +230,7 @@ class TestSpeedBuilder (Builder):
     self.name = name
     self.ext = ext
     self.idep = idep
+    self.signature = str(ext + '|' + idep).encode('utf-8')
   
   #//-------------------------------------------------------//
   
@@ -255,12 +249,6 @@ class TestSpeedBuilder (Builder):
       idep_values.append( FileValue( idep_name, _FileContentType ) )
     
     return target_values, itarget_values, idep_values
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    s = self.ext + '|' + self.idep
-    return s.encode('utf-8')
   
   #//-------------------------------------------------------//
   

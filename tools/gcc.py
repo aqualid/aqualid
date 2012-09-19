@@ -139,12 +139,17 @@ def   execCmd( compiler, cl_options, cwd ):
 
 #//===========================================================================//
 
-class GccCompiler (Builder):
+class GccCompilerImpl (Builder):
   
-  __slots__ = ('compiler', 'cl_options' )
+  __slots__ = ('options', 'compiler', 'cl_options')
   
-  def   __init__(self, env, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
-    super(GccCompiler,self).__init__( env, options, scontent_type, tcontent_type )
+  def   __init__(self, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    
+    self.options = options
+    self.build_dir = options.build_dir.value()
+    self.do_path_merge = options.do_build_path_merge.value()
+    self.scontent_type = scontent_type
+    self.tcontent_type = tcontent_type
     
     self.compiler, self.cl_options = self.__cmdOptions( language )
     self.signature = self.__signature()
@@ -202,7 +207,7 @@ class GccCompiler (Builder):
   
   #//===========================================================================//
 
-  def   __buildMany( self, vfile, src_file_values ):
+  def   __buildMany( self, vfile, src_file_values, src_nodes ):
     
     targets = self.nodeTargets()
     
@@ -218,27 +223,29 @@ class GccCompiler (Builder):
       
       args = ' '.join( args )
       
-      tmp_obj_files, tmp_dep_files = src_files.replace( cwd, ['.o','.d'] )
+      tmp_obj_files, tmp_dep_files = src_files.change( dir = cwd, ext = ['.o','.d'] )
       
-      obj_files = self.buildPaths( src_files, ext = '.o' )
+      obj_files = self.buildPaths( src_files ).add('.o')
       
       err = self.__exec( cmd, cwd )
       
       move_file = os.rename
       
-      for src_file_value, obj_file, tmp_obj_file, tmp_dep_file in zip( src_file_values, obj_files, tmp_obj_files, tmp_dep_files ):
-        if os.path.isfile( tmp_obj_file ):
-          if os.path.isfile( obj_file ):
-            os.remove( obj_file )
-          move_file( tmp_obj_file, obj_file )
-          
-          node_targets = self.nodeTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
-          
-          src_node = Node( self, src_file_value )
-          src_node.save( vfile, node_targets )
-          
-          if not err:
-            targets += node_targets
+      for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
+        
+        if not os.path.isfile( tmp_obj_file ):
+          continue
+        
+        if os.path.isfile( obj_file ):
+          os.remove( obj_file )
+        move_file( tmp_obj_file, obj_file )
+        
+        node_targets = self.nodeTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
+        
+        src_node.save( vfile, node_targets )
+        
+        if not err:
+          targets += node_targets
       
       if err: raise err
     
@@ -249,11 +256,13 @@ class GccCompiler (Builder):
   def   build( self, build_manager, vfile, node ):
     
     src_file_values = node.sources()
+    src_nodes = node.targetNodes()
     
     if len(src_file_values) == 1:
-      targets = self.__buildOne( vfile, cmd,  src_file_values[0] )
+      targets = self.__buildOne( vfile, cmd, src_file_values[0] )
     else:
-      targets = self.__buildMany( vfile, cmd,  src_file_values )
+      targets = self.__buildMany( vfile, cmd, src_file_values, src_nodes )
+      node.setTargetNodes( None )
     
     return targets
   
@@ -264,21 +273,17 @@ class GccCompiler (Builder):
 
 #//===========================================================================//
 
-class GccCompilerManager (Builder):
+class GccCompiler(Builder):
   
   __slots__ = ('compiler')
   
-  def   __init__(self, env, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
-    super(GccCompiler,self).__init__( env, options, scontent_type, tcontent_type )
-    
-    self.compiler = GccCompiler( env, options, language, scontent_type, tcontent_type )
+  def   __init__(self, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    self.compiler = GccCompilerImpl( options, language, scontent_type, tcontent_type )
     self.signature = self.compiler.signature
   
   #//-------------------------------------------------------//
   
-  def   __makeSrcNodes( self, vfile, src_file_values ):
-    
-    actual_nodes = []
+  def   __makeSrcNodes( self, vfile, src_file_values, targets ):
     
     compiler = self.compiler
     
@@ -287,11 +292,11 @@ class GccCompilerManager (Builder):
       node = Node( compiler, src_file_value )
       
       if node.actual( vfile ):
-        actual_nodes.append( node )
+        targets += node.nodeTargets()
       else:
-        src_nodes[ src_file_value.name ] = node
+        src_nodes[ FilePath( src_file_value ) ] = [node, src_file_value]
     
-    return src_nodes, actual_nodes
+    return src_nodes
   
   #//-------------------------------------------------------//
   
@@ -301,7 +306,13 @@ class GccCompilerManager (Builder):
     groups = []
     
     for src_files in src_file_groups:
-      groups.append( [ src_nodes[ src_file ] for src_file in src_files ] )
+      nodes = []
+      values = []
+      for src_file in src_files:
+        nodes.append( src_nodes[ src_file ][0] )
+        values.append( src_nodes[ src_file ][1] )
+      
+      groups.append( (nodes, values) )
     
     return groups
   
@@ -309,21 +320,39 @@ class GccCompilerManager (Builder):
   
   def   prebuild( self, vfile, node ):
     
-    src_nodes, actual_nodes = self.__makeSrcNodes( vfile, node )
+    targets = self.nodeTargets()
+    
+    src_nodes = self.__makeSrcNodes( vfile, node, targets )
     src_node_groups = self.__groupSrcNodes( src_nodes )
     
-    cmd = self.cmd
+    node.setTargets( targets )
     
-    for src_nodes in src_node_groups:
-      if len(src_nodes) == 1:
-        self.__buildSingleSource( vfile, cmd,  src_nodes[0], targets )
+    pre_nodes = []
+    
+    for src_nodes, src_values in src_node_groups:
+      if len(src_values) == 1:
+        tnode = src_nodes[0]
       else:
-        self.__buildManySources( vfile, cmd,  src_nodes, targets )
+        tnode = Node( compiler, src_values )
+        tnode.setTargetNodes( src_nodes )
+      
+      pre_node.append( tnode )
+    
+    return pre_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, vfile, node, pre_nodes ):
+    
+    targets = node.nodeTargets()
+    
+    for pre_node in pre_nodes:
+      targets += pre_node.nodeTargets()
     
     return targets
   
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return self.options.cxx.value() + ': ' + ' '.join( map( str, node.sources() ) )
+    return self.compiler.buildStr( node )
 

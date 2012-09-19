@@ -54,10 +54,10 @@ class TestPathTypes( AqlTestCase ):
   def   test_file_paths( self ):
     paths = FilePaths()
     
-    paths += map( os.path.abspath, ['file0.txt', 'file1.txt', 'file2.txt' ] )
+    paths += ['file0.txt', 'file1.txt', 'file2.txt' ]
     
-    print( paths.replaceExt('.ttt') )
-    print( paths.replaceDir('foo/bar') )
+    self.assertEqual( paths.change( ext = '.ttt'), ['file0.ttt', 'file1.ttt', 'file2.ttt' ] )
+    self.assertEqual( paths.change( dir = 'foo/bar'), ['foo/bar/file0.txt', 'foo/bar/file1.txt', 'foo/bar/file2.txt' ] )
   
   #//=======================================================//
   

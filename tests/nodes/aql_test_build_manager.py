@@ -22,18 +22,16 @@ from aql_event_handler import EventHandler
 
 class CopyValueBuilder (Builder):
   
+  def   __init__(self):
+    self.signature = b''
+  
   def   build( self, build_manager, vfile, node ):
     target_values = []
     
     for source_value in node.sources():
       target_values.append( Value( source_value.name + '_copy', source_value.content ) )
     
-    return target_values, [], []
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    return str()
+    return self.nodeTargets( target_values )
 
 #//===========================================================================//
 
@@ -50,6 +48,7 @@ class ChecksumBuilder (Builder):
     self.offset = offset
     self.length = length
     self.replace_ext = replace_ext
+    self.signature = str(str(self.offset) + '.' + str(self.length)).encode('utf-8')
   
   #//-------------------------------------------------------//
   
@@ -69,13 +68,7 @@ class ChecksumBuilder (Builder):
       
       target_values.append( FileValue( chcksum_filename ) )
     
-    return target_values, [], []
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    s = str(self.offset) + '.' + str(self.length)
-    return s.encode('utf-8')
+    return self.nodeTargets( target_values )
 
 #//===========================================================================//
 
@@ -128,8 +121,8 @@ def   _addNodesToBM( vfilename, builder, src_files ):
     checksums_node = Node( builder, src_values )
     checksums_node2 = Node( builder, checksums_node )
     
-    bm.addNodes( checksums_node ); bm.selfTest()
-    bm.addNodes( checksums_node2 ); bm.selfTest()
+    bm.add( checksums_node ); bm.selfTest()
+    bm.add( checksums_node2 ); bm.selfTest()
   except:
     bm.close()
   
@@ -163,24 +156,16 @@ def   _clearTargets( vfilename, builder, src_files ):
 
 #//===========================================================================//
 
-class TestEnv( object ):
-  __slots__ = ('build_manager')
-  
-  def   __init__(self, bm ):
-    self.build_manager = bm
-
-#//===========================================================================//
-
 class MultiChecksumBuilder (Builder):
   
   __slots__ = (
     'builder',
   )
   
-  def   __init__(self, env, offset, length ):
+  def   __init__(self, offset, length ):
     
-    self.env = env
     self.builder = ChecksumBuilder( offset, length )
+    self.signature = self.builder.signature
   
   #//-------------------------------------------------------//
   
@@ -198,15 +183,10 @@ class MultiChecksumBuilder (Builder):
         sub_nodes.append( n )
     
     if sub_nodes:
-      build_manager.addDeps( node, sub_nodes ); build_manager.selfTest()
+      build_manager.depends( node, sub_nodes ); build_manager.selfTest()
       raise RebuildNode()
     
-    return target_values, [], []
-  
-  #//-------------------------------------------------------//
-  
-  def   signature( self ):
-    return self.builder.signature()
+    return self.nodeTargets( target_values )
 
 #//===========================================================================//
 
@@ -230,25 +210,25 @@ class TestBuildManager( AqlTestCase ):
     node5 = Node( builder, node4 )
     
     node6 = Node( builder, node5 )
-    node6.addDeps( [node0, node1] )
+    node6.depends( [node0, node1] )
     
-    bm.addNodes( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
-    bm.addNodes( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
-    bm.addNodes( node2 ); bm.selfTest(); self.assertEqual( len(bm), 3 )
-    bm.addNodes( node3 ); bm.selfTest(); self.assertEqual( len(bm), 4 )
-    bm.addNodes( node4 ); bm.selfTest(); self.assertEqual( len(bm), 5 )
-    bm.addNodes( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
-    bm.addNodes( node6 ); bm.selfTest(); self.assertEqual( len(bm), 7 )
+    bm.add( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
+    bm.add( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
+    bm.add( node2 ); bm.selfTest(); self.assertEqual( len(bm), 3 )
+    bm.add( node3 ); bm.selfTest(); self.assertEqual( len(bm), 4 )
+    bm.add( node4 ); bm.selfTest(); self.assertEqual( len(bm), 5 )
+    bm.add( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
+    bm.add( node6 ); bm.selfTest(); self.assertEqual( len(bm), 7 )
     
-    node0.addDeps( node3 ); bm.addDeps( node0, node3 ); bm.selfTest()
-    node1.addDeps( node3 ); bm.addDeps( node1, node3 ); bm.selfTest()
-    node2.addDeps( node3 ); bm.addDeps( node2, node3 ); bm.selfTest()
-    node3.addDeps( node4 ); bm.addDeps( node3, node4 ); bm.selfTest()
-    node0.addDeps( node5 ); bm.addDeps( node0, node5 ); bm.selfTest()
-    node5.addDeps( node3 ); bm.addDeps( node5, node3 ); bm.selfTest()
+    node0.depends( node3 ); bm.depends( node0, node3 ); bm.selfTest()
+    node1.depends( node3 ); bm.depends( node1, node3 ); bm.selfTest()
+    node2.depends( node3 ); bm.depends( node2, node3 ); bm.selfTest()
+    node3.depends( node4 ); bm.depends( node3, node4 ); bm.selfTest()
+    node0.depends( node5 ); bm.depends( node0, node5 ); bm.selfTest()
+    node5.depends( node3 ); bm.depends( node5, node3 ); bm.selfTest()
     
     with self.assertRaises(NodeHasCyclicDependency):
-      node4.addDeps( node3 ); bm.addDeps( node4, node3 ); bm.selfTest()
+      node4.depends( node3 ); bm.depends( node4, node3 ); bm.selfTest()
   
   #//-------------------------------------------------------//
   
@@ -308,9 +288,7 @@ class TestBuildManager( AqlTestCase ):
       try:
         bm = BuildManager( vfilename.name, 4, True )
         try:
-          env = TestEnv( bm )
-          
-          builder = MultiChecksumBuilder( env, 0, 256 )
+          builder = MultiChecksumBuilder( 0, 256 )
           
           src_values = []
           for s in src_files:
@@ -318,18 +296,17 @@ class TestBuildManager( AqlTestCase ):
           
           node = Node( builder, src_values )
           
-          bm.addNodes( node ); bm.selfTest()
+          bm.add( node ); bm.selfTest()
           failed_nodes = bm.build()
           
           #//-------------------------------------------------------//
           bm.close()
           
           bm = BuildManager( vfilename.name, 4, True )
-          env = TestEnv( bm )
-          builder = MultiChecksumBuilder( env, 0, 256 )
+          builder = MultiChecksumBuilder( 0, 256 )
           
           node = Node( builder, src_values )
-          bm.addNodes( node ); bm.selfTest()
+          bm.add( node ); bm.selfTest()
           bm.status(); bm.selfTest()
         
         finally:
@@ -366,11 +343,11 @@ class TestBuildManager( AqlTestCase ):
           node3 = Node( builder, node2 )
           node4 = Node( builder, node3 )
           
-          bm.addNodes( node0 )
-          bm.addNodes( node1 )
-          bm.addNodes( node2 )
-          bm.addNodes( node3 )
-          bm.addNodes( node4 )
+          bm.add( node0 )
+          bm.add( node1 )
+          bm.add( node2 )
+          bm.add( node3 )
+          bm.add( node4 )
           
           #~ bm.build()
           
@@ -390,7 +367,7 @@ class TestBuildManager( AqlTestCase ):
 def   _generateNodeTree( bm, builder, node, depth ):
   while depth:
     node = Node( builder, node )
-    bm.addNodes( node )
+    bm.add( node )
     depth -= 1
 
 #//===========================================================================//
@@ -408,7 +385,7 @@ class TestBuildManagerSpeed( AqlTestCase ):
     builder = CopyValueBuilder()
     
     node = Node( builder, value )
-    bm.addNodes( node )
+    bm.add( node )
     
     _generateNodeTree( bm, builder, node, 5000 )
 

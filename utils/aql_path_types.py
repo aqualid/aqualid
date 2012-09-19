@@ -92,7 +92,7 @@ class   FilePath (FilePathBase):
       return self.dir
     
     elif attr == 'dir_name':
-      self.dir_name = os.path.join( self.dir, self.name )
+      self.dir_name = FilePathBase( os.path.join( self.dir, self.name ) )
       return self.dir_name
     
     elif attr in ['seq', 'drive']:
@@ -103,8 +103,12 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   replaceExt( self, new_ext ):
-    return FilePath( self.dir_name + new_ext )
+  def   change( self, dir = None, name = None, ext = None ):
+    if dir is None: dir = self.dir
+    if name is None: name = self.name
+    if ext is None: ext = self.ext
+    
+    return FilePath( os.path.join( dir, name + ext ) )
   
   #//-------------------------------------------------------//
   
@@ -158,41 +162,48 @@ class   FilePath (FilePathBase):
 
 class   FilePaths( ValueListType( UniqueList, FilePath ) ):
   
-  def   replaceDir( self, new_dir ):
-    paths = FilePaths()
+  #//-------------------------------------------------------//
+  
+  def   change( self, dir = None, ext = None ):
+    
+    dirs = tuple( toSequence(dir) )
+    if not dirs: dirs = (None,)
+    
+    exts = tuple( toSequence(ext) )
+    if not exts: exts = (None,)
+    
+    count = len(dirs) * len(exts)
+    
+    paths = [FilePaths()] * count
     
     for path in self:
-      paths.append( os.path.join( new_dir, path.name_ext ) )
+      path_change = path.change
+      i = 0
+      for dir in dirs:
+        for ext in exts:
+          paths[i].append( path_change( dir = dir, ext = ext ) )
+          i += 1
+    
+    if len(paths) == 1:
+      return paths[0]
     
     return paths
   
   #//-------------------------------------------------------//
   
-  def   replaceExt( self, new_ext ):
-    paths = FilePaths()
+  def   add( self, suffix ):
+    
+    suffixes = tuple( toSequence(suffix) )
+    if not suffixes: suffixes = ('',)
+    
+    paths = [FilePaths()] * len(suffixes)
     
     for path in self:
-      paths.append( path.dir_name + new_ext )
-    
-    return paths
-  
-  #//-------------------------------------------------------//
-  
-  def   replaceDirAndExt( self, new_dir, new_ext ):
-    paths = FilePaths()
-    
-    for path in self:
-      paths.append( os.path.join( new_dir, path.name + new_ext ) )
-    
-    return paths
-  
-  #//-------------------------------------------------------//
-  
-  def   addExt( self, new_ext ):
-    paths = FilePaths()
-    
-    for path in self:
-      paths.append( path + new_ext )
+      paths_append = paths[i].append
+      i = 0
+      for suffix in suffixes:
+        paths[i].append( path + suffix )
+        i += 1
     
     return paths
   

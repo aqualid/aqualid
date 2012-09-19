@@ -18,9 +18,9 @@
 #
 
 
-class   UnknownNodeSourceType (Exception):
-  def   __init__( self, node, source ):
-    msg = "Internal error: Unable to add unknown source type '%s' to node '%s'" % (type(source), str(node))
+class   UnknownSourceValueType (Exception):
+  def   __init__( self, source ):
+    msg = "Error: Unable to convert source '%s(%s)' to a value " % (str(source), type(source))
     super(type(self), self).__init__( msg )
 
 #//-------------------------------------------------------//

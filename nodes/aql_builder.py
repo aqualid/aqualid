@@ -19,6 +19,9 @@
 
 import os
 
+from aql_value import Value
+from aql_node import NodeTargets
+from aql_errors import UnknownSourceValueType
 from aql_utils import toSequence
 from aql_file_value import FileValue
 from aql_path_types import FilePath, FilePaths
@@ -36,8 +39,6 @@ class Builder (object):
   """
   
   __slots__ = (
-    'env',
-    'options',
     'build_dir',
     'do_path_merge',
     'name',
@@ -48,37 +49,28 @@ class Builder (object):
    
   #//-------------------------------------------------------//
   
-  def   __init__( self, env, options, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
-    
-    self.env = env
-    self.options = options
-    self.build_dir = self.options.build_dir.value()
-    self.do_path_merge = self.options.do_build_path_merge.value()
-    self.scontent_type = scontent_type
-    self.tcontent_type = tcontent_type
-    
-    cls = self.__class__
-    self.name = '.'.join( [ cls.__module__, cls.__name__, str(self.build_dir), str(self.do_path_merge) ] )
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuild( self, vfile, node ):
-    """
-    Could be used to dynamically generate nodes which need to be built before the passed node
-    """
-    return None
-  
-  #//-------------------------------------------------------//
-  
-  def   build( self, build_manager, vfile, node, prebuild_nodes = None ):
-    """
-    Builds the node and returns values: NodeTargets
-    """
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  #//-------------------------------------------------------//
-  
   def   __getattr__( self, attr ):
+    
+    if attr == 'name':
+      cls = self.__class__
+      self.name = '.'.join( [ cls.__module__, cls.__name__, str(self.build_dir), str(self.do_path_merge) ] )
+      return self.name
+    
+    if attr == 'build_dir':
+      self.build_dir = '.'
+      return self.build_dir
+    
+    if attr == 'do_path_merge':
+      self.do_path_merge = False
+      return self.do_path_merge
+    
+    if attr == 'scontent_type':
+      self.scontent_type = NotImplemented
+      return self.scontent_type
+    
+    if attr == 'tcontent_type':
+      self.tcontent_type = NotImplemented
+      return self.tcontent_type
     
     if attr == 'signature':
       """
@@ -87,6 +79,23 @@ class Builder (object):
       raise NotImplementedError( "Attribute '%s' must be set in a child class." % attr )
     
     raise AttributeError( self, attr )
+  
+  #//-------------------------------------------------------//
+  
+  def   prebuild( self, vfile, node ):
+    """
+    Could be used to dynamically generate nodes which need to be built before the passed node
+    Returns list of nodes
+    """
+    return None
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, vfile, node, prebuild_nodes = None ):
+    """
+    Builds the node and returns a <NodeTargets> object.
+    """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
@@ -149,14 +158,18 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   sourceValues( self, values, use_cache = True ):
-    src_values = []
-    content_type = self.scontent_type
-    for value in toSequence( values ):
-      if not isinstance( value, Value ):
-        value = FileValue( value, content = content_type, use_cache = use_cache )
-        src_values.append( value )
+    return map( self.sourceValue, toSequence( values ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   sourceValue( self, value, use_cache = True ):
+    if not isinstance( value, Value ):
+      if isinstance( value, str ):
+        value = FileValue( value, content = self.scontent_type, use_cache = use_cache )
+      else:
+        raise UnknownSourceValueType( value )
     
-    return src_values
+    return value
   
   #//-------------------------------------------------------//
   

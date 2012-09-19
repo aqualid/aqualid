@@ -21,7 +21,7 @@
 import hashlib
 
 from aql_event_manager import event_manager
-from aql_errors import UnknownNodeSourceType, UnknownAttribute, UnknownNodeDependencyType, InvalidNodeTarget
+from aql_errors import UnknownSourceValueType, UnknownAttribute, InvalidNodeTarget, InvalidNodeTargetsType
 from aql_value import Value, NoContent
 from aql_depends_value import DependsValue
 from aql_utils import toSequence
@@ -42,7 +42,7 @@ def   _toValues( values ):
 #//---------------------------------------------------------------------------//
 
 class NodeTargets (object):
-  __slots__ = ( 'targets', 'itargets', 'ideps' )
+  __slots__ = ( 'target_values', 'itarget_values', 'idep_values' )
   
   def   __init__( self, targets = None, itargets = None, ideps = None ):
     self.target_values  = _toValues( targets )
@@ -71,9 +71,10 @@ class Node (object):
     'dep_nodes',
     'dep_values',
     
-    'idep_values',
+    'target_nodes',
     'target_values',
     'itarget_values',
+    'idep_values',
     
     'name_key',
     'targets_key',
@@ -89,6 +90,8 @@ class Node (object):
   def   __init__( self, builder, sources ):
     
     self.builder = builder
+    self.source_nodes= set()
+    self.source_values = []
     self.source_nodes, self.source_values = self._getSourceNodes( sources )
     self.dep_values = []
     self.dep_nodes = set()
@@ -104,15 +107,15 @@ class Node (object):
     source_nodes_append = source_nodes.add
     source_values_append = source_values.append
     
+    to_value = self.builder.sourceValue
+    
     for source in toSequence( sources ):
       if isinstance(source, Node):
         source_nodes_append( source )
-      elif isinstance(source, Value):
-        source_values_append( source )
       else:
-        raise UnknownNodeSourceType( self, source )
+        source_values_append( to_value( source ) )
     
-    return source_nodes, source_values
+    return source_nodes, tuple(source_values)
     
   #//=======================================================//
   
@@ -123,25 +126,30 @@ class Node (object):
     append_node = self.dep_nodes.add
     append_value = self.dep_values.append
     
+    to_value = self.builder.sourceValue
+    
     for dep in toSequence( deps ):
       if isinstance(dep, Node):
         append_node( dep )
-      elif isinstance(dep, Value):
-        append_value( dep )
       else:
-        raise UnknownNodeDependencyType( self, dep )
+        append_value( to_value(dep) )
   
   #//=======================================================//
   
   def   setTargets( self, node_targets ):
-    if not isinstance( other, NodeTargets ):
-      raise InvalidNodeTargetsType( other )
+    if not isinstance( node_targets, NodeTargets ):
+      raise InvalidNodeTargetsType( node_targets )
     
     self.is_actual = None
     
     self.target_values = tuple( node_targets.target_values )
     self.itarget_values = tuple( node_targets.itarget_values )
-    self.idep_values = tuple( node_targets.ideps_values )
+    self.idep_values = tuple( node_targets.idep_values )
+  
+  #//=======================================================//
+  
+  def   setTargetNodes( self, target_nodes ):
+    self.target_nodes = tuple( toSequence(target_nodes) )
   
   #//=======================================================//
   
@@ -225,9 +233,9 @@ class Node (object):
     
     values = [ Value( self.name_key, self.signature ) ]
     
-    values += idep_values
-    values += target_values
-    values += itarget_values
+    values += self.target_values
+    values += self.itarget_values
+    values += self.idep_values
     
     values.append( DependsValue( self.targets_key,  self.target_values )  )
     values.append( DependsValue( self.itargets_key, self.itarget_values ) )
@@ -296,9 +304,12 @@ class Node (object):
   #//=======================================================//
   
   def   sources(self):
-    values = list(self.source_values)
+    values = []
+    
     for node in self.source_nodes:
       values += node.target_values
+    
+    values = self.source_values
     
     return values
   
@@ -311,6 +322,11 @@ class Node (object):
   
   def   sideEffects(self):
     return self.itarget_values
+  
+  #//=======================================================//
+  
+  def   targetNodes(self):
+    return self.target_nodes
   
   #//=======================================================//
   
@@ -392,16 +408,19 @@ class Node (object):
     node = self
     
     while True:
-      node = next(iter(node.source_nodes))
-      
       name.append( str( node.builder ) + ': ['  )
       depth += 1
       
+      try:
+        node = next(iter(node.source_nodes))
+      except StopIteration:
+        break
+        
       first_source = node.__friendlyName()
       if first_source is not None:
         name.append( first_source )
         break
-    
+      
     name += [']'] * depth
     
     # g++: [ moc: [ m4: src1.m4 ... ] ]
