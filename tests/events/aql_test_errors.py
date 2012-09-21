@@ -20,7 +20,7 @@ class TestErrors( AqlTestCase ):
       except error_type as err:
         pass
       
-    _testError( UnknownNodeSourceType, 1, 2 )
+    _testError( UnknownSourceValueType, 2 )
     _testError( UnknownNodeDependencyType, 1, 2 )
     _testError( UnknownNode, 1 )
     _testError( UnknownAttribute, 1, 2 )

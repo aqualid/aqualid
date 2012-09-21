@@ -37,7 +37,6 @@ class _NodesTree (object):
   __slots__ = \
   (
     'lock',
-    'node_names',
     'node_deps',
     'dep_nodes',
     'tail_nodes',
@@ -47,7 +46,6 @@ class _NodesTree (object):
   
   def   __init__( self ):
     self.lock = threading.Lock()
-    self.node_names = set()
     self.node_deps = {}
     self.dep_nodes = {}
     self.tail_nodes = set()
@@ -55,7 +53,7 @@ class _NodesTree (object):
   #//-------------------------------------------------------//
   
   def   __len__(self):
-    return len(self.node_names)
+    return len(self.node_deps)
   
   #//-------------------------------------------------------//
   
@@ -119,10 +117,6 @@ class _NodesTree (object):
       for node in nodes:
         
         if node not in node_deps:
-          if node.name_key in self.node_names:
-            raise NodeAlreadyExists( node )
-          
-          self.node_names.add( node.name_key )
           self.node_deps[ node ] = set()
           self.dep_nodes[ node ] = set()
           self.tail_nodes.add( node )
@@ -162,7 +156,6 @@ class _NodesTree (object):
       
       tail_nodes = self.tail_nodes
       
-      self.node_names.remove( node.name_key )
       del node_deps[node]
       tail_nodes.remove( node )
       
@@ -182,39 +175,33 @@ class _NodesTree (object):
   
   def   selfTest( self ):
     with self.lock:
-      if len(self.node_names) != len(self.node_deps):
-        raise AssertionError("len(self.node_names)(%s) != len(self.node_deps)(%s)" % (len(self.node_names), len(self.node_deps)) )
-      
       if set(self.node_deps) != set(self.dep_nodes):
         raise AssertionError("Not all deps are added")
       
       all_dep_nodes = set()
       
       for node in self.dep_nodes:
-        if node.name_key not in self.node_names:
-          raise AssertionError("Missed node's name: %s" % str(node.name) )
-        
         if node not in self.node_deps:
-          raise AssertionError("Missed node: %s" % str(node.name) )
+          raise AssertionError("Missed node: %s" % str(node) )
         
         #~ node_deps = node.source_nodes | node.dep_nodes
         node_deps = self.node_deps[node]
         
         if not node_deps:
           if node not in self.tail_nodes:
-            raise AssertionError("Missed tail node: %s"  % str(node.name) )
+            raise AssertionError("Missed tail node: %s"  % str(node) )
         else:
           if node in self.tail_nodes:
-            raise AssertionError("Invalid tail node: %s"  % str(node.name) )
+            raise AssertionError("Invalid tail node: %s"  % str(node) )
         
         all_dep_nodes |= node_deps
         
         #~ if (node_deps - (node.source_nodes | node.dep_nodes)):
-          #~ raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node.name) )
+          #~ raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node) )
         
         for dep in node_deps:
           if node not in self.dep_nodes[dep]:
-            raise AssertionError("node not in self.dep_nodes[dep]: dep: %s, node: %s"  % (dep.name, node.name) )
+            raise AssertionError("node not in self.dep_nodes[dep]: dep: %s, node: %s"  % (dep, node) )
       
       if (all_dep_nodes - set(self.dep_nodes)):
         raise AssertionError("Not all deps are added")
@@ -353,7 +340,7 @@ class BuildManager (object):
       other_node = target_nodes.setdefault( value.name, node )
       
       if other_node is not node:
-        if not other_node.actual( vfile ):
+        if (other_node.name_key == node.name_key) or not other_node.actual( vfile ):
           event_manager.eventTargetIsBuiltTwiceByNodes( value, node, other_node )
   
   #//-------------------------------------------------------//
@@ -410,10 +397,29 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   clear(self):
-    vfile = self.__nodes_builder.vfile
+    get_tails = self.__nodes.tails
     
-    for node in self.__nodes.node_deps:
-      node.clear( vfile )
+    remove_tail = self.__nodes.removeTail
+    
+    failed_nodes = set()
+    
+    vfile = self.valuesFile()
+    
+    while True:
+      
+      tails = get_tails()
+      tails.difference_update( failed_nodes )
+      
+      if not tails:
+        break
+      
+      for node in tails:
+        print( " clear node: %s" % node )
+        if node.clear( vfile ):
+          remove_tail( node )
+        else:
+          print( "failed_node: %s" % node )
+          failed_nodes.add( node )
   
   #//-------------------------------------------------------//
   

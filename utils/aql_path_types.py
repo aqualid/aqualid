@@ -174,7 +174,7 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     
     count = len(dirs) * len(exts)
     
-    paths = [FilePaths()] * count
+    paths = [FilePaths() for i in range(count) ]
     
     for path in self:
       path_change = path.change
@@ -183,6 +183,7 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
         for ext in exts:
           paths[i].append( path_change( dir = dir, ext = ext ) )
           i += 1
+        
     
     if len(paths) == 1:
       return paths[0]
@@ -196,14 +197,16 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     suffixes = tuple( toSequence(suffix) )
     if not suffixes: suffixes = ('',)
     
-    paths = [FilePaths()] * len(suffixes)
+    paths = [FilePaths() for i in range(len(suffixes)) ]
     
     for path in self:
-      paths_append = paths[i].append
       i = 0
       for suffix in suffixes:
         paths[i].append( path + suffix )
         i += 1
+    
+    if len(paths) == 1:
+      return paths[0]
     
     return paths
   

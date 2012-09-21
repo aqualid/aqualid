@@ -65,9 +65,44 @@ class TestPathTypes( AqlTestCase ):
     paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file0.txt', 'klm/file0.txt', 'ghi/file1.txt' ])
     
     groups = paths.groupUniqueNames()
-    groups = paths.groupUniqueNames()
     
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+  
+  #//=======================================================//
+  
+  def   test_file_path_change( self ):
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'])
+    paths_ttt, paths_eee = paths.change( ext = ['.ttt', '.eee'])
+    
+    self.assertEqual( paths_ttt, ['abc/file0.ttt', 'abc/file1.ttt', 'def/file2.ttt'])
+    self.assertEqual( paths_eee, ['abc/file0.eee', 'abc/file1.eee', 'def/file2.eee'])
+    
+    paths_foo, paths_bar = paths.change( dir = ['foo', 'bar'] )
+    
+    self.assertEqual( paths_foo, ['foo/file0.txt', 'foo/file1.txt', 'foo/file2.txt'])
+    self.assertEqual( paths_bar, ['bar/file0.txt', 'bar/file1.txt', 'bar/file2.txt'])
+    
+    paths_foo_ttt, paths_foo_eee, paths_bar_ttt, paths_bar_eee = paths.change( dir = ['foo', 'bar'], ext = ['.ttt', '.eee'] )
+    
+    self.assertEqual( paths_foo_ttt, ['foo/file0.ttt', 'foo/file1.ttt', 'foo/file2.ttt'])
+    self.assertEqual( paths_foo_eee, ['foo/file0.eee', 'foo/file1.eee', 'foo/file2.eee'])
+    self.assertEqual( paths_bar_ttt, ['bar/file0.ttt', 'bar/file1.ttt', 'bar/file2.ttt'])
+    self.assertEqual( paths_bar_eee, ['bar/file0.eee', 'bar/file1.eee', 'bar/file2.eee'])
+    
+    paths_www = paths.change( ext = '.www' )
+    self.assertEqual( paths_www, ['abc/file0.www', 'abc/file1.www', 'def/file2.www'])
+  
+  #//=======================================================//
+  
+  def   test_file_path_add( self ):
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'])
+    paths_ttt, paths_eee = paths.add( suffix = ['.ttt', '.eee'] )
+    
+    self.assertEqual( paths_ttt, ['abc/file0.txt.ttt', 'abc/file1.txt.ttt', 'def/file2.txt.ttt'])
+    self.assertEqual( paths_eee, ['abc/file0.txt.eee', 'abc/file1.txt.eee', 'def/file2.txt.eee'])
+    
+    paths_www = paths.add( suffix = '.www' )
+    self.assertEqual( paths_www, ['abc/file0.txt.www', 'abc/file1.txt.www', 'def/file2.txt.www'])
   
 #//===========================================================================//
 

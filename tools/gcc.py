@@ -3,6 +3,7 @@ import re
 import shutil
 import hashlib
 
+from aql_node import Node
 from aql_builder import Builder
 from aql_utils import execCommand, readTextFile
 from aql_path_types import FilePath, FilePaths
@@ -116,8 +117,8 @@ def   gccOptions():
 
 #//===========================================================================//
 
-def   execCmd( compiler, cl_options, cwd ):
-  if len( args_str ) > 4096:
+def   _execCmd( compiler, cl_options, cwd ):
+  if len( cl_options ) > 4096:
     cmd_file = Tempfile( suffix = '.cmd.args' )
     cl_options = cl_options.replace('\\', '/')
     cmd_file.write( cl_options )
@@ -196,11 +197,11 @@ class GccCompilerImpl (Builder):
       args += [ '-o', obj_file ]
       args += [ src_file ]
       
-      args = ' '.join( map(str, cmd ) )
+      args = ' '.join( map(str, args ) )
       
       cwd = self.buildPath()
       
-      err = execCmd( self.cmd, args, cwd )
+      err = _execCmd( self.compiler, args, cwd )
       if err: raise err
       
       return self.nodeTargets( obj_file, ideps = _readDeps( dep_file.name ) )
@@ -227,7 +228,7 @@ class GccCompilerImpl (Builder):
       
       obj_files = self.buildPaths( src_files ).add('.o')
       
-      err = self.__exec( cmd, cwd )
+      err = _execCmd( self.compiler, args, cwd )
       
       move_file = os.rename
       
@@ -249,19 +250,19 @@ class GccCompilerImpl (Builder):
       
       if err: raise err
     
-    return node_targets
+    return targets
   
   #//-------------------------------------------------------//
   
   def   build( self, build_manager, vfile, node ):
     
     src_file_values = node.sources()
-    src_nodes = node.targetNodes()
     
     if len(src_file_values) == 1:
-      targets = self.__buildOne( vfile, cmd, src_file_values[0] )
+      targets = self.__buildOne( vfile, src_file_values[0] )
     else:
-      targets = self.__buildMany( vfile, cmd, src_file_values, src_nodes )
+      src_nodes = node.targetNodes()
+      targets = self.__buildMany( vfile,  src_file_values, src_nodes )
       node.setTargetNodes( None )
     
     return targets
@@ -322,12 +323,14 @@ class GccCompiler(Builder):
     
     targets = self.nodeTargets()
     
-    src_nodes = self.__makeSrcNodes( vfile, node, targets )
+    src_nodes = self.__makeSrcNodes( vfile, node.sources(), targets )
     src_node_groups = self.__groupSrcNodes( src_nodes )
     
     node.setTargets( targets )
     
     pre_nodes = []
+    
+    compiler = self.compiler
     
     for src_nodes, src_values in src_node_groups:
       if len(src_values) == 1:
@@ -336,7 +339,7 @@ class GccCompiler(Builder):
         tnode = Node( compiler, src_values )
         tnode.setTargetNodes( src_nodes )
       
-      pre_node.append( tnode )
+      pre_nodes.append( tnode )
     
     return pre_nodes
   

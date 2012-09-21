@@ -101,7 +101,15 @@ class TestToolGcc( AqlTestCase ):
       try:
         
         obj = Node( cpp_compiler, src_files )
-        obj.build( None, vfile )
+        pre_nodes = obj.prebuild( vfile )
+        for node in pre_nodes:
+          self.assertFalse( node.actual( vfile ) )
+          node.build( None, vfile )
+          self.assertTrue( node.actual( vfile ) )
+        
+        self.assertFalse( obj.actual( vfile ) )
+        obj.build( None, vfile, pre_nodes )
+        self.assertTrue( obj.actual( vfile ) )
         
         vfile.close(); vfile.open( vfilename )
         
@@ -115,7 +123,14 @@ class TestToolGcc( AqlTestCase ):
         
         obj = Node( cpp_compiler, src_files )
         self.assertFalse( obj.actual( vfile, use_cache = False ) )
-        obj.build( None, vfile )
+        
+        pre_nodes = obj.prebuild( vfile )
+        for node in pre_nodes:
+          self.assertFalse( node.actual( vfile ) )
+          node.build( None, vfile )
+          self.assertTrue( node.actual( vfile ) )
+        
+        obj.build( None, vfile, pre_nodes )
         
         vfile.close(); vfile.open( vfilename )
         

@@ -82,7 +82,6 @@ class Node (object):
     'ideps_key',
     
     'signature',
-    'is_actual',
   )
   
   #//-------------------------------------------------------//
@@ -95,7 +94,6 @@ class Node (object):
     self.source_nodes, self.source_values = self._getSourceNodes( sources )
     self.dep_values = []
     self.dep_nodes = set()
-    self.is_actual = None
   
   #//=======================================================//
   
@@ -121,8 +119,6 @@ class Node (object):
   
   def   depends( self, deps ):
     
-    self.is_actual = None
-    
     append_node = self.dep_nodes.add
     append_value = self.dep_values.append
     
@@ -140,8 +136,6 @@ class Node (object):
     if not isinstance( node_targets, NodeTargets ):
       raise InvalidNodeTargetsType( node_targets )
     
-    self.is_actual = None
-    
     self.target_values = tuple( node_targets.target_values )
     self.itarget_values = tuple( node_targets.itarget_values )
     self.idep_values = tuple( node_targets.idep_values )
@@ -153,74 +147,56 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __getName( self ):
+  def   __setNameAndSignature( self ):
+    
     names = [ self.builder.name.encode('utf-8') ]
-    names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
-    names += sorted( map( lambda node: node.name_key, self.source_nodes ) )
-    
-    return names
-  
-  #//=======================================================//
-  
-  def   __keys( self ):
-     chcksum = hashlib.md5()
-     
-     for name in self.__getName():
-       chcksum.update( name )
-     
-     name_key = chcksum.digest()
-     
-     chcksum.update( b'target_values' )
-     targets_key = chcksum.digest()
-     
-     chcksum.update( b'itarget_values' )
-     itargets_key = chcksum.digest()
-     
-     chcksum.update( b'idep_values' )
-     ideps_key = chcksum.digest()
-     
-     return name_key, targets_key, itargets_key, ideps_key
-
-  #//=======================================================//
-  
-  def   __signature( self ):
-    
     sign = [ self.builder.signature ]
     
-    def _addSign( values, sign = sign ):
-      sign += map( lambda value: value.signature, sorted( values, key = lambda value: value.name) )
+    sources = self.sources()
     
-    def _addSignAndName( values, sign_append = sign.append ):
-      for value in sorted( values, key = lambda value: value.name ):
-        sign_append( value.name.encode('utf-8') )
-        sign_append( value.signature )
+    names += map( lambda value: value.name.encode('utf-8'), sources )
+    sign += map( lambda value: value.signature, sources )
     
-    _addSign( self.source_values )
+    deps = self.dependencies()
     
-    for node in self.source_nodes:
-      _addSignAndName( node.target_values )
+    sign += map( lambda value: value.name.encode('utf-8'), deps )
+    sign += map( lambda value: value.signature, deps )
     
-    _addSignAndName( self.dep_values )
+    #//-------------------------------------------------------//
+    #// Signature
     
-    for node in self.dep_nodes:
-      _addSignAndName( node.target_values )
-    
-    hash = hashlib.md5()
+    sign_hash = hashlib.md5()
     for s in sign:
-      hash.update( s )
+      sign_hash.update( s )
     
-    return hash.digest()
+    self.signature = sign_hash.digest()
+    
+    #//-------------------------------------------------------//
+    #// Name key
+    name_hash = hashlib.md5()
+    for s in names:
+      name_hash.update( s )
+    
+    self.name_key = name_hash.digest()
+    
+    #//-------------------------------------------------------//
+    #// Target keys
+    
+    name_hash.update( b'target_values' )
+    self.targets_key = name_hash.digest()
+   
+    name_hash.update( b'itarget_values' )
+    self.itargets_key = name_hash.digest()
+    
+    name_hash.update( b'idep_values' )
+    self.ideps_key = name_hash.digest()
   
   #//=======================================================//
   
   def   __getattr__( self, attr ):
-    if attr in ('name_key', 'targets_key', 'itargets_key', 'ideps_key'):
-      self.name_key, self.targets_key, self.itargets_key, self.ideps_key, = self.__keys()
+    if attr in ('name_key', 'targets_key', 'itargets_key', 'ideps_key', 'signature'):
+      self.__setNameAndSignature()
       return getattr(self, attr)
-    
-    if attr == 'signature':
-      self.signature = self.__signature()
-      return self.signature
     
     raise AttributeError( self, attr )
   
@@ -242,8 +218,6 @@ class Node (object):
     values.append( DependsValue( self.ideps_key,    self.idep_values )    )
     
     vfile.addValues( values )
-    
-    self.is_actual = True
   
   #//=======================================================//
   
@@ -269,11 +243,6 @@ class Node (object):
   
   def   actual( self, vfile, use_cache = True ):
     
-    if self.is_actual is not None:
-      return self.is_actual
-    
-    self.is_actual = None
-    
     sources_value = Value( self.name_key, self.signature )
     
     targets_value   = DependsValue( self.targets_key   )
@@ -284,12 +253,10 @@ class Node (object):
     values = vfile.findValues( values )
     
     if sources_value != values.pop(0):
-      self.is_actual = False
       return False
     
     for value in values:
       if not value.actual( use_cache ):
-        self.is_actual = False
         return False
     
     targets_value, itargets_value, ideps_value = values
@@ -298,7 +265,6 @@ class Node (object):
     self.itarget_values = itargets_value.content
     self.idep_values    = ideps_value.content
     
-    self.is_actual = True
     return True
   
   #//=======================================================//
@@ -309,7 +275,23 @@ class Node (object):
     for node in self.source_nodes:
       values += node.target_values
     
-    values = self.source_values
+    values += self.source_values
+    
+    values.sort( key = lambda v: v.name )
+    
+    return values
+  
+  #//=======================================================//
+  
+  def   dependencies(self):
+    values = []
+    
+    for node in self.dep_nodes:
+      values += node.target_values
+    
+    values += self.dep_values
+    
+    values.sort( key = lambda v: v.name )
     
     return values
   
@@ -336,22 +318,28 @@ class Node (object):
   #//=======================================================//
   
   def   clear( self, vfile ):
-    
-    self.is_actual = None
-    
-    values = [ DependsValue( self.targets_key  ), DependsValue( self.itargets_key  ) ]
+    try:
+      values = [ DependsValue( self.targets_key ), DependsValue( self.itargets_key ) ]
+    except AttributeError:
+      return False
     
     targets_value, itargets_value = vfile.findValues( values )
     target_values = targets_value.content
     itarget_values = itargets_value.content
     
+    self.target_values = target_values
+    self.itarget_values = itarget_values
+    
+    if isinstance( target_values, NoContent ):
+      target_values = tuple()
+      result = False
+    else:
+      result = True
+    
+    if isinstance( itarget_values, NoContent ):
+      itarget_values = tuple()
+    
     if itarget_values or target_values:
-      if isinstance( target_values, NoContent ):
-        target_values = tuple()
-      
-      if isinstance( itarget_values, NoContent ):
-        itarget_values = tuple()
-      
       self.builder.clear( self, target_values, itarget_values )
       
       values = []
@@ -363,6 +351,8 @@ class Node (object):
         value.content = no_content
       
       vfile.addValues( values )
+    
+    return result
   
   #//-------------------------------------------------------//
   

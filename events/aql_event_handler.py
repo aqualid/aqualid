@@ -90,21 +90,21 @@ class EventHandler( object ):
   
   @_status
   def   eventBuildingNode( self, node ):
-    logInfo("Building node: %s" % str(node) )
+    logInfo("Building node: %s" % node.builder.buildStr( node ) )
   
   #//-------------------------------------------------------//
   
   @_status
   def   eventBuildingNodeFinished( self, node ):
-    logInfo("Finished node: %s" % str(node) )
+    logInfo("Finished node: %s" % node.builder.buildStr( node ) )
   
   @_status
   def   eventRebuildNode( self, node ):
-    logInfo("Rebuild node: %s" % str(node) )
+    logInfo("Rebuild node: %s" % node.builder.buildStr( node ) )
   
   @_status
   def   eventFailedNode( self, node, error ):
-    logError("Failed node: %s" % str(node) )
+    logError("Failed node: %s" % node.builder.buildStr( node ) )
     logError("Error: %s" % str(error) )
     try:
       traceback.print_tb( error.__traceback__ )

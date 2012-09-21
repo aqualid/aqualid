@@ -1,8 +1,9 @@
 ﻿import sys
 import os.path
 import timeit
-import hashlib
 import shutil
+import hashlib
+from binascii import hexlify
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
@@ -143,8 +144,8 @@ class TestNodes( AqlTestCase ):
         
         vfile = ValuesFile( tmp.name )
         try:
-          with Tempfile() as tmp1:
-            with Tempfile() as tmp2:
+          with Tempfile( suffix = '.1' ) as tmp1:
+            with Tempfile( suffix = '.2' ) as tmp2:
               value1 = FileValue( tmp1.name )
               value2 = FileValue( tmp2.name )
               
@@ -162,9 +163,11 @@ class TestNodes( AqlTestCase ):
               value1 = FileValue( tmp1.name )
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
-              with Tempfile() as tmp3:
+              with Tempfile( suffix = '.3' ) as tmp3:
                 value3 = FileValue( tmp3.name )
+                
                 node3 = self._rebuildNode( vfile, builder, [value3], [], tmp_files )
+                
                 node = self._rebuildNode( vfile, builder, [value1, node3], [], tmp_files )
                 
                 # node3: CopyBuilder, tmp, i, tmp3 -> tmp3.tmp, ,tmp3.i

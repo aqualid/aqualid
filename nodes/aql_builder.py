@@ -115,7 +115,7 @@ class Builder (object):
     """
     Returns user friendly builder action string
     """
-    return str(self) + ': ' + ','.join( map( str, node.sources() ) )
+    return str(self) + ': ' + ', '.join( map( str, node.sources() ) )
   
   #//-------------------------------------------------------//
   
@@ -164,10 +164,7 @@ class Builder (object):
   
   def   sourceValue( self, value, use_cache = True ):
     if not isinstance( value, Value ):
-      if isinstance( value, str ):
-        value = FileValue( value, content = self.scontent_type, use_cache = use_cache )
-      else:
-        raise UnknownSourceValueType( value )
+      value = FileValue( value, content = self.scontent_type, use_cache = use_cache )
     
     return value
   
@@ -179,7 +176,8 @@ class Builder (object):
     for value in toSequence( values ):
       if not isinstance( value, Value ):
         value = FileValue( value, content = content_type, use_cache = use_cache )
-        dst_values.append( value )
+      
+      dst_values.append( value )
     
     return dst_values
   

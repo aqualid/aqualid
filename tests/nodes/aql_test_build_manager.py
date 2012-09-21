@@ -374,6 +374,7 @@ def   _generateNodeTree( bm, builder, node, depth ):
 
 @skip
 class TestBuildManagerSpeed( AqlTestCase ):
+  
   def test_bm_deps_speed(self):
     
     event_manager.reset()
