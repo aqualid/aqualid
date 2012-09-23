@@ -142,24 +142,22 @@ def   _execCmd( compiler, cl_options, cwd ):
 
 class GccCompilerImpl (Builder):
   
-  __slots__ = ('options', 'compiler', 'cl_options')
+  __slots__ = ( 'compiler', 'cl_options')
   
   def   __init__(self, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
     
-    self.options = options
     self.build_dir = options.build_dir.value()
     self.do_path_merge = options.do_build_path_merge.value()
     self.scontent_type = scontent_type
     self.tcontent_type = tcontent_type
     
-    self.compiler, self.cl_options = self.__cmdOptions( language )
+    self.compiler, self.cl_options = self.__cmdOptions( options, language )
     self.signature = self.__signature()
   
   #//-------------------------------------------------------//
   
-  def   __cmdOptions( self, language ):
-    
-    options = self.options
+  @staticmethod
+  def   __cmdOptions( options, language ):
     
     cl_options = ['-c', '-pipe', '-MMD', '-x', language ]
     if language == 'c++':
@@ -208,9 +206,7 @@ class GccCompilerImpl (Builder):
   
   #//===========================================================================//
 
-  def   __buildMany( self, vfile, src_file_values, src_nodes ):
-    
-    targets = self.nodeTargets()
+  def   __buildMany( self, vfile, src_file_values, src_nodes, targets ):
     
     build_dir = self.buildPath()
     
@@ -261,9 +257,18 @@ class GccCompilerImpl (Builder):
     if len(src_file_values) == 1:
       targets = self.__buildOne( vfile, src_file_values[0] )
     else:
-      src_nodes = node.targetNodes()
-      targets = self.__buildMany( vfile,  src_file_values, src_nodes )
-      node.setTargetNodes( None )
+      targets = self.nodeTargets()
+      values = []
+      nodes = []
+      for src_file_value in src_file_values:
+        node = Node( self, src_file_value )
+        if node.actual( vfile ):
+          targets += node.nodeTargets()
+        else:
+          values.append( src_file_value )
+          nodes.append( node )
+      
+      self.__buildMany( vfile, values, nodes, targets )
     
     return targets
   
@@ -284,36 +289,15 @@ class GccCompiler(Builder):
   
   #//-------------------------------------------------------//
   
-  def   __makeSrcNodes( self, vfile, src_file_values, targets ):
+  def   __groupSources( self, src_values ):
+    src_map = { FilePath( value.name ) : value for value in src_values }
     
-    compiler = self.compiler
-    
-    src_nodes = {}
-    for src_file_value in src_file_values:
-      node = Node( compiler, src_file_value )
-      
-      if node.actual( vfile ):
-        targets += node.nodeTargets()
-      else:
-        src_nodes[ FilePath( src_file_value ) ] = [node, src_file_value]
-    
-    return src_nodes
-  
-  #//-------------------------------------------------------//
-  
-  def   __groupSrcNodes( self, src_nodes ):
-    src_file_groups = FilePaths( src_nodes ).groupUniqueNames()
+    src_file_groups = FilePaths( src_map ).groupUniqueNames()
     
     groups = []
     
-    for src_files in src_file_groups:
-      nodes = []
-      values = []
-      for src_file in src_files:
-        nodes.append( src_nodes[ src_file ][0] )
-        values.append( src_nodes[ src_file ][1] )
-      
-      groups.append( (nodes, values) )
+    for group in src_file_groups:
+      groups.append( [ src_map[name] for name in group ] )
     
     return groups
   
@@ -321,25 +305,10 @@ class GccCompiler(Builder):
   
   def   prebuild( self, vfile, node ):
     
-    targets = self.nodeTargets()
-    
-    src_nodes = self.__makeSrcNodes( vfile, node.sources(), targets )
-    src_node_groups = self.__groupSrcNodes( src_nodes )
-    
-    node.setTargets( targets )
-    
-    pre_nodes = []
+    src_groups = self.__groupSources( node.sources() )
     
     compiler = self.compiler
-    
-    for src_nodes, src_values in src_node_groups:
-      if len(src_values) == 1:
-        tnode = src_nodes[0]
-      else:
-        tnode = Node( compiler, src_values )
-        tnode.setTargetNodes( src_nodes )
-      
-      pre_nodes.append( tnode )
+    pre_nodes = [ Node( compiler, src_values ) for src_values in src_groups ]
     
     return pre_nodes
   
@@ -347,7 +316,7 @@ class GccCompiler(Builder):
   
   def   build( self, build_manager, vfile, node, pre_nodes ):
     
-    targets = node.nodeTargets()
+    targets = self.nodeTargets()
     
     for pre_node in pre_nodes:
       targets += pre_node.nodeTargets()

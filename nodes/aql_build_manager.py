@@ -350,7 +350,7 @@ class BuildManager (object):
     
     target_nodes = {}
     
-    getTails = self.__nodes.tails
+    get_tails = self.__nodes.tails
     
     build_nodes = self.__nodes_builder.build
     removeTailNode = self.__nodes.removeTail
@@ -362,7 +362,7 @@ class BuildManager (object):
     
     while True:
       
-      tails = getTails()
+      tails = get_tails()
       tails -= waiting_nodes
       tails.difference_update( failed_nodes )
       
@@ -408,17 +408,15 @@ class BuildManager (object):
     while True:
       
       tails = get_tails()
-      tails.difference_update( failed_nodes )
+      tails -= failed_nodes
       
       if not tails:
         break
       
       for node in tails:
-        print( " clear node: %s" % node )
         if node.clear( vfile ):
           remove_tail( node )
         else:
-          print( "failed_node: %s" % node )
           failed_nodes.add( node )
   
   #//-------------------------------------------------------//

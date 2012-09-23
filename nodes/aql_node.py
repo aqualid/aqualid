@@ -71,7 +71,6 @@ class Node (object):
     'dep_nodes',
     'dep_values',
     
-    'target_nodes',
     'target_values',
     'itarget_values',
     'idep_values',
@@ -139,11 +138,6 @@ class Node (object):
     self.target_values = tuple( node_targets.target_values )
     self.itarget_values = tuple( node_targets.itarget_values )
     self.idep_values = tuple( node_targets.idep_values )
-  
-  #//=======================================================//
-  
-  def   setTargetNodes( self, target_nodes ):
-    self.target_nodes = tuple( toSequence(target_nodes) )
   
   #//=======================================================//
   
@@ -304,11 +298,6 @@ class Node (object):
   
   def   sideEffects(self):
     return self.itarget_values
-  
-  #//=======================================================//
-  
-  def   targetNodes(self):
-    return self.target_nodes
   
   #//=======================================================//
   
