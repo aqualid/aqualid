@@ -60,7 +60,7 @@ class CopyBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    idep = Value( str(node), node.name_key )
+    idep = Value( str(node), b'' )
     
     for source_value in node.sources():
       new_name = source_value.name + '.' + self.ext
@@ -123,10 +123,10 @@ class TestNodes( AqlTestCase ):
     node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
-    for tmp_file in node.target_values:
+    for tmp_file in node.targets():
       tmp_files.append( tmp_file.name )
     
-    for tmp_file in node.itarget_values:
+    for tmp_file in node.sideEffects():
       tmp_files.append( tmp_file.name )
     
     return node
@@ -194,7 +194,7 @@ class TestNodes( AqlTestCase ):
                 node3 = self._rebuildNode( vfile, builder3, [value2], [], tmp_files )
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                node_tname = node.target_values[0].name
+                node_tname = node.targets()[0].name
                 
                 with open( node_tname, 'wb' ) as f:
                   f.write( b'333' )
@@ -204,15 +204,15 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                with open( node.itarget_values[0].name, 'wb' ) as f:
+                with open( node.sideEffects()[0].name, 'wb' ) as f:
                   f.write( b'abc' )
                   f.flush()
                 
-                FileValue( node.itarget_values[0].name, use_cache = False )
+                FileValue( node.sideEffects()[0].name, use_cache = False )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                v = Value( node.idep_values[0].name, None )
+                v = Value( node.ideps_value.content[0].name, None )
                 vfile.addValues( [v] )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )

@@ -23,7 +23,7 @@ import hashlib
 from aql_event_manager import event_manager
 from aql_errors import UnknownSourceValueType, UnknownAttribute, InvalidNodeTarget, InvalidNodeTargetsType
 from aql_value import Value, NoContent
-from aql_depends_value import DependsValue
+from aql_depends_value import DependsValue, DependsValueContent
 from aql_utils import toSequence
 
 #//---------------------------------------------------------------------------//
@@ -71,16 +71,10 @@ class Node (object):
     'dep_nodes',
     'dep_values',
     
-    'target_values',
-    'itarget_values',
-    'idep_values',
-    
-    'name_key',
-    'targets_key',
-    'itargets_key',
-    'ideps_key',
-    
-    'signature',
+    'sources_value',
+    'targets_value',
+    'itargets_value',
+    'ideps_value',
   )
   
   #//-------------------------------------------------------//
@@ -135,13 +129,13 @@ class Node (object):
     if not isinstance( node_targets, NodeTargets ):
       raise InvalidNodeTargetsType( node_targets )
     
-    self.target_values = tuple( node_targets.target_values )
-    self.itarget_values = tuple( node_targets.itarget_values )
-    self.idep_values = tuple( node_targets.idep_values )
+    self.targets_value.content = DependsValueContent( node_targets.target_values )
+    self.itargets_value.content = DependsValueContent( node_targets.itarget_values )
+    self.ideps_value.content = DependsValueContent( node_targets.idep_values )
   
   #//=======================================================//
   
-  def   __setNameAndSignature( self ):
+  def   __setValues( self ):
     
     names = [ self.builder.name.encode('utf-8') ]
     sign = [ self.builder.signature ]
@@ -163,7 +157,7 @@ class Node (object):
     for s in sign:
       sign_hash.update( s )
     
-    self.signature = sign_hash.digest()
+    signature = sign_hash.digest()
     
     #//-------------------------------------------------------//
     #// Name key
@@ -171,25 +165,27 @@ class Node (object):
     for s in names:
       name_hash.update( s )
     
-    self.name_key = name_hash.digest()
+    name_key = name_hash.digest()
+    
+    self.sources_value = Value( name_key, signature )
     
     #//-------------------------------------------------------//
-    #// Target keys
+    #// Targets
     
-    name_hash.update( b'target_values' )
-    self.targets_key = name_hash.digest()
-   
-    name_hash.update( b'itarget_values' )
-    self.itargets_key = name_hash.digest()
+    name_hash.update( b'targets' )
+    self.targets_value = DependsValue( name_hash.digest() )
     
-    name_hash.update( b'idep_values' )
-    self.ideps_key = name_hash.digest()
+    name_hash.update( b'itargets' )
+    self.itargets_value = DependsValue( name_hash.digest() )
+    
+    name_hash.update( b'ideps' )
+    self.ideps_value = DependsValue( name_hash.digest() )
   
   #//=======================================================//
   
   def   __getattr__( self, attr ):
-    if attr in ('name_key', 'targets_key', 'itargets_key', 'ideps_key', 'signature'):
-      self.__setNameAndSignature()
+    if attr in ('sources_value', 'targets_value', 'itargets_value', 'ideps_value'):
+      self.__setValues()
       return getattr(self, attr)
     
     raise AttributeError( self, attr )
@@ -201,15 +197,11 @@ class Node (object):
     if node_targets is not None:
       self.setTargets( node_targets )
     
-    values = [ Value( self.name_key, self.signature ) ]
+    values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     
-    values += self.target_values
-    values += self.itarget_values
-    values += self.idep_values
-    
-    values.append( DependsValue( self.targets_key,  self.target_values )  )
-    values.append( DependsValue( self.itargets_key, self.itarget_values ) )
-    values.append( DependsValue( self.ideps_key,    self.idep_values )    )
+    values += self.targets_value.content
+    values += self.itargets_value.content
+    values += self.ideps_value.content
     
     vfile.addValues( values )
   
@@ -242,27 +234,17 @@ class Node (object):
   
   def   actual( self, vfile ):
     
-    sources_value = Value( self.name_key, self.signature )
-    
-    targets_value   = DependsValue( self.targets_key   )
-    itargets_value  = DependsValue( self.itargets_key  )
-    ideps_value     = DependsValue( self.ideps_key     )
-    
-    values = [ sources_value, targets_value, itargets_value, ideps_value ]
+    values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     values = vfile.findValues( values )
     
-    if sources_value != values.pop(0):
+    if self.sources_value != values.pop(0):
       return False
     
     for value in values:
       if not value.actual():
         return False
     
-    targets_value, itargets_value, ideps_value = values
-    
-    self.target_values  = targets_value.content
-    self.itarget_values = itargets_value.content
-    self.idep_values    = ideps_value.content
+    self.targets_value, self.itargets_value, self.ideps_value = values
     
     return True
   
@@ -272,7 +254,7 @@ class Node (object):
     values = []
     
     for node in self.source_nodes:
-      values += node.target_values
+      values += node.targets_value.content
     
     values += self.source_values
     
@@ -286,7 +268,7 @@ class Node (object):
     values = []
     
     for node in self.dep_nodes:
-      values += node.target_values
+      values += node.targets_value.content
     
     values += self.dep_values
     
@@ -297,32 +279,29 @@ class Node (object):
   #//=======================================================//
   
   def   targets(self):
-    return self.target_values
+    return self.targets_value.content
   
   #//=======================================================//
   
   def   sideEffects(self):
-    return self.itarget_values
+    return self.itargets_value.content
   
   #//=======================================================//
   
   def   nodeTargets(self):
-    return NodeTargets( self.target_values, self.itarget_values, self.idep_values )
+    return NodeTargets( self.targets_value.content, self.itargets_value.content, self.ideps_value.content )
   
   #//=======================================================//
   
   def   clear( self, vfile ):
     try:
-      values = [ DependsValue( self.targets_key ), DependsValue( self.itargets_key ) ]
+      values = [ self.targets_value, self.itargets_value ]
     except AttributeError:
       return False
     
     targets_value, itargets_value = vfile.findValues( values )
     target_values = targets_value.content
     itarget_values = itargets_value.content
-    
-    self.target_values = target_values
-    self.itarget_values = itarget_values
     
     if isinstance( target_values, NoContent ):
       target_values = tuple()

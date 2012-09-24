@@ -122,7 +122,7 @@ class TestToolGcc( AqlTestCase ):
         FileValue( hdr_files[0], use_cache = False )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
+        self.assertFalse( obj.actual( vfile ) )
         
         pre_nodes = obj.prebuild( vfile )
         for node in pre_nodes:
@@ -130,7 +130,7 @@ class TestToolGcc( AqlTestCase ):
           node.build( None, vfile )
           self.assertTrue( node.actual( vfile ) )
         
-        self.assertTrue( obj.actual( vfile ) )
+        self.assertFalse( obj.actual( vfile ) )
         obj.prebuildFinished( vfile, pre_nodes )
         self.assertTrue( obj.actual( vfile ) )
         

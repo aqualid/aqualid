@@ -332,8 +332,8 @@ class BuildManager (object):
   
   def   __checkAlreadyBuilt( self, target_nodes, node ):
     values = []
-    values += node.target_values
-    values += node.itarget_values
+    values += node.targets()
+    values += node.sideEffects()
     
     vfile = self.valuesFile()
     
