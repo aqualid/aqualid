@@ -240,7 +240,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   actual( self, vfile, use_cache = True ):
+  def   actual( self, vfile ):
     
     sources_value = Value( self.name_key, self.signature )
     
@@ -255,7 +255,7 @@ class Node (object):
       return False
     
     for value in values:
-      if not value.actual( use_cache ):
+      if not value.actual():
         return False
     
     targets_value, itargets_value, ideps_value = values

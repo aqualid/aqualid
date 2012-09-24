@@ -338,11 +338,10 @@ class BuildManager (object):
     vfile = self.valuesFile()
     
     for value in values:
-      other_node = target_nodes.setdefault( value.name, node )
+      other_node, other_value = target_nodes.setdefault( value.name, (node, value) )
       
-      if other_node is not node:
-        if (other_node.name_key == node.name_key) or not other_node.actual( vfile ):
-          event_manager.eventTargetIsBuiltTwiceByNodes( value, node, other_node )
+      if other_value != value:
+        event_manager.eventTargetIsBuiltTwiceByNodes( value, node, other_node )
   
   #//-------------------------------------------------------//
   

@@ -100,7 +100,7 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name, content = NotImplemented, use_cache = False ):
+  def   __new__( cls, name, content = NotImplemented ):
     
     if isinstance( name, Value ):
       other = name

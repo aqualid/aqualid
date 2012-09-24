@@ -199,9 +199,9 @@ class   FileValue (Value):
   
   #//-------------------------------------------------------//
   
-  def   actual( self, use_cache = True ):
+  def   actual( self ):
     content = self.content
-    return content == type(content)( self.name, use_cache = use_cache )
+    return content == type(content)( self.name, use_cache = True )
   
   #//-------------------------------------------------------//
   

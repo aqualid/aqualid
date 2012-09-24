@@ -94,7 +94,7 @@ class   DependsValueContent (tuple):
 @pickleable
 class   DependsValue (Value):
   
-  def   __new__( cls, name, content = None, use_cache = False ):
+  def   __new__( cls, name, content = None ):
     
     if isinstance( name, DependsValue ):
       other = name
@@ -109,10 +109,10 @@ class   DependsValue (Value):
   
   #//-------------------------------------------------------//
   
-  def   actual( self, use_cache = True ):
+  def   actual( self ):
     try:
       for value in self.content:
-        if not value.actual( use_cache ):
+        if not value.actual():
           return False
     
     except TypeError:
