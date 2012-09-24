@@ -108,7 +108,7 @@ class TestToolGcc( AqlTestCase ):
           self.assertTrue( node.actual( vfile ) )
         
         self.assertFalse( obj.actual( vfile ) )
-        obj.build( None, vfile, pre_nodes )
+        obj.prebuildFinished( vfile, pre_nodes )
         self.assertTrue( obj.actual( vfile ) )
         
         vfile.close(); vfile.open( vfilename )
@@ -130,7 +130,9 @@ class TestToolGcc( AqlTestCase ):
           node.build( None, vfile )
           self.assertTrue( node.actual( vfile ) )
         
-        obj.build( None, vfile, pre_nodes )
+        self.assertFalse( obj.actual( vfile ) )
+        obj.prebuildFinished( vfile, pre_nodes )
+        self.assertTrue( obj.actual( vfile ) )
         
         vfile.close(); vfile.open( vfilename )
         

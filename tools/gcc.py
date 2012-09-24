@@ -314,14 +314,14 @@ class GccCompiler(Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node, pre_nodes ):
+  def   prebuildFinished( self, vfile, node, pre_nodes ):
     
     targets = self.nodeTargets()
     
     for pre_node in pre_nodes:
       targets += pre_node.nodeTargets()
     
-    return targets
+    node.save( vfile, targets )
   
   #//-------------------------------------------------------//
   

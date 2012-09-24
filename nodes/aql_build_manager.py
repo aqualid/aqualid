@@ -257,20 +257,21 @@ class _NodesBuilder (object):
     
     for node in nodes:
       pre_nodes = self.prebuild_nodes.pop( node, None )
+      
       if pre_nodes:
-        addTask( node, node.build, build_manager, vfile, pre_nodes )
+        node.prebuildFinished( vfile, pre_nodes )
       else:
-        if node.actual( vfile ):
-          completed_nodes.append( node )
-        else:
-          pre_nodes = node.prebuild( vfile )
-          
-          if not pre_nodes:
-            add_task( node, node.build, build_manager, vfile )
-          else:
-            self.prebuild_nodes[ node ] = pre_nodes
-            build_manager.depends( node, pre_nodes )
-            rebuild_nodes.append( node )
+        pre_nodes = node.prebuild( vfile )
+        if pre_nodes:
+          self.prebuild_nodes[ node ] = pre_nodes
+          build_manager.depends( node, pre_nodes )
+          rebuild_nodes.append( node )
+          continue
+      
+      if node.actual( vfile ):
+        completed_nodes.append( node )
+      else:
+        add_task( node, node.build, build_manager, vfile, pre_nodes )
     
     if not completed_nodes and not rebuild_nodes:
       for node, exception in self.task_manager.completedTasks():

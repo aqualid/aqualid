@@ -91,6 +91,14 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   prebuildFinished( self, vfile, node, pre_nodes ):
+    """
+    Called when all node returned by the prebuild() methods has been built
+    """
+    pass
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, build_manager, vfile, node, prebuild_nodes = None ):
     """
     Builds the node and returns a <NodeTargets> object.

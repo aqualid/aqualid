@@ -220,6 +220,11 @@ class Node (object):
   
   #//=======================================================//
   
+  def   prebuildFinished( self, vfile, prebuild_nodes ):
+    self.builder.prebuildFinished( vfile, self, prebuild_nodes )
+  
+  #//=======================================================//
+  
   def   build( self, build_manager, vfile, prebuild_nodes = None ):
     
     event_manager.eventBuildingNode( self )
