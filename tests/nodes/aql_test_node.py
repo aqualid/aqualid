@@ -112,7 +112,7 @@ class TestNodes( AqlTestCase ):
     node = Node( builder, values )
     node.depends( deps )
     
-    self.assertFalse( node.actual( vfile, use_cache = False ) )
+    self.assertFalse( node.actual( vfile ) )
     node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
@@ -200,11 +200,15 @@ class TestNodes( AqlTestCase ):
                   f.write( b'333' )
                   f.flush()
                 
+                FileValue( node_tname, use_cache = False )
+                
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
                 with open( node.itarget_values[0].name, 'wb' ) as f:
                   f.write( b'abc' )
                   f.flush()
+                
+                FileValue( node.itarget_values[0].name, use_cache = False )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 

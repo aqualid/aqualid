@@ -70,13 +70,11 @@ def   _generateSrcFiles( dir, name, count ):
 
 class TestToolGcc( AqlTestCase ):
 
-  def test_gcc_compile(self):
+  def test_gcc_compiler(self):
     
-      event_manager.setHandlers( EventHandler() )
+    event_manager.setHandlers( EventHandler() )
     
-    #~ with Tempdir() as tmp_dir:
-      
-      tmp_dir = Tempdir()
+    with Tempdir() as tmp_dir:
       
       root_dir = FilePath(tmp_dir)
       build_dir = root_dir.join('build')
@@ -121,8 +119,10 @@ class TestToolGcc( AqlTestCase ):
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
+        FileValue( hdr_files[0], use_cache = False )
+        
         obj = Node( cpp_compiler, src_files )
-        self.assertFalse( obj.actual( vfile, use_cache = False ) )
+        self.assertTrue( obj.actual( vfile ) )
         
         pre_nodes = obj.prebuild( vfile )
         for node in pre_nodes:
@@ -130,7 +130,7 @@ class TestToolGcc( AqlTestCase ):
           node.build( None, vfile )
           self.assertTrue( node.actual( vfile ) )
         
-        self.assertFalse( obj.actual( vfile ) )
+        self.assertTrue( obj.actual( vfile ) )
         obj.prebuildFinished( vfile, pre_nodes )
         self.assertTrue( obj.actual( vfile ) )
         
@@ -141,6 +141,66 @@ class TestToolGcc( AqlTestCase ):
         
       finally:
         vfile.close()
+  
+  #//-------------------------------------------------------//
+  
+  def test_gcc_compiler_bm(self):
+    
+    event_manager.setHandlers( EventHandler() )
+    
+    with Tempdir() as tmp_dir:
+      
+      root_dir = FilePath(tmp_dir)
+      build_dir = root_dir.join('build')
+      
+      src_dir   = root_dir.join('src')
+      os.makedirs( src_dir )
+      
+      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      
+      options = builtinOptions()
+      options.update( gccOptions() )
+      
+      options.cxx = "C:\\MinGW32\\bin\\g++.exe"
+      
+      options.build_dir_prefix = build_dir
+      
+      cpp_compiler = GccCompiler( options, 'c++' )
+      
+      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+      
+      bm = BuildManager( vfilename, 4, True )
+      vfile = ValuesFile( vfilename )
+      try:
+        
+        obj = Node( cpp_compiler, src_files )
+        self.assertFalse( obj.actual( vfile ) )
+        
+        bm.add( obj )
+        bm.build()
+        
+        bm.close()
+        
+        obj = Node( cpp_compiler, src_files )
+        self.assertTrue( obj.actual( vfile ) )
+        
+        with open( hdr_files[0], 'a' ) as f:
+          f.write("// end of file")
+        
+        FileValue( hdr_files[0], use_cache = False )
+        
+        bm = BuildManager( vfilename, 4, True )
+        obj = Node( cpp_compiler, src_files )
+        bm.add( obj )
+        bm.build()
+        
+        obj = Node( cpp_compiler, src_files )
+        self.assertTrue( obj.actual( vfile ) )
+        
+      finally:
+        vfile.close()
+        bm.close()
+        event_manager.finish()
   
 #//===========================================================================//
 
@@ -176,7 +236,7 @@ class TestToolGccSpeed( AqlTestCase ):
     for i in range(200):
       src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
       obj = Node( cpp_compiler, src_files, src_content_type = FileContentChecksum, target_content_type = FileContentChecksum )
-      bm.addNodes( obj )
+      bm.add( obj )
     
     #~ for i in range(200):
       #~ src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
