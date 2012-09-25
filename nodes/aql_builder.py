@@ -18,6 +18,7 @@
 #
 
 import os
+import errno
 
 from aql_value import Value
 from aql_node import NodeTargets
@@ -82,7 +83,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, vfile, node ):
+  def   prebuild( self, build_manager, vfile, node ):
     """
     Could be used to dynamically generate nodes which need to be built before the passed node
     Returns list of nodes
@@ -91,7 +92,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, vfile, node, pre_nodes ):
+  def   prebuildFinished( self, build_manager, vfile, node, prebuild_nodes ):
     """
     Called when all node returned by the prebuild() methods has been built
     """
@@ -136,7 +137,11 @@ class Builder (object):
   def   __makeDir( path_dir, _path_cache = set() ):
     if path_dir not in _path_cache:
       if not os.path.isdir( path_dir ):
-        os.makedirs( path_dir )
+        try:
+          os.makedirs( path_dir )
+        except OSError as e:
+          if e.errno != errno.EEXIST:
+            raise
       
       _path_cache.add( path_dir )
   

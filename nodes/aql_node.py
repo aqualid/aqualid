@@ -207,13 +207,13 @@ class Node (object):
   
   #//=======================================================//
   
-  def   prebuild( self, vfile ):
-    return self.builder.prebuild( vfile, self )
+  def   prebuild( self, build_manager, vfile ):
+    return self.builder.prebuild( build_manager, vfile, self )
   
   #//=======================================================//
   
-  def   prebuildFinished( self, vfile, prebuild_nodes ):
-    self.builder.prebuildFinished( vfile, self, prebuild_nodes )
+  def   prebuildFinished( self, build_manager, vfile, prebuild_nodes ):
+    self.builder.prebuildFinished( build_manager, vfile, self, prebuild_nodes )
   
   #//=======================================================//
   
@@ -258,7 +258,10 @@ class Node (object):
     
     values += self.source_values
     
+    #~ print("sources: values: %s" % str(list(map(str,values))))
     values.sort( key = lambda v: v.name )
+    
+    #~ print("sources: sorted values: %s" % str(list(map(str,values))))
     
     return values
   

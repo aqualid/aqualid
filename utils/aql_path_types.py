@@ -212,18 +212,26 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
   
   #//-------------------------------------------------------//
   
-  def   groupUniqueNames( self ):
+  def   groupUniqueNames( self, wish_groups = 1, max_group_size = -1 ):
     files = self
-    
+    wish_groups = max( 1, wish_groups )
     groups = []
+    
+    if max_group_size == -1:
+      max_group_size = len(files)
+    else:
+      max_group_size = max(1,max_group_size)
     
     while files:
       group_names = set()
       group_files = FilePaths()
       rest_files = FilePaths()
       
+      group_size = max(1, len(files) / max(1, wish_groups - len(groups) ) )
+      group_size = min( max_group_size, group_size )
+      
       for file in files:
-        if file.name in group_names:
+        if (len(group_files) >= group_size) or (file.name in group_names):
           rest_files.append( file )
         else:
           group_names.add( file.name )

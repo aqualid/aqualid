@@ -95,18 +95,19 @@ class TestToolGcc( AqlTestCase ):
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
       
+      bm = BuildManager( vfilename, 4, True )
       vfile = ValuesFile( vfilename )
       try:
         
         obj = Node( cpp_compiler, src_files )
-        pre_nodes = obj.prebuild( vfile )
+        pre_nodes = obj.prebuild( bm, vfile )
         for node in pre_nodes:
           self.assertFalse( node.actual( vfile ) )
           node.build( None, vfile )
           self.assertTrue( node.actual( vfile ) )
         
         self.assertFalse( obj.actual( vfile ) )
-        obj.prebuildFinished( vfile, pre_nodes )
+        obj.prebuildFinished( bm, vfile, pre_nodes )
         self.assertTrue( obj.actual( vfile ) )
         
         vfile.close(); vfile.open( vfilename )
@@ -124,14 +125,14 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, src_files )
         self.assertFalse( obj.actual( vfile ) )
         
-        pre_nodes = obj.prebuild( vfile )
+        pre_nodes = obj.prebuild( bm, vfile )
         for node in pre_nodes:
-          self.assertFalse( node.actual( vfile ) )
-          node.build( None, vfile )
+          if not node.actual( vfile ):
+            node.build( None, vfile )
           self.assertTrue( node.actual( vfile ) )
         
         self.assertFalse( obj.actual( vfile ) )
-        obj.prebuildFinished( vfile, pre_nodes )
+        obj.prebuildFinished( bm, vfile, pre_nodes )
         self.assertTrue( obj.actual( vfile ) )
         
         vfile.close(); vfile.open( vfilename )
@@ -156,7 +157,7 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 500 )
       
       options = builtinOptions()
       options.update( gccOptions() )

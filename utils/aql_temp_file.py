@@ -26,8 +26,8 @@ class Tempfile (object):
   
   __slots__ = ('__handle', 'name')
   
-  def   __init__(self, prefix = 'tmp', suffix = '', dir = None ):
-    self.__handle = tempfile.NamedTemporaryFile( mode = 'w+b', suffix = suffix, prefix = prefix, dir = dir, delete = False )
+  def   __init__(self, prefix = 'tmp', suffix = '', dir = None, mode = 'w+b'):
+    self.__handle = tempfile.NamedTemporaryFile( mode = mode, suffix = suffix, prefix = prefix, dir = dir, delete = False )
     self.name = self.__handle.name
   
   def   __str__(self):

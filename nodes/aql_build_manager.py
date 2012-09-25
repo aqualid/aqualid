@@ -259,9 +259,9 @@ class _NodesBuilder (object):
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
       if pre_nodes:
-        node.prebuildFinished( vfile, pre_nodes )
+        node.prebuildFinished( build_manager, vfile, pre_nodes )
       else:
-        pre_nodes = node.prebuild( vfile )
+        pre_nodes = node.prebuild( build_manager, vfile )
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           build_manager.depends( node, pre_nodes )
@@ -317,6 +317,11 @@ class BuildManager (object):
   
   def   valuesFile( self ):
     return self.__nodes_builder.vfile
+  
+  #//-------------------------------------------------------//
+  
+  def   jobs( self ):
+    return self.__nodes_builder.jobs
   
   #//-------------------------------------------------------//
   

@@ -67,6 +67,51 @@ class TestPathTypes( AqlTestCase ):
     groups = paths.groupUniqueNames()
     
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+    
+    groups = paths.groupUniqueNames( max_group_size = 1 )
+    
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt'], ['klm/file0.txt'], ['ghi/file1.txt' ] ])
+    
+    groups = paths.groupUniqueNames( max_group_size = 2 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt', 'ghi/file0.txt'], ['klm/file0.txt', 'ghi/file1.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 3 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt', 'ghi/file0.txt'], ['klm/file0.txt', 'ghi/file1.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 2 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'], ['ghi/file0.txt','ghi/file1.txt'], ['klm/file0.txt'] ])
+    
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file3.txt', 'klm/file4.txt', 'ghi/file5.txt', 'ghi/file6.txt' ])
+    groups = paths.groupUniqueNames( wish_groups = 2 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'], ['ghi/file3.txt', 'klm/file4.txt', 'ghi/file5.txt', 'ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 1 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file3.txt', 'klm/file4.txt', 'ghi/file5.txt', 'ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 3 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt', 'ghi/file3.txt'], ['klm/file4.txt', 'ghi/file5.txt', 'ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 4 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt', 'def/file2.txt'], ['ghi/file3.txt', 'klm/file4.txt'], ['ghi/file5.txt', 'ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 5 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file3.txt', 'klm/file4.txt'], ['ghi/file5.txt', 'ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 6 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file3.txt'], ['klm/file4.txt'], ['ghi/file5.txt', 'ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 7 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file3.txt'], ['klm/file4.txt'], ['ghi/file5.txt'], ['ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 8 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file3.txt'], ['klm/file4.txt'], ['ghi/file5.txt'], ['ghi/file6.txt' ] ])
+    
+    groups = paths.groupUniqueNames( wish_groups = 10 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file3.txt'], ['klm/file4.txt'], ['ghi/file5.txt'], ['ghi/file6.txt' ] ])
+    
+    paths = FilePaths(['file0.txt', 'file1.txt', 'file2.txt', 'file3.txt', 'file4.txt'])
+    groups = paths.groupUniqueNames( wish_groups = 4 )
+    self.assertEqual( groups, [ ['file0.txt'], ['file1.txt'], ['file2.txt'], ['file3.txt', 'file4.txt'] ] )
   
   #//=======================================================//
   

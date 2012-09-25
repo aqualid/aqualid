@@ -119,7 +119,7 @@ def   gccOptions():
 
 def   _execCmd( compiler, cl_options, cwd ):
   if len( cl_options ) > 4096:
-    cmd_file = Tempfile( suffix = '.cmd.args' )
+    cmd_file = Tempfile( mode = 'w+', suffix = '.cmd.args' )
     cl_options = cl_options.replace('\\', '/')
     cmd_file.write( cl_options )
     cmd_file.close()
@@ -268,7 +268,14 @@ class GccCompilerImpl (Builder):
           values.append( src_file_value )
           nodes.append( node )
       
-      self.__buildMany( vfile, values, nodes, targets )
+      num = len(values)
+      
+      if num == 1:
+        node_targets = self.__buildOne( vfile, values[0] )
+        nodes[0].save( vfile, node_targets )
+        targets += node_targets
+      elif num > 0:
+        self.__buildMany( vfile, values, nodes, targets )
     
     return targets
   
@@ -289,10 +296,17 @@ class GccCompiler(Builder):
   
   #//-------------------------------------------------------//
   
-  def   __groupSources( self, src_values ):
-    src_map = { FilePath( value.name ) : value for value in src_values }
+  def   __groupSources( self, src_values, wish_groups ):
     
-    src_file_groups = FilePaths( src_map ).groupUniqueNames()
+    src_files = FilePaths()
+    src_map = {}
+    
+    for value in src_values:
+      file = FilePath( value.name )
+      src_files.append( file )
+      src_map[ file ] = value
+    
+    src_file_groups = src_files.groupUniqueNames( wish_groups = wish_groups, max_group_size = -1 )
     
     groups = []
     
@@ -303,9 +317,12 @@ class GccCompiler(Builder):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, vfile, node ):
+  def   prebuild( self, build_manager, vfile, node ):
     
-    src_groups = self.__groupSources( node.sources() )
+    sources = node.sources()
+    src_groups = self.__groupSources( node.sources(), wish_groups = build_manager.jobs() )
+    
+    src_groups_str = [ [ str(value) for value in values] for values in src_groups ]
     
     compiler = self.compiler
     pre_nodes = [ Node( compiler, src_values ) for src_values in src_groups ]
@@ -314,7 +331,7 @@ class GccCompiler(Builder):
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, vfile, node, pre_nodes ):
+  def   prebuildFinished( self, build_manager, vfile, node, pre_nodes ):
     
     targets = self.nodeTargets()
     
