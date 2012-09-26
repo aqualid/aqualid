@@ -322,8 +322,6 @@ class GccCompiler(Builder):
     sources = node.sources()
     src_groups = self.__groupSources( node.sources(), wish_groups = build_manager.jobs() )
     
-    src_groups_str = [ [ str(value) for value in values] for values in src_groups ]
-    
     compiler = self.compiler
     pre_nodes = [ Node( compiler, src_values ) for src_values in src_groups ]
     
