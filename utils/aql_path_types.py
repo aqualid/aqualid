@@ -103,10 +103,11 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   change( self, dir = None, name = None, ext = None ):
+  def   change( self, dir = None, name = None, ext = None, prefix = None ):
     if dir is None: dir = self.dir
     if name is None: name = self.name
     if ext is None: ext = self.ext
+    if prefix: name = prefix + name
     
     return FilePath( os.path.join( dir, name + ext ) )
   

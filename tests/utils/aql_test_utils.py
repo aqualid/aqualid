@@ -122,8 +122,8 @@ class TestUtils( AqlTestCase ):
   #//===========================================================================//
   
   def   test_execCommand( self ):
-    result, out, err = execCommand("route")
-    self.assertTrue( out or err )
+    result = execCommand("route")
+    self.assertTrue( result.out or result.err )
   
 #//===========================================================================//
 

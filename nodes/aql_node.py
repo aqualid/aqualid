@@ -238,13 +238,17 @@ class Node (object):
     values = vfile.findValues( values )
     
     if self.sources_value != values.pop(0):
+      print("not actual sources: %s" % self )
       return False
     
     for value in values:
       if not value.actual():
+        print("not actual targets: %s" % self )
         return False
     
     self.targets_value, self.itargets_value, self.ideps_value = values
+    
+    print("actual: %s" % self )
     
     return True
   

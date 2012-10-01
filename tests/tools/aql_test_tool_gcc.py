@@ -16,7 +16,7 @@ from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_builtin_options import builtinOptions
 
-from gcc import GccCompiler, gccOptions
+from gcc import GccCompiler, GccArchiver, gccOptions
 
 #//===========================================================================//
 
@@ -157,7 +157,7 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 500 )
+      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
       options.update( gccOptions() )
@@ -197,6 +197,78 @@ class TestToolGcc( AqlTestCase ):
         
         obj = Node( cpp_compiler, src_files )
         self.assertTrue( obj.actual( vfile ) )
+        
+      finally:
+        vfile.close()
+        bm.close()
+        event_manager.finish()
+  
+  #//-------------------------------------------------------//
+  
+  def test_gcc_ar(self):
+    
+      event_manager.setHandlers( EventHandler() )
+    
+    #~ with Tempdir() as tmp_dir:
+      tmp_dir = Tempdir()
+      
+      root_dir = FilePath(tmp_dir)
+      build_dir = root_dir.join('build')
+      
+      src_dir   = root_dir.join('src')
+      os.makedirs( src_dir )
+      
+      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      
+      options = builtinOptions()
+      options.update( gccOptions() )
+      
+      options.cxx = "C:\\MinGW32\\bin\\g++.exe"
+      options.ar = "C:\\MinGW32\\bin\\ar.exe"
+      
+      options.build_dir_prefix = build_dir
+      
+      cpp_compiler = GccCompiler( options, 'c++' )
+      archiver = GccArchiver( 'foo', options )
+      
+      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+      
+      bm = BuildManager( vfilename, 4, True )
+      vfile = ValuesFile( vfilename )
+      try:
+        
+        obj = Node( cpp_compiler, src_files )
+        lib = Node( archiver, obj )
+        self.assertFalse( obj.actual( vfile ) )
+        
+        bm.add( obj )
+        bm.add( lib )
+        bm.build()
+        
+        bm.close()
+        
+        obj = Node( cpp_compiler, src_files )
+        self.assertTrue( obj.actual( vfile ) )
+        lib = Node( archiver, obj )
+        self.assertTrue( lib.actual( vfile ) )
+        
+        with open( hdr_files[0], 'a' ) as f:
+          f.write("// end of file")
+        
+        FileValue( hdr_files[0], use_cache = False )
+        
+        bm = BuildManager( vfilename, 4, True )
+        obj = Node( cpp_compiler, src_files )
+        lib = Node( archiver, obj )
+        bm.add( obj )
+        bm.add( lib )
+        bm.build()
+        
+        obj = Node( cpp_compiler, src_files )
+        self.assertTrue( obj.actual( vfile ) )
+        
+        lib = Node( archiver, obj )
+        self.assertTrue( lib.actual( vfile ) )
         
       finally:
         vfile.close()

@@ -368,6 +368,10 @@ class ToolGcc( ToolCxx ):
     pass
   
   @builder
+  def   Objects( self, env, sources, options ):
+    pass
+  
+  @builder
   def   StaticLibrary( self, env, sources, options ):
     pass
   

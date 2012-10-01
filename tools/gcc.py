@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import hashlib
+import itertools
 
 from aql_node import Node
 from aql_builder import Builder
@@ -84,6 +85,8 @@ def   _linkerOptions():
   
   options = Options()
   
+  options.ar = PathOptionType( description = "Static library archiver program" )
+  
   options.linkflags = ListOptionType( description = "Linker options" )
   options.libflags = ListOptionType( description = "Archiver options" )
   
@@ -117,32 +120,9 @@ def   gccOptions():
 
 #//===========================================================================//
 
-def   _execCmd( compiler, cl_options, cwd ):
-  if len( cl_options ) > 4096:
-    cmd_file = Tempfile( mode = 'w+', suffix = '.cmd.args' )
-    cl_options = cl_options.replace('\\', '/')
-    cmd_file.write( cl_options )
-    cmd_file.close()
-    cmd = compiler +' @' + cmd_file.name
-  else:
-    cmd = compiler + ' ' + cl_options
-    cmd_file = None
-  
-  try:
-    result, out, err = execCommand( cmd, cwd = cwd, env = None, stdout = None, stderr = None )    # TODO: env = options.os_env
-    if result:
-      return BuildError( out, err )
-  finally:
-    if cmd_file is not None:
-      cmd_file.remove()
-  
-  return None
-
-#//===========================================================================//
-
 class GccCompilerImpl (Builder):
   
-  __slots__ = ( 'compiler', 'cl_options')
+  __slots__ = ( 'cmd', )
   
   def   __init__(self, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
     
@@ -151,34 +131,36 @@ class GccCompilerImpl (Builder):
     self.scontent_type = scontent_type
     self.tcontent_type = tcontent_type
     
-    self.compiler, self.cl_options = self.__cmdOptions( options, language )
+    self.cmd = self.__cmd( options, language )
     self.signature = self.__signature()
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __cmdOptions( options, language ):
+  def   __cmd( options, language ):
     
-    cl_options = ['-c', '-pipe', '-MMD', '-x', language ]
     if language == 'c++':
-      cl_options += options.cxxflags.value()
-      compiler = options.cxx.value()
+      cmd = [ options.cxx.value() ]
     else:
-      cl_options += options.cflags.value()
-      compiler = options.cc.value()
+      cmd = [ options.cc.value() ]
     
-    cl_options += options.ccflags.value()
-    cl_options += _addPrefix( '-D', options.cppdefines.value() )
-    cl_options += _addPrefix( '-I', options.cpppath.value() )
-    cl_options += _addPrefix( '-I', options.ext_cpppath.value() )
+    cmd += ['-c', '-pipe', '-MMD', '-x', language ]
+    if language == 'c++':
+      cmd += options.cxxflags.value()
+    else:
+      cmd += options.cflags.value()
     
-    return compiler, ' '.join( cl_options )
+    cmd += options.ccflags.value()
+    cmd += itertools.product( ['-D'], options.cppdefines.value() )
+    cmd += itertools.product( ['-I'], options.cpppath.value() )
+    cmd += itertools.product( ['-I'], options.ext_cpppath.value() )
+    
+    return cmd
   
   #//-------------------------------------------------------//
   
   def   __signature( self ):
-    values = ''.join( [ self.compiler, self.cl_options ] )
-    return hashlib.md5( values.encode('utf-8') ).digest()
+    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
   
   #//-------------------------------------------------------//
   
@@ -187,20 +169,19 @@ class GccCompilerImpl (Builder):
       
       src_file = src_file_value.name
       
-      args = [self.cl_options]
+      cmd = list(self.cmd)
       
-      args += [ '-MF', dep_file.name ]
+      cmd += [ '-MF', dep_file.name ]
       
       obj_file = self.buildPath( src_file ) + '.o'
-      args += [ '-o', obj_file ]
-      args += [ src_file ]
-      
-      args = ' '.join( map(str, args ) )
+      cmd += [ '-o', obj_file ]
+      cmd += [ src_file ]
       
       cwd = self.buildPath()
       
-      err = _execCmd( self.compiler, args, cwd )
-      if err: raise err
+      result = execCommand( cmd, cwd, file_flag = '@' )
+      if result.failed():
+        raise result
       
       return self.nodeTargets( obj_file, ideps = _readDeps( dep_file.name ) )
   
@@ -215,16 +196,14 @@ class GccCompilerImpl (Builder):
     with Tempdir( dir = build_dir ) as tmp_dir:
       cwd = FilePath( tmp_dir )
       
-      args = [self.cl_options]
-      args += src_files
-      
-      args = ' '.join( args )
+      cmd = list(self.cmd)
+      cmd += src_files
       
       tmp_obj_files, tmp_dep_files = src_files.change( dir = cwd, ext = ['.o','.d'] )
       
       obj_files = self.buildPaths( src_files ).add('.o')
       
-      err = _execCmd( self.compiler, args, cwd )
+      result = execCommand( cmd, cwd, file_flag = '@' )
       
       move_file = os.rename
       
@@ -241,10 +220,10 @@ class GccCompilerImpl (Builder):
         
         src_node.save( vfile, node_targets )
         
-        if not err:
-          targets += node_targets
+        targets += node_targets
       
-      if err: raise err
+      if result.failed():
+        raise result
     
     return targets
   
@@ -282,7 +261,7 @@ class GccCompilerImpl (Builder):
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return self.compiler + ': ' + ' '.join( map( str, node.sources() ) )
+    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
 
 #//===========================================================================//
 
@@ -319,7 +298,6 @@ class GccCompiler(Builder):
   
   def   prebuild( self, build_manager, vfile, node ):
     
-    sources = node.sources()
     src_groups = self.__groupSources( node.sources(), wish_groups = build_manager.jobs() )
     
     compiler = self.compiler
@@ -342,4 +320,122 @@ class GccCompiler(Builder):
   
   def   buildStr( self, node ):
     return self.compiler.buildStr( node )
+
+#//===========================================================================//
+
+class GccArchiver(Builder):
+  
+  __slots__ = ('cmd', 'target')
+  
+  def   __init__(self, target, options, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    
+    self.target = target
+    self.build_dir = options.build_dir.value()
+    self.do_path_merge = options.do_build_path_merge.value()
+    self.scontent_type = scontent_type
+    self.tcontent_type = tcontent_type
+    
+    self.cmd = [ options.ar.value(), 'rcs' ]
+    self.signature = self.__signature()
+    
+    self.name = self.name + '.' + str(target)
+  
+  #//-------------------------------------------------------//
+  
+  def   __signature( self ):
+    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, vfile, node ):
+    
+    obj_files = node.sources()
+    archive = self.buildPath( self.target ).change( prefix = 'lib', ext = '.a', )
+    
+    cmd = list(self.cmd)
+    
+    cmd += [ archive ]
+    cmd += FilePaths( obj_files )
+    
+    cwd = self.buildPath()
+    
+    result = execCommand( cmd, cwd, file_flag = '@' )
+    if result.failed():
+      raise result
+    
+    return self.nodeTargets( archive )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildStr( self, node ):
+    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+
+#//===========================================================================//
+
+class GccLinker(Builder):
+  
+  __slots__ = ('cmd', 'target')
+  
+  def   __init__(self, target, options, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+    
+    self.target = target
+    self.build_dir = options.build_dir.value()
+    self.do_path_merge = options.do_build_path_merge.value()
+    self.scontent_type = scontent_type
+    self.tcontent_type = tcontent_type
+    
+    self.cmd = self.__cmd( options, language )
+    self.signature = self.__signature()
+    
+    self.name = self.name + '.' + str(target)
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __cmd( options, language ):
+    
+    if language == 'c++':
+      cmd = [ options.cxx.value() ]
+    else:
+      cmd = [ options.cc.value() ]
+    
+    cmd += [ '-pipe' ]
+    
+    cmd += options.linkflags.value()
+    cmd += itertools.product( ['-L'], options.libpath.value() )
+    cmd += itertools.product( ['-l'], options.libs.value() )
+    
+    return cmd
+  
+  #//-------------------------------------------------------//
+  
+  def   __signature( self ):
+    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, build_manager, vfile, node ):
+    
+    obj_files = node.sources()
+    archive = self.buildPath( self.target ).change( prefix = 'lib', ext = '.a', )
+    
+    cmd = list(self.cmd)
+    
+    cmd += [ archive ]
+    cmd += FilePaths( obj_files )
+    
+    cwd = self.buildPath()
+    
+    result = execCommand( cmd, cwd, file_flag = '@' )
+    if result.failed():
+      raise result
+    
+    return self.nodeTargets( archive )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildStr( self, node ):
+    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+
+
 

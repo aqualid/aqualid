@@ -26,8 +26,7 @@ import threading
 import traceback
 import inspect
 import subprocess
-
-from aql_errors import CommandExecFailed
+import tempfile
 
 #//===========================================================================//
 
@@ -288,7 +287,7 @@ def _decodeData( data ):
     codec = None
   
   if not codec:
-    codec = 'utf_8'
+    codec = 'utf-8'
   
   if not isinstance(data, str):
     data = data.decode( codec )
@@ -297,16 +296,83 @@ def _decodeData( data ):
 
 #//===========================================================================//
 
-def execCommand( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = None, env = None ):
-  try:
-    # print( "execCommand: %s" % cmd )
-    p = subprocess.Popen( cmd, stdout = stdout, stderr = stderr, cwd = cwd, env = env )
-    (stdoutdata, stderrdata) = p.communicate()
-    result = p.returncode
-  except Exception as ex:
-    raise CommandExecFailed( str(ex) + ': ' + cmd )
+class   ExecCommandResult( Exception ):
+  __slots__ = ('result', 'out', 'err', 'exception')
   
-  stdoutdata = _decodeData( stdoutdata )
-  stderrdata = _decodeData( stderrdata )
+  def   __init__( self, cmd, exception = None, result = None, out = None, err = None ):
+    msg = str()
+    
+    if exception:
+      msg += str(exception) + ', '
+    
+    if result:
+      msg += 'result: ' + str(result) + ', '
+    
+    if msg:
+      msg = "Command failed: %s%s%s" % (msg, result, cmd)
+      
+      if err:
+        msg += '\n' + err
+      elif out:
+        msg += '\n' + out
+    
+    self.exception = exception
+    self.result = result
+    self.out = out
+    self.err = err
+    
+    super(type(self), self).__init__( msg )
+  
+  def   failed( self ):
+    return (self.result != 0) or self.exception;
+  
+  def   __bool__( self ):
+    return self.failed();
+  
+  def   __nonzero__( self ):
+    return self.failed();
 
-  return result, stdoutdata, stderrdata
+try:
+  _MAX_CMD_LENGTH = os.sysconf('SC_ARG_MAX')
+except AttributeError:
+  _MAX_CMD_LENGTH = 32000  # 32768 default for windows
+
+def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH ):
+  
+  if file_flag:
+    cmd_length = sum( map(len, cmd ) ) + len(cmd) - 1
+    
+    if cmd_length > max_cmd_length:
+      args_str = subprocess.list2cmdline( cmd[1:] ).replace('\\', '\\\\')
+      
+      cmd_file = tempfile.NamedTemporaryFile( mode = 'w+', suffix = '.args', delete = False )
+      
+      cmd_file.write( args_str )
+      cmd_file.close()
+      
+      cmd = [cmd[0], file_flag + cmd_file.name ]
+    else:
+      cmd_file = None
+  
+  try:
+    try:
+      p = subprocess.Popen( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env )
+      (stdoutdata, stderrdata) = p.communicate()
+      result = p.returncode
+    except Exception as ex:
+      return ExecCommandResult( cmd, exception = ex )
+    
+    stdoutdata = _decodeData( stdoutdata )
+    stderrdata = _decodeData( stderrdata )
+    
+    return ExecCommandResult( cmd, result = result, out = stdoutdata, err = stderrdata )
+    
+  finally:
+    if cmd_file is not None:
+      cmd_file.close()
+      try:
+        os.remove( cmd_file.name )
+      except OSError as ex:
+        if ex.errno != errno.ENOENT:
+          raise
+
