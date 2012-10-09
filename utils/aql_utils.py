@@ -27,6 +27,11 @@ import traceback
 import inspect
 import subprocess
 import tempfile
+import itertools
+
+#//===========================================================================//
+
+IS_WINDOWS = (os.name == 'nt')
 
 #//===========================================================================//
 
@@ -308,8 +313,10 @@ class   ExecCommandResult( Exception ):
     if result:
       msg += 'result: ' + str(result) + ', '
     
+    cmd = ' '.join( toSequence(cmd) )
+    
     if msg:
-      msg = "Command failed: %s%s%s" % (msg, result, cmd)
+      msg = "Command failed: %s%s" % (msg, cmd)
       
       if err:
         msg += '\n' + err
@@ -339,6 +346,8 @@ except AttributeError:
 
 def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH ):
   
+  cmd_file = None
+  
   if file_flag:
     cmd_length = sum( map(len, cmd ) ) + len(cmd) - 1
     
@@ -351,15 +360,15 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
       cmd_file.close()
       
       cmd = [cmd[0], file_flag + cmd_file.name ]
-    else:
-      cmd_file = None
   
   try:
     try:
+      print("cmd: %s" % cmd)
       p = subprocess.Popen( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env )
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
     except Exception as ex:
+      raise
       return ExecCommandResult( cmd, exception = ex )
     
     stdoutdata = _decodeData( stdoutdata )
@@ -376,3 +385,44 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
         if ex.errno != errno.ENOENT:
           raise
 
+#//===========================================================================//
+
+def   findProgram( prog, env = None ):
+  
+  if env is None:
+    env = os.environ
+    paths = env.get('PATH', '')
+    path_exts = env.get('PATHEXT', '' )
+  else:
+    paths = env.get('PATH', '')
+    path_exts = env.get('PATHEXT', None )
+    if not path_exts:
+      path_exts = os.environ.get('PATHEXT', '')
+  
+  paths = paths.split( os.pathsep )
+  
+  #//-------------------------------------------------------//
+  
+  if path_exts:
+    path_exts = path_exts.split( os.pathsep )
+    if '' not in path_exts:
+      if IS_WINDOWS:
+        path_exts.append('')
+      else:
+        path_exts.insert(0,'')
+  else:
+    if IS_WINDOWS:
+      path_exts = ('.exe','.cmd','.bat','.com', '')
+    else:
+      path_exts = ('','.sh','.py','.pl')
+  
+  #//-------------------------------------------------------//
+  
+  prog = tuple( toSequence( prog ) )
+  
+  for path in itertools.product( prog, path_exts, paths ):
+    prog_path = os.path.normcase( os.path.expanduser( os.path.join( path[2], path[0] + path[1] ) ) )
+    if os.path.isfile( prog_path ):
+      return prog_path
+  
+  return None

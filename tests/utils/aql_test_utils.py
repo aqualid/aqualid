@@ -8,7 +8,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_utils import fileChecksum, isSequence, toSequence, equalFunctionArgs, checkFunctionArgs, getFunctionName, execCommand
+from aql_utils import fileChecksum, isSequence, toSequence, equalFunctionArgs, checkFunctionArgs, getFunctionName, execCommand, findProgram
 
 class TestUtils( AqlTestCase ):
   def test_isSequence(self):
@@ -121,9 +121,15 @@ class TestUtils( AqlTestCase ):
   
   #//===========================================================================//
   
-  def   test_execCommand( self ):
+  def   test_exec_command( self ):
     result = execCommand("route")
     self.assertTrue( result.out or result.err )
+  
+  #//===========================================================================//
+  
+  def   test_find_prog( self ):
+    self.assertTrue( findProgram( 'route' ) )
+    self.assertFalse( findProgram( 'route', env = {} ) )
   
 #//===========================================================================//
 
