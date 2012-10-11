@@ -34,7 +34,8 @@ class TestToolRsync( AqlTestCase ):
       tmp_dir = str(tmp_dir)
       
       mapping = RemotePathMapping( { tmp_dir : '/work/bar//',
-                                     tmp_dir : '/work/src/foo//'} )
+                                     tmp_dir : '/work/src/foo//'},
+                                    remote_path_sep = '/', local_path_sep = os.path.sep, cygwin_paths = False )
       
       rpath = '/work/src/foo/lib1/foo1.cpp'
       lpath = os.path.join( tmp_dir, 'lib0', 'main.cpp' )
@@ -44,9 +45,9 @@ class TestToolRsync( AqlTestCase ):
       
       mapping = RemotePathMapping()
       
-      mapping.add( tmp_dir + '/src/bar', '/work/src/bar/')
-      mapping.add( tmp_dir + '/src/tools', '/work/src/tools/')
-      mapping.add( tmp_dir + '/src/bar', '/work/src/tools')
+      mapping.add( tmp_dir + '/src/bar/', '/work/src/bar/')
+      mapping.add( tmp_dir + '/src/tools/', '/work/src/tools/')
+      mapping.add( tmp_dir + '/src/bar/', '/work/src/tools/')
       
       rpath = '/work/src/tools/lib1/foo1.cpp'
       self.assertEqual( mapping.remotePath( mapping.localPath( rpath ) ), rpath )
@@ -59,6 +60,18 @@ class TestToolRsync( AqlTestCase ):
       
       rpath = '/work/src/foo/lib1/foo1.cpp'
       self.assertEqual( mapping.localPath( rpath ), os.path.join( tmp_dir, 'foo','lib1','foo1.cpp' ) )
+      
+      mapping = RemotePathMapping( (( tmp_dir, '/work/bar//'),
+                                    ( tmp_dir + '/foo', '/work/src/foo/')),
+                                   cygwin_paths = True
+                                 )
+      
+      rpath = '/work/src/foo/lib1/foo1.cpp'
+      tmp_drive, tmp_path = os.path.splitdrive( tmp_dir )
+      if tmp_drive:
+        tmp_drive = '/cygdrive/' + tmp_drive[0].lower()
+      
+      self.assertEqual( mapping.localPath( rpath ), tmp_drive + tmp_path.replace('\\', '/') + '/foo/lib1/foo1.cpp' )
   
   #//-------------------------------------------------------//
  
@@ -73,13 +86,13 @@ class TestToolRsync( AqlTestCase ):
     #~ path_map = RemotePathMapping( {'/cygdrive/d/build_bench100k': '/home/me/work/build_bench100k/lib_0' } )
     host = None
     #~ path_map = RemotePathMapping( {'/cygdrive/d/test1': '/cygdrive/d/test1_backup' } )
-    path_map = RemotePathMapping( {'D:/test1': '/cygdrive/d/test1_backup' } )
+    path_map = RemotePathMapping( {'D:\\test1\\': 'd:\\test1_backup\\' }, cygwin_paths = True )
     
     sync = Rsync( rsync = rsync, host = host, path_map = path_map, env = env )
     #~ sync.syncRemote( '/cygdrive/d/test1', exclude = ['.svn'] )
     #~ sync.syncLocal( '/cygdrive/d/test1_backup', exclude = ['.svn'] )
-    sync.syncRemote( 'D:/test1', exclude = ['.svn'] )
-    sync.syncLocal( '/cygdrive/d/test1_backup', exclude = ['.svn'] )
+    sync.syncLocal( '/cygdrive/d/test1_backup', exclude = ['.svn', '*.txt'] )
+    sync.syncRemote( 'D:/test1' )
 
 #//===========================================================================//
 

@@ -26,25 +26,63 @@ class RemoteHost (object):
 #//===========================================================================//
 
 class   RemotePathMapping (object):
-    __slots__ = ( 'local_paths', 'remote_paths' )
+    __slots__ = (
+      'local_paths',
+      'remote_paths',
+      'local_path_sep',
+      'remote_path_sep',
+      'cygwin_paths'
+      )
     
     #//-------------------------------------------------------//
     
-    @staticmethod
-    def   __normRemotePath( path ):
-      return os.path.normpath( path ).replace('\\', '/') + '/'
-    
-    @staticmethod
-    def   __normLocalPath( path ):
-      #~ return os.path.normpath( path ).replace('\\', '/') + '/'
-      return os.path.normpath( path ) + os.path.sep
+    def   __normPath( self, path, path_sep ):
+      if not path:
+        path = '.'
+      
+      if self.cygwin_paths:
+        drive, path = os.path.splitdrive( path )
+        if drive.find(':') == 1:
+          drive = "/cygdrive/" + drive[0]
+        path = drive + path
+      
+      path = path.replace('\\', '/')
+      if path[-1] == '/':
+        last_sep = path_sep
+      else:
+        last_sep = ''
+      
+      path = os.path.normpath( path )
+      if path_sep != os.path.sep:
+        if path_sep == '/':
+          path = path.replace('\\', '/')
+        else:
+          path = path.replace('/', '\\')
+      
+      return path + last_sep
     
     #//-------------------------------------------------------//
     
-    def   __init__(self, mappings = {} ):
+    def   __normLocalPath( self, path ):
+      return self.__normPath( path, self.local_path_sep )
+    
+    def   __normRemotePath( self, path ):
+      return self.__normPath( path, self.remote_path_sep )
+    
+    #//-------------------------------------------------------//
+    
+    def   __init__(self, mappings = {}, remote_path_sep = '/', local_path_sep = os.path.sep, cygwin_paths = False ):
       
       self.local_paths = []
       self.remote_paths = []
+      
+      if cygwin_paths:
+        local_path_sep = '/'
+        remote_path_sep = '/'
+      
+      self.cygwin_paths = cygwin_paths
+      self.local_path_sep = local_path_sep
+      self.remote_path_sep = remote_path_sep
       
       try:
         mappings = mappings.items()
@@ -89,25 +127,25 @@ class   RemotePathMapping (object):
     
     #//-------------------------------------------------------//
     
-    def   localPath( self, remote_path ):
-      remote_path = self.__normRemotePath( remote_path )
+    def   __mapPath( self, src_path, src_paths, norm_srcpath, norm_dstpath,  ):
+      src_path = norm_srcpath( src_path )
       
-      for rpath, lpath in self.remote_paths:
-        if remote_path.startswith( rpath ):
-          return self.__normLocalPath( lpath + '/' + remote_path[len(rpath):-1] )
+      for spath, dpath in src_paths:
+        if src_path.startswith( spath ) or ((spath[-1] in ['/', '\\']) and spath[:-1] == src_path):
+          common_path = src_path[len(spath):]
+          if common_path:
+            return norm_dstpath( dpath + '/' + common_path )
+          return dpath
       
       return ''
     
     #//-------------------------------------------------------//
     
+    def   localPath( self, remote_path ):
+      return self.__mapPath( remote_path, self.remote_paths, self.__normRemotePath, self.__normLocalPath )
+    
     def   remotePath( self, local_path ):
-      local_path = self.__normLocalPath( local_path )
-      
-      for lpath, rpath in self.local_paths:
-        if local_path.startswith( lpath ):
-          return self.__normRemotePath( rpath + '/' + local_path[len(lpath):] )[:-1]
-      
-      return ''
+      return self.__mapPath( local_path, self.local_paths, self.__normLocalPath, self.__normRemotePath )
 
 #//===========================================================================//
 
