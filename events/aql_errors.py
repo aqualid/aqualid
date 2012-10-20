@@ -167,3 +167,10 @@ class   BuildError( Exception ):
   def   __init__( self, out, err ):
     msg = "Build error: '%s'" % str(err)
     super(type(self), self).__init__( msg )
+
+#//-------------------------------------------------------//
+
+class   ProgramNotFound( Exception ):
+  def   __init__( self, program, env ):
+    msg = "Program '%s' has not been found" % str(program)
+    super(type(self), self).__init__( msg )

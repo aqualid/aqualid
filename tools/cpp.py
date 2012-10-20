@@ -313,15 +313,15 @@ class ToolCxx( Tool ):
     pass
   
   @builder
-  def   StaticLibrary( self, env, sources, options ):
+  def   LinkStaticLibrary( self, env, sources, options ):
     pass
   
   @builder
-  def   SharedLibrary( self, env, sources, options ):
+  def   LinkSharedLibrary( self, env, sources, options ):
     pass
   
   @builder
-  def   Program( self, env, sources, options ):
+  def   LinkProgram( self, env, sources, options ):
     pass
 
 

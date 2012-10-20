@@ -344,7 +344,7 @@ try:
 except AttributeError:
   _MAX_CMD_LENGTH = 32000  # 32768 default for windows
 
-def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH ):
+def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH, stdin = None ):
   
   cmd_file = None
   
@@ -364,7 +364,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
   try:
     try:
       print("cmd: %s" % cmd)
-      p = subprocess.Popen( cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env )
+      p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env )
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
     except Exception as ex:

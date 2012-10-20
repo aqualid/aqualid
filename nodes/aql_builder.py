@@ -171,7 +171,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   sourceValues( self, values, use_cache = True ):
-    return map( self.sourceValue, toSequence( values ) )
+    return [ self.sourceValue( value, use_cache ) for value in toSequence( values ) ]
   
   #//-------------------------------------------------------//
   
