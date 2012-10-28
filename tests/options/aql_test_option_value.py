@@ -211,6 +211,23 @@ class TestOptionValue( AqlTestCase ):
     self.assertEqual( opt_value.value( None ), [2,1,2] )
     
     self.assertIs( opt_value.optionType(), opt_type1 )
+  
+  #//---------------------------------------------------------------------------//
+  
+  def test_option_value_dict(self):
+    opt_type1 = OptionType( value_type = dict )
+    
+    opt_value = OptionValue( opt_type1 )
+    
+    cond_value  = ConditionalValue( SetValue( {1:2} ) )
+    cond_value  = ConditionalValue( SetValue( {3:4} ) )
+    
+    opt_value.appendValue( cond_value )
+    
+    self.assertEqual( opt_value.value( {} ), {3:4} )
+    
+    opt_type1 = OptionType( value_type = Dict )
+
 
 #//===========================================================================//
 

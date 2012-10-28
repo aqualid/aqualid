@@ -355,8 +355,20 @@ class TestOptions( AqlTestCase ):
     options.build_dir_suffix = None
     
     self.assertTrue( options.do_build_path_merge )
+  
+  #//-------------------------------------------------------//
+  
+  def test_options_dict(self):
+    options = Options()
     
+    options.env = OptionType( value_type = dict )
+    options.env = {1:2}
     
+    print( options.env.value() )
+    
+    self.assertEqual( options.env.value(), {1:3} )
+    
+
 
 #//===========================================================================//
 

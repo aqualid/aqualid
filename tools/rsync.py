@@ -1,20 +1,12 @@
 import os
-import re
-import sys
-import shutil
-import hashlib
-import itertools
 
-from aql_node import Node
 from aql_builder import Builder
-from aql_utils import execCommand, toSequence
-from aql_path_types import FilePath, FilePaths
-from aql_errors import InvalidSourceValueType, BuildError
+from aql_utils import toSequence
 from aql_options import Options
-from aql_temp_file import Tempfile, Tempdir
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
+from aql_option_types import BoolOptionType, PathOptionType, StrOptionType
 
-#//===========================================================================//
+from aql_rsync import Rsync
+from aql_file_value import FileValue, DirValue
 
 #//===========================================================================//
 
@@ -31,69 +23,70 @@ def   rsyncOptions():
   
   options.rsync = 'rsync'
   options.If().rsync.has('cygwin').rsync_cygwin = True
+  
+  return options
 
 #//===========================================================================//
 
 """
-env.RsyncGet( '/work/cp/kh', local_path = src_dir )
+env.RsyncGet( remote_path = '/work/cp/kh', local_path = src_dir )
 
 prog = env.LinkProgram( target = 'test', obj_files )
 
-env.RsyncPut( prog, remote_path = '/work/cp/bin/' )
+env.RsyncPut( prog, local_path = '', remote_path = '/work/cp/bin/' )
 
 """
 
-class SyncLocalBuilder (Builder):
+class RSyncGetBuilder (Builder):
   # rsync -avzub --exclude-from=files.flt --delete-excluded -e "ssh -i dev.key" c4dev@dev:/work/cp/bp2_int/components .
   
-  __slots__ = ( 'rsync', )
+  __slots__ = ( 'rsync', 'local_path', 'remote_path', 'exclude' )
   
-  def   __init__(self, host, login, key_file, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+  def   __init__( self, options, local_path, remote_path, exclude = None, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
     
     self.scontent_type = scontent_type
     self.tcontent_type = tcontent_type
     
     rsync_prog = options.rsync.value()
     
-    host = RemoteHost( host, login, key_file )
+    host = options.rsync_host.value()
+    if host:
+      host = RemoteHost( host, options.rsync_log, options.rsync_key_file )
+      host_address = host.address
+    else:
+      host_address = ''
     
-    self.rsync = Rsync( rsync_prog, host, cygwin_paths = options.rsync_cygwin.value(), options.env.value() )
+    rsync = Rsync( rsync_prog, host, cygwin_paths = options.rsync_cygwin.value(), env = options.env.value() )
     
-    self.name = self.name + '.' + host.address
-    self.signature = bytearray()
+    self.rsync = rsync
+    self.local_path = local_path
+    self.remote_path = toSequence( remote_path )
+    self.exclude = toSequence( exclude )
+    
+    cls = self.__class__
+    self.name = '.'.join( [ cls.__module__ , cls.__name__ , host_address , str(local_path) ] )
+    self.signature = (','.join( self.remote_path ) + '.' +  ','.join( self.exclude )).encode('utf-8')
   
   #//-------------------------------------------------------//
   
   def   build( self, build_manager, vfile, node ):
     
-    src_file_values = node.sources()
+    local_path = self.local_path
     
-    if len(src_file_values) == 1:
-      targets = self.__buildOne( vfile, src_file_values[0] )
+    self.rsync.get( local_path, self.remote_path, exclude = self.exclude )
+    if os.path.isdir( local_path ):
+      target = DirValue( local_path )
     else:
-      targets = self.nodeTargets()
-      values = []
-      nodes = []
-      for src_file_value in src_file_values:
-        node = Node( self, src_file_value )
-        if node.actual( vfile ):
-          targets += node.nodeTargets()
-        else:
-          values.append( src_file_value )
-          nodes.append( node )
-      
-      num = len(values)
-      
-      if num == 1:
-        node_targets = self.__buildOne( vfile, values[0] )
-        nodes[0].save( vfile, node_targets )
-        targets += node_targets
-      elif num > 0:
-        self.__buildMany( vfile, values, nodes, targets )
+      target = FileValue( local_path )
     
-    return targets
+    return self.nodeTargets( target )
   
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+    if self.rsync.host:
+      remote_path = ' '.join( map( self.rsync.host.remotePath, self.remote_path ) )
+    else:
+      remote_path = ' '.join( self.remote_path )
+    
+    return self.rsync.cmd[0] + ': ' + remote_path + ' > ' + str(self.local_path)

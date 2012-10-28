@@ -186,7 +186,7 @@ class   FileValue (Value):
       name = other.name
     
       if content is NotImplemented:
-        content = type(other.content)( name )
+        content = type(other.content)
     else:
       name = FileName( name )
     
@@ -208,6 +208,26 @@ class   FileValue (Value):
   def   remove( self, os_remove = os.remove ):
     try:
       os_remove( self.name )
+    except OSError:
+      pass
+
+#//===========================================================================//
+
+@pickleable
+class   DirValue (FileValue):
+  
+  def   __new__( cls, name, content = NotImplemented, use_cache = False ):
+    
+    if content is NotImplemented:
+      content = FileContentTimeStamp
+    
+    return super(DirValue, cls).__new__( cls, name, content, use_cache = use_cache )
+  
+  #//-------------------------------------------------------//
+  
+  def   remove( self ):
+    try:
+      os.rmdir( self.name )
     except OSError:
       pass
 

@@ -8,8 +8,9 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_simple_types import IgnoreCaseString
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
+from aql_simple_types import IgnoreCaseString, UpperCaseString
+from aql_dict_types import Dict
 from aql_path_types import FilePath
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
@@ -17,6 +18,12 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 #//===========================================================================//
 
 class TestOptionTypes( AqlTestCase ):
+  
+  @classmethod
+  def   setUpClass( cls ):
+    event_manager.setHandlers( EventHandler() )
+  
+  #//===========================================================================//
   
   def test_bool_option(self):
     event_manager.setHandlers( EventHandler() )
@@ -87,8 +94,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_enum_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     optimization = EnumOptionType( values = ( ('off', 0), ('size', 1), ('speed', 2) ),
                                    description = 'Compiler optimization level', group = "Optimization" )
     
@@ -121,8 +126,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_enum_option_int(self):
-    event_manager.setHandlers( EventHandler() )
-    
     optimization = EnumOptionType( values = ( (0, 10), (1, 100), (2, 1000) ),
                                    description = 'Optimization level', group = "Optimization",
                                    value_type = int )
@@ -143,8 +146,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_range_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     warn_level = RangeOptionType( min_value = 0, max_value = 5, auto_correct = False,
                                   description = 'Warning level', group = "Diagnostics" )
     
@@ -184,8 +185,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_str_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     range_help = "<Case-insensitive string>"
     
     opt1 = OptionType( value_type = IgnoreCaseString, description = 'Option 1', group = "group1", range_help = range_help )
@@ -200,8 +199,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_int_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     opt1 = OptionType( value_type = int, description = 'Option 1', group = "group1" )
     
     self.assertEqual( opt1( 0 ), 0 )
@@ -256,8 +253,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_path_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     opt1 = OptionType( value_type = FilePath, description = 'Option 1', group = "group1" )
     
     self.assertEqual( opt1( 'abc' ), 'abc' )
@@ -269,8 +264,6 @@ class TestOptionTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_list_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     opt1 = ListOptionType( value_type = FilePath, description = 'Option 1', group = "group1" )
     
     self.assertEqual( opt1( 'abc' ), 'abc' )
@@ -298,6 +291,45 @@ class TestOptionTypes( AqlTestCase ):
     on = ListOptionType( value_type = int )
     self.assertEqual( on.rangeHelp(), ["List of type 'int'"] )
     
+  #//===========================================================================//
+  
+  def test_dict_option(self):
+    opt1 = OptionType( value_type = dict )
+    
+    self.assertEqual( opt1( {} ), {} )
+    self.assertEqual( opt1( {'ABC':1} ), {'ABC':1} )
+    
+    opt1 = OptionType( value_type = Dict )
+    
+    self.assertEqual( opt1( {} ), {} )
+    self.assertEqual( opt1( {'ABC':1} ), {'ABC':1} )
+    
+    ot = DictOptionType( key_type = int, value_type = int )
+    
+    self.assertEqual( str(ot( {1:2, 3:4} )), "1=2,3=4" )
+    self.assertEqual( ot( "1=2,3=4" ), "1=2,3=4" )
+    
+    env = OptionType( value_type = Dict )()
+    env['PATH'] = ListOptionType( separators = ':')()
+    env['PATH'] += '/work/bin'
+    env['PATH'] += '/usr/bin'
+    env['PATH'] += '/usr/local/bin'
+    env['HOME'] = PathOptionType()('/home/user')
+    env['HOME'] = '/home/guest'
+    
+    self.assertEqual( str(env['PATH']), ':'.join( ['/work/bin', '/usr/bin', '/usr/local/bin'] ) )
+    self.assertEqual( env['HOME'], '/home/guest' )
+    
+    env = DictOptionType( key_type = UpperCaseString )()
+    env['PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )()
+    env['HOME'] = PathOptionType()()
+    env['Path'] = '/work/bin'
+    env['Path'] += '/usr/bin'
+    env['path'] += '/usr/local/bin'
+    env['Home'] = '/home/user'
+    
+    self.assertEqual( str(env['PATH']), os.pathsep.join( map(os.path.normpath, ['/work/bin', '/usr/bin', '/usr/local/bin'] )) )
+    self.assertEqual( env['HOME'], os.path.normpath('/home/user') )
 
 
 #//===========================================================================//

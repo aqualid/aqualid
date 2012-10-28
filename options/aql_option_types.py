@@ -23,6 +23,7 @@ from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet,
 from aql_simple_types import IgnoreCaseString, Version
 from aql_path_types import FilePath
 from aql_list_types import UniqueList, List, SplitListType, ValueListType
+from aql_dict_types import Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
 
@@ -40,7 +41,15 @@ def   _ValueTypeProxy( option_type, value_type ):
       
       value = option_type._convert( value )
       
-      return super(_ValueTypeProxyImpl,cls).__new__( cls, value )
+      self = super(_ValueTypeProxyImpl,cls).__new__( cls, value )
+      super(_ValueTypeProxyImpl,self).__init__( value )
+      
+      return self
+    
+    #//-------------------------------------------------------//
+    
+    def   __init__( self, value = NotImplemented ):
+      pass
     
     #//-------------------------------------------------------//
     
@@ -685,3 +694,53 @@ class   ListOptionType (OptionType):
       return self.item_type.rangeHelp()
     
     return ["List of type '%s'" % self.item_type.__name__]
+
+#//===========================================================================//
+
+class   DictOptionType (OptionType):
+  
+  #//=======================================================//
+  
+  def   __init__( self, key_type = str, value_type = None, separators = ', ', description = None, group = None, range_help = None ):
+    
+    if isinstance(value_type, OptionType):
+      if description is None:
+        description = value_type.description
+        if description:
+          description = "List of: " + description
+      
+      if group is None:
+        group = value_type.group
+      
+      if range_help is None:
+        range_help = value_type.range_help
+    
+    self.value_types = {}
+    
+    dict_type = ValueDictType( Dict, key_type, value_type )
+    
+    if separators:
+      dict_type = SplitDictType( dict_type, separators )
+    
+    super(DictOptionType,self).__init__( dict_type, description, group, range_help )
+    self.value_type_proxy = dict_type
+  
+  #//-------------------------------------------------------//
+  
+  def   __call__( self, values = None ):
+    try:
+      if values is NotImplemented:
+        values = None
+      
+      return self.value_type( values )
+      
+    except (TypeError, ValueError):
+      raise InvalidOptionValue( self.value_type, values )
+
+  #//-------------------------------------------------------//
+  
+  def   rangeHelp( self ):
+    if self.range_help:
+      return list(toSequence( self.range_help ))
+    
+    return ["Dictionary of values"]
