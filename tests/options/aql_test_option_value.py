@@ -12,6 +12,7 @@ from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
 from aql_option_value import OptionValue, ConditionalValue, Condition, Operation, SimpleOperation
+from aql_dict_types import Dict
 
 from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 

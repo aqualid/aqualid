@@ -8,7 +8,9 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType
+from aql_simple_types import UpperCaseString
+from aql_path_types import FilePath
 from aql_option_value import OptionValue, ConditionalValue, Condition
 from aql_options import Options, AddValue, SubValue
 from aql_builtin_options import builtinOptions
@@ -358,17 +360,24 @@ class TestOptions( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
+  @skip
   def test_options_dict(self):
     options = Options()
     
-    options.env = OptionType( value_type = dict )
-    options.env = {1:2}
+    options.defines = DictOptionType( key_type = str, value_type = str )
+    options.env = DictOptionType( key_type = UpperCaseString )
+    options.env['PATH'] = ListOptionType( value_type = FilePath, separators = os.pathsep )()
+    options.env['HOME'] = FilePath()
+    options.env['Path'] = '/work/bin'
+    options.env['Path'] += '/usr/bin'
+    options.env['path'] += ['/usr/local/bin', '/home/user/bin']
+    options.env['Home'] = '/home/user'
+    #options.If().debug.eq(True).defines['DEBUG'].eq('1').strip_sym = False
     
-    print( options.env.value() )
+    path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin' ]))
     
-    self.assertEqual( options.env.value(), {1:3} )
-    
-
+    value = options.env.value()
+    self.assertEqual( value['path'], path )
 
 #//===========================================================================//
 

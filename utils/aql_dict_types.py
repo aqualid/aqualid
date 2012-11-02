@@ -22,6 +22,12 @@ from aql_utils import toSequence
 
 #//===========================================================================//
 
+class DictItem( tuple ):
+  def   __new__( cls, key, value ):
+    return super(DictItem, cls).__new__( cls, (key, value ) )
+
+#//===========================================================================//
+
 class   Dict (dict):
   
   #//-------------------------------------------------------//
@@ -30,6 +36,9 @@ class   Dict (dict):
   def   toItems( items ):
     if not items or (items is NotImplemented):
       return tuple()
+    
+    if isinstance( items, DictItem ):
+      return ( items, )
     
     try:
       items = items.items
@@ -53,6 +62,30 @@ class   Dict (dict):
         self[key] = value
     
     return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):
+    if isinstance( other, DictItem ): return self[ other[0] ] == other[1]
+    return super(Dict,self).__eq__( other )
+  
+  def   __lt__( self, other ):
+    if isinstance( other, DictItem ): return self[ other[0] ] < other[1]
+    return super(Dict,self).__lt__( other )
+  
+  def   __gt__( self, other ):
+    if isinstance( other, DictItem ): return self[ other[0] ] > other[1]
+    return super(Dict,self).__gt__( other )
+  
+  def   __ne__( self, other ):
+    return not (self == other)
+  
+  def   __le__( self, other ):
+    return not (self > other)
+  
+  def   __ge__( self, other ):
+    return not (self < other)
+
 
 #//===========================================================================//
 
@@ -85,7 +118,7 @@ def   SplitDictType( dict_type, separators ):
     
     @staticmethod
     def   __toSplitDict( items ):
-      if isinstance( items, SplitDict ):
+      if isinstance( items, (SplitDict, DictItem) ):
         return items
       
       return SplitDict( items )
@@ -103,12 +136,15 @@ def   SplitDictType( dict_type, separators ):
     #//-------------------------------------------------------//
     
     def update(self, other = None, **kwargs):
+      print(">> SplitDict.update: %s" % str(other) )
       other = self.__toItems( other )
       super(SplitDict,self).update( other )
       
       items = self.__toItems( kwargs )
       
       super(SplitDict,self).update( items )
+      
+      print("<< SplitDict.update: %s" % str(other) )
     
     #//-------------------------------------------------------//
     
@@ -142,6 +178,7 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
   
   def   _toValue( key, value, value_types = value_types, value_type = value_type ):
     try:
+      print(">> ValueDictType._toValue: %s" % str(value) )
       if value_type is None:
         value_type = value_types[ key ]
       if value_type is type(value):
@@ -149,6 +186,8 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
       return value_type( value )
     except KeyError:
       pass
+    finally:
+      print("<< ValueDictType._toValue: %s" % str(value) )
     
     value_types[ key ] = type(value)
     return value
@@ -164,18 +203,27 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
       
       items_tmp = []
       
-      for key, value in Dict.toItems( items ):
-        key = key_type( key )
-        value = _toValue( key, value )
-        items_tmp.append( (key, value) )
-      
-      return items_tmp
+      try:
+        for key, value in Dict.toItems( items ):
+          key = key_type( key )
+          value = _toValue( key, value )
+          items_tmp.append( (key, value) )
+        
+        return items_tmp
+      except ValueError:
+        print("_ValueDict.__toItems: %s" % str(Dict.toItems( items )) )
+        raise
     
     #//-------------------------------------------------------//
     
     def   __toValueDict( self, items ):
-      if isinstance( items, _ValueDict):
+      if isinstance( items, _ValueDict ):
         return items
+      elif isinstance( items, DictItem ):
+        key, value = items
+        key = key_type( key )
+        value = _toValue( key, value )
+        return DictItem( key, value )
       
       return _ValueDict( items )
     

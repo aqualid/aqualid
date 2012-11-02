@@ -24,6 +24,7 @@ import weakref
 
 from aql_utils import toSequence
 from aql_list_types import UniqueList, List
+from aql_dict_types import Dict, DictItem
 from aql_option_types import OptionType, ListOptionType
 from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
 from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType, ExistingOptionValue, ForeignOptionValue
@@ -45,6 +46,9 @@ def   _evalValue( other, options, context ):
 #//===========================================================================//
 
 def   _setOperator( dest_value, value ):
+  if isinstance( dest_value, Dict ) and isinstance( value, DictItem ):
+    dest_value.update( value )
+    return dest_value
   return value
 
 def   _notOperator( dest_value, value ):
@@ -56,6 +60,9 @@ def   _truthOperator( dest_value, value ):
 def   _updateOperator( dest_value, value ):
   if isinstance( dest_value, (UniqueList, List) ):
     dest_value += value
+    return dest_value
+  elif isinstance( dest_value, Dict ):
+    dest_value.update( value )
     return dest_value
   else:
     return value
@@ -86,44 +93,82 @@ def   TruthValue( value, operation = None ):
 
 class OptionValueProxy (object):
   
-  __slots__ = (
-    'option_value',
-    'options',
-  )
-  
-  def   __init__( self, option_value, options ):
+  def   __init__( self, option_value, options, key = NotImplemented ):
     self.option_value = option_value
     self.options = options
+    self.key = key
+    self.child_ref = None
   
   #//-------------------------------------------------------//
   
   def   value( self, context = None ):
-    return self.options.value( self.option_value, context )
+    self.child_ref = None
+    
+    v = self.options.value( self.option_value, context )
+    return v if self.key is NotImplemented else v[self.key]
   
   #//-------------------------------------------------------//
   
   def   __iadd__( self, other ):
+    self.child_ref = None
+    
+    if self.key is not NotImplemented:
+      other = DictItem(self.key, other)
+    
     self.options._appendValue( self.option_value, other, AddValue )
     return self
   
   #//-------------------------------------------------------//
   
   def   __isub__( self, other ):
+    self.child_ref = None
+    
+    if self.key is not NotImplemented:
+      other = DictItem(self.key, other)
+    
     self.options._appendValue( self.option_value, other, SubValue )
     return self
   
   #//-------------------------------------------------------//
   
   def   set( self, value, operation_type = SetValue, condition = None ):
+    self.child_ref = None
+    
+    if self.key is not NotImplemented:
+      value = DictItem(self.key, value)
+    
     self.options._appendValue( self.option_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other, context = None ):
+    self.child_ref = None
+    
     value = self.value( context )
     other = _evalValue( other, self.options, context )
     
     return cmp_operator( value, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   __setitem__( self, key, value ):
+    child_ref = self.child_ref
+    if (child_ref is not None) and (child_ref() is value):
+      return
+    
+    self.child_ref = None
+    
+    self.options._appendValue( self.option_value, DictItem(key, value), UpdateValue, None )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getitem__( self, key ):
+    if self.key is not NotImplemented:
+      raise KeyError( key )
+    
+    child = OptionValueProxy( self.option_value, self.options, key )
+    self.child_ref = weakref.ref( child )
+    return child
   
   #//-------------------------------------------------------//
   
@@ -148,6 +193,9 @@ class OptionValueProxy (object):
   def   __nonzero__(self):
     return bool( self.value() )
   
+  #~ def   __str__(self):
+    #~ return str( self.value() )
+  
   #//-------------------------------------------------------//
   
   def   has( self, other, context = None ):
@@ -161,16 +209,20 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   optionType( self ):
+    self.child_ref = None
     return self.option_value.option_type
   
 #//===========================================================================//
 
 class ConditionGeneratorHelper( object ):
   
-  def     __init__( self, name, options, condition  ):
-    self.name  = name
-    self.options  = options
-    self.condition  = condition
+  __slots__ = ('name', 'options', 'condition', 'key')
+  
+  def     __init__( self, name, options, condition, key = NotImplemented ):
+    self.name = name
+    self.options = options
+    self.condition = condition
+    self.key = key
   
   #//-------------------------------------------------------//
   
@@ -214,11 +266,31 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_operator, other ):
+    if self.key is not None:
+      other = DictItem( self.key, other )
+    
     condition = self.__makeCmpCondition( self.condition, cmp_operator, self.name, other )
     return ConditionGenerator( self.options, condition )
   
-  def   __getitem__( self, other ):
-    return self.cmp( operator.eq, other )
+  #//-------------------------------------------------------//
+  
+  def   __getitem__( self, key ):
+    if self.key is not NotImplemented:
+      raise KeyError( key )
+    
+    return ConditionGeneratorHelper( self.name, self.options, self.condition, key )
+  
+  #//-------------------------------------------------------//
+  
+  def   __setitem__( self, key, value ):
+    option_value = getattr( self, name ).option_value[ key ]
+    print("ConditionGeneratorHelper.__setitem__: key: %s, value: %s" % (key, value) )
+    if self.key != key:
+      print("OptionValueProxy.__setitem__: self.key: %s" % str(self.key) )
+      self.options._appendValue( self.option_value, DictItem(key, value), UpdateValue, None )
+  
+  #//-------------------------------------------------------//
+  
   def   eq( self, other ):
     return self.cmp( operator.eq, other )
   def   ne( self, other ):
@@ -356,11 +428,6 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   __setitem__( self, name, value ):
-    self.__setattr__( name, value )
-  
-  #//-------------------------------------------------------//
-  
   def   _get_value( self, name ):
     try:
       return (self.__dict__['__opt_values'][ name ], False)
@@ -378,11 +445,6 @@ class Options (object):
       raise AttributeError( name )
     
     return OptionValueProxy( opt_value, self )
-  
-  #//-------------------------------------------------------//
-  
-  def   __getitem__( self, name ):
-    return self.__getattr__( name )
   
   #//-------------------------------------------------------//
   
@@ -521,6 +583,7 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   _appendValue( self, option_value, value, operation_type = None, condition = None ):
+    print("Options._appendValue: value: %s" % str(value) )
     value = self._makeCondValue( value, operation_type, condition )
     self.clearCache()
     option_value.appendValue( value )
