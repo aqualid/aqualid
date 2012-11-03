@@ -8,7 +8,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType
+from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
 from aql_simple_types import UpperCaseString
 from aql_path_types import FilePath
 from aql_option_value import OptionValue, ConditionalValue, Condition
@@ -364,6 +364,9 @@ class TestOptions( AqlTestCase ):
   def test_options_dict(self):
     options = Options()
     
+    options.cxx = PathOptionType()
+    options.debug_on = BoolOptionType()
+    
     options.defines = DictOptionType( key_type = str, value_type = str )
     options.env = DictOptionType( key_type = UpperCaseString )
     options.env['PATH'] = ListOptionType( value_type = FilePath, separators = os.pathsep )()
@@ -372,11 +375,22 @@ class TestOptions( AqlTestCase ):
     options.env['Path'] += '/usr/bin'
     options.env['path'] += ['/usr/local/bin', '/home/user/bin']
     options.env['Home'] = '/home/user'
-    #options.If().debug.eq(True).defines['DEBUG'].eq('1').strip_sym = False
+    options.env['path'] += options.env['Home']
+    options.env['path'] += options.cxx
+    options.cxx = '/mingw/bin/g++'
+    options.If().debug_on.eq(False).defines['DEBUG'] = 'FALSE'
+    options.If().debug_on.eq(True).defines['DEBUG'] = 'TRUE'
+    options.If().defines['DEBUG'].eq('TRUE').defines['OPTS'] += 'D'
     
-    path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin' ]))
+    path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin', '/home/user' ] ))
     
+    print("defines: %s" % str(options.defines))
+    options.debug_on = True
+    print("defines: %s" % str(options.defines))
+    
+    print("=" * 100)
     value = options.env.value()
+    print("value['home']: %s " % value['home'] )
     self.assertEqual( value['path'], path )
 
 #//===========================================================================//

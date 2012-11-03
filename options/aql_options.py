@@ -31,15 +31,36 @@ from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType
 
 #//===========================================================================//
 
+class   OptionalValueItem( tuple ):
+  def   __new__( cls, key, opt_value ):
+    return super(OptionalValueItem, cls).__new__( cls, (key, opt_value ) )
+  
+  def   value( self, options, context ):
+    key, opt_value = self
+    return options.value( opt_value, context )[ key ]
+
+#//===========================================================================//
+
 def   _evalValue( other, options, context ):
+  if isinstance( other, DictItem ):
+    key, other = other
+  else:
+    key = NotImplemented
+  
   if isinstance( other, OptionValueProxy ):
     if other.options is not options:
       return other.value()
     
-    return other.value( context )
+    other = other.value( context )
   
   elif isinstance( other, OptionValue ):
-    return options.value( other, context )
+    other = options.value( other, context )
+  
+  elif isinstance( other, OptionalValueItem ):
+    other = other.value( options, context )
+  
+  if key is not NotImplemented:
+    other = DictItem( key, other )
   
   return other
 
@@ -109,6 +130,14 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   valueForCondition( self ):
+    if self.key is NotImplemented:
+      return self.option_value
+    
+    return OptionalValueItem( self.key, self.option_value )
+  
+  #//-------------------------------------------------------//
+  
   def   __iadd__( self, other ):
     self.child_ref = None
     
@@ -158,7 +187,7 @@ class OptionValueProxy (object):
     
     self.child_ref = None
     
-    self.options._appendValue( self.option_value, DictItem(key, value), UpdateValue, None )
+    self.options._appendValue( self.option_value, DictItem(key, value), SetValue, None )
   
   #//-------------------------------------------------------//
   
@@ -193,8 +222,8 @@ class OptionValueProxy (object):
   def   __nonzero__(self):
     return bool( self.value() )
   
-  #~ def   __str__(self):
-    #~ return str( self.value() )
+  def   __str__(self):
+    return str( self.value() )
   
   #//-------------------------------------------------------//
   
@@ -255,7 +284,7 @@ class ConditionGeneratorHelper( object ):
   
   @staticmethod
   def   __cmpValue( options, context, cmp_operator, name, other ):
-    return options[ name ].cmp( cmp_operator, other, context )
+    return getattr( options, name ).cmp( cmp_operator, other, context )
   
   #//-------------------------------------------------------//
   
@@ -283,11 +312,8 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   def   __setitem__( self, key, value ):
-    option_value = getattr( self, name ).option_value[ key ]
-    print("ConditionGeneratorHelper.__setitem__: key: %s, value: %s" % (key, value) )
-    if self.key != key:
-      print("OptionValueProxy.__setitem__: self.key: %s" % str(self.key) )
-      self.options._appendValue( self.option_value, DictItem(key, value), UpdateValue, None )
+    if not isinstance(value, ConditionGeneratorHelper):
+      self.options.appendValue( self.name, DictItem(key, value), SetValue, self.condition )
   
   #//-------------------------------------------------------//
   
@@ -315,12 +341,18 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   def   __iadd__( self, value ):
-   self.options.appendValue( self.name, value, AddValue, self.condition )
-   return self
+    if self.key is not None:
+      value = DictItem( self.key, value )
+    
+    self.options.appendValue( self.name, value, AddValue, self.condition )
+    return self
   
   #//-------------------------------------------------------//
   
   def   __isub__( self, value ):
+    if self.key is not None:
+      value = DictItem( self.key, value )
+    
     self.options.appendValue( self.name, value, SubValue, self.condition )
     return self
 
@@ -368,11 +400,19 @@ class Options (object):
     if operation_type is None:
       raise InvalidOptionValueType( value )
     
+    if isinstance( value, DictItem ):
+      key, value = value
+    else:
+      key = NotImplemented
+    
     if isinstance( value, OptionValueProxy ):
       if value.options is not self:
         raise ForeignOptionValue( None, value )
       
-      value = value.option_value
+      value = value.valueForCondition()
+    
+    if key is not NotImplemented:
+      value = DictItem( key, value )
     
     return ConditionalValue( operation_type( value ), condition )
   

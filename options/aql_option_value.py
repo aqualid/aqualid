@@ -171,3 +171,48 @@ class OptionValue (object):
   
   def   optionType( self ):
     return self.option_type
+
+#//===========================================================================//
+
+class OptionValueItem (object):
+  
+  __slots__ = (
+    'optional_value',
+    'key',
+  )
+  
+  def   __init__( self, optional_value, key ):
+    self.optional_value = optional_value
+    self.key = key
+  
+  #//-------------------------------------------------------//
+  
+  def   appendValue( self, conditional_value ):
+    self.optional_value.appendValue( conditional_value )
+  
+  #//-------------------------------------------------------//
+  
+  def   prependValue( self, conditional_value ):
+    self.optional_value.prependValue( conditional_value )
+  
+  #//-------------------------------------------------------//
+  
+  def   copy( self ):
+    return OptionValueItem( self.optional_value, self.key )
+  
+  #//-------------------------------------------------------//
+  
+  def   __copy__( self ):
+    return self.copy()
+  
+  #//-------------------------------------------------------//
+  
+  def   value( self, options, context = None ):
+    return self.optional_value( options, context )[ self.key ]
+  
+  #//-------------------------------------------------------//
+  
+  def   optionType( self ):
+    return self.optional_value.option_type
+
+
