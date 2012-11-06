@@ -26,6 +26,14 @@ from aql_value import Value, NoContent
 from aql_depends_value import DependsValue, DependsValueContent
 from aql_utils import toSequence
 
+#//===========================================================================//
+
+class   ErrorNodeNoTargets( Exception ):
+  def   __init__( self, node ):
+    msg = "Unable to get targets of node: '%s'" % str(node)
+    self.node = node
+    super(type(self), self).__init__( msg )
+
 #//---------------------------------------------------------------------------//
 
 def   _toValues( values ):
@@ -141,8 +149,11 @@ class Node (object):
     sign = [ self.builder.signature ]
     
     sources = self.sources()
-    
     names += map( lambda value: value.name.encode('utf-8'), sources )
+    
+    #names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
+    #names += sorted( map( lambda node: node.sources_value.name, self.source_nodes ) )
+    
     sign += map( lambda value: value.signature, sources )
     
     deps = self.dependencies()
@@ -254,7 +265,7 @@ class Node (object):
     values = []
     
     for node in self.source_nodes:
-      values += node.targets_value.content
+      values += node.targets()
     
     values += self.source_values
     
@@ -282,12 +293,20 @@ class Node (object):
   #//=======================================================//
   
   def   targets(self):
-    return self.targets_value.content
+    targets = self.targets_value.content
+    if isinstance( targets, NoContent ):
+      raise ErrorNodeNoTargets( self )
+    
+    return targets
   
   #//=======================================================//
   
   def   sideEffects(self):
-    return self.itargets_value.content
+    itargets = self.itargets_value.content
+    if isinstance( itargets, NoContent ):
+      raise ErrorNodeNoTargets( self )
+    
+    return itargets
   
   #//=======================================================//
   
@@ -297,10 +316,7 @@ class Node (object):
   #//=======================================================//
   
   def   clear( self, vfile ):
-    try:
-      values = [ self.targets_value, self.itargets_value ]
-    except AttributeError:
-      return False
+    values = [ self.targets_value, self.itargets_value ]
     
     targets_value, itargets_value = vfile.findValues( values )
     target_values = targets_value.content
@@ -308,9 +324,6 @@ class Node (object):
     
     if isinstance( target_values, NoContent ):
       target_values = tuple()
-      result = False
-    else:
-      result = True
     
     if isinstance( itarget_values, NoContent ):
       itarget_values = tuple()
@@ -318,7 +331,6 @@ class Node (object):
     if itarget_values or target_values:
       self.builder.clear( self, target_values, itarget_values )
       
-      values = []
       values += target_values
       values += itarget_values
       
@@ -327,8 +339,6 @@ class Node (object):
         value.content = no_content
       
       vfile.addValues( values )
-    
-    return result
   
   #//-------------------------------------------------------//
   

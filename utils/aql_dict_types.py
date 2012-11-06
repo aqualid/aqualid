@@ -136,15 +136,12 @@ def   SplitDictType( dict_type, separators ):
     #//-------------------------------------------------------//
     
     def update(self, other = None, **kwargs):
-      print(">> SplitDict.update: %s" % str(other) )
       other = self.__toItems( other )
       super(SplitDict,self).update( other )
       
       items = self.__toItems( kwargs )
       
       super(SplitDict,self).update( items )
-      
-      print("<< SplitDict.update: %s" % str(other) )
     
     #//-------------------------------------------------------//
     
@@ -178,7 +175,6 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
   
   def   _toValue( key, value, value_types = value_types, value_type = value_type ):
     try:
-      print(">> ValueDictType._toValue: %s" % str(value) )
       if value_type is None:
         value_type = value_types[ key ]
       if value_type is type(value):
@@ -186,8 +182,6 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
       return value_type( value )
     except KeyError:
       pass
-    finally:
-      print("<< ValueDictType._toValue: %s" % str(value) )
     
     value_types[ key ] = type(value)
     return value
@@ -211,7 +205,6 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
         
         return items_tmp
       except ValueError:
-        print("_ValueDict.__toItems: %s" % str(Dict.toItems( items )) )
         raise
     
     #//-------------------------------------------------------//

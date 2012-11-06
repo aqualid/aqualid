@@ -529,7 +529,6 @@ class Options (object):
       opt_values = self.values()
     
     for opt_value in toSequence(opt_values):
-      #~ print("setGroup: opt_value: %s" % str(opt_value))
       if isinstance( opt_value, OptionValueProxy ):
         opt_value = opt_value.option_value
       
@@ -623,7 +622,6 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   _appendValue( self, option_value, value, operation_type = None, condition = None ):
-    print("Options._appendValue: value: %s" % str(value) )
     value = self._makeCondValue( value, operation_type, condition )
     self.clearCache()
     option_value.appendValue( value )

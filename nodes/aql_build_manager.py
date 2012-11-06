@@ -402,27 +402,32 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   clear(self):
+    clear_nodes = []
+    
     get_tails = self.__nodes.tails
     
     remove_tail = self.__nodes.removeTail
     
-    failed_nodes = set()
+    outdated_nodes = set()
     
     vfile = self.valuesFile()
     
     while True:
-      
       tails = get_tails()
-      tails -= failed_nodes
+      tails -= outdated_nodes
       
       if not tails:
         break
       
       for node in tails:
-        if node.clear( vfile ):
+        if node.actual( vfile ):
           remove_tail( node )
+          clear_nodes.insert( 0, node )  # add nodes in LIFO order to clear nodes from root to leaf nodes
         else:
-          failed_nodes.add( node )
+          outdated_nodes.add( node )
+    
+    for node in clear_nodes:
+      node.clear( vfile )
   
   #//-------------------------------------------------------//
   

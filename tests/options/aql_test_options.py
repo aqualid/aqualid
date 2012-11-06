@@ -204,7 +204,7 @@ class TestOptions( AqlTestCase ):
     options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
     
     options.opt = 1
-    options.If().warn_level[3].opt += 10
+    options.If().warn_level.eq(3).opt += 10
     options.If().warn_level.ge(3).opt += 10
     
     options.warn_level = 3
@@ -256,7 +256,7 @@ class TestOptions( AqlTestCase ):
     options.warn_level = AddValue( options.opt )
     self.assertEqual( options.warn_level, 1 )
     
-    options.If().warn_level[ options.opt ].warn_level += 1
+    options.If().warn_level.eq( options.opt ).warn_level += 1
     self.assertEqual( options.warn_level, 2 )
     
     options.opt = 2
@@ -293,7 +293,7 @@ class TestOptions( AqlTestCase ):
     self.assertRaises( AttributeError, options.__getattr__, 'debug_on' )
     
     options.opt = options.warn_level
-    options['warn_level'] = 2
+    options.warn_level = 2
     self.assertEqual( options.opt, options.warn_level )
     self.assertEqual( options.opt, 2 )
     self.assertIn( 'opt', options )
@@ -380,18 +380,17 @@ class TestOptions( AqlTestCase ):
     options.cxx = '/mingw/bin/g++'
     options.If().debug_on.eq(False).defines['DEBUG'] = 'FALSE'
     options.If().debug_on.eq(True).defines['DEBUG'] = 'TRUE'
-    options.If().defines['DEBUG'].eq('TRUE').defines['OPTS'] += 'D'
+    options.defines['OPTS'] = ''
+    options.If().defines['DEBUG'].eq('TRUE').defines['OPTS'] += options.defines['DEBUG']
     
-    path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin', '/home/user' ] ))
+    path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin', '/home/user', '/mingw/bin/g++' ] ))
     
-    print("defines: %s" % str(options.defines))
-    options.debug_on = True
-    print("defines: %s" % str(options.defines))
-    
-    print("=" * 100)
     value = options.env.value()
-    print("value['home']: %s " % value['home'] )
     self.assertEqual( value['path'], path )
+    
+    self.assertEqual( options.defines['OPTS'], '' )
+    options.debug_on = True
+    self.assertEqual( options.defines['OPTS'], 'TRUE' )
 
 #//===========================================================================//
 

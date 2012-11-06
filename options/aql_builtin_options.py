@@ -206,13 +206,13 @@ def   _init_defaults( options ):
       return build_dir_prefix.join( build_dir_name, build_dir_suffix ).abs()
     
     options.build_dir = ConditionalValue( _joinBuildDir )
-    options.If().build_dir_suffix[ FilePath() ].do_build_path_merge = True
+    options.If().build_dir_suffix.eq( FilePath() ).do_build_path_merge = True
     
     #//-------------------------------------------------------//
     
     bv = options.If().build_variant
     
-    debug_build_variant = bv['debug']
+    debug_build_variant = bv.eq('debug')
     debug_build_variant.optimization        = 'off'
     debug_build_variant.inlining            = 'off'
     debug_build_variant.whole_optimization  = 'off'
@@ -226,7 +226,7 @@ def   _init_defaults( options ):
     speed_build_variant.debug_symbols         = 'off'
     speed_build_variant.runtime_debug         = 'off'
     
-    size_build_variant = bv['release_size']
+    size_build_variant = bv.eq('release_size')
     size_build_variant.optimization       = 'size'
     size_build_variant.inlining           = 'on'
     size_build_variant.whole_optimization = 'on'
