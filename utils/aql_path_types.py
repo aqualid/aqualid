@@ -46,7 +46,10 @@ class   FilePath (FilePathBase):
     if isinstance( path, FileValue ):
       path = path.name
     
-    path = os.path.normpath( str(path) )
+    path = str(path)
+    
+    if path:
+      path = os.path.normpath( path )
     
     return super(FilePath,cls).__new__( cls, path )
   

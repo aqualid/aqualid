@@ -32,6 +32,31 @@ from aql_utils import toSequence
 
 #//===========================================================================//
 
+"""
+@eventStatus
+def   eventRebuildNode( self, node ):
+  logInfo("Rebuild node: %s" % node.builder.buildStr( node ) )
+
+@eventStatus
+def   eventFailedNode( self, node, error ):
+  logError("Failed node: %s" % node.builder.buildStr( node ) )
+  logError("Error: %s" % str(error) )
+  try:
+    traceback.print_tb( error.__traceback__ )
+  except AttributeError:
+    pass
+
+@eventHandler
+def   eventFailedNode( self, node, error ):
+  logError("Failed node: %s" % node.builder.buildStr( node ) )
+  logError("Error: %s" % str(error) )
+  try:
+    traceback.print_tb( error.__traceback__ )
+  except AttributeError:
+    pass
+"""
+#//===========================================================================//
+
 class _NodesTree (object):
   
   __slots__ = \
@@ -395,8 +420,8 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   close( self ):
-    self.__nodes = _NodesTree()
     self.__nodes_builder.task_manager.finish()
+    self.__nodes = _NodesTree()
     self.__nodes_builder.vfile.close()
   
   #//-------------------------------------------------------//

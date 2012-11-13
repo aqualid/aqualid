@@ -41,7 +41,7 @@ def   _finishingEventFunction():
   raise _FinishingException()
 
 _exit_task = ( None, _exitEventFunction, [], {} )
-_finishing_task = ( None, _exitEventFunction, [], {} )
+_finishing_task = ( None, _finishingEventFunction, [], {} )
 
 #//===========================================================================//
 
@@ -70,21 +70,26 @@ class _TaskProcessor( threading.Thread ):
     is_finishing      = self.finish_event.is_set
     
     while not exit_event.is_set():
-      id, func, args, kw = tasks.get( block = not is_finishing() )
+      try:
+        block = not is_finishing()
+        
+        id, func, args, kw = tasks.get( block )
+        tasks.task_done()
+      except queue.Empty:
+        break
+      
       try:
         func(*args, **kw)
+        
         if id is not None:
           success = (id, None)
           completed_tasks.put( success )
       
-      except queue.Empty:
-        return
-      
       except _FinishingException:
-        pass
+        break
       
       except _ExitException:
-        exit_event.set()
+        break
       
       except (Exception, BaseException) as err:
         if id is not None:
@@ -94,11 +99,6 @@ class _TaskProcessor( threading.Thread ):
             exit_event.set()
         else:
           logWarning("Task failed with error: %s" % str(err) )
-      
-      finally:
-        tasks.task_done()
-    
-    tasks.put( _exit_task ) # exit other threads too
 
 #//===========================================================================//
 
@@ -141,13 +141,14 @@ class TaskManager (object):
   
   #//-------------------------------------------------------//
   
-  def   stop(self):
+  def   __stop( self, stop_event, stop_task ):
     
     if not self.threads:
       return
     
-    self.exit_event.set()
-    self.tasks.put( _exit_task )
+    stop_event.set()
+    for t in self.threads:
+      self.tasks.put( stop_task )
     
     for t in self.threads:
       t.join()
@@ -157,19 +158,13 @@ class TaskManager (object):
   
   #//-------------------------------------------------------//
   
-  def   finish(self):
-    
-    if not self.threads:
-      return
-    
-    self.finish_event.set()
-    self.tasks.put( _finishing_task )
-    
-    for t in self.threads:
-      t.join()
-    
-    self.threads = []
-    self.tasks = queue.Queue()
+  def   stop( self ):
+    self.__stop( self.exit_event, _exit_task )
+  
+  #//-------------------------------------------------------//
+  
+  def   finish( self ):
+    self.__stop( self.finish_event, _finishing_task )
   
   #//-------------------------------------------------------//
   

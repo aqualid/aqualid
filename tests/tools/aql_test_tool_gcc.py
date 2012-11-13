@@ -69,10 +69,20 @@ def   _generateSrcFiles( dir, name, count ):
 #//===========================================================================//
 
 class TestToolGcc( AqlTestCase ):
-
-  def test_gcc_compiler(self):
-    
+  
+  @classmethod
+  def   setUpClass( cls ):
     event_manager.setHandlers( EventHandler() )
+  
+  #//-------------------------------------------------------//
+  
+  @classmethod
+  def   tearDownClass( cls ):
+    event_manager.finish()
+  
+  #//-------------------------------------------------------//
+  
+  def test_gcc_compiler(self):
     
     with Tempdir() as tmp_dir:
       
@@ -97,8 +107,8 @@ class TestToolGcc( AqlTestCase ):
       
       bm = BuildManager( vfilename, 4, True )
       vfile = ValuesFile( vfilename )
+      
       try:
-        
         obj = Node( cpp_compiler, src_files )
         pre_nodes = obj.prebuild( bm, vfile )
         for node in pre_nodes:
@@ -146,8 +156,6 @@ class TestToolGcc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def test_gcc_compiler_bm(self):
-    
-    event_manager.setHandlers( EventHandler() )
     
     with Tempdir() as tmp_dir:
       
@@ -201,13 +209,10 @@ class TestToolGcc( AqlTestCase ):
       finally:
         vfile.close()
         bm.close()
-        event_manager.finish()
   
   #//-------------------------------------------------------//
   
   def test_gcc_ar(self):
-    
-      event_manager.setHandlers( EventHandler() )
     
     #~ with Tempdir() as tmp_dir:
       tmp_dir = Tempdir()
@@ -273,7 +278,6 @@ class TestToolGcc( AqlTestCase ):
       finally:
         vfile.close()
         bm.close()
-        event_manager.finish()
   
 #//===========================================================================//
 
@@ -281,8 +285,6 @@ class TestToolGcc( AqlTestCase ):
 class TestToolGccSpeed( AqlTestCase ):
 
   def test_gcc_compiler_speed(self):
-    
-    event_manager.setHandlers( EventHandler() )
     
     root_dir = FilePath("D:\\build_bench")
     build_dir = root_dir.join('build')
@@ -318,8 +320,6 @@ class TestToolGccSpeed( AqlTestCase ):
         #~ bm.addNodes( obj )
     
     bm.build()
-    
-    event_manager.finish()
     
 
 #//===========================================================================//

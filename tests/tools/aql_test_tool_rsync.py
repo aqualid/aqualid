@@ -14,12 +14,13 @@ from aql_build_manager import BuildManager
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_builtin_options import builtinOptions
-from aql_option_types import OptionType
+from aql_builtin_options import builtinOptions
 
-from rsync import RSyncGetBuilder, rsyncOptions
+from rsync import RSyncGetBuilder, RSyncPutBuilder, rsyncOptions
 
 #//===========================================================================//
 
+@skip
 class TestToolRsync( AqlTestCase ):
   
   @classmethod
@@ -30,15 +31,13 @@ class TestToolRsync( AqlTestCase ):
   
   def test_rsync_get(self):
     
-    event_manager.setHandlers( EventHandler() )
-    
     with Tempdir() as tmp_dir:
       
-      options = rsyncOptions()
+      options = builtinOptions()
+      options.update( rsyncOptions() )
       
-      options.rsync = r"C:\cygwin\bin\rsync.exe"
-      options.env = OptionType( value_type = dict )
-      options.env = {'PATH' : 'r"C:\cygwin\bin' }
+      options.env['PATH'] += r"C:\cygwin\bin"
+      options.rsync_cygwin = True
       
       rsync = RSyncGetBuilder( options, local_path = 'D:\\test1_local\\', remote_path = 'D:\\test1\\' )
       
@@ -55,6 +54,53 @@ class TestToolRsync( AqlTestCase ):
         
         rsync_files = Node( rsync, [] )
         self.assertTrue( rsync_files.actual( vfile ) )
+      
+      finally:
+        vfile.close()
+        bm.close()
+        event_manager.finish()
+  
+  #//-------------------------------------------------------//
+  
+  def test_rsync_put(self):
+    
+    with Tempdir() as tmp_dir:
+      
+      options = builtinOptions()
+      options.update( rsyncOptions() )
+      
+      options.env['PATH'] += r"C:\cygwin\bin"
+      options.rsync_cygwin = True
+      
+      rsync = RSyncPutBuilder( options, local_path = 'D:\\test1_local\\', remote_path = 'D:\\test1\\', exclude = [".svn", "test_*"] )
+      
+      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' ).name
+      
+      bm = BuildManager( vfilename, 4, True )
+      vfile = ValuesFile( vfilename )
+      try:
+        rsync_files = Node( rsync, [] )
+        self.assertFalse( rsync_files.actual( vfile ) )
+        
+        bm.add( rsync_files )
+        bm.build()
+        
+        rsync_files = Node( rsync, [] )
+        self.assertTrue( rsync_files.actual( vfile ) )
+        
+        sync_files  = [ r'd:\test1_local\sbe\sbe\list\list.hpp',
+                        r'd:\test1_local\sbe\sbe\path_finder\path_finder.hpp',
+                      ]
+        
+        rsync_files = Node( rsync, sync_files )
+        self.assertFalse( rsync_files.actual( vfile ) )
+        bm.add( rsync_files )
+        bm.build()
+        
+        rsync_files = Node( rsync, sync_files )
+        self.assertTrue( rsync_files.actual( vfile ) )
+        bm.add( rsync_files )
+        bm.build()
       
       finally:
         vfile.close()

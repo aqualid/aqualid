@@ -85,7 +85,19 @@ class   Dict (dict):
   
   def   __ge__( self, other ):
     return not (self < other)
-
+  
+  #//-------------------------------------------------------//
+  
+  def   copy( self, key_type = None, value_type = None ):
+    
+    other = Dict()
+    
+    for key, value in self.items():
+      if key_type:    key = key_type( key )
+      if value_type:  value = value_type( value )
+      other[ key ] = value
+    
+    return other
 
 #//===========================================================================//
 

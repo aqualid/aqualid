@@ -17,6 +17,7 @@ from aql_errors import NodeHasCyclicDependency
 from aql_build_manager import BuildManager
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
+from aql_logging import logLevel, CRITICAL
 
 #//===========================================================================//
 
@@ -191,7 +192,11 @@ class MultiChecksumBuilder (Builder):
 #//===========================================================================//
 
 class TestBuildManager( AqlTestCase ):
-
+  
+  @classmethod
+  def setUpClass( cls ):
+    logLevel( CRITICAL )
+  
   def test_bm_deps(self):
     
     bm = BuildManager( None, 0, True )
@@ -234,18 +239,18 @@ class TestBuildManager( AqlTestCase ):
   
   def test_bm_build(self):
   
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
+    #~ event_manager.reset()
+    #~ event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       src_files = _generateSourceFiles( 3, 201 )
       try:
         builder = ChecksumBuilder(0, 256 )
         _buildChecksums( tmp.name, builder, src_files )
-        _buildChecksums( tmp.name, builder, src_files )
-        builder = ChecksumBuilder(32, 1024 )
-        _buildChecksums( tmp.name, builder, src_files )
-        _buildChecksums( tmp.name, builder, src_files )
+        #~ _buildChecksums( tmp.name, builder, src_files )
+        #~ builder = ChecksumBuilder(32, 1024 )
+        #~ _buildChecksums( tmp.name, builder, src_files )
+        #~ _buildChecksums( tmp.name, builder, src_files )
         
       finally:
         _clearTargets( tmp.name, builder, src_files )

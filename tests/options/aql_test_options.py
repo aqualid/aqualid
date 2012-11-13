@@ -357,6 +357,8 @@ class TestOptions( AqlTestCase ):
     options.build_dir_suffix = None
     
     self.assertTrue( options.do_build_path_merge )
+    
+    print( options.env.value().copy( value_type = str ) )
   
   #//-------------------------------------------------------//
   

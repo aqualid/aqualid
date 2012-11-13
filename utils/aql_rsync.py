@@ -63,7 +63,7 @@ class   PathNormalizer( object ):
     else:
       last_sep = ''
     
-    path = os.path.normpath( path )
+    path = os.path.normcase( os.path.normpath( path ) )
     if path_sep != os.path.sep:
       if path_sep == '/':
         path = path.replace('\\', '/')
@@ -261,14 +261,12 @@ class   Rsync( object ):
   
   def   __init__( self, rsync, host, cygwin_paths = False, env = None ):
     
-    if rsync is None:
+    if not rsync:
       rsync = findProgram( 'rsync', env )
       if rsync is None:
         raise ProgramNotFound( 'rsync', env )
     
-    print( 'Rsync.__init__ env: %s' % str(env) )
-    
-    self.cmd = (rsync, '-avzubs')
+    self.cmd = (rsync, '-avzubsX')
     self.host = host if host else None
     self.path_normalizer = PathNormalizer( cygwin_paths = cygwin_paths )
     self.env = env
