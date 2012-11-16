@@ -22,7 +22,6 @@ import threading
 import hashlib
 
 from aql_event_manager import event_manager
-from aql_errors import NodeHasCyclicDependency, UnknownNode, NodeAlreadyExists, RemovingNonTailNode
 
 from aql_node import Node
 from aql_builder import RebuildNode
@@ -55,6 +54,34 @@ def   eventFailedNode( self, node, error ):
   except AttributeError:
     pass
 """
+#//===========================================================================//
+
+class   ErrorNodeDependencyCyclic( Exception ):
+  def   __init__( self, node ):
+    msg = "Node has a cyclic dependency: %s" % str(node)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorNodeDependencyUnknown(Exception):
+  def   __init__( self, node, dep_node ):
+    msg = "Unable to add dependency to node '%s' from node '%s'" % (node, dep_node)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   InternalErrorRemoveNonTailNode( Exception ):
+  def   __init__( self, node ):
+    msg = "Removing non-tail node: %s" % str(node)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   InternalErrorRemoveUnknownTailNode(Exception):
+  def   __init__( self, node, dep_node ):
+    msg = "Remove unknown tail node: : %s" % str(node)
+    super(type(self), self).__init__( msg )
+
 #//===========================================================================//
 
 class _NodesTree (object):
@@ -118,7 +145,7 @@ class _NodesTree (object):
         return
       
       if self.__hasCycle( node, new_deps ):
-        raise NodeHasCyclicDependency( node )
+        raise ErrorNodeDependencyCyclic( node )
       
       self.tail_nodes.discard( node )
       
@@ -131,8 +158,8 @@ class _NodesTree (object):
       for dep in new_deps:
         dep_nodes[ dep ].add( node )
     
-    except KeyError as node:
-      raise UnknownNode( node.args[0] )
+    except KeyError as dep_node:
+      raise ErrorNodeDependencyUnknown( node, dep_node.args[0] )
     
   #//-------------------------------------------------------//
   
@@ -175,9 +202,9 @@ class _NodesTree (object):
       
       try:
         if node_deps[node]:
-          raise RemovingNonTailNode( node )
+          raise InternalErrorRemoveNonTailNode( node )
       except KeyError as node:
-        raise UnknownNode( node.args[0] )
+        raise InternalErrorRemoveUnknownTailNode( node.args[0] )
       
       tail_nodes = self.tail_nodes
       

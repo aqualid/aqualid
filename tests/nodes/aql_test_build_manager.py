@@ -232,7 +232,7 @@ class TestBuildManager( AqlTestCase ):
     node0.depends( node5 ); bm.depends( node0, node5 ); bm.selfTest()
     node5.depends( node3 ); bm.depends( node5, node3 ); bm.selfTest()
     
-    with self.assertRaises(NodeHasCyclicDependency):
+    with self.assertRaises(ErrorNodeCyclicDependency):
       node4.depends( node3 ); bm.depends( node4, node3 ); bm.selfTest()
   
   #//-------------------------------------------------------//

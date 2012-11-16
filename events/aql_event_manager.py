@@ -23,8 +23,14 @@ import threading
 from aql_logging import logWarning
 from aql_utils import toSequence, equalFunctionArgs, checkFunctionArgs
 from aql_task_manager import TaskManager
-from aql_errors import InvalidHandlerMethodArgs
 from aql_event_handler import EventHandler, warning_events, info_events, debug_events, status_events, all_events
+
+#//===========================================================================//
+
+class   ErrorEventHandlerWrongArgs ( Exception ):
+  def   __init__( self, method ):
+    msg = "Invalid arguments of handler method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -40,7 +46,7 @@ def   _verifyHandlers( handlers, verbose ):
         else:
           method = getattr(EventHandler, event_method)
           if not equalFunctionArgs( method, handler_method ):
-            raise InvalidHandlerMethodArgs( event_method )
+            raise ErrorEventHandlerWrongArgs( event_method )
 
 #//===========================================================================//
 
@@ -138,7 +144,7 @@ class EventManager( object ):
         if task is not None:
           if __debug__:
             if not checkFunctionArgs( task, check_args, kw ):
-              raise InvalidHandlerMethodArgs( handler_method )
+              raise ErrorEventHandlerWrongArgs( handler_method )
           
           addTask( None, task, *args, **kw )
   

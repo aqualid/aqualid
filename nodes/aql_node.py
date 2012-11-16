@@ -21,7 +21,6 @@
 import hashlib
 
 from aql_event_manager import event_manager
-from aql_errors import UnknownSourceValueType, UnknownAttribute, InvalidNodeTarget, InvalidNodeTargetsType
 from aql_value import Value, NoContent
 from aql_depends_value import DependsValue, DependsValueContent
 from aql_utils import toSequence
@@ -36,13 +35,27 @@ class   ErrorNodeNoTargets( Exception ):
 
 #//---------------------------------------------------------------------------//
 
+class   ErrorNodeTargetIsNotValue( Exception ):
+  def   __init__( self, value ):
+    msg = "Type of node's target '%s' is not value" % str(type(value))
+    super(type(self), self).__init__( msg )
+
+#//---------------------------------------------------------------------------//
+
+class   ErrorNodeInvalidTargetsType( Exception ):
+  def   __init__( self, targets ):
+    msg = "Invalid type of node's targets: %s" % str(type(targets))
+    super(type(self), self).__init__( msg )
+
+#//---------------------------------------------------------------------------//
+
 def   _toValues( values ):
   
   dst_values = []
   
   for value in toSequence( values ):
     if not isinstance( value, Value ):
-      raise InvalidNodeTarget( value )
+      raise ErrorNodeTargetIsNotValue( value )
     dst_values.append( value )
   
   return dst_values
@@ -59,7 +72,7 @@ class NodeTargets (object):
   
   def   __iadd__(self, other):
     if not isinstance( other, NodeTargets ):
-      raise InvalidNodeTargetsType( other )
+      raise ErrorNodeInvalidTargetsType( other )
     
     self.target_values  += other.target_values
     self.itarget_values += other.itarget_values
@@ -135,7 +148,7 @@ class Node (object):
   
   def   setTargets( self, node_targets ):
     if not isinstance( node_targets, NodeTargets ):
-      raise InvalidNodeTargetsType( node_targets )
+      raise ErrorNodeInvalidTargetsType( node_targets )
     
     self.targets_value.content = DependsValueContent( node_targets.target_values )
     self.itargets_value.content = DependsValueContent( node_targets.itarget_values )

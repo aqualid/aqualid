@@ -19,11 +19,38 @@
 
 
 from aql_utils import toSequence
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, InvalidOptionType
 from aql_simple_types import IgnoreCaseString, Version
 from aql_path_types import FilePath
 from aql_list_types import UniqueList, List, SplitListType, ValueListType
 from aql_dict_types import Dict, SplitDictType, ValueDictType
+
+#//===========================================================================//
+
+class   ErrorOptionTypeEnumAliasIsAlreadySet( Exception ):
+  def   __init__( self, option, value, current_value, new_value ):
+    msg = "Alias '%s' of Enum Option '%s' can't be changed to '%s' from '%s'" % (value, option, new_value, current_value )
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorOptionTypeEnumValueIsAlreadySet( Exception ):
+  def   __init__( self, option, value, new_value ):
+    msg = "Value '%s' of Enum Option '%s' can't be changed to alias to '%s'" % (value, option, new_value )
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorOptionTypeUnableConvertValue( TypeError ):
+  def   __init__( self, value_type, value ):
+    msg = "Unable to convert value '%s' to type '%s'" % (value, value_type)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorOptionTypeNoEnumValues( TypeError ):
+  def   __init__( self, option_type ):
+    msg = "Enum option type '%s' doesn't have any values: '%s'" % str(option_type)
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -329,7 +356,7 @@ class   OptionType (object):
       
       return self.value_type( value )
     except (TypeError, ValueError):
-      raise InvalidOptionValue( self.value_type, value )
+      raise ErrorOptionTypeUnableConvertValue( self.value_type, value )
   
   #//-------------------------------------------------------//
   
@@ -488,9 +515,9 @@ class   EnumOptionType (OptionType):
         v = setDefaultValue( alias, value )
         if v != value:
           if alias == v:
-            raise EnumOptionValueIsAlreadySet( self, alias, value )
+            raise ErrorOptionTypeEnumValueIsAlreadySet( self, alias, value )
           else:
-            raise EnumOptionAliasIsAlreadySet( self, alias, v, value )
+            raise ErrorOptionTypeEnumAliasIsAlreadySet( self, alias, v, value )
   
   #//-------------------------------------------------------//
   
@@ -500,11 +527,11 @@ class   EnumOptionType (OptionType):
         try:
           return next(iter(self.__values.values()))
         except StopIteration:
-          raise InvalidOptionType( self )
+          raise ErrorOptionTypeNoEnumValues( self )
       
       return self.__values[ self.value_type( value ) ]
     except (KeyError, TypeError):
-      raise InvalidOptionValue( self, value )
+      raise ErrorOptionTypeUnableConvertValue( self, value )
   
   #//-------------------------------------------------------//
   
@@ -565,7 +592,7 @@ class   RangeOptionType (OptionType):
       try:
         min_value = self.value_type( min_value )
       except (TypeError, ValueError):
-        raise InvalidOptionValue( self, min_value )
+        raise ErrorOptionTypeUnableConvertValue( self.value_type, min_value )
     else:
       min_value = self.value_type()
       
@@ -573,7 +600,7 @@ class   RangeOptionType (OptionType):
       try:
         max_value = self.value_type( max_value )
       except (TypeError, ValueError):
-        raise InvalidOptionValue( self, max_value )
+        raise ErrorOptionTypeUnableConvertValue( self.value_type, max_value )
     else:
       max_value = self.value_type()
     
@@ -611,7 +638,7 @@ class   RangeOptionType (OptionType):
       return value
     
     except TypeError:
-      raise InvalidOptionValue( self, value )
+      raise ErrorOptionTypeUnableConvertValue( self.value_type, value )
   
   #//-------------------------------------------------------//
   
@@ -681,7 +708,7 @@ class   ListOptionType (OptionType):
       return self.value_type( values )
       
     except (TypeError, ValueError):
-      raise InvalidOptionValue( self.value_type, values )
+      raise ErrorOptionTypeUnableConvertValue( self.value_type, values )
 
   #//-------------------------------------------------------//
   
@@ -735,7 +762,7 @@ class   DictOptionType (OptionType):
       return self.value_type( values )
       
     except (TypeError, ValueError):
-      raise InvalidOptionValue( self.value_type, values )
+      raise ErrorOptionTypeUnableConvertValue( self.value_type, values )
 
   #//-------------------------------------------------------//
   

@@ -17,10 +17,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
-from aql_errors import UnpickleableValue
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
+
+#//===========================================================================//
+
+class   ErrorValueUnpickleable ( Exception ):
+  def   __init__( self, value ):
+    msg = "Value '%s' can't be serialized." % type(value).__name__ 
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
 
 @pickleable
 class DependsKeyContent (set):
@@ -76,17 +83,17 @@ class   DependsValueContent (tuple):
   #//-------------------------------------------------------//
   
   def   __getnewargs__(self):
-    raise UnpickleableValue( self )
+    raise ErrorValueUnpickleable( self )
   
   #//-------------------------------------------------------//
   
   def   __getstate__( self ):
-    raise UnpickleableValue( self )
+    raise ErrorValueUnpickleable( self )
   
   #//-------------------------------------------------------//
   
   def   __setstate__( self, state ):
-    raise UnpickleableValue( self )
+    raise ErrorValueUnpickleable( self )
 
 
 #//===========================================================================//

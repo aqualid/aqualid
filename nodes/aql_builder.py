@@ -22,7 +22,6 @@ import errno
 
 from aql_value import Value
 from aql_node import NodeTargets
-from aql_errors import UnknownSourceValueType
 from aql_utils import toSequence
 from aql_file_value import FileValue
 from aql_path_types import FilePath, FilePaths

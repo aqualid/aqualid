@@ -31,6 +31,18 @@ from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType
 
 #//===========================================================================//
 
+class   InternalErrorOptionsNoOperationType( TypeError ):
+  def   __init__( self, value ):
+    msg = "Operation type is not set during creation conditional value for value: '%s'" % str(value)
+    super(type(self), self).__init__( msg )
+
+class   ErrorOptionsOptionValueExists( TypeError ):
+  def   __init__( self, value_name, option_type ):
+    msg = "Unable to set option type '%s' to existing value '%s'" % (option_type, value_name)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
 class   OptionalValueItem( tuple ):
   def   __new__( cls, key, opt_value ):
     return super(OptionalValueItem, cls).__new__( cls, (key, opt_value ) )
@@ -398,7 +410,7 @@ class Options (object):
       return value
     
     if operation_type is None:
-      raise InvalidOptionValueType( value )
+      raise InternalErrorOptionsNoOperationType( value )
     
     if isinstance( value, DictItem ):
       key, value = value
@@ -443,7 +455,7 @@ class Options (object):
     #// Existing option
     else:
       if isinstance( value, OptionType ):
-        raise ExistingOptionValue( name, value )
+        raise ErrorOptionsOptionValueExists( name, value )
       
       elif isinstance( value, OptionValueProxy ):
         if value.option_value is opt_value:
