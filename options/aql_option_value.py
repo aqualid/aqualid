@@ -23,7 +23,6 @@ import operator
 from aql_utils import toSequence
 from aql_list_types import UniqueList, List
 
-
 #//===========================================================================//
 
 class   Condition(object):

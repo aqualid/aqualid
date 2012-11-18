@@ -5,7 +5,6 @@ from aql_value import Value, NoContent
 from aql_file_value import FileValue
 from aql_utils import toSequence, isSequence, execCommand
 from aql_simple_types import FilePath
-from aql_errors import InvalidSourceValueType
 
 # 1. Env( tools = ['c++'] )
 # 2. Tool 'c++': ToolGcc, ToolMSVS, ToolIntelC, ToolClang, ...

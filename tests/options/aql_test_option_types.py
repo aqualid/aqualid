@@ -9,11 +9,10 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
+from aql_option_types import ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet, ErrorOptionTypeUnableConvertValue
 from aql_simple_types import IgnoreCaseString, UpperCaseString
 from aql_dict_types import Dict
 from aql_path_types import FilePath
-
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 
 #//===========================================================================//
 
@@ -103,18 +102,15 @@ class TestOptionTypes( AqlTestCase ):
     for v, base in zip( values, base_values ):
       self.assertEqual( optimization( v ), base )
     
-    with self.assertRaises( InvalidOptionValue ):
-      optimization( 3 )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, optimization, 3 )
       
     optimization.addValues( {'final': 3} )
     
     optimization.addValues( {'final': 99} )
     optimization.addValues( {2: 'fast'} )
-    with self.assertRaises( EnumOptionAliasIsAlreadySet ):
-      optimization.addValues( {'slow': 'fast'} )
     
-    with self.assertRaises( EnumOptionValueIsAlreadySet ):
-      optimization.addValues( {'slow': 'speed'} )
+    self.assertRaises( ErrorOptionTypeEnumAliasIsAlreadySet, optimization.addValues, {'slow': 'fast'} )
+    self.assertRaises( ErrorOptionTypeEnumValueIsAlreadySet, optimization.addValues, {'slow': 'speed'} )
     
     optimization.addValues( ('ultra', 'speed') )
     self.assertEqual( optimization( 'ULTRA' ), 'ultra' )
@@ -138,10 +134,10 @@ class TestOptionTypes( AqlTestCase ):
     
     self.assertEqual( optimization(), 0 )
     
-    self.assertRaises( InvalidOptionValue, optimization, 3 )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, optimization, 3 )
     
     et = EnumOptionType( values = [] )
-    self.assertRaises( InvalidOptionValue, et )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, et )
 
   #//===========================================================================//
 
@@ -153,8 +149,8 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( warn_level( 5 ), 5 )
     self.assertEqual( warn_level( 3 ), 3 )
     
-    self.assertRaises( InvalidOptionValue, warn_level, 10 )
-    self.assertRaises( InvalidOptionValue, warn_level, -1 )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level, 10 )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level, -1 )
     
     warn_level = RangeOptionType( min_value = 0, max_value = 5, auto_correct = True,
                                   description = 'Warning level', group = "Diagnostics" )
@@ -171,15 +167,15 @@ class TestOptionTypes( AqlTestCase ):
     
     warn_level.setRange( min_value = None, max_value = None, auto_correct = False )
     self.assertEqual( warn_level( 0 ), 0 )
-    self.assertRaises( InvalidOptionValue, warn_level, 1 )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level, 1 )
     
     warn_level.setRange( min_value = None, max_value = None, auto_correct = True )
     self.assertEqual( warn_level( 0 ), 0 )
     self.assertEqual( warn_level( 10 ), 0 )
     self.assertEqual( warn_level( -10 ), 0 )
     
-    self.assertRaises( InvalidOptionValue, warn_level.setRange, min_value = "abc", max_value = None )
-    self.assertRaises( InvalidOptionValue, warn_level.setRange, min_value = None, max_value = "efg" )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level.setRange, min_value = "abc", max_value = None )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level.setRange, min_value = None, max_value = "efg" )
     
 
   #//===========================================================================//
@@ -204,7 +200,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( 0 ), 0 )
     self.assertEqual( opt1( '2' ), 2 )
     
-    self.assertRaises( InvalidOptionValue, opt1, 'a1' )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, opt1, 'a1' )
     
     self.assertEqual( opt1.rangeHelp(), ["Value of type 'int'"] )
     
@@ -284,7 +280,7 @@ class TestOptionTypes( AqlTestCase ):
     on = ListOptionType( value_type = int, unique = True, range_help = "List of integers" )
     
     self.assertEqual( on( '1,0,2,1,1,2,0' ), [1,0,2] )
-    self.assertRaises( InvalidOptionValue, on, [1,'abc'] )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, on, [1,'abc'] )
     
     self.assertEqual( on.rangeHelp(), ["List of integers"] )
     

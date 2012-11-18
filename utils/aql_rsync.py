@@ -3,8 +3,7 @@ import os.path
 import itertools
 import tempfile
 
-from aql_utils import execCommand, toSequence, findProgram
-from aql_errors import ProgramNotFound
+from aql_utils import execCommand, toSequence, whereProgram
 
 #//===========================================================================//
 
@@ -262,9 +261,7 @@ class   Rsync( object ):
   def   __init__( self, rsync, host, cygwin_paths = False, env = None ):
     
     if not rsync:
-      rsync = findProgram( 'rsync', env )
-      if rsync is None:
-        raise ProgramNotFound( 'rsync', env )
+      rsync = whereProgram( 'rsync', env )
     
     self.cmd = (rsync, '-avzubsX')
     self.host = host if host else None

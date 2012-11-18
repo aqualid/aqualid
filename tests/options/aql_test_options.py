@@ -13,10 +13,11 @@ from aql_simple_types import UpperCaseString
 from aql_path_types import FilePath
 from aql_option_value import OptionValue, ConditionalValue, Condition
 from aql_options import Options, AddValue, SubValue
-from aql_builtin_options import builtinOptions
 
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue, \
-                       InvalidOptionValueType, UnknownOptionType, ExistingOptionValue, ForeignOptionValue
+from aql_options import ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
+                        ErrorOptionsNewValueTypeIsNotOption, ErrorOptionsOptionValueExists
+
+from aql_builtin_options import builtinOptions
 
 #//===========================================================================//
 
@@ -263,17 +264,15 @@ class TestOptions( AqlTestCase ):
     
     self.assertEqual( options.warn_level, 3 )
     
-    #~ self.assertRaises( InvalidOptionValueType, options.warn_level.set, options.opt.option_value )
-    
     options2 = Options()
     options2.opt = RangeOptionType( min_value = 1, max_value = 100 )
-    self.assertRaises( ForeignOptionValue, options.warn_level.set, options2.opt )
+    self.assertRaises( ErrorOptionsForeignOptionValue, options.warn_level.set, options2.opt )
     
     options.warn_level.set( options.opt )
     self.assertEqual( options.warn_level, 2 )
     
-    self.assertRaises( InvalidOptionValueType, options.appendValue, 'warn_level', 1 )
-    self.assertRaises( UnknownOptionType, options.__setattr__, 'test', 1 )
+    self.assertRaises( ErrorOptionsOperationIsNotSpecified, options.appendValue, 'warn_level', 1 )
+    self.assertRaises( ErrorOptionsNewValueTypeIsNotOption, options.__setattr__, 'test', 1 )
     
     options.opt += options.opt
     
@@ -288,8 +287,8 @@ class TestOptions( AqlTestCase ):
     options.opt = RangeOptionType( min_value = 1, max_value = 100 )
     options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
     
-    self.assertRaises( ExistingOptionValue, options.__setattr__, 'opt', options.opt.option_value.optionType() )
-    self.assertRaises( ForeignOptionValue, options2.__setattr__, 'opt', options.opt )
+    self.assertRaises( ErrorOptionsOptionValueExists, options.__setattr__, 'opt', options.opt.option_value.optionType() )
+    self.assertRaises( ErrorOptionsForeignOptionValue, options2.__setattr__, 'opt', options.opt )
     self.assertRaises( AttributeError, options.__getattr__, 'debug_on' )
     
     options.opt = options.warn_level

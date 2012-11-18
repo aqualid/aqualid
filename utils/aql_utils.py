@@ -387,7 +387,14 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
 
 #//===========================================================================//
 
-def   findProgram( prog, env = None ):
+class   ErrorProgramNotFound( Exception ):
+  def   __init__( self, program, env ):
+    msg = "Program '%s' has not been found" % str(program)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+def   whereProgram( prog, env = None ):
   
   if env is None:
     env = os.environ
@@ -425,4 +432,4 @@ def   findProgram( prog, env = None ):
     if os.path.isfile( prog_path ):
       return prog_path
   
-  return None
+  return ErrorProgramNotFound( prog, env )

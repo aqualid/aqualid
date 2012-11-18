@@ -27,18 +27,27 @@ from aql_list_types import UniqueList, List
 from aql_dict_types import Dict, DictItem
 from aql_option_types import OptionType, ListOptionType
 from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
-from aql_errors import InvalidOptions, InvalidOptionValueType, UnknownOptionType, ExistingOptionValue, ForeignOptionValue
 
 #//===========================================================================//
 
-class   InternalErrorOptionsNoOperationType( TypeError ):
+class   ErrorOptionsOperationIsNotSpecified( TypeError ):
   def   __init__( self, value ):
-    msg = "Operation type is not set during creation conditional value for value: '%s'" % str(value)
+    msg = "Operation type is not set for value: '%s'" % str(value)
     super(type(self), self).__init__( msg )
 
 class   ErrorOptionsOptionValueExists( TypeError ):
   def   __init__( self, value_name, option_type ):
     msg = "Unable to set option type '%s' to existing value '%s'" % (option_type, value_name)
+    super(type(self), self).__init__( msg )
+
+class   ErrorOptionsNewValueTypeIsNotOption( TypeError ):
+  def   __init__( self, name, value ):
+    msg = "Type of the new value '%s' must be OptionType or OptionValue, value's type: %s" % (name, type(value))
+    super(type(self), self).__init__( msg )
+
+class   ErrorOptionsForeignOptionValue( TypeError ):
+  def   __init__( self, value ):
+    msg = "Can't assign OptionValue owned by other options: %s" % str(value)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -410,7 +419,7 @@ class Options (object):
       return value
     
     if operation_type is None:
-      raise InternalErrorOptionsNoOperationType( value )
+      raise ErrorOptionsOperationIsNotSpecified( value )
     
     if isinstance( value, DictItem ):
       key, value = value
@@ -419,7 +428,7 @@ class Options (object):
     
     if isinstance( value, OptionValueProxy ):
       if value.options is not self:
-        raise ForeignOptionValue( None, value )
+        raise ErrorOptionsForeignOptionValue( value )
       
       value = value.valueForCondition()
     
@@ -442,12 +451,12 @@ class Options (object):
       
       elif isinstance( value, OptionValueProxy ):
         if value.options is not self:
-          raise ForeignOptionValue( name, value )
+          raise ErrorOptionsForeignOptionValue( value )
         
         value = value.option_value
       
       elif not isinstance( value, OptionValue):
-        raise UnknownOptionType( name, value )
+        raise ErrorOptionsNewValueTypeIsNotOption( name, value )
       
       self.__dict__['__opt_values'][ name ] = value
     
@@ -575,7 +584,7 @@ class Options (object):
       
       try:
         self.__set_value( name, value, UpdateValue )
-      except UnknownOptionType:
+      except ErrorOptionsNewValueTypeIsNotOption:
         pass
   
   #//-------------------------------------------------------//

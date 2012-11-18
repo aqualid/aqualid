@@ -11,10 +11,9 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql_event_manager import event_manager
 from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
+from aql_option_types import ErrorOptionTypeUnableConvertValue
 from aql_option_value import OptionValue, ConditionalValue, Condition, Operation, SimpleOperation
 from aql_dict_types import Dict
-
-from aql_errors import EnumOptionValueIsAlreadySet, EnumOptionAliasIsAlreadySet, InvalidOptionValue
 
 #//===========================================================================//
 
@@ -153,7 +152,7 @@ class TestOptionValue( AqlTestCase ):
     self.assertEqual( opt_value.value( {} ), 1 )
     
     opt_value.appendValue( ConditionalValue( SetValue( 'ultra' ) ) )
-    self.assertRaises( InvalidOptionValue, opt_value.value, {} )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, opt_value.value, {} )
   
   #//---------------------------------------------------------------------------//
   
