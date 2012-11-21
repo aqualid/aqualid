@@ -17,21 +17,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
 import threading
 
-from aql_logging import logWarning
-from aql_utils import toSequence, equalFunctionArgs, checkFunctionArgs
+from aql_utils import toSequence, equalFunctionArgs
 from aql_task_manager import TaskManager
-from aql_event_handler import EventHandler, warning_events, info_events, debug_events, status_events, all_events
 
 #//===========================================================================//
 
 EVENT_WARNING = 0
-EVENT_WARN = EVENT_WARNING
-EVENT_INFO = 1
-EVENT_DEBUG = 2
+EVENT_STATUS = 1
+EVENT_INFO = 2
+EVENT_DEBUG = 3
 
+EVENT_ALL = ( EVENT_DEBUG, EVENT_INFO, EVENT_STATUS, EVENT_WARNING )
 
 #//===========================================================================//
 
@@ -56,22 +54,6 @@ class   ErrorEventHandlerUnknownEvent ( Exception ):
 
 #//===========================================================================//
 
-def   _verifyHandlers( handlers, verbose ):
-  
-  for handler in handlers:
-    if type(handler) is not EventHandler:
-      for event_method in all_events:
-        handler_method = getattr( handler, event_method, None )
-        if handler_method is None:
-          if verbose:
-            logWarning( "Handler doesn't have method: '%s'" % str(event_method) )
-        else:
-          method = getattr(EventHandler, event_method)
-          if not equalFunctionArgs( method, handler_method ):
-            raise ErrorEventHandlerWrongArgs( event_method )
-
-#//===========================================================================//
-
 class EventManager( object ):
   
   __slots__ = \
@@ -83,20 +65,20 @@ class EventManager( object ):
     'ignored_events',
   )
   
-  #//-------------------------------------------------------//
+  #~ #//-------------------------------------------------------//
   
-  _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
+  #~ _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
   
-  #//-------------------------------------------------------//
+  #~ #//-------------------------------------------------------//
   
-  def   __new__( cls ):
-    instance = EventManager._instance
+  #~ def   __new__( cls ):
+    #~ instance = EventManager._instance
     
-    if instance[0] is not None:
-      return instance[0]
+    #~ if instance[0] is not None:
+      #~ return instance[0]
     
-    self = super(EventManager,cls).__new__(cls)
-    instance[0] = self
+    #~ self = super(EventManager,cls).__new__(cls)
+    #~ instance[0] = self
   
   #//-------------------------------------------------------//
 
@@ -126,7 +108,7 @@ class EventManager( object ):
     
     with self.lock:
       try:
-        defualt_handler = self.default_handlers[ event ]
+        defualt_handler = self.default_handlers[ event ][0]
       except KeyError:
         raise ErrorEventHandlerUnknownEvent( event )
       
@@ -148,28 +130,41 @@ class EventManager( object ):
       if default_handler:
         handlers.append( default_handler )
     
-    addTask = self.tm.addTask
+    self.tm.start( len(handlers) )
+    
+    add_task = self.tm.addTask
     for handler in handlers:
-      addTask( None, handler, *args, **kw )
+      add_task( None, handler, *args, **kw )
   
   #//-------------------------------------------------------//
   
-  def   enableEvents( self, events, enable ):
-    events = toSequence(events)
+  def   __getEvents( self, importance_level ):
+    events = []
+    
+    for event, pair in self.default_handlers.items():
+      handler, level = pair
+      if importance_level == level:
+        events.append( event )
+    
+    return events
+  
+  #//-------------------------------------------------------//
+  
+  def   enableEvents( self, event_filters, enable ):
+    
+    events = set()
     
     with self.lock:
+      for filter in toSequence(event_filters):
+        if filter in EVENT_ALL:
+          events.update( self.__getEvents(filter) )
+        else:
+          events.add( filter )
+      
       if enable:
         self.ignored_events.difference_update( events )
       else:
         self.ignored_events.update( events )
-  
-  #//-------------------------------------------------------//
-  
-  def   enableWarning( self, enable ):    self.enableEvents( warning_events, enable )
-  def   enableInfo( self, enable ):       self.enableEvents( info_events, enable )
-  def   enableDebug( self, enable ):      self.enableEvents( debug_events, enable )
-  def   enableStatus( self, enable ):     self.enableEvents( status_events, enable )
-  def   enableAll( self, enable ):        self.enableEvents( all_events, enable )
   
   #//-------------------------------------------------------//
   
@@ -201,6 +196,19 @@ def   _eventImpl( handler, importance_level ):
 
 #//===========================================================================//
 
-def   eventInfo( handler ):     return _eventImpl( handler, EVENT_INFO )
 def   eventWarning( handler ):  return _eventImpl( handler, EVENT_WARNING )
+def   eventStatus( handler ):   return _eventImpl( handler, EVENT_STATUS )
+def   eventInfo( handler ):     return _eventImpl( handler, EVENT_INFO )
 def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )
+
+#//===========================================================================//
+
+def   eventHandler( handler ):
+  _event_manager.addUserHandler( handler )
+  return handler
+
+#//===========================================================================//
+
+def   enableEvents( event_filters ):  _event_manager.enableEvents( event_filters, True )
+def   disableEvents( event_filters ): _event_manager.enableEvents( event_filters, False )
+def   finishHandleEvents(): _event_manager.finish()
