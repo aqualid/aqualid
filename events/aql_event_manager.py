@@ -27,9 +27,31 @@ from aql_event_handler import EventHandler, warning_events, info_events, debug_e
 
 #//===========================================================================//
 
+EVENT_WARNING = 0
+EVENT_WARN = EVENT_WARNING
+EVENT_INFO = 1
+EVENT_DEBUG = 2
+
+
+#//===========================================================================//
+
 class   ErrorEventHandlerWrongArgs ( Exception ):
   def   __init__( self, method ):
     msg = "Invalid arguments of handler method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorEventHandlerAlreadyExists ( Exception ):
+  def   __init__( self, handler ):
+    msg = "Similar handler is already exists: '%s'" % str(handler)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorEventHandlerUnknownEvent ( Exception ):
+  def   __init__( self, event ):
+    msg = "Unknown event: '%s'" % str(event)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -56,26 +78,84 @@ class EventManager( object ):
   (
     'lock',
     'tm',
-    'handlers',
+    'default_handlers',
+    'user_handlers',
     'ignored_events',
   )
+  
+  #//-------------------------------------------------------//
+  
+  _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
+  
+  #//-------------------------------------------------------//
+  
+  def   __new__( cls ):
+    instance = EventManager._instance
+    
+    if instance[0] is not None:
+      return instance[0]
+    
+    self = super(EventManager,cls).__new__(cls)
+    instance[0] = self
   
   #//-------------------------------------------------------//
 
   def   __init__(self):
     self.lock = threading.Lock()
-    self.handlers = set()
+    self.default_handlers = {}
+    self.user_handlers = {}
     self.tm = TaskManager( 0 )
     self.ignored_events = set()
   
   #//-------------------------------------------------------//
   
-  def   enableEvents( self, events, enable ):
+  def   addDefaultHandler( self, handler, importance_level ):
+    event = handler.__name__
     
-    if isinstance( events, str ):
-      events = [ events ]
-    else:
-      events = toSequence(events)
+    with self.lock:
+      pair = (handler, importance_level)
+      other = self.default_handlers.setdefault( event, pair )
+      if other != pair:
+        raise ErrorEventHandlerAlreadyExists( handler )
+  
+  #//-------------------------------------------------------//
+  
+  def   addUserHandler( self, user_handler ):
+    
+    event = user_handler.__name__
+    
+    with self.lock:
+      try:
+        defualt_handler = self.default_handlers[ event ]
+      except KeyError:
+        raise ErrorEventHandlerUnknownEvent( event )
+      
+      if not equalFunctionArgs( defualt_handler, user_handler ):
+        raise ErrorEventHandlerWrongArgs( event_method )
+      
+      self.user_handlers.setdefault( event, [] ).append( user_handler )
+  
+  #//-------------------------------------------------------//
+  
+  def   sendEvent( self, event, *args, **kw ):
+    
+    with self.lock:
+      if event in self.ignored_events:
+        return
+      
+      handlers = self.user_handlers.get( event, [] )
+      default_handler = self.default_handlers.get( event, (None, 0) )[0]
+      if default_handler:
+        handlers.append( default_handler )
+    
+    addTask = self.tm.addTask
+    for handler in handlers:
+      addTask( None, handler, *args, **kw )
+  
+  #//-------------------------------------------------------//
+  
+  def   enableEvents( self, events, enable ):
+    events = toSequence(events)
     
     with self.lock:
       if enable:
@@ -93,75 +173,34 @@ class EventManager( object ):
   
   #//-------------------------------------------------------//
   
-  def   addHandlers( self, handlers, verbose = False ):
-    handlers = toSequence( handlers )
-    _verifyHandlers( handlers, verbose )
-    with self.lock:
-      self.handlers.update( handlers )
-      self.tm.start( len(self.handlers) )
-  
-  #//-------------------------------------------------------//
-  
-  def   setHandlers( self, handlers, verbose = False ):
-    handlers = toSequence( handlers )
-    _verifyHandlers( handlers, verbose )
-    with self.lock:
-      self.tm.stop()
-      
-      self.handlers.clear()
-      self.handlers.update( handlers )
-      
-      self.tm.start( len(handlers) )
-  
-  #//-------------------------------------------------------//
-  @staticmethod
-  def   __ignoreEvent( *args, **kw ):
-    pass
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, attr ):
-    with self.lock:
-      if attr in self.ignored_events:
-        return self.__ignoreEvent
-    
-    def   _handleEvent( *args, **kw ):
-      self.handleEvent( attr, *args, **kw )
-    
-    return _handleEvent
-  
-  #//-------------------------------------------------------//
-  
-  def   handleEvent( self, handler_method, *args, **kw ):
-    if __debug__:
-      check_args = [ None ]
-      check_args += args
-    
-    with self.lock:
-      addTask = self.tm.addTask
-      for handler in self.handlers:
-        task = getattr( handler, handler_method, None )
-        if task is not None:
-          if __debug__:
-            if not checkFunctionArgs( task, check_args, kw ):
-              raise ErrorEventHandlerWrongArgs( handler_method )
-          
-          addTask( None, task, *args, **kw )
-  
-  #//-------------------------------------------------------//
-  
-  def   reset( self ):
-    with self.lock:
-      self.ignored_events.clear()
-      self.handlers.clear()
-      self.tm.stop()
-  
-  #//-------------------------------------------------------//
-  
   def   finish( self ):
-    with self.lock:
-      self.tm.finish()
+    self.tm.finish()
 
 #//===========================================================================//
 
-event_manager = EventManager()
+_event_manager = EventManager()
+
+#//===========================================================================//
+
+class   HandlerProxy( object ):
+  __slots__ = ('event_manager', 'event')
+  
+  def   __init__( self, event_manager, handler ):
+    self.event_manager = event_manager
+    self.event = handler.__name__
+  
+  def   __call__( self, *args, **kw ):
+    self.event_manager.sendEvent( self.event, *args, **kw )
+
+#//===========================================================================//
+
+def   _eventImpl( handler, importance_level ):
+  event_manager = _event_manager
+  event_manager.addDefaultHandler( handler, importance_level )
+  return HandlerProxy( event_manager, handler )
+
+#//===========================================================================//
+
+def   eventInfo( handler ):     return _eventImpl( handler, EVENT_INFO )
+def   eventWarning( handler ):  return _eventImpl( handler, EVENT_WARNING )
+def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )

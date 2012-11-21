@@ -95,10 +95,11 @@ class _TaskProcessor( threading.Thread ):
         if id is not None:
           fail = ( id, err )
           completed_tasks.put( fail )
-          if self.stop_on_error:
-            exit_event.set()
         else:
           logWarning("Task failed with error: %s" % str(err) )
+        
+        if self.stop_on_error:
+          exit_event.set()
 
 #//===========================================================================//
 
