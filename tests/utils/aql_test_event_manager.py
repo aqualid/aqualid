@@ -9,14 +9,11 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql_utils import getFunctionName, printStacks
 from aql_event_manager import *
+from aql_event_manager import EventManager
 
 #//===========================================================================//
 
 class TestEventManager( AqlTestCase ):
-  
-  def   setUp( self ):
-    super(TestEventManager, self).setUp()
-    resetEventHandlers()
   
   #//-------------------------------------------------------//
   
@@ -72,54 +69,29 @@ class TestEventManager( AqlTestCase ):
   
   def test_event_manager_errors(self):
     
-    @eventWarning
+    em = EventManager()
+    
     def   testEvent1( status ):
       status.append( "default-event1" )
     
-    @eventHandler('testEvent1')
     def   testUserEvent1( status ):
       status.append( "user-event1" )
     
-    @eventStatus
     def   testEvent2( status ):
       status.append( "default-event2" )
     
-    #//-------------------------------------------------------//
+    def   testUserEvent2( msg, status ):
+      status.append( "user-event2" )
     
-    try:
-      unknown_event = False
-      @eventHandler()
-      def   testUserEvent2( status ):
-        status.append( "user-event2" )
-    except ErrorEventHandlerUnknownEvent:
-      unknown_event = True
-    
-    self.assertTrue( unknown_event )
+    em.addDefaultHandler( testEvent1, EVENT_WARNING )
+    em.addDefaultHandler( testEvent2, EVENT_STATUS )
+    em.addUserHandler( testUserEvent1, 'testEvent1' )
     
     #//-------------------------------------------------------//
     
-    try:
-      duplicate_event_def = False
-      @eventStatus
-      def   testEvent2( status ):
-        status.append( "default-event2" )
-    except ErrorEventHandlerAlreadyDefined:
-      duplicate_event_def = True
-    
-    self.assertTrue( duplicate_event_def )
-    
-    #//-------------------------------------------------------//
-    
-    try:
-      wrong_args = False
-      @eventHandler('testEvent2')
-      def   testUserEvent2( msg, status ):
-        status.append( "default-event2" )
-    except ErrorEventUserHandlerWrongArgs:
-      wrong_args = True
-    
-    self.assertTrue( wrong_args )
-
+    self.assertRaises( ErrorEventHandlerAlreadyDefined, em.addDefaultHandler, testEvent2, EVENT_WARNING )
+    self.assertRaises( ErrorEventHandlerUnknownEvent, em.addUserHandler, testUserEvent2 )
+    self.assertRaises( ErrorEventUserHandlerWrongArgs, em.addUserHandler, testUserEvent2, 'testEvent2' )
 
 #//===========================================================================//
 

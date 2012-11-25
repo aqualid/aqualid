@@ -21,7 +21,7 @@ __all__ = (
   'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_INFO', 'EVENT_DEBUG', 'EVENT_ALL',
   'eventWarning',  'eventStatus',  'eventInfo',  'eventDebug',
   'eventHandler', 'disableEvents', 'enableEvents', 'finishHandleEvents',
-  'disableDefaultHandlers', 'enableDefaultHandlers', 'resetEventHandlers',
+  'disableDefaultHandlers', 'enableDefaultHandlers',
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )
 
@@ -76,20 +76,20 @@ class EventManager( object ):
   
   #//-------------------------------------------------------//
   
-  _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
+  #~ _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls ):
-    instance = EventManager._instance
+  #~ def   __new__( cls ):
+    #~ instance = EventManager._instance
     
-    if instance[0] is not None:
-      return instance[0]
+    #~ if instance[0] is not None:
+      #~ return instance[0]
     
-    self = super(EventManager,cls).__new__(cls)
-    instance[0] = self
+    #~ self = super(EventManager,cls).__new__(cls)
+    #~ instance[0] = self
     
-    return self
+    #~ return self
   
   #//-------------------------------------------------------//
 
@@ -152,13 +152,17 @@ class EventManager( object ):
   
   #//-------------------------------------------------------//
   
-  def   __getEvents( self, importance_level ):
-    events = []
+  def   __getEvents( self, event_filters ):
+    events = set()
     
-    for event, pair in self.default_handlers.items():
-      handler, level = pair
-      if importance_level == level:
-        events.append( event )
+    for filter in toSequence(event_filters):
+      if filter not in EVENT_ALL:
+        events.add( filter )
+      else:
+        for event, pair in self.default_handlers.items():
+          handler, level = pair
+          if filter == level:
+            events.add( event )
     
     return events
   
@@ -169,11 +173,7 @@ class EventManager( object ):
     events = set()
     
     with self.lock:
-      for filter in toSequence(event_filters):
-        if filter in EVENT_ALL:
-          events.update( self.__getEvents(filter) )
-        else:
-          events.add( filter )
+      events = self.__getEvents( event_filters )
       
       if enable:
         self.ignored_events.difference_update( events )
@@ -194,15 +194,6 @@ class EventManager( object ):
   
   def   finish( self ):
     self.tm.finish()
-  
-  #//-------------------------------------------------------//
-  
-  def   reset( self ):
-    self.tm.finish()
-    self.default_handlers = {}
-    self.user_handlers = {}
-    self.ignored_events = set()
-    self.disable_defaults = False
 
 #//===========================================================================//
 
@@ -263,10 +254,5 @@ def   enableDefaultHandlers():
 
 def   finishHandleEvents():
   _event_manager.finish()
-
-#//===========================================================================//
-
-def   resetEventHandlers():
-  _event_manager.reset()
 
 #//===========================================================================//
