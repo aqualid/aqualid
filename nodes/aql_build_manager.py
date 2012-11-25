@@ -21,7 +21,7 @@
 import threading
 import hashlib
 
-from aql_event_manager import event_manager
+from aql_event_manager import eventInfo, eventStatus, eventWarning
 
 from aql_node import Node
 from aql_builder import RebuildNode
@@ -31,13 +31,38 @@ from aql_utils import toSequence
 
 #//===========================================================================//
 
-"""
 @eventStatus
-def   eventRebuildNode( self, node ):
+def   eventBuildStatusOutdatedNode( node ):
+  logInfo("Outdated node: %s" % node )
+
+#//===========================================================================//
+
+@eventStatus
+def   eventBuildStatusActualNode( node ):
+  logInfo("Actual node: %s" % node )
+
+#//===========================================================================//
+
+@eventWarning
+def   eventBuildTargetTwiceByNodes( value, node1, node2 ):
+  logWarning("Target '%s' is built twice by different nodes: '%s', '%s' " % ( value.name, node1, node2 ) )
+
+#//===========================================================================//
+
+@eventStatus
+def   eventBuildingNodes( total_nodes ):
+  logInfo("Building %s nodes" % total_nodes )
+
+#//===========================================================================//
+
+@eventInfo
+def   eventRebuildNode( node ):
   logInfo("Rebuild node: %s" % node.builder.buildStr( node ) )
 
+#//===========================================================================//
+
 @eventStatus
-def   eventFailedNode( self, node, error ):
+def   eventBuildNodeFailed( self, node, error ):
   logError("Failed node: %s" % node.builder.buildStr( node ) )
   logError("Error: %s" % str(error) )
   try:
@@ -45,15 +70,6 @@ def   eventFailedNode( self, node, error ):
   except AttributeError:
     pass
 
-@eventHandler
-def   eventFailedNode( self, node, error ):
-  logError("Failed node: %s" % node.builder.buildStr( node ) )
-  logError("Error: %s" % str(error) )
-  try:
-    traceback.print_tb( error.__traceback__ )
-  except AttributeError:
-    pass
-"""
 #//===========================================================================//
 
 class   ErrorNodeDependencyCyclic( Exception ):
@@ -331,10 +347,10 @@ class _NodesBuilder (object):
           completed_nodes.append( node )
         else:
           if isinstance( exception, RebuildNode ):
-            event_manager.eventRebuildNode( node )
+            eventRebuildNode( node )
             rebuild_nodes.append( node )
           else:
-            event_manager.eventFailedNode( node, exception )
+            eventBuildNodeFailed( node, exception )
             failed_nodes[ node ] = exception
     
     return completed_nodes, failed_nodes, rebuild_nodes
@@ -392,18 +408,16 @@ class BuildManager (object):
     values += node.targets()
     values += node.sideEffects()
     
-    vfile = self.valuesFile()
-    
     for value in values:
       other_node, other_value = target_nodes.setdefault( value.name, (node, value) )
       
       if other_value != value:
-        event_manager.eventTargetIsBuiltTwiceByNodes( value, node, other_node )
+        eventBuildTargetTwiceByNodes( value, node, other_node )
   
   #//-------------------------------------------------------//
   
   def   build(self):
-    event_manager.eventBuildingNodes( len(self.__nodes) )
+    eventBuildingNodes( len(self.__nodes) )
     
     target_nodes = {}
     
@@ -501,8 +515,8 @@ class BuildManager (object):
       
       for node in tails:
         if not node.actual( vfile ):
-          event_manager.eventOutdatedNode( node )
+          eventBuildStatusOutdatedNode( node )
           outdated_nodes.add( node )
         else:
-          event_manager.eventActualNode( node )
+          eventBuildStatusActualNode( node )
           removeTailNode( node )

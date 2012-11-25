@@ -20,7 +20,8 @@
 
 import threading
 
-from aql_event_manager import event_manager
+from aql_logging import logWarning
+from aql_event_manager import eventWarning
 
 from aql_values_xash import ValuesXash
 from aql_lock_file import FileLock
@@ -28,6 +29,18 @@ from aql_data_file import DataFile
 from aql_value import NoContent
 from aql_depends_value import DependsValue, DependsKeyContent, DependsValueContent
 from aql_value_pickler import ValuePickler
+
+#//===========================================================================//
+
+@eventWarning
+def   eventFileValuesCyclicDependencyValue( value ):
+  logWarning("Internal error: Cyclic dependency value: %s" % value )
+
+#//===========================================================================//
+
+@eventWarning
+def   eventFileValuesDependencyValueHasUnknownValue( dep_value, value ):
+  logWarning("Internal error: Dependency value: '%s' has unknown value: '%s'" % (dep_value, value) )
 
 #//===========================================================================//
 
@@ -67,7 +80,7 @@ def _sortDepends( dep_sort_data ):
     value = value_keys[0]
     value = DependsValue( value.name, None )
     sorted_deps.append( value )
-    event_manager.eventDepValueIsCyclic( value )
+    eventFileValuesCyclicDependencyValue( value )
   
   return sorted_deps
 
@@ -95,7 +108,7 @@ class ValuesFile (object):
     for value in dep_value.content:
       key = find_value( value )[0]
       if key is None:
-        event_manager.eventUnknownValue( value )
+        eventFileValuesDependencyValueHasUnknownValue( dep_value, value )
         return DependsValue( dep_value.name )
       
       value_keys_append( key )

@@ -20,7 +20,7 @@
 
 import hashlib
 
-from aql_event_manager import event_manager
+from aql_event_manager import eventStatus
 from aql_value import Value, NoContent
 from aql_depends_value import DependsValue, DependsValueContent
 from aql_utils import toSequence
@@ -46,6 +46,18 @@ class   ErrorNodeInvalidTargetsType( Exception ):
   def   __init__( self, targets ):
     msg = "Invalid type of node's targets: %s" % str(type(targets))
     super(type(self), self).__init__( msg )
+
+#//---------------------------------------------------------------------------//
+
+@eventStatus
+def   eventNodeBuilding( node ):
+  logInfo("Building node: %s" % node.builder.buildStr( node ) )
+
+#//-------------------------------------------------------//
+
+@eventStatus
+def   eventNodeBuildingFinished( node ):
+  logInfo("Finished node: %s" % node.builder.buildStr( node ) )
 
 #//---------------------------------------------------------------------------//
 
@@ -243,7 +255,7 @@ class Node (object):
   
   def   build( self, build_manager, vfile, prebuild_nodes = None ):
     
-    event_manager.eventBuildingNode( self )
+    eventNodeBuilding( self )
     
     args = [ build_manager, vfile, self ]
     if prebuild_nodes:
@@ -252,7 +264,7 @@ class Node (object):
     node_targets = self.builder.build( *args )
     self.save( vfile, node_targets )
     
-    event_manager.eventBuildingNodeFinished( self )
+    eventNodeBuildingFinished( self )
   
   #//=======================================================//
   

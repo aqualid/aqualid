@@ -22,7 +22,7 @@ __all__ = (
   'eventWarning',  'eventStatus',  'eventInfo',  'eventDebug',
   'eventHandler', 'disableEvents', 'enableEvents', 'finishHandleEvents',
   'disableDefaultHandlers', 'enableDefaultHandlers', 'resetEventHandlers',
-  'ErrorEventHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
+  'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )
 
 import threading
@@ -110,7 +110,7 @@ class EventManager( object ):
         raise ErrorEventHandlerUnknownEvent( event )
       
       if not equalFunctionArgs( defualt_handler, user_handler ):
-        raise ErrorEventHandlerWrongArgs( event, user_handler )
+        raise ErrorEventUserHandlerWrongArgs( event, user_handler )
       
       self.user_handlers.setdefault( event, [] ).append( user_handler )
   

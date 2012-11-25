@@ -38,23 +38,13 @@ def   _warning( event_method ): warning_events.add( event_method.__name__ );  re
 
 class EventHandler( object ):
   
-  #//-------------------------------------------------------//
-  @_warning
-  def   eventDataFileIsNotSync( self, filename ):
-    """
-    Inconsistency state of Data file. Either internal error or external corruption.
-    """
-    logWarning("Internal error: DataFile '%s' is unsynchronized" % str(filename) )
-  
-  #//-------------------------------------------------------//
-  @_warning
-  def   eventDepValueIsCyclic( self, value ):
-    logWarning("Internal error: Cyclic dependency value: %s" % value )
-  
-  #//-------------------------------------------------------//
-  @_warning
-  def   eventUnknownValue( self, value ):
-    logWarning("Internal error: Unknown value: %s " % value )
+  #~ #//-------------------------------------------------------//
+  #~ @_warning
+  #~ def   eventDataFileIsNotSync( self, filename ):
+    #~ """
+    #~ Inconsistency state of Data file. Either internal error or external corruption.
+    #~ """
+    #~ logWarning("Internal error: DataFile '%s' is unsynchronized" % str(filename) )
   
   #//-------------------------------------------------------//
   

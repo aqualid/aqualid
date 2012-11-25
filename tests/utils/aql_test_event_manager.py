@@ -115,7 +115,7 @@ class TestEventManager( AqlTestCase ):
       @eventHandler('testEvent2')
       def   testUserEvent2( msg, status ):
         status.append( "default-event2" )
-    except ErrorEventHandlerWrongArgs:
+    except ErrorEventUserHandlerWrongArgs:
       wrong_args = True
     
     self.assertTrue( wrong_args )
