@@ -12,9 +12,8 @@ from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
 from aql_values_file import ValuesFile
 from aql_node import Node
 from aql_build_manager import BuildManager
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_builtin_options import builtinOptions
+from aql_event_manager import finishHandleEvents
 
 from gcc import GccCompiler, GccArchiver, gccOptions
 
@@ -70,15 +69,11 @@ def   _generateSrcFiles( dir, name, count ):
 
 class TestToolGcc( AqlTestCase ):
   
-  @classmethod
-  def   setUpClass( cls ):
-    event_manager.setHandlers( EventHandler() )
-  
   #//-------------------------------------------------------//
   
   @classmethod
   def   tearDownClass( cls ):
-    event_manager.finish()
+    finishHandleEvents()
   
   #//-------------------------------------------------------//
   

@@ -6,16 +6,12 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_simple_types import IgnoreCaseString, LowerCaseString, UpperCaseString, Version
 
 #//===========================================================================//
 
 class TestSimpleTypes( AqlTestCase ):
   def test_istr(self):
-    event_manager.setHandlers( EventHandler() )
-    
     s1 = IgnoreCaseString('ABC')
     s2 = IgnoreCaseString('abc')
     
@@ -39,8 +35,6 @@ class TestSimpleTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_lowerstr(self):
-    event_manager.setHandlers( EventHandler() )
-    
     s1 = LowerCaseString('ABC')
     s2 = LowerCaseString('abc')
     
@@ -64,8 +58,6 @@ class TestSimpleTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_upperstr(self):
-    event_manager.setHandlers( EventHandler() )
-    
     s1 = UpperCaseString('ABC')
     s2 = UpperCaseString('abc')
     
@@ -89,8 +81,6 @@ class TestSimpleTypes( AqlTestCase ):
   #//===========================================================================//
 
   def test_version(self):
-    event_manager.setHandlers( EventHandler() )
-    
     v1 = Version('1.2.100')
     v2 = Version('1.2.99')
     

@@ -11,24 +11,11 @@ from aql_depends_value import DependsValue
 from aql_value_pickler import ValuePickler, pickleable
 from aql_data_file import DataFile
 from aql_values_file import ValuesFile
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 
 #//===========================================================================//
 
-class _TestEventHandler (EventHandler):
-  __slots__ = ('not_sync')
-  
-  def   __init__( self ):
-    self.not_sync = False
-  
-  def   eventDataFileIsNotSync( self, filename ):
-    self.not_sync = True
-
 class TestValuesFile( AqlTestCase ):
   def test_value_file(self):
-    event_manager.setHandlers( _TestEventHandler() )
-    
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp.name )
       try:
@@ -125,8 +112,6 @@ class TestValuesFile( AqlTestCase ):
   #//===========================================================================//
 
   def test_value_file_2(self):
-    event_manager.setHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp.name )
       try:
@@ -179,9 +164,6 @@ class TestValuesFile( AqlTestCase ):
   #//===========================================================================//
 
   def test_value_file_3(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp.name )
       try:
@@ -209,9 +191,6 @@ class TestValuesFile( AqlTestCase ):
   #//===========================================================================//
 
   def test_value_file_empty_deps(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp.name )
       try:
@@ -234,9 +213,6 @@ class TestValuesFile( AqlTestCase ):
 
   @skip
   def   test_value_file_speed(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
-    
     values = []
     for i in range(0, 100000):
       value = Value( "target_url%s" % i, "http://aql.org/download" )

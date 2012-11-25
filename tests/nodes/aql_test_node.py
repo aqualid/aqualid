@@ -8,8 +8,6 @@ from binascii import hexlify
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_temp_file import Tempfile
 from aql_value import Value, NoContent
 from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
@@ -79,8 +77,6 @@ class CopyBuilder (Builder):
 class TestNodes( AqlTestCase ):
 
   def test_node_value(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       
@@ -134,8 +130,6 @@ class TestNodes( AqlTestCase ):
   #//=======================================================//
 
   def test_node_file(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     try:
       tmp_files = []
@@ -295,8 +289,6 @@ def   _copyFiles( tmp_files, files, ext ):
 @skip
 class TestNodesSpeed ( AqlTestCase ):
   def test_node_speed( self ):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     try:
       tmp_files = []

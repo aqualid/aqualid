@@ -5,16 +5,13 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_utils import findProgram
 from aql_temp_file import Tempfile, Tempdir
 from aql_file_value import FileValue, DirValue
 from aql_values_file import ValuesFile
 from aql_node import Node
 from aql_build_manager import BuildManager
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_builtin_options import builtinOptions
-from aql_builtin_options import builtinOptions
+from aql_event_manager import finishHandleEvents
 
 from rsync import RSyncGetBuilder, RSyncPutBuilder, rsyncOptions
 
@@ -24,8 +21,8 @@ from rsync import RSyncGetBuilder, RSyncPutBuilder, rsyncOptions
 class TestToolRsync( AqlTestCase ):
   
   @classmethod
-  def   setUpClass( cls ):
-    event_manager.setHandlers( EventHandler() )
+  def   tearDownClass( cls ):
+    finishHandleEvents()
   
   #//-------------------------------------------------------//
   
@@ -58,7 +55,6 @@ class TestToolRsync( AqlTestCase ):
       finally:
         vfile.close()
         bm.close()
-        event_manager.finish()
   
   #//-------------------------------------------------------//
   
@@ -105,7 +101,6 @@ class TestToolRsync( AqlTestCase ):
       finally:
         vfile.close()
         bm.close()
-        event_manager.finish()
 
 #//===========================================================================//
 

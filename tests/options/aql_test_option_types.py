@@ -6,8 +6,6 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
 from aql_option_types import ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet, ErrorOptionTypeUnableConvertValue
 from aql_simple_types import IgnoreCaseString, UpperCaseString
@@ -18,15 +16,9 @@ from aql_path_types import FilePath
 
 class TestOptionTypes( AqlTestCase ):
   
-  @classmethod
-  def   setUpClass( cls ):
-    event_manager.setHandlers( EventHandler() )
-  
   #//===========================================================================//
   
   def test_bool_option(self):
-    event_manager.setHandlers( EventHandler() )
-    
     debug_symbols = BoolOptionType( description = 'Include debug symbols', group = "Debug", style = (True, False) )
     
     true_values = ['tRUe', 't', '1', 'yeS', 'ENABled', 'On', 'y', 1, 2, 3, -1, True ]

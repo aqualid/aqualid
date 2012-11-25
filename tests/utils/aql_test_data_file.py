@@ -7,8 +7,6 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_temp_file import Tempfile
 from aql_data_file import DataFile
 
@@ -46,8 +44,6 @@ def   printFileContent( filename ):
 class TestDataFile( AqlTestCase ):
   
   def test_data_file(self):
-    event_manager.setHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       tmp.remove()
       
@@ -111,8 +107,6 @@ class TestDataFile( AqlTestCase ):
 
   #//-------------------------------------------------------//
   def   test_data_file_update(self):
-    event_manager.setHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       
       data_list = generateDataList( 10, 10, 7, 57 )
@@ -203,8 +197,6 @@ class TestDataFile( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def test_data_file_remove(self):
-    event_manager.setHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       tmp.remove()
       
@@ -253,9 +245,6 @@ class TestDataFile( AqlTestCase ):
   
   @skip
   def   test_data_file_speed(self):
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       
       data_list = generateDataList( 100000, 100000, 128, 1024 )

@@ -4,8 +4,6 @@ import sys
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import skip, AqlTestCase, runLocalTests
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_temp_file import Tempdir
 
 from aql_rsync import Rsync, RemotePathMapping
@@ -13,10 +11,6 @@ from aql_rsync import Rsync, RemotePathMapping
 #//===========================================================================//
 
 class TestRsync( AqlTestCase ):
-  
-  @classmethod
-  def   setUpClass( cls ):
-    event_manager.setHandlers( EventHandler() )
   
   #//-------------------------------------------------------//
   

@@ -13,9 +13,7 @@ from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
 from aql_values_file import ValuesFile
 from aql_node import Node
 from aql_builder import Builder, RebuildNode
-from aql_build_manager import BuildManager
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
+from aql_build_manager import BuildManager, ErrorNodeDependencyCyclic
 from aql_logging import logLevel, CRITICAL
 
 #//===========================================================================//
@@ -231,16 +229,13 @@ class TestBuildManager( AqlTestCase ):
     node0.depends( node5 ); bm.depends( node0, node5 ); bm.selfTest()
     node5.depends( node3 ); bm.depends( node5, node3 ); bm.selfTest()
     
-    with self.assertRaises(ErrorNodeCyclicDependency):
+    with self.assertRaises(ErrorNodeDependencyCyclic):
       node4.depends( node3 ); bm.depends( node4, node3 ); bm.selfTest()
   
   #//-------------------------------------------------------//
   
   def test_bm_build(self):
   
-    #~ event_manager.reset()
-    #~ event_manager.addHandlers( EventHandler() )
-    
     with Tempfile() as tmp:
       src_files = _generateSourceFiles( 3, 201 )
       try:
@@ -258,9 +253,6 @@ class TestBuildManager( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def test_bm_check(self):
-    
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       
@@ -282,9 +274,6 @@ class TestBuildManager( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def test_bm_rebuild(self):
-    
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as vfilename:
       
@@ -325,9 +314,6 @@ class TestBuildManager( AqlTestCase ):
   
   @skip
   def test_bm_node_names(self):
-    
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     with Tempfile() as tmp:
       #~ tmp = Tempfile()
@@ -380,9 +366,6 @@ def   _generateNodeTree( bm, builder, node, depth ):
 class TestBuildManagerSpeed( AqlTestCase ):
   
   def test_bm_deps_speed(self):
-    
-    event_manager.reset()
-    event_manager.addHandlers( EventHandler() )
     
     bm = BuildManager()
     

@@ -17,6 +17,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = (
+  'isSequence', 'toSequence', 'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile',
+  'fileSignature', 'fileChecksum',
+  'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs',
+  'execCommand', 'ExecCommandResult', 'whereProgram',
+  'ErrorProgramNotFound',
+)
+
 
 import io
 import os
@@ -28,6 +36,13 @@ import inspect
 import subprocess
 import tempfile
 import itertools
+
+#//===========================================================================//
+
+class   ErrorProgramNotFound( Exception ):
+  def   __init__( self, program, env ):
+    msg = "Program '%s' has not been found" % str(program)
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -344,6 +359,8 @@ try:
 except AttributeError:
   _MAX_CMD_LENGTH = 32000  # 32768 default for windows
 
+#//===========================================================================//
+
 def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH, stdin = None ):
   
   cmd_file = None
@@ -363,7 +380,6 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
   
   try:
     try:
-      print("cmd: %s" % cmd)
       p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env )
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
@@ -384,13 +400,6 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
       except OSError as ex:
         if ex.errno != errno.ENOENT:
           raise
-
-#//===========================================================================//
-
-class   ErrorProgramNotFound( Exception ):
-  def   __init__( self, program, env ):
-    msg = "Program '%s' has not been found" % str(program)
-    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -432,4 +441,4 @@ def   whereProgram( prog, env = None ):
     if os.path.isfile( prog_path ):
       return prog_path
   
-  return ErrorProgramNotFound( prog, env )
+  raise ErrorProgramNotFound( prog, env )

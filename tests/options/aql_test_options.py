@@ -6,8 +6,6 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
 from aql_simple_types import UpperCaseString
 from aql_path_types import FilePath
@@ -22,11 +20,6 @@ from aql_builtin_options import builtinOptions
 #//===========================================================================//
 
 class TestOptions( AqlTestCase ):
-  
-  @classmethod
-  def   setUpClass( cls ):
-    super(TestOptions, cls).setUpClass()
-    event_manager.setHandlers( EventHandler() )
   
   #//---------------------------------------------------------------------------//
   

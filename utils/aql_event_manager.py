@@ -75,6 +75,23 @@ class EventManager( object ):
   )
   
   #//-------------------------------------------------------//
+  
+  _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
+  
+  #//-------------------------------------------------------//
+  
+  def   __new__( cls ):
+    instance = EventManager._instance
+    
+    if instance[0] is not None:
+      return instance[0]
+    
+    self = super(EventManager,cls).__new__(cls)
+    instance[0] = self
+    
+    return self
+  
+  #//-------------------------------------------------------//
 
   def   __init__(self):
     self.lock = threading.Lock()

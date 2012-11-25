@@ -8,8 +8,6 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_event_manager import event_manager
-from aql_event_handler import EventHandler
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
 from aql_option_types import ErrorOptionTypeUnableConvertValue
 from aql_option_value import OptionValue, ConditionalValue, Condition, Operation, SimpleOperation
@@ -40,10 +38,6 @@ def   _condition( options, context, flag, opt_value = None ):
   return flag
 
 class TestOptionValue( AqlTestCase ):
-  
-  @staticmethod
-  def setUpClass():
-    event_manager.setHandlers( EventHandler() )
   
   #//---------------------------------------------------------------------------//
   
