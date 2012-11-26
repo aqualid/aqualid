@@ -231,7 +231,7 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       group_files = FilePaths()
       rest_files = FilePaths()
       
-      group_size = max(1, len(files) / max(1, wish_groups - len(groups) ) )
+      group_size = max(1, len(files) // max(1, wish_groups - len(groups) ) )
       group_size = min( max_group_size, group_size )
       
       for file in files:

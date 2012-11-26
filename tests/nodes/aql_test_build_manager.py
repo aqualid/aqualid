@@ -14,7 +14,6 @@ from aql_values_file import ValuesFile
 from aql_node import Node
 from aql_builder import Builder, RebuildNode
 from aql_build_manager import BuildManager, ErrorNodeDependencyCyclic
-from aql_logging import logLevel, CRITICAL
 
 #//===========================================================================//
 
@@ -189,10 +188,6 @@ class MultiChecksumBuilder (Builder):
 #//===========================================================================//
 
 class TestBuildManager( AqlTestCase ):
-  
-  @classmethod
-  def setUpClass( cls ):
-    logLevel( CRITICAL )
   
   def test_bm_deps(self):
     

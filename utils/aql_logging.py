@@ -17,48 +17,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = ( 'LOG_CRITICAL', 'LOG_FATAL', 'LOG_ERROR', 'LOG_WARNING', 'LOG_INFO', 'LOG_DEBUG')
 
 import logging
 
 
 _logger = None
 
-CRITICAL = logging.CRITICAL
-FATAL = CRITICAL
-ERROR = logging.ERROR
-WARNING = logging.WARNING
-WARN = WARNING
-INFO = logging.INFO
-DEBUG = logging.DEBUG
-
+LOG_CRITICAL = logging.CRITICAL
+LOG_FATAL = CRITICAL
+LOG_ERROR = logging.ERROR
+LOG_WARNING = logging.WARNING
+LOG_INFO = logging.INFO
+LOG_DEBUG = logging.DEBUG
 
 #//---------------------------------------------------------------------------//
 
-def   _init():
-    logger = logging.getLogger( "AQL" )
-    logger.setLevel(logging.DEBUG)
+class Logger( logging.Logger ):
+  def   __new__( cls ):
+    self = logging.getLogger( "AQL" )
     handler = logging.StreamHandler()
-    handler.setLevel( logging.DEBUG )
     
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
     handler.setFormatter(formatter)
     
-    logger.addHandler( handler )
+    self.addHandler( handler )
+    self.setLevel( logging.DEBUG )
     
-    global _logger
-    _logger = logger
+    return self
+
+_logger = Logger()
 
 #//---------------------------------------------------------------------------//
 
-def     logLevel( level = None ):
-    global _logger
-    _logger.setLevel( level )
-
-#//---------------------------------------------------------------------------//
+def   setLogLevel( level = logging.NOTSET, logger = _logger ):
+  _logger.setLevel( level )
 
 def     logCritical(msg, *args, **kwargs):
-    global _logger
-    _logger.error( msg, *args, **kwargs )
+  _logger.critical( msg, *args, **kwargs )
 
 logFatal = logCritical
 
@@ -90,4 +86,3 @@ def     logDebug(msg, *args, **kwargs):
 
 #//---------------------------------------------------------------------------//
 
-_init()
