@@ -17,6 +17,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = (
+  'DependsValue', 'ErrorValueUnpickleable',
+)
+
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
 

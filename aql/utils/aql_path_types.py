@@ -17,13 +17,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = (
+  'FilePath', 'FilePaths',
+)
+
 import os.path
 import itertools
 
 from aql_utils import toSequence
 from aql_simple_types import IgnoreCaseString
 from aql_list_types import UniqueList, ValueListType
-from aql_file_value import FileValue
 
 #//===========================================================================//
 
@@ -42,9 +45,6 @@ class   FilePath (FilePathBase):
     
     if path is None:
         path = ''
-    
-    if isinstance( path, FileValue ):
-      path = path.name
     
     path = str(path)
     

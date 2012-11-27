@@ -17,6 +17,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = tuple()
+
 from aql_data_file import *
 from aql_dict_types import *
 from aql_event_manager import *

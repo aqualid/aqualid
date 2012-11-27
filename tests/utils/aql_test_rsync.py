@@ -4,9 +4,7 @@ import sys
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import skip, AqlTestCase, runLocalTests
-from aql_temp_file import Tempdir
-
-from aql_rsync import Rsync, RemotePathMapping
+from aql.utils import Rsync, Tempdir
 
 #//===========================================================================//
 

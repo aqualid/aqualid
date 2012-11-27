@@ -17,15 +17,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'LOG_CRITICAL', 'LOG_FATAL', 'LOG_ERROR', 'LOG_WARNING', 'LOG_INFO', 'LOG_DEBUG')
+__all__ = (
+  'setLogLevel', 'logCritical',  'logWarning',  'logError',  'logDebug',  'logInfo',
+                 'LOG_CRITICAL', 'LOG_WARNING', 'LOG_ERROR', 'LOG_DEBUG', 'LOG_INFO',
+)
 
 import logging
 
-
-_logger = None
-
 LOG_CRITICAL = logging.CRITICAL
-LOG_FATAL = CRITICAL
 LOG_ERROR = logging.ERROR
 LOG_WARNING = logging.WARNING
 LOG_INFO = logging.INFO
@@ -34,8 +33,8 @@ LOG_DEBUG = logging.DEBUG
 #//---------------------------------------------------------------------------//
 
 class Logger( logging.Logger ):
-  def   __new__( cls ):
-    self = logging.getLogger( "AQL" )
+  def   __new__( cls, name ):
+    self = logging.getLogger( name )
     handler = logging.StreamHandler()
     
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
@@ -46,41 +45,40 @@ class Logger( logging.Logger ):
     
     return self
 
-_logger = Logger()
+_logger = Logger( "AQL" )
 
 #//---------------------------------------------------------------------------//
 
 def   setLogLevel( level = logging.NOTSET, logger = _logger ):
   _logger.setLevel( level )
 
-def     logCritical(msg, *args, **kwargs):
-  _logger.critical( msg, *args, **kwargs )
+#//---------------------------------------------------------------------------//
 
-logFatal = logCritical
+def   logCritical( msg, *args, **kwargs ):
+  global _logger
+  _logger.critical( msg, *args, **kwargs )
 
 #//---------------------------------------------------------------------------//
 
-def     logError(msg, *args, **kwargs):
+def   logError( msg, *args, **kwargs ):
     global _logger
     _logger.error( msg, *args, **kwargs )
 
 #//---------------------------------------------------------------------------//
 
-def     logWarning(msg, *args, **kwargs):
+def   logWarning( msg, *args, **kwargs ):
     global _logger
     _logger.warning( msg, *args, **kwargs )
 
-logWarn = logWarning
-
 #//---------------------------------------------------------------------------//
 
-def     logInfo(msg, *args, **kwargs):
+def   logInfo( msg, *args, **kwargs ):
     global _logger
     _logger.info( msg, *args, **kwargs )
 
 #//---------------------------------------------------------------------------//
 
-def     logDebug(msg, *args, **kwargs):
+def   logDebug( msg, *args, **kwargs ):
     global _logger
     _logger.debug( msg, *args, **kwargs )
 

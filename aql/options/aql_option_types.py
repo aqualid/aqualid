@@ -18,6 +18,14 @@
 #
 
 
+__all__ = (
+  'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType', 'BoolOptionType', 
+  'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
+  'ErrorOptionTypeEnumAliasIsAlreadySet', 'ErrorOptionTypeEnumValueIsAlreadySet',
+  'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues', 
+)
+
+
 from aql_utils import toSequence
 from aql_simple_types import IgnoreCaseString, Version
 from aql_path_types import FilePath

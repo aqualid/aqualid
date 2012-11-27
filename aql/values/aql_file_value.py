@@ -17,6 +17,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = (
+  'FileContentChecksum', 'FileContentTimeStamp', 'FileName',
+  'FileValue', 'DirValue',
+)
+
 import os
 import hashlib
 import struct
@@ -24,7 +29,8 @@ import datetime
 
 from aql_value import Value, NoContent
 from aql_value_pickler import pickleable
-from aql_utils import fileSignature
+
+from aql.utils import fileSignature
 
 _file_content_chache = {}
 

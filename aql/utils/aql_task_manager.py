@@ -17,6 +17,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+__all__ = (
+  'TaskManager',
+)
+
 import threading
 
 from aql_logging import logWarning
