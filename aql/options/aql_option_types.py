@@ -26,11 +26,7 @@ __all__ = (
 )
 
 
-from aql_utils import toSequence
-from aql_simple_types import IgnoreCaseString, Version
-from aql_path_types import FilePath
-from aql_list_types import UniqueList, List, SplitListType, ValueListType
-from aql_dict_types import Dict, SplitDictType, ValueDictType
+from aql.utils import toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
 

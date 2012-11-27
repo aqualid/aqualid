@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'DependsValue', 'ErrorValueUnpickleable',
+  'DependsValue', 'DependsValueContent', 'ErrorValueUnpickleable',
 )
 
 from aql_value import Value, NoContent

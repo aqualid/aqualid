@@ -23,10 +23,10 @@ __all__ = (
 
 import os
 
+from aql.utils import IgnoreCaseString, UpperCaseString, FilePath
+
 from aql_options import Options
 from aql_option_value import ConditionalValue
-from aql_simple_types import IgnoreCaseString, UpperCaseString
-from aql_path_types import FilePath
 from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//

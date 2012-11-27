@@ -27,9 +27,8 @@ import operator
 import itertools
 import weakref
 
-from aql_utils import toSequence
-from aql_list_types import UniqueList, List
-from aql_dict_types import Dict, DictItem
+from aql.utils import toSequence, UniqueList, List, Dict, DictItem
+
 from aql_option_types import OptionType, ListOptionType
 from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
 

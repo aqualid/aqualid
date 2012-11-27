@@ -25,11 +25,8 @@ __all__ = (
 
 import hashlib
 
-from aql_event_manager import eventStatus
-from aql_logging import logInfo
-from aql_value import Value, NoContent
-from aql_depends_value import DependsValue, DependsValueContent
-from aql_utils import toSequence
+from aql.utils import toSequence, eventStatus, logInfo
+from aql.values import Value, NoContent, DependsValue, DependsValueContent
 
 #//===========================================================================//
 
