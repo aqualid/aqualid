@@ -4,8 +4,8 @@ import sys
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_values_xash import ValuesXash
-from aql_value import Value
+from aql.values.aql_values_xash import ValuesXash
+from aql.values import Value
 
 #//===========================================================================//
 

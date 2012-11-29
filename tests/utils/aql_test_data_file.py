@@ -7,9 +7,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_temp_file import Tempfile
-from aql_data_file import DataFile
-
+from aql.utils import Tempfile, DataFile
 
 #//===========================================================================//
 

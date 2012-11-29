@@ -5,12 +5,8 @@ import timeit
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_temp_file import Tempfile
-from aql_value import Value, NoContent
-from aql_depends_value import DependsValue
-from aql_value_pickler import ValuePickler, pickleable
-from aql_data_file import DataFile
-from aql_values_file import ValuesFile
+from aql.utils import Tempfile, DataFile
+from aql.values import Value, NoContent, DependsValue, ValuePickler, pickleable, ValuesFile
 
 #//===========================================================================//
 

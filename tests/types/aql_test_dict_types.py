@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_dict_types import Dict, SplitDictType, ValueDictType, DictItem
+from aql.types import Dict, SplitDictType, ValueDictType, DictItem
 
 #//===========================================================================//
 

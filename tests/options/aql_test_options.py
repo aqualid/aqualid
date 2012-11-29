@@ -6,16 +6,14 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
-from aql_simple_types import UpperCaseString
-from aql_path_types import FilePath
-from aql_option_value import OptionValue, ConditionalValue, Condition
-from aql_options import Options, AddValue, SubValue
+from aql.types import UpperCaseString, FilePath
 
-from aql_options import ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
+from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
+                        builtinOptions, \
+                        OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, \
+                        ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
                         ErrorOptionsNewValueTypeIsNotOption, ErrorOptionsOptionValueExists
 
-from aql_builtin_options import builtinOptions
 
 #//===========================================================================//
 

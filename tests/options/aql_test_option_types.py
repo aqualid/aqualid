@@ -6,11 +6,10 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType
-from aql_option_types import ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet, ErrorOptionTypeUnableConvertValue
-from aql_simple_types import IgnoreCaseString, UpperCaseString
-from aql_dict_types import Dict
-from aql_path_types import FilePath
+from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
+                        DictOptionType, PathOptionType, \
+                        ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet, ErrorOptionTypeUnableConvertValue
+from aql.types import IgnoreCaseString, UpperCaseString, Dict, FilePath
 
 #//===========================================================================//
 

@@ -6,14 +6,9 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_utils import fileChecksum, printStacks
-from aql_temp_file import Tempfile
-from aql_value import Value, NoContent
-from aql_file_value import FileValue, FileContentTimeStamp, FileContentChecksum
-from aql_values_file import ValuesFile
-from aql_node import Node
-from aql_builder import Builder, RebuildNode
-from aql_build_manager import BuildManager, ErrorNodeDependencyCyclic
+from aql.utils import fileChecksum, Tempfile
+from aql.values import Value, FileValue
+from aql.nodes import Node, Builder, RebuildNode, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 

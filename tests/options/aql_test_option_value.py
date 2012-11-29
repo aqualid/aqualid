@@ -8,10 +8,11 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType
-from aql_option_types import ErrorOptionTypeUnableConvertValue
-from aql_option_value import OptionValue, ConditionalValue, Condition, Operation, SimpleOperation
-from aql_dict_types import Dict
+from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
+                        OptionValue, ConditionalValue, Condition, Operation, SimpleOperation, \
+                        ErrorOptionTypeUnableConvertValue
+
+from aql.types import Dict
 
 #//===========================================================================//
 

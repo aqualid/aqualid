@@ -10,11 +10,8 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_temp_file import Tempfile
-from aql_value import Value, NoContent, IgnoreCaseStringContent
-from aql_file_value import FileValue, FileContentTimeStamp
-from aql_value_pickler import ValuePickler, pickleable
-
+from aql.utils import Tempfile
+from aql.values import Value, NoContent, IgnoreCaseStringContent, FileValue, FileContentTimeStamp, ValuePickler, pickleable
 
 #//===========================================================================//
 

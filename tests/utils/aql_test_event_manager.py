@@ -7,9 +7,12 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_utils import getFunctionName, printStacks
-from aql_event_manager import *
-from aql_event_manager import EventManager
+from aql.utils import eventWarning, eventStatus, eventHandler, \
+      disableEvents, finishHandleEvents, disableDefaultHandlers, enableDefaultHandlers, \
+      EVENT_STATUS, EVENT_WARNING, \
+      ErrorEventHandlerAlreadyDefined, ErrorEventHandlerUnknownEvent, ErrorEventUserHandlerWrongArgs
+
+from aql.utils.aql_event_manager import EventManager
 
 #//===========================================================================//
 

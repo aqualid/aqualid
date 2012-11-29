@@ -5,8 +5,7 @@ import time
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import skip, AqlTestCase, runLocalTests
-
-from aql_task_manager import TaskManager
+from aql.utils import TaskManager
 
 #//===========================================================================//
 

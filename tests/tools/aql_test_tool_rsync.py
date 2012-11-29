@@ -5,13 +5,10 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_temp_file import Tempfile, Tempdir
-from aql_file_value import FileValue, DirValue
-from aql_values_file import ValuesFile
-from aql_node import Node
-from aql_build_manager import BuildManager
-from aql_builtin_options import builtinOptions
-from aql_event_manager import finishHandleEvents
+from aql.utils import Tempfile, Tempdir, finishHandleEvents
+from aql.values import ValuesFile
+from aql.nodes import Node, BuildManager
+from aql.options import builtinOptions
 
 from rsync import RSyncGetBuilder, RSyncPutBuilder, rsyncOptions
 

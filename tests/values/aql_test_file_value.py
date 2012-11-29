@@ -6,8 +6,8 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_temp_file import Tempfile
-from aql_file_value import FileValue, FileName, FileContentChecksum, FileContentTimeStamp
+from aql.utils import Tempfile
+from aql.values.aql_file_value import FileValue, FileName, FileContentChecksum, FileContentTimeStamp
 
 class TestFileValue( AqlTestCase ):
   def test_file_value(self):

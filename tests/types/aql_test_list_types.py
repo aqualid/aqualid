@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql_list_types import UniqueList, SplitListType, List, ValueListType
+from aql.types import UniqueList, SplitListType, List, ValueListType
 
 #//===========================================================================//
 
