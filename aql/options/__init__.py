@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2012 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -19,7 +19,7 @@
 
 __all__ = tuple()
 
-from aql_builtin_options import *
-from aql_option_types import *
-from aql_option_value import *
-from aql_options import *
+from .aql_builtin_options import *
+from .aql_option_types import *
+from .aql_option_value import *
+from .aql_options import *

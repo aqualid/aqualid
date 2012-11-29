@@ -27,8 +27,8 @@ __all__ = (
 
 import threading
 
-from aql_utils import toSequence, equalFunctionArgs
-from aql_task_manager import TaskManager
+from .aql_utils import toSequence, equalFunctionArgs
+from .aql_task_manager import TaskManager
 
 #//===========================================================================//
 

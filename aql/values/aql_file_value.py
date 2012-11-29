@@ -27,8 +27,8 @@ import hashlib
 import struct
 import datetime
 
-from aql_value import Value, NoContent
-from aql_value_pickler import pickleable
+from .aql_value import Value, NoContent
+from .aql_value_pickler import pickleable
 
 from aql.utils import fileSignature
 

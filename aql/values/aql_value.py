@@ -22,7 +22,7 @@ __all__ = (
 
 import hashlib
 
-from aql_value_pickler import pickleable
+from .aql_value_pickler import pickleable
 
 #//===========================================================================//
 

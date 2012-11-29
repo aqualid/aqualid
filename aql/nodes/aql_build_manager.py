@@ -30,8 +30,8 @@ import hashlib
 from aql.utils import toSequence, eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
-from aql_node import Node
-from aql_builder import RebuildNode
+from .aql_node import Node
+from .aql_builder import RebuildNode
 
 #//===========================================================================//
 

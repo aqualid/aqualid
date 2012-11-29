@@ -19,9 +19,9 @@
 
 __all__ = tuple()
 
-from aql_depends_value import *
-from aql_file_value import *
-from aql_value import *
-from aql_value_pickler import *
-from aql_values_file import *
-from aql_values_xash import *
+from .aql_depends_value import *
+from .aql_file_value import *
+from .aql_value import *
+from .aql_value_pickler import *
+from .aql_values_file import *
+from .aql_values_xash import *

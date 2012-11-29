@@ -23,7 +23,7 @@ __all__ = (
 
 import threading
 
-from aql_logging import logWarning
+from .aql_logging import logWarning
 
 try:
   import queue

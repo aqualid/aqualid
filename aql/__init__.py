@@ -22,4 +22,5 @@ __all__ = (
   'options', 
   'utils', 
   'values',
+  'types',
 )

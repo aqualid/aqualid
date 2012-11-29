@@ -19,7 +19,7 @@
 
 __all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
 
-from aql_utils import toSequence
+from aql.utils import toSequence
 
 #//===========================================================================//
 

@@ -1,13 +1,10 @@
 import os
 
-from aql_builder import Builder
-from aql_utils import toSequence
-from aql_options import Options
-from aql_option_types import BoolOptionType, PathOptionType, StrOptionType
-from aql_path_types import FilePaths
-
-from aql_rsync import Rsync
-from aql_file_value import FileValue, DirValue
+from aql.utils import toSequence, Rsync
+from aql.types import FilePaths
+from aql.options import Options, BoolOptionType, PathOptionType, StrOptionType
+from aql.values import FileValue, DirValue
+from aql.nodes import Builder
 
 #//===========================================================================//
 

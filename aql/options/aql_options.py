@@ -19,6 +19,7 @@
 
 __all__ = (
   'Options',
+  'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue',
   'ErrorOptionsOperationIsNotSpecified', 'ErrorOptionsOptionValueExists',
   'ErrorOptionsNewValueTypeIsNotOption', 'ErrorOptionsForeignOptionValue',
 )
@@ -27,10 +28,11 @@ import operator
 import itertools
 import weakref
 
-from aql.utils import toSequence, UniqueList, List, Dict, DictItem
+from aql.utils import toSequence
+from aql.types import UniqueList, List, Dict, DictItem
 
-from aql_option_types import OptionType, ListOptionType
-from aql_option_value import OptionValue, Operation, ConditionalValue, Condition
+from .aql_option_types import OptionType, ListOptionType
+from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition
 
 #//===========================================================================//
 

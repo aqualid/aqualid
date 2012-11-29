@@ -23,7 +23,7 @@ import io
 import os
 import struct
 
-from aql_utils import openFile
+from .aql_utils import openFile
 
 class   DataFileChunk (object):
   __slots__ = \

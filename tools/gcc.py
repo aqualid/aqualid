@@ -4,13 +4,10 @@ import shutil
 import hashlib
 import itertools
 
-from aql_node import Node
-from aql_builder import Builder
-from aql_utils import execCommand, readTextFile
-from aql_path_types import FilePath, FilePaths
-from aql_options import Options
-from aql_temp_file import Tempfile, Tempdir
-from aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
+from aql.nodes import Node, Builder
+from aql.utils import execCommand, readTextFile, Tempfile, Tempdir
+from aql.types import FilePath, FilePaths
+from aql.options import Options, BoolOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//
 

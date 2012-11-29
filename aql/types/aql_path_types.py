@@ -24,9 +24,10 @@ __all__ = (
 import os.path
 import itertools
 
-from aql_utils import toSequence
-from aql_simple_types import IgnoreCaseString
-from aql_list_types import UniqueList, ValueListType
+from aql.utils import toSequence
+
+from .aql_simple_types import IgnoreCaseString
+from .aql_list_types import UniqueList, ValueListType
 
 #//===========================================================================//
 

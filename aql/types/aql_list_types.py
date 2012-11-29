@@ -19,7 +19,7 @@
 
 __all__ = ( 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
 
-from aql_utils import toSequence
+from aql.utils import toSequence
 
 class   UniqueList (object):
   
