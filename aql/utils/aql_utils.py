@@ -21,8 +21,7 @@ __all__ = (
   'isSequence', 'toSequence', 'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile',
   'fileSignature', 'fileChecksum',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs',
-  'execCommand', 'ExecCommandResult', 'whereProgram',
-  'ErrorProgramNotFound',
+  'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )
 
 import io
@@ -383,8 +382,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
     except Exception as ex:
-      raise
-      return ExecCommandResult( cmd, exception = ex )
+      raise ExecCommandResult( cmd, exception = ex )
     
     stdoutdata = _decodeData( stdoutdata )
     stderrdata = _decodeData( stderrdata )
@@ -441,3 +439,25 @@ def   whereProgram( prog, env = None ):
       return prog_path
   
   raise ErrorProgramNotFound( prog, env )
+
+#//===========================================================================//
+
+def   cpuCount( self ):
+  cpu_count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
+  if cpu_count:
+    return cpu_count
+  
+  try:
+    if 'SC_NPROCESSORS_ONLN' in os.sysconf_names:
+      cpu_count = os.sysconf('SC_NPROCESSORS_ONLN')
+    elif 'SC_NPROCESSORS_CONF' in os.sysconf_names:
+      cpu_count = os.sysconf('SC_NPROCESSORS_CONF')
+    if cpu_count
+      return cpu_count
+  
+  except AttributeError:
+    pass
+  
+  cpu_count = 1 # unable to detect number of CPUs
+  
+  return cpu_count

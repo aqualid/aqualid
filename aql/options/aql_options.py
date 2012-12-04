@@ -19,10 +19,12 @@
 
 __all__ = (
   'Options',
-  'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue',
+  'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue' 'JoinPathValue',
   'ErrorOptionsOperationIsNotSpecified', 'ErrorOptionsOptionValueExists',
   'ErrorOptionsNewValueTypeIsNotOption', 'ErrorOptionsForeignOptionValue',
 )
+
+import os.path
 
 import operator
 import itertools
@@ -99,6 +101,9 @@ def   _setOperator( dest_value, value ):
     return dest_value
   return value
 
+def   _joinPath( dest_value, value ):
+  return os.path.join( dest_value, value )
+
 def   _notOperator( dest_value, value ):
   return not value
 
@@ -127,6 +132,12 @@ def   AddValue( value, operation = None ):
 
 def   SubValue( value, operation = None ):
   return Operation( operation, _doAction, operator.isub, value )
+
+def   JoinPathValue( value, operation = None ):
+  return Operation( operation, _doAction, _joinPath, value )
+
+def   AbsPathValue( operation = None ):
+  return Operation( operation, _doAction, _abdPath, None )
 
 def   UpdateValue( value, operation = None ):
   return Operation( operation, _doAction, _updateOperator, value )

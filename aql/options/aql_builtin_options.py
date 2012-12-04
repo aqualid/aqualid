@@ -24,6 +24,7 @@ __all__ = (
 import os
 
 from aql.types import IgnoreCaseString, UpperCaseString, FilePath
+from aql.utils import cpuCount
 
 from .aql_options import Options
 from .aql_option_value import ConditionalValue
@@ -56,7 +57,23 @@ def   _build_options():
                                            description = "Active build variants" )
   options.bvs = options.build_variants
   
+  #//-------------------------------------------------------//
+  
   options.setGroup( "Build output" )
+  
+  return options
+
+#//===========================================================================//
+
+def   _cliOptions():
+  options = Options()
+  
+  options.jobs = RangeOptionType( 1, 1024, description = "The number of parallel jobs to execute tasks." )
+  options.cache_file_name = PathOptionType( description = "Name of cache file of builders outputs. " )
+  options.cache_file = PathOptionType( description = "Path to cache file of builders outputs. " )
+  options.keep_going = BoolOptionType( description = "Keep building targets event if some targets failed." )
+  
+  options.setGroup( "General" )
   
   return options
 
@@ -215,6 +232,14 @@ def   _init_defaults( options ):
     
     #//-------------------------------------------------------//
     
+    options.jobs = cpuCount()
+    options.keep_going = False
+    options.cache_file_name = '.aql.values'
+    options.cache_file = options.build_dir_prefix
+    options.cache_file = JoinPathValue( options.cache_file_name )
+    
+    #//-------------------------------------------------------//
+    
     options.target_os   = 'native'
     options.target_arch = 'native'
     
@@ -239,14 +264,9 @@ def   _init_defaults( options ):
     options.build_dir_name += options.build_variant
     
     
-    def   _joinBuildDir( options, context, current_value ):
-      build_dir_prefix  = options.build_dir_prefix.value()
-      build_dir_name    = options.build_dir_name.value()
-      build_dir_suffix  = options.build_dir_suffix.value()
-      
-      return build_dir_prefix.join( build_dir_name, build_dir_suffix ).abs()
-    
-    options.build_dir = ConditionalValue( _joinBuildDir )
+    options.build_dir = options.build_dir_prefix
+    options.build_dir = JoinPathValue( options.build_dir_name )
+    options.build_dir = JoinPathValue( options.build_dir_suffix )
     options.If().build_dir_suffix.eq( FilePath() ).do_build_path_merge = True
     
     #//-------------------------------------------------------//
@@ -287,6 +307,7 @@ def     builtinOptions():
     options.update( _diagnostic_options() )
     options.update( _setup_options() )
     options.update( _env_options() )
+    options.update( _cliOptions() )
     
     _init_defaults( options )
     
