@@ -18,7 +18,8 @@
 #
 
 __all__ = (
-  'isSequence', 'toSequence', 'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile',
+  'isSequence', 'toSequence',
+  'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
   'fileSignature', 'fileChecksum',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
@@ -140,6 +141,13 @@ def writeBinFile( filename, buf ):
   with openFile( filename, write = True, binary = True ) as f:
     f.truncate()
     f.write( buf )
+
+#//===========================================================================//
+
+def   execFile( filename, locals ):
+  source = readTextFile( filename )
+  code = compile( source, config, 'exec' )
+  exec( code, {}, locals )
 
 #//===========================================================================//
 
@@ -452,7 +460,7 @@ def   cpuCount( self ):
       cpu_count = os.sysconf('SC_NPROCESSORS_ONLN')
     elif 'SC_NPROCESSORS_CONF' in os.sysconf_names:
       cpu_count = os.sysconf('SC_NPROCESSORS_CONF')
-    if cpu_count
+    if cpu_count:
       return cpu_count
   
   except AttributeError:
