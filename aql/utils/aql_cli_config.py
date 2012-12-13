@@ -19,6 +19,9 @@
 
 import optparse
 
+from aql.types import SplitListType, ValueListType, UniqueList
+from aql.utils import toSequence, execFile
+
 __all__ = ( 'CLIOption', 'CLIConfig' )
 
 #//===========================================================================//
@@ -60,8 +63,7 @@ class   CLIConfig( object ):
   
   def   __init__( self, cli_usage, cli_options, args ):
     
-    super(CLIConfig, self).__setattr__( 'values', {} )
-    super(CLIConfig, self).__setattr__( 'targets', [] )
+    super(CLIConfig, self).__setattr__( 'targets', tuple() )
     super(CLIConfig, self).__setattr__( '_set_options', set() )
     super(CLIConfig, self).__setattr__( '_defaults', {} )
     
@@ -82,25 +84,29 @@ class   CLIConfig( object ):
   @staticmethod
   def   __getDefaults( cli_options ):
     defaults = {}
-    
     for opt in cli_options:
       defaults[ opt.opt_name ] = (opt.default, opt.value_type)
+    
+    targets_type = SplitListType( ValueListType( UniqueList, str ), ', ' )
+    defaults[ 'targets' ] = (tuple(), targets_type )
     
     return defaults
   
   #//-------------------------------------------------------//
   
   def   __parseValues( self, args ):
-    values = self.values
-    targets = self.targets
+    targets = []
     
     for arg in args:
       name, sep, value = arg.partition('=')
       name = name.strip()
       if sep:
-        values[name] = value.strip()
+        setattr( self, name, value.strip() )
       else:
         targets.append( name )
+    
+    if targets:
+      self.targets = tuple( targets )
   
   #//-------------------------------------------------------//
   
@@ -115,6 +121,7 @@ class   CLIConfig( object ):
         value = defaults[ name ][0]
       else:
         self._set_options.add( name )
+        value = opt.value_type( value )
       
       super(CLIConfig, self).__setattr__( name, value )
   
@@ -124,19 +131,23 @@ class   CLIConfig( object ):
     parser = self.__getArgsParser( cli_usage, cli_options )
     args, values = parser.parse_args( cli_args )
     
-    self.__parseValues( values )
     self.__parseOptions( cli_options, args )
+    self.__parseValues( values )
   
   #//-------------------------------------------------------//
   
-  def   include( self, config_file ):
-    locals = {}
+  def   readConfig( self, config_file, locals = None ):
+    if locals is None:
+      locals = {}
+    
+    exec_locals = locals.copy()
+    
     defaults = self._defaults
     set_options = self._set_options
     
-    execFile( config_file, locals )
-    for name, value in locals.items():
-      if name in defaults:
+    execFile( config_file, exec_locals )
+    for name, value in exec_locals.items():
+      if name not in locals:
         self.setDefault( name, value )
   
   #//-------------------------------------------------------//
@@ -164,3 +175,11 @@ class   CLIConfig( object ):
   def   __setattr__( self, name, value ):
     self.__set( name, value )
     self._set_options.add( name )
+  
+  #//-------------------------------------------------------//
+  
+  def   items( self ):
+    for name, value in self.__dict__.items():
+      if not name.startswith("_") and (name != "targets"):
+        yield (name, value)
+  

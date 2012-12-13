@@ -146,7 +146,7 @@ def writeBinFile( filename, buf ):
 
 def   execFile( filename, locals ):
   source = readTextFile( filename )
-  code = compile( source, config, 'exec' )
+  code = compile( source, filename, 'exec' )
   exec( code, {}, locals )
 
 #//===========================================================================//
