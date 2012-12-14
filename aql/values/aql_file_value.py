@@ -32,7 +32,7 @@ from .aql_value_pickler import pickleable
 
 from aql.utils import fileSignature
 
-_file_content_chache = {}
+_file_content_cache = {}
 
 #//===========================================================================//
 
@@ -41,11 +41,11 @@ class   FileContentChecksum (object):
   
   __slots__ = ( 'signature' )
   
-  def   __new__( cls, path = None, signature = None, use_cache = False, file_content_chache = _file_content_chache ):
+  def   __new__( cls, path = None, signature = None, use_cache = False, file_content_cache = _file_content_cache ):
     
     if use_cache:
       try:
-        content = file_content_chache[ path ]
+        content = _file_content_cache[ path ]
         if type(content) is FileContentChecksum:
           return content
       except KeyError:
@@ -70,7 +70,7 @@ class   FileContentChecksum (object):
     self = super(FileContentChecksum,cls).__new__(cls)
     self.signature = signature
     
-    file_content_chache[ path ] = self
+    file_content_cache[ path ] = self
     return self
   
   #//-------------------------------------------------------//
@@ -96,11 +96,11 @@ class   FileContentTimeStamp (object):
   
   __slots__ = ( 'size', 'modify_time', 'signature' )
   
-  def   __new__( cls, path = None, size = None, modify_time = None, use_cache = False, file_content_chache = _file_content_chache ):
+  def   __new__( cls, path = None, size = None, modify_time = None, use_cache = False, file_content_cache = _file_content_cache ):
     
     if use_cache:
       try:
-        content = file_content_chache[ path ]
+        content = file_content_cache[ path ]
         if type(content) is FileContentTimeStamp:
           return content
       except KeyError:
@@ -129,7 +129,7 @@ class   FileContentTimeStamp (object):
     except OSError:
         self = NoContent()
     
-    file_content_chache[ path ] = self
+    file_content_cache[ path ] = self
     
     return self
   

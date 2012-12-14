@@ -17,33 +17,53 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = (
-)
+__all__ = ( 'Project', 'ProjectConfig' )
 
-from aql.utils import cpuCount
+import sys
+
+from aql.utils import cpuCount, CLIConfig, CLIOption
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
 
+#//===========================================================================//
+
+def   jobsCount( jobs = None ):
+  
+  if jobs is None:
+    jobs = cpuCount()
+  
+  return max( min( 1, int(jobs), 1024 ) )
 
 #//===========================================================================//
 
-def   defaultJobs():
-  return max( min( 1, cpuCount(), 1024 ) )
-
-#//===========================================================================//
-
-CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
-
-CLI_OPTIONS = (
-  CLIOption( "-j", "--jobs",         "jobs",            int,      defaultJobs(),  "Cache file of targets build status.", 'NUMBER' ),
-  CLIOption( "-m", "--make-file",    "make_file",       FilePath, 'make.aql',     "Cache file of targets build status.", 'FILE PATH'),
-  CLIOption( "-t", "--cache-file",   "cache_file",      FilePath, '.aql.values',  "Cache file of targets build status.", 'FILE PATH'),
-  CLIOption( "-k", "--keep-going",   "keep_going",      bool,     False,          "Continue build even if any target failed." ),
-  CLIOption( "-l", "--list-options", "list_options",    bool,     False,          "List all available options and exit." ),
-  CLIOption( "-c", "--clean",        "clean_targets",   bool,     False,          "Clean up actual targets." ),
-  CLIOption( "-v", "--verbose",      "verbose",         bool,     False,          "Verbose mode." ),
-  CLIOption( "-q", "--quiet",        "quiet",           bool,     False,          "Quiet mode." ),
-)
+class ProjectConfig( CLIConfig ):
+  
+  def   __init__( self, args = None ):
+    if args is None:
+      args = sys.argv
+    
+    CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
+    
+    CLI_OPTIONS = (
+      CLIOption( "-j", "--jobs",          "jobs",            jobsCount,  None,          "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-f", "--make-file",     "make_file",       FilePath,   'make.aql',    "Path to main make file", 'FILE PATH'),
+      CLIOption( "-t", "--cache-file",    "cache_file",      FilePath,   '.aql.cache',  "Path to cache file of build status.", 'FILE PATH'),
+      CLIOption( "-k", "--keep-going",    "keep_going",      bool,       False,         "Continue build even if any target failed." ),
+      CLIOption( "-l", "--list-options",  "list_options",    bool,       False,         "List all available options and exit." ),
+      CLIOption( "-c", "--clean",         "clean_targets",   bool,       False,         "Clean up actual targets." ),
+      CLIOption( "-v", "--verbose",       "verbose",         bool,       False,         "Verbose mode." ),
+      CLIOption( "-q", "--quiet",         "quiet",           bool,       False,         "Quiet mode." ),
+    )
+    
+    super(ProjectConfig, self).__init__( CLI_USAGE, CLI_OPTIONS, args )
+    
+    self.options = builtinOptions()
+  
+  #//-------------------------------------------------------//
+  
+  def readConfig( self, config_file ):
+    locals = {'options': self.options }
+    super(ProjectConfig, self).readConfig( config_file, locals )
 
 #//===========================================================================//
 
@@ -55,13 +75,25 @@ class Project( object ):
     'build_manager',
   )
   
-  def   __init__(self, flags, options ):
-    self.flags = flags
-    self.options = options
-    self.build_manager = BuildManager( flags.cache_file, flags.jobs, flags.keep_going )
+  def   __init__(self, config = None ):
+    if config is None:
+      config = ProjectConfig()
+    
+    self.config = config
+    self.options = config.options.override()
+    self.build_manager = BuildManager( config.cache_file, config.jobs, config.keep_going )
+  
+  #//=======================================================//
+  
+  def   Tool( self, tools, tool_paths = tuple(), **kw ):
+    pass
+  
+  #//=======================================================//
   
   def   Depends( self, target, dependency ):
     pass
+  
+  #//=======================================================//
   
   def   Ignore( self, target, dependency ):
     pass
@@ -75,20 +107,26 @@ class Project( object ):
   def   ReadScript( self, scripts ):
     pass
   
-  def   Tool( self, tools, tool_paths = tuple(), **kw ):
+  #//=======================================================//
+  
+  def   Build( self ):
     pass
   
+  #//=======================================================//
+  
+  def   Clean( self ):
+    pass
+
+#//===========================================================================//
 
 if __name__ == "__main__":
-  
-  options = aql.CLIOptions( )
-  options.include( )
   
   prj_cfg = aql.ProjectConfiguration()
   prj_cfg.readConfig( config_file )
   
   prj_cfg.options 
   
+  prj = aql.Project( )
   prj = aql.Project( prj_cfg )
   
   
