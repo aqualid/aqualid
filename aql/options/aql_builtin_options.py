@@ -25,7 +25,7 @@ import os
 
 from aql.types import IgnoreCaseString, UpperCaseString, FilePath
 
-from .aql_options import Options
+from .aql_options import Options, JoinPathValue
 from .aql_option_value import ConditionalValue
 from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, StrOptionType, VersionOptionType
 
@@ -50,7 +50,7 @@ def   _build_options():
                                   description = "Current build variant" )
   
   options.build_variant = build_variant
-  options.bv = build_variant
+  options.bv = options.build_variant
   
   options.build_variants = ListOptionType( value_type = build_variant, unique = True,
                                            description = "Active build variants" )

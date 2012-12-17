@@ -22,8 +22,10 @@ __all__ = ( 'Project', 'ProjectConfig' )
 import sys
 
 from aql.utils import cpuCount, CLIConfig, CLIOption
+from aql.types import FilePath
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
+from aql.nodes import BuildManager
 
 #//===========================================================================//
 
@@ -32,7 +34,7 @@ def   jobsCount( jobs = None ):
   if jobs is None:
     jobs = cpuCount()
   
-  return max( min( 1, int(jobs), 1024 ) )
+  return max( min( 1, int(jobs) ), 1024 )
 
 #//===========================================================================//
 
@@ -57,21 +59,32 @@ class ProjectConfig( CLIConfig ):
     
     super(ProjectConfig, self).__init__( CLI_USAGE, CLI_OPTIONS, args )
     
-    self.options = builtinOptions()
+    self._options = builtinOptions()
   
   #//-------------------------------------------------------//
   
-  def readConfig( self, config_file ):
-    locals = {'options': self.options }
+  def   readConfig( self, config_file ):
+    options = self._options
+    locals = { 'options': options }
     super(ProjectConfig, self).readConfig( config_file, locals )
+    
+    options.update( self )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, name ):
+    if name == 'options':
+      return self._options
+    
+    return super(ProjectConfig, self).__getattr__( name )
 
 #//===========================================================================//
 
 class Project( object ):
   
   __slots__ = (
+    'config',
     'options',
-    'flags',
     'build_manager',
   )
   
@@ -80,8 +93,11 @@ class Project( object ):
       config = ProjectConfig()
     
     self.config = config
+    
+    print( "config.options.bv: '%s'" % config.options.build_variant.value() )
     self.options = config.options.override()
     self.build_manager = BuildManager( config.cache_file, config.jobs, config.keep_going )
+    print( "self.options.bv: '%s'" % self.options.build_variant.value() )
   
   #//=======================================================//
   

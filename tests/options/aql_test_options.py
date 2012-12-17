@@ -312,13 +312,17 @@ class TestOptions( AqlTestCase ):
     options2.debug_on = False
     options2.bv = ListOptionType( value_type = str )
     options2.bv += 'debug,release,final'
+    options2.build_variant = options2.bv
     options += options2
     self.assertEqual( options.debug_on, options2.debug_on )
     self.assertEqual( options.bv, options2.bv )
+    self.assertEqual( options.bv, options2.build_variant )
+    self.assertEqual( options2.bv, options2.build_variant )
+    self.assertIs( options.bv.option_value, options.build_variant.option_value )
     
     options += options2
     self.assertEqual( options.debug_on, options2.debug_on )
-    self.assertEqual( options.bv, "debug,release,final,debug,release,final" )
+    self.assertEqual( options.bv.value(), "debug,release,final,debug,release,final" )
 
   #//-------------------------------------------------------//
   

@@ -450,7 +450,7 @@ def   whereProgram( prog, env = None ):
 
 #//===========================================================================//
 
-def   cpuCount( self ):
+def   cpuCount():
   cpu_count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
   if cpu_count:
     return cpu_count

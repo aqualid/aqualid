@@ -160,21 +160,28 @@ class   CLIConfig( object ):
     except KeyError:
       defaults[ name ] = (value, type(value))
     else:
-      value = value_type( value )
+      if type(value) is not value_type:
+        value = value_type( value )
     
     super(CLIConfig, self).__setattr__( name, value )
   
   #//-------------------------------------------------------//
   
   def   setDefault( self, name, value ):
-    if name not in self._set_options:
-      self.__set( name, value )
+    if name.startswith("_"):
+      super(CLIConfig, self).__setattr__( name, value )
+    else:
+      if name not in self._set_options:
+        self.__set( name, value )
   
   #//-------------------------------------------------------//
   
   def   __setattr__( self, name, value ):
-    self.__set( name, value )
-    self._set_options.add( name )
+    if name.startswith("_"):
+      super(CLIConfig, self).__setattr__( name, value )
+    else:
+      self.__set( name, value )
+      self._set_options.add( name )
   
   #//-------------------------------------------------------//
   
