@@ -24,21 +24,17 @@ class TestProject( AqlTestCase ):
 abc = 123
 size = 100
 jobs = 4
-options.build_variant = "debug"
+options.build_variant = "final"
 """
       f.write( cfg )
       f.flush()
     
       cfg = ProjectConfig( args )
-      #~ cfg.readConfig( f.name )
+      cfg.readConfig( f.name )
     
     prj = Project( cfg )
     
-    bv = prj.options.bv.value()
-    
-    print( "prj.options.bv: '%s' %s" % (bv, type(bv) ) )
-    
-    self.assertEqual( bv, 'final' )
+    self.assertEqual( prj.options.bv, 'final' )
 
 #//===========================================================================//
 

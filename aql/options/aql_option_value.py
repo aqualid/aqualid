@@ -19,11 +19,26 @@
 
 __all__ = (
   'Condition', 'Operation', 'ConditionalValue', 'OptionValue', 'SimpleOperation',
+  'ErrorOptionValueMergeDifferentOptionTypes'
 )
 
 import operator
 
 from aql.utils import toSequence
+
+#//===========================================================================//
+
+class   ErrorOptionValueMergeDifferentOptionTypes( TypeError ):
+  def   __init__( self, type1, type2 ):
+    msg = "Unable to merge option values of different types: '%s'" % (type1, type2)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorOptionValueMergeNonOptionValue( TypeError ):
+  def   __init__( self, value ):
+    msg = "Unable to merge option value with non option value: '%s'" % str(type(value))
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -136,6 +151,20 @@ class OptionValue (object):
   def   prependValue( self, conditional_value ):
     self.conditional_values[:0] = [ conditional_value ]
   
+  #//-------------------------------------------------------//
+  
+  def   merge( self, other ):
+    if self is other:
+      return
+    
+    if not isinstance( other, OptionValue ):
+      raise ErrorOptionValueMergeNonOptionValue( other )
+    
+    if self.option_type is not other.option_type:
+      raise ErrorOptionValueMergeDifferentOptionTypes( self.option_type, other.option_type )
+    
+    self.conditional_values += other.conditional_values
+    
   #//-------------------------------------------------------//
   
   def   copy( self ):

@@ -94,10 +94,8 @@ class Project( object ):
     
     self.config = config
     
-    print( "config.options.bv: '%s'" % config.options.build_variant.value() )
     self.options = config.options.override()
     self.build_manager = BuildManager( config.cache_file, config.jobs, config.keep_going )
-    print( "self.options.bv: '%s'" % self.options.build_variant.value() )
   
   #//=======================================================//
   

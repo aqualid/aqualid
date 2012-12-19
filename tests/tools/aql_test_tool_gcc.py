@@ -86,7 +86,7 @@ class TestToolGcc( AqlTestCase ):
       src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.update( gccOptions() )
+      options.merge( gccOptions() )
       
       options.cxx = "C:\\MinGW32\\bin\\g++.exe"
       
@@ -159,7 +159,7 @@ class TestToolGcc( AqlTestCase ):
       src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.update( gccOptions() )
+      options.merge( gccOptions() )
       
       options.cxx = "C:\\MinGW32\\bin\\g++.exe"
       
@@ -217,7 +217,7 @@ class TestToolGcc( AqlTestCase ):
       src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.update( gccOptions() )
+      options.merge( gccOptions() )
       
       options.cxx = "C:\\MinGW32\\bin\\g++.exe"
       options.ar = "C:\\MinGW32\\bin\\ar.exe"
@@ -283,7 +283,7 @@ class TestToolGccSpeed( AqlTestCase ):
     #//-------------------------------------------------------//
     
     options = builtinOptions()
-    options.update( gccOptions() )
+    options.merge( gccOptions() )
     
     options.cxx = "C:\\MinGW32\\bin\\g++.exe"
     

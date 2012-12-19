@@ -107,8 +107,8 @@ def   gccOptions():
   options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
   options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
   
-  options.update( _cppCompilerOptions() )
-  options.update( _linkerOptions() )
+  options.merge( _cppCompilerOptions() )
+  options.merge( _linkerOptions() )
   
   options.setGroup( "C/C++ compiler" )
   

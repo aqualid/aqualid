@@ -21,7 +21,7 @@ __all__ = (
   'Options',
   'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
   'ErrorOptionsOperationIsNotSpecified', 'ErrorOptionsOptionValueExists',
-  'ErrorOptionsNewValueTypeIsNotOption', 'ErrorOptionsForeignOptionValue',
+  'ErrorOptionsNewValueTypeIsNotOption', 'ErrorOptionsForeignOptionValue', 'ErrorOptionsMergeNonOptions'
 )
 
 import os.path
@@ -56,6 +56,11 @@ class   ErrorOptionsNewValueTypeIsNotOption( TypeError ):
 class   ErrorOptionsForeignOptionValue( TypeError ):
   def   __init__( self, value ):
     msg = "Can't assign OptionValue owned by other options: %s" % str(value)
+    super(type(self), self).__init__( msg )
+
+class   ErrorOptionsMergeNonOptions( TypeError ):
+  def   __init__( self, value ):
+    msg = "Type '%s' can't be merged with Options." % str(type(value))
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -587,46 +592,59 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __get_value_names( other ):
-    val_names = {}
-    name_val = {}
-    for name, value in other.items():
-      if isinstance( value, OptionValueProxy ):
-        value = value.option_value
-      val_names.setdefault( value, [] ).append( name )
-      name_val[ value] = value
-    
-    return val_names, name_val
-    
-  #//-------------------------------------------------------//
-  
   def   update( self, other ):
     if not other:
       return
     
-    if self is other:
-      return
+    options = self
+    if isinstance( self, Options ):
+      options = other
     
-    self.clearCache()
+    cache_cleared = False
     
-    other_values, other_names = self.__get_value_names( other )
-    self_values, self_names = self.__get_value_names( self )
-    
-    for value, names in other_values.items():
-      if isinstance( value, OptionValue ):
-        value = value.copy()
+    for name, value in other.items():
       
-      for name in names:
-        try:
-          opt_value, from_parent = self._get_value( name )
-          if opt_value is not None:
-            if opt_value not in updated_opt_values:
-              self.__update_value( opt_value, from_parent, name, value, UpdateValue )
-          else:
-            
-        except ErrorOptionsNewValueTypeIsNotOption:
-          pass
+      if isinstance( value, OptionValueProxy ):
+        value = value.value()
+      
+      elif isinstance( value, OptionValue ):
+        value = value.value( options )
+      
+      try:
+        self.__set_value( name, value, UpdateValue )
+      except ErrorOptionsNewValueTypeIsNotOption:
+        pass
+      else:
+        if not cache_cleared:
+          self.clearCache()
+          cache_cleared = True
+  
+  #//-------------------------------------------------------//
+  
+  def   __getValueNewNames( self, names ):
+    
+    value = None
+    from_parent = False
+    new_names = set()
+    
+    for name in names:
+      v, p = self._get_value( name )
+      if v is None:
+        new_names.add( name )
+      else:
+        if (value is not None) and (value is not v):
+          raise ErrorOptionsMergeToDifferentOptions( names )
+        
+        if p:
+          new_names.add( name )
+          from_parent = True
+        
+        value = v
+    
+    if from_parent:
+      value = value.copy()
+    
+    return value, new_names
   
   #//-------------------------------------------------------//
   
@@ -640,28 +658,29 @@ class Options (object):
     if not isinstance( other, Options ):
       raise ErrorOptionsMergeNonOptions( other )
     
-    other_values, other_names = self.__get_value_names( other )
+    self.clearCache()
+    
+    self_opt_values = self.__dict__['__opt_values']
+    
+    other_values = {}
+    for name, value in other.items():
+      other_values.setdefault( value, [] ).append( name )
     
     for value, names in other_values.items():
-      if isinstance( value, OptionValue ):
-        value = value.copy()
       
-      for name in names:
-        opt_value, from_parent = self._get_value( name )
-        if opt_value is not None:
-          raise ErrorOptionsMergeExistingOption( name )
-        self.__set_new_value( name, value )
-          
+      self_value, new_names = self.__getValueNewNames( names )
+      
+      if self_value is None:
+        self_value = value.copy()
+      else:
+        self_value.merge( value )
+      
+      for name in new_names:
+        self_opt_values[ name ] = self_value
   
   #//-------------------------------------------------------//
-  
-  def     __iadd__(self, other ):
-    self.update( other )
-    return self
 
-  #//-------------------------------------------------------//
-
-  def     override( self ):
+  def   override( self ):
     return Options( self )
   
   #//-------------------------------------------------------//

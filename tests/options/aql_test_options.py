@@ -12,7 +12,7 @@ from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionT
                         builtinOptions, \
                         OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, \
                         ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
-                        ErrorOptionsNewValueTypeIsNotOption, ErrorOptionsOptionValueExists
+                        ErrorOptionsNewValueTypeIsNotOption, ErrorOptionsOptionValueExists, ErrorOptionsMergeNonOptions
 
 
 #//===========================================================================//
@@ -306,6 +306,7 @@ class TestOptions( AqlTestCase ):
     
     options.update( {} )
     options.update( options )
+    self.assertRaises( ErrorOptionsMergeNonOptions, options.merge, args )
     
     options2 = Options()
     options2.debug_on = BoolOptionType()
@@ -313,14 +314,14 @@ class TestOptions( AqlTestCase ):
     options2.bv = ListOptionType( value_type = str )
     options2.bv += 'debug,release,final'
     options2.build_variant = options2.bv
-    options += options2
+    options.merge( options2 )
     self.assertEqual( options.debug_on, options2.debug_on )
     self.assertEqual( options.bv, options2.bv )
     self.assertEqual( options.bv, options2.build_variant )
     self.assertEqual( options2.bv, options2.build_variant )
     self.assertIs( options.bv.option_value, options.build_variant.option_value )
     
-    options += options2
+    options.merge( options2 )
     self.assertEqual( options.debug_on, options2.debug_on )
     self.assertEqual( options.bv.value(), "debug,release,final,debug,release,final" )
 
@@ -351,8 +352,6 @@ class TestOptions( AqlTestCase ):
     options.build_dir_suffix = None
     
     self.assertTrue( options.do_build_path_merge )
-    
-    print( options.env.value().copy( value_type = str ) )
   
   #//-------------------------------------------------------//
   

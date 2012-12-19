@@ -277,13 +277,13 @@ def     builtinOptions():
     
     options = Options()
     
-    options.update( _build_options() )
-    options.update( _target_options() )
-    options.update( _optimization_options() )
-    options.update( _code_gen_options() )
-    options.update( _diagnostic_options() )
-    options.update( _setup_options() )
-    options.update( _env_options() )
+    options.merge( _build_options() )
+    options.merge( _target_options() )
+    options.merge( _optimization_options() )
+    options.merge( _code_gen_options() )
+    options.merge( _diagnostic_options() )
+    options.merge( _setup_options() )
+    options.merge( _env_options() )
     
     _init_defaults( options )
     
