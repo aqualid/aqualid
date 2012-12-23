@@ -17,13 +17,14 @@ class TestProject( AqlTestCase ):
   
   def test_prj_config(self):
     
-    args = "-j 8".split()
+    args = "-v".split()
     
     with Tempfile() as f:
       cfg = b"""
 abc = 123
 size = 100
-jobs = 4
+keep_going = True
+jobs=5
 options.build_variant = "final"
 """
       f.write( cfg )
@@ -35,6 +36,7 @@ options.build_variant = "final"
     prj = Project( cfg )
     
     self.assertEqual( prj.options.bv, 'final' )
+    self.assertEqual( prj.config.jobs, 5 )
 
 #//===========================================================================//
 

@@ -81,9 +81,8 @@ class   CLIConfig( object ):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __getDefaults( cli_options ):
-    defaults = {}
+  def   __setDefaults( self, cli_options ):
+    defaults = self._defaults
     for opt in cli_options:
       defaults[ opt.opt_name ] = (opt.default, opt.value_type)
     
@@ -111,17 +110,20 @@ class   CLIConfig( object ):
   #//-------------------------------------------------------//
   
   def   __parseOptions( self, cli_options, args ):
-    defaults = self.__getDefaults( cli_options )
-    self._defaults = defaults
+    self.__setDefaults( cli_options )
+    
+    defaults = self._defaults
     
     for opt in cli_options:
       name = opt.opt_name
       value = getattr( args, name )
+      default, value_type = defaults[ name ]
+      
       if value is None:
-        value = defaults[ name ][0]
+        value = default
       else:
         self._set_options.add( name )
-        value = opt.value_type( value )
+        value = value_type( value )
       
       super(CLIConfig, self).__setattr__( name, value )
   

@@ -359,7 +359,7 @@ class ToolGcc( ToolCxx ):
   #//-------------------------------------------------------//
   
   @builder
-  def   CompileCpp( self, env, sources, options ):
+  def   CompileCpp( self, prj, options, sources ):
     pass
   
   @builder

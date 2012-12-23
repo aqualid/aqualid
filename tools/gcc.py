@@ -434,4 +434,9 @@ class GccLinker(Builder):
     return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
 
 
+#//===========================================================================//
+
+@aql.tool('c++', 'gcc')
+class GccCompilerTool( aql.Tool ):
+  
 

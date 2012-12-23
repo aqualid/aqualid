@@ -29,12 +29,20 @@ from aql.nodes import BuildManager
 
 #//===========================================================================//
 
+class   ErrorProjectInvalidMethod( Exception ):
+  def   __init__( self, method ):
+    msg = "Invalid project method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
+
+
+#//===========================================================================//
+
 def   jobsCount( jobs = None ):
   
   if jobs is None:
     jobs = cpuCount()
   
-  return max( min( 1, int(jobs) ), 1024 )
+  return min( max( 1, int(jobs) ), 1024 )
 
 #//===========================================================================//
 
@@ -46,15 +54,19 @@ class ProjectConfig( CLIConfig ):
     
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
+    Paths = SplitListType( FilePaths, ', ')
+    
     CLI_OPTIONS = (
-      CLIOption( "-j", "--jobs",          "jobs",            jobsCount,  None,          "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-f", "--make-file",     "make_file",       FilePath,   'make.aql',    "Path to main make file", 'FILE PATH'),
-      CLIOption( "-t", "--cache-file",    "cache_file",      FilePath,   '.aql.cache',  "Path to cache file of build status.", 'FILE PATH'),
-      CLIOption( "-k", "--keep-going",    "keep_going",      bool,       False,         "Continue build even if any target failed." ),
-      CLIOption( "-l", "--list-options",  "list_options",    bool,       False,         "List all available options and exit." ),
-      CLIOption( "-c", "--clean",         "clean_targets",   bool,       False,         "Clean up actual targets." ),
-      CLIOption( "-v", "--verbose",       "verbose",         bool,       False,         "Verbose mode." ),
-      CLIOption( "-q", "--quiet",         "quiet",           bool,       False,         "Quiet mode." ),
+      CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,               "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'build.aql',        "Path to main make file", 'FILE PATH'),
+      CLIOption( "-s", "--state-file",    "state_file",     FilePath,   'build.aql.state',  "File path to store information of previous builds.", 'FILE PATH'),
+      CLIOption( "-t", "--tools-path",    "tools_path",     Paths,      [],                 "Paths to tools", 'FILE PATH, ...'),
+      CLIOption( "-p", "--setup-path",    "setup_path",     Paths,      [],                 "Paths to setup scripts to preconfigure tools", 'FILE PATH, ...'),
+      CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,              "Continue build even if any target failed." ),
+      CLIOption( "-l", "--list-options",  "list_options",   bool,       False,              "List all available options and exit." ),
+      CLIOption( "-c", "--clean",         "clean_targets",  bool,       False,              "Clean up actual targets." ),
+      CLIOption( "-v", "--verbose",       "verbose",        bool,       False,              "Verbose mode." ),
+      CLIOption( "-q", "--quiet",         "quiet",          bool,       False,              "Quiet mode." ),
     )
     
     super(ProjectConfig, self).__init__( CLI_USAGE, CLI_OPTIONS, args )
@@ -99,8 +111,35 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   Tool( self, tools, tool_paths = tuple(), **kw ):
+  def   Tool( self, tools, tool_paths = None, **kw ):
     pass
+  
+  #//=======================================================//
+  
+  def   AddMethod( self, method, name = None ):
+    if not hasattr(tool_method, '__call__'):
+      raise ErrorProjectInvalidMethod( method )
+    
+    if not name:
+      name = method.__name__
+    
+    def   methodWrapper( *args, **kw ):
+      return method( self, *args, **kw )
+    
+    setattr( self, name, methodWrapper )
+    
+    return methodWrapper
+  
+  #//=======================================================//
+  
+  def   AddBuilderMethod( self, method, name = None ):
+    
+    method = self.AddMethod( method, name )
+    
+    def   methodWrapper( *args, **kw ):
+      return method( self, *args, **kw )
+    
+    setattr( self, name, methodWrapper )
   
   #//=======================================================//
   
@@ -135,12 +174,11 @@ class Project( object ):
 
 if __name__ == "__main__":
   
-  prj_cfg = aql.ProjectConfiguration()
+  prj_cfg = aql.ProjectConfig()
   prj_cfg.readConfig( config_file )
   
-  prj_cfg.options 
-  
-  prj = aql.Project( )
+  prj = aql.Project()
   prj = aql.Project( prj_cfg )
+  prj.Tool( 'c++', tool_paths )
   
   
