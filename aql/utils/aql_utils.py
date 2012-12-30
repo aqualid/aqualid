@@ -21,7 +21,7 @@ __all__ = (
   'isSequence', 'toSequence',
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
   'fileSignature', 'fileChecksum',
-  'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs',
+  'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )
 
@@ -228,8 +228,13 @@ except AttributeError:
 
 #//===========================================================================//
 
+def   getFunctionArgs( function, getargspec = _getargspec ):
+  return getargspec( function )[:4]
+
+#//===========================================================================//
+
 def   equalFunctionArgs( function1, function2, getargspec = _getargspec):
-  if id(function1) == id(function2):
+  if function1 is function2:
     return True
   
   return getargspec( function1 )[0:3] == getargspec( function2 )[0:3]
@@ -278,26 +283,28 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 #//===========================================================================//
 
-def  findFiles( path = ".", prefix = "", suffix = "", ignore_dir_prefixes = ('__', '.') ):
+def  findFiles( paths = ".", prefix = "", suffix = "", ignore_dir_prefixes = ('__', '.') ):
   
   found_files = []
   
+  paths = toSequence(paths)
   ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
   
-  for root, dirs, files in os.walk( path ):
-    for file_name in files:
-      file_name = file_name.lower()
-      if file_name.startswith( prefix ) and file_name.endswith( suffix ):
-        found_files.append( os.path.join(root, file_name))
-    
-    tmp_dirs = []
-    
-    for dir in dirs:
-      for dir_prefix in ignore_dir_prefixes:
-        if not dir.startswith( dir_prefix ):
-          tmp_dirs.append( dir )
-    
-    dirs[:] = tmp_dirs
+  for path in paths:
+    for root, dirs, files in os.walk( path ):
+      for file_name in files:
+        file_name = file_name.lower()
+        if file_name.startswith( prefix ) and file_name.endswith( suffix ):
+          found_files.append( os.path.join(root, file_name))
+      
+      tmp_dirs = []
+      
+      for dir in dirs:
+        for dir_prefix in ignore_dir_prefixes:
+          if not dir.startswith( dir_prefix ):
+            tmp_dirs.append( dir )
+      
+      dirs[:] = tmp_dirs
   
   return found_files
 
@@ -469,3 +476,59 @@ def   cpuCount():
   cpu_count = 1 # unable to detect number of CPUs
   
   return cpu_count
+
+#//===========================================================================//
+
+def  findFiles( path, test_modules_prefix ):
+  
+  test_case_modules = []
+  
+  for root, dirs, files in os.walk( path ):
+    for file_name in files:
+      file_name = file_name.lower()
+      if file_name.startswith( test_modules_prefix ) and file_name.endswith('.py'):
+        test_case_modules.append( os.path.join(root, file_name))
+    dirs[:] = filter( lambda d: not d.startswith('.') or d.startswith('__'), dirs )
+  
+  return test_case_modules
+
+#//===========================================================================//
+
+def   _loadTestModule( module_file, verbose ):
+  
+  module_dir = os.path.normpath( os.path.dirname( module_file ) )
+  module_name = os.path.splitext( os.path.basename( module_file ) )[0]
+  
+  fp, pathname, description = imp.find_module( module_name, [ module_dir ] )
+  
+  with fp:
+    if verbose:
+      print( "Loading test module: %s" % module_file )
+    
+    m = imp.load_module( module_name, fp, pathname, description )
+    sys_path = sys.path
+    try:
+      sys_path.remove( module_dir )
+    except ValueError:
+      pass
+    sys_path.insert( 0, module_dir )
+    return m
+
+#//===========================================================================//
+
+def   _loadTestModules( path, test_modules_prefix, verbose ):
+  
+  test_modules = []
+  module_files = []
+  
+  for path in _toSequence( path ):
+    if os.path.isdir( path ):
+      module_files += _findTestModuleFiles( path, test_modules_prefix )
+    else:
+      module_files.append( path )
+  
+  for module_file in module_files:
+    test_modules.append( _loadTestModule( module_file, verbose ) )
+  
+  return test_modules
+

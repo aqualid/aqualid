@@ -60,6 +60,12 @@ class ToolInfo( object ):
 
 #//===========================================================================//
 
+class ToolLoader( object ):
+  
+  
+
+#//===========================================================================//
+
 class ToolManager( object ):
   
   __slots__ = ('tool_methods', 'tool_classes', 'tool_setup', 'tool_post_setup' )
@@ -117,11 +123,7 @@ class ToolManager( object ):
     
     all_builders = self.tool_methods
     
-    builders = set()
-    
-    for name, instance in tool_class.__dict__.items():
-      if hasattr(instance, '__call__') and (instance in all_builders):
-        builders.add( instance )
+    builders = frozenset( instance for instance in tool_class.__dict__.values() if instance in all_builders )
     
     return builders
   

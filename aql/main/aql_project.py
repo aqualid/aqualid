@@ -17,15 +17,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'Project', 'ProjectConfig' )
+__all__ = ( 'Project', 'ProjectConfig',
+            'ErrorProjectBuilderMethodExists',
+            'ErrorProjectBuilderMethodFewArguments',
+            'ErrorProjectBuilderMethodResultInvalid',
+            'ErrorProjectBuilderMethodUnbound',
+            'ErrorProjectBuilderMethodWithKW',
+            'ErrorProjectInvalidMethod',
+          )
 
 import sys
+import types
 
-from aql.utils import cpuCount, CLIConfig, CLIOption
-from aql.types import FilePath
+from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs
+from aql.types import FilePath, FilePaths, SplitListType
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
-from aql.nodes import BuildManager
+from aql.nodes import BuildManager, Node
 
 #//===========================================================================//
 
@@ -34,6 +42,40 @@ class   ErrorProjectInvalidMethod( Exception ):
     msg = "Invalid project method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
 
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodWithKW( Exception ):
+  def   __init__( self, method ):
+    msg = "Keyword arguments are not allowed in builder method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodExists( Exception ):
+  def   __init__( self, method_name ):
+    msg = "Builder method '%s' is already added to project" % str(method_name)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodUnbound( Exception ):
+  def   __init__( self, method ):
+    msg = "Unbound builder method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodFewArguments( Exception ):
+  def   __init__( self, method ):
+    msg = "Too few arguments in builder method: '%s'" % str(method)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodResultInvalid( Exception ):
+  def   __init__( self, method, result ):
+    msg = "Builder method '%s' must return a Node object, actual result: '%s'" % (method, result)
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -92,13 +134,74 @@ class ProjectConfig( CLIConfig ):
 
 #//===========================================================================//
 
-class Project( object ):
+class BuilderWrapper( object ):
+  __slots__ = ( 'project', 'method', 'arg_names')
   
-  __slots__ = (
-    'config',
-    'options',
-    'build_manager',
-  )
+  def   __init__( self, project, method ):
+    self.arg_names = self.__checkBuilderMethod( method )
+    self.method = method
+    self.project = project
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __checkBuilderMethod( method ):
+    if not hasattr(method, '__call__'):
+      raise ErrorProjectInvalidMethod( method )
+    
+    f_args, f_varargs, f_kw, f_defaults = getFunctionArgs( method )
+    
+    if f_kw:
+      raise ErrorProjectBuilderMethodWithKW( method )
+    
+    min_args = 2  # at least two arguments: for project and for options
+    
+    if isinstance( method, types.MethodType ):
+      if method.__self__ is None:
+        raise ErrorProjectBuilderMethodUnbound( method )
+      
+      min_args += 1 # add self argument
+    
+    if len(f_args) < min_args:
+      raise ErrorProjectBuilderMethodFewArguments( method )
+    return frozenset( f_args )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getOptionsArgs( self, kw ):
+    args_kw = {}
+    options_kw = {}
+    for name, value in kw.items():
+      if name in self.arg_names:
+        args_kw[ name ] = value
+      else:
+        options_kw[ name ] = value
+    
+    if options_kw:
+      options = self.project.options.override()
+      options.update( options_kw )
+    else:
+      options = self.project.options
+    
+    return options, args_kw
+  
+  #//-------------------------------------------------------//
+  
+  def   __call__( self, *args, **kw ):
+    options, args_kw = self.__getOptionsArgs( kw )
+    
+    node = self.method( self, options, *args, **args_kw )
+    
+    if not isinstance( node, Node ):
+      raise ErrorProjectBuilderMethodResultInvalid( self.method, node )
+    
+    self.project.AddNodes( node )
+    
+    return node
+
+#//===========================================================================//
+
+class Project( object ):
   
   def   __init__(self, config = None ):
     if config is None:
@@ -107,12 +210,13 @@ class Project( object ):
     self.config = config
     
     self.options = config.options.override()
-    self.build_manager = BuildManager( config.cache_file, config.jobs, config.keep_going )
+    self.build_manager = BuildManager( config.state_file, config.jobs, config.keep_going )
   
   #//=======================================================//
   
   def   Tool( self, tools, tool_paths = None, **kw ):
-    pass
+    
+    for tool in tools
   
   #//=======================================================//
   
@@ -127,34 +231,40 @@ class Project( object ):
       return method( self, *args, **kw )
     
     setattr( self, name, methodWrapper )
-    
-    return methodWrapper
   
   #//=======================================================//
   
-  def   AddBuilderMethod( self, method, name = None ):
+  def   AddBuilder( self, builder_method, name = None ):
     
-    method = self.AddMethod( method, name )
+    method_wrapper = BuilderWrapper( self, builder_method )
     
-    def   methodWrapper( *args, **kw ):
-      return method( self, *args, **kw )
+    if not name:
+      name = builder_method.__name__
     
-    setattr( self, name, methodWrapper )
+    if hasattr( self, name ):
+      raise ErrorProjectBuilderMethodExists( builder_method )
+    
+    setattr( self, name, method_wrapper )
   
   #//=======================================================//
   
-  def   Depends( self, target, dependency ):
+  def   AddNodes( self, nodes ):
+    self.build_manager.add( nodes )
+  
+  #//=======================================================//
+  
+  def   Depends( self, node, dependency ):
     pass
   
   #//=======================================================//
   
-  def   Ignore( self, target, dependency ):
+  def   Ignore( self, node, dependency ):
     pass
   
-  def   Alias( self, alias, target ):
+  def   Alias( self, alias, node ):
     pass
   
-  def   AlwaysBuild( self, target ):
+  def   AlwaysBuild( self, node ):
     pass
   
   def   ReadScript( self, scripts ):
@@ -180,5 +290,12 @@ if __name__ == "__main__":
   prj = aql.Project()
   prj = aql.Project( prj_cfg )
   prj.Tool( 'c++', tool_paths )
+  prj.CompileC( c_files, optimization = 'size', debug_symbols = False )
+  prj.CompileCpp( cpp_files, optimization = 'speed' )
+  
+  """
+  1. kw - args
+  
+  """
   
   

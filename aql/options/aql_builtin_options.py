@@ -171,32 +171,6 @@ def     _diagnostic_options():
 
 #//===========================================================================//
 
-def   _setup_options():
-  
-  options = Options()
-  
-  #~ setup_path = os.environ.get('AQL_SETUP_PATH', aql_rootdir + '/setup' )
-  
-  options.setup_path = ListOptionType( value_type = FilePath,
-                                        description = "A file path(s) to setup files.\n" \
-                                                      "By default environment variable AQL_SETUP_PATH is used." )
-  
-  options.tools = ListOptionType( value_type = IgnoreCaseString,
-                                  description = "Environment tools" )
-  
-  #~ tools_path = os.environ.get( 'AQL_TOOLS_PATH', aql_rootdir + '/tools' )
-  options.tools_path = ListOptionType( value_type = FilePath,
-                                       description = "A file path(s) to tools files.\n" \
-                                                     "By default environment variable AQL_TOOLS_PATH is used." )
-  
-  options.log_level = RangeOptionType( 0, 3, description = "Log level" )
-  
-  options.setGroup( "Setup" )
-  
-  return options
-
-#//===========================================================================//
-
 def   _env_options():
   
   options = Options()
@@ -282,7 +256,6 @@ def     builtinOptions():
     options.merge( _optimization_options() )
     options.merge( _code_gen_options() )
     options.merge( _diagnostic_options() )
-    options.merge( _setup_options() )
     options.merge( _env_options() )
     
     _init_defaults( options )

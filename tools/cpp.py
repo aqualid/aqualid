@@ -326,7 +326,7 @@ class ToolCxx( Tool ):
 
 #//===========================================================================//
 
-@tool('gcc', 'c++')
+@aql.tool('gcc', 'c++')
 class ToolGcc( ToolCxx ):
   
   def   __init__( self, env ):
@@ -358,27 +358,23 @@ class ToolGcc( ToolCxx ):
   
   #//-------------------------------------------------------//
   
-  @builder
+  @aql.builder
   def   CompileCpp( self, prj, options, sources ):
     pass
   
-  @builder
+  @aql.builder
   def   CompileC( self, env, sources, options ):
     pass
   
-  @builder
-  def   Objects( self, env, sources, options ):
-    pass
-  
-  @builder
+  @aql.builder
   def   StaticLibrary( self, env, sources, options ):
     pass
   
-  @builder
+  @aql.builder
   def   SharedLibrary( self, env, sources, options ):
     pass
   
-  @builder
+  @aql.builder
   def   Program( self, env, sources, options ):
     pass
 

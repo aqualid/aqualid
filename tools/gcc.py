@@ -41,64 +41,6 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
-def   _cppCompilerOptions():
-  
-  options = Options()
-  
-  options.cc = PathOptionType( description = "C compiler program" )
-  options.cxx = PathOptionType( description = "C++ compiler program" )
-  options.cflags = ListOptionType( description = "C compiler options" )
-  options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
-  options.cxxflags = ListOptionType( description = "C++ compiler options" )
-  
-  options.ocflags = ListOptionType( description = "C compiler optimization options" )
-  options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
-  options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
-  
-  options.cflags += options.ocflags
-  options.ccflags += options.occflags
-  options.cxxflags += options.ocxxflags
-  
-  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
-  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
-  
-  options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
-  options.defines = options.cppdefines
-  
-  options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers" )
-  options.include = options.cpppath
-  
-  options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
-  
-  options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
-  options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
-  
-  return options
-
-#//===========================================================================//
-
-def   _linkerOptions():
-  
-  options = Options()
-  
-  options.ar = PathOptionType( description = "Static library archiver program" )
-  
-  options.linkflags = ListOptionType( description = "Linker options" )
-  options.libflags = ListOptionType( description = "Archiver options" )
-  
-  options.olinkflags = ListOptionType( description = "Linker optimization options" )
-  options.olibflags = ListOptionType( description = "Archiver optimization options" )
-  
-  options.linkflags += options.olinkflags
-  options.libflags += options.olibflags
-  
-  options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to extenal libraries" )
-  options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking extenal libraries" )
-  
-  return options
-
-#//===========================================================================//
-
 def   gccOptions():
   options = Options()
   
@@ -107,8 +49,8 @@ def   gccOptions():
   options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
   options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
   
-  options.merge( _cppCompilerOptions() )
-  options.merge( _linkerOptions() )
+  options.merge( cppCompilerOptions() )
+  options.merge( cppLinkerOptions() )
   
   options.setGroup( "C/C++ compiler" )
   
@@ -436,7 +378,65 @@ class GccLinker(Builder):
 
 #//===========================================================================//
 
-@aql.tool('c++', 'gcc')
-class GccCompilerTool( aql.Tool ):
+@aql.tool('gcc', 'g++', 'c++', 'c')
+class ToolGcc( Tool ):
+  
+  def   __init__( self, env ):
+    raise NotImplemented
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   options( _options = [ None ] ):
+    
+    options = _options[0]
+    
+    if options is not None:
+      return options.override()
+    
+    options = Options()
+    
+    options.gcc_path = PathOptionType()
+    options.gcc_target = StrOptionType( ignore_case = True )
+    options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
+    options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
+    
+    options.merge( cppCompilerOptions() )
+    options.merge( cppLinkerOptions() )
+    
+    options.setGroup( "C/C++ compiler" )
+    
+    _options[0] = options
+    
+    return options.override()
+  
+  #//-------------------------------------------------------//
+  
+  def   configure( self, prj, options ):
+    pass
+  
+  #//-------------------------------------------------------//
+  
+  @aql.builder
+  def   CompileCpp( self, prj, options, sources ):
+    pass
+  
+  @aql.builder
+  def   CompileC( self, prj, sources, options ):
+    pass
+  
+  @aql.builder
+  def   LinkLibrary( self, env, sources, options ):
+    pass
+  
+  @aql.builder
+  def   LinkSharedLibrary( self, env, sources, options ):
+    pass
+  
+  @aql.builder
+  def   LinkProgram( self, env, sources, options ):
+    pass
+
+#//===========================================================================//
   
 

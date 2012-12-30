@@ -680,7 +680,9 @@ class Options (object):
   
   #//-------------------------------------------------------//
 
-  def   override( self ):
+  def   override( self, **kw ):
+    other = Options( self )
+    other.update( kw )
     return Options( self )
   
   #//-------------------------------------------------------//
