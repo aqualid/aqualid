@@ -20,11 +20,12 @@
 __all__ = (
   'isSequence', 'toSequence',
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
-  'fileSignature', 'fileChecksum',
+  'fileSignature', 'fileChecksum', 'findFiles',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )
 
+import imp
 import io
 import os
 import sys
@@ -283,26 +284,42 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 #//===========================================================================//
 
-def  findFiles( paths = ".", prefix = "", suffix = "", ignore_dir_prefixes = ('__', '.') ):
+def  findFiles( paths = ".", prefixes = "", suffixes = "", ignore_dir_prefixes = ('__', '.') ):
   
   found_files = []
   
   paths = toSequence(paths)
   ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
   
+  prefixes = tuple( map( str, toSequence(prefixes) ) )
+  suffixes = tuple( map( str, toSequence(suffixes) ) )
+  ignore_dir_prefixes = tuple( map( str, toSequence(ignore_dir_prefixes) ) )
+  
+  prefixes = tuple( map( os.path.normcase, prefixes ) )
+  suffixes = tuple( map( os.path.normcase, suffixes ) )
+  ignore_dir_prefixes = tuple( map( os.path.normcase, ignore_dir_prefixes ) )
+  
+  if not prefixes: prefixes = ("", )
+  if not suffixes: suffixes = ("", )
+  
   for path in paths:
     for root, dirs, files in os.walk( path ):
       for file_name in files:
-        file_name = file_name.lower()
-        if file_name.startswith( prefix ) and file_name.endswith( suffix ):
-          found_files.append( os.path.join(root, file_name))
+        file_name = os.path.normcase( file_name )
+        for prefix, suffix in itertools.product( prefixes, suffixes ):
+          if file_name.startswith( prefix ) and file_name.endswith( suffix ):
+            found_files.append( os.path.abspath( os.path.join(root, file_name) ) )
       
       tmp_dirs = []
       
       for dir in dirs:
+        ignore = False
         for dir_prefix in ignore_dir_prefixes:
-          if not dir.startswith( dir_prefix ):
-            tmp_dirs.append( dir )
+          if dir.startswith( dir_prefix ):
+            ignore = True
+            break
+        if not ignore:
+          tmp_dirs.append( dir )
       
       dirs[:] = tmp_dirs
   
@@ -479,56 +496,22 @@ def   cpuCount():
 
 #//===========================================================================//
 
-def  findFiles( path, test_modules_prefix ):
+def   loadModule( module_file, update_sys_path = True ):
   
-  test_case_modules = []
-  
-  for root, dirs, files in os.walk( path ):
-    for file_name in files:
-      file_name = file_name.lower()
-      if file_name.startswith( test_modules_prefix ) and file_name.endswith('.py'):
-        test_case_modules.append( os.path.join(root, file_name))
-    dirs[:] = filter( lambda d: not d.startswith('.') or d.startswith('__'), dirs )
-  
-  return test_case_modules
-
-#//===========================================================================//
-
-def   _loadTestModule( module_file, verbose ):
-  
-  module_dir = os.path.normpath( os.path.dirname( module_file ) )
+  module_file = os.path.abspath( module_file )
+  module_dir = os.path.dirname( module_file )
   module_name = os.path.splitext( os.path.basename( module_file ) )[0]
   
   fp, pathname, description = imp.find_module( module_name, [ module_dir ] )
   
   with fp:
-    if verbose:
-      print( "Loading test module: %s" % module_file )
-    
     m = imp.load_module( module_name, fp, pathname, description )
-    sys_path = sys.path
-    try:
-      sys_path.remove( module_dir )
-    except ValueError:
-      pass
-    sys_path.insert( 0, module_dir )
+    if update_sys_path:
+      sys_path = sys.path
+      try:
+        sys_path.remove( module_dir )
+      except ValueError:
+        pass
+      sys_path.insert( 0, module_dir )
+    
     return m
-
-#//===========================================================================//
-
-def   _loadTestModules( path, test_modules_prefix, verbose ):
-  
-  test_modules = []
-  module_files = []
-  
-  for path in _toSequence( path ):
-    if os.path.isdir( path ):
-      module_files += _findTestModuleFiles( path, test_modules_prefix )
-    else:
-      module_files.append( path )
-  
-  for module_file in module_files:
-    test_modules.append( _loadTestModule( module_file, verbose ) )
-  
-  return test_modules
-

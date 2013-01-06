@@ -21,7 +21,7 @@ __all__ = ( 'Project', 'ProjectConfig' )
 
 import sys
 
-from aql.utils import toSequence
+from aql.utils import toSequence, logWarning
 from aql.types import FilePath
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
@@ -60,22 +60,36 @@ class ToolInfo( object ):
 
 #//===========================================================================//
 
-class ToolLoader( object ):
-  
-  
-
-#//===========================================================================//
-
 class ToolManager( object ):
   
-  __slots__ = ('tool_methods', 'tool_classes', 'tool_setup', 'tool_post_setup' )
+  __slots__ = (
+    'builders',
+    'classes',
+    'setup',
+    'post_setup',
+    'loaded_paths'
+  )
   
-  def   __init__( self ):
-    self.tool_methods = set()
-    self.tool_classes = {}
-    self.tool_setup = {}
-    self.tool_post_setup = {}
+  _instance = __import__('__main__').__dict__.setdefault( '__ToolManager_instance', [None] )
+  
+  def   __new__( cls ):
+    
+    instance = ToolManager._instance
+    
+    if instance[0] is not None:
+      return instance[0]
+    
+    self = super(ToolManager,cls).__new__(cls)
+    instance[0] = self
+    
+    self.builders = set()
+    self.classes = {}
+    self.setup = {}
+    self.post_setup = {}
     self.tool_info = {}
+    self.loaded_paths = set()
+    
+    return self
   
   #//-------------------------------------------------------//
   
@@ -91,7 +105,7 @@ class ToolManager( object ):
     if not isinstance( tool_class, type ) or not issubclass( test_case, Tool ):
       raise ErrorToolInvalid( tool_class )
     
-    self.__addToMap( self.tool_classes, names, tool_class )
+    self.__addToMap( self.classes, names, tool_class )
   
   #//-------------------------------------------------------//
   
@@ -99,7 +113,7 @@ class ToolManager( object ):
     if not hasattr(tool_method, '__call__'):
       raise ErrorToolInvalidBuilderMethod( tool_method )
     
-    self.tool_methods.add( tool_method )
+    self.builders.add( tool_method )
     
   #//-------------------------------------------------------//
   
@@ -107,7 +121,7 @@ class ToolManager( object ):
     if not hasattr(tool_method, '__call__'):
       raise ErrorToolInvalidSetupMethod( tool_method )
     
-    self.__addToMap( self.tool_setup, names, setup_method )
+    self.__addToMap( self.setup, names, setup_method )
   
   #//-------------------------------------------------------//
   
@@ -115,13 +129,13 @@ class ToolManager( object ):
     if not hasattr(setup_method, '__call__'):
       raise ErrorToolInvalidSetupMethod( setup_method )
     
-    self.__addToMap( self.tool_post_setup, names, setup_method )
+    self.__addToMap( self.post_setup, names, setup_method )
   
   #//-------------------------------------------------------//
   
   def   __getToolBuilders( tool_class ):
     
-    all_builders = self.tool_methods
+    all_builders = self.builders
     
     builders = frozenset( instance for instance in tool_class.__dict__.values() if instance in all_builders )
     
@@ -129,14 +143,30 @@ class ToolManager( object ):
   
   #//-------------------------------------------------------//
   
+  def   loadTools( self, paths ):
+    paths = set( map( lambda path: os.path.normcase( os.path.abspath( path ) ), toSequence( paths ) ) )
+    paths -= self.loaded_paths
+    
+    module_files = findFiles( paths, suffixes = ".py" )
+    
+    for module_file in module_files:
+      try:
+        loadModule( module_file, update_sys_path = False )
+      except Exception as ex:
+        logWarning( "Unable to load module: %s, error: %s" % (module_file, ex) )
+    
+    self.loaded_paths |= paths
+    
+  #//-------------------------------------------------------//
+  
   def   getTools( self, name ):
     
     tools_info = []
-    tool_classes = self.tool_classes.get( name, () )
-    tool_setup = self.tool_setup.get( name, () )
-    tool_post_setup = self.tool_post_setup.get( name, () )
+    classes = self.classes.get( name, () )
+    setup = self.setup.get( name, () )
+    post_setup = self.post_setup.get( name, () )
     
-    for tool_class in tool_classes:
+    for tool_class in classes:
       tool_info = self.tool_info.get( tool_class, None )
       if tool_info is None:
         tool_info = ToolInfo()
@@ -145,8 +175,8 @@ class ToolManager( object ):
         tool_info.builders = self.__getToolBuilders( tool_class )
         self.tool_info[ tool_class ] = tool_info
       
-      tool_info.setup = tool_setup
-      tool_info.post_setup = tool_post_setup
+      tool_info.setup = setup
+      tool_info.post_setup = post_setup
       
       tools_info.append( tool_info )
     
@@ -154,41 +184,38 @@ class ToolManager( object ):
   
 #//===========================================================================//
 
-def   tool( tool_class )
-  global _suite_maker
+_tool_manager = ToolManager()
+
+def   tool( *tool_names ):
+  def   _tool( tool_class ):
+    _tool_manager.addTool( tool_class, tool_names )
+    return tool_class
   
-  if isinstance( tool_class, type) and issubclass( test_case, unittest.TestCase ):
-    _suite_maker.skip_test_classes.add( test_case )
-  
-  elif hasattr(test_case, '__call__'):
-    _suite_maker.skip_test_methods.add( test_case )
-  
-  return test_case
+  return _tool
 
 #//===========================================================================//
 
 def   builder( tool_method ):
-  pass
+  _tool_manager.addBuilder( tool_method )
+  return tool_method
 
 #//===========================================================================//
 
-def   toolSetup( name ):
-  pass
-
-#//===========================================================================//
-
-def   toolPostSetup( name ):
-  pass
-
-#//===========================================================================//
-
-class SetupTool( object ):
+def   toolSetup( *tool_names ):
+  def   _tool_setup( setup_method ):
+    _tool_manager.addSetup( setup_method, tool_names )
+    return setup_method
   
-  def   setup( self, options ):
-    pass
+  return _tool_setup
+
+#//===========================================================================//
+
+def   toolPostSetup( *tool_names ):
+  def   _tool_post_setup( setup_method ):
+    _tool_manager.addPostSetup( setup_method, tool_names )
+    return setup_method
   
-  def   postSetup( self, options ):
-    pass
+  return _tool_post_setup
 
 #//===========================================================================//
 
@@ -197,8 +224,12 @@ class Tool( object ):
   def   __init__( self ):
     pass
   
-  @classmethod
+  @staticmethod
   def   options( cls ):
+    pass
+  
+  @staticmethod
+  def   signature( options ):
     pass
   
   def   configure( self, options ):

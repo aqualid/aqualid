@@ -6,7 +6,7 @@ import itertools
 
 from aql.nodes import Node, Builder
 from aql.utils import execCommand, readTextFile, Tempfile, Tempdir
-from aql.types import FilePath, FilePaths
+from aql.types import FilePath, FilePaths, Version
 from aql.options import Options, BoolOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//
@@ -378,6 +378,48 @@ class GccLinker(Builder):
 
 #//===========================================================================//
 
+class   GccSpecs( object ):
+  
+  __slots__ = ('version', 'target_os', 'target_arch' )
+  
+  def   __init__( self, gcc ):
+    result = execCommand( [gcc, '-v'] )
+    
+    target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
+    version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
+    
+    out = result.err
+    
+    match = target_re.search( out )
+    target = match.group(1).strip() if match else ''
+    
+    match = version_re.search( out )
+    self.version = Version( match.group(1).strip() if match else '' )
+    
+    if target == 'mingw32':
+      target_arch = 'x86-32'
+      target_os = 'windows'
+    
+    else:
+      target_list = target.split('-')
+      
+      target_list_len = len( target_list )
+      
+      if target_list_len == 2:
+        target_arch = target_list[0]
+        target_os = target_list[1]
+      elif target_list_len > 2:
+        target_arch = target_list[0]
+        target_os = target_list[2]
+      else:
+        target_arch = ''
+        target_os = ''
+    
+    self.target_os = target_os
+    self.target_arch = target_arch
+
+#//===========================================================================//
+
 @aql.tool('gcc', 'g++', 'c++', 'c')
 class ToolGcc( Tool ):
   
@@ -394,15 +436,13 @@ class ToolGcc( Tool ):
     if options is not None:
       return options.override()
     
-    options = Options()
+    options = cppCompilerOptions()
+    options.merge( cppLinkerOptions() )
     
     options.gcc_path = PathOptionType()
     options.gcc_target = StrOptionType( ignore_case = True )
     options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
     options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
-    
-    options.merge( cppCompilerOptions() )
-    options.merge( cppLinkerOptions() )
     
     options.setGroup( "C/C++ compiler" )
     
@@ -412,9 +452,31 @@ class ToolGcc( Tool ):
   
   #//-------------------------------------------------------//
   
-  def   configure( self, prj, options ):
-    pass
-  
+  def   configure( self, options ):
+    
+    gcc_prefix = options.gcc_prefix.value()
+    gcc_suffix = options.gcc_suffix.value()
+    
+    gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
+    gxx = '%sg++%s' % (gcc_prefix, gcc_suffix)
+    
+    env = options.env.value()
+    """
+    env['PATH']
+    gcc
+    """
+    gcc = whereProgram( gcc, env.copy( value_type = str ) )
+    
+    specs = GccSpecs( gcc )
+    
+    options.cc_ver.setDefault( specs.version )
+    
+    if  not options.cc_ver.setDefault( specs.version ) or \
+        not options.target_os.setDefault( specs.target_os ) or \
+        not options.target_arch.setDefault( specs.target_arch ):
+      raise NotImplementedError()
+    
+    
   #//-------------------------------------------------------//
   
   @aql.builder

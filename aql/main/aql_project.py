@@ -215,8 +215,7 @@ class Project( object ):
   #//=======================================================//
   
   def   Tool( self, tools, tool_paths = None, **kw ):
-    
-    for tool in tools
+    pass
   
   #//=======================================================//
   

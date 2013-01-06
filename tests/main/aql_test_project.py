@@ -20,7 +20,39 @@ from aql.main import Project, ProjectConfig, \
 
 #//===========================================================================//
 
+class   GccSpecs( object ):
+  
+  __slots__ = ('version', 'target' )
+  
+  def   __init__( self, gcc ):
+    import re
+    from aql.utils import execCommand
+    from aql.types import Version
+    
+    result = execCommand( [gcc, '-v'] )
+    
+    target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
+    version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
+    
+    out = result.err
+    
+    match = target_re.search( out )
+    self.target = match.group(1).strip() if match else ''
+    
+    match = version_re.search( out )
+    self.version = Version( match.group(1).strip() if match else '' )
+    
+
+#//===========================================================================//
+
 class TestProject( AqlTestCase ):
+  
+  def   test_gcc_specs( self ):
+    specs = GccSpecs( 'gcc' )
+    print( specs.version )
+    print( specs.target )
+  
+  #//-------------------------------------------------------//
   
   def test_prj_config(self):
     

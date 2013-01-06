@@ -9,8 +9,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import isSequence, equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, execCommand, ErrorProgramNotFound
-
+                      whereProgram, execCommand, ErrorProgramNotFound, findFiles
 
 class TestUtils( AqlTestCase ):
   def test_isSequence(self):
@@ -132,6 +131,15 @@ class TestUtils( AqlTestCase ):
   def   test_find_prog( self ):
     self.assertTrue( whereProgram, 'route' )
     self.assertRaises( ErrorProgramNotFound, whereProgram, 'route', env = {} )
+  
+  #//===========================================================================//
+  
+  @skip
+  def   test_find_files( self ):
+    files = findFiles( r"../..", suffixes = ".py" )
+    #~ files = findFiles( r"C:\work\src\aql\aql\main", prefixes = "aql_test_", suffixes = [".py", ".pyc"] )
+    import pprint
+    pprint.pprint( files )
   
 #//===========================================================================//
 

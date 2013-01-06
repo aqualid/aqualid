@@ -143,6 +143,11 @@ class OptionValue (object):
   
   #//-------------------------------------------------------//
   
+  def   isNull( self ):
+    return bool(self.conditional_values)
+  
+  #//-------------------------------------------------------//
+  
   def   appendValue( self, conditional_value ):
     self.conditional_values.append( conditional_value )
   

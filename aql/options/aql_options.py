@@ -165,6 +165,19 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   isNull( self ):
+    return self.option_value.isNull()
+  
+  #//-------------------------------------------------------//
+  
+  def   setDefault( self, default_value ):
+    if self.option_value.isNull():
+      self.set( default_value )
+    elif self != default_value:
+      raise ErrorOptionsOptionValueIsAlreadySet()
+  
+  #//-------------------------------------------------------//
+  
   def   value( self, context = None ):
     self.child_ref = None
     
