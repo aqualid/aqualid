@@ -157,8 +157,9 @@ def   TruthValue( value, operation = None ):
 
 class OptionValueProxy (object):
   
-  def   __init__( self, option_value, options, key = NotImplemented ):
+  def   __init__( self, option_value, from_parent, options, key = NotImplemented ):
     self.option_value = option_value
+    self.from_parent = from_parent
     self.options = options
     self.key = key
     self.child_ref = None
@@ -171,10 +172,11 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   setDefault( self, default_value ):
-    if self.option_value.isNull():
+    if self.isNull():
       self.set( default_value )
-    elif self != default_value:
-      raise ErrorOptionsOptionValueIsAlreadySet()
+      return True
+    
+    return self == default_value
   
   #//-------------------------------------------------------//
   
@@ -200,7 +202,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       other = DictItem(self.key, other)
     
-    self.options._appendValue( self.option_value, other, AddValue )
+    self.options._appendValue( self.option_value, self.from_parent, other, AddValue )
     return self
   
   #//-------------------------------------------------------//
@@ -211,7 +213,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       other = DictItem(self.key, other)
     
-    self.options._appendValue( self.option_value, other, SubValue )
+    self.options._appendValue( self.option_value, self.from_parent, other, SubValue )
     return self
   
   #//-------------------------------------------------------//
@@ -222,7 +224,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       value = DictItem(self.key, value)
     
-    self.options._appendValue( self.option_value, value, operation_type, condition )
+    self.options._appendValue( self.option_value, self.from_parent, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
@@ -243,7 +245,7 @@ class OptionValueProxy (object):
     
     self.child_ref = None
     
-    self.options._appendValue( self.option_value, DictItem(key, value), SetValue, None )
+    self.options._appendValue( self.option_value, self.from_parent, DictItem(key, value), SetValue, None )
   
   #//-------------------------------------------------------//
   
@@ -251,7 +253,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       raise KeyError( key )
     
-    child = OptionValueProxy( self.option_value, self.options, key )
+    child = OptionValueProxy( self.option_value, self.from_parent, self.options, key )
     self.child_ref = weakref.ref( child )
     return child
   
@@ -484,14 +486,15 @@ class Options (object):
       
       value = value.option_value
     
-    elif not isinstance( value, OptionValue):
+    elif not isinstance( value, OptionValue ):
       raise ErrorOptionsNewValueTypeIsNotOption( name, value )
     
+    self.clearCache()
     self.__dict__['__opt_values'][ name ] = value
   
   #//-------------------------------------------------------//
   
-  def   __update_value( self, opt_value, from_parent, name, value, operation_type = SetValue ):
+  def   __update_value( self, opt_value, from_parent, value, operation_type = SetValue ):
       if isinstance( value, OptionType ):
         raise ErrorOptionsOptionValueExists( name, value )
       
@@ -502,13 +505,7 @@ class Options (object):
       elif value is opt_value:
         return
       
-      value = self._makeCondValue( value, operation_type )
-      
-      if from_parent:
-        opt_value = opt_value.copy()
-        self.__dict__['__opt_values'][ name ] = opt_value
-      
-      opt_value.appendValue( value )
+      self._appendValue( opt_value, from_parent, value, operation_type )
   
   #//-------------------------------------------------------//
   
@@ -519,7 +516,7 @@ class Options (object):
     if opt_value is None:
       self.__set_new_value( name, value )
     else:
-      self.__update_value( opt_value, from_parent, name, value, operation_type )
+      self.__update_value( opt_value, from_parent, value, operation_type )
   
   #//-------------------------------------------------------//
   
@@ -541,11 +538,11 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
-    opt_value = self._get_value( name )[0]
+    opt_value, from_parent = self._get_value( name )
     if opt_value is None:
       raise AttributeError( name )
     
-    return OptionValueProxy( opt_value, self )
+    return OptionValueProxy( opt_value, from_parent, self )
   
   #//-------------------------------------------------------//
   
@@ -634,6 +631,23 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   __getParentValueNames( self, opt_value ):
+    
+    parent = self.__dict__['__parent']
+    if not parent:
+      return set()
+    
+    names = set()
+    
+    for name in parent.keys():
+      v, p = self._get_value( name )
+      if v is opt_value:
+        names.add( name )
+    
+    return names
+  
+  #//-------------------------------------------------------//
+  
   def   __getValueNewNames( self, names ):
     
     value = None
@@ -708,10 +722,12 @@ class Options (object):
     
     other = Options()
     
+    other_opt_values = other.__dict__['__opt_values']
+    
     for opt_value, names in val_names.items():
-      new_opt_value = OptionValueProxy( opt_value.copy(), other )
+      new_opt_value = opt_value.copy()
       for name in names:
-        setattr( other, name, new_opt_value )
+        other_opt_values[ name ] = new_opt_value
     
     return other
   
@@ -737,13 +753,17 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   appendValue( self, name, value, operation_type = None, condition = None ):
-    option_value = getattr( self, name ).option_value
-    self._appendValue( option_value, value, operation_type, condition )
+    opt_value, from_parent = self._get_value( name )
+    self._appendValue( opt_value, from_parent, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
-  def   _appendValue( self, option_value, value, operation_type = None, condition = None ):
+  def   _appendValue( self, opt_value, from_parent, value, operation_type = None, condition = None ):
     value = self._makeCondValue( value, operation_type, condition )
+    
+    if from_parent:
+      names = self.__getParentValueNames( )
+    
     self.clearCache()
     option_value.appendValue( value )
   

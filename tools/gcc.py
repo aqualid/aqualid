@@ -469,14 +469,15 @@ class ToolGcc( Tool ):
     
     specs = GccSpecs( gcc )
     
-    options.cc_ver.setDefault( specs.version )
+    specs_match = True
     
-    if  not options.cc_ver.setDefault( specs.version ) or \
-        not options.target_os.setDefault( specs.target_os ) or \
-        not options.target_arch.setDefault( specs.target_arch ):
+    specs_match &= options.cc_ver.setDefault( specs.version )
+    specs_match &= options.target_os.setDefault( specs.target_os )
+    specs_match &= options.target_arch.setDefault( specs.target_arch )
+    
+    if not specs_match:
       raise NotImplementedError()
-    
-    
+  
   #//-------------------------------------------------------//
   
   @aql.builder
