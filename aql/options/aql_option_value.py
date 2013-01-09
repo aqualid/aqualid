@@ -184,8 +184,6 @@ class OptionValue (object):
   
   def   value( self, options, context = None ):
     
-    value = self.option_type()
-    
     if context is None:
       context = {}
     else:
@@ -194,6 +192,7 @@ class OptionValue (object):
       except KeyError:
         pass
     
+    value = self.option_type()
     context[ self ] = value
     
     for conditional_value in self.conditional_values:

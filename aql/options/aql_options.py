@@ -476,25 +476,27 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   __set_new_value( self, name, value ):
-    if isinstance( value, OptionType ):
-      value = OptionValue( value )
+  def   __set_value( self, name, value, operation_type = SetValue ):
     
-    elif isinstance( value, OptionValueProxy ):
-      if value.options is not self:
-        raise ErrorOptionsForeignOptionValue( value )
+    opt_value, from_parent = self._get_value( name )
+    
+    if opt_value is None:
+      if isinstance( value, OptionType ):
+        value = OptionValue( value )
       
-      value = value.option_value
+      elif isinstance( value, OptionValueProxy ):
+        if value.options is not self:
+          raise ErrorOptionsForeignOptionValue( value )
+        
+        value = value.option_value
+      
+      elif not isinstance( value, OptionValue ):
+        raise ErrorOptionsNewValueTypeIsNotOption( name, value )
+      
+      self.clearCache()
+      self.__dict__['__opt_values'][ name ] = value
     
-    elif not isinstance( value, OptionValue ):
-      raise ErrorOptionsNewValueTypeIsNotOption( name, value )
-    
-    self.clearCache()
-    self.__dict__['__opt_values'][ name ] = value
-  
-  #//-------------------------------------------------------//
-  
-  def   __update_value( self, opt_value, from_parent, value, operation_type = SetValue ):
+    else:
       if isinstance( value, OptionType ):
         raise ErrorOptionsOptionValueExists( name, value )
       
@@ -509,20 +511,15 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   __set_value( self, name, value, operation_type = SetValue ):
-    
-    opt_value, from_parent = self._get_value( name )
-    
-    if opt_value is None:
-      self.__set_new_value( name, value )
-    else:
-      self.__update_value( opt_value, from_parent, value, operation_type )
+  def   __set_opt_value( self, opt_value, names ):
+    opt_values = self.__dict__['__opt_values']
+    for name in names:
+      opt_values[ name ] = opt_value
   
   #//-------------------------------------------------------//
   
   def   __setattr__( self, name, value ):
     self.__set_value( name, value )
-    self.clearCache()
   
   #//-------------------------------------------------------//
   
@@ -610,8 +607,6 @@ class Options (object):
     if isinstance( self, Options ):
       options = other
     
-    cache_cleared = False
-    
     for name, value in other.items():
       
       if isinstance( value, OptionValueProxy ):
@@ -624,10 +619,6 @@ class Options (object):
         self.__set_value( name, value, UpdateValue )
       except ErrorOptionsNewValueTypeIsNotOption:
         pass
-      else:
-        if not cache_cleared:
-          self.clearCache()
-          cache_cleared = True
   
   #//-------------------------------------------------------//
   
@@ -687,8 +678,6 @@ class Options (object):
     
     self.clearCache()
     
-    self_opt_values = self.__dict__['__opt_values']
-    
     other_values = {}
     for name, value in other.items():
       other_values.setdefault( value, [] ).append( name )
@@ -702,8 +691,7 @@ class Options (object):
       else:
         self_value.merge( value )
       
-      for name in new_names:
-        self_opt_values[ name ] = self_value
+      self.__set_opt_value( self_value, new_names )
   
   #//-------------------------------------------------------//
 
@@ -722,12 +710,8 @@ class Options (object):
     
     other = Options()
     
-    other_opt_values = other.__dict__['__opt_values']
-    
     for opt_value, names in val_names.items():
-      new_opt_value = opt_value.copy()
-      for name in names:
-        other_opt_values[ name ] = new_opt_value
+      other.__set_opt_value( opt_value.copy(), names )
     
     return other
   
@@ -761,11 +745,14 @@ class Options (object):
   def   _appendValue( self, opt_value, from_parent, value, operation_type = None, condition = None ):
     value = self._makeCondValue( value, operation_type, condition )
     
-    if from_parent:
-      names = self.__getParentValueNames( )
-    
     self.clearCache()
-    option_value.appendValue( value )
+    
+    if from_parent:
+      names = self.__getParentValueNames( opt_value )
+      opt_value = opt_value.copy()
+      self.__set_opt_value( opt_value, names )
+    
+    opt_value.appendValue( value )
   
   #//-------------------------------------------------------//
   

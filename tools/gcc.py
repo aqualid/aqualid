@@ -471,9 +471,9 @@ class ToolGcc( Tool ):
     
     specs_match = True
     
-    specs_match &= options.cc_ver.setDefault( specs.version )
-    specs_match &= options.target_os.setDefault( specs.target_os )
-    specs_match &= options.target_arch.setDefault( specs.target_arch )
+    specs_match &= options.cc_ver.setIfDefault( specs.version )
+    specs_match &= options.target_os.setIfDefault( specs.target_os )
+    specs_match &= options.target_arch.setIfDefault( specs.target_arch )
     
     if not specs_match:
       raise NotImplementedError()

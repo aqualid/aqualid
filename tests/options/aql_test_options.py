@@ -49,6 +49,12 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.debug_on, 'true' )
     
     over_opts = options.override()
+    self.assertEqual( over_opts.debug_on, 'true' )
+    options.debug_on = False
+    self.assertEqual( over_opts.debug_on, 'false' )
+    options.debug_on = True
+    self.assertEqual( over_opts.debug_on, 'true' )
+    
     over_opts.debug_on = False
     
     self.assertEqual( options.debug_on, 'true' )
@@ -57,12 +63,18 @@ class TestOptions( AqlTestCase ):
     
     options.warning_level = 3
     self.assertEqual( over_opts.warn_level, 3 )
+    self.assertEqual( over_opts.warning_level, 3 )
+    over_opts.warn_level.set( 1 )
+    self.assertEqual( options.warning_level, 3 )
+    self.assertEqual( options.warn_level, 3 )
+    self.assertEqual( over_opts.warning_level, 1 )
+    self.assertEqual( over_opts.warn_level, 1 )
     
     over_opts = over_opts.copy()
     options.warning_level = 2
     self.assertEqual( options.warn_level, 2 )
-    self.assertEqual( over_opts.warn_level, 3 )
-    self.assertEqual( over_opts.warning_level, 3 )
+    self.assertEqual( over_opts.warn_level, 1 )
+    self.assertEqual( over_opts.warning_level, 1 )
     
     over_opts.warn_level = 4
     self.assertEqual( over_opts.warn_level, 4 )
