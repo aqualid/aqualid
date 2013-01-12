@@ -47,6 +47,7 @@ def   _build_options():
                                               ('release_size', 'rz'),
                                               ('final', 'f'),
                                             ],
+                                  default = 'debug',
                                   description = "Current build variant" )
   
   options.build_variant = build_variant
@@ -68,13 +69,15 @@ def   _target_options():
   options = Options()
   
   options.target_os = EnumOptionType( values = ['native', 'windows', 'linux', 'cygwin', 'darwin', 'java', 'sunos', 'hpux'],
+                                      default = 'native',
                                       description = "The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'." )
   
   options.target_arch = EnumOptionType( values = [ 'native',
                                                    ('x86-32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
                                                    'x86-64',
                                                    'arm' ],
-                                          description = "The target machine type, e.g. 'i386'" )
+                                        default = 'native',
+                                        description = "The target machine type, e.g. 'i386'" )
   
   options.target_platform = StrOptionType( ignore_case = True,
                                            description = "The target system's distribution, e.g. 'win32', 'Linux'" )
@@ -101,6 +104,7 @@ def   _optimization_options():
   options = Options()
   
   options.optimization = EnumOptionType( values = [ ('off', 0), ('size', 1), ('speed', 2) ],
+                                         default = 'off',
                                          description = 'Optimization level' )
   options.optlevel = options.optimization
   options.opt = options.optimization
@@ -108,6 +112,7 @@ def   _optimization_options():
   #//-------------------------------------------------------//
   
   options.inlining = EnumOptionType( values = ['off', 'on', 'full'],
+                                     default = 'off',
                                      description = 'Inline function expansion' )
   
   #//-------------------------------------------------------//
@@ -128,12 +133,12 @@ def   _code_gen_options():
   options.debug_symbols = BoolOptionType( description = 'Include debug symbols' )
   
   options.profile = BoolOptionType( description = 'Enable compiler profiling' )
-  options.console_app = BoolOptionType( description = 'This option specifies that a console application is to be generated.' )
   
   options.keep_asm = BoolOptionType( description = 'Keep generated assemblers files' )
   
   
   options.runtime_link = EnumOptionType( values = ['default', 'static', ('shared', 'dynamic') ],
+                                         default = 'default',
                                          description = 'Linkage type of runtime library' )
   options.rt_link = options.runtime_link
   
@@ -143,6 +148,7 @@ def   _code_gen_options():
   
   
   options.runtime_thread = EnumOptionType( values = ['default', 'single', 'multi' ],
+                                           default = 'default',
                                            description = 'Threading mode of runtime library' )
   options.rt_thread = options.runtime_thread
   
@@ -162,6 +168,7 @@ def     _diagnostic_options():
   options.werror = options.warning_as_error
   
   options.lint = EnumOptionType( values = [('off', 0), ('on', 1), ('global',2)],
+                                 default = 'off',
                                  description = 'Lint source code.' )
   
   options.lint_flags = ListOptionType( description = "Lint tool options" )
@@ -188,22 +195,6 @@ def   _env_options():
 #//===========================================================================//
 
 def   _init_defaults( options ):
-    
-    #//-------------------------------------------------------//
-    
-    options.target_os   = 'native'
-    options.target_arch = 'native'
-    
-    #//-------------------------------------------------------//
-    
-    options.build_variant   = 'debug'
-    options.build_variants  = 'debug'
-    options.optimization    = 'off'
-    options.inlining        = 'off'
-    options.console_app     = True
-    options.runtime_link    = 'default'
-    options.runtime_thread  = 'default'
-    options.lint            = 'off'
     
     #//-------------------------------------------------------//
     # build_dir_name set to <target OS>_<target arch>

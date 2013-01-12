@@ -378,45 +378,46 @@ class GccLinker(Builder):
 
 #//===========================================================================//
 
-class   GccSpecs( object ):
+def   getGccSpecs( gcc ):
+  result = execCommand( [gcc, '-v'] )
   
-  __slots__ = ('version', 'target_os', 'target_arch' )
+  target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
+  version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
   
-  def   __init__( self, gcc ):
-    result = execCommand( [gcc, '-v'] )
+  out = result.err
+  
+  match = target_re.search( out )
+  target = match.group(1).strip() if match else ''
+  
+  match = version_re.search( out )
+  version = str(Version( match.group(1).strip() if match else '' ))
+  
+  if target == 'mingw32':
+    target_arch = 'x86-32'
+    target_os = 'windows'
+  
+  else:
+    target_list = target.split('-')
     
-    target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
-    version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
+    target_list_len = len( target_list )
     
-    out = result.err
-    
-    match = target_re.search( out )
-    target = match.group(1).strip() if match else ''
-    
-    match = version_re.search( out )
-    self.version = Version( match.group(1).strip() if match else '' )
-    
-    if target == 'mingw32':
-      target_arch = 'x86-32'
-      target_os = 'windows'
-    
+    if target_list_len == 2:
+      target_arch = target_list[0]
+      target_os = target_list[1]
+    elif target_list_len > 2:
+      target_arch = target_list[0]
+      target_os = target_list[2]
     else:
-      target_list = target.split('-')
-      
-      target_list_len = len( target_list )
-      
-      if target_list_len == 2:
-        target_arch = target_list[0]
-        target_os = target_list[1]
-      elif target_list_len > 2:
-        target_arch = target_list[0]
-        target_os = target_list[2]
-      else:
-        target_arch = ''
-        target_os = ''
-    
-    self.target_os = target_os
-    self.target_arch = target_arch
+      target_arch = ''
+      target_os = ''
+  
+  specs = {
+    'version': version,
+    'target_os': target_os,
+    'target_arch': target_arch,
+  }
+  
+  return specs
 
 #//===========================================================================//
 
@@ -452,7 +453,10 @@ class ToolGcc( Tool ):
   
   #//-------------------------------------------------------//
   
-  def   configure( self, options ):
+  @staticmethod
+  def   configure( options ):
+    
+    if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
     
     gcc_prefix = options.gcc_prefix.value()
     gcc_suffix = options.gcc_suffix.value()
@@ -462,21 +466,24 @@ class ToolGcc( Tool ):
     
     env = options.env.value()
     """
-    env['PATH']
-    gcc
+    cfg_keys = ( env['PATH'], gcc )
+    
+    specs = prj.LoadConfiguration( self, cfg_keys )
+    if cfg is None:
+      gcc = whereProgram( gcc, env.copy( value_type = str ) )
+      specs = getGccSpecs( gcc )
+      prj.SaveConfiguration( self, cfg_keys, specs )
     """
+    
     gcc = whereProgram( gcc, env.copy( value_type = str ) )
+    specs = getGccSpecs( gcc )
     
-    specs = GccSpecs( gcc )
+    if not options.cc_ver.setDefault( specs['version'] ):           raise NotImplementedError()
+    if not options.target_os.setDefault( specs['target_os'] ):      raise NotImplementedError()
+    if not options.target_arch.setDefault( specs['target_arch'] ):  raise NotImplementedError()
     
-    specs_match = True
-    
-    specs_match &= options.cc_ver.setIfDefault( specs.version )
-    specs_match &= options.target_os.setIfDefault( specs.target_os )
-    specs_match &= options.target_arch.setIfDefault( specs.target_arch )
-    
-    if not specs_match:
-      raise NotImplementedError()
+    options.cc = gcc
+    options.cxx = gxx
   
   #//-------------------------------------------------------//
   
@@ -489,15 +496,23 @@ class ToolGcc( Tool ):
     pass
   
   @aql.builder
-  def   LinkLibrary( self, env, sources, options ):
+  def   LinkCppLibrary( self, env, sources, options ):
     pass
   
   @aql.builder
-  def   LinkSharedLibrary( self, env, sources, options ):
+  def   LinkCLibrary( self, env, sources, options ):
     pass
   
   @aql.builder
-  def   LinkProgram( self, env, sources, options ):
+  def   LinkSharedCppLibrary( self, env, sources, options ):
+    pass
+  
+  @aql.builder
+  def   LinkSharedCLibrary( self, env, sources, options ):
+    pass
+  
+  @aql.builder
+  def   LinkCppProgram( self, env, sources, options ):
     pass
 
 #//===========================================================================//

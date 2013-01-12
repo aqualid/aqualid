@@ -129,6 +129,9 @@ def   _doAction( options, context, dest_value, op, value ):
   value = _evalValue( value, options, context )
   return op( dest_value, value )
 
+def   _SetDefaultValue( value, operation = None ):
+  return Operation( operation, _doAction, _setOperator, value )
+
 def   SetValue( value, operation = None ):
   return Operation( operation, _doAction, _setOperator, value )
 
@@ -166,14 +169,14 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   isNull( self ):
-    return self.option_value.isNull()
+  def   isSet( self ):
+    return self.option_value.isSet()
   
   #//-------------------------------------------------------//
   
   def   setDefault( self, default_value ):
-    if self.isNull():
-      self.set( default_value )
+    if not self.option_value.isSet():
+      self.set( default_value, _SetDefaultValue )
       return True
     
     return self == default_value
@@ -245,7 +248,7 @@ class OptionValueProxy (object):
     
     self.child_ref = None
     
-    self.options._appendValue( self.option_value, self.from_parent, DictItem(key, value), SetValue, None )
+    self.options._appendValue( self.option_value, self.from_parent, DictItem(key, value), SetValue )
   
   #//-------------------------------------------------------//
   
@@ -752,18 +755,27 @@ class Options (object):
       opt_value = opt_value.copy()
       self.__set_opt_value( opt_value, names )
     
-    opt_value.appendValue( value )
+    if operation_type is _SetDefaultValue:
+      opt_value.setDefault( value )
+    else:
+      opt_value.appendValue( value )
   
   #//-------------------------------------------------------//
   
   def   clearCache( self ):
     self.__dict__['__cache'].clear()
     
+    valid_children = []
+    
     for child in self.__dict__['__children']:
       try:
         child.clearCache()
       except ReferenceError:
         pass
+      else:
+        valid_children.append( child )
+    
+    self.__dict__['__children'] = valid_children
   
   #//-------------------------------------------------------//
   

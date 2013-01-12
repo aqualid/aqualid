@@ -85,10 +85,14 @@ class TestOptionTypes( AqlTestCase ):
 
   def test_enum_option(self):
     optimization = EnumOptionType( values = ( ('off', 0), ('size', 1), ('speed', 2) ),
-                                   description = 'Compiler optimization level', group = "Optimization" )
+                                   description = 'Compiler optimization level', group = "Optimization", default = 'off' )
     
     values = ['oFF', 'siZe', 'SpeeD', '0', '1', '2', 0, 1, 2]
     base_values = ['off', 'size', 'speed', 'off', 'size', 'speed', 'off', 'size', 'speed']
+    
+    self.assertEqual( optimization(), 'off' )
+    self.assertEqual( EnumOptionType( values = [1,2,3,4], default = 3 )(), 3 )
+    self.assertNotEqual( EnumOptionType( values = [1,2,3,4], default = 1 )(), 3 )
     
     for v, base in zip( values, base_values ):
       self.assertEqual( optimization( v ), base )

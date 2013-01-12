@@ -485,13 +485,20 @@ class   EnumOptionType (OptionType):
   
   __slots__ = (
     '__values',
+    '__default',
   )
   
-  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString ):
+  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString, default = NotImplemented ):
     
     super(EnumOptionType,self).__init__( value_type, description, group )
     
     self.__values = {}
+    
+    if default is not NotImplemented:
+      self.addValues( default )
+      self.__default = value_type( default )
+    else:
+      self.__default = NotImplemented
     
     self.addValues( values )
   
@@ -503,7 +510,7 @@ class   EnumOptionType (OptionType):
     except AttributeError:
       pass
     
-    setDefaultValue = self.__values.setdefault
+    set_default_value = self.__values.setdefault
     value_type = self.value_type
     
     for value in toSequence(values):
@@ -512,12 +519,12 @@ class   EnumOptionType (OptionType):
       
       value = value_type( next( it ) )
       
-      value = setDefaultValue( value, value )
+      value = set_default_value( value, value )
       
       for alias in it:
         alias = value_type(alias)
         
-        v = setDefaultValue( alias, value )
+        v = set_default_value( alias, value )
         if v != value:
           if alias == v:
             raise ErrorOptionTypeEnumValueIsAlreadySet( self, alias, value )
@@ -529,6 +536,10 @@ class   EnumOptionType (OptionType):
   def   _convert( self, value = NotImplemented ):
     try:
       if value is NotImplemented:
+        value = self.__default
+        if value is not NotImplemented:
+          return value
+        
         try:
           return next(iter(self.__values.values()))
         except StopIteration:
@@ -622,7 +633,7 @@ class   RangeOptionType (OptionType):
       min_value = self.min_value
       
       if value is NotImplemented:
-        value = min_value
+        return min_value
       
       value = self.value_type( value )
       

@@ -134,17 +134,24 @@ class OptionValue (object):
   
   __slots__ = (
     'option_type',
+    'default_conditional_value',
     'conditional_values',
   )
   
-  def   __init__( self, option_type, conditional_values = None ):
+  def   __init__( self, option_type, default_conditional_value = None, conditional_values = None ):
     self.option_type = option_type
+    self.default_conditional_value = default_conditional_value
     self.conditional_values = list( toSequence(conditional_values) )
   
   #//-------------------------------------------------------//
   
-  def   isNull( self ):
+  def   isSet( self ):
     return bool(self.conditional_values)
+  
+  #//-------------------------------------------------------//
+  
+  def   setDefault( self, conditional_value ):
+    self.default_conditional_value = conditional_value
   
   #//-------------------------------------------------------//
   
@@ -173,7 +180,7 @@ class OptionValue (object):
   #//-------------------------------------------------------//
   
   def   copy( self ):
-    return OptionValue( self.option_type, self.conditional_values )
+    return OptionValue( self.option_type, self.default_conditional_value, self.conditional_values )
   
   #//-------------------------------------------------------//
   
@@ -194,6 +201,9 @@ class OptionValue (object):
     
     value = self.option_type()
     context[ self ] = value
+    
+    if (not self.conditional_values) and (self.default_conditional_value is not None):
+        return self.default_conditional_value.updateValue( value, options, context )
     
     for conditional_value in self.conditional_values:
       value = conditional_value.updateValue( value, options, context )
