@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'cppCompilerOptions', 'cppLinkerOptions'
+  'cppToolCommonOptions',
 )
 
 import os
@@ -30,17 +30,7 @@ from .aql_option_types import BoolOptionType, ListOptionType, PathOptionType, St
 
 #//===========================================================================//
 
-_cpp_options = None
-
-def   cppCompilerOptions():
-  
-  global _cpp_options
-  
-  options = _cpp_options
-  if options is not None:
-    return options.override()
-  
-  options = Options()
+def   _cppCompilerOptions( options ):
   
   options.cc = PathOptionType( description = "C compiler program" )
   options.cxx = PathOptionType( description = "C++ compiler program" )
@@ -72,23 +62,10 @@ def   cppCompilerOptions():
   
   options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
   options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
-  
-  _cpp_options = options
-  
-  return options.override()
 
 #//===========================================================================//
 
-_linker_options = None
-
-def   cppLinkerOptions():
-  global _linker_options
-  
-  options = _linker_options
-  if options is not None:
-    return options.override()
-  
-  options = Options()
+def   _cppLinkerOptions( options ):
   
   options.link = PathOptionType( description = "Program or dynamic library linker" )
   options.lib = PathOptionType( description = "Static library archiver program" )
@@ -104,7 +81,18 @@ def   cppLinkerOptions():
   
   options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to extenal libraries" )
   options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking extenal libraries" )
+
+#//===========================================================================//
+
+def   cppToolCommonOptions( _options = [None] ):
   
-  _linker_options = options
+  options = _options[0]
+  if options is not None:
+    return options.override()
   
+  options = Options()
+  _cppCompilerOptions( options )
+  _cppLinkerOptions( options )
+  
+  _options[0] = options
   return options.override()

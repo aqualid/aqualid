@@ -56,7 +56,20 @@ class   ErrorToolInvalidSetupMethod( Exception ):
 #//===========================================================================//
 
 class ToolInfo( object ):
-  __slots__ = ('options', 'setup', 'post_setup', 'builders', 'tool_class' )
+  __slots__ = (
+    'tool_class',
+    'options',
+    'setup',
+    'post_setup',
+    'builders',
+  )
+  
+  def   __getattr__( self, attr ):
+    if attr == 'options':
+      self.options = self.tool_class.options()
+      return self.options
+    
+    raise AttributeError( attr )
 
 #//===========================================================================//
 
@@ -162,16 +175,16 @@ class ToolManager( object ):
   def   getTools( self, name ):
     
     tools_info = []
-    classes = self.classes.get( name, () )
-    setup = self.setup.get( name, () )
-    post_setup = self.post_setup.get( name, () )
+    empty_list = tuple()
+    classes = self.classes.get( name, empty_list )
+    setup = self.setup.get( name, empty_list )
+    post_setup = self.post_setup.get( name, empty_list )
     
     for tool_class in classes:
       tool_info = self.tool_info.get( tool_class, None )
       if tool_info is None:
         tool_info = ToolInfo()
         tool_info.tool_class = tool_class
-        tool_info.options = tool_class.options()
         tool_info.builders = self.__getToolBuilders( tool_class )
         self.tool_info[ tool_class ] = tool_info
       

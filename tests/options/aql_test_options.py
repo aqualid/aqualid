@@ -335,7 +335,7 @@ class TestOptions( AqlTestCase ):
     
     options.merge( options2 )
     self.assertEqual( options.debug_on, options2.debug_on )
-    self.assertEqual( options.bv.value(), "debug,release,final,debug,release,final" )
+    self.assertEqual( options2.bv, options2.build_variant )
 
   #//-------------------------------------------------------//
   
@@ -367,7 +367,6 @@ class TestOptions( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  @skip
   def test_options_dict(self):
     options = Options()
     
@@ -398,6 +397,51 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.defines['OPTS'], '' )
     options.debug_on = True
     self.assertEqual( options.defines['OPTS'], 'TRUE' )
+  
+  #//=======================================================//
+  
+  def   test_options_merge(self):
+    options = Options()
+    options.opt1 = RangeOptionType( min_value = 1, max_value = 100 )
+    options.opt2 = RangeOptionType( min_value = 0, max_value = 5 )
+    options.opt3 = RangeOptionType( min_value = -10, max_value = 10 )
+    options.option1 = options.opt1
+    options.option3 = options.opt3
+    
+    options.opt1.setDefault( 50 )
+    options.opt2.setDefault( 3 )
+    options.opt3.setDefault( 0 )
+    
+    options2 = Options()
+    options2.opt21 = RangeOptionType( min_value = 1, max_value = 100 )
+    options2.opt22 = RangeOptionType( min_value = 0, max_value = 5 )
+    options2.opt23 = RangeOptionType( min_value = -10, max_value = 10 )
+    options2.option22 = options2.opt22
+    options2.option23 = options2.opt23
+    
+    options.merge( options2 )
+    self.assertEqual( options.opt1, 50 )
+    self.assertEqual( options.opt2, 3 )
+    self.assertEqual( options.opt3, 0 )
+    self.assertIs( options.option1.option_value, options.opt1.option_value )
+    self.assertIs( options.option3.option_value, options.opt3.option_value )
+    self.assertEqual( options.opt21, options2.opt21 )
+    self.assertEqual( options.opt23, options2.opt23 )
+    self.assertEqual( options.opt22, options2.opt22 )
+    self.assertIs( options.option22.option_value, options.opt22.option_value )
+    self.assertIs( options.option23.option_value, options.opt23.option_value )
+    
+    child_options2 = options2.override()
+    
+    child_options2.option21 = child_options2.opt21
+    child_options2.opt22 = 3
+    child_options2.opt23 = 7
+    
+    child_options2.join()
+    self.assertIs( options2.option21.option_value, options2.opt21.option_value )
+    self.assertEqual( options2.opt22, 3 )
+    self.assertEqual( options2.opt23, 7 )
+    
 
 #//===========================================================================//
 

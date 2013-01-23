@@ -7,8 +7,10 @@ import itertools
 from aql.nodes import Node, Builder
 from aql.utils import execCommand, readTextFile, Tempfile, Tempdir
 from aql.types import FilePath, FilePaths, Version
-from aql.options import Options, BoolOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType
+from aql.options import Options, BoolOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType, cppToolCommonOptions
 
+#//===========================================================================//
+#// BUILDERS IMPLEMENTATION
 #//===========================================================================//
 
 def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
@@ -38,23 +40,6 @@ def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
 
 def   _addPrefix( prefix, values ):
   return map( lambda v, prefix = prefix: prefix + v, values )
-
-#//===========================================================================//
-
-def   gccOptions():
-  options = Options()
-  
-  options.gcc_path = PathOptionType()
-  options.gcc_target = StrOptionType( ignore_case = True )
-  options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
-  options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
-  
-  options.merge( cppCompilerOptions() )
-  options.merge( cppLinkerOptions() )
-  
-  options.setGroup( "C/C++ compiler" )
-  
-  return options
 
 #//===========================================================================//
 
@@ -375,10 +360,41 @@ class GccLinker(Builder):
   def   buildStr( self, node ):
     return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
 
+#//===========================================================================//
+#// TOOL IMPLEMENTATION
+#//===========================================================================//
+
+def   _checkProg( gcc_path, prog ):
+  prog = os.path.join( gcc_path, prog )
+  return prog if os.path.isfile( prog ) else None
 
 #//===========================================================================//
 
-def   getGccSpecs( gcc ):
+def   _findGcc( env, gcc_prefix, gcc_suffix )
+  gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
+  gcc = whereProgram( gcc, env.copy( value_type = str ) )
+  
+  gxx = None
+  ar = None
+  
+  gcc_prefixes = [gcc_prefix, ''] if gcc_prefix else ['']
+  gcc_suffixes = [gcc_suffix, ''] if gcc_suffix else ['']
+  
+  gcc_path = os.path.dirname( gcc )
+  
+  for gcc_prefix, gcc_suffix in itertools.product( gcc_prefixes, gcc_suffixes ):
+    if not gxx: gxx = _checkProg( gcc_path, '%sg++%s' % (gcc_prefix, gcc_suffix) )
+    if not gxx: gxx = _checkProg( gcc_path, '%sc++%s' % (gcc_prefix, gcc_suffix) )
+    if not ar:  ar  = _checkProg( gcc_path, '%sar%s' % (gcc_prefix, gcc_suffix) )
+  
+  if not gxx or not ar:
+    raise NotImplementedError()
+  
+  return gcc, gxx, ar
+
+#//===========================================================================//
+
+def   _getGccSpecs( gcc ):
   result = execCommand( [gcc, '-v'] )
   
   target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
@@ -421,24 +437,53 @@ def   getGccSpecs( gcc ):
 
 #//===========================================================================//
 
+def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
+  gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
+  specs = _getGccSpecs( gcc )
+  specs['gcc'] = gcc
+  specs['gxx'] = gxx
+  specs['ar'] = ar
+  
+  return specs
+
+#//===========================================================================//
+
 @aql.tool('gcc', 'g++', 'c++', 'c')
 class ToolGcc( Tool ):
   
-  def   __init__( self, env ):
-    raise NotImplemented
+  def   __init__( self, project, options ):
+    
+    if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
+    
+    env = options.env.value().copy( value_type = str )
+    gcc_prefix = options.gcc_prefix.value()
+    gcc_suffix = options.gcc_suffix.value()
+    
+    """
+    cfg_keys = ( gcc_prefix, gcc_suffix )
+    cfg_deps = ( str(options.env['PATH']), )
+    
+    specs = self.LoadValues( prj, cfg_keys, cfg_deps )
+    if cfg is None:
+      info = _getGccInfo( env, gcc_prefix, gcc_suffix )
+      self.SaveValues( prj, cfg_keys, cfg_deps, specs )
+    """
+    
+    info = _getGccInfo( env, gcc_prefix, gcc_suffix )
+    
+    if not options.cc_ver.setDefault( info['version'] ):           raise NotImplementedError()
+    if not options.target_os.setDefault( info['target_os'] ):      raise NotImplementedError()
+    if not options.target_arch.setDefault( info['target_arch'] ):  raise NotImplementedError()
+    
+    options.cc = info['gcc']
+    options.cxx = info['gxx']
+    options.ar = info['ar']
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   options( _options = [ None ] ):
-    
-    options = _options[0]
-    
-    if options is not None:
-      return options.override()
-    
-    options = cppCompilerOptions()
-    options.merge( cppLinkerOptions() )
+  def   options():
+    options = cppToolCommonOptions()
     
     options.gcc_path = PathOptionType()
     options.gcc_target = StrOptionType( ignore_case = True )
@@ -447,53 +492,21 @@ class ToolGcc( Tool ):
     
     options.setGroup( "C/C++ compiler" )
     
-    _options[0] = options
-    
-    return options.override()
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   configure( options ):
-    
-    if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
-    
-    gcc_prefix = options.gcc_prefix.value()
-    gcc_suffix = options.gcc_suffix.value()
-    
-    gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
-    gxx = '%sg++%s' % (gcc_prefix, gcc_suffix)
-    
-    env = options.env.value()
-    """
-    cfg_keys = ( env['PATH'], gcc )
-    
-    specs = prj.LoadConfiguration( self, cfg_keys )
-    if cfg is None:
-      gcc = whereProgram( gcc, env.copy( value_type = str ) )
-      specs = getGccSpecs( gcc )
-      prj.SaveConfiguration( self, cfg_keys, specs )
-    """
-    
-    gcc = whereProgram( gcc, env.copy( value_type = str ) )
-    specs = getGccSpecs( gcc )
-    
-    if not options.cc_ver.setDefault( specs['version'] ):           raise NotImplementedError()
-    if not options.target_os.setDefault( specs['target_os'] ):      raise NotImplementedError()
-    if not options.target_arch.setDefault( specs['target_arch'] ):  raise NotImplementedError()
-    
-    options.cc = gcc
-    options.cxx = gxx
+    return options
   
   #//-------------------------------------------------------//
   
   @aql.builder
-  def   CompileCpp( self, prj, options, sources ):
-    pass
+  def   CompileCpp( self, project, options, sources ):
+    cpp_compiler = GccCompiler( options, 'c++' )
+    return Node( cpp_compiler, sources )
+  
+  #//-------------------------------------------------------//
   
   @aql.builder
-  def   CompileC( self, prj, sources, options ):
-    pass
+  def   CompileC( self, prj, options, sources ):
+    c_compiler = GccCompiler( options, 'c' )
+    return Node( c_compiler, sources )
   
   @aql.builder
   def   LinkCppLibrary( self, env, sources, options ):

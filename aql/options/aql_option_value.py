@@ -175,7 +175,14 @@ class OptionValue (object):
     if self.option_type is not other.option_type:
       raise ErrorOptionValueMergeDifferentOptionTypes( self.option_type, other.option_type )
     
-    self.conditional_values += other.conditional_values
+    diff_index = 0
+    for conditional_value1, conditional_value2 in zip( self.conditional_values, other.conditional_values ):
+      if conditional_value1 is not conditional_value2:
+        break
+      
+      diff_index += 1
+    
+    self.conditional_values += other.conditional_values[ diff_index: ]
     
   #//-------------------------------------------------------//
   

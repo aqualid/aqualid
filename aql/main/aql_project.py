@@ -32,8 +32,10 @@ import types
 from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs
 from aql.types import FilePath, FilePaths, SplitListType
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
-from aql.options import builtinOptions
+from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
+
+from .aql_tools import ToolManager
 
 #//===========================================================================//
 
@@ -75,6 +77,13 @@ class   ErrorProjectBuilderMethodFewArguments( Exception ):
 class   ErrorProjectBuilderMethodResultInvalid( Exception ):
   def   __init__( self, method, result ):
     msg = "Builder method '%s' must return a Node object, actual result: '%s'" % (method, result)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
+  def   __init__( self, value ):
+    msg = "Type of 'options' argument must be Options, instead of : '%s'(%s)" % (type(value), value)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -164,33 +173,39 @@ class BuilderWrapper( object ):
     
     if len(f_args) < min_args:
       raise ErrorProjectBuilderMethodFewArguments( method )
+    
     return frozenset( f_args )
   
   #//-------------------------------------------------------//
   
-  def   __getOptionsArgs( self, kw ):
+  def   __getOptionsAndArgs( self, kw ):
     args_kw = {}
     options_kw = {}
+    options = self.project.options
+    
     for name, value in kw.items():
+      if name == "options":
+        if not isinstance( value, Options ):
+          raise ErrorProjectBuilderMethodInvalidOptions( value )
+        options = value
+      
       if name in self.arg_names:
         args_kw[ name ] = value
       else:
         options_kw[ name ] = value
     
     if options_kw:
-      options = self.project.options.override()
+      options = options.override()
       options.update( options_kw )
-    else:
-      options = self.project.options
     
     return options, args_kw
   
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
-    options, args_kw = self.__getOptionsArgs( kw )
+    options, args_kw = self.__getOptionsAndArgs( kw )
     
-    node = self.method( self, options, *args, **args_kw )
+    node = self.method( self.project, options, *args, **args_kw )
     
     if not isinstance( node, Node ):
       raise ErrorProjectBuilderMethodResultInvalid( self.method, node )
@@ -211,11 +226,39 @@ class Project( object ):
     
     self.options = config.options.override()
     self.build_manager = BuildManager( config.state_file, config.jobs, config.keep_going )
+    self.tool_manager = ToolManager()
   
   #//=======================================================//
   
   def   Tool( self, tools, tool_paths = None, **kw ):
-    pass
+    tool_manager = self.tool_manager
+    tool_manager.loadTools( tool_paths )
+    
+    options = self.options
+    
+    for tool_name in toSequence( tools ):
+      for tool_info in tool_manager.getTools( tool_name ):
+        
+        tool_options = self.options.override()
+        tool_options.merge( tool_info.options )
+        
+        for setup in tool_info.setup:
+          try:
+            setup_options = tool_options.override()
+            setup( setup_options )
+            tool_options.join( setup_options )
+            break
+          except Exception:
+            pass
+        
+        try:
+          tmp_tool_options = tool_options.override()
+          tool = tool_info.tool_class( self, tmp_tool_options )
+          tool_options.join( tmp_tool_options )
+          break
+        except Exception:
+          pass
+        
   
   #//=======================================================//
   

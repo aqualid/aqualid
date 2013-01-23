@@ -63,6 +63,21 @@ class   ErrorOptionsMergeNonOptions( TypeError ):
     msg = "Type '%s' can't be merged with Options." % str(type(value))
     super(type(self), self).__init__( msg )
 
+class   ErrorOptionsMergeDifferentOptions( TypeError ):
+  def   __init__( self, name1, name2):
+    msg = "Can't merge one an optional value into two different options '%s' and '%s' " % ( name1, name2 )
+    super(type(self), self).__init__( msg )
+
+class   ErrorOptionsJoinNoParent( TypeError ):
+  def   __init__( self, options ):
+    msg = "Can't join options without parent: %s" % ( options )
+    super(type(self), self).__init__( msg )
+
+class   ErrorOptionsJoinParent( TypeError ):
+  def   __init__( self, options ):
+    msg = "Can't join options with children: %s" % ( options )
+    super(type(self), self).__init__( msg )
+
 #//===========================================================================//
 
 class   OptionalValueItem( tuple ):
@@ -160,9 +175,8 @@ def   TruthValue( value, operation = None ):
 
 class OptionValueProxy (object):
   
-  def   __init__( self, option_value, from_parent, options, key = NotImplemented ):
+  def   __init__( self, option_value, options, key = NotImplemented ):
     self.option_value = option_value
-    self.from_parent = from_parent
     self.options = options
     self.key = key
     self.child_ref = None
@@ -205,7 +219,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       other = DictItem(self.key, other)
     
-    self.options._appendValue( self.option_value, self.from_parent, other, AddValue )
+    self.options._appendValue( self.option_value, other, AddValue )
     return self
   
   #//-------------------------------------------------------//
@@ -216,7 +230,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       other = DictItem(self.key, other)
     
-    self.options._appendValue( self.option_value, self.from_parent, other, SubValue )
+    self.options._appendValue( self.option_value, other, SubValue )
     return self
   
   #//-------------------------------------------------------//
@@ -227,7 +241,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       value = DictItem(self.key, value)
     
-    self.options._appendValue( self.option_value, self.from_parent, value, operation_type, condition )
+    self.options._appendValue( self.option_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
@@ -248,7 +262,7 @@ class OptionValueProxy (object):
     
     self.child_ref = None
     
-    self.options._appendValue( self.option_value, self.from_parent, DictItem(key, value), SetValue )
+    self.options._appendValue( self.option_value, DictItem(key, value), SetValue )
   
   #//-------------------------------------------------------//
   
@@ -256,7 +270,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       raise KeyError( key )
     
-    child = OptionValueProxy( self.option_value, self.from_parent, self.options, key )
+    child = OptionValueProxy( self.option_value, self.options, key )
     self.child_ref = weakref.ref( child )
     return child
   
@@ -481,7 +495,7 @@ class Options (object):
   
   def   __set_value( self, name, value, operation_type = SetValue ):
     
-    opt_value, from_parent = self._get_value( name )
+    opt_value = self._get_value( name )
     
     if opt_value is None:
       if isinstance( value, OptionType ):
@@ -510,7 +524,7 @@ class Options (object):
       elif value is opt_value:
         return
       
-      self._appendValue( opt_value, from_parent, value, operation_type )
+      self._appendValue( opt_value, value, operation_type )
   
   #//-------------------------------------------------------//
   
@@ -528,26 +542,26 @@ class Options (object):
   
   def   _get_value( self, name ):
     try:
-      return (self.__dict__['__opt_values'][ name ], False)
+      return self.__dict__['__opt_values'][ name ]
     except KeyError as e:
       try:
-        return ( self.__dict__['__parent']._get_value( name )[0], True )
+        return self.__dict__['__parent']._get_value( name )
       except AttributeError:
-        return (None, False)
+        return None
   
   #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
-    opt_value, from_parent = self._get_value( name )
+    opt_value = self._get_value( name )
     if opt_value is None:
       raise AttributeError( name )
     
-    return OptionValueProxy( opt_value, from_parent, self )
+    return OptionValueProxy( opt_value, self )
   
   #//-------------------------------------------------------//
   
   def   __contains__( self, name ):
-    return self._get_value( name )[0] is not None
+    return self._get_value( name ) is not None
   
   #//-------------------------------------------------------//
   
@@ -556,29 +570,59 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   keys( self ):
-    names = set( self.__dict__['__opt_values'] )
-    parent = self.__dict__['__parent']
-    if parent:
-      names.update( parent.keys() )
+  def   _itemsDict( self ):
     
-    return names
+    parent = self.__dict__['__parent']
+    its = parent._itemsDict() if parent is not None else dict()
+    its.update( self.__dict__['__opt_values'] )
+    
+    return its
+  
+  #//-------------------------------------------------------//
+  
+  def   keys( self ):
+    return self._itemsDict().keys()
   
   #//-------------------------------------------------------//
   
   def   values( self ):
-    values = set( self.__dict__['__opt_values'].values() )
-    parent = self.__dict__['__parent']
-    if parent:
-      values.update( parent.values() )
-    
-    return values
+    return self._itemsDict().values()
   
   #//-------------------------------------------------------//
   
   def   items( self ):
-    for name in self.keys():
-      yield ( name, self._get_value( name )[0] )
+    return self._itemsDict().items()
+  
+  #//-------------------------------------------------------//
+  
+  def   itemsByValue( self ):
+    
+    values = {}
+    
+    for name, value in self.items():
+      try:
+        values[ value ].add( name )
+      except KeyError:
+        values[ value ] = set([ name ])
+    
+    return values.items()
+  
+  #//-------------------------------------------------------//
+  
+  def   isParentValue( self, opt_value ):
+    parent = self.__dict__['__parent']
+    return parent and (opt_value in parent.values())
+  
+  #//-------------------------------------------------------//
+  
+  def   valueNames( self, opt_value ):
+    names = set()
+    
+    for name, value in self.items():
+      if value is opt_value:
+        names.add( name )
+    
+    return names
   
   #//-------------------------------------------------------//
   
@@ -625,47 +669,27 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   __getParentValueNames( self, opt_value ):
-    
-    parent = self.__dict__['__parent']
-    if not parent:
-      return set()
-    
-    names = set()
-    
-    for name in parent.keys():
-      v, p = self._get_value( name )
-      if v is opt_value:
-        names.add( name )
-    
-    return names
-  
-  #//-------------------------------------------------------//
-  
-  def   __getValueNewNames( self, names ):
+  def   __getMergeValueNames( self, names ):
     
     value = None
-    from_parent = False
-    new_names = set()
     
     for name in names:
-      v, p = self._get_value( name )
-      if v is None:
-        new_names.add( name )
-      else:
-        if (value is not None) and (value is not v):
-          raise ErrorOptionsMergeToDifferentOptions( names )
+      value = self._get_value( name )
+      if value is not None:
+        value_names = self.valueNames( value )
         
-        if p:
-          new_names.add( name )
-          from_parent = True
+        new_names = (names - value_names)
+        for new_name in new_names:
+          if self._get_value( new_name ) is not None:
+            raise ErrorOptionsMergeDifferentOptions( new_name, value_names.pop() )
         
-        value = v
+        if self.isParentValue( value ):
+          value = value.copy()
+          new_names = names | value_names
+        
+        return value, new_names
     
-    if from_parent:
-      value = value.copy()
-    
-    return value, new_names
+    return None, names
   
   #//-------------------------------------------------------//
   
@@ -681,13 +705,8 @@ class Options (object):
     
     self.clearCache()
     
-    other_values = {}
-    for name, value in other.items():
-      other_values.setdefault( value, [] ).append( name )
-    
-    for value, names in other_values.items():
-      
-      self_value, new_names = self.__getValueNewNames( names )
+    for value, names in other.itemsByValue():
+      self_value, new_names = self.__getMergeValueNames( names )
       
       if self_value is None:
         self_value = value.copy()
@@ -695,6 +714,74 @@ class Options (object):
         self_value.merge( value )
       
       self.__set_opt_value( self_value, new_names )
+  
+  #//-------------------------------------------------------//
+  
+  def   join( self ):
+    parent = self.__dict__['__parent']
+    if parent is None:
+      raise ErrorOptionsJoinNoParent( self )
+    
+    if self.__dict__['__children']:
+      raise ErrorOptionsJoinParent( self )
+    
+    parent.merge( self )
+    self.clear()
+    
+    #~ parent.clearCache()
+    #~ self.clearCache()
+    
+    #~ opt_values = self.__dict__['__opt_values']
+    
+    #~ values_names = {}
+    
+    #~ for name, value in opt_values.items():
+      #~ if self.isParentValue( value ):
+        #~ p_value = parent._get_value( name )
+        #~ if (p_value is not None) and (p_value is not value):
+          #~ raise ErrorOptionsJoinDifferentOptions( value, p_value )
+      #~ else:
+        #~ value_names.setdefault( value, [] ).append( name )
+    
+    #~ for value, names in value_names:
+      #~ p_value, p_new_names = parent.__getMergeValueNames( names )
+      
+      #~ if p_value is None:
+        #~ p_value = value
+      #~ else:
+        #~ p_value.merge( value )
+      
+      #~ parent.__set_opt_value( p_value, p_new_names )
+      
+      #~ self.__dict__['__parent'] = None
+      #~ self.__dict__['__parent'] = None
+  
+  #//-------------------------------------------------------//
+  
+  def   unjoin( self ):
+    parent = self.__dict__['__parent']
+    if parent is None:
+      return
+    
+    self.merge( parent )
+    
+    self.__dict__['__parent'] = None
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self ):
+    parent = self.__dict__['__parent']
+    
+    for child in self.__dict__['__children']:
+      child.unjoin()
+    
+    if parent is not None:
+      parent.__dict__['__children'].remove( weakref.proxy( self ) )
+    
+    self.__dict__['__parent'] = None
+    self.__dict__['__cache'].clear()
+    self.__dict__['__opt_values'].clear()
+    self.__dict__['__children'] = []
   
   #//-------------------------------------------------------//
 
@@ -707,13 +794,9 @@ class Options (object):
   
   def     copy( self ):
     
-    val_names = {}
-    for name, opt_value in self.items():
-      val_names.setdefault( opt_value, [] ).append( name )
-    
     other = Options()
     
-    for opt_value, names in val_names.items():
+    for opt_value, names in self.itemsByValue():
       other.__set_opt_value( opt_value.copy(), names )
     
     return other
@@ -740,18 +823,18 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   appendValue( self, name, value, operation_type = None, condition = None ):
-    opt_value, from_parent = self._get_value( name )
-    self._appendValue( opt_value, from_parent, value, operation_type, condition )
+    opt_value = self._get_value( name )
+    self._appendValue( opt_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
-  def   _appendValue( self, opt_value, from_parent, value, operation_type = None, condition = None ):
+  def   _appendValue( self, opt_value, value, operation_type = None, condition = None ):
     value = self._makeCondValue( value, operation_type, condition )
     
     self.clearCache()
     
-    if from_parent:
-      names = self.__getParentValueNames( opt_value )
+    if self.isParentValue( opt_value ):
+      names = self.valueNames( opt_value )
       opt_value = opt_value.copy()
       self.__set_opt_value( opt_value, names )
     
