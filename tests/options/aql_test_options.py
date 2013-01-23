@@ -441,7 +441,20 @@ class TestOptions( AqlTestCase ):
     self.assertIs( options2.option21.option_value, options2.opt21.option_value )
     self.assertEqual( options2.opt22, 3 )
     self.assertEqual( options2.opt23, 7 )
+    self.assertFalse( child_options2 )
     
+    child_options2 = options2.override()
+    
+    options2.option_21 = options2.opt21
+    
+    child_options2.opt22 = 4
+    child_options2.opt23 = 8
+    
+    child_options2.unjoin()
+    
+    self.assertIs( child_options2.option21.option_value, child_options2.option_21.option_value )
+    self.assertIs( child_options2.option21.option_value, child_options2.opt21.option_value )
+    self.assertIsNot( child_options2.opt21.option_value, options2.opt21.option_value )
 
 #//===========================================================================//
 
