@@ -17,8 +17,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = tuple()
-
 from .aql_depends_value import *
 from .aql_file_value import *
 from .aql_value import *

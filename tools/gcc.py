@@ -4,10 +4,7 @@ import shutil
 import hashlib
 import itertools
 
-from aql.nodes import Node, Builder
-from aql.utils import execCommand, readTextFile, Tempfile, Tempdir
-from aql.types import FilePath, FilePaths, Version
-from aql.options import Options, BoolOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType, cppToolCommonOptions
+import aql
 
 #//===========================================================================//
 #// BUILDERS IMPLEMENTATION
@@ -15,7 +12,7 @@ from aql.options import Options, BoolOptionType, ListOptionType, PathOptionType,
 
 def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
   
-  deps = readTextFile( dep_file )
+  deps = aql.readTextFile( dep_file )
   
   dep_files = []
   
@@ -43,7 +40,7 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
-class GccCompilerImpl (Builder):
+class GccCompilerImpl (aql.Builder):
   
   __slots__ = ( 'cmd', )
   
@@ -88,7 +85,7 @@ class GccCompilerImpl (Builder):
   #//-------------------------------------------------------//
   
   def   __buildOne( self, vfile, src_file_value ):
-    with Tempfile( suffix = '.d' ) as dep_file:
+    with aql.Tempfile( suffix = '.d' ) as dep_file:
       
       src_file = src_file_value.name
       
@@ -102,7 +99,7 @@ class GccCompilerImpl (Builder):
       
       cwd = self.buildPath()
       
-      result = execCommand( cmd, cwd, file_flag = '@' )
+      result = aql.execCommand( cmd, cwd, file_flag = '@' )
       if result.failed():
         raise result
       
@@ -114,10 +111,10 @@ class GccCompilerImpl (Builder):
     
     build_dir = self.buildPath()
     
-    src_files = FilePaths( src_file_values )
+    src_files = aql.FilePaths( src_file_values )
     
-    with Tempdir( dir = build_dir ) as tmp_dir:
-      cwd = FilePath( tmp_dir )
+    with aql.Tempdir( dir = build_dir ) as tmp_dir:
+      cwd = aql.FilePath( tmp_dir )
       
       cmd = list(self.cmd)
       cmd += src_files
@@ -126,7 +123,7 @@ class GccCompilerImpl (Builder):
       
       obj_files = self.buildPaths( src_files ).add('.o')
       
-      result = execCommand( cmd, cwd, file_flag = '@' )
+      result = aql.execCommand( cmd, cwd, file_flag = '@' )
       
       move_file = os.rename
       
@@ -163,7 +160,7 @@ class GccCompilerImpl (Builder):
       values = []
       nodes = []
       for src_file_value in src_file_values:
-        node = Node( self, src_file_value )
+        node = aql.Node( self, src_file_value )
         if node.actual( vfile ):
           targets += node.nodeTargets()
         else:
@@ -188,7 +185,7 @@ class GccCompilerImpl (Builder):
 
 #//===========================================================================//
 
-class GccCompiler(Builder):
+class GccCompiler(aql.Builder):
   
   __slots__ = ('compiler')
   
@@ -200,11 +197,11 @@ class GccCompiler(Builder):
   
   def   __groupSources( self, src_values, wish_groups ):
     
-    src_files = FilePaths()
+    src_files = aql.FilePaths()
     src_map = {}
     
     for value in src_values:
-      file = FilePath( value.name )
+      file = aql.FilePath( value.name )
       src_files.append( file )
       src_map[ file ] = value
     
@@ -224,7 +221,7 @@ class GccCompiler(Builder):
     src_groups = self.__groupSources( node.sources(), wish_groups = build_manager.jobs() )
     
     compiler = self.compiler
-    pre_nodes = [ Node( compiler, src_values ) for src_values in src_groups ]
+    pre_nodes = [ aql.Node( compiler, src_values ) for src_values in src_groups ]
     
     return pre_nodes
   
@@ -246,7 +243,7 @@ class GccCompiler(Builder):
 
 #//===========================================================================//
 
-class GccArchiver(Builder):
+class GccArchiver(aql.Builder):
   
   __slots__ = ('cmd', 'target')
   
@@ -278,11 +275,11 @@ class GccArchiver(Builder):
     cmd = list(self.cmd)
     
     cmd += [ archive ]
-    cmd += FilePaths( obj_files )
+    cmd += aql.FilePaths( obj_files )
     
     cwd = self.buildPath()
     
-    result = execCommand( cmd, cwd, file_flag = '@' )
+    result = aql.execCommand( cmd, cwd, file_flag = '@' )
     if result.failed():
       raise result
     
@@ -295,7 +292,7 @@ class GccArchiver(Builder):
 
 #//===========================================================================//
 
-class GccLinker(Builder):
+class GccLinker(aql.Builder):
   
   __slots__ = ('cmd', 'target')
   
@@ -345,11 +342,11 @@ class GccLinker(Builder):
     cmd = list(self.cmd)
     
     cmd += [ archive ]
-    cmd += FilePaths( obj_files )
+    cmd += aql.FilePaths( obj_files )
     
     cwd = self.buildPath()
     
-    result = execCommand( cmd, cwd, file_flag = '@' )
+    result = aql.execCommand( cmd, cwd, file_flag = '@' )
     if result.failed():
       raise result
     
@@ -370,7 +367,7 @@ def   _checkProg( gcc_path, prog ):
 
 #//===========================================================================//
 
-def   _findGcc( env, gcc_prefix, gcc_suffix )
+def   _findGcc( env, gcc_prefix, gcc_suffix ):
   gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
   gcc = whereProgram( gcc, env.copy( value_type = str ) )
   
@@ -395,7 +392,7 @@ def   _findGcc( env, gcc_prefix, gcc_suffix )
 #//===========================================================================//
 
 def   _getGccSpecs( gcc ):
-  result = execCommand( [gcc, '-v'] )
+  result = aql.execCommand( [gcc, '-v'] )
   
   target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
   version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
@@ -406,7 +403,7 @@ def   _getGccSpecs( gcc ):
   target = match.group(1).strip() if match else ''
   
   match = version_re.search( out )
-  version = str(Version( match.group(1).strip() if match else '' ))
+  version = str(aql.Version( match.group(1).strip() if match else '' ))
   
   if target == 'mingw32':
     target_arch = 'x86-32'
@@ -449,7 +446,7 @@ def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
 #//===========================================================================//
 
 @aql.tool('gcc', 'g++', 'c++', 'c')
-class ToolGcc( Tool ):
+class ToolGcc( aql.Tool ):
   
   def   __init__( self, project, options ):
     
@@ -483,12 +480,12 @@ class ToolGcc( Tool ):
   
   @staticmethod
   def   options():
-    options = cppToolCommonOptions()
+    options = aql.cppToolCommonOptions()
     
-    options.gcc_path = PathOptionType()
-    options.gcc_target = StrOptionType( ignore_case = True )
-    options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
-    options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
+    options.gcc_path = aql.PathOptionType()
+    options.gcc_target = aql.StrOptionType( ignore_case = True )
+    options.gcc_prefix = aql.StrOptionType( description = "GCC C/C++ compiler prefix" )
+    options.gcc_suffix = aql.StrOptionType( description = "GCC C/C++ compiler suffix" )
     
     options.setGroup( "C/C++ compiler" )
     
@@ -496,36 +493,23 @@ class ToolGcc( Tool ):
   
   #//-------------------------------------------------------//
   
-  @aql.builder
   def   CompileCpp( self, project, options, sources ):
     cpp_compiler = GccCompiler( options, 'c++' )
-    return Node( cpp_compiler, sources )
+    return aql.Node( cpp_compiler, sources )
   
   #//-------------------------------------------------------//
   
-  @aql.builder
   def   CompileC( self, prj, options, sources ):
     c_compiler = GccCompiler( options, 'c' )
-    return Node( c_compiler, sources )
+    return aql.Node( c_compiler, sources )
   
-  @aql.builder
-  def   LinkCppLibrary( self, env, sources, options ):
+  def   LinkLibrary( self, env, sources, options ):
     pass
   
-  @aql.builder
-  def   LinkCLibrary( self, env, sources, options ):
+  def   LinkSharedLibrary( self, env, sources, options ):
     pass
   
-  @aql.builder
-  def   LinkSharedCppLibrary( self, env, sources, options ):
-    pass
-  
-  @aql.builder
-  def   LinkSharedCLibrary( self, env, sources, options ):
-    pass
-  
-  @aql.builder
-  def   LinkCppProgram( self, env, sources, options ):
+  def   LinkProgram( self, env, sources, options ):
     pass
 
 #//===========================================================================//

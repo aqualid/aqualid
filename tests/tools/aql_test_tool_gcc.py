@@ -11,7 +11,7 @@ from aql.values import FileValue, FileContentTimeStamp, FileContentChecksum, Val
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from gcc import GccCompiler, GccArchiver, gccOptions
+from gcc import GccCompiler, GccArchiver
 
 #//===========================================================================//
 

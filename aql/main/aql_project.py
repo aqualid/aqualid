@@ -35,7 +35,7 @@ from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
 
-from .aql_tools import ToolManager
+from .aql_tools import ToolsManager
 
 #//===========================================================================//
 
@@ -226,39 +226,21 @@ class Project( object ):
     
     self.options = config.options.override()
     self.build_manager = BuildManager( config.state_file, config.jobs, config.keep_going )
-    self.tool_manager = ToolManager()
+    self.tools_manager = ToolsManager()
   
   #//=======================================================//
   
-  def   Tool( self, tools, tool_paths = None, **kw ):
-    tool_manager = self.tool_manager
-    tool_manager.loadTools( tool_paths )
+  def   Tool( self, tools, tool_paths = None ):
+    tools_manager = self.tools_manager
+    tools_manager.loadTools( tool_paths )
     
     options = self.options
     
     for tool_name in toSequence( tools ):
-      for tool_info in tool_manager.getTools( tool_name ):
-        
-        tool_options = self.options.override()
-        tool_options.merge( tool_info.options )
-        
-        for setup in tool_info.setup:
-          try:
-            setup_options = tool_options.override()
-            setup( setup_options )
-            tool_options.join( setup_options )
-            break
-          except Exception:
-            pass
-        
-        try:
-          tmp_tool_options = tool_options.override()
-          tool = tool_info.tool_class( self, tmp_tool_options )
-          tool_options.join( tmp_tool_options )
-          break
-        except Exception:
-          pass
-        
+      tool = tools_manager.getTool( tool_name, options )
+      
+      for builder in tool.getBuilders():
+        self.AddBuilder( builder )
   
   #//=======================================================//
   
