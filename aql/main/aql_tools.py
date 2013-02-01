@@ -17,11 +17,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'Tool', 'tool', 'toolSetup' )
+__all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
 
 import sys
 
-from aql.utils import toSequence, logWarning
+from aql.utils import toSequence, logWarning, loadModule
 from aql.types import FilePath
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
@@ -54,7 +54,7 @@ class   ErrorToolNotFound( Exception ):
 
 #//===========================================================================//
 
-class ToolInfo( object ):
+class   ToolInfo( object ):
   __slots__ = (
     'tool_class',
     'options',
@@ -111,10 +111,10 @@ class ToolsManager( object ):
   #//-------------------------------------------------------//
   
   def   addTool( self, tool_class, names ):
-    if not isinstance( tool_class, type ) or not issubclass( tool_class, Tool ):
+    if not issubclass( tool_class, Tool ):
       raise ErrorToolInvalid( tool_class )
     
-    self.tool_names.setdefault( tool_class, set() ).update( names )
+    self.tool_names.setdefault( tool_class, set() ).update( toSequence( names ) )
     self.__addToMap( self.tool_classes, names, tool_class )
   
   #//-------------------------------------------------------//
@@ -143,38 +143,15 @@ class ToolsManager( object ):
   
   #//-------------------------------------------------------//
   
-  def   getToolSetupMethods( self, tool_class ):
-    
-    setup_methods = self.tool_setup_methods.get( tool_class, None )
-    if setup_methods is None:
-      for name in self.tool_names.get( tool_class, [] ):
-        setup_methods.update( self.all_setup_methods.get( name, [] ) )
-      
-      self.tool_setup_methods[ tool_class ] = setup_methods
-    
-    return setup_methods
-  
-  #//-------------------------------------------------------//
-  
-  """
-  'c++': MsvcTool, GccTool, IntelCCTool, Clang
-  'msvc': MsvcTool
-  'gcc': GccTool
-  
-  ---
-  'msvc': Msvc7Setup, Msvc8Setup, MsvcCommonSetup
-  'gcc': GccSetup
-  
-  ---
-  
-  Tool('c++')
-  """
-  
-  def   getToolInfoList( self, name ):
+  def   __getToolInfoList( self, name ):
     
     tools_info = []
     empty_list = tuple()
-    tool_classes = self.tool_classes.get( name, empty_list )
+    
+    if isinstance( name, Tool ):
+      tool_classes = ( name, )
+    else:
+      tool_classes = self.tool_classes.get( name, empty_list )
     
     for tool_class in tool_classes:
       tool_info = self.tool_info.get( tool_class, None )
@@ -182,8 +159,11 @@ class ToolsManager( object ):
         tool_info = ToolInfo()
         tool_info.tool_class = tool_class
         self.tool_info[ tool_class ] = tool_info
-      
-      tool_info.setup_methods = self.getToolSetupMethods( tool_class )
+        
+        tool_info.setup_methods = set()
+        
+        for name in self.tool_names.get( tool_class, [] ):
+          tool_info.setup_methods.update( self.all_setup_methods.get( name, [] ) )
       
       tools_info.append( tool_info )
     
@@ -191,9 +171,9 @@ class ToolsManager( object ):
   
   #//=======================================================//
   
-  def   getTool( self, tool_name, options ):
+  def   getTool( self, tool_name, project, options ):
     
-    tool_info_list = self.getToolInfoList( tool_name )
+    tool_info_list = self.__getToolInfoList( tool_name )
     
     for tool_info in tool_info_list:
       
@@ -210,14 +190,21 @@ class ToolsManager( object ):
           setup_options.join()
       
       try:
-        tool = tool_info.tool_class( self, tool_options )
+        tool = tool_info.tool_class( self, project, tool_options )
       except Exception:
         tool_options.clear()
       else:
         tool_options.join()
-        return tool
+        
+        tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
+        return tool, tool_names
     
     raise ErrorToolNotFound( tool_name )
+  
+  #//=======================================================//
+  
+  def   hasTool( self, tool_name ):
+    return tool_name in self.tool_classes
 
 #//===========================================================================//
 
@@ -243,14 +230,16 @@ def   toolSetup( *tool_names ):
 
 class Tool( object ):
   
-  def   __init__( self ):
+  __slots__ = ('project', 'options')
+  
+  def   __init__( self, project, options ):
     pass
   
   #//-------------------------------------------------------//
   
   @staticmethod
   def   options( cls ):
-    pass
+    return None
   
   #//-------------------------------------------------------//
   
@@ -261,7 +250,7 @@ class Tool( object ):
     for name in dir( self ):
       if not name.startswith('_'):
         builder = getattr( self, name )
-        if isinstance( attr, types.MethodType ):
+        if isinstance( builder, types.MethodType ):
           builders.append( builder )
     
     return builders

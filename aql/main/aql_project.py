@@ -110,9 +110,8 @@ class ProjectConfig( CLIConfig ):
     CLI_OPTIONS = (
       CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,               "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'build.aql',        "Path to main make file", 'FILE PATH'),
-      CLIOption( "-s", "--state-file",    "state_file",     FilePath,   'build.aql.state',  "File path to store information of previous builds.", 'FILE PATH'),
-      CLIOption( "-t", "--tools-path",    "tools_path",     Paths,      [],                 "Paths to tools", 'FILE PATH, ...'),
-      CLIOption( "-p", "--setup-path",    "setup_path",     Paths,      [],                 "Paths to setup scripts to preconfigure tools", 'FILE PATH, ...'),
+      CLIOption( "-d", "--aql-db",        "aql_db",         FilePath,   'build.aql.db',     "File path to store information of previous builds.", 'FILE PATH'),
+      CLIOption( "-p", "--tool-paths",    "tool_paths",     Paths,      [],                 "Paths to tools and setup scripts", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,              "Continue build even if any target failed." ),
       CLIOption( "-l", "--list-options",  "list_options",   bool,       False,              "List all available options and exit." ),
       CLIOption( "-c", "--clean",         "clean_targets",  bool,       False,              "Clean up actual targets." ),
@@ -144,12 +143,13 @@ class ProjectConfig( CLIConfig ):
 #//===========================================================================//
 
 class BuilderWrapper( object ):
-  __slots__ = ( 'project', 'method', 'arg_names')
+  __slots__ = ( 'project', 'options', 'method', 'arg_names')
   
-  def   __init__( self, project, method ):
+  def   __init__( self, method, project, options):
     self.arg_names = self.__checkBuilderMethod( method )
     self.method = method
     self.project = project
+    self.options = options
   
   #//-------------------------------------------------------//
   
@@ -181,7 +181,8 @@ class BuilderWrapper( object ):
   def   __getOptionsAndArgs( self, kw ):
     args_kw = {}
     options_kw = {}
-    options = self.project.options
+    
+    options = self.options
     
     for name, value in kw.items():
       if name == "options":
@@ -216,6 +217,28 @@ class BuilderWrapper( object ):
 
 #//===========================================================================//
 
+class ToolWrapper( object ):
+  
+  def   __init__( self, tool, project, options ):
+    self.project = project
+    self.options = options
+    self.tool = tool
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    method = getattr( self.tool, attr )
+    
+    if name.startswith('_') or not isinstance( method, types.MethodType ):
+      return method
+    
+    builder = BuilderWrapper( method, self.project, self.options )
+    
+    setattr( self, attr, builder )
+    return builder
+
+#//===========================================================================//
+
 class Project( object ):
   
   def   __init__(self, config = None ):
@@ -226,21 +249,62 @@ class Project( object ):
     
     self.options = config.options.override()
     self.build_manager = BuildManager( config.state_file, config.jobs, config.keep_going )
-    self.tools_manager = ToolsManager()
+    
+    tools_manager = ToolsManager()
+    tools_manager.loadTools( config.tool_paths )
+    
+    self.tools_manager = tools_manager
   
   #//=======================================================//
   
-  def   Tool( self, tools, tool_paths = None ):
+  def   __addTool( self, tool_name, options ):
+    tool_options = options.override()
+    
+    tool, names = self.tools_manager.getTool( tool_name, self, tool_options )
+    
+    tool = ToolWrapper( tool, self, tool_options )
+    
+    for name in names:
+      if not hasattr( self, name ):
+        setattr( self, name, tool )
+    
+    return tool
+  
+  #//=======================================================//
+  
+  def   __getattr__( self, name ):
+    if not self.tools_manager.hasTool( name ):
+      raise AttributeError( name )
+    
+    return self.__addTool( name, self.options )
+  
+  #//=======================================================//
+  
+  def __getitem__( self, name ):
+    return getattr( self, name )
+  
+  #//=======================================================//
+  
+  def   Tools( self, *tool_names, **kw ):
+    
+    tool_paths = kw.get('tool_paths', [] )
+    options = kw.get( 'options', None )
+    
     tools_manager = self.tools_manager
     tools_manager.loadTools( tool_paths )
     
-    options = self.options
+    if options is None:
+      options = self.options
     
-    for tool_name in toSequence( tools ):
-      tool = tools_manager.getTool( tool_name, options )
-      
-      for builder in tool.getBuilders():
-        self.AddBuilder( builder )
+    for tool_name in tool_names:
+      self.__addTool( tool_name, options )
+  
+  #//=======================================================//
+  
+  def   Tool( self, tool_class, tool_names = tuple() ):
+    self.tools_manager.addTool( tool_class, tool_names )
+    
+    return self.__addTool( tool_class, self.options )
   
   #//=======================================================//
   
@@ -258,17 +322,17 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   AddBuilder( self, builder_method, name = None ):
+  def   AddBuilder( self, builder, name = None ):
     
-    method_wrapper = BuilderWrapper( self, builder_method )
+    builder_wrapper = BuilderWrapper( builder, self, self.options )
     
     if not name:
-      name = builder_method.__name__
+      name = builder.__name__
     
     if hasattr( self, name ):
-      raise ErrorProjectBuilderMethodExists( builder_method )
+      raise ErrorProjectBuilderMethodExists( builder )
     
-    setattr( self, name, method_wrapper )
+    setattr( self, name, builder_wrapper )
   
   #//=======================================================//
   
@@ -311,11 +375,49 @@ if __name__ == "__main__":
   prj_cfg = aql.ProjectConfig()
   prj_cfg.readConfig( config_file )
   
-  prj = aql.Project()
-  prj = aql.Project( prj_cfg )
-  prj.Tool( 'c++', tool_paths )
-  prj.CompileC( c_files, optimization = 'size', debug_symbols = False )
-  prj.CompileCpp( cpp_files, optimization = 'speed' )
+  prj = aql.Project( prj_cfg, tool_paths )
+  
+  prj.Tool('c').Compile( c_files, optimization = 'size', debug_symbols = False )
+  
+  cpp = prj.Tool( 'c++' )
+  cpp.Compile( cpp_files, optimization = 'speed' )
+  
+  prj.Tool('c++')
+  
+  prj.Compile( c_files, optimization = 'size', debug_symbols = False )
+  
+  prj_c = aql.Project( prj_cfg, tool_paths )
+  prj_c.Tool( 'c' )
+  prj_c.Compile( cpp_files, optimization = 'speed' )
+  
+  #//-------------------------------------------------------//
+  
+  prj = aql.Project( prj_cfg, tool_paths )
+  prj.Tool( 'c++', 'c' )
+  
+  cpp_objs = prj.CompileCpp( cpp_files, optimization = 'size' )
+  c_objs = prj.CompileC( c_files, optimization = 'speed' )
+  objs = prj.Compile( c_cpp_files )
+  
+  cpp_lib = prj.LinkSharedLib( cpp_objs )
+  c_lib = prj.LinkLibrary( c_objs )
+  
+  prog = prj.LinkProgram( [ objs, prj.FilterLibs( cpp_lib ), c_lib ] )
+  
+  #//-------------------------------------------------------//
+  
+  prj = aql.Project( prj_cfg, tool_paths )
+  
+  prj.Tools( 'g++', 'gcc' )
+  
+  cpp_objs = prj.cpp.Compile( cpp_files, optimization = 'size' )
+  c_objs = prj.c.Compile( c_files, optimization = 'speed' )
+  
+  cpp_lib = prj.cpp.LinkSharedLib( cpp_objs )
+  c_lib = prj.c.LinkLibrary( c_objs )
+  
+  prog = prj.cpp.LinkProgram( [ objs, prj.FilterLibs( cpp_lib ), c_lib ] )
+  
   
   """
   1. kw - args

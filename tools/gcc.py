@@ -438,17 +438,16 @@ def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
   gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
   specs = _getGccSpecs( gcc )
   specs['gcc'] = gcc
-  specs['gxx'] = gxx
+  specs['g++'] = gxx
   specs['ar'] = ar
   
   return specs
 
 #//===========================================================================//
 
-@aql.tool('gcc', 'g++', 'c++', 'c')
-class ToolGcc( aql.Tool ):
+class ToolGccCommon( aql.Tool ):
   
-  def   __init__( self, project, options ):
+  def   __init__( self, project, options, language ):
     
     if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
     
@@ -460,10 +459,10 @@ class ToolGcc( aql.Tool ):
     cfg_keys = ( gcc_prefix, gcc_suffix )
     cfg_deps = ( str(options.env['PATH']), )
     
-    specs = self.LoadValues( prj, cfg_keys, cfg_deps )
+    specs = self.LoadValues( project, cfg_keys, cfg_deps )
     if cfg is None:
       info = _getGccInfo( env, gcc_prefix, gcc_suffix )
-      self.SaveValues( prj, cfg_keys, cfg_deps, specs )
+      self.SaveValues( project, cfg_keys, cfg_deps, specs )
     """
     
     info = _getGccInfo( env, gcc_prefix, gcc_suffix )
@@ -473,7 +472,7 @@ class ToolGcc( aql.Tool ):
     if not options.target_arch.setDefault( info['target_arch'] ):  raise NotImplementedError()
     
     options.cc = info['gcc']
-    options.cxx = info['gxx']
+    options.cxx = info['g++']
     options.ar = info['ar']
   
   #//-------------------------------------------------------//
@@ -482,7 +481,7 @@ class ToolGcc( aql.Tool ):
   def   options():
     options = aql.cppToolCommonOptions()
     
-    options.gcc_path = aql.PathOptionType()
+    options.gcc_path  = aql.PathOptionType()
     options.gcc_target = aql.StrOptionType( ignore_case = True )
     options.gcc_prefix = aql.StrOptionType( description = "GCC C/C++ compiler prefix" )
     options.gcc_suffix = aql.StrOptionType( description = "GCC C/C++ compiler suffix" )
@@ -490,28 +489,45 @@ class ToolGcc( aql.Tool ):
     options.setGroup( "C/C++ compiler" )
     
     return options
-  
+    
   #//-------------------------------------------------------//
   
-  def   CompileCpp( self, project, options, sources ):
+  def   FilterLibrary( self, options, libraries ):
+    pass
+
+
+#//===========================================================================//
+
+@aql.tool('c++', 'g++', 'cpp', 'cxx')
+class ToolGxx( ToolGccCommon ):
+  
+  def   Compile( self, options, sources ):
     cpp_compiler = GccCompiler( options, 'c++' )
     return aql.Node( cpp_compiler, sources )
   
-  #//-------------------------------------------------------//
-  
-  def   CompileC( self, prj, options, sources ):
-    c_compiler = GccCompiler( options, 'c' )
-    return aql.Node( c_compiler, sources )
-  
-  def   LinkLibrary( self, env, sources, options ):
+  def   LinkLibrary( self, options, sources ):
     pass
   
-  def   LinkSharedLibrary( self, env, sources, options ):
+  def   LinkSharedLibrary( self, options, sources ):
     pass
   
-  def   LinkProgram( self, env, sources, options ):
+  def   LinkProgram( self, options, sources ):
     pass
 
 #//===========================================================================//
   
-
+@aql.tool('c', 'gcc', 'cc')
+class ToolGcc( ToolGccCommon ):
+  
+  def   Compile( self, options, sources ):
+    compiler = GccCompiler( options, 'c' )
+    return aql.Node( compiler, sources )
+  
+  def   LinkLibrary( self, options, sources ):
+    pass
+  
+  def   LinkSharedLibrary( self, options, sources ):
+    pass
+  
+  def   LinkProgram( self, options, sources ):
+    pass
