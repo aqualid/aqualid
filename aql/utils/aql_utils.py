@@ -20,7 +20,7 @@
 __all__ = (
   'isSequence', 'toSequence',
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
-  'fileSignature', 'fileChecksum', 'findFiles',
+  'fileSignature', 'fileChecksum', 'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )

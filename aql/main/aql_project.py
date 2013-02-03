@@ -248,7 +248,7 @@ class Project( object ):
     self.config = config
     
     self.options = config.options.override()
-    self.build_manager = BuildManager( config.state_file, config.jobs, config.keep_going )
+    self.build_manager = BuildManager( config.aql_db, config.jobs, config.keep_going )
     
     tools_manager = ToolsManager()
     tools_manager.loadTools( config.tool_paths )

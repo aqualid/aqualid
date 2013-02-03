@@ -83,6 +83,15 @@ options.build_variant = "final"
     prj.AddBuilder( TestTool().TestBuildNode )
     node = prj.TestBuildNode( 'a' )
     self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
+  
+  #//-------------------------------------------------------//
+  
+  def   test_prj_tools( self ):
+    cfg = ProjectConfig( [] )
+    prj = Project( cfg )
+    
+    prj.Tools( 'gcc', tool_paths = r'C:\work\src\aql\tools' )
+
 
 #//===========================================================================//
 

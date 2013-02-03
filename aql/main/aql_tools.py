@@ -19,9 +19,9 @@
 
 __all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
 
-import sys
+import os
 
-from aql.utils import toSequence, logWarning, loadModule
+from aql.utils import toSequence, logWarning, loadModule, findFiles
 from aql.types import FilePath
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
@@ -177,7 +177,9 @@ class ToolsManager( object ):
     
     for tool_info in tool_info_list:
       
+      options.override()
       tool_options = options.override()
+      
       tool_options.merge( tool_info.options )
       
       for setup in tool_info.setup_methods:
@@ -191,7 +193,8 @@ class ToolsManager( object ):
       
       try:
         tool = tool_info.tool_class( self, project, tool_options )
-      except Exception:
+      except Exception as err:
+        logWarning( "Tool init failed: %s - %s" % (tool_info.tool_class, err))
         tool_options.clear()
       else:
         tool_options.join()

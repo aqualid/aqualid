@@ -455,6 +455,15 @@ class TestOptions( AqlTestCase ):
     self.assertIs( child_options2.option21.option_value, child_options2.option_21.option_value )
     self.assertIs( child_options2.option21.option_value, child_options2.opt21.option_value )
     self.assertIsNot( child_options2.opt21.option_value, options2.opt21.option_value )
+  
+  #//=======================================================//
+  
+  def   test_options_clear(self):
+    options = Options()
+    options.override()
+    child = options.override()
+    
+    child.clear()
 
 #//===========================================================================//
 

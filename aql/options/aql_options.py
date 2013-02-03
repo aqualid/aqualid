@@ -461,7 +461,7 @@ class Options (object):
     self.__dict__['__children']     = []
     
     if parent is not None:
-      parent.__dict__['__children'].append( weakref.proxy( self ) )
+      parent.__dict__['__children'].append( weakref.ref( self ) )
   
   #//-------------------------------------------------------//
   
@@ -727,34 +727,6 @@ class Options (object):
     
     parent.merge( self )
     self.clear()
-    
-    #~ parent.clearCache()
-    #~ self.clearCache()
-    
-    #~ opt_values = self.__dict__['__opt_values']
-    
-    #~ values_names = {}
-    
-    #~ for name, value in opt_values.items():
-      #~ if self.isParentValue( value ):
-        #~ p_value = parent._get_value( name )
-        #~ if (p_value is not None) and (p_value is not value):
-          #~ raise ErrorOptionsJoinDifferentOptions( value, p_value )
-      #~ else:
-        #~ value_names.setdefault( value, [] ).append( name )
-    
-    #~ for value, names in value_names:
-      #~ p_value, p_new_names = parent.__getMergeValueNames( names )
-      
-      #~ if p_value is None:
-        #~ p_value = value
-      #~ else:
-        #~ p_value.merge( value )
-      
-      #~ parent.__set_opt_value( p_value, p_new_names )
-      
-      #~ self.__dict__['__parent'] = None
-      #~ self.__dict__['__parent'] = None
   
   #//-------------------------------------------------------//
   
@@ -769,26 +741,61 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   __unjoinChildren( self ):
+    
+    children = self.__dict__['__children']
+    
+    for child_ref in children:
+      child = child_ref()
+      if child is not None:
+        child.unjoin()
+    
+    del children[:]
+  
+  #//-------------------------------------------------------//
+  
+  def   __clearChildrenCache( self ):
+    
+    def   _clearChildCache( ref ):
+      child = ref()
+      if child is not None:
+        child.clearCache()
+        return True
+      
+      return False
+    
+    self.__dict__['__children'] = list( filter( _clearChildCache, self.__dict__['__children'] ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   __removeChild( self, child ):
+    
+    def   _filterChild( ref, removed_child = child ):
+      child = ref()
+      return (child is not None) and (child is not removed_child)
+    
+    self.__dict__['__children'] = list( filter( _filterChild, self.__dict__['__children'] ) )
+  
+  #//-------------------------------------------------------//
+  
   def   clear( self ):
     parent = self.__dict__['__parent']
     
-    for child in self.__dict__['__children']:
-      child.unjoin()
+    self.__unjoinChildren()
     
     if parent is not None:
-      parent.__dict__['__children'].remove( weakref.proxy( self ) )
+      parent.__removeChild( self )
     
     self.__dict__['__parent'] = None
     self.__dict__['__cache'].clear()
     self.__dict__['__opt_values'].clear()
-    self.__dict__['__children'] = []
   
   #//-------------------------------------------------------//
 
   def   override( self, **kw ):
     other = Options( self )
     other.update( kw )
-    return Options( self )
+    return other
   
   #//-------------------------------------------------------//
   
@@ -847,18 +854,7 @@ class Options (object):
   
   def   clearCache( self ):
     self.__dict__['__cache'].clear()
-    
-    valid_children = []
-    
-    for child in self.__dict__['__children']:
-      try:
-        child.clearCache()
-      except ReferenceError:
-        pass
-      else:
-        valid_children.append( child )
-    
-    self.__dict__['__children'] = valid_children
+    self.__clearChildrenCache()
   
   #//-------------------------------------------------------//
   
