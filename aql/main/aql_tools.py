@@ -21,7 +21,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
 
 import os
 
-from aql.utils import toSequence, logWarning, loadModule, findFiles
+from aql.utils import toSequence, logWarning, loadModule, findFiles, eventWarning
 from aql.types import FilePath
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
@@ -34,6 +34,18 @@ from aql.options import builtinOptions
   1.4 Create tool
   1.5 Add tool's builders
 """
+
+#//===========================================================================//
+
+@eventWarning
+def   eventToolsUnableLoadModule( module, err ):
+  logWarning( "Unable to load module: %s, error: %s" % (module, err) )
+
+#//===========================================================================//
+
+@eventWarning
+def   eventToolsToolFailed( tool_class, err ):
+  logWarning( "Tool init failed: %s - %s" % (tool_class, err))
 
 #//===========================================================================//
 
@@ -137,7 +149,7 @@ class ToolsManager( object ):
       try:
         loadModule( module_file, update_sys_path = False )
       except Exception as ex:
-        logWarning( "Unable to load module: %s, error: %s" % (module_file, ex) )
+        eventToolsUnableLoadModule( module_file, ex )
     
     self.loaded_paths |= paths
   
@@ -194,7 +206,7 @@ class ToolsManager( object ):
       try:
         tool = tool_info.tool_class( project, tool_options )
       except Exception as err:
-        logWarning( "Tool init failed: %s - %s" % (tool_info.tool_class, err))
+        eventToolsToolFailed( tool_info.tool_class, err )
         tool_options.clear()
         raise
       else:
