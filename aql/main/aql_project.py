@@ -229,7 +229,7 @@ class ToolWrapper( object ):
   def   __getattr__( self, attr ):
     method = getattr( self.tool, attr )
     
-    if name.startswith('_') or not isinstance( method, types.MethodType ):
+    if attr.startswith('_') or not isinstance( method, types.MethodType ):
       return method
     
     builder = BuilderWrapper( method, self.project, self.options )
@@ -264,9 +264,11 @@ class Project( object ):
     
     tool = ToolWrapper( tool, self, tool_options )
     
+    attrs = self.__dict__
+    
     for name in names:
-      if not hasattr( self, name ):
-        setattr( self, name, tool )
+      if name not in attrs:
+        attrs[ name] = tool
     
     return tool
   
@@ -274,7 +276,7 @@ class Project( object ):
   
   def   __getattr__( self, name ):
     if not self.tools_manager.hasTool( name ):
-      raise AttributeError( name )
+      raise AttributeError( "%s instance has no attribute '%s'" % (type(self), name) )
     
     return self.__addTool( name, self.options )
   

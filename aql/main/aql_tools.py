@@ -66,7 +66,7 @@ class   ToolInfo( object ):
       self.options = self.tool_class.options()
       return self.options
     
-    raise AttributeError( attr )
+    raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
 
 #//===========================================================================//
 
@@ -192,10 +192,11 @@ class ToolsManager( object ):
           setup_options.join()
       
       try:
-        tool = tool_info.tool_class( self, project, tool_options )
+        tool = tool_info.tool_class( project, tool_options )
       except Exception as err:
         logWarning( "Tool init failed: %s - %s" % (tool_info.tool_class, err))
         tool_options.clear()
+        raise
       else:
         tool_options.join()
         
@@ -243,17 +244,3 @@ class Tool( object ):
   @staticmethod
   def   options( cls ):
     return None
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuilders( self ):
-    
-    builders = []
-    
-    for name in dir( self ):
-      if not name.startswith('_'):
-        builder = getattr( self, name )
-        if isinstance( builder, types.MethodType ):
-          builders.append( builder )
-    
-    return builders

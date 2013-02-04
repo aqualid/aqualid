@@ -82,7 +82,7 @@ class Builder (object):
       """
       raise NotImplementedError( "Attribute '%s' must be set in a child class." % attr )
     
-    raise AttributeError( self, attr )
+    AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
   
   #//-------------------------------------------------------//
   

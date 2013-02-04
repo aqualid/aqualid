@@ -187,11 +187,6 @@ class   CLIConfig( object ):
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, name ):
-    raise AttributeError( name )
-  
-  #//-------------------------------------------------------//
-  
   def   items( self ):
     for name, value in self.__dict__.items():
       if not name.startswith("_") and (name != "targets"):

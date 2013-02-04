@@ -255,7 +255,7 @@ class GccArchiver(aql.Builder):
     self.scontent_type = scontent_type
     self.tcontent_type = tcontent_type
     
-    self.cmd = [ options.ar.value(), 'rcs' ]
+    self.cmd = [ options.lib.value(), 'rcs' ]
     self.signature = self.__signature()
     
     self.name = self.name + '.' + str(target)
@@ -369,13 +369,15 @@ def   _checkProg( gcc_path, prog ):
 
 def   _findGcc( env, gcc_prefix, gcc_suffix ):
   gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
-  gcc = whereProgram( gcc, env.copy( value_type = str ) )
+  gcc = aql.whereProgram( gcc, env )
   
   gxx = None
   ar = None
   
+  gcc_ext = os.path.splitext( gcc )[1]
+  
   gcc_prefixes = [gcc_prefix, ''] if gcc_prefix else ['']
-  gcc_suffixes = [gcc_suffix, ''] if gcc_suffix else ['']
+  gcc_suffixes = [gcc_suffix + gcc_ext, gcc_ext ] if gcc_suffix else [gcc_ext]
   
   gcc_path = os.path.dirname( gcc )
   
@@ -447,9 +449,12 @@ def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
 
 class ToolGccCommon( aql.Tool ):
   
-  def   __init__( self, project, options, language ):
+  def   __init__( self, project, options ):
     
-    if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
+    try:
+      if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
+    except Exception as err:
+      raise
     
     env = options.env.value().copy( value_type = str )
     gcc_prefix = options.gcc_prefix.value()
@@ -473,7 +478,7 @@ class ToolGccCommon( aql.Tool ):
     
     options.cc = info['gcc']
     options.cxx = info['g++']
-    options.ar = info['ar']
+    options.lib = info['ar']
   
   #//-------------------------------------------------------//
   
@@ -501,17 +506,17 @@ class ToolGccCommon( aql.Tool ):
 @aql.tool('c++', 'g++', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   
-  def   Compile( self, options, sources ):
+  def   Compile( self, project, options, sources ):
     cpp_compiler = GccCompiler( options, 'c++' )
     return aql.Node( cpp_compiler, sources )
   
-  def   LinkLibrary( self, options, sources ):
+  def   LinkLibrary( self, project, options, sources ):
     pass
   
-  def   LinkSharedLibrary( self, options, sources ):
+  def   LinkSharedLibrary( self, project, options, sources ):
     pass
   
-  def   LinkProgram( self, options, sources ):
+  def   LinkProgram( self, project, options, sources ):
     pass
 
 #//===========================================================================//
@@ -519,15 +524,15 @@ class ToolGxx( ToolGccCommon ):
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   
-  def   Compile( self, options, sources ):
+  def   Compile( self, project, options, sources ):
     compiler = GccCompiler( options, 'c' )
     return aql.Node( compiler, sources )
   
-  def   LinkLibrary( self, options, sources ):
+  def   LinkLibrary( self, project, options, sources ):
     pass
   
-  def   LinkSharedLibrary( self, options, sources ):
+  def   LinkSharedLibrary( self, project, options, sources ):
     pass
   
-  def   LinkProgram( self, options, sources ):
+  def   LinkProgram( self, project, options, sources ):
     pass

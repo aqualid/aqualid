@@ -554,7 +554,7 @@ class Options (object):
   def   __getattr__( self, name ):
     opt_value = self._get_value( name )
     if opt_value is None:
-      raise AttributeError( name )
+      AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
     
     return OptionValueProxy( opt_value, self )
   

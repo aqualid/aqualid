@@ -103,7 +103,7 @@ class   FilePath (FilePathBase):
       self.drive, self.seq = self.__makeSeq( self )
       return getattr( self, attr )
     
-    raise AttributeError( attr )
+    AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
   
   #//-------------------------------------------------------//
   

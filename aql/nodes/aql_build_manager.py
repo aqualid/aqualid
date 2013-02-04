@@ -314,7 +314,7 @@ class _NodesBuilder (object):
       self.task_manager = tm
       return tm
     
-    raise AttributeError("Unknown attribute: '%s'" % str(attr) )
+    AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
     
   #//-------------------------------------------------------//
   
