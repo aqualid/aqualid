@@ -189,7 +189,6 @@ class ToolsManager( object ):
     
     for tool_info in tool_info_list:
       
-      options.override()
       tool_options = options.override()
       
       tool_options.merge( tool_info.options )
@@ -208,9 +207,10 @@ class ToolsManager( object ):
       except Exception as err:
         eventToolsToolFailed( tool_info.tool_class, err )
         tool_options.clear()
-        raise
       else:
+        print( tool_options.build_dir.value() )
         tool_options.join()
+        print( options.build_dir.value() )
         
         tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
         return tool, tool_names

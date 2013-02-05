@@ -468,24 +468,23 @@ class TestOptions( AqlTestCase ):
   #//=======================================================//
   
   def   test_options_join(self):
-    options = Options()
     
-    options.build_dir_prefix  = PathOptionType()
-    options.build_dir         = PathOptionType()
-    options.build_dir_name    = StrOptionType()
-    options.target_os         = StrOptionType()
+    built_options = builtinOptions()
     
-    options.build_dir_name = options.target_os
+    p_options = built_options.override()
     
-    options.build_dir = options.build_dir_prefix
-    options.build_dir = JoinPathValue( options.build_dir_name )
+    options = p_options.override()
     
     options2 = options.override()
     
     options2.build_dir_prefix = "bin"
-    options2.target_os = "win32"
+    options2.target_os = "windows"
     
-    self.assertEqual( options2.build_dir.value(), 'bin/win32' )
+    self.assertEqual( options2.build_dir.value(), 'bin/windows_native_debug' )
+    self.assertEqual( options.build_dir.value(), 'native_native_debug' )
+    
+    options2.join()
+    self.assertEqual( options.build_dir.value(), 'bin/windows_native_debug' )
 
 #//===========================================================================//
 
