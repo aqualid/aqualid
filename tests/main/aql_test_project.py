@@ -90,9 +90,10 @@ options.build_variant = "final"
     cfg = ProjectConfig( [] )
     prj = Project( cfg )
     
-    prj.Tools( 'g++', tool_paths = r'C:\work\src\aql\tools' )
+    prj.Tools( tool_paths = r'C:\work\src\aql\tools' )
     
     objs = prj.cpp.Compile( 'file0.cpp' )
+    prj.Build()
 
 
 #//===========================================================================//

@@ -66,7 +66,7 @@ def   eventRebuildNode( node ):
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildNodeFailed( self, node, error ):
+def   eventBuildNodeFailed( node, error ):
   logError("Failed node: %s" % node.builder.buildStr( node ) )
   logError("Error: %s" % str(error) )
   try:
@@ -314,7 +314,7 @@ class _NodesBuilder (object):
       self.task_manager = tm
       return tm
     
-    AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
+    raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
     
   #//-------------------------------------------------------//
   

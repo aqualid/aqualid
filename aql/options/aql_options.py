@@ -80,13 +80,23 @@ class   ErrorOptionsJoinParent( TypeError ):
 
 #//===========================================================================//
 
-class   OptionalValueItem( tuple ):
-  def   __new__( cls, key, opt_value ):
-    return super(OptionalValueItem, cls).__new__( cls, (key, opt_value ) )
+class   _OpValue( tuple ):
+  def   __new__( cls, value ):
+    
+    if not isinstance( value, OptionValueProxy ):
+      return value
+    
+    return super(_OpValue, cls).__new__( cls, (value.name, value.key) )
   
   def   value( self, options, context ):
-    key, opt_value = self
-    return options.value( opt_value, context )[ key ]
+    name, key = self
+    
+    value = getattr( options, name ).value( context )
+    
+    if key is not NotImplemented:
+      value = value[ key ]
+    
+    return value
 
 #//===========================================================================//
 
@@ -96,17 +106,17 @@ def   _evalValue( other, options, context ):
   else:
     key = NotImplemented
   
-  if isinstance( other, OptionValueProxy ):
+  if isinstance( other, _OpValue ):
+    other = other.value( options, context )
+  
+  elif isinstance( other, OptionValueProxy ):
     if other.options is not options:
-      return other.value()
-    
-    other = other.value( context )
+      other = other.value()
+    else:
+      other = other.value( context )
   
   elif isinstance( other, OptionValue ):
     other = options.value( other, context )
-  
-  elif isinstance( other, OptionalValueItem ):
-    other = other.value( options, context )
   
   if key is not NotImplemented:
     other = DictItem( key, other )
@@ -145,38 +155,39 @@ def   _doAction( options, context, dest_value, op, value ):
   return op( dest_value, value )
 
 def   _SetDefaultValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
+  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
 
 def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
+  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
 
 def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, value )
+  return Operation( operation, _doAction, operator.iadd, _OpValue( value ) )
 
 def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, value )
+  return Operation( operation, _doAction, operator.isub, _OpValue( value ) )
 
 def   JoinPathValue( value, operation = None ):
-  return Operation( operation, _doAction, _joinPath, value )
+  return Operation( operation, _doAction, _joinPath, _OpValue( value ) )
 
 def   AbsPathValue( operation = None ):
   return Operation( operation, _doAction, _abdPath, None )
 
 def   UpdateValue( value, operation = None ):
-  return Operation( operation, _doAction, _updateOperator, value )
+  return Operation( operation, _doAction, _updateOperator, _OpValue( value ) )
 
 def   NotValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, value )
+  return Operation( operation, _doAction, _notOperator, _OpValue( value ) )
 
 def   TruthValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, value )
+  return Operation( operation, _doAction, _notOperator, _OpValue( value ) )
 
 #//===========================================================================//
 
 class OptionValueProxy (object):
   
-  def   __init__( self, option_value, options, key = NotImplemented ):
+  def   __init__( self, option_value, name, options, key = NotImplemented ):
     self.option_value = option_value
+    self.name = name
     self.options = options
     self.key = key
     self.child_ref = None
@@ -202,14 +213,6 @@ class OptionValueProxy (object):
     
     v = self.options.value( self.option_value, context )
     return v if self.key is NotImplemented else v[self.key]
-  
-  #//-------------------------------------------------------//
-  
-  def   valueForCondition( self ):
-    if self.key is NotImplemented:
-      return self.option_value
-    
-    return OptionalValueItem( self.key, self.option_value )
   
   #//-------------------------------------------------------//
   
@@ -270,7 +273,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       raise KeyError( key )
     
-    child = OptionValueProxy( self.option_value, self.options, key )
+    child = OptionValueProxy( self.option_value, self.name, self.options, key )
     self.child_ref = weakref.ref( child )
     return child
   
@@ -484,7 +487,7 @@ class Options (object):
       if value.options is not self:
         raise ErrorOptionsForeignOptionValue( value )
       
-      value = value.valueForCondition()
+      value = _OpValue( value )
     
     if key is not NotImplemented:
       value = DictItem( key, value )
@@ -554,9 +557,9 @@ class Options (object):
   def   __getattr__( self, name ):
     opt_value = self._get_value( name )
     if opt_value is None:
-      AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
+      raise AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
     
-    return OptionValueProxy( opt_value, self )
+    return OptionValueProxy( opt_value, name, self )
   
   #//-------------------------------------------------------//
   

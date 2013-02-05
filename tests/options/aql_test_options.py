@@ -8,9 +8,9 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.types import UpperCaseString, FilePath
 
-from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
+from aql.options import OptionType, StrOptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
                         builtinOptions, \
-                        OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, \
+                        OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, JoinPathValue, \
                         ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
                         ErrorOptionsNewValueTypeIsNotOption, ErrorOptionsOptionValueExists, ErrorOptionsMergeNonOptions
 
@@ -464,6 +464,28 @@ class TestOptions( AqlTestCase ):
     child = options.override()
     
     child.clear()
+  
+  #//=======================================================//
+  
+  def   test_options_join(self):
+    options = Options()
+    
+    options.build_dir_prefix  = PathOptionType()
+    options.build_dir         = PathOptionType()
+    options.build_dir_name    = StrOptionType()
+    options.target_os         = StrOptionType()
+    
+    options.build_dir_name = options.target_os
+    
+    options.build_dir = options.build_dir_prefix
+    options.build_dir = JoinPathValue( options.build_dir_name )
+    
+    options2 = options.override()
+    
+    options2.build_dir_prefix = "bin"
+    options2.target_os = "win32"
+    
+    self.assertEqual( options2.build_dir.value(), 'bin/win32' )
 
 #//===========================================================================//
 

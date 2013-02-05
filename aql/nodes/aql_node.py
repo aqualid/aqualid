@@ -227,7 +227,7 @@ class Node (object):
       self.__setValues()
       return getattr(self, attr)
     
-    AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
+    raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
   
   #//=======================================================//
   
