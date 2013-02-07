@@ -182,6 +182,8 @@ class OptionValue (object):
       
       diff_index += 1
     
+    self.default_conditional_value = other.default_conditional_value
+    
     self.conditional_values += other.conditional_values[ diff_index: ]
     
   #//-------------------------------------------------------//

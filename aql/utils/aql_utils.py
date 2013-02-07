@@ -410,7 +410,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
   
   try:
     try:
-      p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env )
+      p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = True )
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
     except Exception as ex:

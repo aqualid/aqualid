@@ -54,13 +54,13 @@ class   ErrorNodeInvalidTargetsType( Exception ):
 
 @eventStatus
 def   eventNodeBuilding( node ):
-  logInfo("Building node: %s" % node.builder.buildStr( node ) )
+  logInfo("Building node: %s" % node.buildStr() )
 
 #//-------------------------------------------------------//
 
 @eventStatus
 def   eventNodeBuildingFinished( node ):
-  logInfo("Finished node: %s" % node.builder.buildStr( node ) )
+  logInfo("Finished node: %s" % node.buildStr() )
 
 #//---------------------------------------------------------------------------//
 
@@ -430,3 +430,8 @@ class Node (object):
     # g++: [ moc: [ m4: src1.m4 ... ] ]
     
     return ' '.join( name )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildStr( self ):
+    return self.builder.buildStr( self )

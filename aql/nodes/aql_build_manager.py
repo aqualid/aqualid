@@ -26,6 +26,7 @@ __all__ = (
 
 import threading
 import hashlib
+import traceback
 
 from aql.utils import toSequence, eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
@@ -67,7 +68,7 @@ def   eventRebuildNode( node ):
 
 @eventStatus
 def   eventBuildNodeFailed( node, error ):
-  logError("Failed node: %s" % node.builder.buildStr( node ) )
+  logError("Failed node: %s" % node.buildStr() )
   logError("Error: %s" % str(error) )
   try:
     traceback.print_tb( error.__traceback__ )

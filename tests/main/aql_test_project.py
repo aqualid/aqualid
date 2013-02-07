@@ -92,7 +92,7 @@ options.build_variant = "final"
     
     prj.Tools( tool_paths = r'C:\work\src\aql\tools' )
     
-    objs = prj.cpp.Compile( 'file0.cpp' )
+    objs = prj.c.Compile( 'file0.cpp' )
     prj.Build()
 
 

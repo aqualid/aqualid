@@ -29,7 +29,7 @@ __all__ = ( 'Project', 'ProjectConfig',
 import sys
 import types
 
-from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents
+from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError
 from aql.types import FilePath, FilePaths, SplitListType
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions, Options
@@ -365,6 +365,8 @@ class Project( object ):
   def   Build( self ):
     failed_nodes = self.build_manager.build()
     finishHandleEvents()
+    
+    return failed_nodes
   
   #//=======================================================//
   

@@ -208,9 +208,7 @@ class ToolsManager( object ):
         eventToolsToolFailed( tool_info.tool_class, err )
         tool_options.clear()
       else:
-        print( tool_options.build_dir.value() )
         tool_options.join()
-        print( options.build_dir.value() )
         
         tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
         return tool, tool_names
