@@ -30,27 +30,10 @@ from .aql_option_types import BoolOptionType, ListOptionType, PathOptionType, St
 
 #//===========================================================================//
 
-def   _cppCompilerOptions( options ):
+def   _commonCCppCompilerOptions( options ):
   
-  options.cc = PathOptionType( description = "C compiler program" )
-  options.cxx = PathOptionType( description = "C++ compiler program" )
-  options.cflags = ListOptionType( description = "C compiler options" )
   options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
-  options.cxxflags = ListOptionType( description = "C++ compiler options" )
-  
-  options.ocflags = ListOptionType( description = "C compiler optimization options" )
   options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
-  options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
-  
-  options.cflags += options.ccflags
-  options.cxxflags += options.ccflags
-  
-  options.cflags += options.ocflags
-  options.ccflags += options.occflags
-  options.cxxflags += options.ocxxflags
-  
-  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
-  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
   
   options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
   options.defines = options.cppdefines
@@ -59,13 +42,48 @@ def   _cppCompilerOptions( options ):
   options.include = options.cpppath
   
   options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
+  options.ext_include = options.ext_cpppath
+  
+#//===========================================================================//
+
+def   _cppCompilerOptions( options ):
+  
+  _commonCCppCompilerOptions( options )
+  
+  options.cxx = PathOptionType( description = "C++ compiler program" )
+  options.cxxflags = ListOptionType( description = "C++ compiler options" )
+  options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
+  
+  options.cxxflags += options.ccflags
+  options.cxxflags += options.occflags
+  options.cxxflags += options.ocxxflags
+  
+  options.cxx_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
+  options.cxx_ver = VersionOptionType( description = "C/C++ compiler version" )
   
   options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
   options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
+  
+#//===========================================================================//
+
+def   _cCompilerOptions( options ):
+  
+  _commonCCppCompilerOptions( options )
+  
+  options.cc = PathOptionType( description = "C compiler program" )
+  options.cflags = ListOptionType( description = "C compiler options" )
+  options.ocflags = ListOptionType( description = "C compiler optimization options" )
+  
+  options.cflags += options.ccflags
+  options.cflags += options.occflags
+  options.cflags += options.ocflags
+  
+  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
+  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
 
 #//===========================================================================//
 
-def   _cppLinkerOptions( options ):
+def   _commonCCppLinkerOptions( options ):
   
   options.link = PathOptionType( description = "Program or dynamic library linker" )
   options.lib = PathOptionType( description = "Static library archiver program" )
@@ -84,15 +102,18 @@ def   _cppLinkerOptions( options ):
 
 #//===========================================================================//
 
-def   cppToolCommonOptions( _options = [None] ):
-  
-  options = _options[0]
-  if options is not None:
-    return options.override()
-  
+def   cppToolCommonOptions():
   options = Options()
   _cppCompilerOptions( options )
-  _cppLinkerOptions( options )
+  _commonCCppLinkerOptions( options )
   
-  _options[0] = options
-  return options.override()
+  return options
+
+#//===========================================================================//
+
+def   cToolCommonOptions():
+  options = Options()
+  _cppCompilerOptions( options )
+  _commonCCppLinkerOptions( options )
+  
+  return options

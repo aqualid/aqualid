@@ -3,6 +3,7 @@ import os.path
 import timeit
 import hashlib
 import shutil
+import types
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -70,7 +71,8 @@ options.build_variant = "final"
       def   TestBuildNode( self, prj, options, source ):
         return Node( TestBuilder(), '' )
     
-    self.assertRaises( ErrorProjectBuilderMethodUnbound, prj.AddBuilder, TestTool.TestBuilder )
+    if isinstance( TestTool.TestBuilder, types.MethodType ):
+      self.assertRaises( ErrorProjectBuilderMethodUnbound, prj.AddBuilder, TestTool.TestBuilder )
     
     prj.AddBuilder( TestTool().TestBuilder )
     self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )

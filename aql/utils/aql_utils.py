@@ -342,6 +342,9 @@ def _decodeData( data ):
   if not isinstance(data, str):
     data = data.decode( codec )
   
+  data = data.replace('\r\n', '\n')
+  data = data.replace('\r', '\n')
+  
   return data
 
 #//===========================================================================//
@@ -410,7 +413,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
   
   try:
     try:
-      p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = True )
+      p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
     except Exception as ex:

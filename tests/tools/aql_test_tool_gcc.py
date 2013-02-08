@@ -11,58 +11,11 @@ from aql.values import FileValue, FileContentTimeStamp, FileContentChecksum, Val
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from gcc import GccCompiler, GccArchiver
+from gcc import GccCompiler, GccArchiver, ToolGccCommon
 
 #//===========================================================================//
 
-SRC_FILE_TEMPLATE = """
-#include <cstdio>
-#include "%s.h"
-
-void  %s()
-{}
-"""
-
-HDR_FILE_TEMPLATE = """
-#ifndef HEADER_%s_INCLUDED
-#define HEADER_%s_INCLUDED
-
-extern void  %s();
-
-#endif
-"""
-
-#//===========================================================================//
-
-def   _generateSrcFile( dir, name ):
-  src_content = SRC_FILE_TEMPLATE % ( name, 'foo_' + name )
-  hdr_content = HDR_FILE_TEMPLATE % ( name.upper(), name.upper(), 'foo_' + name )
-  
-  src_file = dir.join( name + '.cpp' )
-  hdr_file = dir.join( name + '.h' )
-  
-  with open( src_file, 'w' ) as f:
-    f.write( src_content )
-  
-  with open( hdr_file, 'w' ) as f:
-    f.write( hdr_content )
-  
-  return src_file, hdr_file
-
-#//===========================================================================//
-
-def   _generateSrcFiles( dir, name, count ):
-  src_files = FilePaths()
-  hdr_files = FilePaths()
-  for i in range( count ):
-    src_file, hdr_file = _generateSrcFile( dir, name + str(i) )
-    src_files.append( src_file )
-    hdr_files.append( hdr_file )
-  
-  return src_files, hdr_files
-
-#//===========================================================================//
-
+@skip
 class TestToolGcc( AqlTestCase ):
   
   #//-------------------------------------------------------//
@@ -83,10 +36,10 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.merge( gccOptions() )
+      options.merge( ToolGccCommon.options() )
       
       options.cxx = "C:\\MinGW32\\bin\\g++.exe"
       
@@ -156,10 +109,10 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.merge( gccOptions() )
+      options.merge( ToolGccCommon.options() )
       
       options.cxx = "C:\\MinGW32\\bin\\g++.exe"
       
@@ -214,13 +167,13 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = _generateSrcFiles( src_dir, 'foo', 5 )
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
       
       options = builtinOptions()
-      options.merge( gccOptions() )
+      options.merge( ToolGccCommon.options() )
       
       options.cxx = "C:\\MinGW32\\bin\\g++.exe"
-      options.ar = "C:\\MinGW32\\bin\\ar.exe"
+      options.lib = "C:\\MinGW32\\bin\\ar.exe"
       
       options.build_dir_prefix = build_dir
       
@@ -283,7 +236,7 @@ class TestToolGccSpeed( AqlTestCase ):
     #//-------------------------------------------------------//
     
     options = builtinOptions()
-    options.merge( gccOptions() )
+    options.merge( ToolGccCommon.options() )
     
     options.cxx = "C:\\MinGW32\\bin\\g++.exe"
     
