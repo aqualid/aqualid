@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012,2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2013 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,8 +17,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from .aql_dict_types import *
-from .aql_list_types import *
-from .aql_path_types import *
-from .aql_simple_types import *
-from .aql_singleton_type import *
+__all__ = ( 'Singleton' )
+
+class Singleton( object ):
+  
+  @classmethod
+  def   instance( cls, *args, **kw ):
+    
+    instance = cls._instance
+    
+    if not instance:
+      instance.append( __import__('__main__').__dict__.setdefault( (cls.__module__, cls.__name__ ), [None] ) )
+    
+    instance = instance[0]
+    
+    if instance[0] is not None:
+      return instance[0]
+    
+    self = cls( *args, **kw )
+    instance[0] = self
+    
+    return self

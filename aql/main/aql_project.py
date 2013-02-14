@@ -26,7 +26,6 @@ __all__ = ( 'Project', 'ProjectConfig',
             'ErrorProjectInvalidMethod',
           )
 
-import sys
 import types
 
 from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError
@@ -97,20 +96,21 @@ def   jobsCount( jobs = None ):
 
 #//===========================================================================//
 
-class ProjectConfig( CLIConfig ):
+class ProjectConfig( Singleton, CLIConfig ):
+  
+  _instance = []
+  
+  #//-------------------------------------------------------//
   
   def   __init__( self, args = None ):
-    if args is None:
-      args = sys.argv
-    
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
-    Paths = SplitListType( FilePaths, ', ')
+    Paths = SplitListType( FilePaths, ', ' )
     
     CLI_OPTIONS = (
       CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,               "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'build.aql',        "Path to main make file", 'FILE PATH'),
-      CLIOption( "-d", "--aql-db",        "aql_db",         FilePath,   'build.aql.db',     "File path to store information of previous builds.", 'FILE PATH'),
+      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'make.aql',         "Path to main make file", 'FILE PATH'),
+      CLIOption( "-d", "--aql-db",        "aql_db",         FilePath,   'make.aql.db',      "File path to store information of previous builds.", 'FILE PATH'),
       CLIOption( "-p", "--tool-paths",    "tool_paths",     Paths,      [],                 "Paths to tools and setup scripts", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,              "Continue build even if any target failed." ),
       CLIOption( "-l", "--list-options",  "list_options",   bool,       False,              "List all available options and exit." ),
@@ -139,6 +139,8 @@ class ProjectConfig( CLIConfig ):
       return self._options
     
     return super(ProjectConfig, self).__getattr__( name )
+
+project_config = ProjectConfig.instance()
 
 #//===========================================================================//
 
@@ -241,16 +243,14 @@ class ToolWrapper( object ):
 
 class Project( object ):
   
-  def   __init__(self, config = None ):
-    if config is None:
-      config = ProjectConfig()
+  def   __init__( self, tool_paths = None ):
     
-    self.config = config
+    config = ProjectConfig.instance()
     
     self.options = config.options.override()
     self.build_manager = BuildManager( config.aql_db, config.jobs, config.keep_going )
     
-    tools_manager = ToolsManager()
+    tools_manager = ToolsManager.instance()
     tools_manager.loadTools( config.tool_paths )
     
     self.tools_manager = tools_manager
@@ -377,7 +377,7 @@ class Project( object ):
 
 if __name__ == "__main__":
   
-  prj_cfg = aql.ProjectConfig()
+  prj_cfg = aql.ProjectConfig.instance()
   prj_cfg.readConfig( config_file )
   
   prj = aql.Project( prj_cfg, tool_paths )

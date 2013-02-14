@@ -61,7 +61,7 @@ class   CLIConfig( object ):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, cli_usage, cli_options, args ):
+  def   __init__( self, cli_usage, cli_options, args = None ):
     
     super(CLIConfig, self).__setattr__( 'targets', tuple() )
     super(CLIConfig, self).__setattr__( '_set_options', set() )

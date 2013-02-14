@@ -493,7 +493,7 @@ def   runSuite( suite ):
 def   runTests( suite_class = TestCaseSuite, options = None ):
   if options is None:
     from tests_options import TestsOptions
-    options = TestsOptions()
+    options = TestsOptions.instance()
   
   suite = testsSuite( options.tests_dirs, options.test_modules_prefix, options.test_methods_prefix,
                       options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options )
@@ -508,7 +508,7 @@ def   runTests( suite_class = TestCaseSuite, options = None ):
 def   runLocalTests( suite_class = TestCaseSuite, options = None ):
   if options is None:
     from tests_options import TestsOptions
-    options = TestsOptions()
+    options = TestsOptions.instance()
   
   suite = localTestsSuite( options.test_methods_prefix,
                            options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options )

@@ -17,27 +17,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
 import os.path
 import optparse
 
 __all__ = ( 'TestsOptions', )
 
 try:
-  unicode("test")
+  StrTypes = (str, unicode)
 except NameError:
-  unicode = str
+  StrTypes = (str, )
 
 def   _toSequence( value ):
   if value is None:
     return None
   
   try:
-    if isinstance( value, (str, unicode) ):
+    if isinstance( value, StrTypes ):
       return value.split(',')
     else:
-      iter( value )
-      return value
+      return tuple( value )
   except TypeError:
     pass
   
@@ -46,102 +44,163 @@ def   _toSequence( value ):
 #//===========================================================================//
 
 def   _toBool( value ):
-  if isinstance( value, (str, unicode) ):
+  if isinstance( value, StrTypes ):
     return value.lower() == 'true'
   
   return bool( value )
 
 #//===========================================================================//
 
-class TestsOptions( object ):
+class   CLIOption( object ):
+  __slots__ = (
+    'cli_name', 'cli_long_name', 'opt_name', 'value_type', 'default', 'help', 'metavar'
+  )
   
-  _instance = __import__('__main__').__dict__.setdefault( '__TestsOptions_instance', [None] )
+  def   __init__( self, cli_name, cli_long_name, opt_name, value_type, default, help, metavar = None ):
+    self.cli_name = cli_name
+    self.cli_long_name = cli_long_name
+    self.opt_name = opt_name
+    self.value_type = value_type
+    self.default = value_type(default)
+    self.help = help
+    self.metavar = metavar
   
-  def   __new__( cls, configs = None, **kw):
+  #//-------------------------------------------------------//
+  
+  def   addToParser( self, parser ):
+    args = []
+    if self.cli_name is not None:
+      args.append( self.cli_name )
     
-    if TestsOptions._instance[0] is not None:
-      return TestsOptions._instance[0]
+    if self.cli_long_name is not None:
+      args.append( self.cli_long_name )
     
-    self = super(TestsOptions,cls).__new__(cls)
-    TestsOptions._instance[0] = self
+    if (self.value_type is bool) or (self.value_type is _toBool):
+      action = 'store_false' if self.default else 'store_true'
+    else:
+      action = 'store'
     
-    opt, args = self.__getOptArgs()
+    kw = { 'dest': self.opt_name, 'help': self.help, 'action': action }
+    if self.metavar:
+      kw['metavar'] = self.metavar
+    parser.add_option( *args, **kw )
+
+#//===========================================================================//
+
+class Singleton( object ):
+  
+  @classmethod
+  def   instance( cls, *args, **kw ):
     
-    self.setOption( 'test_modules_prefix',  opt.test_modules_prefix,        'test_' )
-    self.setOption( 'test_methods_prefix',  opt.test_methods_prefix,        'test'  )
-    self.setOption( 'verbose',              opt.verbose,                    False   )
-    self.setOption( 'quiet',                opt.quiet,                      False   )
-    self.setOption( 'keep_going',           opt.keep_going,                 False   )
-    self.setOption( 'reset',                opt.reset,                      False   )
-    self.setOption( 'list_tests',           opt.list_tests,                 False   )
-    self.setOption( 'list_options',         opt.list_options,               False   )
-    self.setOption( 'tests_dirs',           _toSequence( opt.tests_dirs ),  '.'     )
+    instance = cls._instance
     
-    self.__parseTests( opt.tests )
-    self.__parseArguments( args )
+    if not instance:
+      instance.append( __import__('__main__').__dict__.setdefault( (cls.__module__, cls.__name__ ), [None] ) )
     
-    for name,value in kw.items():
-      self.setOption( name, value )
+    instance = instance[0]
     
-    self.appyConfig( opt.configs )
-    self.appyConfig( configs )
+    if instance[0] is not None:
+      return instance[0]
     
-    self.normalizeKnownOptions()
+    self = cls( *args, **kw )
+    instance[0] = self
     
     return self
+
+#//===========================================================================//
+
+class   TestsOptions( Singleton ):
   
-  #//=======================================================//
+  _instance = []
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, args = None ):
+    
+    CLI_USAGE = "usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]"
+    
+    CLI_OPTIONS = (
+      CLIOption( "-d", "--dir",           "tests_dirs",           _toSequence,  '.',      "Tests directories", 'PATH,...' ),
+      CLIOption( "-p", "--prefix",        "test_modules_prefix",  str,          'test_',  "File name prefix of test modules", 'PREFIX'),
+      CLIOption( "-m", "--method-prefix", "test_methods_prefix",  str,          'test',   "Test methods prefix", 'PREFIX'),
+      CLIOption( "-f", "--config",        "configs",              _toSequence,  (),       "Path to config file(s).", 'FILE PATH, ...'),
+      CLIOption( "-x", "--tests",         "tests",                _toSequence,  None,     "List of tests which should be executed.", "[+-~]TEST,..."),
+      CLIOption( None, "--run-tests",     "run_tests",            _toSequence,  None,     "List of tests which should be executed.", "TEST,..."),
+      CLIOption( None, "--skip-tests",    "skip_tests",           _toSequence,  None,     "List of tests which should be skipped.", "TEST,..."),
+      CLIOption( None, "--add-tests",     "add_tests",            _toSequence,  None,     "List of tests which should be added.", "TEST,..."),
+      CLIOption( None, "--continue",      "start_from_tests",     _toSequence,  None,     "Continue execution from test.", "TEST"),
+      CLIOption( "-k", "--keep-going",    "keep_going",           _toBool,      False,    "Keep going even if any test case failed" ),
+      CLIOption( "-o", "--list-options",  "list_options",         _toBool,      False,    "List options and exit." ),
+      CLIOption( "-l", "--list",          "list_tests",           _toBool,      False,    "List test cases and exit." ),
+      CLIOption( "-r", "--reset",         "reset",                _toBool,      False,    "Reset configuration." ),
+      CLIOption( "-v", "--verbose",       "verbose",              _toBool,      False,    "Verbose mode." ),
+      CLIOption( "-q", "--quiet",         "quiet",                _toBool,      False,    "Quiet mode." ),
+    )
+    
+    super(TestsOptions, self).__setattr__( 'targets', tuple() )
+    super(TestsOptions, self).__setattr__( '_set_options', set() )
+    super(TestsOptions, self).__setattr__( '_defaults', {} )
+    
+    self.__parseArguments( CLI_USAGE, CLI_OPTIONS, args )
+    
+  #//-------------------------------------------------------//
   
   @staticmethod
-  def   __getOptArgs():
-    parser = optparse.OptionParser("usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]")
+  def   __getArgsParser( cli_usage, cli_options ):
+    parser = optparse.OptionParser( usage = cli_usage )
     
-    parser.add_option("-d", "--dir", dest = "tests_dirs",
-                      help = "Tests directory", metavar = "DIR PATH,..." )
+    for opt in cli_options:
+      opt.addToParser( parser )
+    return parser
+  
+  #//-------------------------------------------------------//
+  
+  def   __setDefaults( self, cli_options ):
+    defaults = self._defaults
+    for opt in cli_options:
+      defaults[ opt.opt_name ] = (opt.default, opt.value_type)
     
-    parser.add_option("-p", "--prefix", dest = "test_modules_prefix",
-                      help = "File name prefix of test modules", metavar = "FILE PATH PREFIX" )
+    defaults[ 'targets' ] = (tuple(), _toSequence )
     
-    parser.add_option("-m", "--method-prefix", dest = "test_methods_prefix",
-                      help = "Test methods prefix", metavar = "TEST METHOD PREFIX" )
+    return defaults
+  
+  #//-------------------------------------------------------//
+  
+  def   __parseValues( self, args ):
+    targets = []
     
-    parser.add_option("-c", "--config", dest = "configs",
-                      help = "Path to config file(s).", metavar = "FILE PATH,...")
-    
-    parser.add_option("-x", "--tests", dest = "tests",
-                      help = "Comma separated list of tests which should be executed.", metavar = "[+-~]TEST,...")
-    
-    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help = "Verbose mode." )
-    
-    parser.add_option("-q", "--quiet", action="store_true", dest="quiet", help = "Quiet mode." )
-    
-    parser.add_option("-k", "--keep-going", action="store_true", dest="keep_going",
-                      help = "Keep going even if any test case failed." )
-    
-    parser.add_option("-r", "--reset", action="store_true", dest = "reset",
-                      help = "Reset configuration" )
-    
-    parser.add_option("-l", "--list", action="store_true", dest="list_tests",
-                      help = "List test cases and exit." )
-    
-    parser.add_option("-o", "--list_options", action="store_true", dest="list_options",
-                      help = "List options and exit." )
-    
-    opt, args = parser.parse_args()
-    
-    return (opt, args)
-
-  #//=======================================================//
-
-  def   __parseArguments( self, args ):
     for arg in args:
       name, sep, value = arg.partition('=')
-      if not sep:
-        raise Exception("Error: Invalid commmand line argument.")
-      
-      self.setOption( name.strip(), value.strip() )
+      name = name.strip()
+      if sep:
+        setattr( self, name, value.strip() )
+      else:
+        targets.append( name )
+    
+    if targets:
+      self.targets = tuple( targets )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
+  
+  def   __parseOptions( self, cli_options, args ):
+    self.__setDefaults( cli_options )
+    
+    defaults = self._defaults
+    
+    for opt in cli_options:
+      name = opt.opt_name
+      value = getattr( args, name )
+      default, value_type = defaults[ name ]
+      
+      if value is None:
+        value = default
+      else:
+        self._set_options.add( name )
+        value = value_type( value )
+      
+      super(TestsOptions, self).__setattr__( name, value )
+  
+  #//-------------------------------------------------------//
   
   def  __parseTests( self, tests ):
     
@@ -178,76 +237,78 @@ class TestsOptions( object ):
           run_tests = set()
         run_tests.add( test )
     
-    self.setOption( 'run_tests', run_tests )
-    self.setOption( 'add_tests', add_tests )
-    self.setOption( 'skip_tests', skip_tests )
-    self.setOption( 'start_from_tests', start_from_tests )
-
-  #//=======================================================//
+    if run_tests is not None:   self.run_tests  = run_tests
+    if add_tests is not None:   self.add_tests  = add_tests
+    if skip_tests is not None:  self.skip_tests = skip_tests
+    if start_from_tests is not None:  self.start_from_tests = start_from_tests
   
-  def   appyConfig( self, config ):
-    if config is None:
-      return
+  #//-------------------------------------------------------//
+  
+  def   __parseArguments( self, cli_usage, cli_options, cli_args ):
+    parser = self.__getArgsParser( cli_usage, cli_options )
+    args, values = parser.parse_args( cli_args )
     
-    for config in _toSequence( config ):
-      with open(config) as f:
-        source = f.read()
-        code = compile( source, config, 'exec' )
-        settings = {}
-        exec( code, {}, settings )
-        
-        for key,value in settings.items():
-          self.setOption( key, value )
+    self.__parseOptions( cli_options, args )
+    self.__parseValues( values )
+    self.__parseTests( self.tests )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
-  def   setOption( self, name, value, default_value = None ):
+  def   readConfig( self, config_file, locals = None ):
+    if locals is None:
+      locals = {}
     
-    options = self.__dict__.setdefault('__options', {} )
+    exec_locals = locals.copy()
     
-    current_value = options.get( name, None )
+    defaults = self._defaults
+    set_options = self._set_options
     
-    if current_value is None:
-      if value is not None:
-        options[ name ] = value
-        setattr( self, name, value )
-      
-      elif default_value is not None:
-        setattr( self, name, default_value )
+    execFile( config_file, exec_locals )
+    for name, value in exec_locals.items():
+      if name not in locals:
+        self.setDefault( name, value )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
-  def   setDefault( self, name, default_value ):
-    options = self.__dict__.setdefault('__options', {} )
-    current_value = options.get( name, None )
-    if current_value is None:
-      setattr( self, name, default_value )
-  
-  #//=======================================================//
-  
-  def  __normOption( self, name, normalizer ):
+  def   __set( self, name, value ):
+    defaults = self._defaults
+    
     try:
-      setattr( self, name, normalizer(getattr( self, name )) )
-    except AttributeError:
-      pass
+      value_type = defaults[ name ][1]
+    except KeyError:
+      defaults[ name ] = (value, type(value))
+    else:
+      if type(value) is not value_type:
+        value = value_type( value )
+    
+    super(TestsOptions, self).__setattr__( name, value )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
-  def   normalizeKnownOptions( self ):
-    self.__normOption( 'test_modules_prefix', str )
-    self.__normOption( 'test_methods_prefix', str )
-    self.__normOption( 'verbose',             _toBool )
-    self.__normOption( 'list_tests',          _toBool )
-    self.__normOption( 'list_options',        _toBool )
-    self.__normOption( 'reset',               _toBool )
-    self.__normOption( 'keep_going',          _toBool )
-    self.__normOption( 'tests_dirs',          _toSequence )
-    self.__normOption( 'run_tests',           _toSequence )
-    self.__normOption( 'add_tests',           _toSequence )
-    self.__normOption( 'skip_tests',          _toSequence )
-    self.__normOption( 'start_from_tests',    _toSequence )
+  def   setDefault( self, name, value ):
+    if name.startswith("_"):
+      super(TestsOptions, self).__setattr__( name, value )
+    else:
+      if name not in self._set_options:
+        self.__set( name, value )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
+  
+  def   __setattr__( self, name, value ):
+    if name.startswith("_"):
+      super(TestsOptions, self).__setattr__( name, value )
+    else:
+      self.__set( name, value )
+      self._set_options.add( name )
+  
+  #//-------------------------------------------------------//
+  
+  def   items( self ):
+    for name, value in self.__dict__.items():
+      if not name.startswith("_") and (name != "targets"):
+        yield (name, value)
+  
+  #//-------------------------------------------------------//
   
   def   dump( self ):
     values = []
@@ -256,17 +317,12 @@ class TestsOptions( object ):
         values.append( [ name, getattr(self, name) ] )
     
     return values
-  
-  #//=======================================================//
-  
-  def   __getattr__(self, name ):
-    return None
 
 #//===========================================================================//
 
 if __name__ == "__main__":
   
   import pprint
-  pprint.pprint( TestsOptions().__dict__ )
+  pprint.pprint( TestsOptions.instance().__dict__ )
   
 

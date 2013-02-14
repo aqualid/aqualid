@@ -27,6 +27,8 @@ __all__ = (
 
 import threading
 
+from aql.types import Singleton
+
 from .aql_utils import toSequence, equalFunctionArgs
 from .aql_task_manager import TaskManager
 
@@ -62,7 +64,9 @@ class   ErrorEventHandlerUnknownEvent ( Exception ):
 
 #//===========================================================================//
 
-class EventManager( object ):
+class EventManager( Singleton ):
+  
+  _instance = []
   
   __slots__ = \
   (
@@ -73,23 +77,6 @@ class EventManager( object ):
     'ignored_events',
     'disable_defaults',
   )
-  
-  #//-------------------------------------------------------//
-  
-  #~ _instance = __import__('__main__').__dict__.setdefault( '__AQL_EventManager_instance', [None] )
-  
-  #//-------------------------------------------------------//
-  
-  #~ def   __new__( cls ):
-    #~ instance = EventManager._instance
-    
-    #~ if instance[0] is not None:
-      #~ return instance[0]
-    
-    #~ self = super(EventManager,cls).__new__(cls)
-    #~ instance[0] = self
-    
-    #~ return self
   
   #//-------------------------------------------------------//
 
@@ -197,16 +184,12 @@ class EventManager( object ):
 
 #//===========================================================================//
 
-_event_manager = EventManager()
-
-#//===========================================================================//
-
 def   _eventImpl( handler, importance_level, event = None ):
   
   if not event:
     event = handler.__name__
   
-  event_manager = _event_manager
+  event_manager = EventManager.instance()
   event_manager.addDefaultHandler( handler, importance_level )
   
   def   _sendEvent( *args, **kw ):
@@ -225,7 +208,7 @@ def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )
 
 def   eventHandler( event = None ):
   def   _eventHandlerImpl( handler ):
-    _event_manager.addUserHandler( handler, event )
+    EventManager.instance().addUserHandler( handler, event )
     return handler
   
   return _eventHandlerImpl
@@ -233,26 +216,26 @@ def   eventHandler( event = None ):
 #//===========================================================================//
 
 def   enableEvents( event_filters ):
-  _event_manager.enableEvents( event_filters, True )
+  EventManager.instance().enableEvents( event_filters, True )
 
 #//===========================================================================//
 
 def   disableEvents( event_filters ):
-  _event_manager.enableEvents( event_filters, False )
+  EventManager.instance().enableEvents( event_filters, False )
 
 #//===========================================================================//
 
 def   disableDefaultHandlers():
-  _event_manager.disableDefaultHandlers()
+  EventManager.instance().disableDefaultHandlers()
 
 #//===========================================================================//
 
 def   enableDefaultHandlers():
-  _event_manager.enableDefaultHandlers()
+  EventManager.instance().enableDefaultHandlers()
 
 #//===========================================================================//
 
 def   finishHandleEvents():
-  _event_manager.finish()
+  EventManager.instance().finish()
 
 #//===========================================================================//

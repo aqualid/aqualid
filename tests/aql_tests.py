@@ -79,7 +79,7 @@ class AqlTestCase( TestCaseBase ):
 
 if __name__ == '__main__':
   
-  options = TestsOptions()
+  options = TestsOptions.instance()
   options.setDefault( 'test_modules_prefix', 'aql_test_' )
   
   runTests()

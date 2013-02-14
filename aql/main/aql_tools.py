@@ -82,7 +82,7 @@ class   ToolInfo( object ):
 
 #//===========================================================================//
 
-class ToolsManager( object ):
+class ToolsManager( Singleton ):
   
   __slots__ = (
     'tool_classes',
@@ -92,17 +92,13 @@ class ToolsManager( object ):
     'loaded_paths'
   )
   
-  _instance = __import__('__main__').__dict__.setdefault( '__ToolsManager_instance', [None] )
+  #//-------------------------------------------------------//
   
-  def   __new__( cls ):
-    
-    instance = ToolsManager._instance
-    
-    if instance[0] is not None:
-      return instance[0]
-    
-    self = super(ToolsManager,cls).__new__(cls)
-    instance[0] = self
+  _instance = []
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self ):
     
     self.tool_classes = {}
     self.tool_names = {}
@@ -222,11 +218,9 @@ class ToolsManager( object ):
 
 #//===========================================================================//
 
-_tools_manager = ToolsManager()
-
 def   tool( *tool_names ):
   def   _tool( tool_class ):
-    _tools_manager.addTool( tool_class, tool_names )
+    ToolsManager.instance().addTool( tool_class, tool_names )
     return tool_class
   
   return _tool
@@ -235,7 +229,7 @@ def   tool( *tool_names ):
 
 def   toolSetup( *tool_names ):
   def   _tool_setup( setup_method ):
-    _tools_manager.addSetup( setup_method, tool_names )
+    ToolsManager.instance().addSetup( setup_method, tool_names )
     return setup_method
   
   return _tool_setup
