@@ -89,10 +89,8 @@ options.build_variant = "final"
   #//-------------------------------------------------------//
   
   def   test_prj_tools( self ):
-    cfg = ProjectConfig( [] )
-    prj = Project( cfg )
-    
-    prj.Tools( tool_paths = r'C:\work\src\aql\tools' )
+    prj = Project( tool_paths = '../../tools' )
+    prj.config
     
     objs = prj.c.Compile( 'file0.cpp' )
     prj.Build()

@@ -251,6 +251,9 @@ class   TestsOptions( Singleton ):
     self.__parseOptions( cli_options, args )
     self.__parseValues( values )
     self.__parseTests( self.tests )
+    
+    for config in self.configs:
+      self.readConfig( config )
   
   #//-------------------------------------------------------//
   

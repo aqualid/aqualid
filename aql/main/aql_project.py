@@ -29,7 +29,7 @@ __all__ = ( 'Project', 'ProjectConfig',
 import types
 
 from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError
-from aql.types import FilePath, FilePaths, SplitListType
+from aql.types import FilePath, FilePaths, SplitListType, Singleton
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
@@ -96,13 +96,24 @@ def   jobsCount( jobs = None ):
 
 #//===========================================================================//
 
-class ProjectConfig( Singleton, CLIConfig ):
+class ProjectConfig( object ):
+  
+  __slots__ = ('cli_options', 'options' )
   
   _instance = []
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, args = None ):
+  def   __new__( cls, args = None ):
+    
+    self = Singleton.getInstance( cls )
+    if instance is not None:
+      return instance
+    
+    self = super(ProjectConfig, cls).__new__( cls )
+    
+    Singleton.setInstance( cls, self )
+    
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
     Paths = SplitListType( FilePaths, ', ' )
@@ -110,7 +121,7 @@ class ProjectConfig( Singleton, CLIConfig ):
     CLI_OPTIONS = (
       CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,               "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'make.aql',         "Path to main make file", 'FILE PATH'),
-      CLIOption( "-d", "--aql-db",        "aql_db",         FilePath,   'make.aql.db',      "File path to store information of previous builds.", 'FILE PATH'),
+      CLIOption( "-d", "--aql-db",        "aql_db",         FilePath,   '.make.aql.db',     "File path to store information of previous builds.", 'FILE PATH'),
       CLIOption( "-p", "--tool-paths",    "tool_paths",     Paths,      [],                 "Paths to tools and setup scripts", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,              "Continue build even if any target failed." ),
       CLIOption( "-l", "--list-options",  "list_options",   bool,       False,              "List all available options and exit." ),
@@ -119,16 +130,19 @@ class ProjectConfig( Singleton, CLIConfig ):
       CLIOption( "-q", "--quiet",         "quiet",          bool,       False,              "Quiet mode." ),
     )
     
-    super(ProjectConfig, self).__init__( CLI_USAGE, CLI_OPTIONS, args )
-    
-    self._options = builtinOptions()
+    sel.cli_options = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
+    self.options = builtinOptions()
   
   #//-------------------------------------------------------//
   
-  def   readConfig( self, config_file ):
-    options = self._options
-    locals = { 'options': options }
-    super(ProjectConfig, self).readConfig( config_file, locals )
+  def   __init__(self, args = None):
+    pass
+  
+  #//-------------------------------------------------------//
+  
+  def   Update( self, config_file ):
+    locals = { 'options': self.options }
+    self.cli_options.readConfig( config_file, locals )
     
     options.update( self )
   
@@ -377,10 +391,7 @@ class Project( object ):
 
 if __name__ == "__main__":
   
-  prj_cfg = aql.ProjectConfig.instance()
-  prj_cfg.readConfig( config_file )
-  
-  prj = aql.Project( prj_cfg, tool_paths )
+  prj = aql.Project( tool_paths )
   
   prj.Tool('c').Compile( c_files, optimization = 'size', debug_symbols = False )
   

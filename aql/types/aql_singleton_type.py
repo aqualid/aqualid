@@ -21,9 +21,8 @@ __all__ = ( 'Singleton' )
 
 class Singleton( object ):
   
-  @classmethod
-  def   instance( cls, *args, **kw ):
-    
+  @staticmethod
+  def   getInstance( cls ):
     instance = cls._instance
     
     if not instance:
@@ -31,10 +30,20 @@ class Singleton( object ):
     
     instance = instance[0]
     
-    if instance[0] is not None:
-      return instance[0]
+    return instance[0]
+  
+  @staticmethod
+  def   setInstance( cls, instance ):
+    cls._instance[0][0] = instance
+  
+  @classmethod
+  def   instance( cls, *args, **kw ):
+    instance = Singleton.getInstance( cls )
+    if instance is not None:
+      return instance
     
     self = cls( *args, **kw )
-    instance[0] = self
+    
+    Singleton.setInstance( cls, self )
     
     return self

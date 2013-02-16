@@ -39,7 +39,7 @@ def   main():
 
 if __name__ == "__main__":
   
-  
+  configuration.Update( '' )
   
   prj_cfg = aql.ProjectConfig()
   prj_cfg.readConfig( config_file )
