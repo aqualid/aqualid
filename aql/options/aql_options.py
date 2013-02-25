@@ -653,9 +653,7 @@ class Options (object):
     if not other:
       return
     
-    options = self
-    if isinstance( self, Options ):
-      options = other
+    options = other if isinstance( other, Options ) else self
     
     for name, value in other.items():
       

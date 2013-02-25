@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2013 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -30,9 +30,35 @@ from .aql_project import Project
 
 #//===========================================================================//
 
-def   main():
-  prj_cfg = ProjectConfig()
+def   _findMakeScript( start_dir, main_script, main_script_default ):
+  if os.path.isdir( main_script ):
+    main_script = os.path.join( main_script, main_script_default )
+  else:
+    script_dir, main_script = os.path.split( main_script )
+    if script_dir:
+      return script_dir, main_script
   
+  script_dir = start_dir
+  
+  while True:
+    main_script_path = os.path.join( script_dir, main_script )
+    if os.path.isfile( main_script_path ):
+      return main_script_path
+
+#//===========================================================================//
+
+
+def   main():
+  prj_cfg = ProjectConfig.instance()
+  
+  main_script = prj_cfg.cli_options.make_file
+  if os.path.isdir( main_script ):
+    main_script_default = prj_cfg.cli_options.getDefault( 'make_file' )
+    main_script = os.path.join( main_script, main_script_default )
+  
+  start_dir = os.getcwd()
+  
+  execFile( )
 
 
 #//===========================================================================//

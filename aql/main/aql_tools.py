@@ -136,6 +136,10 @@ class ToolsManager( Singleton ):
   #//-------------------------------------------------------//
   
   def   loadTools( self, paths ):
+    
+    if not paths:
+      return
+    
     paths = set( map( lambda path: os.path.normcase( os.path.abspath( path ) ), toSequence( paths ) ) )
     paths -= self.loaded_paths
     

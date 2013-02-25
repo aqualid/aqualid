@@ -33,7 +33,7 @@ class GeneralFileLock (object):
   __slots__ = ('lockfilename', 'locked', 'retries', 'interval')
   
   def   __init__( self, filename, interval = 0.25, timeout = 5 * 60 ):
-    self.lockfilename = os.path.normcase( os.path.normpath( os.path.abspath( str(filename) ) ) ) + '.lock'
+    self.lockfilename = os.path.normcase( os.path.abspath( str(filename) ) ) + '.lock'
     self.locked = False
     self.interval = interval
     self.retries = int(timeout / interval)

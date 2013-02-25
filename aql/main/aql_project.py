@@ -38,6 +38,10 @@ from .aql_tools import ToolsManager
 
 #//===========================================================================//
 
+AQL_CACHE_FILE_NAME = '.aql.cache'
+
+#//===========================================================================//
+
 class   ErrorProjectInvalidMethod( Exception ):
   def   __init__( self, method ):
     msg = "Invalid project method: '%s'" % str(method)
@@ -96,7 +100,7 @@ def   jobsCount( jobs = None ):
 
 #//===========================================================================//
 
-class ProjectConfig( object ):
+class ProjectConfig( Singleton ):
   
   __slots__ = ('cli_options', 'options' )
   
@@ -104,15 +108,7 @@ class ProjectConfig( object ):
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, args = None ):
-    
-    self = Singleton.getInstance( cls )
-    if instance is not None:
-      return instance
-    
-    self = super(ProjectConfig, cls).__new__( cls )
-    
-    Singleton.setInstance( cls, self )
+  def   __init__( cls, args = None ):
     
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
@@ -120,8 +116,8 @@ class ProjectConfig( object ):
     
     CLI_OPTIONS = (
       CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,               "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'make.aql',         "Path to main make file", 'FILE PATH'),
-      CLIOption( "-d", "--aql-db",        "aql_db",         FilePath,   '.make.aql.db',     "File path to store information of previous builds.", 'FILE PATH'),
+      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'aql.make',         "Path to main make file", 'FILE PATH'),
+      CLIOption( "-o", "--output",        "output",         FilePath,   'output',           "Build output path", 'FILE PATH'),
       CLIOption( "-p", "--tool-paths",    "tool_paths",     Paths,      [],                 "Paths to tools and setup scripts", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,              "Continue build even if any target failed." ),
       CLIOption( "-l", "--list-options",  "list_options",   bool,       False,              "List all available options and exit." ),
@@ -144,18 +140,8 @@ class ProjectConfig( object ):
     locals = { 'options': self.options }
     self.cli_options.readConfig( config_file, locals )
     
-    options.update( self )
+    options.update( self.cli_options )
   
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, name ):
-    if name == 'options':
-      return self._options
-    
-    return super(ProjectConfig, self).__getattr__( name )
-
-project_config = ProjectConfig.instance()
-
 #//===========================================================================//
 
 class BuilderWrapper( object ):
@@ -266,6 +252,7 @@ class Project( object ):
     
     tools_manager = ToolsManager.instance()
     tools_manager.loadTools( config.tool_paths )
+    tools_manager.loadTools( tool_paths )
     
     self.tools_manager = tools_manager
   
@@ -371,7 +358,7 @@ class Project( object ):
   def   AlwaysBuild( self, node ):
     pass
   
-  def   ReadScript( self, scripts ):
+  def   Include( self, scripts ):
     pass
   
   #//=======================================================//
@@ -390,6 +377,8 @@ class Project( object ):
 #//===========================================================================//
 
 if __name__ == "__main__":
+  
+  aql.CONFIG.Update( 'aql.cfg' )
   
   prj = aql.Project( tool_paths )
   

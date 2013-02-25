@@ -144,7 +144,6 @@ class   CLIConfig( object ):
     
     exec_locals = locals.copy()
     
-    defaults = self._defaults
     set_options = self._set_options
     
     execFile( config_file, exec_locals )
@@ -166,6 +165,14 @@ class   CLIConfig( object ):
         value = value_type( value )
     
     super(CLIConfig, self).__setattr__( name, value )
+  
+  #//-------------------------------------------------------//
+  
+  def   getDefault( self, name ):
+    try:
+      return self._defaults[ name ][0]
+    except KeyError:
+      return None
   
   #//-------------------------------------------------------//
   

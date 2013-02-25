@@ -214,7 +214,6 @@ class DataFile (object):
   
   __slots__ = \
   (
-    'filename',
     'locations',
     'file_header',
     'file_size',
@@ -245,7 +244,6 @@ class DataFile (object):
     return self
   
   def   __exit__(self, exc_type, exc_value, traceback):
-    print("DataFile: __exit__")
     self.close()
   
   #//-------------------------------------------------------//
@@ -255,7 +253,6 @@ class DataFile (object):
     
     stream = openFile( filename, write = True, binary = True, sync = True )
     
-    self.filename = str(filename)
     self.stream = stream
     
     self.file_header.update( stream )

@@ -296,7 +296,7 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   __init__( self, vfilename, jobs, stop_on_error ):
-    self.vfilename = vfilename
+    self.vfilename = os.path.normcase( os.path.abspath( str(vfilename) ) )
     self.jobs = jobs
     self.stop_on_error = stop_on_error
     self.prebuild_nodes = {}
