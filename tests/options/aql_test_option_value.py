@@ -1,4 +1,4 @@
-﻿import copy
+import copy
 import sys
 import os.path
 import timeit

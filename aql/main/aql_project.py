@@ -115,15 +115,15 @@ class ProjectConfig( Singleton ):
     Paths = SplitListType( FilePaths, ', ' )
     
     CLI_OPTIONS = (
-      CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,               "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'aql.make',         "Path to main make file", 'FILE PATH'),
-      CLIOption( "-o", "--output",        "output",         FilePath,   'output',           "Build output path", 'FILE PATH'),
-      CLIOption( "-p", "--tool-paths",    "tool_paths",     Paths,      [],                 "Paths to tools and setup scripts", 'FILE PATH, ...'),
-      CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,              "Continue build even if any target failed." ),
-      CLIOption( "-l", "--list-options",  "list_options",   bool,       False,              "List all available options and exit." ),
-      CLIOption( "-c", "--clean",         "clean_targets",  bool,       False,              "Clean up actual targets." ),
-      CLIOption( "-v", "--verbose",       "verbose",        bool,       False,              "Verbose mode." ),
-      CLIOption( "-q", "--quiet",         "quiet",          bool,       False,              "Quiet mode." ),
+      CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'aql.make',   "Path to main make file", 'FILE PATH'),
+      CLIOption( "-b", "--output",        "output",         FilePath,   'output',     "Build output path", 'FILE PATH'),
+      CLIOption( "-t", "--tool-paths",    "tool_paths",     Paths,      [],           "Paths to tools and setup scripts", 'FILE PATH, ...'),
+      CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,        "Continue build even if any target failed." ),
+      CLIOption( "-l", "--list-options",  "list_options",   bool,       False,        "List all available options and exit." ),
+      CLIOption( "-a", "--always-make",   "always_make",    bool,       False,        "Unconditionally make all targets." ),
+      CLIOption( "-v", "--verbose",       "verbose",        bool,       False,        "Verbose mode." ),
+      CLIOption( "-q", "--quiet",         "quiet",          bool,       False,        "Quiet mode." ),
     )
     
     sel.cli_options = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -378,7 +378,21 @@ class Project( object ):
 
 if __name__ == "__main__":
   
-  aql.CONFIG.Update( 'aql.cfg' )
+  ReadOptions('../../aql.config')
+  
+  libs = ReadScript('src/aql.make')
+  
+  c = Tool('c')
+  c.LinkProgram( src_files, libs )
+  
+  cpp = tools.cpp
+  
+  objs = cpp.Compile( cpp_files )
+  lib = cpp.SharedLibrary( objs )
+  objs = cpp.Compile( objs, options = lib.options )
+  
+  c = Clean( objs )
+  
   
   prj = aql.Project( tool_paths )
   

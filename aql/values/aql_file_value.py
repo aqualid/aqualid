@@ -39,7 +39,7 @@ _file_content_cache = {}
 @pickleable
 class   FileContentChecksum (object):
   
-  __slots__ = ( 'signature' )
+  __slots__ = ( 'path', 'signature' )
   
   def   __new__( cls, path = None, signature = None, use_cache = False, file_content_cache = _file_content_cache ):
     

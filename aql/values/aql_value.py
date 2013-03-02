@@ -65,11 +65,9 @@ class   IgnoreCaseStringContent (str):
     
     if value is None:
       return NoContent()
-    else:
-      value = str(value)
     
     self = super(IgnoreCaseStringContent, cls).__new__(cls, value)
-    self.__value = value.lower()
+    self.__value = self.lower()
     
     return self
   
@@ -81,18 +79,43 @@ class   IgnoreCaseStringContent (str):
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
+      self.signature = strSignature( self.__value )
+      return self.signature
+    
+    return super(IgnoreCaseStringContent,self).__getattr__( attr )
+
+#//===========================================================================//
+
+@pickleable
+class StringContent( str ):
+  
+  def     __new__(cls, value = None ):
+    
+    if (cls is StringContent) and (type(value) is cls):
+      return value
+    
+    if value is None:
+      return NoContent()
+    
+    return super(StringContent, cls).__new__(cls, value)
+  
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
       self.signature = self.__signature()
       return self.signature
     
     return super(IgnoreCaseStringContent,self).__getattr__( attr )
-  
+
   def   __signature( self ):
-    buf = self.__value.encode('utf-8')
+    buf = self.encode('utf-8')
     hash = hashlib.md5()
     
     if len(buf) > hash.digest_size:
-      return hash.update( buf ).digest()
+      hash.update( buf )
+      return hash.digest()
+    
     return buf
+
 
 #//===========================================================================//
 
@@ -177,12 +200,12 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      self.signature = self.__signature()
-      return self.signature
+  #~ def   __getattr__( self, attr ):
+    #~ if attr == 'signature':
+      #~ self.signature = self.__signature()
+      #~ return self.signature
     
-    return super(Value,self).__getattr__( attr )
+    #~ return super(Value,self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   

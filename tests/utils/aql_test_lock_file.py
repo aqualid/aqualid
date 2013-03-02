@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import time
 import os.path
 import multiprocessing as mp

@@ -43,6 +43,7 @@ class Builder (object):
   """
   
   __slots__ = (
+    'options',
     'build_dir',
     'do_path_merge',
     'name',

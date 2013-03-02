@@ -1,4 +1,4 @@
-﻿import io
+import io
 import sys
 import pickle
 import os.path

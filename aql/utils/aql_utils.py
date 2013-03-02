@@ -20,7 +20,7 @@
 __all__ = (
   'isSequence', 'toSequence',
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
-  'fileSignature', 'fileChecksum', 'findFiles', 'loadModule',
+  'strSignature', 'fileSignature', 'fileChecksum', 'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )
@@ -149,6 +149,16 @@ def   execFile( filename, locals ):
   source = readTextFile( filename )
   code = compile( source, filename, 'exec' )
   exec( code, {}, locals )
+
+#//===========================================================================//
+
+def   strSignature( str_value ):
+  buf = str_value.encode('utf-8')
+  hash = hashlib.md5()
+  
+  if len(buf) > hash.digest_size:
+    return hash.update( buf ).digest()
+  return buf
 
 #//===========================================================================//
 

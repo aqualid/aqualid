@@ -1,4 +1,4 @@
-﻿#
+#
 # Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and

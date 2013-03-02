@@ -118,8 +118,6 @@ class Node (object):
   def   __init__( self, builder, sources ):
     
     self.builder = builder
-    self.source_nodes = set()
-    self.source_values = []
     self.source_nodes, self.source_values = self._getSourceNodes( sources )
     self.dep_values = []
     self.dep_nodes = set()
@@ -297,10 +295,7 @@ class Node (object):
     
     values += self.source_values
     
-    #~ print("sources: values: %s" % str(list(map(str,values))))
     values.sort( key = lambda v: v.name )
-    
-    #~ print("sources: sorted values: %s" % str(list(map(str,values))))
     
     return values
   
