@@ -22,20 +22,22 @@ __all__ = (
 
 import hashlib
 
+from aql.utils import strSignature
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
 
 @pickleable
-class NoContent( object ):
+class _NoContent( object ):
   
   def   __new__( cls, *args ):
-    self = super(NoContent,cls).__new__(cls)
+    self = super(_NoContent,cls).__new__(cls)
     self.signature = bytearray()
     return self
   
   def   __init__(self, *args ):
     pass
+  
   def   __eq__( self, other ):
     return False
   def   __ne__( self, other ):
@@ -45,13 +47,15 @@ class NoContent( object ):
   def   __nonzero__( self ):
     return False
   def   __str__( self ):
-    return "<Not exist>"
+    return "<Not exists>"
   def   __getnewargs__(self):
     return ()
   def   __getstate__(self):
     return {}
   def   __setstate__(self,state):
     pass
+
+NoContent = _NoContent()
 
 #//===========================================================================//
 
@@ -60,11 +64,11 @@ class   IgnoreCaseStringContent (str):
   
   def     __new__(cls, value = None ):
     
-    if (cls is IgnoreCaseStringContent) and (type(value) is cls):
+    if type(value) is cls:
       return value
     
     if value is None:
-      return NoContent()
+      return NoContent
     
     self = super(IgnoreCaseStringContent, cls).__new__(cls, value)
     self.__value = self.lower()
@@ -89,33 +93,12 @@ class   IgnoreCaseStringContent (str):
 @pickleable
 class StringContent( str ):
   
-  def     __new__(cls, value = None ):
-    
-    if (cls is StringContent) and (type(value) is cls):
-      return value
-    
-    if value is None:
-      return NoContent()
-    
-    return super(StringContent, cls).__new__(cls, value)
-  
   def   __getattr__( self, attr ):
     if attr == 'signature':
-      self.signature = self.__signature()
+      self.signature = strSignature( self )
       return self.signature
     
-    return super(IgnoreCaseStringContent,self).__getattr__( attr )
-
-  def   __signature( self ):
-    buf = self.encode('utf-8')
-    hash = hashlib.md5()
-    
-    if len(buf) > hash.digest_size:
-      hash.update( buf )
-      return hash.digest()
-    
-    return buf
-
+    return super(StringContent,self).__getattr__( attr )
 
 #//===========================================================================//
 
@@ -140,16 +123,16 @@ class   Value (object):
     self = super(Value,cls).__new__(cls)
     
     if (content is NotImplemented) or (content is None):
-      content = NoContent()
+      content = NoContent
     
     self.name = name
     self.content = content
     
     return self
   
-  #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
+  #//-------------------------------------------------------//
     return ( self.name, self.content )
   
   #//-------------------------------------------------------//
@@ -191,39 +174,12 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   actual( self, use_cache = True ):
-    return not isinstance( self.content, NoContent )
+    return self.content is not NoContent
   
   #//-------------------------------------------------------//
   
   def   remove( self ):
     pass
   
-  #//-------------------------------------------------------//
-  
-  #~ def   __getattr__( self, attr ):
-    #~ if attr == 'signature':
-      #~ self.signature = self.__signature()
-      #~ return self.signature
-    
-    #~ return super(Value,self).__getattr__( attr )
-  
-  #//-------------------------------------------------------//
-  
-  def   __signature( self ):
-    content = self.content
-    
-    try:
-      return content.signature
-    except AttributeError:
-      pass
-    
-    buf = content.__str__().encode('utf-8')
-    hash = hashlib.md5()
-    
-    if len(buf) > hash.digest_size:
-      hash.update( buf )
-      return hash.digest()
-    
-    return buf
   
   #//-------------------------------------------------------//

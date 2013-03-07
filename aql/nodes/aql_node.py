@@ -25,7 +25,8 @@ __all__ = (
 
 import hashlib
 
-from aql.utils import toSequence, eventStatus, logInfo
+from aql.types import toSequence
+from aql.utils import eventStatus, logInfo
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 
 #//===========================================================================//
@@ -180,12 +181,12 @@ class Node (object):
     #names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
     #names += sorted( map( lambda node: node.sources_value.name, self.source_nodes ) )
     
-    sign += map( lambda value: value.signature, sources )
+    sign += map( lambda value: value.content.signature, sources )
     
     deps = self.dependencies()
     
     sign += map( lambda value: value.name.encode('utf-8'), deps )
-    sign += map( lambda value: value.signature, deps )
+    sign += map( lambda value: value.content.signature, deps )
     
     #//-------------------------------------------------------//
     #// Signature
@@ -317,7 +318,7 @@ class Node (object):
   
   def   targets(self):
     targets = self.targets_value.content
-    if isinstance( targets, NoContent ):
+    if targets is NoContent:
       raise ErrorNodeNoTargets( self )
     
     return targets
@@ -326,7 +327,7 @@ class Node (object):
   
   def   sideEffects(self):
     itargets = self.itargets_value.content
-    if isinstance( itargets, NoContent ):
+    if itargets is NoContent:
       raise ErrorNodeNoTargets( self )
     
     return itargets
@@ -345,10 +346,10 @@ class Node (object):
     target_values = targets_value.content
     itarget_values = itargets_value.content
     
-    if isinstance( target_values, NoContent ):
+    if target_values is NoContent:
       target_values = tuple()
     
-    if isinstance( itarget_values, NoContent ):
+    if itarget_values is NoContent:
       itarget_values = tuple()
     
     if itarget_values or target_values:
@@ -357,9 +358,8 @@ class Node (object):
       values += target_values
       values += itarget_values
       
-      no_content = NoContent()
       for value in values:
-        value.content = no_content
+        value.content = NoContent
       
       vfile.addValues( values )
   

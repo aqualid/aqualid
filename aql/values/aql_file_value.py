@@ -30,14 +30,13 @@ import datetime
 from .aql_value import Value, NoContent
 from .aql_value_pickler import pickleable
 
-from aql.utils import fileSignature
+from aql.utils import fileSignature, fileTimeSignature
 
 _file_content_cache = {}
 
 #//===========================================================================//
 
-@pickleable
-class   FileContentChecksum (object):
+class   FileContentBase(object):
   
   __slots__ = ( 'path', 'signature' )
   
@@ -46,32 +45,39 @@ class   FileContentChecksum (object):
     if use_cache:
       try:
         content = _file_content_cache[ path ]
-        if type(content) is FileContentChecksum:
+        if type(content) is cls:
           return content
       except KeyError:
         pass
     
     if signature is not None:
-      self = super(FileContentChecksum,cls).__new__(cls)
+      self = super(FileContentBase,cls).__new__(cls)
       self.signature = signature
       return self
     
     if path is None:
-      return NoContent()
+      return NoContent
     
-    if (cls is FileContentChecksum) and (type(path) is cls):
+    if type(path) is cls:
       return path
     
-    try:
-      signature = fileSignature( path )
-    except (OSError, IOError):
-      return NoContent()
-    
-    self = super(FileContentChecksum,cls).__new__(cls)
-    self.signature = signature
+    self = super(FileContentBase,cls).__new__(cls)
+    self.path = path
     
     file_content_cache[ path ] = self
     return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
+      try:
+        signature = self._sign()
+      except (OSError, IOError):
+        signature = NoContent
+      
+      self.signature = signature
+      del self.path
   
   #//-------------------------------------------------------//
   
@@ -92,79 +98,26 @@ class   FileContentChecksum (object):
 #//===========================================================================//
 
 @pickleable
-class   FileContentTimeStamp (object):
+class   FileContentChecksum (FileContentBase):
   
-  __slots__ = ( 'size', 'modify_time', 'signature' )
+  def   _sign( self ):
+    return fileSignature( self.path )
+
+#//===========================================================================//
+
+@pickleable
+class   FileContentTimeStamp (FileContentBase):
   
-  def   __new__( cls, path = None, size = None, modify_time = None, use_cache = False, file_content_cache = _file_content_cache ):
-    
-    if use_cache:
-      try:
-        content = file_content_cache[ path ]
-        if type(content) is FileContentTimeStamp:
-          return content
-      except KeyError:
-        pass
-    
-    if (size is not None) and (modify_time is not None):
-      self = super(FileContentTimeStamp,cls).__new__(cls)
-      self.size = size
-      self.modify_time = modify_time
-      return self
-    
-    if path is None:
-      return NoContent()
-    
-    if (cls is FileContentTimeStamp) and (type(path) is cls):
-      return path
-    
-    try:
-      stat = os.stat( path )
-      
-      self = super(FileContentTimeStamp,cls).__new__(cls)
-      
-      self.size = stat.st_size
-      self.modify_time = stat.st_mtime
-    
-    except OSError:
-        self = NoContent()
-    
-    file_content_cache[ path ] = self
-    
-    return self
-  
-  #//-------------------------------------------------------//
-  
-  def   __eq__( self, other ):
-    return type(self) == type(other) and (self.size == other.size) and (self.modify_time == other.modify_time)
-  def   __ne__( self, other ):
-    return not self.__eq__( other )
-  
-  def   __getnewargs__(self):
-    return ( None, self.size, self.modify_time )
-  def   __getstate__(self):
-    return {}
-  def   __setstate__(self,state):
-    pass
-  def   __str__( self ):
-    return str( datetime.datetime.fromtimestamp( self.modify_time ) )
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      self.signature = self.__signature()
-      return self.signature
-    
-    return super(FileContentTimeStamp,self).__getattr__( attr )
-  
-  def   __signature( self ):
-    return struct.pack( ">Qd", self.size, self.modify_time )
+  def   _sign( self ):
+    return fileTimeSignature( self.path )
+
 
 #//===========================================================================//
 
 @pickleable
 class   FileName (str):
   def     __new__(cls, path = None, full_path = None ):
-    if (cls is FileName) and (type(path) is cls):
+    if type(path) is cls:
       return path
     
     if full_path is None:

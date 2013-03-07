@@ -19,8 +19,8 @@
 
 import optparse
 
-from aql.types import SplitListType, ValueListType, UniqueList
-from aql.utils import toSequence, execFile
+from aql.types import toSequence, SplitListType, ValueListType, UniqueList
+from aql.utils import execFile
 
 __all__ = ( 'CLIOption', 'CLIConfig' )
 

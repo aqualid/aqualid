@@ -8,23 +8,10 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import isSequence, equalFunctionArgs, checkFunctionArgs, getFunctionName, \
+from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
                       whereProgram, execCommand, ErrorProgramNotFound, findFiles
 
 class TestUtils( AqlTestCase ):
-  def test_isSequence(self):
-    
-    self.assertTrue( isSequence([1,2]) )
-    self.assertTrue( isSequence((1,2)) )
-    self.assertTrue( isSequence({1:2}) )
-    self.assertTrue( isSequence(set([1,2])) )
-    self.assertTrue( isSequence(frozenset([1,2])) )
-    self.assertTrue( isSequence(filter( lambda v: True, [1,2])) )
-    self.assertTrue( isSequence(map( lambda v: v, [1,2])) )
-    self.assertTrue( isSequence(iter([1,2])) )
-    
-    self.assertFalse( isSequence( 1 ) )
-    self.assertFalse( isSequence( None ) )
 
   #//===========================================================================//
 

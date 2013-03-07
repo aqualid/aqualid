@@ -28,7 +28,8 @@ import threading
 import hashlib
 import traceback
 
-from aql.utils import toSequence, eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
+from aql.types import toSequence
+from aql.utils import eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
 from .aql_node import Node

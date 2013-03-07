@@ -30,8 +30,7 @@ import operator
 import itertools
 import weakref
 
-from aql.utils import toSequence
-from aql.types import UniqueList, List, Dict, DictItem
+from aql.types import toSequence, UniqueList, List, Dict, DictItem
 
 from .aql_option_types import OptionType, ListOptionType
 from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition

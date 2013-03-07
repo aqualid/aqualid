@@ -71,7 +71,7 @@ class TestValuesFile( AqlTestCase ):
           vfile2.addValues( [dep_value] ); vfile2.selfTest()
           s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
           self.assertNotEqual( dep_value, s_dep_value )
-          self.assertIsInstance( s_dep_value.content, NoContent)
+          self.assertIs( s_dep_value.content, NoContent)
           
           #//-------------------------------------------------------//
           
@@ -153,7 +153,7 @@ class TestValuesFile( AqlTestCase ):
         for value, s_value in zip( all_dep_values, s_all_dep_values ):
           self.assertEqual( value.name, s_value.name )
           self.assertNotEqual( value.content, s_value.content )
-          self.assertIsInstance( s_value.content, NoContent )
+          self.assertIs( s_value.content, NoContent )
       finally:
         vfile.close()
     

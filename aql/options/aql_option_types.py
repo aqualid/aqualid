@@ -26,8 +26,7 @@ __all__ = (
 )
 
 
-from aql.utils import toSequence
-from aql.types import IgnoreCaseString, Version, FilePath, UniqueList, List, SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
+from aql.types import toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
 
@@ -68,7 +67,7 @@ def   _ValueTypeProxy( option_type, value_type ):
     #//-------------------------------------------------------//
     
     def     __new__( cls, value = NotImplemented ):
-      if (cls is _ValueTypeProxyImpl) and (type(value) is cls):
+      if type(value) is cls:
         return value
       
       value = option_type._convert( value )
@@ -217,7 +216,7 @@ def   _ValueBoolTypeProxy( option_type ):
     #//-------------------------------------------------------//
     
     def     __new__( cls, value = NotImplemented ):
-      if (cls is _ValueBoolTypeProxyImpl) and (type(value) is cls):
+      if type(value) is cls:
         return value
       
       value = option_type._convert( value )

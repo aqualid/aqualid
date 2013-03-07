@@ -17,9 +17,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
+__all__ = ( 'toSequence', 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
 
-from aql.utils import toSequence
+#//===========================================================================//
+
+def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
+  
+  try:
+    if not isinstance( value, str ):
+      iter( value )
+      return value
+  except TypeError:
+    pass
+  
+  if value is None:
+    return tuple()
+  
+  return ( value, )
+
+#//===========================================================================//
 
 class   UniqueList (object):
   

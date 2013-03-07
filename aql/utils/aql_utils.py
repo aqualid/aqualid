@@ -18,9 +18,8 @@
 #
 
 __all__ = (
-  'isSequence', 'toSequence',
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
-  'strSignature', 'fileSignature', 'fileChecksum', 'findFiles', 'loadModule',
+  'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )
@@ -47,34 +46,6 @@ class   ErrorProgramNotFound( Exception ):
 #//===========================================================================//
 
 IS_WINDOWS = (os.name == 'nt')
-
-#//===========================================================================//
-
-def     isSequence( value, iter = iter, isinstance = isinstance, str = str ):
-  try:
-    if not isinstance( value, str ):
-      iter( value )
-      return True
-  except TypeError:
-    pass
-  
-  return False
-
-#//===========================================================================//
-
-def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
-  
-  try:
-    if not isinstance( value, str ):
-      iter( value )
-      return value
-  except TypeError:
-    pass
-  
-  if value is None:
-    return tuple()
-  
-  return ( value, )
 
 #//===========================================================================//
 
@@ -177,6 +148,13 @@ def   fileSignature( filename, chunk_size = hashlib.md5().block_size * (2 ** 12)
       checksum_update( chunk )
   
   return checksum.digest()
+
+#//===========================================================================//
+
+def   fileTimeSignature( filename ):
+  stat = os.stat( path )
+  return struct.pack( ">Qd", stat.st_size, stat.st_mtime )
+
 
 #//===========================================================================//
 

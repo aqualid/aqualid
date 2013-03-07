@@ -19,8 +19,6 @@
 
 __all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
 
-from aql.utils import toSequence
-
 #//===========================================================================//
 
 class DictItem( tuple ):

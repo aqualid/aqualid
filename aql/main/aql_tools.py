@@ -21,8 +21,8 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
 
 import os
 
-from aql.utils import toSequence, logWarning, loadModule, findFiles, eventWarning
-from aql.types import FilePath
+from aql.types import toSequence, FilePath, Singleton
+from aql.utils import logWarning, loadModule, findFiles, eventWarning
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions
 
@@ -241,8 +241,6 @@ def   toolSetup( *tool_names ):
 #//===========================================================================//
 
 class Tool( object ):
-  
-  __slots__ = ('project', 'options')
   
   def   __init__( self, project, options ):
     pass

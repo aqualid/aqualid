@@ -24,8 +24,7 @@ __all__ = (
 import os
 import errno
 
-from aql.utils import toSequence
-from aql.types import FilePath, FilePaths
+from aql.types import toSequence, FilePath, FilePaths
 from aql.values import Value, FileValue
 
 from .aql_node import NodeTargets

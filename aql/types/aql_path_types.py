@@ -24,10 +24,8 @@ __all__ = (
 import os.path
 import itertools
 
-from aql.utils import toSequence
-
 from .aql_simple_types import IgnoreCaseString
-from .aql_list_types import UniqueList, ValueListType
+from .aql_list_types import UniqueList, ValueListType, toSequence
 
 #//===========================================================================//
 
@@ -41,7 +39,7 @@ class   FilePath (FilePathBase):
   #//-------------------------------------------------------//
   
   def     __new__(cls, path = None ):
-    if (cls is FilePath) and (type(path) is cls):
+    if type(path) is cls:
       return path
     
     if path is None:

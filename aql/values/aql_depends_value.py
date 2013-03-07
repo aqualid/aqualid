@@ -57,11 +57,11 @@ class   DependsValueContent (tuple):
     if isinstance( values, DependsKeyContent ):
       return values
     
-    if isinstance( values, NoContent ):
+    if values is NoContent:
       return values
     
     if values is None:
-      return NoContent()
+      return NoContent
     
     try:
       values = list(values)

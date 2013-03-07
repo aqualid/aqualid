@@ -1,7 +1,7 @@
 import os
 
-from aql.utils import toSequence, Rsync
-from aql.types import FilePaths
+from aql.utils import Rsync
+from aql.types import toSequence, FilePaths
 from aql.options import Options, BoolOptionType, PathOptionType, StrOptionType
 from aql.values import FileValue, DirValue
 from aql.nodes import Builder

@@ -26,7 +26,8 @@ import os.path
 import itertools
 import tempfile
 
-from .aql_utils import execCommand, toSequence, whereProgram
+from aql.types import toSequence
+from .aql_utils import execCommand, whereProgram
 
 #//===========================================================================//
 

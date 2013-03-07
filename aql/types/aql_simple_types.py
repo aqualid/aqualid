@@ -31,7 +31,7 @@ class   IgnoreCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if (cls is IgnoreCaseString) and (type(value) is cls):
+    if type(value) is cls:
         return value
     
     if value is None:
@@ -75,7 +75,7 @@ class   LowerCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if (cls is LowerCaseString) and (type(value) is cls):
+    if type(value) is cls:
         return value
     
     if value is None:
@@ -92,7 +92,7 @@ class   UpperCaseString (str):
 
   def     __new__(cls, value = None ):
     
-    if (cls is UpperCaseString) and (type(value) is cls):
+    if type(value) is cls:
         return value
     
     if value is None:
@@ -111,7 +111,7 @@ class   Version (str):
   
   def     __new__(cls, version = None, _ver_re = __ver_re ):
     
-    if (cls is Version) and (type(version) is cls):
+    if type(version) is cls:
         return version
     
     if version is None:

@@ -24,7 +24,7 @@ __all__ = (
 
 import operator
 
-from aql.utils import toSequence
+from aql.types import toSequence
 
 #//===========================================================================//
 

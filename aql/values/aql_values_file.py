@@ -134,7 +134,7 @@ class ValuesFile (object):
         v = get_value( key )
         if isinstance( v, DependsValue ):
           v = self.__makeDepends( v, kvalue_key )
-          if isinstance( v.content, NoContent ):
+          if v.content is NoContent:
             return DependsValue( kvalue.name )
         
         values_append( v )
