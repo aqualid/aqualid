@@ -41,7 +41,7 @@ class AqlTestCase( TestCaseBase ):
     loaded_value = loaded_values[0]
     
     self.assertEqual( value.name, loaded_value.name )
-    if type(value.content) is not NoContent:
+    if value.exists():
       self.assertEqual( value.content, loaded_value.content )
     else:
       self.assertEqual( type(value.content), type(loaded_value.content) )

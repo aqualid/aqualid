@@ -23,9 +23,6 @@ __all__ = (
 )
 
 import os
-import hashlib
-import struct
-import datetime
 
 from .aql_value import Value, NoContent
 from .aql_value_pickler import pickleable
@@ -38,9 +35,9 @@ _file_content_cache = {}
 
 class   FileContentBase(object):
   
-  __slots__ = ( 'path', 'signature' )
+  __slots__ = ( 'path', 'exists', 'signature' )
   
-  def   __new__( cls, path = None, signature = None, use_cache = False, file_content_cache = _file_content_cache ):
+  def   __new__( cls, path = None, signature = None, exists = False, use_cache = False, file_content_cache = _file_content_cache ):
     
     if use_cache:
       try:
@@ -53,6 +50,7 @@ class   FileContentBase(object):
     if signature is not None:
       self = super(FileContentBase,cls).__new__(cls)
       self.signature = signature
+      self.exists = exists
       return self
     
     if path is None:
@@ -70,24 +68,31 @@ class   FileContentBase(object):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
-    if attr == 'signature':
+    if attr in ('signature', 'exists'):
       try:
         signature = self._sign()
+        exists = True
       except (OSError, IOError):
-        signature = NoContent
+        signature = bytearray()
+        exists = False
       
+      self.exists = exists
       self.signature = signature
       del self.path
-  
+      
+      return signature if (attr == 'signature') else exists
+    
+    return super(FileContentBase, self).__getattr__( attr )
+    
   #//-------------------------------------------------------//
   
   def   __eq__( self, other ):
-    return (type(self) == type(other)) and (self.signature == other.signature)
+    return (type(self) == type(other)) and self.exists and other.exists and (self.signature == other.signature)
   
   def   __ne__( self, other ):
     return not self.__eq__( other )
   def   __getnewargs__(self):
-    return ( None, self.signature )
+    return ( None, self.signature, self.exists )
   def   __getstate__(self):
     return {}
   def   __setstate__(self,state):
@@ -110,7 +115,6 @@ class   FileContentTimeStamp (FileContentBase):
   
   def   _sign( self ):
     return fileTimeSignature( self.path )
-
 
 #//===========================================================================//
 
@@ -161,6 +165,11 @@ class   FileValue (Value):
   def   actual( self ):
     content = self.content
     return content == type(content)( self.name, use_cache = True )
+  
+  #//-------------------------------------------------------//
+  
+  def   exists( self ):
+    return self.content.exists
   
   #//-------------------------------------------------------//
   

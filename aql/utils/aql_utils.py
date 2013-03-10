@@ -29,6 +29,7 @@ import io
 import os
 import sys
 import hashlib
+import struct
 import threading
 import traceback
 import inspect
@@ -59,6 +60,11 @@ if hasattr(os, 'O_SYNC'):
 else:
   _O_SYNC = 0
 
+if hasattr(os, 'O_BINARY'):
+  _O_BINARY = os.O_BINARY
+else:
+  _O_BINARY = 0
+
 def   openFile( filename, read = True, write = False, binary = False, sync = False, flags = _O_NOINHERIT ):
   
   mode = 'r'
@@ -80,7 +86,7 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
     
   if binary:
     mode += 'b'
-    flags |= os.O_BINARY
+    flags |= _O_BINARY
     
   fd = os.open( filename, flags )
   try:
@@ -152,7 +158,7 @@ def   fileSignature( filename, chunk_size = hashlib.md5().block_size * (2 ** 12)
 #//===========================================================================//
 
 def   fileTimeSignature( filename ):
-  stat = os.stat( path )
+  stat = os.stat( filename )
   return struct.pack( ">Qd", stat.st_size, stat.st_mtime )
 
 

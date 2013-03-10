@@ -106,6 +106,9 @@ class TestFileValue( AqlTestCase ):
   def test_file_empty_value_save_load(self):
     
     value1 = FileValue('__non_exist_file__')
+    #~ print( id(value1.content) )
+    #~ print( value1.content.signature )
+    
     value2 = FileValue( value1, FileContentTimeStamp )
     
     self._testSaveLoad( value1 )
