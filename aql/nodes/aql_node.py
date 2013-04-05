@@ -237,9 +237,9 @@ class Node (object):
     
     values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     
-    values += self.targets_value.content
-    values += self.itargets_value.content
-    values += self.ideps_value.content
+    values += self.targets_value.content.data
+    values += self.itargets_value.content.data
+    values += self.ideps_value.content.data
     
     vfile.addValues( values )
   
@@ -306,7 +306,7 @@ class Node (object):
     values = []
     
     for node in self.dep_nodes:
-      values += node.targets_value.content
+      values += node.targets_value.content.data
     
     values += self.dep_values
     
@@ -318,24 +318,24 @@ class Node (object):
   
   def   targets(self):
     targets = self.targets_value.content
-    if targets is NoContent:
+    if not targets:
       raise ErrorNodeNoTargets( self )
     
-    return targets
+    return targets.data
   
   #//=======================================================//
   
   def   sideEffects(self):
     itargets = self.itargets_value.content
-    if itargets is NoContent:
+    if not itargets:
       raise ErrorNodeNoTargets( self )
     
-    return itargets
+    return itargets.data
   
   #//=======================================================//
   
   def   nodeTargets(self):
-    return NodeTargets( self.targets_value.content, self.itargets_value.content, self.ideps_value.content )
+    return NodeTargets( self.targets_value.content.data, self.itargets_value.content.data, self.ideps_value.content.data )
   
   #//=======================================================//
   
@@ -343,14 +343,8 @@ class Node (object):
     values = [ self.targets_value, self.itargets_value ]
     
     targets_value, itargets_value = vfile.findValues( values )
-    target_values = targets_value.content
-    itarget_values = itargets_value.content
-    
-    if target_values is NoContent:
-      target_values = tuple()
-    
-    if itarget_values is NoContent:
-      itarget_values = tuple()
+    target_values = targets_value.content.data if targets_value.content else tuple()
+    itarget_values = itargets_value.content.data if itargets_value.content else tuple()
     
     if itarget_values or target_values:
       self.builder.clear( self, target_values, itarget_values )

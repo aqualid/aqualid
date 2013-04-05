@@ -105,8 +105,6 @@ class ToolsManager( Singleton ):
     self.all_setup_methods = {}
     self.tool_info = {}
     self.loaded_paths = set()
-    
-    return self
   
   #//-------------------------------------------------------//
   

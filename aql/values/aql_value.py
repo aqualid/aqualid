@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,7 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 __all__ = (
-  'NoContent', 'IgnoreCaseStringContent', 'Value',
+  'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'Value', 'StringValue', 'IStringValue',
 )
 
 import hashlib
@@ -27,75 +27,156 @@ from .aql_value_pickler import pickleable
 
 #//===========================================================================//
 
-@pickleable
-class _NoContent( object ):
+class   ErrorInvalidValueContentType( Exception ):
+  def   __init__( self, content ):
+    msg = "Value content type must be based on ContentBase, content type: '%s'" % str(type(content))
+    self.content = content
+    super(type(self), self).__init__( msg )
+
+class   ErrorInvalidValueBytesContentType( Exception ):
+  def   __init__( self, content ):
+    msg = "Value content type must be bytes or  bytearray, content type: '%s'" % str(type(content))
+    self.content = content
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class ContentBase( object ):
   
-  def   __new__( cls, *args ):
-    self = super(_NoContent,cls).__new__(cls)
-    self.signature = bytearray()
-    return self
+  __slots__ = ('data', 'signature')
   
-  def   __init__(self, *args ):
+  def   __new__( cls, *args, **kw ):
+    return super(ContentBase,cls).__new__(cls)
+  
+  def   __init__( self, *args, **kw ):
     pass
   
   def   __eq__( self, other ):
-    return False
+    raise NotImplementedError("Abstract method should be implemented in child classes")
+  
   def   __ne__( self, other ):
-    return True
+    return not self.__eq__( other )
+  
   def   __bool__( self ):
-    return False
+    raise NotImplementedError("Abstract method should be implemented in child classes")
+  
   def   __nonzero__( self ):
+    return self.__bool__()
+  
+  def   __str__( self ):
+    raise NotImplementedError("Abstract method should be implemented in child classes")
+  
+  def   __getnewargs__(self):
+    raise NotImplementedError("Abstract method should be implemented in child classes")
+  
+  def   __getstate__(self):
+    return {}
+  def   __setstate__(self,state):
+    pass
+  
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
+      raise NotImplementedError("Attribute '%s' must be set by child classes" % str(attr))
+    
+    raise AttributeError( attr )
+
+#//===========================================================================//
+
+@pickleable
+class _NoContent( ContentBase ):
+  
+  def   __new__( cls, *args ):
+    self = super(_NoContent,cls).__new__(cls)
+    self.data = None
+    self.signature = bytearray()
+    return self
+  
+  def   __eq__( self, other ):
+    return False
+  def   __bool__( self ):
     return False
   def   __str__( self ):
     return "<Not exists>"
   def   __getnewargs__(self):
     return ()
-  def   __getstate__(self):
-    return {}
-  def   __setstate__(self,state):
-    pass
 
 NoContent = _NoContent()
 
 #//===========================================================================//
 
 @pickleable
-class   IgnoreCaseStringContent (str):
+class   BytesContent ( ContentBase ):
   
-  def     __new__(cls, value = None ):
+  def   __new__(cls, data = None ):
     
-    if type(value) is cls:
-      return value
+    if type(data) is cls:
+      return data
     
-    if value is None:
+    if data is None:
       return NoContent
     
-    self = super(IgnoreCaseStringContent, cls).__new__(cls, value)
-    self.__value = self.lower()
+    if not isinstance( data, (bytes, bytearray) ):
+      raise ErrorInvalidValueBytesContentType( data )
+    
+    self = super(BytesContent,cls).__new__(cls)
+    
+    self.data = data
     
     return self
   
   def   __eq__( self, other ):
-    return type(self) == type(other) and (self.__value == other.__value)
+    return type(self) == type(other) and (self.signature == other.signature)
   
-  def   __ne__( self, other ):
-    return not self.__eq__( other )
+  def   __bool__( self ):
+    return True
+  
+  def   __str__( self ):
+    return str(self.data)
+  
+  def   __getnewargs__(self):
+    return (self.data, )
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
-      self.signature = strSignature( self.__value )
+      self.signature = dataSignature( self.data )
       return self.signature
     
-    return super(IgnoreCaseStringContent,self).__getattr__( attr )
+    return super(BytesContent,self).__getattr__( attr )
 
 #//===========================================================================//
 
 @pickleable
-class StringContent( str ):
+class   StringContent ( ContentBase ):
+  
+  def   __new__(cls, data = None ):
+    
+    if type(data) is cls:
+      return data
+    
+    if data is None:
+      return NoContent
+    
+    self = super(StringContent,cls).__new__(cls)
+    
+    self.data = str(data)
+    
+    return self
+  
+  def   __eq__( self, other ):
+    return type(self) == type(other) and (self.signature == other.signature)
+  
+  def   __bool__( self ):
+    return True
+  
+  def   __str__( self ):
+    return self.data
+  
+  def   __getnewargs__(self):
+    return (self.data, )
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
-      self.signature = strSignature( self )
+      self.signature = strSignature( self.data )
       return self.signature
     
     return super(StringContent,self).__getattr__( attr )
@@ -103,9 +184,30 @@ class StringContent( str ):
 #//===========================================================================//
 
 @pickleable
+class   IStringContent ( StringContent ):
+  
+  __slots__ = ('low_case_str')
+  
+  def   __eq__( self, other ):
+    return type(self) == type(other) and (self.signature == other.signature)
+  
+  def   __getattr__( self, attr ):
+    if attr == 'low_case_str':
+      self.low_case_str = data.lower()
+      return self.low_case_str
+    
+    if attr == 'signature':
+      self.signature = strSignature( self.low_case_str )
+      return self.signature
+    
+    return super(IStringContent,self).__getattr__( attr )
+
+#//===========================================================================//
+
+@pickleable
 class   Value (object):
   
-  __slots__ = ( 'name', 'content', 'signature' )
+  __slots__ = ( 'name', 'content', 'data', 'signature' )
   
   #//-------------------------------------------------------//
   
@@ -124,6 +226,9 @@ class   Value (object):
     
     if (content is NotImplemented) or (content is None):
       content = NoContent
+    
+    if not isinstance( content, ContentBase ):
+      raise ErrorInvalidValueContentType( content )
     
     self.name = name
     self.content = content
@@ -168,18 +273,52 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   exists( self ):
-    return type(self.content) is not NoContent
+  def   __bool__( self ):
+    return bool(self.content)
   
   #//-------------------------------------------------------//
   
   def   actual( self, use_cache = True ):
-    return self.content is not NoContent
+    return bool(self.content)
   
   #//-------------------------------------------------------//
   
   def   remove( self ):
     pass
   
-  
   #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    if attr == 'data':
+      self.data = self.content.data
+      return self.data
+    
+    if attr == 'signature':
+      self.signature = self.content.signature
+      return self.signature
+    
+    raise AttributeError( attr )
+  
+#//===========================================================================//
+
+@pickleable
+class   StringValue (Value):
+  
+  def   __new__( cls, name, content = NotImplemented ):
+    
+    if (content is not NotImplemented) and not isinstance( content, StringContent ):
+      content = StringContent( content )
+    
+    return super(StringValue,self).__new__( name, content )
+
+#//===========================================================================//
+
+@pickleable
+class   IStringValue (Value):
+  
+  def   __new__( cls, name, content = NotImplemented ):
+    
+    if (content is not NotImplemented) and not isinstance( content,IStringContent ):
+      content = IStringContent( content )
+    
+    return super(IStringValue,self).__new__( name, content )

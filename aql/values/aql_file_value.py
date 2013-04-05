@@ -24,7 +24,7 @@ __all__ = (
 
 import os
 
-from .aql_value import Value, NoContent
+from .aql_value import Value, ContentBase, NoContent
 from .aql_value_pickler import pickleable
 
 from aql.utils import fileSignature, fileTimeSignature
@@ -33,11 +33,11 @@ _file_content_cache = {}
 
 #//===========================================================================//
 
-class   FileContentBase(object):
+class   FileContentBase( ContentBase ):
   
-  __slots__ = ( 'path', 'exists', 'signature' )
+  __slots__ = ('path', )
   
-  def   __new__( cls, path = None, signature = None, exists = False, use_cache = False, file_content_cache = _file_content_cache ):
+  def   __new__( cls, path = None, signature = None, use_cache = False, file_content_cache = _file_content_cache ):
     
     if use_cache:
       try:
@@ -47,10 +47,9 @@ class   FileContentBase(object):
       except KeyError:
         pass
     
-    if signature is not None:
+    if signature:
       self = super(FileContentBase,cls).__new__(cls)
       self.signature = signature
-      self.exists = exists
       return self
     
     if path is None:
@@ -68,35 +67,30 @@ class   FileContentBase(object):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
-    if attr in ('signature', 'exists'):
+    if attr == 'signature':
       try:
         signature = self._sign()
-        exists = True
       except (OSError, IOError):
         signature = bytearray()
-        exists = False
       
-      self.exists = exists
       self.signature = signature
       del self.path
       
-      return signature if (attr == 'signature') else exists
+      return signature
     
     return super(FileContentBase, self).__getattr__( attr )
     
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):
-    return (type(self) == type(other)) and self.exists and other.exists and (self.signature == other.signature)
+  def   __bool__( self ):
+    return bool(self.signature)
   
-  def   __ne__( self, other ):
-    return not self.__eq__( other )
+  def   __eq__( self, other ):
+    return (type(self) == type(other)) and self.signature and (self.signature == other.signature)
+  
   def   __getnewargs__(self):
-    return ( None, self.signature, self.exists )
-  def   __getstate__(self):
-    return {}
-  def   __setstate__(self,state):
-    pass
+    return ( None, self.signature )
+  
   def   __str__( self ):
     return str(self.signature)
 
@@ -164,12 +158,11 @@ class   FileValue (Value):
   
   def   actual( self ):
     content = self.content
+    
+    if not content:
+      return False
+    
     return content == type(content)( self.name, use_cache = True )
-  
-  #//-------------------------------------------------------//
-  
-  def   exists( self ):
-    return self.content.exists
   
   #//-------------------------------------------------------//
   

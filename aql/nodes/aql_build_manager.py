@@ -24,6 +24,7 @@ __all__ = (
   'eventBuildingNodes', 'eventRebuildNode',
 )
 
+import os
 import threading
 import hashlib
 import traceback

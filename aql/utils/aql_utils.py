@@ -19,7 +19,7 @@
 
 __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
-  'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles', 'loadModule',
+  'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
 )
@@ -129,13 +129,15 @@ def   execFile( filename, locals ):
 
 #//===========================================================================//
 
-def   strSignature( str_value ):
-  buf = str_value.encode('utf-8')
+def   dataSignature( data ):
   hash = hashlib.md5()
-  
-  if len(buf) > hash.digest_size:
-    return hash.update( buf ).digest()
-  return buf
+  hash.update( data )
+  return hash.digest()
+
+#//===========================================================================//
+
+def   strSignature( str_value ):
+  return dataSignature( str_value.encode('utf-8') )
 
 #//===========================================================================//
 

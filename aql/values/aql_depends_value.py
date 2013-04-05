@@ -18,10 +18,10 @@
 #
 
 __all__ = (
-  'DependsValue', 'DependsValueContent', 'ErrorValueUnpickleable',
+  'DependsValue', 'DependsValueContent', 'DependsKeyContent', 'ErrorValueUnpickleable',
 )
 
-from .aql_value import Value, NoContent
+from .aql_value import Value, ContentBase, NoContent
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
@@ -34,20 +34,21 @@ class   ErrorValueUnpickleable ( Exception ):
 #//===========================================================================//
 
 @pickleable
-class DependsKeyContent (set):
+class DependsKeyContent (ContentBase):
   def   __new__( cls, values = None ):
     
     self = super(DependsKeyContent,cls).__new__(cls)
-    if values is not None:
-      self.update( values )
+    
+    self.data = frozenset( values ) if values is not None else frozenset()
+    
     return self
   
   def   __getnewargs__(self):
-    return ( tuple(self), )
+    return ( tuple(self.data), )
 
 #//===========================================================================//
 
-class   DependsValueContent (tuple):
+class   DependsValueContent (ContentBase):
   
   def   __new__( cls, values = None ):
     
@@ -57,8 +58,8 @@ class   DependsValueContent (tuple):
     if isinstance( values, DependsKeyContent ):
       return values
     
-    if values is NoContent:
-      return values
+    if isinstance(values, ContentBase) and not values:
+      return NoContent
     
     if values is None:
       return NoContent
@@ -70,19 +71,15 @@ class   DependsValueContent (tuple):
     
     values.sort( key = lambda value: value.name )
     
-    self = super(DependsValueContent,cls).__new__(cls, tuple(values) )
+    self = super(DependsValueContent,cls).__new__(cls)
+    self.data = tuple( values )
     
     return self
   
   #//-------------------------------------------------------//
   
   def   __eq__( self, other ):
-    return (type(self) == type(other)) and super(DependsValueContent,self).__eq__( other )
-  
-  #//-------------------------------------------------------//
-  
-  def   __ne__( self, other ):
-    return not self.__eq__( other )
+    return (type(self) == type(other)) and  (self.data == other.data)
   
   #//-------------------------------------------------------//
   
@@ -122,7 +119,7 @@ class   DependsValue (Value):
   
   def   actual( self ):
     try:
-      for value in self.content:
+      for value in self.content.data:
         if not value.actual():
           return False
     

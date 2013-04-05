@@ -30,11 +30,10 @@ class GeneralFileLock (object):
   
   class Timeout( Exception ): pass
   
-  __slots__ = ('lockfilename', 'locked', 'retries', 'interval')
+  __slots__ = ('lockfilename', 'retries', 'interval')
   
   def   __init__( self, filename, interval = 0.25, timeout = 5 * 60 ):
     self.lockfilename = os.path.normcase( os.path.abspath( str(filename) ) ) + '.lock'
-    self.locked = False
     self.interval = interval
     self.retries = int(timeout / interval)
   
@@ -48,9 +47,6 @@ class GeneralFileLock (object):
     return self.writeLock()
   
   def   writeLock( self ):
-    if self.locked:
-      raise AssertionError( 'file: %s is locked already' % self.lockfilename )
-    
     index = self.retries
     
     while True:
@@ -67,20 +63,14 @@ class GeneralFileLock (object):
       
       time.sleep( self.interval )
     
-    self.locked = True
     return self
   
   def   releaseLock( self ):
-    if not self.locked:
-      raise AssertionError( 'file: %s is not locked' % self.lockfilename )
-    
     try:
       os.rmdir( self.lockfilename )
     except OSError as ex:
       if ex.errno != errno.ENOENT:
         raise
-    
-    self.locked = False
 
 try:
   #//===========================================================================//
@@ -139,7 +129,6 @@ except ImportError:
                                            win32file.OPEN_ALWAYS,
                                            0,
                                            None )
-        self.locked = False
       
       def   __enter__(self):
         return self

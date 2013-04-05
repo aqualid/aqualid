@@ -17,6 +17,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+"""
+file chk sum
+file time sum
+
+str
+bytes
+
+Content:
+  data
+  signature
+
+Value: name, content, signature
+
+Save: name, content
+
+Value: name, data, signature
+
+v.name
+v.data
+v.signature
+
+v.name
+v.content.data
+v.content.signature
+"""
+
 __all__ = (
   'ValuesFile',
   'eventFileValuesCyclicDependencyValue', 'eventFileValuesDependencyValueHasUnknownValue',
@@ -27,7 +53,6 @@ import threading
 from aql.utils import DataFile, FileLock, eventWarning, logWarning
 
 from .aql_values_xash import ValuesXash
-from .aql_value import NoContent
 from .aql_depends_value import DependsValue, DependsKeyContent, DependsValueContent
 from .aql_value_pickler import ValuePickler
 
@@ -103,10 +128,10 @@ class ValuesFile (object):
   def   __makeDependsKey( self, dep_value ):
     
     value_keys = DependsKeyContent()
-    value_keys_append = value_keys.add
+    value_keys_append = value_keys.data.add
     
     find_value = self.xash.find
-    for value in dep_value.content:
+    for value in dep_value.content.data:
       key = find_value( value )[0]
       if key is None:
         eventFileValuesDependencyValueHasUnknownValue( dep_value, value )
@@ -126,7 +151,7 @@ class ValuesFile (object):
     get_value = self.xash.__getitem__
     
     try:
-      keys = kvalue.content
+      keys = kvalue.content.data
       if kvalue_key in keys: # cyslic dependency
         return DependsValue( kvalue.name )
       
@@ -134,7 +159,7 @@ class ValuesFile (object):
         v = get_value( key )
         if isinstance( v, DependsValue ):
           v = self.__makeDepends( v, kvalue_key )
-          if v.content is NoContent:
+          if not v.content:
             return DependsValue( kvalue.name )
         
         values_append( v )
@@ -155,7 +180,7 @@ class ValuesFile (object):
     for value in values:
       if isinstance(value, DependsValue ):
         try:
-          dep_values[ id(value) ] = [value, set(map(id, value.content))]
+          dep_values[ id(value) ] = [value, set(map(id, value.content.data))]
         except TypeError:
           sorted_values.append( value )
       else:

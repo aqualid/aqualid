@@ -47,7 +47,6 @@ class TestFileLock( AqlTestCase ):
     with Tempfile() as temp_file:
       
       flock = LockType( temp_file.name )
-      self.assertRaises( AssertionError, flock.releaseLock )
       
       event = mp.Event()
       
