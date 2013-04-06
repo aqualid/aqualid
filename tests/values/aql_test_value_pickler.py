@@ -11,7 +11,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values import Value, NoContent, IgnoreCaseStringContent, FileValue, FileContentTimeStamp, ValuePickler, pickleable
+from aql.values import Value, NoContent, IStringContent, FileValue, FileContentTimeStamp, ValuePickler, pickleable
 
 #//===========================================================================//
 
@@ -39,7 +39,7 @@ class TestValuePickler( AqlTestCase ):
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = Value( tmp.name, IgnoreCaseStringContent('123-345') )
+    value = Value( tmp.name, IStringContent('123-345') )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     

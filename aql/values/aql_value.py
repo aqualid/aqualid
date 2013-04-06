@@ -22,7 +22,7 @@ __all__ = (
 
 import hashlib
 
-from aql.utils import strSignature
+from aql.utils import strSignature, dataSignature
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
@@ -309,7 +309,7 @@ class   StringValue (Value):
     if (content is not NotImplemented) and not isinstance( content, StringContent ):
       content = StringContent( content )
     
-    return super(StringValue,self).__new__( name, content )
+    return super(StringValue,cls).__new__( cls, name, content )
 
 #//===========================================================================//
 
@@ -321,4 +321,4 @@ class   IStringValue (Value):
     if (content is not NotImplemented) and not isinstance( content,IStringContent ):
       content = IStringContent( content )
     
-    return super(IStringValue,self).__new__( name, content )
+    return super(IStringValue,cls).__new__( cls, name, content )

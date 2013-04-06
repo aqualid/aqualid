@@ -27,7 +27,7 @@ import hashlib
 
 from aql.types import toSequence
 from aql.utils import eventStatus, logInfo
-from aql.values import Value, NoContent, DependsValue, DependsValueContent
+from aql.values import Value, NoContent, BytesContent, DependsValue, DependsValueContent
 
 #//===========================================================================//
 
@@ -205,7 +205,7 @@ class Node (object):
     
     name_key = name_hash.digest()
     
-    self.sources_value = Value( name_key, signature )
+    self.sources_value = Value( name_key, BytesContent( signature ) )
     
     #//-------------------------------------------------------//
     #// Targets

@@ -127,8 +127,8 @@ class ValuesFile (object):
   
   def   __makeDependsKey( self, dep_value ):
     
-    value_keys = DependsKeyContent()
-    value_keys_append = value_keys.data.add
+    value_keys = set()
+    value_keys_append = value_keys.add
     
     find_value = self.xash.find
     for value in dep_value.content.data:
@@ -139,7 +139,7 @@ class ValuesFile (object):
       
       value_keys_append( key )
     
-    return DependsValue( dep_value.name, value_keys )
+    return DependsValue( dep_value.name, DependsKeyContent( value_keys ) )
   
   #//---------------------------------------------------------------------------//
   

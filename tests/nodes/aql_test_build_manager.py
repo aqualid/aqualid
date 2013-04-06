@@ -7,7 +7,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import fileChecksum, Tempfile
-from aql.values import Value, FileValue
+from aql.values import Value, StringValue, FileValue
 from aql.nodes import Node, Builder, RebuildNode, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
@@ -188,9 +188,9 @@ class TestBuildManager( AqlTestCase ):
     
     bm = BuildManager( None, 0, True )
     
-    value1 = Value( "target_url1", "http://aql.org/download" )
-    value2 = Value( "target_url2", "http://aql.org/download2" )
-    value3 = Value( "target_url3", "http://aql.org/download3" )
+    value1 = StringValue( "target_url1", "http://aql.org/download" )
+    value2 = StringValue( "target_url2", "http://aql.org/download2" )
+    value3 = StringValue( "target_url3", "http://aql.org/download3" )
     
     builder = CopyValueBuilder()
     
@@ -359,7 +359,7 @@ class TestBuildManagerSpeed( AqlTestCase ):
     
     bm = BuildManager()
     
-    value = Value( "target_url1", "http://aql.org/download" )
+    value = StringValue( "target_url1", "http://aql.org/download" )
     builder = CopyValueBuilder()
     
     node = Node( builder, value )
