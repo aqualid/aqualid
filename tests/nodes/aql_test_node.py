@@ -26,7 +26,7 @@ class ChecksumBuilder (Builder):
     itarget_values = []
     
     for source_value in node.sources():
-      content = source_value.content.encode()
+      content = source_value.content.data.encode()
       chcksum = hashlib.md5()
       chcksum.update( content )
       chcksum_sha512 = hashlib.sha512()
@@ -202,7 +202,7 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                v = Value( node.ideps_value.content[0].name, None )
+                v = Value( node.ideps_value.content.data[0].name, None )
                 vfile.addValues( [v] )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )

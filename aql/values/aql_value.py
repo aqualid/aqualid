@@ -52,6 +52,8 @@ class ContentBase( object ):
     pass
   
   def   __eq__( self, other ):
+    print(type(self))
+    print(type(other))
     raise NotImplementedError("Abstract method should be implemented in child classes")
   
   def   __ne__( self, other ):
@@ -224,11 +226,17 @@ class   Value (object):
     
     self = super(Value,cls).__new__(cls)
     
+    
     if (content is NotImplemented) or (content is None):
       content = NoContent
     
     if not isinstance( content, ContentBase ):
-      raise ErrorInvalidValueContentType( content )
+      if isinstance( content, str):
+        content = StringContent( content )
+      elif isinstance( content, (bytes, bytearray)):
+        content = BytesContent( content )
+      else:
+        raise ErrorInvalidValueContentType( content )
     
     self.name = name
     self.content = content

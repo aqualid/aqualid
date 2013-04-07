@@ -43,6 +43,18 @@ class DependsKeyContent (ContentBase):
     
     return self
   
+  #//-------------------------------------------------------//
+  
+  def   __bool__( self ):
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):
+    return (type(self) == type(other)) and  (self.data == other.data)
+  
+  #//-------------------------------------------------------//
+  
   def   __getnewargs__(self):
     return ( tuple(self.data), )
 
@@ -75,6 +87,11 @@ class   DependsValueContent (ContentBase):
     self.data = tuple( values )
     
     return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __bool__( self ):
+    return True
   
   #//-------------------------------------------------------//
   
