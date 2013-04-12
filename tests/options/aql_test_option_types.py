@@ -111,8 +111,6 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( optimization( 'ULTRA' ), 'ultra' )
     
     self.assertEqual( sorted(optimization.range()), sorted(['slow', 'off', 'ultra', 'speed', 'final', 'size']) )
-    
-    self.assertEqual( optimization.rangeHelp(), ['slow', 'off (or 0)', 'ultra', 'speed (or fast, 2)', 'final (or 99, 3)', 'size (or 1)'] )
 
   #//===========================================================================//
 

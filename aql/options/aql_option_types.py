@@ -17,6 +17,77 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+"""
+class Proxy(object):
+    __slots__ = ["_obj", "__weakref__"]
+    def __init__(self, obj):
+        object.__setattr__(self, "_obj", obj)
+    
+    #
+    # proxying (special cases)
+    #
+    def __getattribute__(self, name):
+        return getattr(object.__getattribute__(self, "_obj"), name)
+    def __delattr__(self, name):
+        delattr(object.__getattribute__(self, "_obj"), name)
+    def __setattr__(self, name, value):
+        setattr(object.__getattribute__(self, "_obj"), name, value)
+    
+    def __nonzero__(self):
+        return bool(object.__getattribute__(self, "_obj"))
+    def __str__(self):
+        return str(object.__getattribute__(self, "_obj"))
+    def __repr__(self):
+        return repr(object.__getattribute__(self, "_obj"))
+    
+    #
+    # factories
+    #
+    _special_names = [
+        '__abs__', '__add__', '__and__', '__call__', '__cmp__', '__coerce__', 
+        '__contains__', '__delitem__', '__delslice__', '__div__', '__divmod__', 
+        '__eq__', '__float__', '__floordiv__', '__ge__', '__getitem__', 
+        '__getslice__', '__gt__', '__hash__', '__hex__', '__iadd__', '__iand__',
+        '__idiv__', '__idivmod__', '__ifloordiv__', '__ilshift__', '__imod__', 
+        '__imul__', '__int__', '__invert__', '__ior__', '__ipow__', '__irshift__', 
+        '__isub__', '__iter__', '__itruediv__', '__ixor__', '__le__', '__len__', 
+        '__long__', '__lshift__', '__lt__', '__mod__', '__mul__', '__ne__', 
+        '__neg__', '__oct__', '__or__', '__pos__', '__pow__', '__radd__', 
+        '__rand__', '__rdiv__', '__rdivmod__', '__reduce__', '__reduce_ex__', 
+        '__repr__', '__reversed__', '__rfloorfiv__', '__rlshift__', '__rmod__', 
+        '__rmul__', '__ror__', '__rpow__', '__rrshift__', '__rshift__', '__rsub__', 
+        '__rtruediv__', '__rxor__', '__setitem__', '__setslice__', '__sub__', 
+        '__truediv__', '__xor__', 'next',
+    ]
+    
+    @classmethod
+    def _create_class_proxy(cls, theclass):
+        
+        def make_method(name):
+            def method(self, *args, **kw):
+                return getattr(object.__getattribute__(self, "_obj"), name)(*args, **kw)
+            return method
+        
+        namespace = {}
+        for name in cls._special_names:
+            if hasattr(theclass, name):
+                namespace[name] = make_method(name)
+        return type("%s(%s)" % (cls.__name__, theclass.__name__), (cls,), namespace)
+    
+    def __new__(cls, obj, *args, **kwargs):
+        try:
+            cache = cls.__dict__["_class_proxy_cache"]
+        except KeyError:
+            cls._class_proxy_cache = cache = {}
+        try:
+            theclass = cache[obj.__class__]
+        except KeyError:
+            cache[obj.__class__] = theclass = cls._create_class_proxy(obj.__class__)
+        ins = object.__new__(theclass)
+        theclass.__init__(ins, obj, *args, **kwargs)
+        return ins
+"""
+
 
 __all__ = (
   'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType', 'BoolOptionType', 
@@ -60,9 +131,9 @@ class   ErrorOptionTypeNoEnumValues( TypeError ):
 
 def   _ValueTypeProxy( option_type, value_type ):
   
-  value_type_attr = set(dir(value_type))
-  
-  class   _ValueTypeProxyImpl (value_type):
+  class   _ValueTypeProxyImpl (object):
+    
+    __slots__ = ["_value", "__weakref__"]
     
     #//-------------------------------------------------------//
     
@@ -70,137 +141,72 @@ def   _ValueTypeProxy( option_type, value_type ):
       if type(value) is cls:
         return value
       
-      value = option_type._convert( value )
+      value = value_type( option_type._convert( value ) )
       
-      self = super(_ValueTypeProxyImpl,cls).__new__( cls, value )
-      super(_ValueTypeProxyImpl,self).__init__( value )
+      self = super(_ValueTypeProxyImpl,cls).__new__( cls )
+      super(_ValueTypeProxyImpl, self).__setattr__( self, "_value", value )
       
       return self
     
-    #//-------------------------------------------------------//
+    @staticmethod
+    def   __getValue( self ):
+      return super(_ValueTypeProxyImpl, self).__getattribute__("_value")
     
-    def   __init__( self, value = NotImplemented ):
-      pass
+    def __getattribute__(self, name):
+        return getattr(_ValueTypeProxyImpl.__getValue( self ), name )
     
-    #//-------------------------------------------------------//
+    def __delattr__(self, name):
+        delattr( _ValueTypeProxyImpl.__getValue( self ), name)
     
-    def   __op( self, op, other ):
-      return _ValueTypeProxyImpl( getattr( super(_ValueTypeProxyImpl,self), op )( _ValueTypeProxyImpl( other ) ) )
+    def __setattr__(self, name, value):
+        setattr(_ValueTypeProxyImpl.__getValue( self ), name, value)
     
-    #//-------------------------------------------------------//
+    def __bool__(self):
+        return bool(_ValueTypeProxyImpl.__getValue( self ))
     
-    if '__add__' in value_type_attr:
-      def   __add__ ( self, other ):
-        return self.__op( '__add__', other )
-      def   __iadd__( self, other ):
-        return self.__op( '__add__', other )
+    def __nonzero__(self):
+        return bool(_ValueTypeProxyImpl.__getValue( self ))
     
-    if '__sub__' in value_type_attr:
-      def   __sub__ ( self, other ):
-        return self.__op( '__sub__', other )
-      def   __isub__( self, other ):
-        return self.__op( '__sub__', other )
+    def __str__(self):
+        return str(_ValueTypeProxyImpl.__getValue( self ))
     
-    if '__mul__' in value_type_attr:
-      def   __mul__ ( self, other ):
-        return self.__op( '__mul__', other )
-      def   __imul__( self, other ):
-        return self.__op( '__mul__', other )
+    def __repr__(self):
+        return repr(_ValueTypeProxyImpl.__getValue( self ))
     
-    if '__mod__' in value_type_attr:
-      def   __mod__ ( self, other ):
-        return self.__op( '__mod__', other )
-      def   __imod__( self, other ):
-        return self.__op( '__mod__', other )
-    
-    if '__pow__' in value_type_attr:
-      def   __pow__ ( self, other ):
-        return self.__op( '__pow__', other )
-      def   __ipow__( self, other ):
-        return self.__op( '__pow__', other )
-    
-    if '__and__' in value_type_attr:
-      def   __and__ ( self, other ):
-        return self.__op( '__and__', other )
-      def   __iand__( self, other ):
-        return self.__op( '__and__', other )
-    
-    if '__xor__' in value_type_attr:
-      def   __xor__ ( self, other ):
-        return self.__op( '__xor__', other )
-      def   __ixor__( self, other ):
-        return self.__op( '__xor__', other )
-    
-    if '__or__' in value_type_attr:
-      def   __or__ ( self, other ):
-        return self.__op( '__or__', other )
-      def   __ior__( self, other ):
-        return self.__op( '__or__', other )
-    
-    if '__truediv__' in value_type_attr:
-      def   __truediv__ ( self, other ):
-        return self.__op( '__truediv__', other )
-      def   __itruediv__( self, other ):
-        return self.__op( '__truediv__', other )
-    
-    if '__div__' in value_type_attr:
-      def   __div__ ( self, other ):
-        return self.__op( '__div__', other )
-      def   __idiv__( self, other ):
-        return self.__op( '__div__', other )
-    
-    if '__floordiv__' in value_type_attr:
-      def   __floordiv__ ( self, other ):
-        return self.__op( '__floordiv__', other )
-      def   __ifloordiv__( self, other ):
-        return self.__op( '__floordiv__', other )
-    
-    if '__lshift__' in value_type_attr:
-      def   __lshift__ ( self, other ):
-        return self.__op( '__lshift__', other )
-      def   __ilshift__( self, other ):
-        return self.__op( '__lshift__', other )
-    
-    if '__rshift__' in value_type_attr:
-      def   __rshift__ ( self, other ):
-        return self.__op( '__rshift__', other )
-      def   __irshift__( self, other ):
-        return self.__op( '__rshift__', other )
-    
-    #//-------------------------------------------------------//
-    
-    if '__cmp__' in value_type_attr:
-      def   __cmp__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__cmp__( _ValueTypeProxyImpl( other ) )
-    
-    if '__eq__' in value_type_attr:
-      def   __eq__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__eq__( _ValueTypeProxyImpl( other ) )
-    
-    if '__ne__' in value_type_attr:
-      def   __ne__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__ne__( _ValueTypeProxyImpl( other ) )
-    
-    if '__gt__' in value_type_attr:
-      def   __gt__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__gt__( _ValueTypeProxyImpl( other ) )
-    
-    if '__ge__' in value_type_attr:
-      def   __ge__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__ge__( _ValueTypeProxyImpl( other ) )
-    
-    if '__lt__' in value_type_attr:
-      def   __lt__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__lt__( _ValueTypeProxyImpl( other ) )
-    
-    if '__le__' in value_type_attr:
-      def   __le__( self, other ):
-        return super(_ValueTypeProxyImpl,self).__le__( _ValueTypeProxyImpl( other ) )
-    
-    def   __hash__( self ):
-      return super(_ValueTypeProxyImpl,self).__hash__()
-  
   #//=======================================================//
+  
+  special_methods = [
+      '__call__', '__coerce__', '__hash__',
+      '__hex__', '__oct__', '__index__',
+      '__int__', '__float__', '__long__', '__complex__', '__round__',
+      '__neg__', '__pos__', '__invert__', '__abs__', 
+      '__iter__', '__len__', '__reversed__', '__setitem__', '__setslice__', '__next__',
+      '__delitem__', '__delslice__', '__getitem__', '__getslice__', 
+  ]
+  
+  special_methods_2 = (
+      '__add__',        '__iadd__',       '__radd__',
+      '__sub__',        '__isub__',       '__rsub__',
+      '__mul__',        '__imul__',       '__rmul__',
+      '__mod__',        '__imod__',       '__rmod__',
+      '__pow__',        '__ipow__',       '__rpow__',
+      '__and__',        '__iand__',       '__rand__',
+      '__xor__',        '__ixor__',       '__rxor__',
+      '__or__',         '__ior__',        '__ror__',
+      '__and__',        '__iand__',       '__rand__',
+      '__truediv__ ',   '__itruediv__',   '__rtruediv__',
+      '__div__ ',       '__idiv__',       '__rdiv__',
+      '__floordiv__ ',  '__ifloordiv__',  '__rfloordiv__',
+      '__lshift__ ',    '__ilshift__',    '__rlshift__',
+      '__rshift__ ',    '__irshift__',    '__rrshift__',
+      '__divmod__',
+      '__cmp__','__eq__','__ne__','__gt__','__ge__','__lt__','__le__', '__contains__',
+  )
+  
+  for name in special_methods:
+    if hasattr(value_type, name):
+      method = lambda self, other, name = name, proxy_type = _ValueTypeProxyImpl: getattr( proxy_type.__getValue( self ), name)( proxy_type( other ) )
+      setattr( _ValueTypeProxyImpl, name, method )
   
   return _ValueTypeProxyImpl
 

@@ -18,11 +18,26 @@
 #
 
 __all__ = (
-  'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
+  'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
 )
 
 import re
 import os.path
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   String (str):
+
+  def     __new__( cls, value = None ):
+    
+    if type(value) is cls:
+        return value
+    
+    if value is None:
+        value = ''
+    
+    return super(String, cls).__new__(cls, value)
 
 #//===========================================================================//
 #//===========================================================================//

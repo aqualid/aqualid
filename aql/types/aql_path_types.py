@@ -24,7 +24,7 @@ __all__ = (
 import os.path
 import itertools
 
-from .aql_simple_types import IgnoreCaseString
+from .aql_simple_types import String, IgnoreCaseString
 from .aql_list_types import UniqueList, ValueListType, toSequence
 
 #//===========================================================================//
@@ -32,7 +32,7 @@ from .aql_list_types import UniqueList, ValueListType, toSequence
 if os.path.normcase('ABC') == os.path.normcase('abc'):
   FilePathBase = IgnoreCaseString
 else:
-  FilePathBase = str
+  FilePathBase = String
 
 class   FilePath (FilePathBase):
   
