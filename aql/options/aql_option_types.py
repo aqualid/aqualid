@@ -144,45 +144,45 @@ def   _ValueTypeProxy( option_type, value_type ):
       value = value_type( option_type._convert( value ) )
       
       self = super(_ValueTypeProxyImpl,cls).__new__( cls )
-      super(_ValueTypeProxyImpl, self).__setattr__( self, "_value", value )
+      super(_ValueTypeProxyImpl, self).__setattr__( "_value", value )
       
       return self
     
     @staticmethod
-    def   __getValue( self ):
+    def   _getValue( self ):
       return super(_ValueTypeProxyImpl, self).__getattribute__("_value")
     
     def __getattribute__(self, name):
-        return getattr(_ValueTypeProxyImpl.__getValue( self ), name )
+        return getattr(_ValueTypeProxyImpl._getValue( self ), name )
     
     def __delattr__(self, name):
-        delattr( _ValueTypeProxyImpl.__getValue( self ), name)
+        delattr( _ValueTypeProxyImpl._getValue( self ), name)
     
     def __setattr__(self, name, value):
-        setattr(_ValueTypeProxyImpl.__getValue( self ), name, value)
+        setattr(_ValueTypeProxyImpl._getValue( self ), name, value)
     
     def __bool__(self):
-        return bool(_ValueTypeProxyImpl.__getValue( self ))
+        return bool(_ValueTypeProxyImpl._getValue( self ))
     
     def __nonzero__(self):
-        return bool(_ValueTypeProxyImpl.__getValue( self ))
+        return bool(_ValueTypeProxyImpl._getValue( self ))
     
     def __str__(self):
-        return str(_ValueTypeProxyImpl.__getValue( self ))
+        return option_type._convertToStr(_ValueTypeProxyImpl._getValue( self ))
     
     def __repr__(self):
-        return repr(_ValueTypeProxyImpl.__getValue( self ))
+        return repr(_ValueTypeProxyImpl._getValue( self ))
     
   #//=======================================================//
   
-  special_methods = [
+  special_methods = (
       '__call__', '__coerce__', '__hash__',
       '__hex__', '__oct__', '__index__',
       '__int__', '__float__', '__long__', '__complex__', '__round__',
       '__neg__', '__pos__', '__invert__', '__abs__', 
       '__iter__', '__len__', '__reversed__', '__setitem__', '__setslice__', '__next__',
       '__delitem__', '__delslice__', '__getitem__', '__getslice__', 
-  ]
+  )
   
   special_methods_2 = (
       '__add__',        '__iadd__',       '__radd__',
@@ -194,132 +194,53 @@ def   _ValueTypeProxy( option_type, value_type ):
       '__xor__',        '__ixor__',       '__rxor__',
       '__or__',         '__ior__',        '__ror__',
       '__and__',        '__iand__',       '__rand__',
-      '__truediv__ ',   '__itruediv__',   '__rtruediv__',
-      '__div__ ',       '__idiv__',       '__rdiv__',
-      '__floordiv__ ',  '__ifloordiv__',  '__rfloordiv__',
-      '__lshift__ ',    '__ilshift__',    '__rlshift__',
-      '__rshift__ ',    '__irshift__',    '__rrshift__',
-      '__divmod__',
-      '__cmp__','__eq__','__ne__','__gt__','__ge__','__lt__','__le__', '__contains__',
+      '__truediv__',    '__itruediv__',   '__rtruediv__',
+      '__div__',        '__idiv__',       '__rdiv__',
+      '__floordiv__',   '__ifloordiv__',  '__rfloordiv__',
+      '__lshift__',     '__ilshift__',    '__rlshift__',
+      '__rshift__',     '__irshift__',    '__rrshift__',
+      '__divmod__',     '__idivmod__',    '__rdivmod__',
   )
   
-  for name in special_methods:
-    if hasattr(value_type, name):
-      method = lambda self, other, name = name, proxy_type = _ValueTypeProxyImpl: getattr( proxy_type.__getValue( self ), name)( proxy_type( other ) )
-      setattr( _ValueTypeProxyImpl, name, method )
+  cmp_methods = (
+    '__cmp__','__eq__','__ne__','__gt__','__ge__','__lt__','__le__', '__contains__',
+  )
+  
+  def make_method(name):
+    def method(self, *args, **kw):
+      return getattr( _ValueTypeProxyImpl._getValue( self ), name)(*args, **kw)
+    return method
+  
+  def make_method_2(name):
+    def method( self, other ):
+      other = _ValueTypeProxyImpl( other )
+      other = _ValueTypeProxyImpl._getValue( other )
+      value = _ValueTypeProxyImpl._getValue( self )
+      return _ValueTypeProxyImpl( getattr( value, name)( other ) )
+      
+    return method
+  
+  def make_method_cmp(name):
+    def method(self, other ):
+      other = _ValueTypeProxyImpl( other )
+      other = _ValueTypeProxyImpl._getValue( other )
+      value = _ValueTypeProxyImpl._getValue( self )
+      return getattr( value, name)( other )
+      
+    return method
+  
+  value_type_methods = frozenset( dir(value_type) )
+  
+  for methods, proxy_method_maker in [  (special_methods,   make_method),
+                                        (special_methods_2, make_method_2),
+                                        (cmp_methods,       make_method_cmp), ]:
+    
+    methods = frozenset( methods ) & value_type_methods
+    
+    for name in methods:
+      setattr( _ValueTypeProxyImpl, name, proxy_method_maker( name ) )
   
   return _ValueTypeProxyImpl
-
-
-#//===========================================================================//
-
-def   _ValueBoolTypeProxy( option_type ):
-  
-  value_type_attr = set(dir(int))
-  
-  class   _ValueBoolTypeProxyImpl (int):
-    
-    #//-------------------------------------------------------//
-    
-    def     __new__( cls, value = NotImplemented ):
-      if type(value) is cls:
-        return value
-      
-      value = option_type._convert( value )
-      
-      return super(_ValueBoolTypeProxyImpl,cls).__new__( cls, value )
-    
-    #//-------------------------------------------------------//
-    
-    def   __op( self, op, other ):
-      return _ValueBoolTypeProxyImpl( getattr( super(_ValueBoolTypeProxyImpl,self), op )( _ValueBoolTypeProxyImpl(other) ) )
-    
-    #//-------------------------------------------------------//
-    
-    if '__and__' in value_type_attr:
-      def   __and__ ( self, other ):
-        return self.__op( '__and__', other )
-      def   __iand__( self, other ):
-        return self.__op( '__and__', other )
-    
-    if '__xor__' in value_type_attr:
-      def   __xor__ ( self, other ):
-        return self.__op( '__xor__', other )
-      def   __ixor__( self, other ):
-        return self.__op( '__xor__', other )
-    
-    if '__or__' in value_type_attr:
-      def   __or__ ( self, other ):
-        return self.__op( '__or__', other )
-      def   __ior__( self, other ):
-        return self.__op( '__or__', other )
-    
-    #//-------------------------------------------------------//
-    
-    def   __add__ ( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __iadd__( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __sub__ ( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __isub__( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __mul__ ( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __imul__( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __mod__ ( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __imod__( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __pow__ ( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __ipow__( self, other ):      raise NotImplementedError("Not supported operation")
-    def   __truediv__ ( self, other ):  raise NotImplementedError("Not supported operation")
-    def   __itruediv__( self, other ):  raise NotImplementedError("Not supported operation")
-    def   __floordiv__ ( self, other ): raise NotImplementedError("Not supported operation")
-    def   __ifloordiv__( self, other ): raise NotImplementedError("Not supported operation")
-    def   __lshift__ ( self, other ):   raise NotImplementedError("Not supported operation")
-    def   __ilshift__( self, other ):   raise NotImplementedError("Not supported operation")
-    def   __rshift__ ( self, other ):   raise NotImplementedError("Not supported operation")
-    def   __irshift__( self, other ):   raise NotImplementedError("Not supported operation")
-    
-    #//-------------------------------------------------------//
-    
-    if '__cmp__' in value_type_attr:
-      def   __cmp__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__cmp__( _ValueBoolTypeProxyImpl( other ) )
-    
-    if '__eq__' in value_type_attr:
-      def   __eq__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__eq__( _ValueBoolTypeProxyImpl( other ) )
-    
-    if '__ne__' in value_type_attr:
-      def   __ne__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__ne__( _ValueBoolTypeProxyImpl( other ) )
-    
-    if '__gt__' in value_type_attr:
-      def   __gt__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__gt__( _ValueBoolTypeProxyImpl( other ) )
-    
-    if '__ge__' in value_type_attr:
-      def   __ge__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__ge__( _ValueBoolTypeProxyImpl( other ) )
-    
-    if '__lt__' in value_type_attr:
-      def   __lt__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__lt__( _ValueBoolTypeProxyImpl( other ) )
-    
-    if '__le__' in value_type_attr:
-      def   __le__( self, other ):
-        return super(_ValueBoolTypeProxyImpl,self).__le__( _ValueBoolTypeProxyImpl( other ) )
-    
-    def   __hash__( self ):
-      return super(_ValueBoolTypeProxyImpl,self).__hash__()
-    
-    #//-------------------------------------------------------//
-    
-    def   __str__(self):
-      try:
-        return option_type.true_value if self else option_type.false_value
-      except AttributeError:
-        return str(True) if self else str(False)
-  
-  #//=======================================================//
-  
-  return _ValueBoolTypeProxyImpl
-
 
 #//===========================================================================//
 
@@ -339,10 +260,7 @@ class   OptionType (object):
     
     self.value_type = value_type
     
-    if value_type is bool:
-      self.value_type_proxy = _ValueBoolTypeProxy( self )
-    else:
-      self.value_type_proxy = _ValueTypeProxy( self, value_type )
+    self.value_type_proxy = _ValueTypeProxy( self, value_type )
     
     self.description = description
     self.group = group
@@ -367,6 +285,12 @@ class   OptionType (object):
       return self.value_type( value )
     except (TypeError, ValueError):
       raise ErrorOptionTypeUnableConvertValue( self.value_type, value )
+  
+  def   _convertToStr( self, value ):
+    """
+    Converts a value to options' value string
+    """
+    return str( self._convert( value ))
   
   #//-------------------------------------------------------//
   
@@ -467,6 +391,12 @@ class   BoolOptionType (OptionType):
       value = False
     
     return bool( value )
+  
+  #//-------------------------------------------------------//
+  
+  def   _convertToStr( self, value ):
+    value = self._convert( value )
+    return self.true_value if value else self.false_value
   
   #//-------------------------------------------------------//
   

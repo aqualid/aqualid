@@ -131,6 +131,8 @@ def   _setOperator( dest_value, value ):
   return value
 
 def   _joinPath( dest_value, value ):
+  print( "_joinPath: %s, %s" % (dest_value, value))
+  print( "_joinPath: %s, %s" % (type(dest_value), type(value)))
   return os.path.join( dest_value, value )
 
 def   _notOperator( dest_value, value ):

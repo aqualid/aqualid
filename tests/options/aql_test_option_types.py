@@ -209,7 +209,9 @@ class TestOptionTypes( AqlTestCase ):
     v = v * '2'; self.assertEqual( v, '10' ); self.assertIs( type(v), type(opt1()) )
     v *= '0'; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
     v += '2'; self.assertEqual( v, '2' ); self.assertIs( type(v), type(opt1()) )
-    v /= '2'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
+    v //= '2';
+    self.assertEqual( v, '1' );
+    self.assertIs( type(v), type(opt1()) )
     v = v / '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
     v //= '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
     v = v // '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
