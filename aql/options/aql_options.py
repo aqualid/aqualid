@@ -131,8 +131,6 @@ def   _setOperator( dest_value, value ):
   return value
 
 def   _joinPath( dest_value, value ):
-  print( "_joinPath: %s, %s" % (dest_value, value))
-  print( "_joinPath: %s, %s" % (type(dest_value), type(value)))
   return os.path.join( dest_value, value )
 
 def   _notOperator( dest_value, value ):
@@ -249,16 +247,6 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   cmp( self, cmp_operator, other, context = None ):
-    self.child_ref = None
-    
-    value = self.value( context )
-    other = _evalValue( other, self.options, context )
-    
-    return cmp_operator( value, other )
-  
-  #//-------------------------------------------------------//
-  
   def   __setitem__( self, key, value ):
     child_ref = self.child_ref
     if (child_ref is not None) and (child_ref() is value):
@@ -280,21 +268,6 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other ):
-    return self.cmp( operator.eq, other )
-  def   __ne__( self, other ):
-    return self.cmp( operator.ne, other )
-  def   __lt__( self, other ):
-    return self.cmp( operator.lt, other )
-  def   __le__( self, other ):
-    return self.cmp( operator.le, other )
-  def   __gt__( self, other ):
-    return self.cmp( operator.gt, other )
-  def   __ge__( self, other ):
-    return self.cmp( operator.ge, other )
-  
-  #//-------------------------------------------------------//
-  
   def   __bool__(self):
     return bool( self.value() )
   
@@ -306,13 +279,78 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   has( self, other, context = None ):
-    return self.cmp( operator.contains, other )
+  def   eq( self, other, context = None ):  return self.cmp( operator.eq, other, context )
+  def   ne( self, other, context = None ):  return self.cmp( operator.ne, other, context )
+  def   lt( self, other, context = None ):  return self.cmp( operator.lt, other, context )
+  def   le( self, other, context = None ):  return self.cmp( operator.le, other, context )
+  def   gt( self, other, context = None ):  return self.cmp( operator.gt, other, context )
+  def   ge( self, other, context = None ):  return self.cmp( operator.ge, other, context )
+  
+  def   __eq__( self, other ):        return self.eq( other )
+  def   __ne__( self, other ):        return self.ne( other )
+  def   __lt__( self, other ):        return self.lt( other )
+  def   __le__( self, other ):        return self.le( other )
+  def   __gt__( self, other ):        return self.gt( other )
+  def   __ge__( self, other ):        return self.ge( other )
+  def   __contains__( self, other ):  return self.has( other )
   
   #//-------------------------------------------------------//
   
-  def   __contains__( self, other ):
-    return self.has( other )
+  def   cmp( self, cmp_operator, other, context = None ):
+    self.child_ref = None
+    
+    other = _evalValue( other, self.options, context )
+    value = self.value( context )
+    
+    if not isinstance( value, (Dict, List)) and (self.key is NotImplemented):
+      other = self.option_value.option_type( other )
+    
+    return cmp_operator( value, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   has( self, other, context = None ):
+    other = _evalValue( other, self.options, context )
+    value = self.value( context )
+    
+    return other in value
+  
+  #//-------------------------------------------------------//
+  
+  def   hasAny( self, values, context = None ):
+    
+    value = self.value( context )
+    values = _evalValue( values, self.options, context )
+    
+    for other in toSequence( values ):
+      if other in value:
+        return True
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  def   hasAll( self, values, context = None ):
+    
+    value = self.value( context )
+    values = _evalValue( values, self.options, context )
+    
+    for other in toSequence( values ):
+      if other not in value:
+        return False
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   oneOf( self, values, context = None ):
+    
+    value = self.value( context )
+    values = _evalValue( values, self.options, context )
+    
+    for other in values:
+      other = self.option_value.option_type( other )
+      if value == other:
+        return True
+    return False
   
   #//-------------------------------------------------------//
   
@@ -335,49 +373,22 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __hasAny( seq, values ):
-    for value in toSequence( values ):
-      if value in seq:
-        return True
-    return False
+  def   __cmpValue( options, context, cmp_method, name, other ):
+    return getattr( getattr( options, name ), cmp_method )( other, context )
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __hasAll( seq, values ):
-    for value in toSequence( values ):
-      if value not in seq:
-        return False
-    return True
+  def __makeCmpCondition( condition, cmp_method, name, other ):
+    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_method, name, other )
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __oneOf( value, values ):
-    for v in values:
-      if value == v:
-        return True
-    return False
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __cmpValue( options, context, cmp_operator, name, other ):
-    return getattr( options, name ).cmp( cmp_operator, other, context )
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def __makeCmpCondition( condition, cmp_operator, name, other ):
-    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_operator, name, other )
-  
-  #//-------------------------------------------------------//
-  
-  def   cmp( self, cmp_operator, other ):
+  def   cmp( self, cmp_method, other ):
     if self.key is not None:
       other = DictItem( self.key, other )
     
-    condition = self.__makeCmpCondition( self.condition, cmp_operator, self.name, other )
+    condition = self.__makeCmpCondition( self.condition, cmp_method, self.name, other )
     return ConditionGenerator( self.options, condition )
   
   #//-------------------------------------------------------//
@@ -396,26 +407,16 @@ class ConditionGeneratorHelper( object ):
   
   #//-------------------------------------------------------//
   
-  def   eq( self, other ):
-    return self.cmp( operator.eq, other )
-  def   ne( self, other ):
-    return self.cmp( operator.ne, other )
-  def   gt( self, other ):
-    return self.cmp( operator.gt, other )
-  def   ge( self, other ):
-    return self.cmp( operator.ge, other )
-  def   lt( self, other ):
-    return self.cmp( operator.lt, other )
-  def   le( self, other ):
-    return self.cmp( operator.le, other )
-  def   has( self, value ):
-    return self.cmp( operator.contains, value )
-  def   hasAny( self, values ):
-    return self.cmp( self.__hasAny, values )
-  def   hasAll( self, values ):
-    return self.cmp( self.__hasAll, values )
-  def   oneOf( self, values ):
-    return self.cmp( self.__oneOf, values )
+  def   eq( self, other ):      return self.cmp( 'eq',      other )
+  def   ne( self, other ):      return self.cmp( 'ne',      other )
+  def   gt( self, other ):      return self.cmp( 'gt',      other )
+  def   ge( self, other ):      return self.cmp( 'ge',      other )
+  def   lt( self, other ):      return self.cmp( 'lt',      other )
+  def   le( self, other ):      return self.cmp( 'le',      other )
+  def   has( self, value ):     return self.cmp( 'has',     value )
+  def   hasAny( self, values ): return self.cmp( 'hasAny',  values )
+  def   hasAll( self, values ): return self.cmp( 'hasAll',  values )
+  def   oneOf( self, values ):  return self.cmp( 'oneOf',   values )
   
   #//-------------------------------------------------------//
   

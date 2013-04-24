@@ -83,14 +83,17 @@ class   Operation( object ):
     self.args = args
     self.kw = kw
   
-  def   __call__( self, options, context, dest_value ):
+  def   __call__( self, options, context, dest_value, value_type ):
     if self.operation is not None:
-      dest_value = self.operation( options, context, dest_value )
+      dest_value = self.operation( options, context, dest_value, value_type )
+      dest_value = value_type( dest_value )
     
     if self.action is None:
       return dest_value
     
-    return self.action( options, context, dest_value, *self.args, **self.kw )
+    dest_value = self.action( options, context, dest_value, *self.args, **self.kw )
+    dest_value = value_type( dest_value )
+    return dest_value
 
 #//===========================================================================//
 
@@ -115,16 +118,11 @@ class   ConditionalValue (object):
   
   #//-------------------------------------------------------//
   
-  def   updateValue( self, value, options, context ):
+  def   __call__( self, value, value_type, options, context ):
     condition = self.condition
     if (condition is None) or condition( options, context ):
       if self.operation is not None:
-        new_value = self.operation( options, context, value )
-        value_type = type(value)
-        if type(new_value) is not value_type:
-          new_value = value_type( new_value )
-        
-        return new_value
+        value = self.operation( options, context, value, value_type )
     
     return value
 
@@ -208,19 +206,15 @@ class OptionValue (object):
       except KeyError:
         pass
     
-    value = self.option_type()
+    value_type = self.option_type
+    value = value_type()
     context[ self ] = value
     
     if (not self.conditional_values) and (self.default_conditional_value is not None):
-        return self.default_conditional_value.updateValue( value, options, context )
+        return self.default_conditional_value( value, value_type, options, context )
     
     for conditional_value in self.conditional_values:
-      value = conditional_value.updateValue( value, options, context )
+      value = conditional_value( value, value_type, options, context )
       context[ self ] = value
     
     return value
-
-  #//-------------------------------------------------------//
-  
-  def   optionType( self ):
-    return self.option_type

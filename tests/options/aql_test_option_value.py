@@ -144,7 +144,7 @@ class TestOptionValue( AqlTestCase ):
     opt_value = OptionValue( value_type )
     
     opt_value.appendValue( ConditionalValue( SetValue( 'size' ) ) )
-    self.assertEqual( opt_value.value( {} ), 1 )
+    self.assertEqual( opt_value.value( {} ), value_type(1) )
     
     opt_value.appendValue( ConditionalValue( SetValue( 'ultra' ) ) )
     self.assertRaises( ErrorOptionTypeUnableConvertValue, opt_value.value, {} )
@@ -170,7 +170,7 @@ class TestOptionValue( AqlTestCase ):
     
     opt_value1.appendValue( ConditionalValue( AddValue( opt_value2 ) ) )
     
-    self.assertEqual( opt_value2.value( None ), 7 )
+    self.assertEqual( opt_value2.value( None ), opt_value2.option_type(7) )
     self.assertEqual( opt_value1.value( None ), 7 )
     
     # opt1: 1 + opt2 + opt2 = 1 + 3 + 3

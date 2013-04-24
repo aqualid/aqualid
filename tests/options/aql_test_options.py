@@ -234,7 +234,7 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.opt, 30 )
     
     options.If().warn_level.le(2).opt += 1
-    self.assertEqual( options.opt.value(), 30 )
+    self.assertEqual( options.opt, 30 )
     options.If().warn_level.le(4).opt += 5
     self.assertEqual( options.opt, 35 )
     
@@ -247,7 +247,7 @@ class TestOptions( AqlTestCase ):
     to = tc.opt
     to += 5
     
-    self.assertEqual( options.opt.value(), 50 )
+    self.assertEqual( options.opt, 50 )
   
   #//-------------------------------------------------------//
   
@@ -290,7 +290,7 @@ class TestOptions( AqlTestCase ):
     options.opt = RangeOptionType( min_value = 1, max_value = 100 )
     options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
     
-    self.assertRaises( ErrorOptionsOptionValueExists, options.__setattr__, 'opt', options.opt.option_value.optionType() )
+    self.assertRaises( ErrorOptionsOptionValueExists, options.__setattr__, 'opt', options.opt.option_value.option_type )
     self.assertRaises( ErrorOptionsForeignOptionValue, options2.__setattr__, 'opt', options.opt )
     self.assertRaises( AttributeError, options.__getattr__, 'debug_on' )
     
@@ -341,8 +341,8 @@ class TestOptions( AqlTestCase ):
   
   def   test_builtin_options(self):
     options = builtinOptions()
-    self.assertEqual( options.build_variant, 'debug' )
     self.assertEqual( options.optimization, 'off' )
+    self.assertEqual( options.build_variant, 'debug' )
     
     options.build_variant = 'release'
     self.assertEqual( options.optimization, 'speed' )
@@ -391,7 +391,7 @@ class TestOptions( AqlTestCase ):
     
     path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin', '/home/user', '/mingw/bin/g++' ] ))
     
-    value = options.env.value()
+    value = options.env
     self.assertEqual( value['path'], path )
     
     self.assertEqual( options.defines['OPTS'], '' )
@@ -481,11 +481,11 @@ class TestOptions( AqlTestCase ):
     options2.target_os.setDefault( "windows" )
     options2.target_arch.setDefault( "x86-32" )
     
-    self.assertEqual( options2.build_dir.value(), 'bin/windows_x86-32_debug' )
-    self.assertEqual( options.build_dir.value(), 'native_native_debug' )
+    self.assertEqual( options2.build_dir, 'bin/windows_x86-32_debug' )
+    self.assertEqual( options.build_dir, 'native_native_debug' )
     
     options2.join()
-    self.assertEqual( options.build_dir.value(), 'bin/windows_x86-32_debug' )
+    self.assertEqual( options.build_dir, 'bin/windows_x86-32_debug' )
 
 #//===========================================================================//
 
