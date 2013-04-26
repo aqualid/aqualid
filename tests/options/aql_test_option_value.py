@@ -205,7 +205,7 @@ class TestOptionValue( AqlTestCase ):
     opt_value = copy.copy( opt_value )
     self.assertEqual( opt_value.value( None ), [2,1,2] )
     
-    self.assertIs( opt_value.optionType(), opt_type1 )
+    self.assertIs( opt_value.option_type, opt_type1 )
   
   #//---------------------------------------------------------------------------//
   

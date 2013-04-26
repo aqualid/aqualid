@@ -288,6 +288,7 @@ class ValuesFile (object):
     
     key, val = xash.find( value )
     if val is not None:
+      print( "value: %s" % value )
       if value.content != val.content:
         data = self.dumps( value )
         new_key = self.data_file.replace( key, data )

@@ -34,6 +34,14 @@ if os.path.normcase('ABC') == os.path.normcase('abc'):
 else:
   FilePathBase = String
 
+try:
+  _splitunc = os.path.splitunc
+except AttributeError:
+  def _splitunc( path ):
+    return str(), path
+
+#//===========================================================================//
+
 class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
@@ -119,7 +127,7 @@ class   FilePath (FilePathBase):
   def   __makeSeq( path ):
     drive, path = os.path.splitdrive( path )
     if not drive:
-      drive, path = os.path.splitunc( path )
+      drive, path = _splitunc( path )
     
     path = tuple( map( FilePathBase, filter( None, path.split( os.path.sep ) ) ) )
     
@@ -147,6 +155,7 @@ class   FilePath (FilePathBase):
     path = self
     
     if self.drive == other.drive:
+      i = 0
       for i, parts in enumerate( zip( seq, other.seq ) ):
         if parts[0] != parts[1]:
           break

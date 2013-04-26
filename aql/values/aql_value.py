@@ -195,7 +195,7 @@ class   IStringContent ( StringContent ):
   
   def   __getattr__( self, attr ):
     if attr == 'low_case_str':
-      self.low_case_str = data.lower()
+      self.low_case_str = self.data.lower()
       return self.low_case_str
     
     if attr == 'signature':
@@ -282,6 +282,11 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   __bool__( self ):
+    return bool(self.content)
+  
+  #//-------------------------------------------------------//
+  
+  def   __nonzero__( self ):
     return bool(self.content)
   
   #//-------------------------------------------------------//

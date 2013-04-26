@@ -58,7 +58,7 @@ class TestValuesFile( AqlTestCase ):
           
           #//-------------------------------------------------------//
           
-          value1.content = "http://aql.org/download1"
+          value1 = Value( value1.name, "http://aql.org/download1" )
           
           vfile2.addValues( [ value1 ] ); vfile2.selfTest()
           s_value1 = vfile.findValues( [ value1 ] )[0]; vfile.selfTest()

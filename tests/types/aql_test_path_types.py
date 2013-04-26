@@ -8,6 +8,12 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.types import FilePath, FilePaths
 
+try:
+  _splitunc = os.path.splitunc
+except AttributeError:
+  def _splitunc( path ):
+    return str(), path
+
 #//===========================================================================//
 
 class TestPathTypes( AqlTestCase ):
@@ -30,7 +36,7 @@ class TestPathTypes( AqlTestCase ):
     self.assertEqual( p.dir, os.path.dirname(file1) )
     self.assertEqual( p.name, os.path.splitext( os.path.basename(file1) )[0] )
     self.assertEqual( p.ext, os.path.splitext( os.path.basename(file1) )[1] )
-    self.assertIn( p.drive, [ os.path.splitdrive( file1 )[0], os.path.splitunc( file1 )[0] ] )
+    self.assertIn( p.drive, [ os.path.splitdrive( file1 )[0], _splitunc( file1 )[0] ] )
     
     self.assertEqual( p.merge( p2 ), os.path.join( p, os.path.basename(p2.dir), p2.name_ext ) )
     self.assertEqual( p.merge( host_file ), os.path.join( p, *(filter(None, host_file.split('/'))) ) )

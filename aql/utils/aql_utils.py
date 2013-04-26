@@ -37,6 +37,8 @@ import subprocess
 import tempfile
 import itertools
 
+from aql.types import toSequence
+
 #//===========================================================================//
 
 class   ErrorProgramNotFound( Exception ):
@@ -137,6 +139,7 @@ def   dataSignature( data ):
 #//===========================================================================//
 
 def   strSignature( str_value ):
+  print("str_value: %s" % str(str_value))
   return dataSignature( str_value.encode('utf-8') )
 
 #//===========================================================================//
