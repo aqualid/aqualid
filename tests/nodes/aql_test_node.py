@@ -9,7 +9,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values import Value, NoContent, FileValue, FileContentTimeStamp, FileContentChecksum, DependsValue, ValuesFile
+from aql.values import SignatureValue, StringValue, Value, NoContent, FileValue, FileContentTimeStamp, FileContentChecksum, DependsValue, ValuesFile
 from aql.nodes import Node, Builder
 
 #//===========================================================================//
@@ -31,8 +31,8 @@ class ChecksumBuilder (Builder):
       chcksum.update( content )
       chcksum_sha512 = hashlib.sha512()
       chcksum_sha512.update( content )
-      target_values.append( Value( source_value.name + '_chksum', chcksum.digest() ) )
-      itarget_values.append( Value( source_value.name + '_chcksum_sha512', chcksum_sha512.digest() ) )
+      target_values.append( SignatureValue( source_value.name + '_chksum', chcksum.digest() ) )
+      itarget_values.append( SignatureValue( source_value.name + '_chcksum_sha512', chcksum_sha512.digest() ) )
     
     return self.nodeTargets( target_values, itarget_values )
 
@@ -78,9 +78,9 @@ class TestNodes( AqlTestCase ):
       
       vfile = ValuesFile( tmp.name )
       try:
-        value1 = Value( "target_url1", "http://aql.org/download" )
-        value2 = Value( "target_url2", "http://aql.org/download2" )
-        value3 = Value( "target_url3", "http://aql.org/download3" )
+        value1 = StringValue( "target_url1", "http://aql.org/download" )
+        value2 = StringValue( "target_url2", "http://aql.org/download2" )
+        value3 = StringValue( "target_url3", "http://aql.org/download3" )
         
         builder = ChecksumBuilder()
         
@@ -174,10 +174,10 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                dep = Value( "dep1", "1" )
+                dep = StringValue( "dep1", "1" )
                 node = self._rebuildNode( vfile, builder, [value1, node3], [dep], tmp_files )
                 
-                dep = Value( "dep1", "11" )
+                dep = StringValue( "dep1", "11" )
                 node = self._rebuildNode( vfile, builder, [value1, node3], [dep], tmp_files )
                 node3 = self._rebuildNode( vfile, builder3, [value1], [], tmp_files )
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
