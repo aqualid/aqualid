@@ -17,7 +17,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 __all__ = (
-  'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'Value', 'StringValue', 'IStringValue',
+  'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'SignatureContent',
+  'Value', 'StringValue', 'IStringValue', 'SignatureValue',
 )
 
 import hashlib
@@ -52,8 +53,6 @@ class ContentBase( object ):
     pass
   
   def   __eq__( self, other ):
-    print(type(self))
-    print(type(other))
     raise NotImplementedError("Abstract method should be implemented in child classes")
   
   def   __ne__( self, other ):
@@ -107,9 +106,44 @@ NoContent = _NoContent()
 #//===========================================================================//
 
 @pickleable
+class   SignatureContent( ContentBase ):
+  
+  def   __new__( cls, data = None ):
+    
+    if type(data) is cls:
+      return data
+    
+    if data is None:
+      return NoContent
+    
+    if not isinstance( data, (bytes, bytearray) ):
+      raise ErrorInvalidValueBytesContentType( data )
+    
+    self = super(SignatureContent,cls).__new__(cls)
+    
+    self.data = data
+    self.signature = data
+    
+    return self
+  
+  def   __eq__( self, other ):
+    return type(self) == type(other) and (self.signature == other.signature)
+  
+  def   __bool__( self ):
+    return True
+  
+  def   __str__( self ):
+    return str(self.data)
+  
+  def   __getnewargs__(self):
+    return (self.data, )
+  
+#//===========================================================================//
+
+@pickleable
 class   BytesContent ( ContentBase ):
   
-  def   __new__(cls, data = None ):
+  def   __new__( cls, data = None ):
     
     if type(data) is cls:
       return data
@@ -231,10 +265,10 @@ class   Value (object):
       content = NoContent
     
     if not isinstance( content, ContentBase ):
-      if isinstance( content, str):
-        content = StringContent( content )
-      elif isinstance( content, (bytes, bytearray)):
+      if isinstance( content, (bytes, bytearray)):
         content = BytesContent( content )
+      elif isinstance( content, str):
+        content = StringContent( content )
       else:
         raise ErrorInvalidValueContentType( content )
     
@@ -335,3 +369,13 @@ class   IStringValue (Value):
       content = IStringContent( content )
     
     return super(IStringValue,cls).__new__( cls, name, content )
+
+#//===========================================================================//
+
+@pickleable
+class   SignatureValue (Value):
+  
+  def   __new__( cls, name, content = NotImplemented ):
+    
+    content = SignatureContent( content )
+    return super(SignatureValue,cls).__new__( cls, name, content )
