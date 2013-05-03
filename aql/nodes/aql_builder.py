@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -31,6 +31,43 @@ from .aql_node import NodeTargets
 
 #//===========================================================================//
 
+def   _makeDir( path_dir, _path_cache = set() ):
+  if path_dir not in _path_cache:
+    if not os.path.isdir( path_dir ):
+      try:
+        os.makedirs( path_dir )
+      except OSError as e:
+        if e.errno != errno.EEXIST:
+          raise
+    
+    _path_cache.add( path_dir )
+
+#//===========================================================================//
+
+def   buildPath( build_dir, build_dir_suffix, src_path = None ):
+  
+  build_path = FilePath( build_dir )
+  
+  if build_dir_suffix:
+    build_path = build_path.join( build_dir_suffix )
+  
+  if src_path is None:
+    _makeDir( build_path )
+  
+  else:
+    src_path = FilePath( src_path )
+    
+    if build_dir_suffix:
+      build_path = build_path.join( src_path.name_ext )
+    else:
+      build_path = build_path.merge( src_path )
+    
+    _makeDir( build_path.dir )
+  
+  return build_path
+
+#//===========================================================================//
+
 class RebuildNode( Exception ):
   pass
 
@@ -43,12 +80,8 @@ class Builder (object):
   
   __slots__ = (
     'options',
-    'build_dir',
-    'do_path_merge',
     'name',
     'signature',
-    'scontent_type',
-    'tcontent_type',
   )
    
   #//-------------------------------------------------------//
@@ -57,24 +90,9 @@ class Builder (object):
     
     if attr == 'name':
       cls = self.__class__
-      self.name = '.'.join( [ cls.__module__, cls.__name__, str(self.build_dir), str(self.do_path_merge) ] )
+      build_dir = self.buildPath()
+      self.name = '.'.join( [ cls.__module__, cls.__name__, str(build_dir) ] )
       return self.name
-    
-    if attr == 'build_dir':
-      self.build_dir = '.'
-      return self.build_dir
-    
-    if attr == 'do_path_merge':
-      self.do_path_merge = False
-      return self.do_path_merge
-    
-    if attr == 'scontent_type':
-      self.scontent_type = NotImplemented
-      return self.scontent_type
-    
-    if attr == 'tcontent_type':
-      self.tcontent_type = NotImplemented
-      return self.tcontent_type
     
     if attr == 'signature':
       """
@@ -136,35 +154,8 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __makeDir( path_dir, _path_cache = set() ):
-    if path_dir not in _path_cache:
-      if not os.path.isdir( path_dir ):
-        try:
-          os.makedirs( path_dir )
-        except OSError as e:
-          if e.errno != errno.EEXIST:
-            raise
-      
-      _path_cache.add( path_dir )
-  
-  #//-------------------------------------------------------//
-  
   def   buildPath( self, src_path = None ):
-    if src_path is None:
-      build_path = self.build_dir
-      self.__makeDir( build_path )
-    else:
-      src_path = FilePath( src_path )
-      
-      if self.do_path_merge:
-        build_path = self.build_dir.merge( src_path )
-      else:
-        build_path = FilePath( os.path.join( self.build_dir, src_path.name_ext ) )
-      
-      self.__makeDir( build_path.dir )
-    
-    return build_path
+    return buildPath( self.options.build_dir.value(), self.options.build_dir_suffix.value(), src_path )
   
   #//-------------------------------------------------------//
   
@@ -173,7 +164,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   sourceValues( self, values, use_cache = True ):
+  def   makeSourceValues( self, values, value_type, content_type, use_cache = True ):
     return [ self.sourceValue( value, use_cache ) for value in toSequence( values ) ]
   
   #//-------------------------------------------------------//

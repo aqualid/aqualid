@@ -39,7 +39,6 @@ def   _build_options():
   options.build_dir_suffix  = PathOptionType( description = "The building directory suffix." )
   options.build_dir_name    = StrOptionType( description = "The building directory name." )
   options.prefix            = StrOptionType( description = "Output files prefix." )
-  options.do_build_path_merge = BoolOptionType( description = "Should we merge source paths with build directory." )
   
   build_variant = EnumOptionType( values =  [
                                               ('debug', 'dbg', 'd' ),
@@ -56,6 +55,20 @@ def   _build_options():
   options.build_variants = ListOptionType( value_type = build_variant, unique = True,
                                            description = "Active build variants" )
   options.bvs = options.build_variants
+  
+  
+  #//-------------------------------------------------------//
+  
+  source_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
+                                      default = 'checksum',
+                                      description = "Type used to detect changes in sources" )
+  
+  target_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
+                                      default = 'checksum',
+                                      description = "Type used to detect changes in targets" )
+  
+  options.source_signature = source_signature
+  options.target_signature = target_signature
   
   #//-------------------------------------------------------//
   
@@ -208,8 +221,6 @@ def   _init_defaults( options ):
     
     options.build_dir = options.build_dir_prefix
     options.build_dir = JoinPathValue( options.build_dir_name )
-    options.build_dir = JoinPathValue( options.build_dir_suffix )
-    options.If().build_dir_suffix.eq( FilePath() ).do_build_path_merge = True
     
     #//-------------------------------------------------------//
     

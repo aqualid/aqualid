@@ -48,6 +48,8 @@ class GccCompilerImpl (aql.Builder):
     
     self.build_dir = options.build_dir.value()
     self.do_path_merge = options.do_build_path_merge.value()
+    
+    self.options = 
     self.scontent_type = scontent_type
     self.tcontent_type = tcontent_type
     
@@ -296,7 +298,7 @@ class GccLinker(aql.Builder):
   
   __slots__ = ('cmd', 'target')
   
-  def   __init__(self, target, options, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+  def   __init__(self, target, options ):
     
     self.target = target
     self.build_dir = options.build_dir.value()

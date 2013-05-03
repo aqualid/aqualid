@@ -56,121 +56,6 @@ class   ErrorOptionTypeNoEnumValues( TypeError ):
 
 #//===========================================================================//
 
-def   _ValueTypeProxy( option_type, value_type ):
-  
-  class   _ValueTypeProxyImpl (object):
-    
-    __slots__ = ["_value", "__weakref__"]
-    
-    #//-------------------------------------------------------//
-    
-    def     __new__( cls, value = NotImplemented ):
-      if type(value) is cls:
-        return value
-      
-      value = value_type( option_type._convert( value ) )
-      
-      self = super(_ValueTypeProxyImpl,cls).__new__( cls )
-      super(_ValueTypeProxyImpl, self).__setattr__( "_value", value )
-      
-      return self
-    
-    @staticmethod
-    def   _getValue( self ):
-      return super(_ValueTypeProxyImpl, self).__getattribute__("_value")
-    
-    def __getattribute__(self, name):
-        return getattr(_ValueTypeProxyImpl._getValue( self ), name )
-    
-    def __delattr__(self, name):
-        delattr( _ValueTypeProxyImpl._getValue( self ), name)
-    
-    def __setattr__(self, name, value):
-        setattr(_ValueTypeProxyImpl._getValue( self ), name, value)
-    
-    def __bool__(self):
-        return bool(_ValueTypeProxyImpl._getValue( self ))
-    
-    def __nonzero__(self):
-        return bool(_ValueTypeProxyImpl._getValue( self ))
-    
-    def __str__(self):
-        return option_type.toStr(_ValueTypeProxyImpl._getValue( self ))
-    
-    def __repr__(self):
-        return repr(_ValueTypeProxyImpl._getValue( self ))
-    
-  #//=======================================================//
-  
-  special_methods = (
-      '__call__', '__coerce__', '__hash__',
-      '__hex__', '__oct__', '__index__',
-      '__int__', '__float__', '__long__', '__complex__', '__round__',
-      '__neg__', '__pos__', '__invert__', '__abs__', 
-      '__iter__', '__len__', '__reversed__', '__setitem__', '__setslice__', '__next__',
-      '__delitem__', '__delslice__', '__getitem__', '__getslice__', 
-  )
-  
-  special_methods_2 = (
-      '__add__',        '__iadd__',       '__radd__',
-      '__sub__',        '__isub__',       '__rsub__',
-      '__mul__',        '__imul__',       '__rmul__',
-      '__mod__',        '__imod__',       '__rmod__',
-      '__pow__',        '__ipow__',       '__rpow__',
-      '__and__',        '__iand__',       '__rand__',
-      '__xor__',        '__ixor__',       '__rxor__',
-      '__or__',         '__ior__',        '__ror__',
-      '__and__',        '__iand__',       '__rand__',
-      '__truediv__',    '__itruediv__',   '__rtruediv__',
-      '__div__',        '__idiv__',       '__rdiv__',
-      '__floordiv__',   '__ifloordiv__',  '__rfloordiv__',
-      '__lshift__',     '__ilshift__',    '__rlshift__',
-      '__rshift__',     '__irshift__',    '__rrshift__',
-      '__divmod__',     '__idivmod__',    '__rdivmod__',
-  )
-  
-  cmp_methods = (
-    '__cmp__','__eq__','__ne__','__gt__','__ge__','__lt__','__le__', '__contains__',
-  )
-  
-  def make_method(name):
-    def method(self, *args, **kw):
-      return getattr( _ValueTypeProxyImpl._getValue( self ), name)(*args, **kw)
-    return method
-  
-  def make_method_2(name):
-    def method( self, other ):
-      other = _ValueTypeProxyImpl( other )
-      other = _ValueTypeProxyImpl._getValue( other )
-      value = _ValueTypeProxyImpl._getValue( self )
-      return _ValueTypeProxyImpl( getattr( value, name)( other ) )
-      
-    return method
-  
-  def make_method_cmp(name):
-    def method(self, other ):
-      other = _ValueTypeProxyImpl( other )
-      other = _ValueTypeProxyImpl._getValue( other )
-      value = _ValueTypeProxyImpl._getValue( self )
-      return getattr( value, name)( other )
-      
-    return method
-  
-  value_type_methods = frozenset( dir(value_type) )
-  
-  for methods, proxy_method_maker in [  (special_methods,   make_method),
-                                        (special_methods_2, make_method_2),
-                                        (cmp_methods,       make_method_cmp), ]:
-    
-    methods = frozenset( methods ) & value_type_methods
-    
-    for name in methods:
-      setattr( _ValueTypeProxyImpl, name, proxy_method_maker( name ) )
-  
-  return _ValueTypeProxyImpl
-
-#//===========================================================================//
-
 class   OptionType (object):
 
   __slots__ = (
@@ -193,11 +78,6 @@ class   OptionType (object):
   #//-------------------------------------------------------//
   
   def   __call__( self, value = NotImplemented ):
-    return self._convert( value )
-  
-  #//-------------------------------------------------------//
-  
-  def   _convert( self, value ):
     """
     Converts a value to options' value
     """
@@ -297,7 +177,7 @@ class   BoolOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   _convert( self, value = NotImplemented ):
+  def   __call__( self, value = NotImplemented ):
     
     if type(value) is bool:
       return value
@@ -394,7 +274,7 @@ class   EnumOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   _convert( self, value = NotImplemented ):
+  def   __call__( self, value = NotImplemented ):
     
     v = value
     
@@ -495,7 +375,7 @@ class   RangeOptionType (OptionType):
     
   #//-------------------------------------------------------//
   
-  def   _convert( self, value = NotImplemented):
+  def   __call__( self, value = NotImplemented):
     try:
       min_value = self.min_value
       
