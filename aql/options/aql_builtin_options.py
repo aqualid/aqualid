@@ -59,16 +59,11 @@ def   _build_options():
   
   #//-------------------------------------------------------//
   
-  source_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
+  file_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
                                       default = 'checksum',
-                                      description = "Type used to detect changes in sources" )
+                                      description = "Type used to detect changes in dependecy files" )
   
-  target_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
-                                      default = 'checksum',
-                                      description = "Type used to detect changes in targets" )
-  
-  options.source_signature = source_signature
-  options.target_signature = target_signature
+  options.file_signature = file_signature
   
   #//-------------------------------------------------------//
   

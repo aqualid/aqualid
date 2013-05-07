@@ -248,7 +248,7 @@ class Project( object ):
     config = ProjectConfig.instance()
     
     self.options = config.options.override()
-    self.build_manager = BuildManager( config.aql_db, config.jobs, config.keep_going )
+    self.build_manager = BuildManager()
     
     tools_manager = ToolsManager.instance()
     tools_manager.loadTools( config.tool_paths )
@@ -380,7 +380,13 @@ if __name__ == "__main__":
   
   ReadOptions('../../aql.config')
   
-  libs = ReadScript('src/aql.make')
+  # global 
+  # options
+  # tools
+  
+  libs = Include('src/aql.make')
+  
+  
   
   c = Tool('c')
   c.LinkProgram( src_files, libs )

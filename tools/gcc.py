@@ -42,24 +42,17 @@ def   _addPrefix( prefix, values ):
 
 class GccCompilerImpl (aql.Builder):
   
-  __slots__ = ( 'cmd', )
+  __slots__ = ( 'cmd', 'language')
   
-  def   __init__(self, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+  def   __init__(self, options, language ):
+    self.language = language
     
-    self.build_dir = options.build_dir.value()
-    self.do_path_merge = options.do_build_path_merge.value()
-    
-    self.options = 
-    self.scontent_type = scontent_type
-    self.tcontent_type = tcontent_type
-    
-    self.cmd = self.__cmd( options, language )
-    self.signature = self.__signature()
-  
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __cmd( options, language ):
+  def   getCmd():
+    
+    language = self.language
+    options = self.options
     
     if language == 'c++':
       cmd = [ options.cxx.value() ]
@@ -81,8 +74,27 @@ class GccCompilerImpl (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   __signature( self ):
+  def   getSignature( self ):
     return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    
+    if attr == 'name':
+      name = self.getName() + '.' + self.language
+      self.name = name
+      return name
+    
+    elif attr == 'signature':
+      self.signature = signature = self.getSignature()
+      return signature
+    
+    elif attr == 'cmd':
+      self.cmd = cmd = self.getCmd()
+      return cmd
+    
+    return super( GccCompilerImpl, self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   
@@ -105,7 +117,7 @@ class GccCompilerImpl (aql.Builder):
       if result.failed():
         raise result
       
-      return self.nodeTargets( obj_file, ideps = _readDeps( dep_file.name ) )
+      return self.makeNodeFileTargets( obj_file, ideps = _readDeps( dep_file.name ) )
   
   #//===========================================================================//
 
@@ -138,7 +150,7 @@ class GccCompilerImpl (aql.Builder):
           os.remove( obj_file )
         move_file( tmp_obj_file, obj_file )
         
-        node_targets = self.nodeTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
+        node_targets = self.makeNodeFileTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
         
         src_node.save( vfile, node_targets )
         
@@ -158,7 +170,7 @@ class GccCompilerImpl (aql.Builder):
     if len(src_file_values) == 1:
       targets = self.__buildOne( vfile, src_file_values[0] )
     else:
-      targets = self.nodeTargets()
+      targets = aql.NodeTargets()
       values = []
       nodes = []
       for src_file_value in src_file_values:
@@ -191,9 +203,23 @@ class GccCompiler(aql.Builder):
   
   __slots__ = ('compiler')
   
-  def   __init__(self, options, language, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
-    self.compiler = GccCompilerImpl( options, language, scontent_type, tcontent_type )
-    self.signature = self.compiler.signature
+  def   __init__(self, options, language ):
+    self.compiler = GccCompilerImpl( options, language )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    
+    if attr == 'name':
+      name = self.getName() + '.' + self.compiler.name
+      self.name = name
+      return name
+    
+    elif attr == 'signature':
+      self.signature = signature = self.compiler.signature
+      return signature
+    
+    return super(GccCompiler,self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   
@@ -231,7 +257,7 @@ class GccCompiler(aql.Builder):
   
   def   prebuildFinished( self, build_manager, vfile, node, pre_nodes ):
     
-    targets = self.nodeTargets()
+    targets = aql.NodeTargets()
     
     for pre_node in pre_nodes:
       targets += pre_node.nodeTargets()
@@ -249,23 +275,36 @@ class GccArchiver(aql.Builder):
   
   __slots__ = ('cmd', 'target')
   
-  def   __init__(self, target, options, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
-    
+  def   __init__( self, options, target ):
     self.target = target
-    self.build_dir = options.build_dir.value()
-    self.do_path_merge = options.do_build_path_merge.value()
-    self.scontent_type = scontent_type
-    self.tcontent_type = tcontent_type
     
-    self.cmd = [ options.lib.value(), 'rcs' ]
-    self.signature = self.__signature()
-    
-    self.name = self.name + '.' + str(target)
+  #//-------------------------------------------------------//
+  
+  def   getCmd( self ):
+    return [ self.options.lib.value(), 'rcs' ]
+  #//-------------------------------------------------------//
+  
+  def   getSignature( self ):
+    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
   
   #//-------------------------------------------------------//
   
-  def   __signature( self ):
-    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
+  def   __getattr__( self, attr ):
+    
+    if attr == 'name':
+      name = self.getName() + '.' + self.target
+      self.name = name
+      return name
+    
+    elif attr == 'signature':
+      self.signature = signature = self.getSignature()
+      return signature
+    
+    elif attr == 'cmd':
+      self.cmd = cmd = self.getCmd()
+      return signature
+    
+    return super(GccCompiler,self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   
@@ -285,7 +324,7 @@ class GccArchiver(aql.Builder):
     if result.failed():
       raise result
     
-    return self.nodeTargets( archive )
+    return self.makeNodeFileTargets( archive )
   
   #//-------------------------------------------------------//
   
@@ -352,7 +391,7 @@ class GccLinker(aql.Builder):
     if result.failed():
       raise result
     
-    return self.nodeTargets( archive )
+    return self.makeNodeFileTargets( archive )
   
   #//-------------------------------------------------------//
   
@@ -451,7 +490,7 @@ def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
 
 class ToolGccCommon( aql.Tool ):
   
-  def   __init__( self, project, options ):
+  def   __init__( self, options ):
     
     try:
       if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
@@ -508,17 +547,22 @@ class ToolGccCommon( aql.Tool ):
 @aql.tool('c++', 'g++', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   
-  def   Compile( self, project, options, sources ):
-    cpp_compiler = GccCompiler( options, 'c++' )
-    return aql.Node( cpp_compiler, sources )
+  def   Compile( self, options ):
+    return GccCompiler( options, 'c++' )
   
-  def   LinkLibrary( self, project, options, sources ):
+  #//-------------------------------------------------------//
+  
+  def   LinkLibrary( self, options, target ):
+    return GccArchiver( options, target )
+  
+  #//-------------------------------------------------------//
+  
+  def   LinkSharedLibrary( self, options, target ):
     pass
   
-  def   LinkSharedLibrary( self, project, options, sources ):
-    pass
+  #//-------------------------------------------------------//
   
-  def   LinkProgram( self, project, options, sources ):
+  def   LinkProgram( self, options, target ):
     pass
 
 #//===========================================================================//
@@ -526,8 +570,9 @@ class ToolGxx( ToolGccCommon ):
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   
-  def   Compile( self, project, options, sources ):
+  def   Compile( self, project, options, source_nodes, sources ):
     compiler = GccCompiler( options, 'c' )
+    
     return aql.Node( compiler, sources )
   
   def   LinkLibrary( self, project, options, sources ):

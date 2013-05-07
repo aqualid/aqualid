@@ -27,7 +27,7 @@ import errno
 from aql.types import toSequence, FilePath, FilePaths
 from aql.values import Value, FileValue
 
-from .aql_node import NodeTargets
+from .aql_node import Node, NodeTargets
 
 #//===========================================================================//
 
@@ -44,7 +44,7 @@ def   _makeDir( path_dir, _path_cache = set() ):
 
 #//===========================================================================//
 
-def   buildPath( build_dir, build_dir_suffix, src_path = None ):
+def   _buildPath( build_dir, build_dir_suffix, src_path = None ):
   
   build_path = FilePath( build_dir )
   
@@ -68,6 +68,19 @@ def   buildPath( build_dir, build_dir_suffix, src_path = None ):
 
 #//===========================================================================//
 
+def   _makeFileValues( content_type, values, use_cache ):
+  
+  file_values = []
+  values = toSequence( values )
+  for value in values:
+    if not isinstance( value, Value ):
+      value = FileValue( value, content = content_type, use_cache = use_cache )
+    file_values.append( value )
+  
+  return file_values
+
+#//===========================================================================//
+
 class RebuildNode( Exception ):
   pass
 
@@ -86,15 +99,30 @@ class Builder (object):
    
   #//-------------------------------------------------------//
   
+  def   __new__(cls, options, *args, **kw):
+    
+    self = super(Builder,cls).__new__(cls)
+    self.options = options
+    
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def getName( self ):
+      cls = self.__class__
+      build_dir = self.buildPath()
+      return '.'.join( [ cls.__module__, cls.__name__, str(build_dir) ] )
+      return self.name
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     
     if attr == 'name':
-      cls = self.__class__
-      build_dir = self.buildPath()
-      self.name = '.'.join( [ cls.__module__, cls.__name__, str(build_dir) ] )
-      return self.name
+      self.name = name = self.getName()
+      return name
     
-    if attr == 'signature':
+    elif attr == 'signature':
       """
       Sets builder signature which uniquely identify builder's parameters
       """
@@ -155,7 +183,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   buildPath( self, src_path = None ):
-    return buildPath( self.options.build_dir.value(), self.options.build_dir_suffix.value(), src_path )
+    return _buildPath( self.options.build_dir.value(), self.options.build_dir_suffix.value(), src_path )
   
   #//-------------------------------------------------------//
   
@@ -164,36 +192,39 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeSourceValues( self, values, value_type, content_type, use_cache = True ):
-    return [ self.sourceValue( value, use_cache ) for value in toSequence( values ) ]
-  
-  #//-------------------------------------------------------//
-  
-  def   sourceValue( self, value, use_cache = True ):
-    if not isinstance( value, Value ):
-      value = FileValue( value, content = self.scontent_type, use_cache = use_cache )
+  def   __fileContentType( self ):
+    content_type = NotImplemented
     
-    return value
-  
-  #//-------------------------------------------------------//
-  
-  def   targetValues( self, values, use_cache = False ):
-    content_type = self.tcontent_type
-    dst_values = []
-    for value in toSequence( values ):
-      if not isinstance( value, Value ):
-        value = FileValue( value, content = content_type, use_cache = use_cache )
-      
-      dst_values.append( value )
+    file_signature = self.options.file_signature
     
-    return dst_values
+    if file_signature == 'checksum':
+      content_type = FileContentChecksum
+    
+    elif file_signature == 'timestamp':
+      content_type = FileContentTimeStamp
+    
+    return content_type
   
   #//-------------------------------------------------------//
   
-  def   nodeTargets( self, targets = None, itargets = None, ideps = None, use_cache = True ):
-    target_values = self.targetValues( targets )
-    itarget_values = self.targetValues( itargets )
-    idep_values = self.targetValues( ideps, use_cache = use_cache )
+  def   makeSourceValues( self, values ):
+    return makeFileValues( values )
+  
+  #//-------------------------------------------------------//
+  
+  def   makeFileValues( self, values, use_cache = True ):
+    content_type = self.__fileContentType()
+    return _makeFileValues( content_type, values, use_cache )
+  
+  #//-------------------------------------------------------//
+  
+  def   makeNodeFileTargets( self, targets = None, itargets = None, ideps = None, use_cache = True ):
+    
+    content_type = self.__fileContentType()
+    
+    target_values = _makeFileValues( content_type, targets, use_cache = False )
+    itarget_values = _makeFileValues( content_type, itargets, use_cache = False )
+    idep_values = _makeFileValues( content_type, ideps, use_cache = use_cache )
     
     return NodeTargets( target_values, itarget_values, idep_values )
 

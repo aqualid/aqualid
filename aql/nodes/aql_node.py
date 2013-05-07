@@ -27,7 +27,7 @@ import hashlib
 
 from aql.types import toSequence
 from aql.utils import eventStatus, logInfo
-from aql.values import Value, SignatureValue, NoContent, BytesContent, DependsValue, DependsValueContent
+from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsValueContent
 
 #//===========================================================================//
 
@@ -50,6 +50,13 @@ class   ErrorNodeInvalidTargetsType( Exception ):
   def   __init__( self, targets ):
     msg = "Invalid type of node's targets: %s" % str(type(targets))
     super(type(self), self).__init__( msg )
+
+#//---------------------------------------------------------------------------//
+
+#~ class   ErrorNodeInvalidSourceType( Exception ):
+  #~ def   __init__( self, source ):
+    #~ msg = "Expected Node or Value type, actual: '%s(%s)'" % (source, type(source))
+    #~ super(type(self), self).__init__( msg )
 
 #//---------------------------------------------------------------------------//
 
@@ -116,47 +123,19 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, builder, sources ):
+  def   __init__( self, builder, source_nodes, source_values ):
     
     self.builder = builder
-    self.source_nodes, self.source_values = self._getSources( sources )
-    self.dep_values = []
+    self.source_nodes = frozenset( source_nodes )
+    self.source_values = tuple( source_values )
     self.dep_nodes = set()
+    self.dep_values = []
   
   #//=======================================================//
   
-  def   _getSources( self, sources ):
-    
-    source_nodes = set()
-    source_values = []
-    
-    source_nodes_append = source_nodes.add
-    source_values_append = source_values.append
-    
-    to_value = self.builder.sourceValue
-    
-    for source in toSequence( sources ):
-      if isinstance(source, Node):
-        source_nodes_append( source )
-      else:
-        source_values_append( to_value( source ) )
-    
-    return source_nodes, tuple(source_values)
-    
-  #//=======================================================//
-  
-  def   depends( self, deps ):
-    
-    append_node = self.dep_nodes.add
-    append_value = self.dep_values.append
-    
-    to_value = self.builder.sourceValue
-    
-    for dep in toSequence( deps ):
-      if isinstance(dep, Node):
-        append_node( dep )
-      else:
-        append_value( to_value(dep) )
+  def   depends( self, dep_nodes, dep_values ):
+    self.dep_nodes.update( dep_nodes )
+    self.dep_values.extend( dep_values )
   
   #//=======================================================//
   

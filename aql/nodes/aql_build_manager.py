@@ -305,16 +305,23 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
+  def   __enter__(self):
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __exit__(self, exc_type, exc_value, traceback):
+    self.close()
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     if attr == 'vfile':
-      vfile = ValuesFile( self.vfilename )
-      self.vfile = vfile
+      self.vfile = vfile = ValuesFile( self.vfilename )
       return vfile
     
     elif attr == 'task_manager':
-      tm = TaskManager( num_threads = self.jobs, stop_on_error = self.stop_on_error )
-      
-      self.task_manager = tm
+      self.task_manager = tm = TaskManager( num_threads = self.jobs, stop_on_error = self.stop_on_error )
       return tm
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
@@ -361,6 +368,12 @@ class _NodesBuilder (object):
             failed_nodes[ node ] = exception
     
     return completed_nodes, failed_nodes, rebuild_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   close( self ):
+    self.task_manager.finish()
+    self.vfile.close()
 
 #//===========================================================================//
 
@@ -368,45 +381,40 @@ class BuildManager (object):
   
   __slots__ = \
   (
-    '__nodes',
-    '__nodes_builder',
+    '_nodes',
+    '_jobs'
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__(self, vfilename, jobs, stop_on_error ):
-    self.__nodes = _NodesTree()
-    self.__nodes_builder = _NodesBuilder( vfilename, jobs, stop_on_error )
+  def   __init__(self):
+    self._nodes = _NodesTree()
+    self._jobs = 1
   
   #//-------------------------------------------------------//
   
   def   add( self, nodes ):
-    self.__nodes.add( nodes )
+    self._nodes.add( nodes )
   
   #//-------------------------------------------------------//
   
   def   depends( self, node, deps ):
-    self.__nodes.depends( node, deps )
-  
-  #//-------------------------------------------------------//
-  
-  def   valuesFile( self ):
-    return self.__nodes_builder.vfile
+    self._nodes.depends( node, deps )
   
   #//-------------------------------------------------------//
   
   def   jobs( self ):
-    return self.__nodes_builder.jobs
+    return self._jobs
   
   #//-------------------------------------------------------//
   
   def   __len__(self):
-    return len(self.__nodes)
+    return len(self._nodes)
   
   #//-------------------------------------------------------//
   
   def   selfTest( self ):
-    self.__nodes.selfTest()
+    self._nodes.selfTest()
   
   #//-------------------------------------------------------//
   
@@ -423,107 +431,110 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build(self):
-    eventBuildingNodes( len(self.__nodes) )
+  def   build( self, vfilename, jobs, stop_on_error ):
     
-    target_nodes = {}
-    
-    get_tails = self.__nodes.tails
-    
-    build_nodes = self.__nodes_builder.build
-    removeTailNode = self.__nodes.removeTail
-    
-    waiting_nodes = set()
-    waitingDiff = waiting_nodes.difference_update
-    
-    failed_nodes = {}
-    
-    while True:
+    with _NodesBuilder( vfilename, jobs, stop_on_error ) as nodes_builder:
       
-      tails = get_tails()
-      tails -= waiting_nodes
-      tails.difference_update( failed_nodes )
+      self._jobs = nodes_builder.jobs
       
-      if not tails and not waiting_nodes:
-        break
+      eventBuildingNodes( len(self._nodes) )
       
-      completed_nodes, tmp_failed_nodes, rebuild_nodes = build_nodes( self, tails )
-      if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
-        break
+      target_nodes = {}
       
-      failed_nodes.update( tmp_failed_nodes )
+      get_tails = self._nodes.tails
       
-      waiting_nodes |= tails
+      build_nodes = nodes_builder.build
+      removeTailNode = self._nodes.removeTail
       
-      waitingDiff( completed_nodes )
-      waitingDiff( tmp_failed_nodes )
-      waitingDiff( rebuild_nodes )
+      waiting_nodes = set()
+      waitingDiff = waiting_nodes.difference_update
       
-      for node in completed_nodes:
-        self.__checkAlreadyBuilt( target_nodes, node )
-        removeTailNode( node )
-    
-    return tuple( failed_nodes.items() )
+      failed_nodes = {}
+      
+      while True:
+        
+        tails = get_tails()
+        tails -= waiting_nodes
+        tails.difference_update( failed_nodes )
+        
+        if not tails and not waiting_nodes:
+          break
+        
+        completed_nodes, tmp_failed_nodes, rebuild_nodes = build_nodes( self, tails )
+        if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
+          break
+        
+        failed_nodes.update( tmp_failed_nodes )
+        
+        waiting_nodes |= tails
+        
+        waitingDiff( completed_nodes )
+        waitingDiff( tmp_failed_nodes )
+        waitingDiff( rebuild_nodes )
+        
+        for node in completed_nodes:
+          self.__checkAlreadyBuilt( target_nodes, node )
+          removeTailNode( node )
+      
+      return tuple( failed_nodes.items() )
     
   #//-------------------------------------------------------//
   
   def   close( self ):
-    self.__nodes_builder.task_manager.finish()
-    self.__nodes = _NodesTree()
-    self.__nodes_builder.vfile.close()
+    self._nodes = _NodesTree()
+    self._jobs = 1
   
   #//-------------------------------------------------------//
   
-  def   clear(self):
+  def   clear(self, vfilename ):
     clear_nodes = []
     
-    get_tails = self.__nodes.tails
+    get_tails = self._nodes.tails
     
-    remove_tail = self.__nodes.removeTail
+    remove_tail = self._nodes.removeTail
     
     outdated_nodes = set()
     
-    vfile = self.valuesFile()
-    
-    while True:
-      tails = get_tails()
-      tails -= outdated_nodes
+    with ValuesFile( vfilename ) as vfile:
+      while True:
+        tails = get_tails()
+        tails -= outdated_nodes
+        
+        if not tails:
+          break
+        
+        for node in tails:
+          if node.actual( vfile ):
+            remove_tail( node )
+            clear_nodes.insert( 0, node )  # add nodes in LIFO order to clear nodes from root to leaf nodes
+          else:
+            outdated_nodes.add( node )
       
-      if not tails:
-        break
-      
-      for node in tails:
-        if node.actual( vfile ):
-          remove_tail( node )
-          clear_nodes.insert( 0, node )  # add nodes in LIFO order to clear nodes from root to leaf nodes
-        else:
-          outdated_nodes.add( node )
-    
-    for node in clear_nodes:
-      node.clear( vfile )
+      for node in clear_nodes:
+        node.clear( vfile )
   
   #//-------------------------------------------------------//
   
-  def   status(self):
+  def   status( self, vfilename ):
     
-    target_nodes = {}
-    vfile = self.__nodes_builder.vfile
-    getTails = self.__nodes.tails
-    
-    removeTailNode = self.__nodes.removeTail
-    
-    outdated_nodes = set()
-    
-    while True:
+    with ValuesFile( vfilename ) as vfile:
+      target_nodes = {}
+      getTails = self._nodes.tails
       
-      tails = getTails() - outdated_nodes
-      if not tails:
-        break
+      removeTailNode = self._nodes.removeTail
       
-      for node in tails:
-        if not node.actual( vfile ):
-          eventBuildStatusOutdatedNode( node )
-          outdated_nodes.add( node )
-        else:
-          eventBuildStatusActualNode( node )
-          removeTailNode( node )
+      outdated_nodes = set()
+      
+      while True:
+        
+        tails = getTails() - outdated_nodes
+        if not tails:
+          break
+        
+        for node in tails:
+          if not node.actual( vfile ):
+            eventBuildStatusOutdatedNode( node )
+            outdated_nodes.add( node )
+          else:
+            eventBuildStatusActualNode( node )
+            removeTailNode( node )
