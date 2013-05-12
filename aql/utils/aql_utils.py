@@ -36,6 +36,7 @@ import inspect
 import subprocess
 import tempfile
 import itertools
+import multiprocessing
 
 from aql.types import toSequence
 
@@ -476,6 +477,12 @@ def   whereProgram( prog, env = None ):
 #//===========================================================================//
 
 def   cpuCount():
+  
+  try:
+    return multiprocessing.cpu_count()
+  except NotImplementedError:
+    pass
+  
   cpu_count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
   if cpu_count:
     return cpu_count

@@ -328,6 +328,16 @@ class _NodesBuilder (object):
     
   #//-------------------------------------------------------//
   
+  def   getVfile( self, node ):
+      vfilepath = node.builder.buildPath()
+      vfilepath.join( '.aql.db')
+      try:
+        vfile = self.vfiles[ vfilename ]
+      except KeyError:
+        vfile = ValuesFile( vfilename )
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, build_manager, nodes ):
     completed_nodes = []
     failed_nodes = {}
@@ -338,6 +348,12 @@ class _NodesBuilder (object):
     vfile = self.vfile
     
     for node in nodes:
+      vfilepath = node.builder.options.build_dir.value()
+      try:
+        vfile = vfiles[ vfilename ]
+      except KeyError:
+        vfile = ValuesFile( vfilename )
+      
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
       if pre_nodes:

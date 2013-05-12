@@ -115,15 +115,18 @@ class ProjectConfig( Singleton ):
     Paths = SplitListType( FilePaths, ', ' )
     
     CLI_OPTIONS = (
-      CLIOption( "-j", "--jobs",          "jobs",           jobsCount,  None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-f", "--make-file",     "make_file",      FilePath,   'aql.make',   "Path to main make file", 'FILE PATH'),
-      CLIOption( "-b", "--output",        "output",         FilePath,   'output',     "Build output path", 'FILE PATH'),
-      CLIOption( "-t", "--tool-paths",    "tool_paths",     Paths,      [],           "Paths to tools and setup scripts", 'FILE PATH, ...'),
-      CLIOption( "-k", "--keep-going",    "keep_going",     bool,       False,        "Continue build even if any target failed." ),
-      CLIOption( "-l", "--list-options",  "list_options",   bool,       False,        "List all available options and exit." ),
-      CLIOption( "-a", "--always-make",   "always_make",    bool,       False,        "Unconditionally make all targets." ),
-      CLIOption( "-v", "--verbose",       "verbose",        bool,       False,        "Verbose mode." ),
-      CLIOption( "-q", "--quiet",         "quiet",          bool,       False,        "Quiet mode." ),
+      
+      CLIOption( "-C", "--directory",       "directory",      FilePath,   '',           "Change directory before reading the make files or doing anything else.", 'FILE PATH'),
+      CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file", 'FILE PATH'),
+      CLIOption( "-l", "--list-options",    "list_options",   bool,       False,        "List all available options and exit." ),
+      
+      CLIOption( "-o", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path", 'FILE PATH'),
+      CLIOption( "-t", "--tool-paths",      "tool_paths",     Paths,      [],           "Paths to tools and setup scripts", 'FILE PATH, ...'),
+      CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Continue build even if any target failed." ),
+      CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
+      CLIOption( "-j", "--jobs",            "jobs",           jobsCount,  None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
+      CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
     )
     
     sel.cli_options = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )

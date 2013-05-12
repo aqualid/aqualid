@@ -279,6 +279,14 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   isTrue( self, context = None ):
+    return bool( self.value( context ) )
+  
+  def   isFalse( self, context = None):
+    return not bool( self.value( context ) )
+  
+  #//-------------------------------------------------------//
+  
   def   eq( self, other, context = None ):  return self.cmp( operator.eq, other, context )
   def   ne( self, other, context = None ):  return self.cmp( operator.ne, other, context )
   def   lt( self, other, context = None ):  return self.cmp( operator.lt, other, context )
@@ -379,16 +387,16 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def __makeCmpCondition( condition, cmp_method, name, other ):
-    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_method, name, other )
+  def __makeCmpCondition( condition, cmp_method, name, *args ):
+    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_method, name, *args )
   
   #//-------------------------------------------------------//
   
-  def   cmp( self, cmp_method, other ):
-    if self.key is not None:
-      other = DictItem( self.key, other )
+  def   cmp( self, cmp_method, *args ):
+    if self.key is not NotImplemented:
+      args = [ DictItem( self.key, *args ) ]
     
-    condition = self.__makeCmpCondition( self.condition, cmp_method, self.name, other )
+    condition = self.__makeCmpCondition( self.condition, cmp_method, self.name, *args )
     return ConditionGenerator( self.options, condition )
   
   #//-------------------------------------------------------//
@@ -417,11 +425,13 @@ class ConditionGeneratorHelper( object ):
   def   hasAny( self, values ): return self.cmp( 'hasAny',  values )
   def   hasAll( self, values ): return self.cmp( 'hasAll',  values )
   def   oneOf( self, values ):  return self.cmp( 'oneOf',   values )
+  def   isTrue( self ):         return self.cmp( 'isTrue' )
+  def   isFalse( self ):        return self.cmp( 'isFalse' )
   
   #//-------------------------------------------------------//
   
   def   __iadd__( self, value ):
-    if self.key is not None:
+    if self.key is not NotImplemented:
       value = DictItem( self.key, value )
     
     self.options.appendValue( self.name, value, AddValue, self.condition )
@@ -430,7 +440,7 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   def   __isub__( self, value ):
-    if self.key is not None:
+    if self.key is not NotImplemented:
       value = DictItem( self.key, value )
     
     self.options.appendValue( self.name, value, SubValue, self.condition )

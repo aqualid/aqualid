@@ -25,7 +25,7 @@ import os
 
 from aql.types import IgnoreCaseString, UpperCaseString, FilePath
 
-from .aql_options import Options, JoinPathValue
+from .aql_options import Options, JoinPathValue, AddValue
 from .aql_option_value import ConditionalValue
 from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, StrOptionType, VersionOptionType
 
@@ -34,11 +34,18 @@ from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeO
 def   _build_options():
   options = Options()
   
+  #~ CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
+  #~ CLIOption( "-j", "--jobs",            "jobs",           jobsCount,  None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
+  #~ CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
+  #~ CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
+
+  options.tool_paths = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tool search paths" )
+  options.keep_going = BoolOptionType( description = "Continue build even if any target failed." )
+  
   options.build_dir         = PathOptionType( description = "The building directory full path." )
-  options.build_dir_prefix  = PathOptionType( description = "The building directory prefix." )
   options.build_dir_suffix  = PathOptionType( description = "The building directory suffix." )
-  options.build_dir_name    = StrOptionType( description = "The building directory name." )
-  options.prefix            = StrOptionType( description = "Output files prefix." )
+  options.build_dir_name    = StrOptionType( description  = "The building directory name." )
+  options.prefix            = StrOptionType( description  = "Output files prefix." )
   
   build_variant = EnumOptionType( values =  [
                                               ('debug', 'dbg', 'd' ),
@@ -60,14 +67,14 @@ def   _build_options():
   #//-------------------------------------------------------//
   
   file_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
-                                      default = 'checksum',
-                                      description = "Type used to detect changes in dependecy files" )
+                                    default = 'checksum',
+                                    description = "Type used to detect changes in dependecy files" )
   
   options.file_signature = file_signature
   
   #//-------------------------------------------------------//
   
-  options.setGroup( "Build output" )
+  options.setGroup( "Build" )
   
   return options
 
@@ -207,15 +214,9 @@ def   _init_defaults( options ):
     #//-------------------------------------------------------//
     # build_dir_name set to <target OS>_<target arch>
     
-    options.build_dir_name = options.target_os
-    options.build_dir_name += '_'
-    options.build_dir_name += options.target_arch
-    options.build_dir_name += '_'
+    options.If().target_os.isTrue().build_dir_name = AddValue( '_', AddValue( options.target_os ) )
+    options.If().target_os.ne( options.target_arch ).build_dir_name += AddValue( '_', AddValue( options.target_arch ) )
     options.build_dir_name += options.build_variant
-    
-    
-    options.build_dir = options.build_dir_prefix
-    options.build_dir = JoinPathValue( options.build_dir_name )
     
     #//-------------------------------------------------------//
     

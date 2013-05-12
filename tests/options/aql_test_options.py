@@ -353,17 +353,7 @@ class TestOptions( AqlTestCase ):
     options.build_variant = 'final'
     self.assertEqual( options.optimization, 'speed' )
     
-    self.assertEqual( options.build_variant.optionType().group, "Build output" )
-    
-    self.assertTrue( options.do_build_path_merge )
-    
-    options.build_dir_suffix = 'syslib'
-    
-    self.assertFalse( options.do_build_path_merge )
-    
-    options.build_dir_suffix = None
-    
-    self.assertTrue( options.do_build_path_merge )
+    self.assertEqual( options.build_variant.optionType().group, "Build" )
   
   #//-------------------------------------------------------//
   
@@ -396,6 +386,20 @@ class TestOptions( AqlTestCase ):
     
     self.assertEqual( options.defines['OPTS'], '' )
     options.debug_on = True
+    self.assertEqual( options.defines['OPTS'], 'TRUE' )
+  
+  #//=======================================================//
+  
+  def test_options_dict_2(self):
+    options = Options()
+    
+    options.debug_on = BoolOptionType()
+    
+    options.defines = DictOptionType( key_type = str, value_type = str )
+    options.defines['DEBUG'] = 'TRUE'
+    options.defines['OPTS'] = ''
+    options.If().defines['DEBUG'].eq('TRUE').defines['OPTS'] = 'TRUE'
+    
     self.assertEqual( options.defines['OPTS'], 'TRUE' )
   
   #//=======================================================//
