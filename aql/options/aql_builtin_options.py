@@ -24,6 +24,7 @@ __all__ = (
 import os
 
 from aql.types import IgnoreCaseString, UpperCaseString, FilePath
+from aql.utils import cpuCount
 
 from .aql_options import Options, JoinPathValue, AddValue
 from .aql_option_value import ConditionalValue
@@ -33,12 +34,6 @@ from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeO
 
 def   _build_options():
   options = Options()
-  
-  options.tool_paths = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search paths" )
-  options.keep_going = BoolOptionType( description = "Continue build even if any target failed." )
-  options.build_always = BoolOptionType( description = "Unconditionally build all targets." )
-  options.jobs = OptionType( value_type = int, description = "Number of parallel jobs to build targets." )
-  options.log_level = RangeOptionType( 0, 2, description = 'Logging level' )
   
   options.build_dir         = PathOptionType( description = "The building directory full path." )
   options.build_dir_suffix  = PathOptionType( description = "The building directory suffix." )
@@ -69,6 +64,14 @@ def   _build_options():
                                     description = "Type used to detect changes in dependecy files" )
   
   options.file_signature = file_signature
+  
+  #//-------------------------------------------------------//
+  
+  options.tool_paths    = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search paths" )
+  options.keep_going    = BoolOptionType( description = "Continue build even if any target failed." )
+  options.build_always  = BoolOptionType( description = "Unconditionally build all targets." )
+  options.jobs          = RangeOptionType( 1, 32, description = "Number of parallel jobs to build targets." )
+  options.log_level     = RangeOptionType( 0, 2, description = 'Logging level' )
   
   #//-------------------------------------------------------//
   
@@ -210,11 +213,17 @@ def   _env_options():
 def   _init_defaults( options ):
     
     #//-------------------------------------------------------//
-    # build_dir_name set to <target OS>_<target arch>
+    # build_dir_name set to <target OS>_<target arch>_<build variant>
     
     options.If().target_os.ne('native').build_dir_name = AddValue( '_', AddValue( options.target_os ) )
     options.If().target_arch.ne('native').build_dir_name = AddValue( '_', AddValue( options.target_arch ) )
     options.build_dir_name += options.build_variant
+    
+    #//-------------------------------------------------------//
+    
+    options.jobs.setDefault( cpuCount() )
+    options.keep_going.setDefault( True )
+    options.log_level.setDefault( 2 )
     
     #//-------------------------------------------------------//
     

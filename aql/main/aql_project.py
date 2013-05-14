@@ -124,7 +124,7 @@ class ProjectConfig( Singleton ):
       CLIOption( "-t", "--tool-paths",      "tool_paths",     Paths,      [],           "Paths to tools and setup scripts", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Continue build even if any target failed." ),
       CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
-      CLIOption( "-j", "--jobs",            "jobs",           jobsCount,  None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
       CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
     )

@@ -485,11 +485,6 @@ class TestOptions( AqlTestCase ):
     
     options2.target_os.setDefault( "windows" )
     options2.target_arch.setDefault( "x86-32" )
-    #~ options2.target_os = "windows"
-    #~ options2.target_arch = "x86-32"
-    
-    #~ print( options2.target_arch.value() )
-    #~ print( options2.target_os.value() )
     
     self.assertEqual( options2.build_dir_name.value(), 'windows_x86-32_debug' )
     self.assertEqual( options.build_dir_name, 'debug' )
