@@ -276,8 +276,6 @@ class   EnumOptionType (OptionType):
   
   def   __call__( self, value = NotImplemented ):
     
-    v = value
-    
     try:
       if value is NotImplemented:
         value = self.__default

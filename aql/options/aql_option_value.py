@@ -196,7 +196,7 @@ class OptionValue (object):
   
   #//-------------------------------------------------------//
   
-  def   value( self, options, context = None ):
+  def   value( self, options, context ):
     
     if context is None:
       context = {}
@@ -211,7 +211,9 @@ class OptionValue (object):
     context[ self ] = value
     
     if (not self.conditional_values) and (self.default_conditional_value is not None):
-        return self.default_conditional_value( value, value_type, options, context )
+        value = self.default_conditional_value( value, value_type, options, context )
+        context[ self ] = value
+        return value
     
     for conditional_value in self.conditional_values:
       value = conditional_value( value, value_type, options, context )

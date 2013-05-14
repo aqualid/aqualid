@@ -34,13 +34,11 @@ from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeO
 def   _build_options():
   options = Options()
   
-  #~ CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
-  #~ CLIOption( "-j", "--jobs",            "jobs",           jobsCount,  None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
-  #~ CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
-  #~ CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
-
-  options.tool_paths = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tool search paths" )
+  options.tool_paths = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search paths" )
   options.keep_going = BoolOptionType( description = "Continue build even if any target failed." )
+  options.build_always = BoolOptionType( description = "Unconditionally build all targets." )
+  options.jobs = OptionType( value_type = int, description = "Number of parallel jobs to build targets." )
+  options.log_level = RangeOptionType( 0, 2, description = 'Logging level' )
   
   options.build_dir         = PathOptionType( description = "The building directory full path." )
   options.build_dir_suffix  = PathOptionType( description = "The building directory suffix." )
@@ -214,8 +212,8 @@ def   _init_defaults( options ):
     #//-------------------------------------------------------//
     # build_dir_name set to <target OS>_<target arch>
     
-    options.If().target_os.isTrue().build_dir_name = AddValue( '_', AddValue( options.target_os ) )
-    options.If().target_os.ne( options.target_arch ).build_dir_name += AddValue( '_', AddValue( options.target_arch ) )
+    options.If().target_os.ne('native').build_dir_name = AddValue( '_', AddValue( options.target_os ) )
+    options.If().target_arch.ne('native').build_dir_name = AddValue( '_', AddValue( options.target_arch ) )
     options.build_dir_name += options.build_variant
     
     #//-------------------------------------------------------//

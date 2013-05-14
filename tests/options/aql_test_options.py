@@ -390,20 +390,6 @@ class TestOptions( AqlTestCase ):
   
   #//=======================================================//
   
-  def test_options_dict_2(self):
-    options = Options()
-    
-    options.debug_on = BoolOptionType()
-    
-    options.defines = DictOptionType( key_type = str, value_type = str )
-    options.defines['DEBUG'] = 'TRUE'
-    options.defines['OPTS'] = ''
-    options.If().defines['DEBUG'].eq('TRUE').defines['OPTS'] = 'TRUE'
-    
-    self.assertEqual( options.defines['OPTS'], 'TRUE' )
-  
-  #//=======================================================//
-  
   def   test_options_merge(self):
     options = Options()
     options.opt1 = RangeOptionType( min_value = 1, max_value = 100 )
@@ -471,6 +457,22 @@ class TestOptions( AqlTestCase ):
   
   #//=======================================================//
   
+  def   test_options_build_dir_name(self):
+    
+    options = builtinOptions()
+    
+    self.assertEqual( options.build_dir_name, 'debug' )
+    
+    options.target_os = "windows"
+    
+    self.assertEqual( options.build_dir_name.value(), 'windows_debug' )
+    
+    options.target_arch = "x86-32"
+    
+    self.assertEqual( options.build_dir_name, 'windows_x86-32_debug' )
+  
+  #//=======================================================//
+  
   def   test_options_join(self):
     
     built_options = builtinOptions()
@@ -481,15 +483,19 @@ class TestOptions( AqlTestCase ):
     
     options2 = options.override()
     
-    options2.build_dir_prefix = "bin"
     options2.target_os.setDefault( "windows" )
     options2.target_arch.setDefault( "x86-32" )
+    #~ options2.target_os = "windows"
+    #~ options2.target_arch = "x86-32"
     
-    self.assertEqual( options2.build_dir, 'bin/windows_x86-32_debug' )
-    self.assertEqual( options.build_dir, 'native_native_debug' )
+    #~ print( options2.target_arch.value() )
+    #~ print( options2.target_os.value() )
+    
+    self.assertEqual( options2.build_dir_name.value(), 'windows_x86-32_debug' )
+    self.assertEqual( options.build_dir_name, 'debug' )
     
     options2.join()
-    self.assertEqual( options.build_dir, 'bin/windows_x86-32_debug' )
+    self.assertEqual( options.build_dir_name.value(), 'windows_x86-32_debug' )
 
 #//===========================================================================//
 

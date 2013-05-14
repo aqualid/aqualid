@@ -99,7 +99,7 @@ class   _OpValue( tuple ):
 
 #//===========================================================================//
 
-def   _evalValue( other, options, context ):
+def   _evalValue( options, context, other ):
   if isinstance( other, DictItem ):
     key, other = other
   else:
@@ -110,7 +110,7 @@ def   _evalValue( other, options, context ):
   
   elif isinstance( other, OptionValueProxy ):
     if other.options is not options:
-      other = other.value()
+      other = other.value( context = None )
     else:
       other = other.value( context )
   
@@ -150,7 +150,7 @@ def   _updateOperator( dest_value, value ):
     return value
 
 def   _doAction( options, context, dest_value, op, value ):
-  value = _evalValue( value, options, context )
+  value = _evalValue( options, context, value )
   return op( dest_value, value )
 
 def   _SetDefaultValue( value, operation = None ):
@@ -269,45 +269,45 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   __bool__(self):
-    return bool( self.value() )
+    return bool( self.value( context = None ) )
   
   def   __nonzero__(self):
-    return bool( self.value() )
+    return bool( self.value( context = None ) )
   
   def   __str__(self):
-    return str( self.value() )
+    return str( self.value( context = None ) )
   
   #//-------------------------------------------------------//
   
-  def   isTrue( self, context = None ):
+  def   isTrue( self, context ):
     return bool( self.value( context ) )
   
-  def   isFalse( self, context = None):
+  def   isFalse( self, context ):
     return not bool( self.value( context ) )
   
   #//-------------------------------------------------------//
   
-  def   eq( self, other, context = None ):  return self.cmp( operator.eq, other, context )
-  def   ne( self, other, context = None ):  return self.cmp( operator.ne, other, context )
-  def   lt( self, other, context = None ):  return self.cmp( operator.lt, other, context )
-  def   le( self, other, context = None ):  return self.cmp( operator.le, other, context )
-  def   gt( self, other, context = None ):  return self.cmp( operator.gt, other, context )
-  def   ge( self, other, context = None ):  return self.cmp( operator.ge, other, context )
+  def   eq( self, context, other ):  return self.cmp( context, operator.eq, other )
+  def   ne( self, context, other ):  return self.cmp( context, operator.ne, other )
+  def   lt( self, context, other ):  return self.cmp( context, operator.lt, other )
+  def   le( self, context, other ):  return self.cmp( context, operator.le, other )
+  def   gt( self, context, other ):  return self.cmp( context, operator.gt, other )
+  def   ge( self, context, other ):  return self.cmp( context, operator.ge, other )
   
-  def   __eq__( self, other ):        return self.eq( other )
-  def   __ne__( self, other ):        return self.ne( other )
-  def   __lt__( self, other ):        return self.lt( other )
-  def   __le__( self, other ):        return self.le( other )
-  def   __gt__( self, other ):        return self.gt( other )
-  def   __ge__( self, other ):        return self.ge( other )
-  def   __contains__( self, other ):  return self.has( other )
+  def   __eq__( self, other ):        return self.eq( None, other )
+  def   __ne__( self, other ):        return self.ne( None, other )
+  def   __lt__( self, other ):        return self.lt( None, other )
+  def   __le__( self, other ):        return self.le( None, other )
+  def   __gt__( self, other ):        return self.gt( None, other )
+  def   __ge__( self, other ):        return self.ge( None, other )
+  def   __contains__( self, other ):  return self.has( None, other )
   
   #//-------------------------------------------------------//
   
-  def   cmp( self, cmp_operator, other, context = None ):
+  def   cmp( self, context, cmp_operator, other ):
     self.child_ref = None
     
-    other = _evalValue( other, self.options, context )
+    other = _evalValue( self.options, context, other )
     value = self.value( context )
     
     if not isinstance( value, (Dict, List)) and (self.key is NotImplemented):
@@ -317,18 +317,18 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   has( self, other, context = None ):
-    other = _evalValue( other, self.options, context )
+  def   has( self, context, other ):
+    other = _evalValue( self.options, context, other )
     value = self.value( context )
     
     return other in value
   
   #//-------------------------------------------------------//
   
-  def   hasAny( self, values, context = None ):
+  def   hasAny( self, context, values ):
     
     value = self.value( context )
-    values = _evalValue( values, self.options, context )
+    values = _evalValue( self.options, context, values )
     
     for other in toSequence( values ):
       if other in value:
@@ -337,10 +337,10 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   hasAll( self, values, context = None ):
+  def   hasAll( self, context, values ):
     
     value = self.value( context )
-    values = _evalValue( values, self.options, context )
+    values = _evalValue( self.options, context, values )
     
     for other in toSequence( values ):
       if other not in value:
@@ -349,10 +349,10 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   oneOf( self, values, context = None ):
+  def   oneOf( self, context, values ):
     
     value = self.value( context )
-    values = _evalValue( values, self.options, context )
+    values = _evalValue( self.options, context, values )
     
     for other in values:
       other = self.option_value.option_type( other )
@@ -381,8 +381,8 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __cmpValue( options, context, cmp_method, name, other ):
-    return getattr( getattr( options, name ), cmp_method )( other, context )
+  def   __cmpValue( options, context, cmp_method, name, *args ):
+    return getattr( getattr( options, name ), cmp_method )( context, *args )
   
   #//-------------------------------------------------------//
   
@@ -670,10 +670,10 @@ class Options (object):
     for name, value in other.items():
       
       if isinstance( value, OptionValueProxy ):
-        value = value.value()
+        value = value.value( context = None )
       
       elif isinstance( value, OptionValue ):
-        value = value.value( options )
+        value = value.value( options, context = None )
       
       try:
         self.__set_value( name, value, UpdateValue )
@@ -823,7 +823,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   value( self, option_value, context = None ):
+  def   value( self, option_value, context  ):
     try:
       if context is not None:
         return context[ option_value ]
