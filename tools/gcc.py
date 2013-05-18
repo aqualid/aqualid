@@ -570,16 +570,16 @@ class ToolGxx( ToolGccCommon ):
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   
-  def   Compile( self, project, options, source_nodes, sources ):
+  def   Compile( self, options, source_nodes, sources ):
     compiler = GccCompiler( options, 'c' )
     
     return aql.Node( compiler, sources )
   
-  def   LinkLibrary( self, project, options, sources ):
+  def   LinkLibrary( self, options, sources ):
     pass
   
-  def   LinkSharedLibrary( self, project, options, sources ):
+  def   LinkSharedLibrary( self, options, sources ):
     pass
   
-  def   LinkProgram( self, project, options, sources ):
+  def   LinkProgram( self, options, sources ):
     pass

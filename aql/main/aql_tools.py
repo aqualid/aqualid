@@ -181,7 +181,7 @@ class ToolsManager( Singleton ):
   
   #//=======================================================//
   
-  def   getTool( self, tool_name, project, options ):
+  def   getTool( self, tool_name, options ):
     
     tool_info_list = self.__getToolInfoList( tool_name )
     
@@ -201,7 +201,7 @@ class ToolsManager( Singleton ):
           setup_options.join()
       
       try:
-        tool = tool_info.tool_class( project, tool_options )
+        tool = tool_info.tool_class( tool_options )
       except Exception as err:
         eventToolsToolFailed( tool_info.tool_class, err )
         tool_options.clear()
@@ -240,7 +240,7 @@ def   toolSetup( *tool_names ):
 
 class Tool( object ):
   
-  def   __init__( self, project, options ):
+  def   __init__( self, options ):
     pass
   
   #//-------------------------------------------------------//

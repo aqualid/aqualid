@@ -140,14 +140,11 @@ class   CLIConfig( object ):
     if locals is None:
       locals = {}
     
-    exec_locals = locals.copy()
-    
     set_options = self._set_options
     
-    execFile( config_file, exec_locals )
+    exec_locals = execFile( config_file, locals )
     for name, value in exec_locals.items():
-      if name not in locals:
-        self.setDefault( name, value )
+      self.setDefault( name, value )
   
   #//-------------------------------------------------------//
   

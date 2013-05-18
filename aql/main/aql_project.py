@@ -91,24 +91,13 @@ class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
 
 #//===========================================================================//
 
-def   jobsCount( jobs = None ):
+class ProjectConfig( object ):
   
-  if jobs is None:
-    jobs = cpuCount()
-  
-  return min( max( 1, int(jobs) ), 1024 )
-
-#//===========================================================================//
-
-class ProjectConfig( Singleton ):
-  
-  __slots__ = ('cli_options', 'options' )
-  
-  _instance = []
+  __slots__ = ('directory', 'makefile', 'targets', 'options' )
   
   #//-------------------------------------------------------//
   
-  def   __init__( cls, args = None ):
+  def   __init__( self, args = None ):
     
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
@@ -116,12 +105,13 @@ class ProjectConfig( Singleton ):
     
     CLI_OPTIONS = (
       
-      CLIOption( "-C", "--directory",       "directory",      FilePath,   '',           "Change directory before reading the make files or doing anything else.", 'FILE PATH'),
-      CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file", 'FILE PATH'),
+      CLIOption( "-C", "--directory",       "directory",      FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
+      CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
       CLIOption( "-l", "--list-options",    "list_options",   bool,       False,        "List all available options and exit." ),
+      CLIOption( "-c", "--config",          "config",         FilePath,   None,         "The configuration file used to read CLI arguments." ),
       
-      CLIOption( "-o", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path", 'FILE PATH'),
-      CLIOption( "-t", "--tool-paths",      "tool_paths",     Paths,      [],           "Paths to tools and setup scripts", 'FILE PATH, ...'),
+      CLIOption( "-o", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
+      CLIOption( "-I", "--tool-paths",      "tool_paths",     Paths,      [],           "Paths to tools and setup scripts.", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Continue build even if any target failed." ),
       CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
       CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
@@ -129,22 +119,42 @@ class ProjectConfig( Singleton ):
       CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
     )
     
-    sel.cli_options = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
-    self.options = builtinOptions()
-  
-  #//-------------------------------------------------------//
-  
-  def   __init__(self, args = None):
-    pass
-  
-  #//-------------------------------------------------------//
-  
-  def   Update( self, config_file ):
-    locals = { 'options': self.options }
-    self.cli_options.readConfig( config_file, locals )
+    cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
     
-    options.update( self.cli_options )
-  
+    options = builtinOptions()
+    
+    config = cli_config.config
+    
+    if config:
+      cli_config.readConfig( config, { 'options', options })
+    
+    cli_options = {}
+    
+    ignore_options = set(['directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet'])
+    for name,value in cli_config.items():
+      if (name not in ignore_options) and (value is not None):
+        cli_options[ name ] = value
+    
+    log_level = 1
+    
+    if cli_config.verbose:
+      log_level += 1
+    
+    if cli_config.quiet:
+      log_level -= 1
+    
+    cli_options['log_level'] = log_level
+    
+    options.update( cli_options )
+    
+    if cli_config.list_options:
+      printOptions( options )
+    
+    self.options = options
+    self.directory = cli_config.directory.abs()
+    self.makefile = cli_config.makefile
+    self.targets = cli_config.targets
+
 #//===========================================================================//
 
 class BuilderWrapper( object ):
@@ -211,7 +221,7 @@ class BuilderWrapper( object ):
   def   __call__( self, *args, **kw ):
     options, args_kw = self.__getOptionsAndArgs( kw )
     
-    node = self.method( self.project, options, *args, **args_kw )
+    node = self.method( options, *args, **args_kw )
     
     if not isinstance( node, Node ):
       raise ErrorProjectBuilderMethodResultInvalid( self.method, node )
@@ -244,113 +254,121 @@ class ToolWrapper( object ):
 
 #//===========================================================================//
 
-class Project( object ):
+class ProjectTools( object ):
   
-  def   __init__( self, tool_paths = None ):
+  def   __init__( self, project ):
+    self.project = project
+    self.options = project.options
     
-    config = ProjectConfig.instance()
+    tools = ToolsManager.instance()
+    tools.loadTools( self.options.tool_paths )
     
-    self.options = config.options.override()
-    self.build_manager = BuildManager()
-    
-    tools_manager = ToolsManager.instance()
-    tools_manager.loadTools( config.tool_paths )
-    tools_manager.loadTools( tool_paths )
-    
-    self.tools_manager = tools_manager
+    self.tools = tools
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
   def   __addTool( self, tool_name, options ):
     tool_options = options.override()
     
-    tool, names = self.tools_manager.getTool( tool_name, self, tool_options )
+    tool, names = self.tools.getTool( tool_name, tool_options )
     
-    tool = ToolWrapper( tool, self, tool_options )
+    tool = ToolWrapper( tool, self.project, tool_options )
     
     attrs = self.__dict__
     
     for name in names:
       if name not in attrs:
-        attrs[ name] = tool
+        attrs[ name ] = tool
     
     return tool
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
-    if not self.tools_manager.hasTool( name ):
-      raise AttributeError( "%s instance has no attribute '%s'" % (type(self), name) )
-    
     return self.__addTool( name, self.options )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
   def __getitem__( self, name ):
-    return getattr( self, name )
+    return self.__addTool( name, self.options )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
   def   Tools( self, *tool_names, **kw ):
     
     tool_paths = kw.get('tool_paths', [] )
     options = kw.get( 'options', None )
     
-    tools_manager = self.tools_manager
-    tools_manager.loadTools( tool_paths )
+    self.tools.loadTools( tool_paths )
     
     if options is None:
       options = self.options
     
+    tools = []
+    
     for tool_name in tool_names:
-      self.__addTool( tool_name, options )
+      tool = self.__addTool( tool_name, options )
+      tools.append( tool )
+    
+    if len(tool_names) == 1:
+      return tool_names[0]
+    
+    return tool_names
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
-  def   Tool( self, tool_class, tool_names = tuple() ):
-    self.tools_manager.addTool( tool_class, tool_names )
+  def   AddTool( self, tool_class, tool_names = tuple() ):
+    self.tools.addTool( tool_class, tool_names )
     
     return self.__addTool( tool_class, self.options )
+
+#//===========================================================================//
+
+class Project( object ):
   
-  #//=======================================================//
+  def   __init__( self, options, targets ):
+    
+    self.targets = targets
+    self.options = options
+    self.build_manager = BuildManager()
+    
+    self.tools = ProjectTools( self )
   
-  def   AddMethod( self, method, name = None ):
-    if not hasattr(tool_method, '__call__'):
-      raise ErrorProjectInvalidMethod( method )
-    
-    if not name:
-      name = method.__name__
-    
-    def   methodWrapper( *args, **kw ):
-      return method( self, *args, **kw )
-    
-    setattr( self, name, methodWrapper )
+  #//-------------------------------------------------------//
   
-  #//=======================================================//
+  def   Options( self, options_file ):
+    
+    locals = execFile( options_file, { 'options': self.options } )
+    
+    options.update( locals )
   
-  def   AddBuilder( self, builder, name = None ):
-    
-    builder_wrapper = BuilderWrapper( builder, self, self.options )
-    
-    if not name:
-      name = builder.__name__
-    
-    if hasattr( self, name ):
-      raise ErrorProjectBuilderMethodExists( builder )
-    
-    setattr( self, name, builder_wrapper )
+  #//-------------------------------------------------------//
   
-  #//=======================================================//
+  def   Include( self, makefile ):
+    
+    locals = {
+      'options' : self.options,
+      'tools'   : self.tools,
+    }
+    
+    for name in dir(self):
+      member = getattr( self, name )
+      if isinstance( member, types.MethodType ):
+        locals.setdefault( name, member )
+    
+    return execFile( options_file, { 'options': self.options } )
+  
+  #//-------------------------------------------------------//
   
   def   AddNodes( self, nodes ):
     self.build_manager.add( nodes )
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
   def   Depends( self, node, dependency ):
     pass
   
-  #//=======================================================//
+  #//-------------------------------------------------------//
   
   def   Ignore( self, node, dependency ):
     pass
@@ -359,9 +377,6 @@ class Project( object ):
     pass
   
   def   AlwaysBuild( self, node ):
-    pass
-  
-  def   Include( self, scripts ):
     pass
   
   #//=======================================================//
@@ -390,8 +405,8 @@ if __name__ == "__main__":
   libs = Include('src/aql.make')
   
   
+  c, cpp = Tools('c', 'c++')
   
-  c = Tool('c')
   c.LinkProgram( src_files, libs )
   
   cpp = tools.cpp

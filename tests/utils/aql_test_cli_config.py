@@ -17,10 +17,11 @@ class TestCLIConfig( AqlTestCase ):
     usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
 
     cli_options = (
-      CLIOption( "-j", "--jobs",    "jobs",     int,  1,      "", 'NUMBER' ),
-      CLIOption( "-s", "--size",    "size",     int,  256,    "", 'NUMBER' ),
-      CLIOption( "-q", "--quite",   "quite",    bool, False,  "" ),
-      CLIOption( "-v", "--verbose", "verbose",  bool, False,  "" ),
+      CLIOption( "-l", "--log-level", "log_level",  int,  None,   "", 'NUMBER' ),
+      CLIOption( "-j", "--jobs",      "jobs",       int,  1,      "", 'NUMBER' ),
+      CLIOption( "-s", "--size",      "size",       int,  256,    "", 'NUMBER' ),
+      CLIOption( "-q", "--quite",     "quite",      bool, False,  "" ),
+      CLIOption( "-v", "--verbose",   "verbose",    bool, False,  "" ),
     )
     
     config = CLIConfig( usage, cli_options, ["-j", "0", "-v", "foo", "-s32", "bv=release", "jobs=10"] )
@@ -30,11 +31,19 @@ class TestCLIConfig( AqlTestCase ):
     config.setDefault( 'new_size', 2 )
     self.assertEqual( config.jobs, 10 )
     self.assertEqual( config.size, 32 )
+    self.assertIs( config.log_level, None )
     self.assertEqual( config.new_size, 2 )
     self.assertSequenceEqual( config.targets, ['foo'] )
     self.assertEqual( config.bv, 'release' )
     self.assertFalse( config.quite )
     self.assertTrue( config.verbose )
+    
+    config.setDefault( 'log_level', 1 )
+    self.assertEqual( config.log_level, 1)
+    
+    config.log_level = 2
+    config.setDefault( 'log_level', 0 )
+    self.assertEqual( config.log_level, 2)
     
     config.jobs = 10
     self.assertEqual( config.jobs, 10 )
@@ -90,6 +99,10 @@ targets="test1 test2 test3"
       cli_values = {'abc': 123, 'jobs': 10, 'verbose': True, 'quite': False, 'bv': 'release', 'size': 100}
       
       self.assertEqual( dict( config.items() ), cli_values )
+      
+      import inspect
+      import pprint
+      pprint.pprint( inspect.getmembers(self) )
 
 #//===========================================================================//
 
