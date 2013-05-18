@@ -102,7 +102,7 @@ targets="test1 test2 test3"
       
       import inspect
       import pprint
-      pprint.pprint( inspect.getmembers(self) )
+      pprint.pprint( dir(self) )
 
 #//===========================================================================//
 

@@ -330,13 +330,52 @@ class Project( object ):
     
     self.targets = targets
     self.options = options
+    self.files_cache = {}
+    
     self.build_manager = BuildManager()
     
     self.tools = ProjectTools( self )
   
   #//-------------------------------------------------------//
   
+  def   __getattr__( self, attr ):
+    if attr == 'script_locals':
+      self.script_locals = self.__getSciptLocals()
+      return self.script_locals
+    
+    raise AttributeError("No attribute '%s'" % str(atrr) )
+    
+  #//-------------------------------------------------------//
+  
+  def   __getSciptLocals( self ):
+    locals = {
+      'options' : self.options,
+      'tools'   : self.tools,
+    }
+    
+    for name in dir(self):
+      if name.startswith('_'):
+        continue
+      
+      member = getattr( self, name )
+      if isinstance( member, types.MethodType ):
+        locals.setdefault( name, member )
+    
+    return locals
+  
+  #//-------------------------------------------------------//
+  
   def   Options( self, options_file ):
+    
+    option_file = FilePath( option_file ).abs()
+    
+    self.files_cache = 
+    
+    locals = self.files_cache.get( option_file, None )
+    if locals is not None:
+      return locals
+    
+    self.known_option_files.setdefault( option_file, {} )
     
     locals = execFile( options_file, { 'options': self.options } )
     
@@ -346,17 +385,27 @@ class Project( object ):
   
   def   Include( self, makefile ):
     
+    makefile = FilePath( option_file ).abs()
+    
+    if option_file in self.known_option_files:
+      return
+    
+    self.known_option_files.add( option_file )
+    
     locals = {
       'options' : self.options,
       'tools'   : self.tools,
     }
     
     for name in dir(self):
+      if name.startswith('_'):
+        continue
+      
       member = getattr( self, name )
       if isinstance( member, types.MethodType ):
         locals.setdefault( name, member )
     
-    return execFile( options_file, { 'options': self.options } )
+    return execFile( options_file, locals )
   
   #//-------------------------------------------------------//
   
@@ -398,7 +447,6 @@ if __name__ == "__main__":
   
   ReadOptions('../../aql.config')
   
-  # global 
   # options
   # tools
   
