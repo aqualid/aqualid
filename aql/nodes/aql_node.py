@@ -126,16 +126,16 @@ class Node (object):
   def   __init__( self, builder, source_nodes, source_values ):
     
     self.builder = builder
-    self.source_nodes = frozenset( source_nodes )
-    self.source_values = tuple( source_values )
+    self.source_nodes = frozenset( toSequence(source_nodes) )
+    self.source_values = tuple( toSequence( source_values ) )
     self.dep_nodes = set()
     self.dep_values = []
   
   #//=======================================================//
   
   def   depends( self, dep_nodes, dep_values ):
-    self.dep_nodes.update( dep_nodes )
-    self.dep_values.extend( dep_values )
+    self.dep_nodes.update( toSequence( dep_nodes ) )
+    self.dep_values.extend( toSequence( dep_values ) )
   
   #//=======================================================//
   

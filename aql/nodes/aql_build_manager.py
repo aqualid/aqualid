@@ -283,24 +283,78 @@ class _NodesTree (object):
 
 #//===========================================================================//
 
+class  _VFiles( object ):
+  __slots__ = \
+  (
+    'names',
+    'handles',
+  )
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self ):
+    self.handles = {}
+    self.names = {}
+  
+  #//-------------------------------------------------------//
+  
+  def   __getitem__( self, node ):
+    
+    builder_name = node.builder.name
+    
+    try:
+      vfilename = self.names[ builder_name ]
+    except KeyError:
+      vfilename = node.builder.buildPath().join('.aql.db').abs()
+      self.names[ builder_name ] = vfilename
+    
+    try:
+      return self.handles[ vfilename ]
+    
+    except KeyError:
+      vfile = ValuesFile( vfilename )
+      self.handles[ vfilename ] = vfile
+      
+      return vfile
+
+  #//-------------------------------------------------------//
+  
+  def   close(self):
+    for vfile in self.handles.values():
+      vfile.close()
+    
+    self.handles.clear()
+    self.names.clear()
+  
+  #//-------------------------------------------------------//
+  
+  def   __enter__(self):
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __exit__(self, exc_type, exc_value, traceback):
+    self.close()
+
+#//===========================================================================//
+
 class _NodesBuilder (object):
   
   __slots__ = \
   (
-    'vfile',
-    'vfilename',
+    'vfiles',
     'jobs',
-    'stop_on_error',
+    'keep_going',
     'task_manager',
     'prebuild_nodes',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, vfilename, jobs, stop_on_error ):
-    self.vfilename = os.path.normcase( os.path.abspath( str(vfilename) ) )
+  def   __init__( self, jobs, keep_going ):
+    self.vfiles = _VFiles()
     self.jobs = jobs
-    self.stop_on_error = stop_on_error
+    self.keep_going = keep_going
     self.prebuild_nodes = {}
   
   #//-------------------------------------------------------//
@@ -316,26 +370,12 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
-    if attr == 'vfile':
-      self.vfile = vfile = ValuesFile( self.vfilename )
-      return vfile
-    
-    elif attr == 'task_manager':
-      self.task_manager = tm = TaskManager( num_threads = self.jobs, stop_on_error = self.stop_on_error )
+    if attr == 'task_manager':
+      self.task_manager = tm = TaskManager( num_threads = self.jobs, keep_going = self.keep_going )
       return tm
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
     
-  #//-------------------------------------------------------//
-  
-  def   getVfile( self, node ):
-      vfilepath = node.builder.buildPath()
-      vfilepath.join( '.aql.db')
-      try:
-        vfile = self.vfiles[ vfilename ]
-      except KeyError:
-        vfile = ValuesFile( vfilename )
-  
   #//-------------------------------------------------------//
   
   def   build( self, build_manager, nodes ):
@@ -345,14 +385,8 @@ class _NodesBuilder (object):
     
     add_task = self.task_manager.addTask
     
-    vfile = self.vfile
-    
     for node in nodes:
-      vfilepath = node.builder.options.build_dir.value()
-      try:
-        vfile = vfiles[ vfilename ]
-      except KeyError:
-        vfile = ValuesFile( vfilename )
+      vfile = self.vfiles[ node ]
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
@@ -389,7 +423,7 @@ class _NodesBuilder (object):
   
   def   close( self ):
     self.task_manager.finish()
-    self.vfile.close()
+    self.vfiles.close()
 
 #//===========================================================================//
 
@@ -447,9 +481,9 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, vfilename, jobs, stop_on_error ):
+  def   build( self, jobs, keep_going ):
     
-    with _NodesBuilder( vfilename, jobs, stop_on_error ) as nodes_builder:
+    with _NodesBuilder( jobs, keep_going ) as nodes_builder:
       
       self._jobs = nodes_builder.jobs
       
@@ -502,7 +536,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   clear(self, vfilename ):
+  def   clear( self ):
     clear_nodes = []
     
     get_tails = self._nodes.tails
@@ -511,7 +545,7 @@ class BuildManager (object):
     
     outdated_nodes = set()
     
-    with ValuesFile( vfilename ) as vfile:
+    with _VFiles() as vfiles:
       while True:
         tails = get_tails()
         tails -= outdated_nodes
@@ -520,6 +554,7 @@ class BuildManager (object):
           break
         
         for node in tails:
+          vfile = vfiles[ node ]
           if node.actual( vfile ):
             remove_tail( node )
             clear_nodes.insert( 0, node )  # add nodes in LIFO order to clear nodes from root to leaf nodes
@@ -527,13 +562,14 @@ class BuildManager (object):
             outdated_nodes.add( node )
       
       for node in clear_nodes:
+        vfile = vfiles[ node ]
         node.clear( vfile )
   
   #//-------------------------------------------------------//
   
-  def   status( self, vfilename ):
+  def   status( self ):
     
-    with ValuesFile( vfilename ) as vfile:
+    with _VFiles() as vfiles:
       target_nodes = {}
       getTails = self._nodes.tails
       
@@ -542,12 +578,12 @@ class BuildManager (object):
       outdated_nodes = set()
       
       while True:
-        
         tails = getTails() - outdated_nodes
         if not tails:
           break
         
         for node in tails:
+          vfile = vfiles[ node ]
           if not node.actual( vfile ):
             eventBuildStatusOutdatedNode( node )
             outdated_nodes.add( node )

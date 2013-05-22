@@ -51,7 +51,7 @@ _finishing_task = ( None, _finishingEventFunction, [], {} )
 
 class _TaskProcessor( threading.Thread ):
   
-  def __init__(self, tasks, completed_tasks, exit_event, finish_event, stop_on_error ):
+  def __init__(self, tasks, completed_tasks, exit_event, finish_event, keep_going ):
     
     super(_TaskProcessor,self).__init__()
     
@@ -59,7 +59,7 @@ class _TaskProcessor( threading.Thread ):
     self.completed_tasks  = completed_tasks
     self.exit_event       = exit_event
     self.finish_event     = finish_event
-    self.stop_on_error    = stop_on_error
+    self.keep_going       = keep_going
     self.daemon           = True  # let that main thread to exit even if task threads are still active
     
     self.start()
@@ -102,7 +102,7 @@ class _TaskProcessor( threading.Thread ):
         else:
           logWarning("Task failed with error: %s" % str(err) )
         
-        if self.stop_on_error:
+        if not self.keep_going:
           exit_event.set()
 
 #//===========================================================================//
@@ -115,18 +115,18 @@ class TaskManager (object):
     'completed_tasks',
     'exit_event',
     'finish_event',
-    'stop_on_error',
+    'keep_going',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__(self, num_threads, stop_on_error = False ):
+  def   __init__(self, num_threads, keep_going = False ):
     self.tasks            = queue.Queue()
     self.completed_tasks  = queue.Queue()
     self.exit_event       = threading.Event()
     self.finish_event     = threading.Event()
     self.threads          = []
-    self.stop_on_error    = stop_on_error
+    self.keep_going       = keep_going
     
     self.start( num_threads )
   
@@ -142,7 +142,7 @@ class TaskManager (object):
     
     while num_threads > 0:
       num_threads -= 1
-      t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event, self.finish_event, self.stop_on_error )
+      t = _TaskProcessor( self.tasks, self.completed_tasks, self.exit_event, self.finish_event, self.keep_going )
       threads.append( t )
   
   #//-------------------------------------------------------//

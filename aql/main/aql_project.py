@@ -26,6 +26,7 @@ __all__ = ( 'Project', 'ProjectConfig',
             'ErrorProjectInvalidMethod',
           )
 
+import os
 import types
 
 from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError
@@ -348,6 +349,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   __getSciptLocals( self ):
+    
     locals = {
       'options' : self.options,
       'tools'   : self.tools,
@@ -365,47 +367,39 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Options( self, options_file ):
+  def   _execScript( self, script, script_locals ):
     
-    option_file = FilePath( option_file ).abs()
+    script = FilePath( script ).abs()
     
-    self.files_cache = 
+    files_cache = self.files_cache
     
-    locals = self.files_cache.get( option_file, None )
+    locals = files_cache.get( script, None )
     if locals is not None:
       return locals
     
-    self.known_option_files.setdefault( option_file, {} )
+    self.files_cache.setdefault( script, {} )
     
-    locals = execFile( options_file, { 'options': self.options } )
+    try:
+      cur_dir = os.getcwd()
+      os.chdir( script.dir )
+      return execFile( script, script_locals )
+    finally:
+      os.chdir( cur_dir )
+  
+  #//-------------------------------------------------------//
+  
+  def   Options( self, options_file ):
+    
+    script_locals = { 'options': self.options }
+    
+    locals = self._execScript( options_file, script_locals )
     
     options.update( locals )
   
   #//-------------------------------------------------------//
   
   def   Include( self, makefile ):
-    
-    makefile = FilePath( option_file ).abs()
-    
-    if option_file in self.known_option_files:
-      return
-    
-    self.known_option_files.add( option_file )
-    
-    locals = {
-      'options' : self.options,
-      'tools'   : self.tools,
-    }
-    
-    for name in dir(self):
-      if name.startswith('_'):
-        continue
-      
-      member = getattr( self, name )
-      if isinstance( member, types.MethodType ):
-        locals.setdefault( name, member )
-    
-    return execFile( options_file, locals )
+    return self._execScript( options_file, self.script_locals )
   
   #//-------------------------------------------------------//
   
@@ -431,7 +425,11 @@ class Project( object ):
   #//=======================================================//
   
   def   Build( self ):
-    failed_nodes = self.build_manager.build()
+    keep_going = self.options.keep_going.value()
+    jobs = self.options.jobs.value()
+    
+    failed_nodes = self.build_manager.build( jobs, keep_going )
+    
     finishHandleEvents()
     
     return failed_nodes

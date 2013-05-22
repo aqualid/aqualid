@@ -222,7 +222,6 @@ def   _init_defaults( options ):
     #//-------------------------------------------------------//
     
     options.jobs.setDefault( cpuCount() )
-    options.keep_going.setDefault( True )
     options.log_level.setDefault( 2 )
     
     #//-------------------------------------------------------//

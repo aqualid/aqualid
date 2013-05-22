@@ -8,13 +8,14 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import fileChecksum, Tempfile
 from aql.values import Value, StringValue, FileValue
+from aql.options import builtinOptions
 from aql.nodes import Node, Builder, RebuildNode, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 
 class CopyValueBuilder (Builder):
   
-  def   __init__(self):
+  def   __init__(self, options ):
     self.signature = b''
   
   def   build( self, build_manager, vfile, node ):
@@ -102,8 +103,8 @@ def   _generateSourceFiles( num, size ):
 
 #//===========================================================================//
 
-def   _addNodesToBM( vfilename, builder, src_files ):
-  bm = BuildManager( vfilename, 4, True )
+def   _addNodesToBM( builder, src_files ):
+  bm = BuildManager()
   try:
     
     src_values = []
@@ -122,11 +123,11 @@ def   _addNodesToBM( vfilename, builder, src_files ):
 
 #//===========================================================================//
 
-def   _buildChecksums( vfilename, builder, src_files ):
+def   _buildChecksums( builder, src_files ):
   
-  bm = _addNodesToBM( vfilename, builder, src_files )
+  bm = _addNodesToBM( builder, src_files )
   try:
-    failed_nodes = bm.build()
+    failed_nodes = bm.build( 1, False )
     for node,err in failed_nodes:
       try:
         import traceback
@@ -138,9 +139,9 @@ def   _buildChecksums( vfilename, builder, src_files ):
 
 #//===========================================================================//
 
-def   _clearTargets( vfilename, builder, src_files ):
+def   _clearTargets( builder, src_files ):
   
-  bm = _addNodesToBM( vfilename, builder, src_files )
+  bm = _addNodesToBM( builder, src_files )
   try:
     bm.clear(); bm.selfTest()
   finally:
@@ -186,23 +187,25 @@ class TestBuildManager( AqlTestCase ):
   
   def test_bm_deps(self):
     
-    bm = BuildManager( None, 0, True )
+    bm = BuildManager()
     
     value1 = StringValue( "target_url1", "http://aql.org/download" )
     value2 = StringValue( "target_url2", "http://aql.org/download2" )
     value3 = StringValue( "target_url3", "http://aql.org/download3" )
     
-    builder = CopyValueBuilder()
+    options = builtinOptions()
     
-    node0 = Node( builder, value1 )
-    node1 = Node( builder, node0 )
-    node2 = Node( builder, node1 )
-    node3 = Node( builder, value2 )
-    node4 = Node( builder, value3 )
-    node5 = Node( builder, node4 )
+    builder = CopyValueBuilder( options )
     
-    node6 = Node( builder, node5 )
-    node6.depends( [node0, node1] )
+    node0 = Node( builder, None, value1,  )
+    node1 = Node( builder, node0, None )
+    node2 = Node( builder, node1, None )
+    node3 = Node( builder, None, value2 )
+    node4 = Node( builder, None, value3 )
+    node5 = Node( builder, node4, None )
+    
+    node6 = Node( builder, node5, None )
+    node6.depends( [node0, node1], None )
     
     bm.add( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
     bm.add( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
@@ -212,15 +215,15 @@ class TestBuildManager( AqlTestCase ):
     bm.add( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
     bm.add( node6 ); bm.selfTest(); self.assertEqual( len(bm), 7 )
     
-    node0.depends( node3 ); bm.depends( node0, node3 ); bm.selfTest()
-    node1.depends( node3 ); bm.depends( node1, node3 ); bm.selfTest()
-    node2.depends( node3 ); bm.depends( node2, node3 ); bm.selfTest()
-    node3.depends( node4 ); bm.depends( node3, node4 ); bm.selfTest()
-    node0.depends( node5 ); bm.depends( node0, node5 ); bm.selfTest()
-    node5.depends( node3 ); bm.depends( node5, node3 ); bm.selfTest()
+    node0.depends( node3, None ); bm.depends( node0, node3 ); bm.selfTest()
+    node1.depends( node3, None ); bm.depends( node1, node3 ); bm.selfTest()
+    node2.depends( node3, None ); bm.depends( node2, node3 ); bm.selfTest()
+    node3.depends( node4, None ); bm.depends( node3, node4 ); bm.selfTest()
+    node0.depends( node5, None ); bm.depends( node0, node5 ); bm.selfTest()
+    node5.depends( node3, None ); bm.depends( node5, node3 ); bm.selfTest()
     
     with self.assertRaises(ErrorNodeDependencyCyclic):
-      node4.depends( node3 ); bm.depends( node4, node3 ); bm.selfTest()
+      node4.depends( node3, None ); bm.depends( node4, node3 ); bm.selfTest()
   
   #//-------------------------------------------------------//
   
@@ -230,14 +233,14 @@ class TestBuildManager( AqlTestCase ):
       src_files = _generateSourceFiles( 3, 201 )
       try:
         builder = ChecksumBuilder(0, 256 )
-        _buildChecksums( tmp.name, builder, src_files )
+        _buildChecksums( builder, src_files )
         #~ _buildChecksums( tmp.name, builder, src_files )
         #~ builder = ChecksumBuilder(32, 1024 )
         #~ _buildChecksums( tmp.name, builder, src_files )
         #~ _buildChecksums( tmp.name, builder, src_files )
         
       finally:
-        _clearTargets( tmp.name, builder, src_files )
+        _clearTargets( builder, src_files )
         _removeFiles( src_files )
   
   #//-------------------------------------------------------//
@@ -249,16 +252,16 @@ class TestBuildManager( AqlTestCase ):
       src_files = _generateSourceFiles( 3, 201 )
       try:
         builder = ChecksumBuilder( 0, 256, replace_ext = True )
-        _buildChecksums( tmp.name, builder, src_files )
+        _buildChecksums( builder, src_files )
         
-        bm = _addNodesToBM( tmp.name, builder, src_files )
+        bm = _addNodesToBM( builder, src_files )
         try:
           bm.status(); bm.selfTest()
         finally:
           bm.close()
       
       finally:
-        _clearTargets( tmp.name, builder, src_files )
+        _clearTargets( builder, src_files )
         _removeFiles( src_files )
   
   #//-------------------------------------------------------//
@@ -269,7 +272,7 @@ class TestBuildManager( AqlTestCase ):
       
       src_files = _generateSourceFiles( 3, 201 )
       try:
-        bm = BuildManager( vfilename.name, 4, True )
+        bm = BuildManager()
         try:
           builder = MultiChecksumBuilder( 0, 256 )
           
@@ -285,7 +288,7 @@ class TestBuildManager( AqlTestCase ):
           #//-------------------------------------------------------//
           bm.close()
           
-          bm = BuildManager( vfilename.name, 4, True )
+          bm = BuildManager()
           builder = MultiChecksumBuilder( 0, 256 )
           
           node = Node( builder, src_values )

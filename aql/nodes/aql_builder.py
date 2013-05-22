@@ -44,6 +44,30 @@ def   _makeDir( path_dir, _path_cache = set() ):
 
 #//===========================================================================//
 
+def   _buildDir( build_dir, build_dir_suffix, src_path = None ):
+  
+  build_path = FilePath( build_dir )
+  
+  if build_dir_suffix:
+    build_path = build_path.join( build_dir_suffix )
+  
+  if src_path is None:
+    _makeDir( build_path )
+  
+  else:
+    src_path = FilePath( src_path )
+    
+    if build_dir_suffix:
+      build_path = build_path.join( src_path.name_ext )
+    else:
+      build_path = build_path.merge( src_path )
+    
+    _makeDir( build_path.dir )
+  
+  return build_path
+
+#//===========================================================================//
+
 def   _buildPath( build_dir, build_dir_suffix, src_path = None ):
   
   build_path = FilePath( build_dir )
