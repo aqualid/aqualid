@@ -300,12 +300,14 @@ class  _VFiles( object ):
   
   def   __getitem__( self, node ):
     
-    builder_name = node.builder.name
+    builder = node.builder
+    builder_name = builder.name
     
     try:
       vfilename = self.names[ builder_name ]
     except KeyError:
-      vfilename = node.builder.buildPath().join('.aql.db').abs()
+      build_path = builder.options.build_path.value()
+      vfilename = build_path.join('.aql.db').abs()
       self.names[ builder_name ] = vfilename
     
     try:

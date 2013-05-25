@@ -25,6 +25,7 @@ __all__ = (
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )
 
+import types
 import threading
 
 from aql.types import Singleton, toSequence
@@ -207,6 +208,11 @@ def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )
 #//===========================================================================//
 
 def   eventHandler( event = None ):
+  
+  if isinstance( event, (types.FunctionType, types.MethodType)):
+    EventManager.instance().addUserHandler( event )
+    return event
+  
   def   _eventHandlerImpl( handler ):
     EventManager.instance().addUserHandler( handler, event )
     return handler

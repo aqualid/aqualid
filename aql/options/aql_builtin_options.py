@@ -26,7 +26,7 @@ import os
 from aql.types import IgnoreCaseString, UpperCaseString, FilePath
 from aql.utils import cpuCount
 
-from .aql_options import Options, JoinPathValue, AddValue
+from .aql_options import Options, JoinPathValue, SetValue, AddValue
 from .aql_option_value import ConditionalValue
 from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, StrOptionType, VersionOptionType
 
@@ -35,7 +35,8 @@ from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeO
 def   _build_options():
   options = Options()
   
-  options.build_dir         = PathOptionType( description = "The building directory full path." )
+  options.build_path        = PathOptionType( description = "The building directory full path." )
+  options.build_dir         = PathOptionType( description = "The building directory." )
   options.build_dir_suffix  = PathOptionType( description = "The building directory suffix." )
   options.build_dir_name    = StrOptionType( description  = "The building directory name." )
   options.prefix            = StrOptionType( description  = "Output files prefix." )
@@ -218,6 +219,9 @@ def   _init_defaults( options ):
     options.If().target_os.ne('native').build_dir_name = AddValue( '_', AddValue( options.target_os ) )
     options.If().target_arch.ne('native').build_dir_name = AddValue( '_', AddValue( options.target_arch ) )
     options.build_dir_name += options.build_variant
+    
+    options.build_path = JoinPathValue( options.build_dir_name, SetValue( options.build_dir ) )
+    options.If().build_dir_suffix.isTrue().build_path = JoinPathValue( options.build_dir_suffix )
     
     #//-------------------------------------------------------//
     

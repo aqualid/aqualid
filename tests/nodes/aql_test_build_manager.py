@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import fileChecksum, Tempfile
+from aql.utils import fileChecksum, Tempfile, Tempdir, eventHandler, finishHandleEvents, disableDefaultHandlers, enableDefaultHandlers
 from aql.values import Value, StringValue, FileValue
 from aql.options import builtinOptions
 from aql.nodes import Node, Builder, RebuildNode, BuildManager, ErrorNodeDependencyCyclic
@@ -36,7 +36,7 @@ class ChecksumBuilder (Builder):
     'replace_ext',
   )
   
-  def   __init__(self, offset, length, replace_ext = False ):
+  def   __init__(self, options, offset, length, replace_ext = False ):
     
     self.offset = offset
     self.length = length
@@ -56,12 +56,14 @@ class ChecksumBuilder (Builder):
       else:
         chcksum_filename = source_value.name + '.chksum'
       
+      chcksum_filename = self.buildPath( chcksum_filename )
+      
       with open( chcksum_filename, 'wb' ) as f:
         f.write( chcksum.digest() )
       
       target_values.append( FileValue( chcksum_filename ) )
     
-    return self.nodeTargets( target_values )
+    return self.makeNodeFileTargets( target_values )
 
 #//===========================================================================//
 
@@ -111,8 +113,8 @@ def   _addNodesToBM( builder, src_files ):
     for s in src_files:
       src_values.append( FileValue( s ) )
     
-    checksums_node = Node( builder, src_values )
-    checksums_node2 = Node( builder, checksums_node )
+    checksums_node = Node( builder, None, src_values )
+    checksums_node2 = Node( builder, checksums_node, None )
     
     bm.add( checksums_node ); bm.selfTest()
     bm.add( checksums_node2 ); bm.selfTest()
@@ -123,10 +125,9 @@ def   _addNodesToBM( builder, src_files ):
 
 #//===========================================================================//
 
-def   _buildChecksums( builder, src_files ):
-  
-  bm = _addNodesToBM( builder, src_files )
+def   _build( bm ):
   try:
+    bm.selfTest()
     failed_nodes = bm.build( 1, False )
     for node,err in failed_nodes:
       try:
@@ -134,18 +135,22 @@ def   _buildChecksums( builder, src_files ):
         traceback.print_tb( err.__traceback__ )
       except AttributeError:
         pass
+    
+    if failed_nodes:
+      raise Exception("Nodes failed")
+    
   finally:
+    bm.selfTest()
     bm.close()
+    bm.selfTest()
+    finishHandleEvents()
 
 #//===========================================================================//
 
-def   _clearTargets( builder, src_files ):
+def   _buildChecksums( builder, src_files ):
   
   bm = _addNodesToBM( builder, src_files )
-  try:
-    bm.clear(); bm.selfTest()
-  finally:
-    bm.close()
+  _build( bm )
 
 #//===========================================================================//
 
@@ -155,9 +160,9 @@ class MultiChecksumBuilder (Builder):
     'builder',
   )
   
-  def   __init__(self, offset, length ):
+  def   __init__(self, options, offset, length ):
     
-    self.builder = ChecksumBuilder( offset, length )
+    self.builder = ChecksumBuilder( options, offset, length )
     self.signature = self.builder.signature
   
   #//-------------------------------------------------------//
@@ -169,7 +174,7 @@ class MultiChecksumBuilder (Builder):
     
     for source_value in node.sources():
       
-      n = Node( self.builder, source_value )
+      n = Node( self.builder, None, source_value )
       if n.actual( vfile ):
         target_values += n.targets()
       else:
@@ -183,7 +188,49 @@ class MultiChecksumBuilder (Builder):
 
 #//===========================================================================//
 
+_building_started = [0]
+
+@eventHandler
+def   eventNodeBuilding( node ):
+  global _building_started
+  _building_started[0] += 1
+
+#//-------------------------------------------------------//
+
+_building_finished = [0]
+
+@eventHandler
+def   eventNodeBuildingFinished( node ):
+  global _building_finished
+  _building_finished[0] += 1
+
+#//-------------------------------------------------------//
+
+_actual_node = [0]
+@eventHandler
+def   eventBuildStatusActualNode( node ):
+  global _actual_node
+  _actual_node[0] += 1
+
+#//-------------------------------------------------------//
+
+_outdated_node = [0]
+@eventHandler
+def   eventBuildStatusOutdatedNode( node ):
+  global _outdated_node
+  _outdated_node[0] += 1
+
+#//===========================================================================//
+
 class TestBuildManager( AqlTestCase ):
+  
+  def   setUp( self ):
+    #~ disableDefaultHandlers()
+    pass
+  
+  def   tearDown( self ):
+    enableDefaultHandlers()
+    pass
   
   def test_bm_deps(self):
     
@@ -228,70 +275,112 @@ class TestBuildManager( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def test_bm_build(self):
-  
-    with Tempfile() as tmp:
+    
+    with Tempdir() as tmp_dir:
+      
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
       src_files = _generateSourceFiles( 3, 201 )
       try:
-        builder = ChecksumBuilder(0, 256 )
+        
+        builder = ChecksumBuilder( options, 0, 256 )
+        
+        _building_started[0] = _building_finished[0] = 0
         _buildChecksums( builder, src_files )
-        #~ _buildChecksums( tmp.name, builder, src_files )
-        #~ builder = ChecksumBuilder(32, 1024 )
-        #~ _buildChecksums( tmp.name, builder, src_files )
-        #~ _buildChecksums( tmp.name, builder, src_files )
+        self.assertEqual( _building_started[0], 2 )
+        self.assertEqual( _building_started, _building_finished )
+        
+        #//-------------------------------------------------------//
+        
+        _building_started[0] = _building_finished[0] = 0
+        _buildChecksums( builder, src_files )
+        self.assertEqual( _building_started[0], 0 )
+        self.assertEqual( _building_started, _building_finished )
+        
+        #//-------------------------------------------------------//
+        
+        builder = ChecksumBuilder( options, 32, 1024 )
+        
+        _building_started[0] = _building_finished[0] = 0
+        _buildChecksums( builder, src_files )
+        self.assertEqual( _building_started[0], 2 )
+        self.assertEqual( _building_started, _building_finished )
+        
+        #//-------------------------------------------------------//
+        
+        _building_started[0] = _building_finished[0] = 0
+        _buildChecksums( builder, src_files )
+        self.assertEqual( _building_started[0], 0 )
+        self.assertEqual( _building_started, _building_started )
         
       finally:
-        _clearTargets( builder, src_files )
         _removeFiles( src_files )
   
   #//-------------------------------------------------------//
   
   def test_bm_check(self):
     
-    with Tempfile() as tmp:
+    global _building_started
+    global _building_finished
+    global _outdated_node
+    global _actual_node
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
       
       src_files = _generateSourceFiles( 3, 201 )
       try:
-        builder = ChecksumBuilder( 0, 256, replace_ext = True )
+        builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
+        
+        _building_started[0] = _building_finished[0] = 0
         _buildChecksums( builder, src_files )
+        self.assertEqual( _building_started[0], 2 )
+        self.assertEqual( _building_started, _building_finished )
         
         bm = _addNodesToBM( builder, src_files )
         try:
+          _actual_node[0] = _outdated_node[0] = 0
           bm.status(); bm.selfTest()
+          self.assertEqual( _outdated_node[0], 0)
+          self.assertEqual( _actual_node[0], 2 )
+          
         finally:
           bm.close()
       
       finally:
-        _clearTargets( builder, src_files )
         _removeFiles( src_files )
   
   #//-------------------------------------------------------//
   
   def test_bm_rebuild(self):
     
-    with Tempfile() as vfilename:
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
       
       src_files = _generateSourceFiles( 3, 201 )
       try:
         bm = BuildManager()
         try:
-          builder = MultiChecksumBuilder( 0, 256 )
+          builder = MultiChecksumBuilder( options, 0, 256 )
           
           src_values = []
           for s in src_files:
             src_values.append( FileValue( s ) )
           
-          node = Node( builder, src_values )
+          node = Node( builder, None, src_values )
           
-          bm.add( node ); bm.selfTest()
-          failed_nodes = bm.build()
+          bm.add( node )
+          _build( bm )
           
           #//-------------------------------------------------------//
-          bm.close()
           
           bm = BuildManager()
-          builder = MultiChecksumBuilder( 0, 256 )
+          builder = MultiChecksumBuilder( options, 0, 256 )
           
-          node = Node( builder, src_values )
+          node = Node( builder, None, src_values )
           bm.add( node ); bm.selfTest()
           bm.status(); bm.selfTest()
         
@@ -320,11 +409,11 @@ class TestBuildManager( AqlTestCase ):
           for s in src_files:
             src_values.append( FileValue( s ) )
           
-          node0 = Node( builder, [] )
-          node1 = Node( builder, src_values )
-          node2 = Node( builder, node1 )
-          node3 = Node( builder, node2 )
-          node4 = Node( builder, node3 )
+          node0 = Node( builder, None, None )
+          node1 = Node( builder, None, src_values )
+          node2 = Node( builder, node1, None )
+          node3 = Node( builder, node2, None )
+          node4 = Node( builder, node3, None )
           
           bm.add( node0 )
           bm.add( node1 )

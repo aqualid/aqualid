@@ -25,8 +25,7 @@ import os
 import errno
 
 from aql.types import toSequence, FilePath, FilePaths
-from aql.values import Value, FileValue
-
+from aql.values import Value, FileValue, FileContentChecksum, FileContentTimeStamp
 from .aql_node import Node, NodeTargets
 
 #//===========================================================================//
@@ -44,51 +43,23 @@ def   _makeDir( path_dir, _path_cache = set() ):
 
 #//===========================================================================//
 
-def   _buildDir( build_dir, build_dir_suffix, src_path = None ):
+def   _buildPath( build_path, strip_src_path, src_path = None ):
   
-  build_path = FilePath( build_dir )
+  filename = ''
   
-  if build_dir_suffix:
-    build_path = build_path.join( build_dir_suffix )
-  
-  if src_path is None:
-    _makeDir( build_path )
+  if not src_path:
+    filename = ''
   
   else:
     src_path = FilePath( src_path )
+    filename = src_path.name_ext
     
-    if build_dir_suffix:
-      build_path = build_path.join( src_path.name_ext )
-    else:
-      build_path = build_path.merge( src_path )
+    if not strip_src_path:
+      build_path = build_path.merge( src_path.dir )
     
-    _makeDir( build_path.dir )
+  _makeDir( build_path )
   
-  return build_path
-
-#//===========================================================================//
-
-def   _buildPath( build_dir, build_dir_suffix, src_path = None ):
-  
-  build_path = FilePath( build_dir )
-  
-  if build_dir_suffix:
-    build_path = build_path.join( build_dir_suffix )
-  
-  if src_path is None:
-    _makeDir( build_path )
-  
-  else:
-    src_path = FilePath( src_path )
-    
-    if build_dir_suffix:
-      build_path = build_path.join( src_path.name_ext )
-    else:
-      build_path = build_path.merge( src_path )
-    
-    _makeDir( build_path.dir )
-  
-  return build_path
+  return build_path.join( filename )
 
 #//===========================================================================//
 
@@ -207,7 +178,8 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   buildPath( self, src_path = None ):
-    return _buildPath( self.options.build_dir.value(), self.options.build_dir_suffix.value(), src_path )
+    options = self.options
+    return _buildPath( options.build_path.value(), bool(options.build_dir_suffix.value()), src_path )
   
   #//-------------------------------------------------------//
   
