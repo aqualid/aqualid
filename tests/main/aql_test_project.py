@@ -21,6 +21,7 @@ from aql.main import Project, ProjectConfig, \
 
 #//===========================================================================//
 
+@skip
 class TestProject( AqlTestCase ):
   
   def test_prj_config(self):

@@ -306,7 +306,7 @@ class  _VFiles( object ):
     try:
       vfilename = self.names[ builder_name ]
     except KeyError:
-      build_path = builder.options.build_path.value()
+      build_path = builder.buildPath()
       vfilename = build_path.join('.aql.db').abs()
       self.names[ builder_name ] = vfilename
     

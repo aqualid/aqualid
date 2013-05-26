@@ -41,7 +41,7 @@ class TestTaskManager( AqlTestCase ):
   #//===========================================================================//
 
   def test_task_manager_fail(self):
-    tm = TaskManager( num_threads = 4, stop_on_error = True )
+    tm = TaskManager( num_threads = 4 )
     
     for i in range(100):
       tm.addTask( i, _doFail, 0.0 )
@@ -50,7 +50,7 @@ class TestTaskManager( AqlTestCase ):
     
     done_tasks = tm.completedTasks()
     
-    self.assertEqual( len(done_tasks), 4 )
+    self.assertEqual( len(done_tasks), 100 )
     
     for i, t in enumerate( sorted(done_tasks) ):
       self.assertEqual( t[0], i )

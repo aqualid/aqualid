@@ -99,10 +99,6 @@ targets="test1 test2 test3"
       cli_values = {'abc': 123, 'jobs': 10, 'verbose': True, 'quite': False, 'bv': 'release', 'size': 100}
       
       self.assertEqual( dict( config.items() ), cli_values )
-      
-      import inspect
-      import pprint
-      pprint.pprint( dir(self) )
 
 #//===========================================================================//
 
