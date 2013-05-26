@@ -184,7 +184,7 @@ class MultiChecksumBuilder (Builder):
       build_manager.depends( node, sub_nodes ); build_manager.selfTest()
       raise RebuildNode()
     
-    return self.nodeTargets( target_values )
+    return self.makeNodeFileTargets( target_values )
 
 #//===========================================================================//
 
@@ -220,12 +220,20 @@ def   eventBuildStatusOutdatedNode( node ):
   global _outdated_node
   _outdated_node[0] += 1
 
+#//-------------------------------------------------------//
+
+_rebuild_node = [0]
+@eventHandler
+def   eventRebuildNode( node ):
+  global _rebuild_node
+  _rebuild_node[0] += 1
+
 #//===========================================================================//
 
 class TestBuildManager( AqlTestCase ):
   
   def   setUp( self ):
-    #~ disableDefaultHandlers()
+    disableDefaultHandlers()
     pass
   
   def   tearDown( self ):
@@ -343,6 +351,8 @@ class TestBuildManager( AqlTestCase ):
         try:
           _actual_node[0] = _outdated_node[0] = 0
           bm.status(); bm.selfTest()
+          
+          finishHandleEvents()
           self.assertEqual( _outdated_node[0], 0)
           self.assertEqual( _actual_node[0], 2 )
           
@@ -356,6 +366,12 @@ class TestBuildManager( AqlTestCase ):
   
   def test_bm_rebuild(self):
     
+    global _building_started
+    global _building_finished
+    global _outdated_node
+    global _actual_node
+    global _rebuild_node
+    
     with Tempdir() as tmp_dir:
       options = builtinOptions()
       options.build_dir = tmp_dir
@@ -364,6 +380,10 @@ class TestBuildManager( AqlTestCase ):
       try:
         bm = BuildManager()
         try:
+          _building_started[0] = _building_finished[0] = 0
+          _actual_node[0] = _outdated_node[0] = 0
+          _rebuild_node[0] = 0
+          
           builder = MultiChecksumBuilder( options, 0, 256 )
           
           src_values = []
@@ -375,7 +395,10 @@ class TestBuildManager( AqlTestCase ):
           bm.add( node )
           _build( bm )
           
+          self.assertEqual( _building_started[0], 5 )
+          
           #//-------------------------------------------------------//
+          _actual_node[0] = _outdated_node[0] = 0
           
           bm = BuildManager()
           builder = MultiChecksumBuilder( options, 0, 256 )
@@ -383,6 +406,10 @@ class TestBuildManager( AqlTestCase ):
           node = Node( builder, None, src_values )
           bm.add( node ); bm.selfTest()
           bm.status(); bm.selfTest()
+          
+          finishHandleEvents()
+          self.assertEqual( _outdated_node[0], 0 )
+          self.assertEqual( _actual_node[0], 1 )
         
         finally:
           bm.close()

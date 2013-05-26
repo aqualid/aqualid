@@ -373,7 +373,7 @@ class _NodesBuilder (object):
   
   def   __getattr__( self, attr ):
     if attr == 'task_manager':
-      self.task_manager = tm = TaskManager( num_threads = self.jobs, keep_going = self.keep_going )
+      self.task_manager = tm = TaskManager( num_threads = self.jobs )
       return tm
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
@@ -408,7 +408,9 @@ class _NodesBuilder (object):
         add_task( node, node.build, build_manager, vfile, pre_nodes )
     
     if not completed_nodes and not rebuild_nodes:
-      for node, exception in self.task_manager.completedTasks():
+      finished_tasks = self.task_manager.completedTasks()
+      
+      for node, exception in finished_tasks:
         if exception is None:
           completed_nodes.append( node )
         else:
@@ -416,6 +418,9 @@ class _NodesBuilder (object):
             eventRebuildNode( node )
             rebuild_nodes.append( node )
           else:
+            if not self.keep_going:
+              self.task_manager.stop()
+              
             eventBuildNodeFailed( node, exception )
             failed_nodes[ node ] = exception
     

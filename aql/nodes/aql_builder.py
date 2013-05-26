@@ -105,9 +105,8 @@ class Builder (object):
   
   def getName( self ):
       cls = self.__class__
-      build_dir = self.buildPath()
+      build_dir = self.options.build_path.value()
       return '.'.join( [ cls.__module__, cls.__name__, str(build_dir) ] )
-      return self.name
   
   #//-------------------------------------------------------//
   

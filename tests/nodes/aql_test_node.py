@@ -8,9 +8,25 @@ from binascii import hexlify
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile
+from aql.types import toSequence
+from aql.utils import Tempfile, disableDefaultHandlers, enableDefaultHandlers
+from aql.options import builtinOptions
 from aql.values import SignatureValue, StringValue, Value, NoContent, FileValue, FileContentTimeStamp, FileContentChecksum, DependsValue, ValuesFile
 from aql.nodes import Node, Builder
+
+
+#//===========================================================================//
+
+def   _splitNodes( items ):
+  nodes = []
+  values = []
+  for item in toSequence( items ):
+    if isinstance( item, Node ):
+      nodes.append( item )
+    else:
+      values.append( item )
+  
+  return nodes, values
 
 #//===========================================================================//
 
@@ -18,7 +34,7 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   __init__(self):
+  def   __init__(self, options ):
     self.signature = b''
   
   def   build( self, build_manager, vfile, node ):
@@ -34,7 +50,7 @@ class ChecksumBuilder (Builder):
       target_values.append( SignatureValue( source_value.name + '_chksum', chcksum.digest() ) )
       itarget_values.append( SignatureValue( source_value.name + '_chcksum_sha512', chcksum_sha512.digest() ) )
     
-    return self.nodeTargets( target_values, itarget_values )
+    return self.makeNodeFileTargets( target_values, itarget_values )
 
 #//===========================================================================//
 
@@ -42,7 +58,7 @@ class CopyBuilder (Builder):
   
   __slots__ = ('ext', 'iext')
   
-  def   __init__(self, ext, iext ):
+  def   __init__(self, options, ext, iext ):
     self.ext = ext
     self.iext = iext
     self.signature = str(ext + '|' + iext).encode('utf-8')
@@ -66,12 +82,20 @@ class CopyBuilder (Builder):
       target_values.append( FileValue( new_name ) )
       itarget_values.append( FileValue( new_iname ) )
     
-    return self.nodeTargets( target_values, itarget_values, idep )
+    return self.makeNodeFileTargets( target_values, itarget_values, idep )
 
 #//===========================================================================//
 
 class TestNodes( AqlTestCase ):
-
+  
+  def   setUp( self ):
+    disableDefaultHandlers()
+    pass
+  
+  def   tearDown( self ):
+    enableDefaultHandlers()
+    pass
+  
   def test_node_value(self):
     
     with Tempfile() as tmp:
@@ -82,15 +106,16 @@ class TestNodes( AqlTestCase ):
         value2 = StringValue( "target_url2", "http://aql.org/download2" )
         value3 = StringValue( "target_url3", "http://aql.org/download3" )
         
-        builder = ChecksumBuilder()
+        options = builtinOptions()
+        builder = ChecksumBuilder( options )
         
-        node = Node( builder, [value1, value2, value3] )
+        node = Node( builder, None, [value1, value2, value3] )
         
         self.assertFalse( node.actual( vfile ) )
         node.build( None, vfile )
         self.assertTrue( node.actual( vfile ) )
         
-        node = Node( builder, [value1, value2, value3] )
+        node = Node( builder, None, [value1, value2, value3] )
         self.assertTrue( node.actual( vfile ) )
         node.build( None, vfile )
         self.assertTrue( node.actual( vfile ) )
@@ -101,15 +126,17 @@ class TestNodes( AqlTestCase ):
   #//===========================================================================//
 
   def   _rebuildNode( self, vfile, builder, values, deps, tmp_files):
-    node = Node( builder, values )
-    node.depends( deps )
+    nodes, values = _splitNodes( values )
+    
+    node = Node( builder, nodes, values )
+    node.depends( *_splitNodes(deps) )
     
     self.assertFalse( node.actual( vfile ) )
     node.build( None, vfile )
     self.assertTrue( node.actual( vfile ) )
     
-    node = Node( builder, values )
-    node.depends( deps )
+    node = Node( builder, nodes, values )
+    node.depends( *_splitNodes(deps) )
     
     self.assertTrue( node.actual( vfile ) )
     node.build( None, vfile )
@@ -139,13 +166,15 @@ class TestNodes( AqlTestCase ):
               value1 = FileValue( tmp1.name )
               value2 = FileValue( tmp2.name )
               
-              builder = CopyBuilder("tmp", "i")
+              options = builtinOptions()
+              
+              builder = CopyBuilder( options, "tmp", "i")
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
-              builder = CopyBuilder("ttt", "i")
+              builder = CopyBuilder( options, "ttt", "i")
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
-              builder = CopyBuilder("ttt", "d")
+              builder = CopyBuilder( options, "ttt", "d")
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
               tmp1.write(b'123')
@@ -163,7 +192,7 @@ class TestNodes( AqlTestCase ):
                 # node3: CopyBuilder, tmp, i, tmp3 -> tmp3.tmp, ,tmp3.i
                 # node: CopyBuilder, tmp, i, tmp1, tmp3.tmp -> tmp1.tmp, tmp3.tmp.tmp, , tmp1.i, tmp3.tmp.i
                 
-                builder3 = CopyBuilder("xxx", "3")
+                builder3 = CopyBuilder( options, "xxx", "3")
                 node3 = self._rebuildNode( vfile, builder3, [value3], [], tmp_files )
                 
                 # node3: CopyBuilder, xxx, 3, tmp3 -> tmp3.xxx, ,tmp3.3
@@ -223,7 +252,7 @@ class TestSpeedBuilder (Builder):
   
   __slots__ = ('ext', 'idep')
   
-  def   __init__(self, name, ext, idep ):
+  def   __init__(self, options, name, ext, idep ):
     self.name = name
     self.ext = ext
     self.idep = idep
@@ -256,7 +285,7 @@ class TestSpeedBuilder (Builder):
 
 def   _testNoBuildSpeed( vfile, builder, source_values ):
   for source in source_values:
-    node = Node( builder, [ FileValue( source, _FileContentType ) ] )
+    node = Node( builder, None, [ FileValue( source, _FileContentType ) ] )
     if not node.actual( vfile ):
       raise AssertionError( "node is not actual" )
 
@@ -299,7 +328,7 @@ class TestNodesSpeed ( AqlTestCase ):
           builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
           
           for source in source_files:
-            node = Node( builder, [ FileValue( source, _FileContentType ) ] )
+            node = Node( builder, None, [ FileValue( source, _FileContentType ) ] )
             self.assertFalse( node.actual( vfile ) )
             node.build( None, vfile )
             for tmp_file in node.target_values:
