@@ -125,12 +125,12 @@ def writeBinFile( filename, buf ):
 
 #//===========================================================================//
 
-def   execFile( filename, globals ):
+def   execFile( filename, in_locals ):
   source = readTextFile( filename )
   code = compile( source, filename, 'exec' )
-  locals = {}
-  exec( code, globals, locals )
-  return locals
+  out_locals = {}
+  exec( code, in_locals, out_locals )
+  return out_locals
 
 #//===========================================================================//
 

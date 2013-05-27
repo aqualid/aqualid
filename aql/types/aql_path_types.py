@@ -176,9 +176,9 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
   
   #//-------------------------------------------------------//
   
-  def   change( self, dir = None, ext = None ):
+  def   change( self, directory = None, ext = None ):
     
-    dirs = tuple( toSequence(dir) )
+    dirs = tuple( toSequence(directory) )
     if not dirs: dirs = (None,)
     
     exts = tuple( toSequence(ext) )
@@ -191,9 +191,9 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     for path in self:
       path_change = path.change
       i = 0
-      for dir in dirs:
+      for d in dirs:
         for ext in exts:
-          paths[i].append( path_change( dir = dir, ext = ext ) )
+          paths[i].append( path_change( directory = d, ext = ext ) )
           i += 1
         
     
@@ -242,12 +242,12 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       group_size = max(1, len(files) // max(1, wish_groups - len(groups) ) )
       group_size = min( max_group_size, group_size )
       
-      for file in files:
-        if (len(group_files) >= group_size) or (file.name in group_names):
-          rest_files.append( file )
+      for filepath in files:
+        if (len(group_files) >= group_size) or (filepath.name in group_names):
+          rest_files.append( filepath )
         else:
-          group_names.add( file.name )
-          group_files.append( file )
+          group_names.add( filepath.name )
+          group_files.append( filepath )
       
       groups.append( group_files )
       

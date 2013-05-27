@@ -43,6 +43,15 @@ def   _toSequence( value ):
 
 #//===========================================================================//
 
+def   _execFile( filename, in_context ):
+  source = readTextFile( filename )
+  code = compile( source, filename, 'exec' )
+  out_context = {}
+  exec( code, in_context, out_context )
+  return out_context
+
+#//===========================================================================//
+
 def   _toBool( value ):
   if isinstance( value, StrTypes ):
     return value.lower() == 'true'
@@ -257,18 +266,13 @@ class   TestsOptions( Singleton ):
   
   #//-------------------------------------------------------//
   
-  def   readConfig( self, config_file, locals = None ):
-    if locals is None:
-      locals = {}
+  def   readConfig( self, config_file, exec_locals = None ):
+    if exec_locals is None:
+      exec_locals = {}
     
-    exec_locals = locals.copy()
-    
-    defaults = self._defaults
-    set_options = self._set_options
-    
-    execFile( config_file, exec_locals )
-    for name, value in exec_locals.items():
-      if name not in locals:
+    file_locals = _execFile( config_file, exec_locals )
+    for name, value in file_locals.items():
+      if name not in exec_locals:
         self.setDefault( name, value )
   
   #//-------------------------------------------------------//

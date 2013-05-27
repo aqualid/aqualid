@@ -100,7 +100,7 @@ class   UniqueList (object):
     values_list = self.__values_list
     
     values_set_add = values_set.add
-    values_list_append = values_list.append
+    values_list_insert = values_list.insert
     values_set_size = values_set.__len__
     values_list_size = values_list.__len__
     values_list_index = values_list.index
@@ -116,7 +116,7 @@ class   UniqueList (object):
         
         del values_list[ i ]
       
-      values_list.insert( pos, value )
+      values_list_insert( pos, value )
       
       pos += 1
   
