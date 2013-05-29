@@ -53,7 +53,7 @@ import threading
 from aql.utils import DataFile, FileLock, eventWarning, logWarning
 
 from .aql_values_xash import ValuesXash
-from .aql_depends_value import DependsValue, DependsKeyContent, DependsValueContent
+from .aql_depends_value import DependsValue, DependsKeyContent
 from .aql_value_pickler import ValuePickler
 
 #//===========================================================================//
@@ -163,7 +163,7 @@ class ValuesFile (object):
             return DependsValue( kvalue.name )
         
         values_append( v )
-    except KeyError as e:
+    except KeyError:
       return DependsValue( kvalue.name )
     
     return DependsValue( kvalue.name, values )

@@ -26,7 +26,7 @@ import errno
 
 from aql.types import toSequence, FilePath, FilePaths
 from aql.values import Value, FileValue, FileContentChecksum, FileContentTimeStamp
-from .aql_node import Node, NodeTargets
+from .aql_node import NodeTargets
 
 #//===========================================================================//
 
@@ -84,6 +84,11 @@ class RebuildNode( Exception ):
 class Builder (object):
   """
   Base class for all builders
+  
+  'options' - builder's options
+  'name' - uniquely identifies builder
+  'signature' - uniquely identifies builder's parameters
+  
   """
   
   __slots__ = (
@@ -96,7 +101,7 @@ class Builder (object):
   
   def   __new__(cls, options, *args, **kw):
     
-    self = super(Builder,cls).__new__(cls)
+    self = super(Builder, cls).__new__(cls)
     self.options = options
     
     return self
@@ -117,9 +122,6 @@ class Builder (object):
       return name
     
     elif attr == 'signature':
-      """
-      Sets builder signature which uniquely identify builder's parameters
-      """
       raise NotImplementedError( "Attribute '%s' must be set in a child class." % attr )
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
@@ -203,7 +205,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   makeSourceValues( self, values ):
-    return makeFileValues( values )
+    return self.makeFileValues( values )
   
   #//-------------------------------------------------------//
   

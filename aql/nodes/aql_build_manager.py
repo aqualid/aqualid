@@ -24,16 +24,13 @@ __all__ = (
   'eventBuildingNodes', 'eventRebuildNode',
 )
 
-import os
 import threading
-import hashlib
 import traceback
 
 from aql.types import toSequence
 from aql.utils import eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
-from .aql_node import Node
 from .aql_builder import RebuildNode
 
 #//===========================================================================//
@@ -82,28 +79,28 @@ def   eventBuildNodeFailed( node, error ):
 class   ErrorNodeDependencyCyclic( Exception ):
   def   __init__( self, node ):
     msg = "Node has a cyclic dependency: %s" % str(node)
-    super(type(self), self).__init__( msg )
+    super(ErrorNodeDependencyCyclic, self).__init__( msg )
 
 #//===========================================================================//
 
 class   ErrorNodeDependencyUnknown(Exception):
   def   __init__( self, node, dep_node ):
     msg = "Unable to add dependency to node '%s' from node '%s'" % (node, dep_node)
-    super(type(self), self).__init__( msg )
+    super(ErrorNodeDependencyUnknown, self).__init__( msg )
 
 #//===========================================================================//
 
 class   InternalErrorRemoveNonTailNode( Exception ):
   def   __init__( self, node ):
     msg = "Removing non-tail node: %s" % str(node)
-    super(type(self), self).__init__( msg )
+    super(InternalErrorRemoveNonTailNode, self).__init__( msg )
 
 #//===========================================================================//
 
 class   InternalErrorRemoveUnknownTailNode(Exception):
   def   __init__( self, node, dep_node ):
     msg = "Remove unknown tail node: : %s" % str(node)
-    super(type(self), self).__init__( msg )
+    super(InternalErrorRemoveUnknownTailNode, self).__init__( msg )
 
 #//===========================================================================//
 
@@ -335,7 +332,7 @@ class  _VFiles( object ):
   
   #//-------------------------------------------------------//
   
-  def   __exit__(self, exc_type, exc_value, traceback):
+  def   __exit__(self, exc_type, exc_value, backtrace):
     self.close()
 
 #//===========================================================================//
@@ -366,7 +363,7 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   __exit__(self, exc_type, exc_value, traceback):
+  def   __exit__(self, exc_type, exc_value, backtrace):
     self.close()
   
   #//-------------------------------------------------------//
@@ -577,7 +574,6 @@ class BuildManager (object):
   def   status( self ):
     
     with _VFiles() as vfiles:
-      target_nodes = {}
       getTails = self._nodes.tails
       
       removeTailNode = self._nodes.removeTail

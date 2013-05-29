@@ -89,17 +89,13 @@ class   FilePath (FilePathBase):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
-    if attr == 'name_ext':
-      self.name_ext = FilePathBase( os.path.basename(self) )
-      return self.name_ext
+    if attr in ['name_ext', 'dir']:
+      self.dir, self.name_ext = map( FilePathBase, os.path.split( self ) )
+      return getattr( self, attr )
     
     elif attr in ['name', 'ext']:
       self.name, self.ext = map( FilePathBase, os.path.splitext( self.name_ext ) )
       return getattr( self, attr )
-    
-    elif attr == 'dir':
-      self.dir = FilePathBase( os.path.dirname( self ) )
-      return self.dir
     
     elif attr == 'dir_name':
       self.dir_name = FilePathBase( os.path.join( self.dir, self.name ) )
@@ -176,9 +172,9 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
   
   #//-------------------------------------------------------//
   
-  def   change( self, directory = None, ext = None ):
+  def   change( self, dir = None, ext = None ):
     
-    dirs = tuple( toSequence(directory) )
+    dirs = tuple( toSequence(dir) )
     if not dirs: dirs = (None,)
     
     exts = tuple( toSequence(ext) )
@@ -193,7 +189,7 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       i = 0
       for d in dirs:
         for ext in exts:
-          paths[i].append( path_change( directory = d, ext = ext ) )
+          paths[i].append( path_change( dir = d, ext = ext ) )
           i += 1
         
     

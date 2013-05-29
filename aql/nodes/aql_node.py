@@ -35,28 +35,28 @@ class   ErrorNodeNoTargets( Exception ):
   def   __init__( self, node ):
     msg = "Unable to get targets of node: '%s'" % str(node)
     self.node = node
-    super(type(self), self).__init__( msg )
+    super(ErrorNodeNoTargets, self).__init__( msg )
 
 #//---------------------------------------------------------------------------//
 
 class   ErrorNodeTargetIsNotValue( Exception ):
   def   __init__( self, value ):
     msg = "Type of node's target '%s' is not value" % str(type(value))
-    super(type(self), self).__init__( msg )
+    super(ErrorNodeTargetIsNotValue, self).__init__( msg )
 
 #//---------------------------------------------------------------------------//
 
 class   ErrorNodeInvalidTargetsType( Exception ):
   def   __init__( self, targets ):
     msg = "Invalid type of node's targets: %s" % str(type(targets))
-    super(type(self), self).__init__( msg )
+    super(ErrorNodeInvalidTargetsType, self).__init__( msg )
 
 #//---------------------------------------------------------------------------//
 
 #~ class   ErrorNodeInvalidSourceType( Exception ):
   #~ def   __init__( self, source ):
     #~ msg = "Expected Node or Value type, actual: '%s(%s)'" % (source, type(source))
-    #~ super(type(self), self).__init__( msg )
+    #~ super(ErrorNodeInvalidTargetsType, self).__init__( msg )
 
 #//---------------------------------------------------------------------------//
 
@@ -155,17 +155,17 @@ class Node (object):
     sign = [ self.builder.signature ]
     
     sources = self.sources()
-    names += map( lambda value: value.name.encode('utf-8'), sources )
+    names += ( value.name.encode('utf-8') for value in sources )
     
     #names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
     #names += sorted( map( lambda node: node.sources_value.name, self.source_nodes ) )
     
-    sign += map( lambda value: value.content.signature, sources )
+    sign += ( value.content.signature for value in sources )
     
     deps = self.dependencies()
     
-    sign += map( lambda value: value.name.encode('utf-8'), deps )
-    sign += map( lambda value: value.content.signature, deps )
+    sign += ( value.name.encode('utf-8') for value in deps )
+    sign += ( value.content.signature for value in deps )
     
     #//-------------------------------------------------------//
     #// Signature
@@ -314,7 +314,9 @@ class Node (object):
   #//=======================================================//
   
   def   nodeTargets(self):
-    return NodeTargets( self.targets_value.content.data, self.itargets_value.content.data, self.ideps_value.content.data )
+    return NodeTargets( self.targets_value.content.data,
+                        self.itargets_value.content.data,
+                        self.ideps_value.content.data )
   
   #//=======================================================//
   
@@ -338,7 +340,7 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   __friendlyName( self ):
+  def   _friendlyName( self ):
     
     many_sources = False
     
@@ -370,7 +372,7 @@ class Node (object):
   
   def   __str__(self):
     
-    name = self.__friendlyName()
+    name = self._friendlyName()
     if name is not None:
       return name
     
@@ -388,7 +390,7 @@ class Node (object):
       except StopIteration:
         break
         
-      first_source = node.__friendlyName()
+      first_source = node._friendlyName()
       if first_source is not None:
         name.append( first_source )
         break

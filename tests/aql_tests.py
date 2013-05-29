@@ -1,14 +1,12 @@
 import sys
 import os.path
 import pickle
-import unittest
 
 _search_paths = [ '.', 'tests_utils', 'tools' ]
 sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', p) ), _search_paths )
 
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
 from aql.types import FilePaths
-from aql.values import NoContent
 
 #//===========================================================================//
 
