@@ -29,7 +29,7 @@ __all__ = ( 'Project', 'ProjectConfig',
 import os
 import types
 
-from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError
+from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile
 from aql.types import FilePath, FilePaths, SplitListType, Singleton
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions, Options
@@ -262,7 +262,7 @@ class ProjectTools( object ):
     self.options = project.options
     
     tools = ToolsManager.instance()
-    tools.loadTools( self.options.tool_paths )
+    tools.loadTools( self.options.tool_paths.value() )
     
     self.tools = tools
   
@@ -304,6 +304,8 @@ class ProjectTools( object ):
     
     if options is None:
       options = self.options
+    
+    self.tools.loadTools( options.tool_paths.value() )
     
     tools = []
     
@@ -353,6 +355,9 @@ class Project( object ):
     locals = {
       'options' : self.options,
       'tools'   : self.tools,
+      'Tool'    : self.tools.Tools,
+      'Tools'   : self.tools.Tools,
+      'AddTool' : self.tools.AddTool,
     }
     
     for name in dir(self):
@@ -388,7 +393,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Options( self, options_file ):
+  def   ReadOptions( self, options_file ):
     
     script_locals = { 'options': self.options }
     
@@ -399,7 +404,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   Include( self, makefile ):
-    return self._execScript( options_file, self.script_locals )
+    return self._execScript( makefile, self.script_locals )
   
   #//-------------------------------------------------------//
   

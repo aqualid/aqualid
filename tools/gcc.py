@@ -525,7 +525,7 @@ class ToolGccCommon( aql.Tool ):
   
   @staticmethod
   def   options():
-    options = aql.cppToolCommonOptions()
+    options = aql.optionsCxx()
     
     options.gcc_path  = aql.PathOptionType()
     options.gcc_target = aql.StrOptionType( ignore_case = True )

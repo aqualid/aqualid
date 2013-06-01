@@ -46,7 +46,7 @@ def   _commonCCppCompilerOptions( options ):
   
 #//===========================================================================//
 
-def   _cppCompilerOptions( options ):
+def   _cxxCompilerOptions( options ):
   
   _commonCCppCompilerOptions( options )
   
@@ -83,7 +83,7 @@ def   _cCompilerOptions( options ):
 
 #//===========================================================================//
 
-def   _commonCCppLinkerOptions( options ):
+def   _linkerOptions( options ):
   
   options.link = PathOptionType( description = "Program or dynamic library linker" )
   options.lib = PathOptionType( description = "Static library archiver program" )
@@ -102,7 +102,7 @@ def   _commonCCppLinkerOptions( options ):
 
 #//===========================================================================//
 
-def   cppToolCommonOptions():
+def   optiosCxx():
   options = Options()
   _cppCompilerOptions( options )
   _commonCCppLinkerOptions( options )
@@ -111,9 +111,9 @@ def   cppToolCommonOptions():
 
 #//===========================================================================//
 
-def   cToolCommonOptions():
+def   optionsC():
   options = Options()
-  _cppCompilerOptions( options )
-  _commonCCppLinkerOptions( options )
+  _cxxCompilerOptions( options )
+  _linkerOptions( options )
   
   return options

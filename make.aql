@@ -1,0 +1,7 @@
+
+options.build_dir = 'output'
+options.tool_paths = 'tools'
+
+cpp = Tool('c++')
+
+
