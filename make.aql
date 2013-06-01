@@ -4,4 +4,5 @@ options.tool_paths = 'tools'
 
 cpp = Tool('c++')
 
+print( cpp.options.cc_ver.value() )
 

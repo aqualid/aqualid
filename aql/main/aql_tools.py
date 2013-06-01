@@ -201,7 +201,8 @@ class ToolsManager( Singleton ):
           setup_options.join()
       
       try:
-        tool = tool_info.tool_class( tool_options )
+        env = tool_options.env.value().copy( value_type = str )
+        tool = tool_info.tool_class( tool_options, env )
       except Exception as err:
         eventToolsToolFailed( tool_info.tool_class, err )
         tool_options.clear()

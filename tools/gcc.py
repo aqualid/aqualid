@@ -480,9 +480,9 @@ def   _getGccSpecs( gcc ):
 def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
   gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
   specs = _getGccSpecs( gcc )
-  specs['gcc'] = gcc
-  specs['g++'] = gxx
-  specs['ar'] = ar
+  specs['cc'] = gcc
+  specs['cxx'] = gxx
+  specs['lib'] = ar
   
   return specs
 
@@ -490,14 +490,11 @@ def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
 
 class ToolGccCommon( aql.Tool ):
   
-  def   __init__( self, options ):
+  def   __init__( self, options, env ):
     
-    try:
-      if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
-    except Exception as err:
-      raise
+    if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
     
-    env = options.env.value().copy( value_type = str )
+    #~ env = options.env.value().copy( value_type = str )
     gcc_prefix = options.gcc_prefix.value()
     gcc_suffix = options.gcc_suffix.value()
     
@@ -513,19 +510,19 @@ class ToolGccCommon( aql.Tool ):
     
     info = _getGccInfo( env, gcc_prefix, gcc_suffix )
     
-    if not options.cc_ver.setDefault( info['version'] ):           raise NotImplementedError()
     if not options.target_os.setDefault( info['target_os'] ):      raise NotImplementedError()
     if not options.target_arch.setDefault( info['target_arch'] ):  raise NotImplementedError()
     
-    options.cc = info['gcc']
-    options.cxx = info['g++']
-    options.lib = info['ar']
+    if not options.cc_ver.setDefault( info['version'] ):           raise NotImplementedError()
+    
+    options.update( info )
   
   #//-------------------------------------------------------//
   
   @staticmethod
   def   options():
-    options = aql.optionsCxx()
+    
+    options = aql.optionsCCpp()
     
     options.gcc_path  = aql.PathOptionType()
     options.gcc_target = aql.StrOptionType( ignore_case = True )

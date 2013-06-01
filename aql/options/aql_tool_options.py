@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'cppToolCommonOptions',
+  'optionsCCpp',
 )
 
 import os
@@ -31,6 +31,9 @@ from .aql_option_types import BoolOptionType, ListOptionType, PathOptionType, St
 #//===========================================================================//
 
 def   _commonCCppCompilerOptions( options ):
+  
+  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
+  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
   
   options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
   options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
@@ -48,8 +51,6 @@ def   _commonCCppCompilerOptions( options ):
 
 def   _cxxCompilerOptions( options ):
   
-  _commonCCppCompilerOptions( options )
-  
   options.cxx = PathOptionType( description = "C++ compiler program" )
   options.cxxflags = ListOptionType( description = "C++ compiler options" )
   options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
@@ -58,17 +59,12 @@ def   _cxxCompilerOptions( options ):
   options.cxxflags += options.occflags
   options.cxxflags += options.ocxxflags
   
-  options.cxx_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
-  options.cxx_ver = VersionOptionType( description = "C/C++ compiler version" )
-  
   options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
   options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
   
 #//===========================================================================//
 
 def   _cCompilerOptions( options ):
-  
-  _commonCCppCompilerOptions( options )
   
   options.cc = PathOptionType( description = "C compiler program" )
   options.cflags = ListOptionType( description = "C compiler options" )
@@ -77,9 +73,6 @@ def   _cCompilerOptions( options ):
   options.cflags += options.ccflags
   options.cflags += options.occflags
   options.cflags += options.ocflags
-  
-  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
-  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
 
 #//===========================================================================//
 
@@ -102,18 +95,11 @@ def   _linkerOptions( options ):
 
 #//===========================================================================//
 
-def   optiosCxx():
+def   optionsCCpp():
   options = Options()
-  _cppCompilerOptions( options )
-  _commonCCppLinkerOptions( options )
-  
-  return options
-
-#//===========================================================================//
-
-def   optionsC():
-  options = Options()
+  _commonCCppCompilerOptions( options )
   _cxxCompilerOptions( options )
+  _cCompilerOptions( options )
   _linkerOptions( options )
   
   return options
