@@ -494,7 +494,6 @@ class ToolGccCommon( aql.Tool ):
     
     if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
     
-    #~ env = options.env.value().copy( value_type = str )
     gcc_prefix = options.gcc_prefix.value()
     gcc_suffix = options.gcc_suffix.value()
     

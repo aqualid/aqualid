@@ -110,6 +110,7 @@ class ProjectConfig( object ):
       CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
       CLIOption( "-l", "--list-options",    "list_options",   bool,       False,        "List all available options and exit." ),
       CLIOption( "-c", "--config",          "config",         FilePath,   None,         "The configuration file used to read CLI arguments." ),
+      CLIOption( "-u", "--up",              "search_up",      bool,       False,        "Search up directory tree for a make file." ),
       
       CLIOption( "-o", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tool-paths",      "tool_paths",     Paths,      [],           "Paths to tools and setup scripts.", 'FILE PATH, ...'),
@@ -131,7 +132,7 @@ class ProjectConfig( object ):
     
     cli_options = {}
     
-    ignore_options = set(['directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet'])
+    ignore_options = set(['directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet', 'search_up'])
     for name,value in cli_config.items():
       if (name not in ignore_options) and (value is not None):
         cli_options[ name ] = value
@@ -313,10 +314,10 @@ class ProjectTools( object ):
       tool = self.__addTool( tool_name, options )
       tools.append( tool )
     
-    if len(tool_names) == 1:
-      return tool_names[0]
+    if len(tools) == 1:
+      return tools[0]
     
-    return tool_names
+    return tools
   
   #//-------------------------------------------------------//
   

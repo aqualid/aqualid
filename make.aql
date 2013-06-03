@@ -2,7 +2,9 @@
 options.build_dir = 'output'
 options.tool_paths = 'tools'
 
-cpp = Tool('c++')
+cpp = Tool('c++', cc_ver = '4.9')
 
 print( cpp.options.cc_ver.value() )
+print( cpp.options.cc.value() )
+print( cpp.options.cxx.value() )
 
