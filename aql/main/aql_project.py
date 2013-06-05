@@ -448,7 +448,6 @@ class Project( object ):
 #//===========================================================================//
 
 if __name__ == "__main__":
-  
   ReadOptions('../../aql.config')
   
   # options

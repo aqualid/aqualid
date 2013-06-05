@@ -19,19 +19,12 @@
 
 __all__ = (
   'Condition', 'Operation', 'ConditionalValue', 'OptionValue', 'SimpleOperation',
-  'ErrorOptionValueMergeDifferentOptionTypes'
+  'ErrorOptionValueMergeNonOptionValue'
 )
 
 import operator
 
 from aql.types import toSequence
-
-#//===========================================================================//
-
-class   ErrorOptionValueMergeDifferentOptionTypes( TypeError ):
-  def   __init__( self, type1, type2 ):
-    msg = "Unable to merge option values of different types: '%s'" % (type1, type2)
-    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -170,8 +163,7 @@ class OptionValue (object):
     if not isinstance( other, OptionValue ):
       raise ErrorOptionValueMergeNonOptionValue( other )
     
-    if self.option_type is not other.option_type:
-      raise ErrorOptionValueMergeDifferentOptionTypes( self.option_type, other.option_type )
+    self.option_type = other.option_type
     
     diff_index = 0
     for conditional_value1, conditional_value2 in zip( self.conditional_values, other.conditional_values ):

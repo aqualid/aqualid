@@ -20,8 +20,8 @@
 __all__ = (
   'Options',
   'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
-  'ErrorOptionsOperationIsNotSpecified', 'ErrorOptionsOptionValueExists',
-  'ErrorOptionsNewValueTypeIsNotOption', 'ErrorOptionsForeignOptionValue', 'ErrorOptionsMergeNonOptions'
+  'ErrorOptionsOperationIsNotSpecified',
+  'ErrorOptionsForeignOptionValue', 'ErrorOptionsMergeNonOptions'
 )
 
 import os.path
@@ -32,7 +32,7 @@ import weakref
 
 from aql.types import toSequence, UniqueList, List, Dict, DictItem
 
-from .aql_option_types import OptionType, ListOptionType
+from .aql_option_types import OptionType, ListOptionType, autoOptionType
 from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition
 
 #//===========================================================================//
@@ -40,16 +40,6 @@ from .aql_option_value import OptionValue, Operation, ConditionalValue, Conditio
 class   ErrorOptionsOperationIsNotSpecified( TypeError ):
   def   __init__( self, value ):
     msg = "Operation type is not set for value: '%s'" % str(value)
-    super(type(self), self).__init__( msg )
-
-class   ErrorOptionsOptionValueExists( TypeError ):
-  def   __init__( self, value_name, option_type ):
-    msg = "Unable to set option type '%s' to existing value '%s'" % (option_type, value_name)
-    super(type(self), self).__init__( msg )
-
-class   ErrorOptionsNewValueTypeIsNotOption( TypeError ):
-  def   __init__( self, name, value ):
-    msg = "Type of the new value '%s' must be OptionType or OptionValue, value's type: %s" % (name, type(value))
     super(type(self), self).__init__( msg )
 
 class   ErrorOptionsForeignOptionValue( TypeError ):
@@ -523,14 +513,18 @@ class Options (object):
         value = value.option_value
       
       elif not isinstance( value, OptionValue ):
-        raise ErrorOptionsNewValueTypeIsNotOption( name, value )
+        opt_value = OptionValue( autoOptionType( value ) )
+        value = ConditionalValue( SetValue( value ) )
+        opt_value.appendValue( value )
+        value = opt_value
       
       self.clearCache()
       self.__dict__['__opt_values'][ name ] = value
     
     else:
       if isinstance( value, OptionType ):
-        raise ErrorOptionsOptionValueExists( name, value )
+        opt_value.option_type = value
+        return
       
       elif isinstance( value, OptionValueProxy ):
         if value.option_value is opt_value:
@@ -555,22 +549,22 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   _get_value( self, name ):
+  def   _get_value( self, name, raise_ex = False ):
     try:
       return self.__dict__['__opt_values'][ name ]
     except KeyError as e:
       try:
         return self.__dict__['__parent']._get_value( name )
       except AttributeError:
+        if raise_ex:
+          raise AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
+        
         return None
   
   #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
-    opt_value = self._get_value( name )
-    if opt_value is None:
-      raise AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
-    
+    opt_value = self._get_value( name, raise_ex = True )
     return OptionValueProxy( opt_value, name, self )
   
   #//-------------------------------------------------------//
@@ -675,10 +669,7 @@ class Options (object):
       elif isinstance( value, OptionValue ):
         value = value.value( options, context = None )
       
-      try:
-        self.__set_value( name, value, UpdateValue )
-      except ErrorOptionsNewValueTypeIsNotOption:
-        pass
+      self.__set_value( name, value, UpdateValue )
   
   #//-------------------------------------------------------//
   
@@ -843,7 +834,7 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   appendValue( self, name, value, operation_type = None, condition = None ):
-    opt_value = self._get_value( name )
+    opt_value = self._get_value( name, raise_ex = True )
     self._appendValue( opt_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//

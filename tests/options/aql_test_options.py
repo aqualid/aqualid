@@ -12,7 +12,7 @@ from aql.options import OptionType, StrOptionType, BoolOptionType, EnumOptionTyp
                         builtinOptions, \
                         OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, JoinPathValue, \
                         ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
-                        ErrorOptionsNewValueTypeIsNotOption, ErrorOptionsOptionValueExists, ErrorOptionsMergeNonOptions
+                        ErrorOptionsMergeNonOptions
 
 
 #//===========================================================================//
@@ -275,7 +275,9 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.warn_level, 2 )
     
     self.assertRaises( ErrorOptionsOperationIsNotSpecified, options.appendValue, 'warn_level', 1 )
-    self.assertRaises( ErrorOptionsNewValueTypeIsNotOption, options.__setattr__, 'test', 1 )
+    
+    options.test = 1
+    self.assertEqual( options.test.value(), 1 )
     
     options.opt += options.opt
     
@@ -290,7 +292,8 @@ class TestOptions( AqlTestCase ):
     options.opt = RangeOptionType( min_value = 1, max_value = 100 )
     options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
     
-    self.assertRaises( ErrorOptionsOptionValueExists, options.__setattr__, 'opt', options.opt.option_value.option_type )
+    options.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    
     self.assertRaises( ErrorOptionsForeignOptionValue, options2.__setattr__, 'opt', options.opt )
     self.assertRaises( AttributeError, options.__getattr__, 'debug_on' )
     
@@ -314,7 +317,7 @@ class TestOptions( AqlTestCase ):
     options.update( args )
     self.assertEqual( options.opt, args['opt'] )
     self.assertEqual( options.warn_level, args['warn_level'] )
-    self.assertNotIn( 'debug_on', options )
+    self.assertIn( 'debug_on', options )
     
     options.update( {} )
     options.update( options )

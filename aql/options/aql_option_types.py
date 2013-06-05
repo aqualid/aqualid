@@ -20,6 +20,7 @@
 __all__ = (
   'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType', 'BoolOptionType', 
   'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
+  'autoOptionType',
   'ErrorOptionTypeEnumAliasIsAlreadySet', 'ErrorOptionTypeEnumValueIsAlreadySet',
   'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues', 
 )
@@ -53,6 +54,31 @@ class   ErrorOptionTypeNoEnumValues( TypeError ):
   def   __init__( self, option_type ):
     msg = "Enum option type '%s' doesn't have any values: '%s'" % str(option_type)
     super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+def   autoOptionType( value ):
+  
+  if isinstance( value, (UniqueList, list, tuple) ):
+    value_type = str
+    if value:
+      try:
+        value_type = type(value[0])
+      except IndexError:
+        pass
+    
+    return ListOptionType( value_type = value_type )
+  
+  #//-------------------------------------------------------//
+  
+  if isinstance( value, dict ):
+    return DictOptionType()
+  
+  if isinstance( value, bool ):
+    return BoolOptionType()
+  
+  return OptionType( value_type = type(value) )
+
 
 #//===========================================================================//
 
