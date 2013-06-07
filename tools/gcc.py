@@ -510,7 +510,7 @@ class ToolGccCommon( aql.Tool ):
     
     info = _getGccInfo( env, gcc_prefix, gcc_suffix )
     
-    if options.isSetNotTo( **info ):    raise NotImplementedError()
+    if options.conflictWith( **info ):    raise NotImplementedError()
     
     options.update( info )
   

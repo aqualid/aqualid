@@ -481,7 +481,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   isSetNotTo( self, **kw ):
+  def   conflictWith( self, **kw ):
     for key, value in kw.items():
       opt_value = getattr( self, key )
       if opt_value.isSetNotTo( value ):
