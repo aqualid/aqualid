@@ -47,6 +47,7 @@ def   eventToolsUnableLoadModule( module, err ):
 def   eventToolsToolFailed( tool_class, err ):
   logWarning( "Tool init failed: %s - %s" % (tool_class, err))
 
+
 #//===========================================================================//
 
 class   ErrorToolInvalid( Exception ):
@@ -204,7 +205,8 @@ class ToolsManager( Singleton ):
         env = tool_options.env.value().copy( value_type = str )
         tool = tool_info.tool_class( tool_options, env )
       except Exception as err:
-        eventToolsToolFailed( tool_info.tool_class, err )
+        if not isinstance( err, NotImplementedError ):
+          eventToolsToolFailed( tool_info.tool_class, err )
         tool_options.clear()
       else:
         tool_options.join()

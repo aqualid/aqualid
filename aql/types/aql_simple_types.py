@@ -22,6 +22,7 @@ __all__ = (
 )
 
 import re
+import operator
 import os.path
 
 #//===========================================================================//
@@ -162,18 +163,22 @@ class   Version (str):
   
   #//-------------------------------------------------------//
   
-  def   __hash__(self):
-    return hash(self.__version)
+  def   _cmp( self, other, cmp_op ):
+    self_ver = self.__version
+    other_ver = self.__convert( other ).__version
+    
+    min_len = min( len(self_ver), len(other_ver) )
+    self_ver = self_ver[:min_len]
+    other_ver = other_ver[:min_len]
+    
+    return cmp_op( self_ver, other_ver )
   
-  def   __eq__( self, other):
-    return self.__version == self.__convert( other ).__version
-  def   __lt__( self, other):
-    return self.__version <  self.__convert( other ).__version
-  def   __le__( self, other):
-    return self.__version <= self.__convert( other ).__version
-  def   __ne__( self, other):
-    return self.__version != self.__convert( other ).__version
-  def   __gt__( self, other):
-    return self.__version >  self.__convert( other ).__version
-  def   __ge__( self, other):
-    return self.__version >= self.__convert( other ).__version
+  #//-------------------------------------------------------//
+  
+  def   __hash__(self):         return hash(self.__version)
+  def   __eq__( self, other ):  return self._cmp( other, operator.eq )
+  def   __ne__( self, other ):  return self._cmp( other, operator.ne )
+  def   __lt__( self, other ):  return self._cmp( other, operator.lt )
+  def   __le__( self, other ):  return self._cmp( other, operator.le )
+  def   __gt__( self, other ):  return self._cmp( other, operator.gt )
+  def   __ge__( self, other ):  return self._cmp( other, operator.ge )

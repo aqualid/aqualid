@@ -103,6 +103,10 @@ class TestSimpleTypes( AqlTestCase ):
     self.assertEqual( len(b), 2 )
     
     self.assertIs( v1, Version( v1 ) )
+    
+    v = Version('1.2')
+    self.assertEqual( v, v1 )
+    self.assertEqual( Version('1.2.100.12.a'), v1 )
   
 #//===========================================================================//
 

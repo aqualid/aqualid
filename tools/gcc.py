@@ -468,9 +468,9 @@ def   _getGccSpecs( gcc ):
       target_os = ''
   
   specs = {
-    'version': version,
-    'target_os': target_os,
-    'target_arch': target_arch,
+    'cc_ver':       version,
+    'target_os':    target_os,
+    'target_arch':  target_arch,
   }
   
   return specs
@@ -492,7 +492,8 @@ class ToolGccCommon( aql.Tool ):
   
   def   __init__( self, options, env ):
     
-    if not options.cc_name.setDefault( "gcc" ):   raise NotImplementedError()
+    if options.cc_name.isSetNotTo( 'gcc'):  raise NotImplementedError()
+    options.cc_name = 'gcc'
     
     gcc_prefix = options.gcc_prefix.value()
     gcc_suffix = options.gcc_suffix.value()
@@ -509,10 +510,7 @@ class ToolGccCommon( aql.Tool ):
     
     info = _getGccInfo( env, gcc_prefix, gcc_suffix )
     
-    if not options.target_os.setDefault( info['target_os'] ):      raise NotImplementedError()
-    if not options.target_arch.setDefault( info['target_arch'] ):  raise NotImplementedError()
-    
-    if not options.cc_ver.setDefault( info['version'] ):           raise NotImplementedError()
+    if options.isSetNotTo( **info ):    raise NotImplementedError()
     
     options.update( info )
   

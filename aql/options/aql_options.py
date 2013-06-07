@@ -188,6 +188,17 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   isSetNotTo( self, value ):
+    return self.option_value.isSet() and (self != value)
+  
+  def   isSetGreater( self, value ):
+    return self.option_value.isSet() and (self > value)
+  
+  def   isSetLess( self, value ):
+    return self.option_value.isSet() and (self < value)
+  
+  #//-------------------------------------------------------//
+  
   def   setDefault( self, default_value ):
     if not self.option_value.isSet():
       self.set( default_value, _SetDefaultValue )
@@ -467,6 +478,16 @@ class Options (object):
     
     if parent is not None:
       parent.__dict__['__children'].append( weakref.ref( self ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   isSetNotTo( self, **kw ):
+    for key, value in kw.items():
+      opt_value = getattr( self, key )
+      if opt_value.isSetNotTo( value ):
+        return True
+    
+    return False
   
   #//-------------------------------------------------------//
   
