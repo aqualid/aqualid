@@ -481,6 +481,20 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   getHashRef( self ):
+    if self.__dict__['__opt_values']:
+      return weakref.ref( self )
+    
+    parent = self.__dict__['__parent']
+    
+    if parent is None:
+      return weakref.ref( self )
+    
+    return parent.getHashRef()
+    
+  
+  #//-------------------------------------------------------//
+  
   def   conflictWith( self, **kw ):
     for key, value in kw.items():
       opt_value = getattr( self, key )

@@ -28,7 +28,6 @@ __all__ = ( 'Project', 'ProjectConfig',
 
 import os
 import types
-import weakref
 
 from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile
 from aql.types import FilePath, FilePaths, SplitListType, Singleton
@@ -261,19 +260,29 @@ class ProjectTools( object ):
   
   def   __init__( self, project ):
     self.project = project
-    self.options = project.options
     self.tools_cache = {}
     
     tools = ToolsManager.instance()
-    tools.loadTools( self.options.tool_paths.value() )
+    tools.loadTools( self.project.options.tool_paths.value() )
     
     self.tools = tools
   
   #//-------------------------------------------------------//
   
+  def   _override( self, project ):
+    other = super(ProjectTools,self).__new__( self.__class__ )
+    
+    other.project = project
+    other.tools = self.tools
+    other.tools_cache = self.tools_cache
+    
+    return other
+  
+  #//-------------------------------------------------------//
+  
   def   __addTool( self, tool_name, options ):
     
-    options_ref = weakref.ref( options )
+    options_ref = options.getHashRef()
     
     try:
       return self.tools_cache[ tool_name ][ options_ref ]
@@ -299,7 +308,7 @@ class ProjectTools( object ):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
-    return self.__addTool( name, self.options )
+    return self.__addTool( name, self.project.options )
   
   #//-------------------------------------------------------//
   
@@ -316,7 +325,7 @@ class ProjectTools( object ):
     self.tools.loadTools( tool_paths )
     
     if options is None:
-      options = self.options
+      options = self.project.options
     
     if kw:
       options = options.override()
@@ -333,7 +342,7 @@ class ProjectTools( object ):
   def   AddTool( self, tool_class, tool_names = tuple() ):
     self.tools.addTool( tool_class, tool_names )
     
-    return self.__addTool( tool_class, self.options )
+    return self.__addTool( tool_class, self.project.options )
 
 #//===========================================================================//
 
@@ -348,6 +357,19 @@ class Project( object ):
     self.build_manager = BuildManager()
     
     self.tools = ProjectTools( self )
+  
+  #//-------------------------------------------------------//
+  
+  def   _override( self ):
+    other = super(Project,self).__new__( self.__class__ )
+    
+    other.targets       = self.targets
+    other.files_cache   = self.files_cache
+    other.build_manager = self.build_manager
+    other.options       = self.options.override()
+    other.tools         = self.tools._override( other )
+    
+    return other
   
   #//-------------------------------------------------------//
   
@@ -414,12 +436,19 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   Include( self, makefile ):
-    return self._execScript( makefile, self.script_locals )
+    
+    other = self._override()
+    return other._execScript( makefile, self.script_locals )
   
   #//-------------------------------------------------------//
   
   def   AddNodes( self, nodes ):
     self.build_manager.add( nodes )
+  
+  #//-------------------------------------------------------//
+  
+  def   BuildDir( self, build_dir ):
+    self.options.build_dir = FilePath(build_dir).abs()
   
   #//-------------------------------------------------------//
   
