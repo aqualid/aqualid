@@ -4,6 +4,11 @@ options.tool_paths = 'tools'
 options.cc_ver = '4.8.1'
 
 cpp = Tool('c++')
+print(cpp)
+
+cpp = Tool('c++')
+print(cpp)
+
 
 print( cpp.options.cc_ver.value() )
 print( cpp.options.cc.value() )

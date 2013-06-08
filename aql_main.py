@@ -40,7 +40,6 @@ def   _findMakeScript( start_dir, main_script, main_script_default ):
 
 #//===========================================================================//
 
-
 def   main():
   prj_cfg = ProjectConfig()
   

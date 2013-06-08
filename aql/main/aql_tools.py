@@ -203,10 +203,18 @@ class ToolsManager( Singleton ):
       
       try:
         env = tool_options.env.value().copy( value_type = str )
-        tool = tool_info.tool_class( tool_options, env )
+        
+        options_kw = tool_info.tool_class.setup( tool_options, env )
+        
+        if tool_options.conflictWith( **options_kw ):
+          raise NotImplementedError()
+        
+        tool_options.update( options_kw )
+        
       except Exception as err:
         if not isinstance( err, NotImplementedError ):
           eventToolsToolFailed( tool_info.tool_class, err )
+          raise
         tool_options.clear()
       else:
         tool_options.join()
@@ -249,5 +257,10 @@ class Tool( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   options( cls ):
+  def   setup( options, env ):
+    options_kw = {}
+    return options_kw
+  
+  @staticmethod
+  def   options():
     return None

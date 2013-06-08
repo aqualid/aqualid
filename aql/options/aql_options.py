@@ -521,7 +521,7 @@ class Options (object):
   
   def   __set_value( self, name, value, operation_type = SetValue ):
     
-    opt_value = self._get_value( name )
+    opt_value = self._get_value( name, raise_ex = False )
     
     if opt_value is None:
       if isinstance( value, OptionType ):
@@ -570,17 +570,20 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   _get_value( self, name, raise_ex = False ):
+  def   _get_value( self, name, raise_ex ):
     try:
       return self.__dict__['__opt_values'][ name ]
     except KeyError as e:
-      try:
-        return self.__dict__['__parent']._get_value( name )
-      except AttributeError:
-        if raise_ex:
-          raise AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
-        
-        return None
+      parent = self.__dict__['__parent']
+      if parent is not None:
+        value = parent._get_value( name, False )
+        if value is not None:
+          return value
+      
+      if raise_ex:
+        raise AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
+      
+      return None
   
   #//-------------------------------------------------------//
   
@@ -591,7 +594,7 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   __contains__( self, name ):
-    return self._get_value( name ) is not None
+    return self._get_value( name, raise_ex = False ) is not None
   
   #//-------------------------------------------------------//
   
@@ -699,13 +702,13 @@ class Options (object):
     value = None
     
     for name in names:
-      value = self._get_value( name )
+      value = self._get_value( name, raise_ex = False )
       if value is not None:
         value_names = self.valueNames( value )
         
         new_names = (names - value_names)
         for new_name in new_names:
-          if self._get_value( new_name ) is not None:
+          if self._get_value( new_name, raise_ex = False ) is not None:
             raise ErrorOptionsMergeDifferentOptions( new_name, value_names.pop() )
         
         if self.isParentValue( value ):

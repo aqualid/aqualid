@@ -28,6 +28,7 @@ __all__ = ( 'Project', 'ProjectConfig',
 
 import os
 import types
+import weakref
 
 from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile
 from aql.types import FilePath, FilePaths, SplitListType, Singleton
@@ -261,6 +262,7 @@ class ProjectTools( object ):
   def   __init__( self, project ):
     self.project = project
     self.options = project.options
+    self.tools_cache = {}
     
     tools = ToolsManager.instance()
     tools.loadTools( self.options.tool_paths.value() )
@@ -270,6 +272,14 @@ class ProjectTools( object ):
   #//-------------------------------------------------------//
   
   def   __addTool( self, tool_name, options ):
+    
+    options_ref = weakref.ref( options )
+    
+    try:
+      return self.tools_cache[ tool_name ][ options_ref ]
+    except KeyError:
+      pass
+    
     tool_options = options.override()
     
     tool, names = self.tools.getTool( tool_name, tool_options )
@@ -281,6 +291,8 @@ class ProjectTools( object ):
     for name in names:
       if name not in attrs:
         attrs[ name ] = tool
+        name_tools = self.tools_cache.setdefault( name, {} )
+        name_tools[ options_ref ] = tool
     
     return tool
   
@@ -292,32 +304,29 @@ class ProjectTools( object ):
   #//-------------------------------------------------------//
   
   def __getitem__( self, name ):
-    return self.__addTool( name, self.options )
+    return getattr( self, name )
   
   #//-------------------------------------------------------//
   
   def   Tools( self, *tool_names, **kw ):
     
-    tool_paths = kw.get('tool_paths', [] )
-    options = kw.get( 'options', None )
+    tool_paths = kw.pop('tool_paths', [])
+    options = kw.pop( 'options', None )
     
     self.tools.loadTools( tool_paths )
     
     if options is None:
       options = self.options
     
+    if kw:
+      options = options.override()
+      options.update( kw )
+    
     self.tools.loadTools( options.tool_paths.value() )
     
-    tools = []
+    tools = [ self.__addTool( tool_name, options ) for tool_name in tool_names ]
     
-    for tool_name in tool_names:
-      tool = self.__addTool( tool_name, options )
-      tools.append( tool )
-    
-    if len(tools) == 1:
-      return tools[0]
-    
-    return tools
+    return tools[0] if len(tools) == 1 else tools
   
   #//-------------------------------------------------------//
   

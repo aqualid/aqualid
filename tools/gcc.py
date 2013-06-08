@@ -468,6 +468,7 @@ def   _getGccSpecs( gcc ):
       target_os = ''
   
   specs = {
+    'cc_name':      'gcc',
     'cc_ver':       version,
     'target_os':    target_os,
     'target_arch':  target_arch,
@@ -477,23 +478,10 @@ def   _getGccSpecs( gcc ):
 
 #//===========================================================================//
 
-def   _getGccInfo( env, gcc_prefix, gcc_suffix ):
-  gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
-  specs = _getGccSpecs( gcc )
-  specs['cc'] = gcc
-  specs['cxx'] = gxx
-  specs['lib'] = ar
-  
-  return specs
-
-#//===========================================================================//
-
 class ToolGccCommon( aql.Tool ):
   
-  def   __init__( self, options, env ):
-    
-    if options.cc_name.isSetNotTo( 'gcc'):  raise NotImplementedError()
-    options.cc_name = 'gcc'
+  @staticmethod
+  def   setup( options, env ):
     
     gcc_prefix = options.gcc_prefix.value()
     gcc_suffix = options.gcc_suffix.value()
@@ -508,11 +496,13 @@ class ToolGccCommon( aql.Tool ):
       self.SaveValues( project, cfg_keys, cfg_deps, specs )
     """
     
-    info = _getGccInfo( env, gcc_prefix, gcc_suffix )
+    gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
+    specs = _getGccSpecs( gcc )
+    specs['cc'] = gcc
+    specs['cxx'] = gxx
+    specs['lib'] = ar
     
-    if options.conflictWith( **info ):    raise NotImplementedError()
-    
-    options.update( info )
+    return specs
   
   #//-------------------------------------------------------//
   
