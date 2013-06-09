@@ -7,7 +7,9 @@ options.cc_ver = '4.8.1'
 cpp = Tool('c++')
 print(cpp)
 
-cpp = Tool('c++')
+result = Include('other_make.aql')
+
+cpp = result['cpp']
 print(cpp)
 
 print( cpp.options.cc_ver.value() )

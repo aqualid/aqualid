@@ -1,0 +1,10 @@
+
+cpp = Tool('c++')
+print(cpp)
+
+print(tools.cxx)
+
+print( cpp.options.cc_ver.value() )
+print( cpp.options.cc.value() )
+print( cpp.options.cxx.value() )
+
