@@ -90,8 +90,8 @@ def   _target_options():
                                       description = "The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'." )
   
   options.target_arch = EnumOptionType( values = [ 'native',
-                                                   ('x86-32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
-                                                   'x86-64',
+                                                   ('x86-32', 'x86_32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
+                                                   ('x86-64','x86_64', 'amd64'),
                                                    'arm' ],
                                         default = 'native',
                                         description = "The target machine type, e.g. 'i386'" )

@@ -211,6 +211,8 @@ class ToolsManager( Singleton ):
         
         tool_options.update( options_kw )
         
+        tool = tool_info.tool_class( tool_options )
+        
       except Exception as err:
         if not isinstance( err, NotImplementedError ):
           eventToolsToolFailed( tool_info.tool_class, err )

@@ -1,18 +1,8 @@
 
 BuildDir('output')
 
-options.tool_paths = 'tools'
-options.cc_ver = '4.8.1'
+cpp = Tool('c++', tool_paths = 'tools' )
 
-cpp = Tool('c++')
-print(cpp)
+#~ result = Include('other_make.aql')
 
-result = Include('other_make.aql')
-
-cpp = result['cpp']
-print(cpp)
-
-print( cpp.options.cc_ver.value() )
-print( cpp.options.cc.value() )
-print( cpp.options.cxx.value() )
-
+obj = cpp.Compile( 'main.cpp' )

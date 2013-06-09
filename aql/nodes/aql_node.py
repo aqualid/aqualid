@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Node',
+  'Node', 'NodeTargets',
   'ErrorNodeInvalidTargetsType', 'ErrorNodeNoTargets', 'ErrorNodeTargetIsNotValue',
   'eventNodeBuilding', 'eventNodeBuildingFinished',
 )
@@ -126,7 +126,7 @@ class Node (object):
   def   __init__( self, builder, source_nodes, source_values ):
     
     self.builder = builder
-    self.source_nodes = frozenset( toSequence(source_nodes) )
+    self.source_nodes = frozenset( toSequence( source_nodes ) )
     self.source_values = tuple( toSequence( source_values ) )
     self.dep_nodes = set()
     self.dep_values = []
@@ -271,9 +271,9 @@ class Node (object):
     values = []
     
     for node in self.source_nodes:
-      values += node.targets()
+      values.extend( node.targets() )
     
-    values += self.source_values
+    values.extend( self.source_values )
     
     values.sort( key = lambda v: v.name )
     
@@ -285,9 +285,9 @@ class Node (object):
     values = []
     
     for node in self.dep_nodes:
-      values += node.targets_value.content.data
+      values.extend( node.targets_value.content.data )
     
-    values += self.dep_values
+    values.extend( self.dep_values )
     
     values.sort( key = lambda v: v.name )
     

@@ -49,7 +49,7 @@ class GccCompilerImpl (aql.Builder):
     
   #//-------------------------------------------------------//
   
-  def   getCmd():
+  def   getCmd( self ):
     
     language = self.language
     options = self.options
@@ -174,7 +174,7 @@ class GccCompilerImpl (aql.Builder):
       values = []
       nodes = []
       for src_file_value in src_file_values:
-        node = aql.Node( self, src_file_value )
+        node = aql.Node( self, None, src_file_value )
         if node.actual( vfile ):
           targets += node.nodeTargets()
         else:
@@ -249,7 +249,7 @@ class GccCompiler(aql.Builder):
     src_groups = self.__groupSources( node.sources(), wish_groups = build_manager.jobs() )
     
     compiler = self.compiler
-    pre_nodes = [ aql.Node( compiler, src_values ) for src_values in src_groups ]
+    pre_nodes = [ aql.Node( compiler, None, src_values ) for src_values in src_groups ]
     
     return pre_nodes
   
@@ -554,10 +554,8 @@ class ToolGxx( ToolGccCommon ):
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   
-  def   Compile( self, options, source_nodes, sources ):
-    compiler = GccCompiler( options, 'c' )
-    
-    return aql.Node( compiler, sources )
+  def   Compile( self, options ):
+    return GccCompiler( options, 'c' )
   
   def   LinkLibrary( self, options, sources ):
     pass

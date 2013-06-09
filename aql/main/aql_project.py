@@ -20,7 +20,6 @@
 __all__ = ( 'Project', 'ProjectConfig',
             'ErrorProjectBuilderMethodExists',
             'ErrorProjectBuilderMethodFewArguments',
-            'ErrorProjectBuilderMethodResultInvalid',
             'ErrorProjectBuilderMethodUnbound',
             'ErrorProjectBuilderMethodWithKW',
             'ErrorProjectInvalidMethod',
@@ -74,13 +73,6 @@ class   ErrorProjectBuilderMethodUnbound( Exception ):
 class   ErrorProjectBuilderMethodFewArguments( Exception ):
   def   __init__( self, method ):
     msg = "Too few arguments in builder method: '%s'" % str(method)
-    super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
-class   ErrorProjectBuilderMethodResultInvalid( Exception ):
-  def   __init__( self, method, result ):
-    msg = "Builder method '%s' must return a Node object, actual result: '%s'" % (method, result)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -180,7 +172,7 @@ class BuilderWrapper( object ):
     if f_kw:
       raise ErrorProjectBuilderMethodWithKW( method )
     
-    min_args = 2  # at least two arguments: for project and for options
+    min_args = 1  # at least one argument: options
     
     if isinstance( method, types.MethodType ):
       if method.__self__ is None:
@@ -198,6 +190,7 @@ class BuilderWrapper( object ):
   def   __getOptionsAndArgs( self, kw ):
     args_kw = {}
     options_kw = {}
+    sources = []
     
     options = self.options
     
@@ -206,27 +199,43 @@ class BuilderWrapper( object ):
         if not isinstance( value, Options ):
           raise ErrorProjectBuilderMethodInvalidOptions( value )
         options = value
-      
-      if name in self.arg_names:
-        args_kw[ name ] = value
+      if name in ['sources', 'source']:
+        sources += toSequnece( value )
       else:
-        options_kw[ name ] = value
+        if name in self.arg_names:
+          args_kw[ name ] = value
+        else:
+          options_kw[ name ] = value
     
     if options_kw:
       options = options.override()
       options.update( options_kw )
     
-    return options, args_kw
+    return options, sources, args_kw
   
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
-    options, args_kw = self.__getOptionsAndArgs( kw )
+    options, sources, args_kw = self.__getOptionsAndArgs( kw )
+    sources += args
     
-    node = self.method( options, *args, **args_kw )
+    builder = self.method( options, **args_kw )
     
-    if not isinstance( node, Node ):
-      raise ErrorProjectBuilderMethodResultInvalid( self.method, node )
+    source_values = []
+    source_nodes = []
+    source_others = []
+    
+    for source in sources:
+      if isinstance( source, Node ):
+        source_nodes.append( source )
+      elif isinstance( source, Value ):
+        source_values.append( source )
+      else:
+        source_others.append( source )
+    
+    source_values.extend( builder.makeSourceValues( source_others ) )
+    
+    node = Node( builder, source_nodes, source_values )
     
     self.project.AddNodes( node )
     
