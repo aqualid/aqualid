@@ -302,7 +302,7 @@ class GccArchiver(aql.Builder):
     
     elif attr == 'cmd':
       self.cmd = cmd = self.getCmd()
-      return signature
+      return cmd
     
     return super(GccCompiler,self).__getattr__( attr )
   
@@ -558,7 +558,7 @@ class ToolGcc( ToolGccCommon ):
     return GccCompiler( options, 'c' )
   
   def   LinkLibrary( self, options, sources ):
-    pass
+    return GccArchiver( options, target )
   
   def   LinkSharedLibrary( self, options, sources ):
     pass
