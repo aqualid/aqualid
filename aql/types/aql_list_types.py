@@ -17,7 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'toSequence', 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
+__all__ = ( 'toSequence', 'isSequence', 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
 
 #//===========================================================================//
 
@@ -34,6 +34,17 @@ def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, st
     return tuple()
   
   return ( value, )
+
+#//===========================================================================//
+
+def   isSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
+  
+  try:
+    if not isinstance( value, str ):
+      iter( value )
+      return True
+  except TypeError:
+    return False
 
 #//===========================================================================//
 
