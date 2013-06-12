@@ -28,7 +28,7 @@ __all__ = ( 'Project', 'ProjectConfig',
 import os
 import types
 
-from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile
+from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile, flattenList
 from aql.types import FilePath, FilePaths, SplitListType, Singleton
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions, Options
@@ -218,6 +218,7 @@ class BuilderWrapper( object ):
   def   __call__( self, *args, **kw ):
     options, sources, args_kw = self.__getOptionsAndArgs( kw )
     sources += args
+    sources = flattenList( sources )
     
     builder = self.method( options, **args_kw )
     

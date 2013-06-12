@@ -9,7 +9,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, execCommand, ErrorProgramNotFound, findFiles, flattenSequence
+                      whereProgram, execCommand, ErrorProgramNotFound, findFiles, flattenList
 
 class TestUtils( AqlTestCase ):
 
@@ -134,14 +134,11 @@ class TestUtils( AqlTestCase ):
     
     l = []
     l_flat = []
-    for i in range(20):
-      l = [l, i, l]
+    for i in range(2000):
+      l = [l, i ]
       l_flat.append( i )
     
-    print( "generated: %s" % (flattenSequence( l ),) )
-    
-    #~ self.assertEqual( flattenSequence( l ), l_flat )
-    #~ self.assertEqual( flattenSequenceFast( l ), l_flat )
+    self.assertEqual( flattenList( l ), l_flat )
   
 #//===========================================================================//
 

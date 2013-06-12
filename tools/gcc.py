@@ -66,9 +66,9 @@ class GccCompilerImpl (aql.Builder):
       cmd += options.cflags.value()
     
     cmd += options.ccflags.value()
-    cmd += itertools.product( ['-D'], options.cppdefines.value() )
-    cmd += itertools.product( ['-I'], options.cpppath.value() )
-    cmd += itertools.product( ['-I'], options.ext_cpppath.value() )
+    cmd += itertools.chain( *itertools.product( ['-D'], options.cppdefines.value() ) )
+    cmd += itertools.chain( *itertools.product( ['-I'], options.cpppath.value() ) )
+    cmd += itertools.chain( *itertools.product( ['-I'], options.ext_cpppath.value() ) )
     
     return cmd
   

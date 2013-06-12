@@ -21,7 +21,7 @@ __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
   'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'flattenSequence',
+  'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'flattenList',
 )
 
 import imp
@@ -528,7 +528,7 @@ def   loadModule( module_file, update_sys_path = True ):
 
 #//===========================================================================//
 
-def   flattenSequence( seq ):
+def   flattenList( seq ):
   
   out_list = list( toSequence( seq ) )
   
