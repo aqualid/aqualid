@@ -119,6 +119,46 @@ class TestPathTypes( AqlTestCase ):
   
   #//=======================================================//
   
+  def   test_file_path_group_dirs( self ):
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file0.txt', 'klm/file0.txt', 'ghi/file1.txt' ])
+    
+    groups = paths.groupByDir()
+    
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+    
+    groups = paths.groupByDir( max_group_size = 1 )
+    
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt'], ['ghi/file1.txt' ], ['klm/file0.txt'] ] )
+    
+    groups = paths.groupByDir( max_group_size = 2 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+    
+    groups = paths.groupByDir( wish_groups = 3 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+    
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt' ])
+    groups = paths.groupByDir( wish_groups = 3 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt'] ])
+    
+    groups = paths.groupByDir( wish_groups = 2 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt'], ['abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt'] ])
+    
+    groups = paths.groupByDir( wish_groups = 2, max_group_size = 1 )
+    self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['abc/file2.txt'], ['abc/file3.txt'], ['abc/file4.txt'], ['abc/file5.txt'] ])
+    
+    groups = paths.groupByDir( wish_groups = 1 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt'] ])
+    
+    paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt', 'abc/file6.txt' ])
+    groups = paths.groupByDir( wish_groups = 3 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt', 'abc/file6.txt'] ])
+    
+    groups = paths.groupByDir( wish_groups = 3, max_group_size = 2 )
+    self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt'], ['abc/file6.txt'] ])
+
+    
+  #//=======================================================//
+  
   def   test_file_path_change( self ):
     paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt'])
     paths_ttt, paths_eee = paths.change( ext = ['.ttt', '.eee'])

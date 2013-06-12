@@ -414,6 +414,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
   
   try:
     try:
+      print( cmd )
       p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
       (stdoutdata, stderrdata) = p.communicate()
       result = p.returncode
