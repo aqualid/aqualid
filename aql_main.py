@@ -53,7 +53,14 @@ def   main():
   prj = Project( options, targets )
   
   prj.Include( makefile )
-  prj.Build()
+  
+  import timeit
+  
+  t = timeit.timeit( prj.Build, number = 1 )
+  
+  print("build time: %s" % t)
+  
+  #~ prj.Build()
 
 
 #//===========================================================================//

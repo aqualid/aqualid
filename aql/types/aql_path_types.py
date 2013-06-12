@@ -250,3 +250,43 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       files = rest_files
     
     return groups
+  
+  #//-------------------------------------------------------//
+  
+  def   groupByDir( self, wish_groups = 1, max_group_size = -1 ):
+    
+    wish_groups = max( 1, wish_groups )
+    groups = []
+    
+    if max_group_size == -1:
+      max_group_size = len(self)
+    else:
+      max_group_size = max(1,max_group_size)
+    
+    files = sorted( self )
+    
+    last_dir = None
+    group_files = FilePaths()
+    tail_size = len(files)
+    
+    group_size = max( 1, tail_size // wish_groups )
+    group_size = min( max_group_size, group_size )
+    
+    for file in files:
+      if (last_dir != file.dir) or (len(group_files) >= group_size):
+        last_dir = file.dir
+        
+        if group_files:
+          groups.append( group_files )
+          group_files = FilePaths()
+        
+          group_size = max( 1, tail_size // max(1, wish_groups - len(groups) ) )
+          group_size = min( max_group_size, group_size )
+      
+      tail_size -= 1
+      group_files.append( file )
+    
+    if group_files:
+      groups.append( group_files )
+    
+    return groups

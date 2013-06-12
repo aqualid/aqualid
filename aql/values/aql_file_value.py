@@ -29,9 +29,9 @@ from .aql_value_pickler import pickleable
 
 from aql.utils import fileSignature, fileTimeSignature
 
-_file_content_cache = {}
 
 #//===========================================================================//
+_file_content_cache = {}
 
 class   FileContentBase( ContentBase ):
   
@@ -39,41 +39,40 @@ class   FileContentBase( ContentBase ):
   
   def   __new__( cls, path = None, signature = None, use_cache = False, file_content_cache = _file_content_cache ):
     
-    if use_cache:
-      try:
-        content = _file_content_cache[ path ]
-        if type(content) is cls:
-          return content
-      except KeyError:
-        pass
-    
-    if signature:
-      self = super(FileContentBase,cls).__new__(cls)
-      self.signature = signature
-      return self
-    
-    if path is None:
-      return NoContent
-    
     if type(path) is cls:
       return path
     
-    self = super(FileContentBase,cls).__new__(cls)
-    self.path = path
+    if not signature and (path is None):
+      return NoContent
     
-    file_content_cache[ path ] = self
+    if not signature:
+      if use_cache:
+        try:
+          signature = file_content_cache.setdefault( id(cls), {})[ path ]
+        except KeyError:
+          pass
+    
+    self = super(FileContentBase,cls).__new__(cls)
+    
+    if signature:
+      self.signature = signature
+    else:
+      self.path = path
+    
     return self
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr ):
+  def   __getattr__( self, attr, file_content_cache = _file_content_cache ):
     if attr == 'signature':
+      
       try:
         signature = self._sign()
       except (OSError, IOError):
         signature = bytearray()
       
       self.signature = signature
+      file_content_cache[ id(self.__class__)][ self.path ] = signature
       del self.path
       
       return signature

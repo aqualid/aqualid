@@ -99,25 +99,26 @@ class GccCompilerImpl (aql.Builder):
   #//-------------------------------------------------------//
   
   def   __buildOne( self, vfile, src_file_value ):
-    with aql.Tempfile( suffix = '.d' ) as dep_file:
-      
-      src_file = src_file_value.name
-      
-      cmd = list(self.cmd)
-      
-      cmd += [ '-MF', dep_file.name ]
-      
-      obj_file = self.buildPath( src_file ) + '.o'
-      cmd += [ '-o', obj_file ]
-      cmd += [ src_file ]
-      
-      cwd = self.buildPath()
-      
-      result = aql.execCommand( cmd, cwd, file_flag = '@' )
-      if result.failed():
-        raise result
-      
-      return self.makeNodeFileTargets( obj_file, ideps = _readDeps( dep_file.name ) )
+    src_file = src_file_value.name
+    
+    cmd = list(self.cmd)
+    
+    build_src_file = self.buildPath( src_file )
+    obj_file = build_src_file + '.o'
+    dep_file = build_src_file + '.d'
+    
+    cmd += [ '-MF', dep_file ]
+    
+    cmd += [ '-o', obj_file ]
+    cmd += [ src_file ]
+    
+    cwd = self.buildPath()
+    
+    result = aql.execCommand( cmd, cwd, file_flag = '@' )
+    if result.failed():
+      raise result
+    
+    return self.makeNodeFileTargets( obj_file, ideps = _readDeps( dep_file ) )
   
   #//===========================================================================//
 
@@ -233,7 +234,7 @@ class GccCompiler(aql.Builder):
       src_files.append( file )
       src_map[ file ] = value
     
-    src_file_groups = src_files.groupUniqueNames( wish_groups = wish_groups, max_group_size = -1 )
+    src_file_groups = src_files.groupByDir( wish_groups = wish_groups, max_group_size = -1 )
     
     groups = []
     
