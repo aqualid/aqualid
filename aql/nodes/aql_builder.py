@@ -128,6 +128,16 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   actual( self, vfile, node ):
+    return node.actual( vfile )
+  
+  #//-------------------------------------------------------//
+  
+  def   save( self, vfile, node ):
+    vfile.addValues( nodes.values() )
+  
+  #//-------------------------------------------------------//
+  
   def   prebuild( self, build_manager, vfile, node ):
     """
     Could be used to dynamically generate nodes which need to be built before the passed node
@@ -204,7 +214,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeSourceValues( self, values ):
+  def   makeValues( self, values ):
     return self.makeFileValues( values )
   
   #//-------------------------------------------------------//

@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile',
+  'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
   'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'flattenList',
@@ -328,6 +328,18 @@ def  findFiles( paths = ".", prefixes = "", suffixes = "", ignore_dir_prefixes =
 
 #//===========================================================================//
 
+def   removeFiles( files ):
+  
+  for file in toSequence( files ):
+    try:
+      os.remove( file )
+    except OSError as ex:
+      if ex.errno != errno.ENOENT:
+        raise
+
+
+#//===========================================================================//
+
 def _decodeData( data ):
   if not data:
     return str()
@@ -428,11 +440,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
   finally:
     if cmd_file is not None:
       cmd_file.close()
-      try:
-        os.remove( cmd_file.name )
-      except OSError as ex:
-        if ex.errno != errno.ENOENT:
-          raise
+      removeFiles( cmd_file.name )
 
 #//===========================================================================//
 

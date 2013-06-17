@@ -21,7 +21,7 @@ __all__ = (
   'BuildManager',
   'ErrorNodeDependencyCyclic', 'ErrorNodeDependencyUnknown',
   'eventBuildNodeFailed', 'eventBuildStatusActualNode', 'eventBuildStatusOutdatedNode', 'eventBuildTargetTwiceByNodes',
-  'eventBuildingNodes', 'eventRebuildNode',
+  'eventBuildingNodes', 'eventRebuildNode', 'eventNodeBuilding', 'eventNodeBuildingFinished',
 )
 
 import threading
@@ -73,6 +73,18 @@ def   eventBuildNodeFailed( node, error ):
     traceback.print_tb( error.__traceback__ )
   except AttributeError:
     pass
+
+#//===========================================================================//
+
+@eventStatus
+def   eventNodeBuilding( node ):
+  logInfo("Building node: %s" % node.buildStr() )
+
+#//===========================================================================//
+
+@eventStatus
+def   eventNodeBuildingFinished( node ):
+  logInfo("Finished node: %s" % node.buildStr() )
 
 #//===========================================================================//
 
@@ -337,6 +349,17 @@ class  _VFiles( object ):
 
 #//===========================================================================//
 
+def   _buildNode( build_manager, vfile, builder, node ):
+  
+  eventNodeBuilding( node )
+  
+  builder.build( build_manager, vfile, node )
+  
+  eventNodeBuildingFinished( node )
+
+
+#//===========================================================================//
+
 class _NodesBuilder (object):
   
   __slots__ = \
@@ -387,22 +410,24 @@ class _NodesBuilder (object):
     for node in nodes:
       vfile = self.vfiles[ node ]
       
+      builder = node.builder
+      
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
       if pre_nodes:
-        node.prebuildFinished( build_manager, vfile, pre_nodes )
+        builder.prebuildFinished( build_manager, vfile, node, pre_nodes )
       else:
-        pre_nodes = node.prebuild( build_manager, vfile )
+        pre_nodes = builder.prebuild( build_manager, vfile, node )
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           build_manager.depends( node, pre_nodes )
           rebuild_nodes.append( node )
           continue
       
-      if node.actual( vfile ):
+      if builder.actual( vfile, node ):
         completed_nodes.append( node )
       else:
-        add_task( node, node.build, build_manager, vfile, pre_nodes )
+        add_task( node, builder.build, build_manager, vfile )
     
     if not completed_nodes and not rebuild_nodes:
       finished_tasks = self.task_manager.completedTasks()

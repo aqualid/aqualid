@@ -18,98 +18,23 @@
 #
 
 __all__ = (
-  'Node', 'NodeTargets',
-  'ErrorNodeInvalidTargetsType', 'ErrorNodeNoTargets', 'ErrorNodeTargetIsNotValue',
-  'eventNodeBuilding', 'eventNodeBuildingFinished',
+  'Node',
 )
 
 import hashlib
 
 from aql.types import toSequence
-from aql.utils import eventStatus, logInfo
 from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsValueContent
 
 #//===========================================================================//
-
-class   ErrorNodeNoTargets( Exception ):
-  def   __init__( self, node ):
-    msg = "Unable to get targets of node: '%s'" % str(node)
-    self.node = node
-    super(ErrorNodeNoTargets, self).__init__( msg )
-
-#//---------------------------------------------------------------------------//
-
-class   ErrorNodeTargetIsNotValue( Exception ):
-  def   __init__( self, value ):
-    msg = "Type of node's target '%s' is not value" % str(type(value))
-    super(ErrorNodeTargetIsNotValue, self).__init__( msg )
-
-#//---------------------------------------------------------------------------//
-
-class   ErrorNodeInvalidTargetsType( Exception ):
-  def   __init__( self, targets ):
-    msg = "Invalid type of node's targets: %s" % str(type(targets))
-    super(ErrorNodeInvalidTargetsType, self).__init__( msg )
-
-#//---------------------------------------------------------------------------//
-
-#~ class   ErrorNodeInvalidSourceType( Exception ):
-  #~ def   __init__( self, source ):
-    #~ msg = "Expected Node or Value type, actual: '%s(%s)'" % (source, type(source))
-    #~ super(ErrorNodeInvalidTargetsType, self).__init__( msg )
-
-#//---------------------------------------------------------------------------//
-
-@eventStatus
-def   eventNodeBuilding( node ):
-  logInfo("Building node: %s" % node.buildStr() )
-
-#//-------------------------------------------------------//
-
-@eventStatus
-def   eventNodeBuildingFinished( node ):
-  logInfo("Finished node: %s" % node.buildStr() )
-
-#//---------------------------------------------------------------------------//
-
-def   _toValues( values ):
-  
-  dst_values = []
-  
-  for value in toSequence( values ):
-    if not isinstance( value, Value ):
-      raise ErrorNodeTargetIsNotValue( value )
-    dst_values.append( value )
-  
-  return dst_values
-
-#//---------------------------------------------------------------------------//
-
-class NodeTargets (object):
-  __slots__ = ( 'target_values', 'itarget_values', 'idep_values' )
-  
-  def   __init__( self, targets = None, itargets = None, ideps = None ):
-    self.target_values  = _toValues( targets )
-    self.itarget_values = _toValues( itargets )
-    self.idep_values    = _toValues( ideps )
-  
-  def   __iadd__(self, other):
-    if not isinstance( other, NodeTargets ):
-      raise ErrorNodeInvalidTargetsType( other )
-    
-    self.target_values  += other.target_values
-    self.itarget_values += other.itarget_values
-    self.idep_values    += other.idep_values
-    
-    return self
-
-#//---------------------------------------------------------------------------//
 
 class Node (object):
   
   __slots__ = \
   (
     'builder',
+    'builder_data'
+    
     'source_nodes',
     'source_values',
     'dep_nodes',
@@ -126,6 +51,7 @@ class Node (object):
   def   __init__( self, builder, source_nodes, source_values ):
     
     self.builder = builder
+    self.builder_data = None
     self.source_nodes = frozenset( toSequence( source_nodes ) )
     self.source_values = tuple( toSequence( source_values ) )
     self.dep_nodes = set()
@@ -135,24 +61,32 @@ class Node (object):
   
   def   depends( self, dep_nodes, dep_values ):
     self.dep_nodes.update( toSequence( dep_nodes ) )
-    self.dep_values.extend( toSequence( dep_values ) )
+    self.dep_values += toSequence( dep_values )
   
   #//=======================================================//
   
-  def   setTargets( self, node_targets ):
-    if not isinstance( node_targets, NodeTargets ):
-      raise ErrorNodeInvalidTargetsType( node_targets )
+  def   split( self, builder = None ):
+    nodes = []
     
-    self.targets_value.content = DependsValueContent( node_targets.target_values )
-    self.itargets_value.content = DependsValueContent( node_targets.itarget_values )
-    self.ideps_value.content = DependsValueContent( node_targets.idep_values )
+    if builder is None:
+      builder = self.builder
+    
+    dep_nodes = self.dep_nodes
+    dep_values = self.dep_values
+    for src_value in self.sources():
+      node = Node( builder, None, src_value )
+      node.dep_nodes = dep_nodes
+      node.dep_values = dep_values
+      nodes.append( node )
+    
+    return nodes
   
   #//=======================================================//
   
   def   __setValues( self ):
     
     names = [ self.builder.name.encode('utf-8') ]
-    sign = [ self.builder.signature ]
+    sign  = [ self.builder.signature ]
     
     sources = self.sources()
     names += ( value.name.encode('utf-8') for value in sources )
@@ -209,59 +143,32 @@ class Node (object):
   
   #//=======================================================//
   
-  def   save( self, vfile, node_targets = None ):
-    
-    if node_targets is not None:
-      self.setTargets( node_targets )
+  def   values( self ):
     
     values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     
-    values += self.targets_value.content.data
-    values += self.itargets_value.content.data
-    values += self.ideps_value.content.data
+    values += toSequence( self.targets_value.content.data )
+    values += toSequence( self.itargets_value.content.data )
+    values += toSequence( self.ideps_value.content.data )
     
-    vfile.addValues( values )
+    return values
   
   #//=======================================================//
   
-  def   prebuild( self, build_manager, vfile ):
-    return self.builder.prebuild( build_manager, vfile, self )
-  
-  #//=======================================================//
-  
-  def   prebuildFinished( self, build_manager, vfile, prebuild_nodes ):
-    self.builder.prebuildFinished( build_manager, vfile, self, prebuild_nodes )
-  
-  #//=======================================================//
-  
-  def   build( self, build_manager, vfile, prebuild_nodes = None ):
-    
-    eventNodeBuilding( self )
-    
-    args = [ build_manager, vfile, self ]
-    if prebuild_nodes:
-      args.append( prebuild_nodes )
-    
-    node_targets = self.builder.build( *args )
-    self.save( vfile, node_targets )
-    
-    eventNodeBuildingFinished( self )
-  
-  #//=======================================================//
-  
-  def   actual( self, vfile ):
+  def   actual( self, vfile, check = True ):
     
     values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     values = vfile.findValues( values )
     
-    if self.sources_value != values.pop(0):
-      return False
+    self.targets_value, self.itargets_value, self.ideps_value = values[1:]
     
-    for value in values:
-      if not value.actual():
+    if check:
+      if self.sources_value != values[0]:
         return False
-    
-    self.targets_value, self.itargets_value, self.ideps_value = values
+      
+      for value in values:
+        if not value.actual():
+          return False
     
     return True
   
@@ -271,9 +178,9 @@ class Node (object):
     values = []
     
     for node in self.source_nodes:
-      values.extend( node.targets() )
+      values += node.targets()
     
-    values.extend( self.source_values )
+    values += self.source_values
     
     values.sort( key = lambda v: v.name )
     
@@ -285,9 +192,9 @@ class Node (object):
     values = []
     
     for node in self.dep_nodes:
-      values.extend( node.targets_value.content.data )
+      values += toSequence( node.targets_value.content.data )
     
-    values.extend( self.dep_values )
+    values += self.dep_values
     
     values.sort( key = lambda v: v.name )
     
@@ -296,47 +203,25 @@ class Node (object):
   #//=======================================================//
   
   def   targets(self):
-    targets = self.targets_value.content
-    if not targets:
-      raise ErrorNodeNoTargets( self )
-    
-    return targets.data
+    return toSequence( self.targets_value.content.data )
   
   #//=======================================================//
   
   def   sideEffects(self):
-    itargets = self.itargets_value.content
-    if not itargets:
-      raise ErrorNodeNoTargets( self )
-    
-    return itargets.data
+    return toSequence( self.itargets_value.content.data )
   
   #//=======================================================//
   
-  def   nodeTargets(self):
-    return NodeTargets( self.targets_value.content.data,
-                        self.itargets_value.content.data,
-                        self.ideps_value.content.data )
-  
-  #//=======================================================//
-  
-  def   clear( self, vfile ):
-    values = [ self.targets_value, self.itargets_value ]
+  def   setTargets( self, targets, itargets = None, ideps = None ):
+    makeValues = self.builder.makeValues
     
-    targets_value, itargets_value = vfile.findValues( values )
-    target_values = targets_value.content.data if targets_value.content else tuple()
-    itarget_values = itargets_value.content.data if itargets_value.content else tuple()
+    target_values   = makeValues( targets, use_cache = False )
+    itarget_values  = makeValues( itargets, use_cache = False )
+    idep_values     = makeValues( ideps, use_cache = True )
     
-    if itarget_values or target_values:
-      self.builder.clear( self, target_values, itarget_values )
-      
-      values += target_values
-      values += itarget_values
-      
-      for value in values:
-        value.content = NoContent
-      
-      vfile.addValues( values )
+    self.targets_value.content  = DependsValueContent( target_values )
+    self.itargets_value.content = DependsValueContent( itarget_values )
+    self.ideps_value.content    = DependsValueContent( idep_values )
   
   #//-------------------------------------------------------//
   

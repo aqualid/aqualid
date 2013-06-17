@@ -325,6 +325,22 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
+  def   removeValues( self, values ):
+    with self.lock:
+      with self.file_lock.writeLock():
+        self.__update()
+        
+        remove_keys = []
+        
+        for value in values:
+          key, val = xash.find( value )
+          if val is not None:
+            remove_keys.append( key )
+        
+        self.data_file.remove( remove_keys )
+  
+  #//---------------------------------------------------------------------------//
+  
   def   clear(self):
     with self.lock:
       with self.file_lock.writeLock():

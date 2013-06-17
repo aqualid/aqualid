@@ -98,105 +98,50 @@ class GccCompilerImpl (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   __buildOne( self, vfile, src_file_value ):
-    src_file = src_file_value.name
-    
-    cmd = list(self.cmd)
-    
-    build_src_file = self.buildPath( src_file )
-    obj_file = build_src_file + '.o'
-    dep_file = build_src_file + '.d'
-    
-    cmd += [ '-MF', dep_file ]
-    
-    cmd += [ '-o', obj_file ]
-    cmd += [ src_file ]
-    
-    cwd = self.buildPath()
-    
-    result = aql.execCommand( cmd, cwd, file_flag = '@' )
-    if result.failed():
-      raise result
-    
-    return self.makeNodeFileTargets( obj_file, ideps = _readDeps( dep_file ) )
+  def   actual( self, vfile, node ):
+    return False
   
-  #//===========================================================================//
-
-  def   __buildMany( self, vfile, src_file_values, src_nodes, targets ):
-    
-    build_dir = self.buildPath()
-    
-    src_files = aql.FilePaths( src_file_values )
-    
-    with aql.Tempdir( dir = build_dir ) as tmp_dir:
-      cwd = aql.FilePath( tmp_dir )
-      
-      cmd = list(self.cmd)
-      cmd += src_files
-      
-      tmp_obj_files, tmp_dep_files = src_files.change( dir = cwd, ext = ['.o','.d'] )
-      
-      obj_files = self.buildPaths( src_files ).add('.o')
-      
-      result = aql.execCommand( cmd, cwd, file_flag = '@' )
-      
-      move_file = os.rename
-      
-      for src_node, obj_file, tmp_obj_file, tmp_dep_file in zip( src_nodes, obj_files, tmp_obj_files, tmp_dep_files ):
-        
-        if not os.path.isfile( tmp_obj_file ):
-          continue
-        
-        if os.path.isfile( obj_file ):
-          os.remove( obj_file )
-        move_file( tmp_obj_file, obj_file )
-        
-        node_targets = self.makeNodeFileTargets( obj_file, ideps = _readDeps( tmp_dep_file ) )
-        
-        src_node.save( vfile, node_targets )
-        
-        targets += node_targets
-      
-      if result.failed():
-        raise result
-    
-    return targets
+  #//-------------------------------------------------------//
+  
+  def   save( self, vfile, node ):
+    pass
   
   #//-------------------------------------------------------//
   
   def   build( self, build_manager, vfile, node ):
     
-    src_file_values = node.sources()
+    obj_files, src_nodes = node.builder_data
+    dep_files = obj_files.change( ext = '.d' )
     
-    if len(src_file_values) == 1:
-      targets = self.__buildOne( vfile, src_file_values[0] )
-    else:
-      targets = aql.NodeTargets()
-      values = []
-      nodes = []
-      for src_file_value in src_file_values:
-        node = aql.Node( self, None, src_file_value )
-        if node.actual( vfile ):
-          targets += node.nodeTargets()
-        else:
-          values.append( src_file_value )
-          nodes.append( node )
-      
-      num = len(values)
-      
-      if num == 1:
-        node_targets = self.__buildOne( vfile, values[0] )
-        nodes[0].save( vfile, node_targets )
-        targets += node_targets
-      elif num > 0:
-        self.__buildMany( vfile, values, nodes, targets )
+    cwd = obj_files[0].dir
     
-    return targets
+    cmd = list(self.cmd)
+    cmd += [ str(src_value) for src_value in node.sources()]
+    
+    removeFiles( obj_files )
+    
+    result = aql.execCommand( cmd, cwd, file_flag = '@' )
+    
+    save_values = []
+    
+    for src_node, obj_file, dep_file in zip( src_nodes, obj_files, dep_files ):
+      if not os.path.isfile( obj_file ):
+        continue
+      
+      src_node.setTargets( obj_file, itargets = dep_files, ideps = _readDeps( dep_file ) )
+      
+      save_values += src_node.values()
+    
+    vfile.addValues( save_values )    # save src nodes
+    
+    if result.failed():
+      raise result
   
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
     return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+
 
 #//===========================================================================//
 
@@ -224,46 +169,65 @@ class GccCompiler(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   __groupSources( self, src_values, wish_groups ):
+  def   actual( self, vfile, node ):
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   save( self, vfile, node ):
+    pass
+  
+  #//-------------------------------------------------------//
+  
+  def   _splitNodes( self, vfile, node ):
+    targets = aql.NodeTargets()
     
-    src_files = aql.FilePaths()
-    src_map = {}
+    src_nodes = []
+    for src_node in node.split( self.compiler ):
+      if src_node.actual( vfile ):
+        targets += src_node.targets()
+      else:
+        src_nodes.append( src_node )
     
-    for value in src_values:
-      file = aql.FilePath( value.name )
-      src_files.append( file )
-      src_map[ file ] = value
+    node.setTargets( targets )
     
-    src_file_groups = src_files.groupByDir( wish_groups = wish_groups, max_group_size = -1 )
-    
-    groups = []
-    
-    for group in src_file_groups:
-      groups.append( [ src_map[name] for name in group ] )
-    
-    return groups
+    return src_nodes
   
   #//-------------------------------------------------------//
   
   def   prebuild( self, build_manager, vfile, node ):
+    src_nodes = self._splitNodes( vfile, node )
     
-    src_groups = self.__groupSources( node.sources(), wish_groups = build_manager.jobs() )
+    src_values = [ src_node.sources()[0] for src_node in src_nodes ]
+    obj_files = self.buildPaths( src_values ).add('.o')
     
-    compiler = self.compiler
-    pre_nodes = [ aql.Node( compiler, None, src_values ) for src_values in src_groups ]
+    groups, indexes = obj_files.groupByDir( wish_groups = build_manager.jobs(), max_group_size = -1 )
     
-    return pre_nodes
+    group_nodes = []
+    
+    for group, index in zip( groups, indexes ):
+      
+      group_values  = [ src_values[ i ] for i in index ]
+      group_nodes   = [ src_nodes[ i ]  for i in index ]
+      group_objs    = [ obj_files[ i ]  for i in index ]
+      
+      group_node = aql.Node( self.compiler, None, group_values )
+      group_node.builder_data = ( group_objs, group_nodes )
+    
+      group_nodes.append[ group_node ]
+    
+    return group_nodes
   
   #//-------------------------------------------------------//
   
   def   prebuildFinished( self, build_manager, vfile, node, pre_nodes ):
     
-    targets = aql.NodeTargets()
+    targets = aql.getTargets()
     
     for pre_node in pre_nodes:
-      targets += pre_node.nodeTargets()
+      targets += pre_node.getTargets()
     
-    node.save( vfile, targets )
+    node.setTargets( targets )
   
   #//-------------------------------------------------------//
   
@@ -325,7 +289,7 @@ class GccArchiver(aql.Builder):
     if result.failed():
       raise result
     
-    return self.makeNodeFileTargets( archive )
+    node.setTargets( archive )
   
   #//-------------------------------------------------------//
   
@@ -392,7 +356,7 @@ class GccLinker(aql.Builder):
     if result.failed():
       raise result
     
-    return self.makeNodeFileTargets( archive )
+    node.setTargets( archive )
   
   #//-------------------------------------------------------//
   
