@@ -163,14 +163,14 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, node, target_values, itarget_values ):
+  def   clear( self, node ):
     """
     Cleans produced values
     """
-    for value in target_values:
+    for value in node.targets():
       value.remove()
     
-    for value in itarget_values:
+    for value in node.sideEffects():
       value.remove()
   
   #//-------------------------------------------------------//

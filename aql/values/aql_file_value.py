@@ -31,13 +31,12 @@ from aql.utils import fileSignature, fileTimeSignature
 
 
 #//===========================================================================//
-_file_content_cache = {}
 
 class   FileContentBase( ContentBase ):
   
   __slots__ = ('path', )
   
-  def   __new__( cls, path = None, signature = None, use_cache = False, file_content_cache = _file_content_cache ):
+  def   __new__( cls, path = None, signature = None, use_cache = False ):
     
     if type(path) is cls:
       return path
@@ -45,34 +44,44 @@ class   FileContentBase( ContentBase ):
     if not signature and (path is None):
       return NoContent
     
-    if not signature:
-      if use_cache:
-        try:
-          signature = file_content_cache.setdefault( id(cls), {})[ path ]
-        except KeyError:
-          pass
-    
     self = super(FileContentBase,cls).__new__(cls)
     
     if signature:
       self.signature = signature
     else:
-      self.path = path
+      if not use_cache:
+        self.signature = self._getSignature( path )
+      else:
+        self.path = path
     
     return self
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr, file_content_cache = _file_content_cache ):
-    if attr == 'signature':
-      
+  def   _getSignature( self, path, use_cache = False, file_content_cache = {} ):
+    
+    cache = file_content_cache.setdefault( id(self.__class__), {})
+    
+    if use_cache:
       try:
-        signature = self._sign()
-      except (OSError, IOError):
-        signature = bytearray()
-      
+        return cache[ path ]
+      except KeyError:
+        pass
+    
+    try:
+      signature = self._sign()
+      cache[ path ] = signature
+    except (OSError, IOError):
+      signature = bytearray()
+    
+    return signature
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
+      signature = self._setSignature( self.path, use_cache = True )
       self.signature = signature
-      file_content_cache[ id(self.__class__)][ self.path ] = signature
       del self.path
       
       return signature

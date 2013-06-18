@@ -155,20 +155,28 @@ class Node (object):
   
   #//=======================================================//
   
-  def   actual( self, vfile, check = True ):
+  def   load( self, vfile ):
+    
+    values = [ self.targets_value, self.itargets_value, self.ideps_value ]
+    values = vfile.findValues( values )
+    
+    self.targets_value, self.itargets_value, self.ideps_value = values
+  
+  #//=======================================================//
+  
+  def   actual( self, vfile  ):
     
     values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     values = vfile.findValues( values )
     
-    self.targets_value, self.itargets_value, self.ideps_value = values[1:]
+    if self.sources_value != values.pop(0):
+      return False
     
-    if check:
-      if self.sources_value != values[0]:
+    for value in values:
+      if not value.actual():
         return False
-      
-      for value in values:
-        if not value.actual():
-          return False
+    
+    self.targets_value, self.itargets_value, self.ideps_value = values
     
     return True
   
