@@ -180,7 +180,7 @@ class GccCompiler(aql.Builder):
   #//-------------------------------------------------------//
   
   def   _splitNodes( self, vfile, node ):
-    targets = aql.NodeTargets()
+    targets = []
     
     src_nodes = []
     for src_node in node.split( self.compiler ):
@@ -222,12 +222,11 @@ class GccCompiler(aql.Builder):
   
   def   prebuildFinished( self, build_manager, vfile, node, pre_nodes ):
     
-    targets = aql.getTargets()
-    
+    targets = []
     for pre_node in pre_nodes:
-      targets += pre_node.getTargets()
+      targets += pre_node.targets()
     
-    node.setTargets( targets )
+    node.addTargets( targets )
   
   #//-------------------------------------------------------//
   

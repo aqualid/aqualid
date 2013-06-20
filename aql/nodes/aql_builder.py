@@ -163,15 +163,19 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, node ):
+  def   clear( self, vfile, node ):
     """
     Cleans produced values
     """
+    node.load( vfile )
+    
     for value in node.targets():
       value.remove()
     
     for value in node.sideEffects():
       value.remove()
+    
+    vfile.removeValues( node.values() )
   
   #//-------------------------------------------------------//
   

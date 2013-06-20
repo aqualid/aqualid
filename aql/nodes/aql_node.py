@@ -28,6 +28,23 @@ from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsVa
 
 #//===========================================================================//
 
+def   _addTargets( targets_value, targets, replace, valueMaker, use_cache )
+  if not targets:
+    return
+  
+  if replace:
+    target_values = []
+  else
+    target_values = targets_value.content.data
+    if target_values is None:
+      target_values = []
+  
+  target_values += valueMaker( targets, use_cache = use_cache )
+  targets_value.content = DependsValueContent( target_values )
+
+
+#//===========================================================================//
+
 class Node (object):
   
   __slots__ = \
@@ -221,15 +238,17 @@ class Node (object):
   #//=======================================================//
   
   def   setTargets( self, targets, itargets = None, ideps = None ):
+    self.addTargets( targets, itargets, ideps, replace = True )
+  
+  #//=======================================================//
+  
+  def   addTargets( self, targets, itargets = None, ideps = None, replace = False ):
+    
     makeValues = self.builder.makeValues
     
-    target_values   = makeValues( targets, use_cache = False )
-    itarget_values  = makeValues( itargets, use_cache = False )
-    idep_values     = makeValues( ideps, use_cache = True )
-    
-    self.targets_value.content  = DependsValueContent( target_values )
-    self.itargets_value.content = DependsValueContent( itarget_values )
-    self.ideps_value.content    = DependsValueContent( idep_values )
+    _addTargets( self.targets_value,  targets, replace, makeValues, False )
+    _addTargets( self.itargets_value, itargets, replace, makeValues, False )
+    _addTargets( self.idep_value, ideps, replace, makeValues, False )
   
   #//-------------------------------------------------------//
   

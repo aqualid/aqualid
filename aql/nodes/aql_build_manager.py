@@ -567,18 +567,15 @@ class BuildManager (object):
   
   def   clear( self ):
     
-    get_tails = self._nodes.tails
+    getTails = self._nodes.tails
     
-    remove_tail = self._nodes.removeTail
-    
-    outdated_nodes = set()
+    removeTailNode = self._nodes.removeTail
     
     with _VFiles() as vfiles:
       clear_values = {}
       
       while True:
-        tails = get_tails()
-        tails -= outdated_nodes
+        tails = getTails()
         
         if not tails:
           break
@@ -586,20 +583,9 @@ class BuildManager (object):
         for node in tails:
           vfile = vfiles[ node ]
           
-          node.load( vfile ):
-          node.builder.clear( node )
+          node.builder.clear( vfile, node )
           
-          clear_values += node.values()
-          
-          remove_tail( node )
-          
-            clear_nodes.insert( 0, node )  # add nodes in LIFO order to clear nodes from root to leaf nodes
-          else:
-            outdated_nodes.add( node )
-      
-      for node in clear_nodes:
-        vfile = vfiles[ node ]
-        node.clear( vfile )
+          removeTailNode( node )
   
   #//-------------------------------------------------------//
   
@@ -619,7 +605,7 @@ class BuildManager (object):
         
         for node in tails:
           vfile = vfiles[ node ]
-          if not node.actual( vfile ):
+          if not node.builder.actual( vfile, node ):
             eventBuildStatusOutdatedNode( node )
             outdated_nodes.add( node )
           else:
