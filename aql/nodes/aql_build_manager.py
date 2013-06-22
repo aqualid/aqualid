@@ -21,7 +21,7 @@ __all__ = (
   'BuildManager',
   'ErrorNodeDependencyCyclic', 'ErrorNodeDependencyUnknown',
   'eventBuildNodeFailed', 'eventBuildStatusActualNode', 'eventBuildStatusOutdatedNode', 'eventBuildTargetTwiceByNodes',
-  'eventBuildingNodes', 'eventRebuildNode', 'eventNodeBuilding', 'eventNodeBuildingFinished',
+  'eventBuildingNodes', 'eventNodeBuilding', 'eventNodeBuildingFinished',
 )
 
 import threading
@@ -30,8 +30,6 @@ import traceback
 from aql.types import toSequence
 from aql.utils import eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
-
-from .aql_builder import RebuildNode
 
 #//===========================================================================//
 
@@ -56,12 +54,6 @@ def   eventBuildTargetTwiceByNodes( value, node1, node2 ):
 @eventStatus
 def   eventBuildingNodes( total_nodes ):
   logInfo("Building %s nodes" % total_nodes )
-
-#//===========================================================================//
-
-@eventInfo
-def   eventRebuildNode( node ):
-  logInfo("Rebuild node: %s" % node.builder.buildStr( node ) )
 
 #//===========================================================================//
 
@@ -349,11 +341,11 @@ class  _VFiles( object ):
 
 #//===========================================================================//
 
-def   _buildNode( build_manager, vfile, builder, node ):
+def   _buildNode( builder, node ):
   
   eventNodeBuilding( node )
   
-  builder.build( build_manager, vfile, node )
+  builder.build( node )
   
   eventNodeBuildingFinished( node )
 
@@ -405,19 +397,20 @@ class _NodesBuilder (object):
     failed_nodes = {}
     rebuild_nodes = []
     
-    add_task = self.task_manager.addTask
+    vfiles = self.vfiles
+    addTask = self.task_manager.addTask
     
     for node in nodes:
-      vfile = self.vfiles[ node ]
+      vfile = vfiles[ node ]
       
       builder = node.builder
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
       if pre_nodes:
-        builder.prebuildFinished( build_manager, vfile, node, pre_nodes )
+        builder.prebuildFinished( vfile, node, pre_nodes )
       else:
-        pre_nodes = builder.prebuild( build_manager, vfile, node )
+        pre_nodes = builder.prebuild( vfile, node )
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           build_manager.depends( node, pre_nodes )
@@ -427,24 +420,22 @@ class _NodesBuilder (object):
       if builder.actual( vfile, node ):
         completed_nodes.append( node )
       else:
-        add_task( node, builder.build, build_manager, vfile )
+        addTask( node, _buildNode, builder, node )
     
     if not completed_nodes and not rebuild_nodes:
       finished_tasks = self.task_manager.completedTasks()
       
       for node, exception in finished_tasks:
+        
         if exception is None:
+          node.builder.save( vfiles[ node ], node )
           completed_nodes.append( node )
         else:
-          if isinstance( exception, RebuildNode ):
-            eventRebuildNode( node )
-            rebuild_nodes.append( node )
-          else:
-            if not self.keep_going:
-              self.task_manager.stop()
-              
-            eventBuildNodeFailed( node, exception )
-            failed_nodes[ node ] = exception
+          if not self.keep_going:
+            self.task_manager.stop()
+            
+          eventBuildNodeFailed( node, exception )
+          failed_nodes[ node ] = exception
     
     return completed_nodes, failed_nodes, rebuild_nodes
   

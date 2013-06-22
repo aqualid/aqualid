@@ -72,6 +72,7 @@ def   _build_options():
   options.keep_going    = BoolOptionType( description = "Continue build even if any target failed." )
   options.build_always  = BoolOptionType( description = "Unconditionally build all targets." )
   options.jobs          = RangeOptionType( 1, 32, description = "Number of parallel jobs to build targets." )
+  options.group_size    = OptionType( value_type = int, description = "Maximum size build group." )
   options.log_level     = RangeOptionType( 0, 2, description = 'Logging level' )
   
   #//-------------------------------------------------------//
@@ -226,6 +227,7 @@ def   _init_defaults( options ):
     #//-------------------------------------------------------//
     
     options.jobs.setDefault( cpuCount() )
+    options.group_size = -1
     options.log_level.setDefault( 2 )
     
     #//-------------------------------------------------------//

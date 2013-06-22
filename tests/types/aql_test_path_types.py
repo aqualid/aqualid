@@ -122,38 +122,41 @@ class TestPathTypes( AqlTestCase ):
   def   test_file_path_group_dirs( self ):
     paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file0.txt', 'klm/file0.txt', 'ghi/file1.txt' ])
     
-    groups = paths.groupByDir()
+    groups, indexes = paths.groupByDir()
+    print( groups )
+    print( indexes )
     
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
+    self.assertEqual( indexes, [ [0,1], [2], [3,5], [4] ])
     
-    groups = paths.groupByDir( max_group_size = 1 )
+    groups, indexes = paths.groupByDir( max_group_size = 1 )
     
     self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt'], ['ghi/file1.txt' ], ['klm/file0.txt'] ] )
     
-    groups = paths.groupByDir( max_group_size = 2 )
+    groups, indexes = paths.groupByDir( max_group_size = 2 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
     
-    groups = paths.groupByDir( wish_groups = 3 )
+    groups, indexes = paths.groupByDir( wish_groups = 3 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
     
     paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt' ])
-    groups = paths.groupByDir( wish_groups = 3 )
+    groups, indexes = paths.groupByDir( wish_groups = 3 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt'] ])
     
-    groups = paths.groupByDir( wish_groups = 2 )
+    groups, indexes = paths.groupByDir( wish_groups = 2 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt'], ['abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt'] ])
     
-    groups = paths.groupByDir( wish_groups = 2, max_group_size = 1 )
+    groups, indexes = paths.groupByDir( wish_groups = 2, max_group_size = 1 )
     self.assertEqual( groups, [ ['abc/file0.txt'], ['abc/file1.txt'], ['abc/file2.txt'], ['abc/file3.txt'], ['abc/file4.txt'], ['abc/file5.txt'] ])
     
-    groups = paths.groupByDir( wish_groups = 1 )
+    groups, indexes = paths.groupByDir( wish_groups = 1 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt'] ])
     
     paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt', 'abc/file6.txt' ])
-    groups = paths.groupByDir( wish_groups = 3 )
+    groups, indexes = paths.groupByDir( wish_groups = 3 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt', 'abc/file6.txt'] ])
     
-    groups = paths.groupByDir( wish_groups = 3, max_group_size = 2 )
+    groups, indexes = paths.groupByDir( wish_groups = 3, max_group_size = 2 )
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt'], ['abc/file6.txt'] ])
 
     

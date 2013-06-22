@@ -104,38 +104,35 @@ class GccCompilerImpl (aql.Builder):
   #//-------------------------------------------------------//
   
   def   save( self, vfile, node ):
-    pass
+    values = []
+    
+    src_nodes = node.builder_data[1]
+    
+    for src_node in src_nodes:
+      values += src_node.values()
+    
+    vfile.addValues( values )
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     
     obj_files, src_nodes = node.builder_data
-    dep_files = obj_files.change( ext = '.d' )
     
     cwd = obj_files[0].dir
     
     cmd = list(self.cmd)
     cmd += [ str(src_value) for src_value in node.sources()]
     
-    removeFiles( obj_files )
-    
     result = aql.execCommand( cmd, cwd, file_flag = '@' )
-    
-    save_values = []
-    
-    for src_node, obj_file, dep_file in zip( src_nodes, obj_files, dep_files ):
-      if not os.path.isfile( obj_file ):
-        continue
-      
-      src_node.setTargets( obj_file, itargets = dep_files, ideps = _readDeps( dep_file ) )
-      
-      save_values += src_node.values()
-    
-    vfile.addValues( save_values )    # save src nodes
-    
     if result.failed():
       raise result
+    
+    targets = obj_file
+    
+    for src_node, obj_file, dep_file in zip( src_nodes, obj_files ):
+      dep_file = obj_file.change( ext = '.d' )
+      src_node.setTargets( obj_file, itargets = dep_file, ideps = _readDeps( dep_file ) )
   
   #//-------------------------------------------------------//
   
@@ -174,11 +171,6 @@ class GccCompiler(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   save( self, vfile, node ):
-    pass
-  
-  #//-------------------------------------------------------//
-  
   def   _splitNodes( self, vfile, node ):
     targets = []
     
@@ -195,38 +187,42 @@ class GccCompiler(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, build_manager, vfile, node ):
+  def   prebuild( self, vfile, node ):
     src_nodes = self._splitNodes( vfile, node )
     
     src_values = [ src_node.sources()[0] for src_node in src_nodes ]
-    obj_files = self.buildPaths( src_values ).add('.o')
+    obj_files = self.buildPaths( src_values ).change( ext = '.o')
     
-    groups, indexes = obj_files.groupByDir( wish_groups = build_manager.jobs(), max_group_size = -1 )
+    #~ num_groups = self.options.jobs.value()
+    num_groups = 1
+    group_size = self.options.group_size.value()
     
-    group_nodes = []
+    groups, indexes = obj_files.groupByDir( wish_groups = num_groups, max_group_size = group_size )
+    
+    nodes = []
     
     for group, index in zip( groups, indexes ):
       
       group_values  = [ src_values[ i ] for i in index ]
       group_nodes   = [ src_nodes[ i ]  for i in index ]
-      group_objs    = [ obj_files[ i ]  for i in index ]
+      group_objs    = aql.FilePaths( obj_files[ i ] for i in index )
       
       group_node = aql.Node( self.compiler, None, group_values )
       group_node.builder_data = ( group_objs, group_nodes )
     
-      group_nodes.append[ group_node ]
+      nodes.append( group_node )
     
-    return group_nodes
+    return nodes
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, build_manager, vfile, node, pre_nodes ):
+  def   prebuildFinished( self, vfile, node, pre_nodes ):
     
-    targets = []
+    targets = list( node.targets() )
     for pre_node in pre_nodes:
       targets += pre_node.targets()
     
-    node.addTargets( targets )
+    node.setTargets( targets )
   
   #//-------------------------------------------------------//
   
@@ -272,7 +268,7 @@ class GccArchiver(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     
     obj_files = node.sources()
     archive = self.buildPath( self.target ).change( prefix = 'lib', ext = '.a', )
@@ -339,7 +335,7 @@ class GccLinker(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     
     obj_files = node.sources()
     archive = self.buildPath( self.target ).change( prefix = 'lib', ext = '.a', )

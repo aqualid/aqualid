@@ -69,7 +69,7 @@ class   FileContentBase( ContentBase ):
         pass
     
     try:
-      signature = self._sign()
+      signature = self._sign( path )
       cache[ path ] = signature
     except (OSError, IOError):
       signature = bytearray()
@@ -80,7 +80,7 @@ class   FileContentBase( ContentBase ):
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
-      signature = self._setSignature( self.path, use_cache = True )
+      signature = self._getSignature( self.path, use_cache = True )
       self.signature = signature
       del self.path
       
@@ -107,16 +107,16 @@ class   FileContentBase( ContentBase ):
 @pickleable
 class   FileContentChecksum (FileContentBase):
   
-  def   _sign( self ):
-    return fileSignature( self.path )
+  def   _sign( self, path ):
+    return fileSignature( path )
 
 #//===========================================================================//
 
 @pickleable
 class   FileContentTimeStamp (FileContentBase):
   
-  def   _sign( self ):
-    return fileTimeSignature( self.path )
+  def   _sign( self, path ):
+    return fileTimeSignature( path )
 
 #//===========================================================================//
 

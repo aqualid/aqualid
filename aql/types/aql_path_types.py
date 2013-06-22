@@ -257,36 +257,42 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     
     wish_groups = max( 1, wish_groups )
     groups = []
+    index_groups = []
     
     if max_group_size == -1:
       max_group_size = len(self)
     else:
       max_group_size = max(1,max_group_size)
     
-    files = sorted( self )
+    files = sorted( enumerate(self), key = lambda v:v[1] )
     
     last_dir = None
     group_files = FilePaths()
+    group_indexes = []
     tail_size = len(files)
     
     group_size = max( 1, tail_size // wish_groups )
     group_size = min( max_group_size, group_size )
     
-    for file in files:
+    for index, file in files:
       if (last_dir != file.dir) or (len(group_files) >= group_size):
         last_dir = file.dir
         
         if group_files:
           groups.append( group_files )
+          index_groups.append( group_indexes )
           group_files = FilePaths()
+          group_indexes = []
         
           group_size = max( 1, tail_size // max(1, wish_groups - len(groups) ) )
           group_size = min( max_group_size, group_size )
       
       tail_size -= 1
       group_files.append( file )
+      group_indexes.append( index )
     
     if group_files:
       groups.append( group_files )
+      index_groups.append( group_indexes )
     
-    return groups
+    return groups, index_groups

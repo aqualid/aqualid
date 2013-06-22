@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Builder', 'RebuildNode',
+  'Builder',
 )
 
 import os
@@ -26,7 +26,6 @@ import errno
 
 from aql.types import toSequence, FilePath, FilePaths
 from aql.values import Value, FileValue, FileContentChecksum, FileContentTimeStamp
-from .aql_node import NodeTargets
 
 #//===========================================================================//
 
@@ -73,11 +72,6 @@ def   _makeFileValues( content_type, values, use_cache ):
     file_values.append( value )
   
   return file_values
-
-#//===========================================================================//
-
-class RebuildNode( Exception ):
-  pass
 
 #//===========================================================================//
 
@@ -134,11 +128,11 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   save( self, vfile, node ):
-    vfile.addValues( nodes.values() )
+    vfile.addValues( node.values() )
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, build_manager, vfile, node ):
+  def   prebuild( self, vfile, node ):
     """
     Could be used to dynamically generate nodes which need to be built before the passed node
     Returns list of nodes
@@ -147,7 +141,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, build_manager, vfile, node, prebuild_nodes ):
+  def   prebuildFinished( self, vfile, node, prebuild_nodes ):
     """
     Called when all node returned by the prebuild() methods has been built
     """
@@ -155,9 +149,17 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node, prebuild_nodes = None ):
+  def   buildFailed( self, vfile, node ):
     """
-    Builds the node and returns a <NodeTargets> object.
+    Called when node build failed
+    """
+    pass
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    """
+    Builds a node
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
@@ -218,24 +220,13 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeValues( self, values ):
-    return self.makeFileValues( values )
+  def   makeValues( self, values, use_cache = False ):
+    return self.makeFileValues( values, use_cache )
   
   #//-------------------------------------------------------//
   
-  def   makeFileValues( self, values, use_cache = True ):
+  def   makeFileValues( self, values, use_cache = False ):
     content_type = self.__fileContentType()
     return _makeFileValues( content_type, values, use_cache )
   
-  #//-------------------------------------------------------//
-  
-  def   makeNodeFileTargets( self, targets = None, itargets = None, ideps = None, use_cache = True ):
-    
-    content_type = self.__fileContentType()
-    
-    target_values = _makeFileValues( content_type, targets, use_cache = False )
-    itarget_values = _makeFileValues( content_type, itargets, use_cache = False )
-    idep_values = _makeFileValues( content_type, ideps, use_cache = use_cache )
-    
-    return NodeTargets( target_values, itarget_values, idep_values )
 

@@ -151,7 +151,12 @@ class ValuesFile (object):
     get_value = self.xash.__getitem__
     
     try:
+      
+      if not kvalue.content:
+        return kvalue
+      
       keys = kvalue.content.data
+      
       if kvalue_key in keys: # cyslic dependency
         return DependsValue( kvalue.name )
       

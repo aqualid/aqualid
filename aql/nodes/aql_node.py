@@ -28,29 +28,12 @@ from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsVa
 
 #//===========================================================================//
 
-def   _addTargets( targets_value, targets, replace, valueMaker, use_cache )
-  if not targets:
-    return
-  
-  if replace:
-    target_values = []
-  else
-    target_values = targets_value.content.data
-    if target_values is None:
-      target_values = []
-  
-  target_values += valueMaker( targets, use_cache = use_cache )
-  targets_value.content = DependsValueContent( target_values )
-
-
-#//===========================================================================//
-
 class Node (object):
   
   __slots__ = \
   (
     'builder',
-    'builder_data'
+    'builder_data',
     
     'source_nodes',
     'source_values',
@@ -164,9 +147,14 @@ class Node (object):
     
     values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
     
-    values += toSequence( self.targets_value.content.data )
-    values += toSequence( self.itargets_value.content.data )
-    values += toSequence( self.ideps_value.content.data )
+    targets = self.targets_value.content.data
+    if targets: values += targets
+    
+    itargets = self.itargets_value.content.data
+    if itargets: values += itargets
+    
+    ideps = self.ideps_value.content.data
+    if ideps: values += ideps
     
     return values
   
@@ -228,27 +216,28 @@ class Node (object):
   #//=======================================================//
   
   def   targets(self):
-    return toSequence( self.targets_value.content.data )
+    targets = self.targets_value.content.data
+    return targets if targets else tuple()
   
   #//=======================================================//
   
   def   sideEffects(self):
-    return toSequence( self.itargets_value.content.data )
+    itargets = self.itargets_value.content.data
+    return itargets if itargets else tuple()
   
   #//=======================================================//
   
   def   setTargets( self, targets, itargets = None, ideps = None ):
-    self.addTargets( targets, itargets, ideps, replace = True )
-  
-  #//=======================================================//
-  
-  def   addTargets( self, targets, itargets = None, ideps = None, replace = False ):
     
     makeValues = self.builder.makeValues
     
-    _addTargets( self.targets_value,  targets, replace, makeValues, False )
-    _addTargets( self.itargets_value, itargets, replace, makeValues, False )
-    _addTargets( self.idep_value, ideps, replace, makeValues, False )
+    target_values = makeValues( targets, use_cache = False )
+    itarget_values = makeValues( itargets, use_cache = False )
+    idep_values = makeValues( ideps, use_cache = True )
+    
+    self.targets_value.content = DependsValueContent( target_values )
+    self.itargets_value.content = DependsValueContent( itarget_values )
+    self.ideps_value.content = DependsValueContent( idep_values )
   
   #//-------------------------------------------------------//
   

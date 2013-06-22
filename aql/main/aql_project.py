@@ -234,7 +234,7 @@ class BuilderWrapper( object ):
       else:
         source_others.append( source )
     
-    source_values.extend( builder.makeSourceValues( source_others ) )
+    source_values.extend( builder.makeValues( source_others ) )
     
     node = Node( builder, source_nodes, source_values )
     

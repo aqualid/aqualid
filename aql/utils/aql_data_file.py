@@ -251,7 +251,7 @@ class DataFile (object):
   def  open( self, filename, loadLocation = DataFileChunk.load):
     self.close()
     
-    stream = openFile( filename, write = True, binary = True, sync = True )
+    stream = openFile( filename, write = True, binary = True, sync = False )
     
     self.stream = stream
     

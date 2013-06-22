@@ -76,7 +76,7 @@ class _TaskExecutor( threading.Thread ):
       try:
         block = not is_finishing()
         
-        id, func, args, kw = tasks.get( block )
+        task_id, func, args, kw = tasks.get( block )
         tasks.task_done()
       except queue.Empty:
         break
@@ -84,8 +84,8 @@ class _TaskExecutor( threading.Thread ):
       try:
         func(*args, **kw)
         
-        if id is not None:
-          success = (id, None)
+        if task_id is not None:
+          success = (task_id, None)
           completed_tasks.put( success )
       
       except _FinishingException:
@@ -95,8 +95,8 @@ class _TaskExecutor( threading.Thread ):
         break
       
       except (Exception, BaseException) as err:
-        if id is not None:
-          fail = ( id, err )
+        if task_id is not None:
+          fail = ( task_id, err )
           completed_tasks.put( fail )
         else:
           logWarning("Task failed with error: %s" % str(err) )
@@ -168,9 +168,9 @@ class TaskManager (object):
   
   #//-------------------------------------------------------//
   
-  def   addTask( self, id, function, *args, **kw ):
+  def   addTask( self, task_id, function, *args, **kw ):
     if not self.exit_event.is_set() and not self.finish_event.is_set():
-      task = ( id, function, args, kw )
+      task = ( task_id, function, args, kw )
       self.tasks.put( task )
   
   #//-------------------------------------------------------//
@@ -184,7 +184,7 @@ class TaskManager (object):
     
     while True:
       try:
-        block = (not completed_tasks) and (not is_exit())
+        block = not (completed_tasks or is_exit() or self.tasks.empty())
         task_result = self.completed_tasks.get( block = block )
         
         completed_tasks.append( task_result )
