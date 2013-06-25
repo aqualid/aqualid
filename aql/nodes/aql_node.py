@@ -65,11 +65,8 @@ class Node (object):
   
   #//=======================================================//
   
-  def   split( self, builder = None ):
+  def   split( self, builder ):
     nodes = []
-    
-    if builder is None:
-      builder = self.builder
     
     dep_nodes = self.dep_nodes
     dep_values = self.dep_values

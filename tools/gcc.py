@@ -103,36 +103,23 @@ class GccCompilerImpl (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   save( self, vfile, node ):
-    values = []
-    
-    src_nodes = node.builder_data[1]
-    
-    for src_node in src_nodes:
-      values += src_node.values()
-    
-    vfile.addValues( values )
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, node ):
     
-    obj_files, src_nodes = node.builder_data
+    source = node.sources()[0]
+    obj_file = self.buildPath( source )
     
-    cwd = obj_files[0].dir
+    cwd = obj_file.dir
+    dep_file = obj_file +'.d'
+    obj_file += '.o'
     
     cmd = list(self.cmd)
-    cmd += [ str(src_value) for src_value in node.sources()]
+    cmd += ['-o', obj_file, '-MF', dep_file, str(source) ]
     
     result = aql.execCommand( cmd, cwd, file_flag = '@' )
     if result.failed():
       raise result
     
-    targets = obj_file
-    
-    for src_node, obj_file, dep_file in zip( src_nodes, obj_files ):
-      dep_file = obj_file.change( ext = '.d' )
-      src_node.setTargets( obj_file, itargets = dep_file, ideps = _readDeps( dep_file ) )
+    node.setTargets( obj_file, itargets = dep_file, ideps = _readDeps( dep_file ) )
   
   #//-------------------------------------------------------//
   
@@ -188,31 +175,18 @@ class GccCompiler(aql.Builder):
   #//-------------------------------------------------------//
   
   def   prebuild( self, vfile, node ):
-    src_nodes = self._splitNodes( vfile, node )
+    targets = []
     
-    src_values = [ src_node.sources()[0] for src_node in src_nodes ]
-    obj_files = self.buildPaths( src_values ).change( ext = '.o')
+    src_nodes = []
+    for src_node in node.split( self.compiler ):
+      if src_node.actual( vfile ):
+        targets += src_node.targets()
+      else:
+        src_nodes.append( src_node )
     
-    #~ num_groups = self.options.jobs.value()
-    num_groups = 1
-    group_size = self.options.group_size.value()
+    node.setTargets( targets )
     
-    groups, indexes = obj_files.groupByDir( wish_groups = num_groups, max_group_size = group_size )
-    
-    nodes = []
-    
-    for group, index in zip( groups, indexes ):
-      
-      group_values  = [ src_values[ i ] for i in index ]
-      group_nodes   = [ src_nodes[ i ]  for i in index ]
-      group_objs    = aql.FilePaths( obj_files[ i ] for i in index )
-      
-      group_node = aql.Node( self.compiler, None, group_values )
-      group_node.builder_data = ( group_objs, group_nodes )
-    
-      nodes.append( group_node )
-    
-    return nodes
+    return src_nodes
   
   #//-------------------------------------------------------//
   

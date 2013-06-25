@@ -236,6 +236,7 @@ class ValuesFile (object):
             invalid_keys.append( key )
         
         data_file.remove( invalid_keys )
+        data_file.flush()
   
   #//---------------------------------------------------------------------------//
   
@@ -277,6 +278,7 @@ class ValuesFile (object):
     with self.lock:
       with self.file_lock.writeLock():
         self.__update()
+        self.data_file.flush()
       
       out_values = []
       
@@ -327,6 +329,8 @@ class ValuesFile (object):
         for dep_value in dep_values:
           value = self.__makeDependsKey( dep_value )
           self.__addValue( value )
+        
+        self.data_file.flush()
   
   #//---------------------------------------------------------------------------//
   
@@ -343,6 +347,7 @@ class ValuesFile (object):
             remove_keys.append( key )
         
         self.data_file.remove( remove_keys )
+        self.data_file.flush()
   
   #//---------------------------------------------------------------------------//
   

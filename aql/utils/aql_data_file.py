@@ -307,6 +307,12 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
+  def   flush(self):
+    if self.stream is not None:
+      self.stream.flush()
+  
+  #//-------------------------------------------------------//
+  
   def   close(self):
     if self.stream is not None:
       self.stream.close()
