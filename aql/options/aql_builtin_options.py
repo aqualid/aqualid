@@ -97,6 +97,10 @@ def   _target_options():
                                         default = 'native',
                                         description = "The target machine type, e.g. 'i386'" )
   
+  options.target_subsystem = EnumOptionType( values = [ 'console', 'windows' ],
+                                              default = 'console',
+                                              description = "The target subsystem." )
+  
   options.target_platform = StrOptionType( ignore_case = True,
                                            description = "The target system's distribution, e.g. 'win32', 'Linux'" )
   

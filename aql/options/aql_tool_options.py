@@ -32,6 +32,7 @@ from .aql_option_types import BoolOptionType, ListOptionType, PathOptionType, St
 
 def   _commonCCppCompilerOptions( options ):
   
+  options.objsuffix = PathOptionType( description = "Object suffix." )
   options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
   options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
   
@@ -77,6 +78,10 @@ def   _cCompilerOptions( options ):
 #//===========================================================================//
 
 def   _linkerOptions( options ):
+  
+  options.libsuffix = PathOptionType( description = "Static library suffix." )
+  options.shlibsuffix = PathOptionType( description = "Shared library suffix." )
+  options.progsuffix = PathOptionType( description = "Program suffix." )
   
   options.link = PathOptionType( description = "Program or dynamic library linker" )
   options.lib = PathOptionType( description = "Static library archiver program" )
