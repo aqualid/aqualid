@@ -42,10 +42,11 @@ def   _addPrefix( prefix, values ):
 
 class GccCompilerImpl (aql.Builder):
   
-  __slots__ = ( 'cmd', 'language')
+  __slots__ = ( 'cmd', 'language', 'shared')
   
-  def   __init__(self, options, language ):
+  def   __init__(self, options, language, shared ):
     self.language = language
+    self.shared = shared
     
   #//-------------------------------------------------------//
   
@@ -65,6 +66,9 @@ class GccCompilerImpl (aql.Builder):
     else:
       cmd += options.cflags.value()
     
+    if self.shared:
+      cmd += ['-fPIC']
+    
     cmd += options.ccflags.value()
     cmd += itertools.chain( *itertools.product( ['-D'], options.cppdefines.value() ) )
     cmd += itertools.chain( *itertools.product( ['-I'], options.cpppath.value() ) )
@@ -82,8 +86,11 @@ class GccCompilerImpl (aql.Builder):
   def   __getattr__( self, attr ):
     
     if attr == 'name':
-      name = self.getName() + '.' + self.language
-      self.name = name
+      options = self.options
+      prefix = options.prefix.value()
+      suffix = options.shobjsuffix.value() if self.shared else options.objsuffix.value()
+      
+      self.name = name = '.'.join( [ self.getName(), prefix, suffix ] )
       return name
     
     elif attr == 'signature':
@@ -105,12 +112,17 @@ class GccCompilerImpl (aql.Builder):
   
   def   build( self, node ):
     
+    options = self.options
+    
+    prefix = options.prefix.value()
+    suffix = options.shobjsuffix.value() if self.shared else options.objsuffix.value()
+    
     source = node.sources()[0]
     obj_file = self.buildPath( source )
     
     cwd = obj_file.dir
+    obj_file = obj_file.change( prefix = prefix ) + suffix
     dep_file = obj_file +'.d'
-    obj_file += self.options.objsuffix
     
     cmd = list(self.cmd)
     cmd += ['-o', obj_file, '-MF', dep_file, str(source) ]
@@ -133,16 +145,15 @@ class GccCompiler(aql.Builder):
   
   __slots__ = ('compiler')
   
-  def   __init__(self, options, language ):
-    self.compiler = GccCompilerImpl( options, language )
+  def   __init__(self, options, language, shared ):
+    self.compiler = GccCompilerImpl( options, language, shared )
   
   #//-------------------------------------------------------//
   
   def   __getattr__( self, attr ):
     
     if attr == 'name':
-      name = self.getName() + '.' + self.compiler.name
-      self.name = name
+      self.name = name = self.compiler.name
       return name
     
     elif attr == 'signature':
@@ -226,8 +237,13 @@ class GccArchiver(aql.Builder):
   def   __getattr__( self, attr ):
     
     if attr == 'name':
-      name = self.getName() + '.' + self.target
-      self.name = name
+      
+      options = self.options
+      
+      prefix = options.libprefix.value() + options.prefix.value()
+      suffix = options.libsuffix.value()
+      
+      self.name = name = '.'.join( [ self.getName(), self.target, prefix, suffix ] )
       return name
     
     elif attr == 'signature':
@@ -244,8 +260,12 @@ class GccArchiver(aql.Builder):
   
   def   build( self, node ):
     
+    options = self.options
+    prefix = options.libprefix.value() + options.prefix.value()
+    suffix = options.libsuffix.value()
+    
     obj_files = node.sources()
-    archive = self.buildPath( self.target ).change( prefix = 'lib', ext = '.a', )
+    archive = self.buildPath( self.target ).change( prefix = prefix ) + suffix
     
     cmd = list(self.cmd)
     
@@ -271,7 +291,7 @@ class GccLinker(aql.Builder):
   
   __slots__ = ('cmd', 'language', 'target', 'shared' )
   
-  def   __init__( self, options, language, target, shared ):
+  def   __init__( self, options, target, language, shared ):
     self.language = language
     self.target = target
     self.shared = shared
@@ -309,8 +329,16 @@ class GccLinker(aql.Builder):
   def   __getattr__( self, attr ):
     
     if attr == 'name':
-      name = self.getName() + '.' + self.target
-      self.name = name
+      options = self.options
+      
+      if self.shared:
+        prefix = options.shlibprefix.value()
+        suffix = options.shlibsuffix.value()
+      else:
+        prefix = ''
+        suffix = options.progsuffix.value()
+      
+      self.name = name = '.'.join( [ self.getName(), self.target, prefix, suffix ] )
       return name
     
     elif attr == 'signature':
@@ -330,14 +358,21 @@ class GccLinker(aql.Builder):
     obj_files = node.sources()
     
     if self.shared:
-      target = self.buildPath( self.target ).change( prefix = 'lib', ext = '.so', )
+      prefix = self.options.shlibprefix.value()
+      suffix = self.options.shlibsuffix.value()
+      
+      target = self.buildPath( self.target ).change( prefix = prefix, ext = suffix )
     else:
-      target = self.buildPath( self.target ) + '.exe'
+      suffix = self.options.progsuffix.value()
+      
+      target = self.buildPath( self.target ) + suffix
     
+    print("target: %s" % (target,))
     cmd = list(self.cmd)
     
-    cmd += [ archive ]
-    cmd += aql.FilePaths( obj_files )
+    cmd_objs = [ '-o', target ]
+    cmd_objs += map( str, obj_files )
+    cmd[1:1] = cmd_objs
     
     cwd = self.buildPath()
     
@@ -345,71 +380,7 @@ class GccLinker(aql.Builder):
     if result.failed():
       raise result
     
-    node.setTargets( archive )
-  
-  #//-------------------------------------------------------//
-  
-  def   buildStr( self, node ):
-    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
-
-  
-  __slots__ = ('cmd', 'target')
-  
-  def   __init__(self, target, options ):
-    
-    self.target = target
-    self.build_dir = options.build_dir.value()
-    self.do_path_merge = options.do_build_path_merge.value()
-    self.scontent_type = scontent_type
-    self.tcontent_type = tcontent_type
-    
-    self.cmd = self.__cmd( options, language )
-    self.signature = self.__signature()
-    
-    self.name = self.name + '.' + str(target)
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __cmd( options, language ):
-    
-    if language == 'c++':
-      cmd = [ options.cxx.value() ]
-    else:
-      cmd = [ options.cc.value() ]
-    
-    cmd += [ '-pipe' ]
-    
-    cmd += options.linkflags.value()
-    cmd += itertools.product( ['-L'], options.libpath.value() )
-    cmd += itertools.product( ['-l'], options.libs.value() )
-    
-    return cmd
-  
-  #//-------------------------------------------------------//
-  
-  def   __signature( self ):
-    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
-  
-  #//-------------------------------------------------------//
-  
-  def   build( self, node ):
-    
-    obj_files = node.sources()
-    archive = self.buildPath( self.target ).change( prefix = 'lib', ext = '.a', )
-    
-    cmd = list(self.cmd)
-    
-    cmd += [ archive ]
-    cmd += aql.FilePaths( obj_files )
-    
-    cwd = self.buildPath()
-    
-    result = aql.execCommand( cmd, cwd, file_flag = '@' )
-    if result.failed():
-      raise result
-    
-    node.setTargets( archive )
+    node.setTargets( target )
   
   #//-------------------------------------------------------//
   
@@ -537,11 +508,14 @@ class ToolGccCommon( aql.Tool ):
     if_ = options.If()
     if_windows = if_.target_os.eq('windows')
     
-    options.objsuffix = '.o'
-    options.libsuffix = '.a'
-    options.shlibsuffix = '.so'
-    
+    options.objsuffix     = '.o'
+    options.shobjsuffix   = '.os'
+    options.libprefix     = 'lib'
+    options.libsuffix     = '.a'
+    options.shlibprefix   = 'lib'
+    options.shlibsuffix   = '.so'
     if_windows.progsuffix = '.exe'
+    
     if_windows.target_subsystem.eq('console').linkflags += '-Wl,--subsystem,console'
     if_windows.target_subsystem.eq('windows').linkflags += '-Wl,--subsystem,windows'
     
@@ -555,12 +529,12 @@ class ToolGccCommon( aql.Tool ):
     if_.target_os.ne('windows').runtime_thread.eq('multi').ccflags += '-pthreads'
     
     if_.optimization.eq('speed').occflags += '-O3'
-    if_.optimization.eq('size').occflags += '-Os'
-    if_.optimization.eq('off').occflags += '-O0'
+    if_.optimization.eq('size').occflags  += '-Os'
+    if_.optimization.eq('off').occflags   += '-O0'
     
-    if_.inlining.eq('off').occflags += '-fno-inline'
-    if_.inlining.eq('on').occflags += '-finline'
-    if_.inlining.eq('full').occflags += '-finline-functions'
+    if_.inlining.eq('off').occflags   += '-fno-inline'
+    if_.inlining.eq('on').occflags    += '-finline'
+    if_.inlining.eq('full').occflags  += '-finline-functions'
     
     if_.no_rtti.isTrue().cxxflags   += '-fno-rtti'
     if_.no_rtti.isFalse().cxxflags  += '-frtti'
@@ -590,37 +564,37 @@ class ToolGccCommon( aql.Tool ):
 @aql.tool('c++', 'g++', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   
-  def   Compile( self, options ):
-    return GccCompiler( options, 'c++' )
+  def   Object( self, options ):
+    return GccCompiler( options, 'c++', shared = False )
   
-  #//-------------------------------------------------------//
+  def   SharedObject( self, options ):
+    return GccCompiler( options, 'c++', shared = True )
   
-  def   LinkLibrary( self, options, target ):
+  def   Library( self, options, target ):
     return GccArchiver( options, target )
   
-  #//-------------------------------------------------------//
+  def   SharedLibrary( self, options, target ):
+    return GccLinker( options, target, 'c++', shared = True )
   
-  def   LinkSharedLibrary( self, options, target ):
-    pass
-  
-  #//-------------------------------------------------------//
-  
-  def   LinkProgram( self, options, target ):
-    pass
+  def   Program( self, options, target ):
+    return GccLinker( options, target, 'c++', shared = False )
 
 #//===========================================================================//
   
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   
-  def   Compile( self, options ):
-    return GccCompiler( options, 'c' )
+  def   Object( self, options ):
+    return GccCompiler( options, 'c', shared = False )
   
-  def   LinkLibrary( self, options, sources ):
+  def   SharedObject( self, options ):
+    return GccCompiler( options, 'c', shared = True )
+  
+  def   Library( self, options, target ):
     return GccArchiver( options, target )
   
-  def   LinkSharedLibrary( self, options, sources ):
-    pass
+  def   SharedLibrary( self, options, target ):
+    return GccLinker( options, target, 'c', shared = True )
   
-  def   LinkProgram( self, options, sources ):
-    pass
+  def   Program( self, options, target ):
+    return GccLinker( options, target, 'c', shared = False )
