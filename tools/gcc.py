@@ -78,6 +78,17 @@ class GccCompilerImpl (aql.Builder):
   
   #//-------------------------------------------------------//
   
+  def   getName( self ):
+    options = self.options
+    prefix = options.prefix.value()
+    suffix = options.shobjsuffix.value() if self.shared else options.objsuffix.value()
+    
+    name = super(GccCompilerImpl, self).getName()
+    
+    return '.'.join( [ name, prefix, suffix ] )
+  
+  #//-------------------------------------------------------//
+  
   def   getSignature( self ):
     return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
   
@@ -85,19 +96,7 @@ class GccCompilerImpl (aql.Builder):
   
   def   __getattr__( self, attr ):
     
-    if attr == 'name':
-      options = self.options
-      prefix = options.prefix.value()
-      suffix = options.shobjsuffix.value() if self.shared else options.objsuffix.value()
-      
-      self.name = name = '.'.join( [ self.getName(), prefix, suffix ] )
-      return name
-    
-    elif attr == 'signature':
-      self.signature = signature = self.getSignature()
-      return signature
-    
-    elif attr == 'cmd':
+    if attr == 'cmd':
       self.cmd = cmd = self.getCmd()
       return cmd
     
@@ -107,8 +106,8 @@ class GccCompilerImpl (aql.Builder):
   
   def   actual( self, vfile, node ):
     return False
-  
   #//-------------------------------------------------------//
+  
   
   def   build( self, node ):
     
@@ -150,17 +149,14 @@ class GccCompiler(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr ):
-    
-    if attr == 'name':
-      self.name = name = self.compiler.name
-      return name
-    
-    elif attr == 'signature':
-      self.signature = signature = self.compiler.signature
-      return signature
-    
-    return super(GccCompiler,self).__getattr__( attr )
+  def getName( self ):
+      #~ return self.__class__.__name__ + '.' + self.compiler.name
+      return self.compiler.name
+  
+  #//-------------------------------------------------------//
+  
+  def getSignature( self ):
+      return self.compiler.signature
   
   #//-------------------------------------------------------//
   
@@ -234,27 +230,25 @@ class GccArchiver(aql.Builder):
   
   #//-------------------------------------------------------//
   
+  def   getName(self):
+    options = self.options
+    
+    prefix = options.libprefix.value() + options.prefix.value()
+    suffix = options.libsuffix.value()
+    
+    name = super(GccArchiver, self).getName()
+    
+    return '.'.join( [ name, self.target, prefix, suffix ] )
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     
-    if attr == 'name':
-      
-      options = self.options
-      
-      prefix = options.libprefix.value() + options.prefix.value()
-      suffix = options.libsuffix.value()
-      
-      self.name = name = '.'.join( [ self.getName(), self.target, prefix, suffix ] )
-      return name
-    
-    elif attr == 'signature':
-      self.signature = signature = self.getSignature()
-      return signature
-    
-    elif attr == 'cmd':
+    if attr == 'cmd':
       self.cmd = cmd = self.getCmd()
       return cmd
     
-    return super(GccCompiler,self).__getattr__( attr )
+    return super(GccArchiver,self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   
@@ -326,30 +320,29 @@ class GccLinker(aql.Builder):
   
   #//-------------------------------------------------------//
   
+  def   getName( self ):
+    options = self.options
+    
+    if self.shared:
+      prefix = options.shlibprefix.value()
+      suffix = options.shlibsuffix.value()
+    else:
+      prefix = ''
+      suffix = options.progsuffix.value()
+    
+    name = super(GccLinker, self).getName()
+    
+    return '.'.join( [ name, self.target, prefix, suffix ] )
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     
-    if attr == 'name':
-      options = self.options
-      
-      if self.shared:
-        prefix = options.shlibprefix.value()
-        suffix = options.shlibsuffix.value()
-      else:
-        prefix = ''
-        suffix = options.progsuffix.value()
-      
-      self.name = name = '.'.join( [ self.getName(), self.target, prefix, suffix ] )
-      return name
-    
-    elif attr == 'signature':
-      self.signature = signature = self.getSignature()
-      return signature
-    
-    elif attr == 'cmd':
+    if attr == 'cmd':
       self.cmd = cmd = self.getCmd()
       return cmd
     
-    return super(GccCompiler,self).__getattr__( attr )
+    return super(GccLinker,self).__getattr__( attr )
   
   #//-------------------------------------------------------//
   
@@ -367,12 +360,11 @@ class GccLinker(aql.Builder):
       
       target = self.buildPath( self.target ) + suffix
     
-    print("target: %s" % (target,))
     cmd = list(self.cmd)
     
     cmd_objs = [ '-o', target ]
     cmd_objs += map( str, obj_files )
-    cmd[1:1] = cmd_objs
+    cmd[3:3] = cmd_objs
     
     cwd = self.buildPath()
     

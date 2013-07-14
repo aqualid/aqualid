@@ -109,6 +109,11 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   getSignature( self ):
+    raise NotImplementedError( "Must be implemented in a child class." % attr )
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     
     if attr == 'name':
@@ -116,7 +121,8 @@ class Builder (object):
       return name
     
     elif attr == 'signature':
-      raise NotImplementedError( "Attribute '%s' must be set in a child class." % attr )
+      self.signature = signature = self.getSignature()
+      return signature
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
   
@@ -128,6 +134,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   save( self, vfile, node ):
+    print("save: %s " % (node, ))
     vfile.addValues( node.values() )
   
   #//-------------------------------------------------------//

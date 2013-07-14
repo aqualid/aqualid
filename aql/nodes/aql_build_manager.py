@@ -70,13 +70,15 @@ def   eventBuildNodeFailed( node, error ):
 
 @eventStatus
 def   eventNodeBuilding( node ):
-  logInfo("Building node: %s" % node.buildStr() )
+  #~ logInfo("Building node: %s" % node.buildStr() )
+  logInfo("Building node: %s" % ( node, ) )
 
 #//===========================================================================//
 
 @eventStatus
 def   eventNodeBuildingFinished( node ):
-  logInfo("Finished node: %s" % node.buildStr() )
+  #~ logInfo("Finished node: %s" % node.buildStr() )
+  logInfo("Finished node: %s" % ( node, ) )
 
 #//===========================================================================//
 
@@ -423,17 +425,13 @@ class _NodesBuilder (object):
         addTask( node, _buildNode, builder, node )
     
     if not completed_nodes and not rebuild_nodes:
-      finished_tasks = self.task_manager.completedTasks()
+      finished_tasks = self.task_manager.finishedTasks()
       
       for node, exception in finished_tasks:
-        
         if exception is None:
           node.builder.save( vfiles[ node ], node )
           completed_nodes.append( node )
         else:
-          if not self.keep_going:
-            self.task_manager.stop()
-            
           eventBuildNodeFailed( node, exception )
           failed_nodes[ node ] = exception
     
@@ -531,6 +529,11 @@ class BuildManager (object):
           break
         
         completed_nodes, tmp_failed_nodes, rebuild_nodes = build_nodes( self, tails )
+        
+        print( "completed_nodes: %s" % len(completed_nodes))
+        print( "rebuild_nodes: %s" % len(rebuild_nodes))
+        print( "failed_nodes: %s" % len(tmp_failed_nodes))
+        
         if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
           break
         
