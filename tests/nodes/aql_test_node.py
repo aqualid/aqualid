@@ -37,7 +37,7 @@ class ChecksumBuilder (Builder):
   def   __init__(self, options ):
     self.signature = b''
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     target_values = []
     itarget_values = []
     
@@ -50,7 +50,7 @@ class ChecksumBuilder (Builder):
       target_values.append( SignatureValue( source_value.name + '_chksum', chcksum.digest() ) )
       itarget_values.append( SignatureValue( source_value.name + '_chcksum_sha512', chcksum_sha512.digest() ) )
     
-    return self.makeNodeFileTargets( target_values, itarget_values )
+    node.setTargets( target_values, itarget_values )
 
 #//===========================================================================//
 
@@ -65,7 +65,7 @@ class CopyBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     target_values = []
     itarget_values = []
     idep_values = []
@@ -82,7 +82,7 @@ class CopyBuilder (Builder):
       target_values.append( FileValue( new_name ) )
       itarget_values.append( FileValue( new_iname ) )
     
-    return self.makeNodeFileTargets( target_values, itarget_values, idep )
+    node.setTargets( target_values, itarget_values, idep )
 
 #//===========================================================================//
 
@@ -112,12 +112,14 @@ class TestNodes( AqlTestCase ):
         node = Node( builder, None, [value1, value2, value3] )
         
         self.assertFalse( node.actual( vfile ) )
-        node.build( None, vfile )
+        builder.build( node )
+        builder.save( vfile, node )
         self.assertTrue( node.actual( vfile ) )
         
         node = Node( builder, None, [value1, value2, value3] )
         self.assertTrue( node.actual( vfile ) )
-        node.build( None, vfile )
+        builder.build( node )
+        builder.save( vfile, node )
         self.assertTrue( node.actual( vfile ) )
       
       finally:
@@ -132,14 +134,16 @@ class TestNodes( AqlTestCase ):
     node.depends( *_splitNodes(deps) )
     
     self.assertFalse( node.actual( vfile ) )
-    node.build( None, vfile )
+    builder.build( node )
+    builder.save( vfile, node )
     self.assertTrue( node.actual( vfile ) )
     
     node = Node( builder, nodes, values )
     node.depends( *_splitNodes(deps) )
     
     self.assertTrue( node.actual( vfile ) )
-    node.build( None, vfile )
+    builder.build( node )
+    builder.save( vfile, node )
     self.assertTrue( node.actual( vfile ) )
     
     for tmp_file in node.targets():
@@ -260,7 +264,7 @@ class TestSpeedBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     target_values = []
     itarget_values = []
     idep_values = []
@@ -274,7 +278,7 @@ class TestSpeedBuilder (Builder):
       target_values.append( FileValue( new_name, _FileContentType ) )
       idep_values.append( FileValue( idep_name, _FileContentType ) )
     
-    return target_values, itarget_values, idep_values
+    node.setTargets( target_values, itarget_values, idep_values )
   
   #//-------------------------------------------------------//
   
@@ -330,7 +334,8 @@ class TestNodesSpeed ( AqlTestCase ):
           for source in source_files:
             node = Node( builder, None, [ FileValue( source, _FileContentType ) ] )
             self.assertFalse( node.actual( vfile ) )
-            node.build( None, vfile )
+            builder.build( node )
+            builder.save( vfile, node )
             for tmp_file in node.target_values:
               tmp_files.append( tmp_file.name )
           

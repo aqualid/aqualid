@@ -9,7 +9,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import fileChecksum, Tempfile, Tempdir, eventHandler, finishHandleEvents, disableDefaultHandlers, enableDefaultHandlers
 from aql.values import Value, StringValue, FileValue
 from aql.options import builtinOptions
-from aql.nodes import Node, Builder, RebuildNode, BuildManager, ErrorNodeDependencyCyclic
+from aql.nodes import Node, Builder, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 
@@ -18,7 +18,7 @@ class CopyValueBuilder (Builder):
   def   __init__(self, options ):
     self.signature = b''
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     target_values = []
     
     for source_value in node.sources():
@@ -45,7 +45,7 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
+  def   build( self, node ):
     target_values = []
     
     for source_value in node.sources():
@@ -63,7 +63,7 @@ class ChecksumBuilder (Builder):
       
       target_values.append( FileValue( chcksum_filename ) )
     
-    return self.makeNodeFileTargets( target_values )
+    return node.setTargets( target_values )
 
 #//===========================================================================//
 
@@ -130,6 +130,8 @@ def   _build( bm ):
     bm.selfTest()
     failed_nodes = bm.build( 1, False )
     for node,err in failed_nodes:
+      
+      print( "Failed node: %s" % (err,))
       try:
         import traceback
         traceback.print_tb( err.__traceback__ )
@@ -167,24 +169,37 @@ class MultiChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, vfile, node ):
-    target_values = []
+  def   prebuild( self, vfile, node ):
     
+    targets = []
     sub_nodes = []
     
     for source_value in node.sources():
       
       n = Node( self.builder, None, source_value )
       if n.actual( vfile ):
-        target_values += n.targets()
+        targets += n.targets()
       else:
         sub_nodes.append( n )
     
-    if sub_nodes:
-      build_manager.depends( node, sub_nodes ); build_manager.selfTest()
-      raise RebuildNode()
+    node.setTargets( targets )
     
-    return self.makeNodeFileTargets( target_values )
+    return sub_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   prebuildFinished( self, vfile, node, sub_nodes ):
+    
+    targets = list( node.targets() )
+    for sub_node in sub_nodes:
+      targets += sub_node.targets()
+    
+    node.setTargets( targets )
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self, vfile, node ):
+    return True
 
 #//===========================================================================//
 
@@ -219,14 +234,6 @@ _outdated_node = [0]
 def   eventBuildStatusOutdatedNode( node ):
   global _outdated_node
   _outdated_node[0] += 1
-
-#//-------------------------------------------------------//
-
-_rebuild_node = [0]
-@eventHandler
-def   eventRebuildNode( node ):
-  global _rebuild_node
-  _rebuild_node[0] += 1
 
 #//===========================================================================//
 
@@ -370,7 +377,6 @@ class TestBuildManager( AqlTestCase ):
     global _building_finished
     global _outdated_node
     global _actual_node
-    global _rebuild_node
     
     with Tempdir() as tmp_dir:
       options = builtinOptions()
@@ -382,7 +388,6 @@ class TestBuildManager( AqlTestCase ):
         try:
           _building_started[0] = _building_finished[0] = 0
           _actual_node[0] = _outdated_node[0] = 0
-          _rebuild_node[0] = 0
           
           builder = MultiChecksumBuilder( options, 0, 256 )
           
@@ -395,7 +400,7 @@ class TestBuildManager( AqlTestCase ):
           bm.add( node )
           _build( bm )
           
-          self.assertEqual( _building_started[0], 5 )
+          self.assertEqual( _building_started[0], 3 )
           
           #//-------------------------------------------------------//
           _actual_node[0] = _outdated_node[0] = 0

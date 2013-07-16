@@ -134,7 +134,6 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   save( self, vfile, node ):
-    print("save: %s " % (node, ))
     vfile.addValues( node.values() )
   
   #//-------------------------------------------------------//

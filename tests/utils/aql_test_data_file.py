@@ -122,6 +122,8 @@ class TestDataFile( AqlTestCase ):
         
         self.assertEqual( tuple(map(list, df.update() )), ([],[]) )
         
+        df.flush()
+        
         df2 = DataFile( tmp.name );
         try:
           df2.selfTest()
@@ -154,6 +156,7 @@ class TestDataFile( AqlTestCase ):
             df2.selfTest()
             deleted_keys.append( key )
           
+          df2.flush()
           added, deleted = df.update()
           df.selfTest()
           
@@ -173,6 +176,7 @@ class TestDataFile( AqlTestCase ):
               df3.selfTest()
               deleted_keys.append( key )
             
+            df3.flush()
             added, deleted = df.update()
             df.selfTest()
             

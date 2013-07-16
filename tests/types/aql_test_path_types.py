@@ -123,8 +123,6 @@ class TestPathTypes( AqlTestCase ):
     paths = FilePaths(['abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file0.txt', 'klm/file0.txt', 'ghi/file1.txt' ])
     
     groups, indexes = paths.groupByDir()
-    print( groups )
-    print( indexes )
     
     self.assertEqual( groups, [ ['abc/file0.txt', 'abc/file1.txt'], ['def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt'] ])
     self.assertEqual( indexes, [ [0,1], [2], [3,5], [4] ])

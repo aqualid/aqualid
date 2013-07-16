@@ -12,7 +12,6 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.nodes import Node, Builder
 from aql.utils import Tempfile
 from aql.main import Project, ProjectConfig, \
-                     ErrorProjectBuilderMethodResultInvalid, \
                      ErrorProjectBuilderMethodExists, \
                      ErrorProjectBuilderMethodWithKW, \
                      ErrorProjectBuilderMethodFewArguments, \
@@ -75,8 +74,8 @@ options.build_variant = "final"
     if isinstance( TestTool.TestBuilder, types.MethodType ):
       self.assertRaises( ErrorProjectBuilderMethodUnbound, prj.AddBuilder, TestTool.TestBuilder )
     
-    prj.AddBuilder( TestTool().TestBuilder )
-    self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
+    #~ prj.AddBuilder( TestTool().TestBuilder )
+    #~ self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
     
     self.assertRaises( ErrorProjectBuilderMethodExists, prj.AddBuilder, TestTool().TestBuilder )
     self.assertRaises( ErrorProjectBuilderMethodWithKW, prj.AddBuilder, TestTool().TestBuilder2 )
@@ -85,7 +84,7 @@ options.build_variant = "final"
     
     prj.AddBuilder( TestTool().TestBuildNode )
     node = prj.TestBuildNode( 'a' )
-    self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
+    #~ self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
   
   #//-------------------------------------------------------//
   

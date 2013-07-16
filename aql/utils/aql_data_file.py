@@ -504,8 +504,6 @@ class DataFile (object):
   
   def   selfTest( self ):
     
-    self.flush()
-    
     if self.stream is not None:
       file_size = self.file_header.header_size
     else:

@@ -32,7 +32,7 @@ class TestTaskManager( AqlTestCase ):
     
     time.sleep(0.5) # wait until all tasks are done
     
-    done_tasks = tm.completedTasks()
+    done_tasks = tm.finishedTasks()
     expected_tasks = sorted( zip( range(0,8), [None] * 8 ) )
     
     self.assertEqual( sorted(done_tasks), expected_tasks )
@@ -48,7 +48,7 @@ class TestTaskManager( AqlTestCase ):
     
     time.sleep(1) # wait until all tasks are done
     
-    done_tasks = tm.completedTasks()
+    done_tasks = tm.finishedTasks()
     
     self.assertEqual( len(done_tasks), 100 )
     
@@ -71,7 +71,7 @@ class TestTaskManager( AqlTestCase ):
     tm.stop()
     tm.stop()
     
-    done_tasks = tm.completedTasks()
+    done_tasks = tm.finishedTasks()
     expected_tasks = sorted( zip( range(0,4), [None] * 4 ) )
     
     self.assertEqual( sorted(done_tasks), expected_tasks )
@@ -89,9 +89,12 @@ class TestTaskManager( AqlTestCase ):
     
     tm.finish()
     
+    for i in range(8,16):
+      tm.addTask( i, _doAppend, i, results, 0.2 )
+    
     self.assertEqual( results, set(range(8)) )
     
-    done_tasks = tm.completedTasks()
+    done_tasks = tm.finishedTasks()
     expected_tasks = sorted(enumerate( [None] * 8 ))
     
     self.assertEqual( sorted(done_tasks), expected_tasks )
@@ -113,7 +116,7 @@ class TestTaskManager( AqlTestCase ):
     
     time.sleep(1)
     
-    done_tasks = sorted( tm.completedTasks() )
+    done_tasks = sorted( tm.finishedTasks() )
     self.assertEqual( len(done_tasks), 8 )
     
     expected_tasks = sorted( zip( range(0,8), [None] * 8 ) )
@@ -128,7 +131,7 @@ class TestTaskManager( AqlTestCase ):
   #//===========================================================================//
 
   def test_task_manager_stop_on_fail(self):
-    tm = TaskManager( 4 )
+    tm = TaskManager( 4, stop_on_fail = True )
     
     results = set()
     
@@ -142,17 +145,17 @@ class TestTaskManager( AqlTestCase ):
     
     time.sleep(1)
     
-    done_tasks = sorted( tm.completedTasks() )
-    self.assertEqual( len(done_tasks), 8 )
+    done_tasks = sorted( tm.finishedTasks() )
+    self.assertEqual( len(done_tasks), 4 )
     
-    expected_tasks = sorted( zip( range(0,8), [None] * 8 ) )
+    expected_tasks = sorted( zip( range(0,4), [None] * 4 ) )
     
     self.assertEqual( done_tasks[:3], expected_tasks[:3] )
     
     self.assertEqual( done_tasks[3][0], 3 )
     self.assertIsInstance( done_tasks[3][1], Exception )
     
-    self.assertEqual( done_tasks[4:], expected_tasks[4:] )
+    #~ self.assertEqual( done_tasks[4:], expected_tasks[4:] )
 
 #//===========================================================================//
 

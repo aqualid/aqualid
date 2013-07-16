@@ -530,10 +530,6 @@ class BuildManager (object):
         
         completed_nodes, tmp_failed_nodes, rebuild_nodes = build_nodes( self, tails )
         
-        print( "completed_nodes: %s" % len(completed_nodes))
-        print( "rebuild_nodes: %s" % len(rebuild_nodes))
-        print( "failed_nodes: %s" % len(tmp_failed_nodes))
-        
         if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
           break
         
