@@ -37,16 +37,16 @@ def   _commonCCppCompilerOptions( options ):
   options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
   options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
   
-  options.ccflags = ListOptionType( description = "Common C/C++ compiler options" )
-  options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options" )
+  options.ccflags = ListOptionType( description = "Common C/C++ compiler options", separators = None )
+  options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options", separators = None )
   
-  options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines" )
+  options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines", separators = None )
   options.defines = options.cppdefines
   
-  options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers" )
+  options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
   options.include = options.cpppath
   
-  options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers" )
+  options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers", separators = None )
   options.ext_include = options.ext_cpppath
   
 #//===========================================================================//
@@ -54,8 +54,8 @@ def   _commonCCppCompilerOptions( options ):
 def   _cxxCompilerOptions( options ):
   
   options.cxx = PathOptionType( description = "C++ compiler program" )
-  options.cxxflags = ListOptionType( description = "C++ compiler options" )
-  options.ocxxflags = ListOptionType( description = "C++ compiler optimization options" )
+  options.cxxflags = ListOptionType( description = "C++ compiler options", separators = None )
+  options.ocxxflags = ListOptionType( description = "C++ compiler optimization options", separators = None )
   
   options.cxxflags += options.ccflags
   options.cxxflags += options.occflags
@@ -69,8 +69,8 @@ def   _cxxCompilerOptions( options ):
 def   _cCompilerOptions( options ):
   
   options.cc = PathOptionType( description = "C compiler program" )
-  options.cflags = ListOptionType( description = "C compiler options" )
-  options.ocflags = ListOptionType( description = "C compiler optimization options" )
+  options.cflags = ListOptionType( description = "C compiler options", separators = None )
+  options.ocflags = ListOptionType( description = "C compiler optimization options", separators = None )
   
   options.cflags += options.ccflags
   options.cflags += options.occflags
@@ -89,17 +89,17 @@ def   _linkerOptions( options ):
   options.link = PathOptionType( description = "Program or dynamic library linker" )
   options.lib = PathOptionType( description = "Static library archiver program" )
   
-  options.linkflags = ListOptionType( description = "Linker options" )
-  options.libflags = ListOptionType( description = "Archiver options" )
+  options.linkflags = ListOptionType( description = "Linker options", separators = None )
+  options.libflags = ListOptionType( description = "Archiver options", separators = None )
   
-  options.olinkflags = ListOptionType( description = "Linker optimization options" )
-  options.olibflags = ListOptionType( description = "Archiver optimization options" )
+  options.olinkflags = ListOptionType( description = "Linker optimization options", separators = None )
+  options.olibflags = ListOptionType( description = "Archiver optimization options", separators = None )
   
   options.linkflags += options.olinkflags
   options.libflags += options.olibflags
   
-  options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to extenal libraries" )
-  options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking extenal libraries" )
+  options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to extenal libraries", separators = None )
+  options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking extenal libraries", separators = None )
 
 #//===========================================================================//
 

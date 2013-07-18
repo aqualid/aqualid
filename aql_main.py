@@ -54,13 +54,13 @@ def   main():
   
   prj.Include( makefile )
   
-  import timeit
+  #~ import timeit
   
-  t = timeit.timeit( prj.Build, number = 1 )
+  #~ t = timeit.timeit( prj.Build, number = 1 )
   
-  print("build time: %s" % t)
+  #~ print("build time: %s" % t)
   
-  #~ prj.Build()
+  prj.Build()
 
 
 #//===========================================================================//

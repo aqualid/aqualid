@@ -135,7 +135,7 @@ class GccCompilerImpl (aql.Builder):
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
 
 
 #//===========================================================================//
@@ -150,7 +150,6 @@ class GccCompiler(aql.Builder):
   #//-------------------------------------------------------//
   
   def getName( self ):
-      #~ return self.__class__.__name__ + '.' + self.compiler.name
       return self.compiler.name
   
   #//-------------------------------------------------------//
@@ -277,7 +276,7 @@ class GccArchiver(aql.Builder):
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
 
 #//===========================================================================//
 
@@ -377,7 +376,7 @@ class GccLinker(aql.Builder):
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return self.cmd[0] + ': ' + ' '.join( map( str, node.sources() ) )
+    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION
@@ -539,7 +538,7 @@ class ToolGccCommon( aql.Tool ):
     if_profiling_true = if_.profile.isTrue()
     if_profiling_true.ccflags += '-pg'
     if_profiling_true.linkflags += '-pg'
-    if_profiling_true.linkflags -= '-Wl,--strip-all'
+    #~ if_profiling_true.linkflags -= '-Wl,--strip-all'
     
     options.setGroup( "C/C++ compiler" )
     

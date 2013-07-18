@@ -70,15 +70,15 @@ def   eventBuildNodeFailed( node, error ):
 
 @eventStatus
 def   eventNodeBuilding( node ):
-  #~ logInfo("Building node: %s" % node.buildStr() )
-  logInfo("Building node: %s" % ( node, ) )
+  logInfo("Building node: %s" % node.buildStr() )
+  #~ logInfo("Building node: %s" % ( node, ) )
 
 #//===========================================================================//
 
 @eventStatus
 def   eventNodeBuildingFinished( node ):
-  #~ logInfo("Finished node: %s" % node.buildStr() )
-  logInfo("Finished node: %s" % ( node, ) )
+  logInfo("Finished node: %s" % node.buildStr() )
+  #~ logInfo("Finished node: %s" % ( node, ) )
 
 #//===========================================================================//
 
