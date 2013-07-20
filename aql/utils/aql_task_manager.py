@@ -167,11 +167,7 @@ class TaskManager (object):
   #//-------------------------------------------------------//
   
   def   failHandler( self, err ):
-    with self.lock:
-      if not self.exit_event.is_set():
-        self.exit_event.set()
-        for t in self.threads:
-          self.tasks.put( _exit_task )
+    self.exit_event.set()
   
   #//-------------------------------------------------------//
   
@@ -190,6 +186,10 @@ class TaskManager (object):
     is_exit = self.exit_event.is_set
     
     with self.lock:
+      
+      if is_exit():
+        self.__stop()
+      
       block = (self.unfinished_tasks > 0) and self.threads
       
       while True:

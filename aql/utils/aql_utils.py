@@ -285,7 +285,7 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 #//===========================================================================//
 
-def  findFiles( paths = ".", prefixes = "", suffixes = "", ignore_dir_prefixes = ('__', '.') ):
+def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes = ('__', '.') ):
   
   found_files = []
   
@@ -302,6 +302,10 @@ def  findFiles( paths = ".", prefixes = "", suffixes = "", ignore_dir_prefixes =
   
   if not prefixes: prefixes = ("", )
   if not suffixes: suffixes = ("", )
+  
+  print("paths: %s" % (paths,))
+  print("suffixes: %s" % (suffixes,))
+  print("prefixes: %s" % (prefixes,))
   
   for path in paths:
     for root, dirs, files in os.walk( path ):

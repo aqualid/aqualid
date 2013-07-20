@@ -59,12 +59,12 @@ def   eventBuildingNodes( total_nodes ):
 
 @eventStatus
 def   eventBuildNodeFailed( node, error ):
-  logError("Failed node: %s" % node.buildStr() )
+  #~ logError("Failed node: %s" % node.buildStr() )
   logError("Error: %s" % str(error) )
-  try:
-    traceback.print_tb( error.__traceback__ )
-  except AttributeError:
-    pass
+  #~ try:
+    #~ traceback.print_tb( error.__traceback__ )
+  #~ except AttributeError:
+    #~ pass
 
 #//===========================================================================//
 
@@ -387,7 +387,7 @@ class _NodesBuilder (object):
   
   def   __getattr__( self, attr ):
     if attr == 'task_manager':
-      self.task_manager = tm = TaskManager( num_threads = self.jobs )
+      self.task_manager = tm = TaskManager( num_threads = self.jobs, stop_on_fail = not self.keep_going )
       return tm
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )

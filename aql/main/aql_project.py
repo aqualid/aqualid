@@ -28,17 +28,13 @@ __all__ = ( 'Project', 'ProjectConfig',
 import os
 import types
 
-from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile, flattenList
+from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile, flattenList, findFiles
 from aql.types import FilePath, FilePaths, SplitListType, Singleton
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
 
 from .aql_tools import ToolsManager
-
-#//===========================================================================//
-
-AQL_CACHE_FILE_NAME = '.aql.cache'
 
 #//===========================================================================//
 
@@ -395,11 +391,12 @@ class Project( object ):
   def   __getSciptLocals( self ):
     
     locals = {
-      'options' : self.options,
-      'tools'   : self.tools,
-      'Tool'    : self.tools.Tools,
-      'Tools'   : self.tools.Tools,
-      'AddTool' : self.tools.AddTool,
+      'options'   : self.options,
+      'tools'     : self.tools,
+      'Tool'      : self.tools.Tools,
+      'Tools'     : self.tools.Tools,
+      'AddTool'   : self.tools.AddTool,
+      'FindFiles' : findFiles
     }
     
     for name in dir(self):

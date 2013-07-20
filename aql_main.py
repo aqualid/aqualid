@@ -20,6 +20,7 @@
 import os
 
 from aql.main import Project, ProjectConfig
+from aql.utils import printStacks
 
 #//===========================================================================//
 
@@ -60,7 +61,11 @@ def   main():
   
   #~ print("build time: %s" % t)
   
-  prj.Build()
+  try:
+    prj.Build()
+  except KeyboardInterrupt:
+    printStacks()
+    pass
 
 
 #//===========================================================================//
