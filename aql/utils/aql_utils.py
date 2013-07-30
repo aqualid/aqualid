@@ -91,7 +91,7 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
     mode += 'b'
     flags |= _O_BINARY
     
-  fd = os.open( filename, flags )
+  fd = os.open( str(filename), flags )
   try:
     if sync:
       f = io.open( fd, mode, 0 )
@@ -303,10 +303,6 @@ def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes =
   if not prefixes: prefixes = ("", )
   if not suffixes: suffixes = ("", )
   
-  print("paths: %s" % (paths,))
-  print("suffixes: %s" % (suffixes,))
-  print("prefixes: %s" % (prefixes,))
-  
   for path in paths:
     for root, dirs, files in os.walk( path ):
       for file_name in files:
@@ -367,16 +363,16 @@ def _decodeData( data ):
 #//===========================================================================//
 
 class   ExecCommandResult( Exception ):
-  __slots__ = ('result', 'out', 'err', 'exception')
+  __slots__ = ('returncode', 'out', 'err', 'exception')
   
-  def   __init__( self, cmd, exception = None, result = None, out = None, err = None ):
+  def   __init__( self, cmd, exception = None, returncode = None, out = None, err = None ):
     msg = str()
     
     if exception:
       msg += str(exception) + ', '
     
-    if result:
-      msg += 'result: ' + str(result) + ', '
+    if returncode:
+      msg += 'return code: ' + str(returncode) + ', '
     
     cmd = ' '.join( toSequence(cmd) )
     
@@ -389,14 +385,14 @@ class   ExecCommandResult( Exception ):
         msg += '\n' + out
     
     self.exception = exception
-    self.result = result
+    self.returncode = returncode
     self.out = out
     self.err = err
     
     super(type(self), self).__init__( msg )
   
   def   failed( self ):
-    return (self.result != 0) or self.exception;
+    return (self.returncode != 0) or self.exception;
   
   def   __bool__( self ):
     return self.failed();
@@ -429,17 +425,19 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
       cmd = [cmd[0], file_flag + cmd_file.name ]
   
   try:
+    cmd = map(str, cmd)
+    
     try:
       p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
       (stdoutdata, stderrdata) = p.communicate()
-      result = p.returncode
+      returncode = p.returncode
     except Exception as ex:
       raise ExecCommandResult( cmd, exception = ex )
     
     stdoutdata = _decodeData( stdoutdata )
     stderrdata = _decodeData( stderrdata )
     
-    return ExecCommandResult( cmd, result = result, out = stdoutdata, err = stderrdata )
+    return ExecCommandResult( cmd, returncode = returncode, out = stdoutdata, err = stderrdata )
     
   finally:
     if cmd_file is not None:

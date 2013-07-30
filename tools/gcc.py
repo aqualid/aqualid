@@ -121,16 +121,17 @@ class GccCompilerImpl (aql.Builder):
     
     cwd = obj_file.dir
     obj_file = obj_file.change( prefix = prefix ) + suffix
-    dep_file = obj_file +'.d'
     
-    cmd = list(self.cmd)
-    cmd += ['-o', obj_file, '-MF', dep_file, str(source) ]
-    
-    result = aql.execCommand( cmd, cwd, file_flag = '@' )
-    if result.failed():
-      raise result
-    
-    node.setTargets( obj_file, itargets = dep_file, ideps = _readDeps( dep_file ) )
+    with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
+      
+      cmd = list(self.cmd)
+      cmd += ['-o', obj_file, '-MF', dep_file, str(source) ]
+      
+      result = aql.execCommand( cmd, cwd, file_flag = '@' )
+      if result.failed():
+        raise result
+      
+      node.setTargets( obj_file, ideps = _readDeps( dep_file ) )
   
   #//-------------------------------------------------------//
   

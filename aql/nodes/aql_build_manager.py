@@ -61,10 +61,10 @@ def   eventBuildingNodes( total_nodes ):
 def   eventBuildNodeFailed( node, error ):
   #~ logError("Failed node: %s" % node.buildStr() )
   logError("Error: %s" % str(error) )
-  #~ try:
-    #~ traceback.print_tb( error.__traceback__ )
-  #~ except AttributeError:
-    #~ pass
+  try:
+    traceback.print_tb( error.__traceback__ )
+  except AttributeError:
+    pass
 
 #//===========================================================================//
 
@@ -425,22 +425,35 @@ class _NodesBuilder (object):
         addTask( node, _buildNode, builder, node )
     
     if not completed_nodes and not rebuild_nodes:
-      finished_tasks = self.task_manager.finishedTasks()
-      
-      for node, exception in finished_tasks:
-        if exception is None:
-          node.builder.save( vfiles[ node ], node )
-          completed_nodes.append( node )
-        else:
-          eventBuildNodeFailed( node, exception )
-          failed_nodes[ node ] = exception
+      completed_nodes, failed_nodes = self.__getFinishedNodes()
     
     return completed_nodes, failed_nodes, rebuild_nodes
   
   #//-------------------------------------------------------//
   
+  def   __getFinishedNodes( self ):
+    completed_nodes = []
+    failed_nodes = {}
+    
+    finished_tasks = self.task_manager.finishedTasks()
+    
+    vfiles = self.vfiles
+    
+    for node, exception in finished_tasks:
+      if exception is None:
+        node.builder.save( vfiles[ node ], node )
+        completed_nodes.append( node )
+      else:
+        eventBuildNodeFailed( node, exception )
+        failed_nodes[ node ] = exception
+    
+    return completed_nodes, failed_nodes
+  
+  #//-------------------------------------------------------//
+  
   def   close( self ):
     self.task_manager.finish()
+    self.__getFinishedNodes()
     self.vfiles.close()
 
 #//===========================================================================//
