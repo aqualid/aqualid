@@ -155,14 +155,6 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   buildFailed( self, vfile, node ):
-    """
-    Called when node build failed
-    """
-    pass
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, node ):
     """
     Builds a node

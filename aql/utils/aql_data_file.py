@@ -550,7 +550,7 @@ class DataFile (object):
       file_header.update( self.stream )
       
       if self.file_header != file_header:
-        raise AssertionError("self.file_header != file_header" % (key, l, location))
+        raise AssertionError("self.file_header != file_header")
       
       offset = file_header.header_size
       

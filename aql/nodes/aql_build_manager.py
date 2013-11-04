@@ -115,8 +115,8 @@ class _NodesTree (object):
   __slots__ = \
   (
     'lock',
-    'node_deps',
-    'dep_nodes',
+    'node2deps',
+    'dep2nodes',
     'tail_nodes',
   )
   
@@ -124,14 +124,14 @@ class _NodesTree (object):
   
   def   __init__( self ):
     self.lock = threading.Lock()
-    self.node_deps = {}
-    self.dep_nodes = {}
+    self.node2deps = {}
+    self.dep2nodes = {}
     self.tail_nodes = set()
   
   #//-------------------------------------------------------//
   
   def   __len__(self):
-    return len(self.node_deps)
+    return len(self.node2deps)
   
   #//-------------------------------------------------------//
   
@@ -141,12 +141,12 @@ class _NodesTree (object):
       return True
     
     deps = set(new_deps)
-    node_deps = self.node_deps
+    node2deps = self.node2deps
     
     while deps:
       dep = deps.pop()
       
-      dep_deps = node_deps[dep]
+      dep_deps = node2deps[dep]
       
       if node in dep_deps:
         return True
@@ -159,11 +159,11 @@ class _NodesTree (object):
   
   def   __depends( self, node, deps ):
     
-    node_deps = self.node_deps
-    dep_nodes = self.dep_nodes
+    node2deps = self.node2deps
+    dep2nodes = self.dep2nodes
     
     try:
-      current_node_deps = node_deps[ node ]
+      current_node_deps = node2deps[ node ]
       
       new_deps = set(deps) - current_node_deps
       
@@ -182,7 +182,7 @@ class _NodesTree (object):
       #//-------------------------------------------------------//
       
       for dep in new_deps:
-        dep_nodes[ dep ].add( node )
+        dep2nodes[ dep ].add( node )
     
     except KeyError as dep_node:
       raise ErrorNodeDependencyUnknown( node, dep_node.args[0] )
@@ -190,19 +190,17 @@ class _NodesTree (object):
   #//-------------------------------------------------------//
   
   def   __add( self, nodes ):
-      node_deps = self.node_deps
-      
       for node in nodes:
         
-        if node not in node_deps:
-          self.node_deps[ node ] = set()
-          self.dep_nodes[ node ] = set()
+        if node not in self.node2deps:
+          self.node2deps[ node ] = set()
+          self.dep2nodes[ node ] = set()
           self.tail_nodes.add( node )
           
-          self.__add( node.source_nodes )   # TODO: recursively add sources and depends
+          self.__add( node.sourceNodes() )   # TODO: recursively add sources and depends
           self.__add( node.dep_nodes )      # It would be better to rewrite this code to aviod the recursion
           
-          self.__depends( node, node.source_nodes )
+          self.__depends( node, node.sourceNodes() )
           self.__depends( node, node.dep_nodes )
     
   #//-------------------------------------------------------//
@@ -224,21 +222,21 @@ class _NodesTree (object):
   
   def   removeTail( self, node ):
     with self.lock:
-      node_deps = self.node_deps
+      node2deps = self.node2deps
       
       try:
-        if node_deps[node]:
+        if node2deps[node]:
           raise InternalErrorRemoveNonTailNode( node )
       except KeyError as node:
         raise InternalErrorRemoveUnknownTailNode( node.args[0] )
       
       tail_nodes = self.tail_nodes
       
-      del node_deps[node]
+      del node2deps[node]
       tail_nodes.remove( node )
       
-      for dep in self.dep_nodes.pop( node ):
-        d = node_deps[ dep ]
+      for dep in self.dep2nodes.pop( node ):
+        d = node2deps[ dep ]
         d.remove( node )
         if not d:
           tail_nodes.add( dep )
@@ -253,17 +251,16 @@ class _NodesTree (object):
   
   def   selfTest( self ):
     with self.lock:
-      if set(self.node_deps) != set(self.dep_nodes):
+      if set(self.node2deps) != set(self.dep2nodes):
         raise AssertionError("Not all deps are added")
       
       all_dep_nodes = set()
       
-      for node in self.dep_nodes:
-        if node not in self.node_deps:
+      for node in self.dep2nodes:
+        if node not in self.node2deps:
           raise AssertionError("Missed node: %s" % str(node) )
         
-        #~ node_deps = node.source_nodes | node.dep_nodes
-        node_deps = self.node_deps[node]
+        node_deps = self.node2deps[node]
         
         if not node_deps:
           if node not in self.tail_nodes:
@@ -274,14 +271,11 @@ class _NodesTree (object):
         
         all_dep_nodes |= node_deps
         
-        #~ if (node_deps - (node.source_nodes | node.dep_nodes)):
-          #~ raise AssertionError("self.node_deps[node] != node_deps for node: %s"  % str(node) )
-        
         for dep in node_deps:
-          if node not in self.dep_nodes[dep]:
-            raise AssertionError("node not in self.dep_nodes[dep]: dep: %s, node: %s"  % (dep, node) )
+          if node not in self.dep2nodes[dep]:
+            raise AssertionError("node not in self.dep2nodes[dep]: dep: %s, node: %s"  % (dep, node) )
       
-      if (all_dep_nodes - set(self.dep_nodes)):
+      if (all_dep_nodes - set(self.dep2nodes)):
         raise AssertionError("Not all deps are added")
 
 #//===========================================================================//

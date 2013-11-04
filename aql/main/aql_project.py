@@ -147,6 +147,56 @@ class ProjectConfig( object ):
 
 #//===========================================================================//
 
+@optionValueEvaluator
+def   _evalNode( value ):
+  if isinstance( value, Node ):
+    values = value.targets()
+  else:
+    values = toSequnece( value )
+  
+  opt_value = []
+  
+  for value in values:
+    if isinstance( value, FileValue ):
+      value = FilePath( value.name )
+    
+    elif isinstance( value, Value ):
+      content = value.content
+      value   = content.data if content else dest_value
+    
+    opt_value.append( value )
+  
+  if len(opt_value) == 1:
+    opt_value = opt_value[0]
+  
+  return opt_value
+
+#//===========================================================================//
+
+class _ToolBuilderProxy( object ):
+  
+  def   __init__( self, method, options, args_kw ):
+    
+    self._tool_builder = None
+    self._tool_method = method
+    self._tool_options = options
+    self._tool_args_kw = args_kw
+  
+  def   __evalArgs( self ):
+    return { name: _evalNode( value ) for name, value in self._tool_args_kw.items() }
+  
+  def   __getattr__( self, attr ):
+    builder = self._tool_builder
+    if builder is None:
+      args_kw = self.__evalArgs()
+      builder = self._tool_method( self._tool_options, **args_kw )
+      self._tool_builder = builder
+    
+    return getattr( builder, attr )
+  
+
+#//===========================================================================//
+
 class BuilderWrapper( object ):
   __slots__ = ( 'project', 'options', 'method', 'arg_names')
   
@@ -187,6 +237,7 @@ class BuilderWrapper( object ):
     args_kw = {}
     options_kw = {}
     sources = []
+    dep_nodes = []
     
     options = self.options
     
@@ -198,6 +249,10 @@ class BuilderWrapper( object ):
       if name in ['sources', 'source']:
         sources += toSequnece( value )
       else:
+        for v in toSequnece( value ):
+          if isinstance( v, (Node, Value)):
+            dep_nodes.append( v )
+        
         if name in self.arg_names:
           args_kw[ name ] = value
         else:
@@ -207,32 +262,19 @@ class BuilderWrapper( object ):
       options = options.override()
       options.update( options_kw )
     
-    return options, sources, args_kw
+    return options, dep_nodes, sources, args_kw
   
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
-    options, sources, args_kw = self.__getOptionsAndArgs( kw )
+    options, dep_nodes, sources, args_kw = self.__getOptionsAndArgs( kw )
     sources += args
     sources = flattenList( sources )
     
-    builder = self.method( options, **args_kw )
+    builder = _ToolBuilderProxy( self.method, options, args_kw )
     
-    source_values = []
-    source_nodes = []
-    source_others = []
-    
-    for source in sources:
-      if isinstance( source, Node ):
-        source_nodes.append( source )
-      elif isinstance( source, Value ):
-        source_values.append( source )
-      else:
-        source_others.append( source )
-    
-    source_values.extend( builder.makeValues( source_others ) )
-    
-    node = Node( builder, source_nodes, source_values )
+    node = Node( builder, sources )
+    node.depends( dep_nodes )
     
     self.project.AddNodes( node )
     
@@ -432,6 +474,11 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
+  def   ExecuteMethod( self, method, *args, **kw ):
+    raise NotImplementedError()
+  
+  #//-------------------------------------------------------//
+  
   def   ReadOptions( self, options_file ):
     
     script_locals = { 'options': self.options }
@@ -459,20 +506,28 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Depends( self, node, dependency ):
-    pass
+  def   Depends( self, node, dependencies ):
+    node.depends( dependencies )
+    self.build_manager.depends( node, node.dep_nodes )
   
   #//-------------------------------------------------------//
   
   def   Ignore( self, node, dependency ):
-    pass
+    raise NotImplementedError()
   
   def   Alias( self, alias, node ):
-    pass
+    raise NotImplementedError()
   
   def   AlwaysBuild( self, node ):
-    pass
+    raise NotImplementedError()
   
+  def   DirName(self, node):
+    raise NotImplementedError()
+  
+  def   BaseName(self, node):
+    raise NotImplementedError()
+    
+    
   #//=======================================================//
   
   def   Build( self ):
@@ -499,6 +554,10 @@ if __name__ == "__main__":
   # tools
   
   libs = Include('src/aql.make')
+  
+  cpp_paths = ReadLibConfig('config.cfg')
+  
+  cpp.options.cpp_paths += cpp_paths
   
   
   c, cpp = Tools('c', 'c++')

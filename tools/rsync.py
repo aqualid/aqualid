@@ -39,7 +39,7 @@ class RSyncBuilder (Builder):
   
   __slots__ = ( 'rsync', 'local_path', 'remote_path', 'exclude' )
   
-  def   __init__( self, action, options, local_path, remote_path, exclude = None, scontent_type = NotImplemented, tcontent_type = NotImplemented ):
+  def   __init__( self, action, options, local_path, remote_path, exclude = None ):
     do_get = bool(action == 'get')
     
     self.scontent_type = scontent_type

@@ -1,4 +1,4 @@
-#
+
 # Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -28,6 +28,13 @@ from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsVa
 
 #//===========================================================================//
 
+class   ErrorNodeDependencyInvalid( Exception ):
+  def   __init__( self, dep ):
+    msg = "Invalid node dependency: %s" % (dep,)
+    super(ErrorNodeDependencyCyclic, self).__init__( msg )
+
+#//===========================================================================//
+
 class Node (object):
   
   __slots__ = \
@@ -35,7 +42,7 @@ class Node (object):
     'builder',
     'builder_data',
     
-    'source_nodes',
+    '_sources',
     'source_values',
     'dep_nodes',
     'dep_values',
@@ -48,20 +55,27 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, builder, source_nodes, source_values ):
+  def   __init__( self, builder, sources ):
     
     self.builder = builder
     self.builder_data = None
-    self.source_nodes = frozenset( toSequence( source_nodes ) )
-    self.source_values = tuple( toSequence( source_values ) )
+    self._sources = toSequence( sources )
     self.dep_nodes = set()
     self.dep_values = []
   
   #//=======================================================//
   
-  def   depends( self, dep_nodes, dep_values ):
-    self.dep_nodes.update( toSequence( dep_nodes ) )
-    self.dep_values += toSequence( dep_values )
+  def   depends( self, dependencies ):
+    
+    for value in toSequence( dependencies ):
+      if isinstance( value, Node ):
+        self.dep_nodes.add( value )
+      
+      elif isinstance( value, Value ):
+        self.dep_values.append( value )
+      
+      else:
+        raise ErrorNodeDependencyInvalid( value )
   
   #//=======================================================//
   
@@ -85,11 +99,9 @@ class Node (object):
     names = [ self.builder.name.encode('utf-8') ]
     sign  = [ self.builder.signature ]
     
-    sources = self.sources()
-    names += ( value.name.encode('utf-8') for value in sources )
+    sources = sorted( self.sources(), key = lambda v: v.name )
     
-    #names += sorted( map( lambda value: value.name.encode('utf-8'), self.source_values ) )
-    #names += sorted( map( lambda node: node.sources_value.name, self.source_nodes ) )
+    names += ( value.name.encode('utf-8') for value in sources )
     
     sign += ( value.content.signature for value in sources )
     
@@ -135,6 +147,10 @@ class Node (object):
     if attr in ('sources_value', 'targets_value', 'itargets_value', 'ideps_value'):
       self.__setValues()
       return getattr(self, attr)
+    
+    if attr == 'source_values':
+      self.source_values = source_values = self.__getSourceValues()
+      return source_values
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
   
@@ -184,17 +200,30 @@ class Node (object):
   
   #//=======================================================//
   
-  def   sources(self):
+  def   __getSourceValues(self):
     values = []
     
-    for node in self.source_nodes:
-      values += node.targets()
+    makeValues = self.builder.makeValues
     
-    values += self.source_values
-    
-    values.sort( key = lambda v: v.name )
+    for value in self._sources:
+      if isinstance( value, Node ):
+        values += value.targets()
+      
+      elif isinstance( value, Value ):
+        values.append( value )
+      
+      else:
+        values += makeValues( value, use_cache = True )
     
     return values
+  
+  #//=======================================================//
+  
+  def   sources(self):
+    return self.source_values
+  
+  def   sourceNodes(self):
+    return filter( lambda node: isinstance(node,Node), self._sources )
   
   #//=======================================================//
   
@@ -235,69 +264,6 @@ class Node (object):
     self.targets_value.content = DependsValueContent( target_values )
     self.itargets_value.content = DependsValueContent( itarget_values )
     self.ideps_value.content = DependsValueContent( idep_values )
-  
-  #//-------------------------------------------------------//
-  
-  def   _friendlyName( self ):
-    
-    many_sources = False
-    
-    try:
-      source_values = self.source_values
-      
-      if not source_values:
-        return None
-      
-      many_sources = (len(source_values) > 1)
-      if not many_sources:
-        if self.source_nodes:
-          many_sources = True
-      
-      first_source = min( source_values, key = lambda v: v.name ).name
-    
-    except AttributeError:
-      return None
-    
-    name = str( self.builder ) + ': '
-    if many_sources:
-      name += '[' + str(first_source) + ' ...]'
-    else:
-      name += str(first_source)
-    
-    return name
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__(self):
-    
-    name = self._friendlyName()
-    if name is not None:
-      return name
-    
-    depth = 0
-    name = []
-    
-    node = self
-    
-    while True:
-      name.append( str( node.builder ) + ': ['  )
-      depth += 1
-      
-      try:
-        node = next(iter(node.source_nodes))
-      except StopIteration:
-        break
-        
-      first_source = node._friendlyName()
-      if first_source is not None:
-        name.append( first_source )
-        break
-      
-    name += [']'] * depth
-    
-    # g++: [ moc: [ m4: src1.m4 ... ] ]
-    
-    return ' '.join( name )
   
   #//-------------------------------------------------------//
   
