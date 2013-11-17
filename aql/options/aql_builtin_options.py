@@ -23,7 +23,7 @@ __all__ = (
 
 import os
 
-from aql.types import IgnoreCaseString, UpperCaseString, FilePath
+from aql.util_types import IgnoreCaseString, UpperCaseString, FilePath
 from aql.utils import cpuCount
 
 from .aql_options import Options, JoinPathValue, SetValue, AddValue

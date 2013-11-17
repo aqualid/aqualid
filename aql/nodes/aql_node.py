@@ -23,7 +23,7 @@ __all__ = (
 
 import hashlib
 
-from aql.types import toSequence
+from aql.util_types import toSequence
 from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsValueContent
 
 #//===========================================================================//

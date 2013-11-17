@@ -25,7 +25,7 @@ __all__ = (
   'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues', 
 )
 
-from aql.types import toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
+from aql.util_types import toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
 

@@ -23,11 +23,11 @@ __all__ = (
   'options', 
   'utils', 
   'values',
-  'types',
+  'util_types',
 )
 
 from .utils import *
-from .types import *
+from .util_types import *
 from .values import *
 from .options import *
 from .nodes import *

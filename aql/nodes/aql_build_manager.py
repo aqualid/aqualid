@@ -27,7 +27,7 @@ __all__ = (
 import threading
 import traceback
 
-from aql.types import toSequence
+from aql.util_types import toSequence
 from aql.utils import eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 

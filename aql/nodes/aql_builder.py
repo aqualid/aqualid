@@ -24,7 +24,7 @@ __all__ = (
 import os
 import errno
 
-from aql.types import toSequence, FilePath, FilePaths
+from aql.util_types import toSequence, FilePath, FilePaths
 from aql.values import Value, FileValue, FileContentChecksum, FileContentTimeStamp
 
 #//===========================================================================//

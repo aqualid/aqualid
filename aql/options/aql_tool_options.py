@@ -23,7 +23,7 @@ __all__ = (
 
 import os
 
-from aql.types import FilePath
+from aql.util_types import FilePath
 
 from .aql_options import Options
 from .aql_option_types import BoolOptionType, ListOptionType, PathOptionType, StrOptionType, VersionOptionType

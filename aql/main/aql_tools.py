@@ -21,7 +21,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
 
 import os
 
-from aql.types import toSequence, FilePath, Singleton
+from aql.util_types import toSequence, FilePath, Singleton
 from aql.utils import logWarning, loadModule, findFiles, eventWarning
 from aql.values import Value, NoContent, DependsValue, DependsValueContent
 from aql.options import builtinOptions

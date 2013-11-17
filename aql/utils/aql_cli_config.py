@@ -19,7 +19,7 @@
 
 import optparse
 
-from aql.types import toSequence, SplitListType, ValueListType, UniqueList
+from aql.util_types import SplitListType, ValueListType, UniqueList
 from aql.utils import execFile
 
 __all__ = ( 'CLIOption', 'CLIConfig' )
@@ -28,16 +28,16 @@ __all__ = ( 'CLIOption', 'CLIConfig' )
 
 class   CLIOption( object ):
   __slots__ = (
-    'cli_name', 'cli_long_name', 'opt_name', 'value_type', 'default', 'help', 'metavar'
+    'cli_name', 'cli_long_name', 'opt_name', 'value_type', 'default', 'description', 'metavar'
   )
   
-  def   __init__( self, cli_name, cli_long_name, opt_name, value_type, default, help, metavar = None ):
+  def   __init__( self, cli_name, cli_long_name, opt_name, value_type, default, description, metavar = None ):
     self.cli_name = cli_name
     self.cli_long_name = cli_long_name
     self.opt_name = opt_name
     self.value_type = value_type
     self.default = None if default is None else value_type(default)
-    self.help = help
+    self.description = description
     self.metavar = metavar
   
   #//-------------------------------------------------------//
@@ -50,13 +50,14 @@ class   CLIOption( object ):
     else:
       action = 'store'
     
-    kw = { 'dest': self.opt_name, 'help': self.help, 'action': action }
+    kw = { 'dest': self.opt_name, 'help': self.description, 'action': action }
     if self.metavar:
       kw['metavar'] = self.metavar
     parser.add_option( *args, **kw )
 
 #//===========================================================================//
 
+#noinspection PyUnresolvedReferences,PyAttributeOutsideInit
 class   CLIConfig( object ):
   
   #//-------------------------------------------------------//
@@ -136,13 +137,11 @@ class   CLIConfig( object ):
   
   #//-------------------------------------------------------//
   
-  def   readConfig( self, config_file, locals = None ):
-    if locals is None:
-      locals = {}
+  def   readConfig( self, config_file, in_locals = None ):
+    if in_locals is None:
+      in_locals = {}
     
-    set_options = self._set_options
-    
-    exec_locals = execFile( config_file, locals )
+    exec_locals = execFile( config_file, in_locals )
     for name, value in exec_locals.items():
       self.setDefault( name, value )
   

@@ -28,10 +28,10 @@ __all__ = ( 'Project', 'ProjectConfig',
 import os
 import types
 
-from aql.utils import cpuCount, CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, logError, execFile, flattenList, findFiles
-from aql.types import FilePath, FilePaths, SplitListType, Singleton
-from aql.values import Value, NoContent, DependsValue, DependsValueContent
-from aql.options import builtinOptions, Options
+from aql.utils import CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, execFile, flattenList, findFiles
+from aql.util_types import FilePath, FilePaths, SplitListType, toSequence
+from aql.values import Value, FileValue
+from aql.options import optionValueEvaluator, builtinOptions, Options
 from aql.nodes import BuildManager, Node
 
 from .aql_tools import ToolsManager
@@ -80,6 +80,7 @@ class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
 
 #//===========================================================================//
 
+#noinspection PyUnresolvedReferences
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options' )
@@ -120,7 +121,7 @@ class ProjectConfig( object ):
     
     cli_options = {}
     
-    ignore_options = set(['directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet', 'search_up'])
+    ignore_options = {'directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet', 'search_up'}
     for name,value in cli_config.items():
       if (name not in ignore_options) and (value is not None):
         cli_options[ name ] = value
@@ -152,7 +153,7 @@ def   _evalNode( value ):
   if isinstance( value, Node ):
     values = value.targets()
   else:
-    values = toSequnece( value )
+    values = toSequence( value )
   
   opt_value = []
   
@@ -161,9 +162,8 @@ def   _evalNode( value ):
       value = FilePath( value.name )
     
     elif isinstance( value, Value ):
-      content = value.content
-      value   = content.data if content else dest_value
-    
+      value = value.content.data
+
     opt_value.append( value )
   
   if len(opt_value) == 1:
@@ -247,9 +247,9 @@ class BuilderWrapper( object ):
           raise ErrorProjectBuilderMethodInvalidOptions( value )
         options = value
       if name in ['sources', 'source']:
-        sources += toSequnece( value )
+        sources += toSequence( value )
       else:
-        for v in toSequnece( value ):
+        for v in toSequence( value ):
           if isinstance( v, (Node, Value)):
             dep_nodes.append( v )
         
@@ -547,7 +547,7 @@ class Project( object ):
 
 #//===========================================================================//
 
-if __name__ == "__main__":
+"""
   ReadOptions('../../aql.config')
   
   # options
@@ -618,8 +618,3 @@ if __name__ == "__main__":
   
   
   """
-  1. kw - args
-  
-  """
-  
-  

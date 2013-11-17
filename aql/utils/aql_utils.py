@@ -30,6 +30,7 @@ import os
 import sys
 import hashlib
 import struct
+import errno
 import threading
 import traceback
 import inspect
@@ -38,7 +39,7 @@ import tempfile
 import itertools
 import multiprocessing
 
-from aql.types import toSequence
+from aql.util_types import toSequence
 
 #//===========================================================================//
 
@@ -135,9 +136,9 @@ def   execFile( filename, in_locals ):
 #//===========================================================================//
 
 def   dataSignature( data ):
-  hash = hashlib.md5()
-  hash.update( data )
-  return hash.digest()
+  sig = hashlib.md5()
+  sig.update( data )
+  return sig.digest()
 
 #//===========================================================================//
 
@@ -203,7 +204,7 @@ def   getFunctionName( currentframe = inspect.currentframe ):
   if frame:
     return frame.f_back.f_code.co_name
   
-  return "__not_avaiable__"
+  return "__not_available__"
   
   #~ try:
     #~ raise Exception()
@@ -313,14 +314,14 @@ def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes =
       
       tmp_dirs = []
       
-      for dir in dirs:
+      for d in dirs:
         ignore = False
         for dir_prefix in ignore_dir_prefixes:
-          if dir.startswith( dir_prefix ):
+          if d.startswith( dir_prefix ):
             ignore = True
             break
         if not ignore:
-          tmp_dirs.append( dir )
+          tmp_dirs.append( d )
       
       dirs[:] = tmp_dirs
   
@@ -330,9 +331,9 @@ def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes =
 
 def   removeFiles( files ):
   
-  for file in toSequence( files ):
+  for f in toSequence( files ):
     try:
-      os.remove( file )
+      os.remove( f )
     except OSError as ex:
       if ex.errno != errno.ENOENT:
         raise
@@ -392,13 +393,13 @@ class   ExecCommandResult( Exception ):
     super(type(self), self).__init__( msg )
   
   def   failed( self ):
-    return (self.returncode != 0) or self.exception;
+    return (self.returncode != 0) or self.exception
   
   def   __bool__( self ):
-    return self.failed();
+    return self.failed()
   
   def   __nonzero__( self ):
-    return self.failed();
+    return self.failed()
 
 try:
   _MAX_CMD_LENGTH = os.sysconf('SC_ARG_MAX')

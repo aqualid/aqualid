@@ -28,7 +28,7 @@ __all__ = (
 import types
 import threading
 
-from aql.types import Singleton, toSequence
+from aql.util_types import Singleton, toSequence
 
 from .aql_utils import equalFunctionArgs
 from .aql_task_manager import TaskManager

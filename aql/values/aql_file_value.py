@@ -60,7 +60,7 @@ class   FileContentBase( ContentBase ):
   
   def   _getSignature( self, path, use_cache = False, file_content_cache = {} ):
     
-    cache = file_content_cache.setdefault( id(self.__class__), {})
+    cache = file_content_cache.setdefault( self.__class__, {})
     
     if use_cache:
       try:
