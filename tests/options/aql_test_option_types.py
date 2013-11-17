@@ -9,7 +9,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
                         DictOptionType, PathOptionType, \
                         ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet, ErrorOptionTypeUnableConvertValue
-from aql.types import IgnoreCaseString, UpperCaseString, Dict, FilePath
+from aql.util_types import IgnoreCaseString, UpperCaseString, Dict, FilePath
 
 #//===========================================================================//
 

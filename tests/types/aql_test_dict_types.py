@@ -1,12 +1,11 @@
 import sys
 import os.path
-import timeit
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import AqlTestCase, runLocalTests
 
-from aql.types import Dict, SplitDictType, ValueDictType, DictItem
+from aql.util_types import Dict, SplitDictType, ValueDictType, DictItem
 
 #//===========================================================================//
 

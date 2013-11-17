@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile, Tempdir, finishHandleEvents
-from aql.types import FilePath, FilePaths
+from aql.util_types import FilePath, FilePaths
 from aql.values import FileValue, FileContentTimeStamp, FileContentChecksum, ValuesFile
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions

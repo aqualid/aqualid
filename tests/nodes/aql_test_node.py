@@ -8,7 +8,7 @@ from binascii import hexlify
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.types import toSequence
+from aql.util_types import toSequence
 from aql.utils import Tempfile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
 from aql.values import SignatureValue, StringValue, Value, NoContent, FileValue, FileContentTimeStamp, FileContentChecksum, DependsValue, ValuesFile

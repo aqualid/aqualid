@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.types import UpperCaseString, FilePath
+from aql.util_types import UpperCaseString, FilePath
 
 from aql.options import OptionType, StrOptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
                         builtinOptions, \

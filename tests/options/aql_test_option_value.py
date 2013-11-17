@@ -12,7 +12,7 @@ from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionT
                         OptionValue, ConditionalValue, Condition, Operation, SimpleOperation, \
                         ErrorOptionTypeUnableConvertValue
 
-from aql.types import Dict
+from aql.util_types import Dict
 
 #//===========================================================================//
 

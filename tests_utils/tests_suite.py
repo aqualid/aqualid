@@ -390,7 +390,7 @@ class TestsSuiteMaker(object):
   
   #//-------------------------------------------------------//
   
-  def   suite( self, tests, suite_class = TestCaseSuite, options = None ):
+  def   suite( self, tests, suite_class = TestCaseSuite, options = None , tests_case = None):
     
     from tests_case import TestCaseBase
     
