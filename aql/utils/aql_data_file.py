@@ -19,7 +19,6 @@
 
 __all__ = ( 'DataFile', )
 
-import io
 import os
 import struct
 
@@ -163,7 +162,7 @@ class DataFileHeader( object ):
     version = self.version
     self.version, self.uid = header_struct.unpack( header )
     
-    return (version != self.version)
+    return version != self.version
   
   #//-------------------------------------------------------//
   
@@ -229,7 +228,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, filename, DataFileHeader = DataFileHeader ):
+  def   __init__( self, filename ):
     
     self.locations = {}
     self.file_header = DataFileHeader()
@@ -242,7 +241,8 @@ class DataFile (object):
   
   def   __enter__(self):
     return self
-  
+
+  #noinspection PyUnusedLocal
   def   __exit__(self, exc_type, exc_value, traceback):
     self.close()
   
@@ -285,8 +285,7 @@ class DataFile (object):
     locations = {}
     
     stream = self.stream
-    getLocation = self.locations.__getitem__
-    
+
     while True:
       key, location, size = loadLocation( stream, offset )
       if key == -1:
@@ -518,7 +517,7 @@ class DataFile (object):
     if file_size != self.file_size:
       raise AssertionError("file_size (%s) != self.file_size (%s)" % (file_size, self.file_size) )
     
-    ordered_location = sorted( self.locations.values(), key = lambda l: l.offset )
+    ordered_location = sorted( self.locations.values(), key = lambda loc: loc.offset )
     
     if self.stream is not None:
       real_file_size = self.stream.seek( 0, os.SEEK_END )
@@ -560,7 +559,8 @@ class DataFile (object):
           break
         
         l = self.locations[key]
-        
+
+        #noinspection PyUnresolvedReferences
         if (l.size != location.size) or (l.capacity != location.capacity):
           raise AssertionError("self.locations[%s] (%s) != location (%s)" % (key, l, location))
         

@@ -143,13 +143,13 @@ class EventManager( Singleton ):
   def   __getEvents( self, event_filters ):
     events = set()
     
-    for filter in toSequence(event_filters):
-      if filter not in EVENT_ALL:
-        events.add( filter )
+    for event_filter in toSequence(event_filters):
+      if event_filter not in EVENT_ALL:
+        events.add( event_filter )
       else:
         for event, pair in self.default_handlers.items():
           handler, level = pair
-          if filter == level:
+          if event_filter == level:
             events.add( event )
     
     return events
@@ -157,8 +157,6 @@ class EventManager( Singleton ):
   #//-------------------------------------------------------//
   
   def   enableEvents( self, event_filters, enable ):
-    
-    events = set()
     
     with self.lock:
       events = self.__getEvents( event_filters )

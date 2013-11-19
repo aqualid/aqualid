@@ -40,6 +40,7 @@ class GeneralFileLock (object):
   def   __enter__(self):
     return self
 
+  #noinspection PyUnusedLocal
   def   __exit__(self, exc_type, exc_value, traceback):
     self.releaseLock()
   
@@ -76,18 +77,20 @@ try:
   #//===========================================================================//
   #   Unix implementation
   #//===========================================================================//
+  #noinspection PyUnresolvedReferences
   import fcntl
   
   class UnixFileLock (object):
     
-    __slots__ = ('fd')
+    __slots__ = ('fd',)
   
     def   __init__( self, filename ):
       self.fd = os.open( filename, os.O_RDWR | os.O_CREAT )
     
     def   __enter__(self):
       return self
-  
+
+    #noinspection PyUnusedLocal
     def   __exit__(self, exc_type, exc_value, traceback):
       self.releaseLock()
     
@@ -110,8 +113,11 @@ except ImportError:
     #//===========================================================================//
     #   Widows implementation
     #//===========================================================================//
+    #noinspection PyUnresolvedReferences
     import win32con
+    #noinspection PyUnresolvedReferences
     import win32file
+    #noinspection PyUnresolvedReferences
     import pywintypes
     
     class WindowsFileLock (object):
@@ -132,7 +138,8 @@ except ImportError:
       
       def   __enter__(self):
         return self
-    
+
+      #noinspection PyUnusedLocal
       def   __exit__(self, exc_type, exc_value, traceback):
         self.releaseLock()
       

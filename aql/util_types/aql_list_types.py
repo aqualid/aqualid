@@ -21,6 +21,7 @@ __all__ = ( 'toSequence', 'isSequence', 'UniqueList', 'List', 'ValueListType', '
 
 #//===========================================================================//
 
+#noinspection PyShadowingBuiltins,PyRedundantParentheses
 def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
   
   try:
@@ -37,7 +38,8 @@ def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, st
 
 #//===========================================================================//
 
-def   isSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
+#noinspection PyShadowingBuiltins
+def   isSequence( value, iter = iter, isinstance = isinstance, str = str ):
   
   try:
     if not isinstance( value, str ):
@@ -346,7 +348,7 @@ class   List (list):
   #//-------------------------------------------------------//
   
   def   pop_front( self ):
-    return self.__values_list.pop(0)
+    return self.pop(0)
 
 #//===========================================================================//
 
@@ -358,8 +360,10 @@ def   SplitListType( list_type, separators ):
   class   SplitList (list_type):
     
     #//-------------------------------------------------------//
-    
-    def   __toSequence( self, values, separator = separator, other_separators = other_separators ):
+
+    #noinspection PyShadowingNames
+    @staticmethod
+    def   __toSequence( values, separator = separator, other_separators = other_separators ):
       if not isinstance( values, str ):
         return values
       
@@ -370,7 +374,8 @@ def   SplitListType( list_type, separators ):
     
     #//-------------------------------------------------------//
     
-    def   __toSplitList( self, values ):
+    @staticmethod
+    def   __toSplitList( values ):
       if isinstance( values, SplitList ):
         return values
       
@@ -433,7 +438,8 @@ def   ValueListType( list_type, value_type ):
     
     #//-------------------------------------------------------//
     
-    def   __toSequence( self, values ):
+    @staticmethod
+    def   __toSequence( values ):
       if isinstance( values, _ValueList ):
         return values
       
@@ -441,7 +447,8 @@ def   ValueListType( list_type, value_type ):
     
     #//-------------------------------------------------------//
     
-    def   __toValueList( self, values ):
+    @staticmethod
+    def   __toValueList( values ):
       if isinstance( values, _ValueList):
         return values
       

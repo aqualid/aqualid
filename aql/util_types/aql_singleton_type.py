@@ -19,6 +19,7 @@
 
 __all__ = ( 'Singleton', )
 
+#noinspection PyProtectedMember
 class Singleton( object ):
   
   @staticmethod

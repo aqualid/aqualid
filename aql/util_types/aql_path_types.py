@@ -42,6 +42,7 @@ except AttributeError:
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
@@ -183,7 +184,8 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     count = len(dirs) * len(exts)
     
     paths = [FilePaths() for i in range(count) ]
-    
+
+    #noinspection PyTypeChecker
     for path in self:
       path_change = path.change
       i = 0
@@ -206,7 +208,8 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     if not suffixes: suffixes = ('',)
     
     paths = [FilePaths() for i in range(len(suffixes)) ]
-    
+
+    #noinspection PyTypeChecker
     for path in self:
       i = 0
       for suffix in suffixes:
@@ -237,7 +240,8 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       
       group_size = max(1, len(files) // max(1, wish_groups - len(groups) ) )
       group_size = min( max_group_size, group_size )
-      
+
+      #noinspection PyTypeChecker
       for filepath in files:
         if (len(group_files) >= group_size) or (filepath.name in group_names):
           rest_files.append( filepath )
@@ -274,9 +278,9 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     group_size = max( 1, tail_size // wish_groups )
     group_size = min( max_group_size, group_size )
     
-    for index, file in files:
-      if (last_dir != file.dir) or (len(group_files) >= group_size):
-        last_dir = file.dir
+    for index, file_path in files:
+      if (last_dir != file_path.dir) or (len(group_files) >= group_size):
+        last_dir = file_path.dir
         
         if group_files:
           groups.append( group_files )
@@ -288,7 +292,7 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
           group_size = min( max_group_size, group_size )
       
       tail_size -= 1
-      group_files.append( file )
+      group_files.append( file_path )
       group_indexes.append( index )
     
     if group_files:

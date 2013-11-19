@@ -22,6 +22,8 @@ __all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
 #//===========================================================================//
 
 class DictItem( tuple ):
+
+  #noinspection PyInitNewSignature
   def   __new__( cls, key, value ):
     return super(DictItem, cls).__new__( cls, (key, value ) )
 
@@ -110,16 +112,16 @@ def   SplitDictType( dict_type, separators ):
     #//-------------------------------------------------------//
     
     @staticmethod
-    def   __toItems( items_str, separator = separator, other_separators = other_separators ):
+    def   __toItems( items_str, sep = separator, other_seps = other_separators ):
       if not isinstance( items_str, str ):
         return items_str
       
-      for sep in other_separators:
-        items_str = items_str.replace( sep, separator )
+      for sep in other_seps:
+        items_str = items_str.replace( sep, sep )
       
       items = []
       
-      for v in filter( None, items_str.split( separator ) ):
+      for v in filter( None, items_str.split( sep ) ):
         key, sep, value = v.partition('=')
         items.append( (key, value) )
       
@@ -184,17 +186,17 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
   
   value_types = {}
   
-  def   _toValue( key, value, value_types = value_types, value_type = value_type ):
+  def   _toValue( key, value, val_types = value_types, val_type = value_type ):
     try:
-      if value_type is None:
-        value_type = value_types[ key ]
-      if value_type is type(value):
+      if val_type is None:
+        val_type = val_types[ key ]
+      if val_type is type(value):
         return value
-      return value_type( value )
+      return val_type( value )
     except KeyError:
       pass
     
-    value_types[ key ] = type(value)
+    val_types[ key ] = type(value)
     return value
   
   class   _ValueDict (dict_type):
@@ -220,7 +222,8 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
     
     #//-------------------------------------------------------//
     
-    def   __toValueDict( self, items ):
+    @staticmethod
+    def   __toValueDict( items ):
       if isinstance( items, _ValueDict ):
         return items
       elif isinstance( items, DictItem ):
