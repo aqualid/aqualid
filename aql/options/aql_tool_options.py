@@ -21,8 +21,6 @@ __all__ = (
   'optionsCCpp',
 )
 
-import os
-
 from aql.util_types import FilePath
 
 from .aql_options import Options
@@ -46,7 +44,7 @@ def   _commonCCppCompilerOptions( options ):
   options.cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
   options.include = options.cpppath
   
-  options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to extenal headers", separators = None )
+  options.ext_cpppath = ListOptionType( value_type = FilePath, unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
   options.ext_include = options.ext_cpppath
   
 #//===========================================================================//
@@ -61,7 +59,7 @@ def   _cxxCompilerOptions( options ):
   options.cxxflags += options.occflags
   options.cxxflags += options.ocxxflags
   
-  options.no_rtti = BoolOptionType( description = 'Disable C++ realtime type information' )
+  options.no_rtti = BoolOptionType( description = 'Disable C++ real-time type information' )
   options.no_exceptions = BoolOptionType( description = 'Disable C++ exceptions' )
   
 #//===========================================================================//
@@ -98,8 +96,8 @@ def   _linkerOptions( options ):
   options.linkflags += options.olinkflags
   options.libflags += options.olibflags
   
-  options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to extenal libraries", separators = None )
-  options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking extenal libraries", separators = None )
+  options.libpath = ListOptionType( value_type = FilePath, unique = True, description = "Paths to external libraries", separators = None )
+  options.libs = ListOptionType( value_type = FilePath, unique = True, description = "Linking external libraries", separators = None )
 
 #//===========================================================================//
 

@@ -23,11 +23,10 @@ __all__ = (
 
 import os
 
-from aql.util_types import IgnoreCaseString, UpperCaseString, FilePath
+from aql.util_types import IgnoreCaseString, UpperCaseString
 from aql.utils import cpuCount
 
 from .aql_options import Options, JoinPathValue, SetValue, AddValue
-from .aql_option_value import ConditionalValue
 from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//
@@ -62,7 +61,7 @@ def   _build_options():
   
   file_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
                                     default = 'checksum',
-                                    description = "Type used to detect changes in dependecy files" )
+                                    description = "Type used to detect changes in dependency files" )
   
   options.file_signature = file_signature
   
@@ -200,6 +199,7 @@ def     _diagnostic_options():
 
 #//===========================================================================//
 
+#noinspection PyUnresolvedReferences
 def   _env_options():
   
   options = Options()

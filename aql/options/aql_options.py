@@ -27,12 +27,11 @@ __all__ = (
 import os.path
 
 import operator
-import itertools
 import weakref
 
 from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
 
-from .aql_option_types import OptionType, ListOptionType, autoOptionType
+from .aql_option_types import OptionType, autoOptionType
 from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition
 
 #//===========================================================================//
@@ -59,12 +58,12 @@ class   ErrorOptionsMergeDifferentOptions( TypeError ):
 
 class   ErrorOptionsJoinNoParent( TypeError ):
   def   __init__( self, options ):
-    msg = "Can't join options without parent: %s" % ( options )
+    msg = "Can't join options without parent: %s" % ( options, )
     super(type(self), self).__init__( msg )
 
 class   ErrorOptionsJoinParent( TypeError ):
   def   __init__( self, options ):
-    msg = "Can't join options with children: %s" % ( options )
+    msg = "Can't join options with children: %s" % ( options, )
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -136,9 +135,15 @@ def   _setOperator( dest_value, value ):
 def   _joinPath( dest_value, value ):
   return os.path.join( dest_value, value )
 
+#noinspection PyUnusedLocal
+def   _absPath( dest_value, value ):
+  return os.path.abspath( value )
+
+#noinspection PyUnusedLocal
 def   _notOperator( dest_value, value ):
   return not value
 
+#noinspection PyUnusedLocal
 def   _truthOperator( dest_value, value ):
   return bool(value)
 
@@ -172,7 +177,7 @@ def   JoinPathValue( value, operation = None ):
   return Operation( operation, _doAction, _joinPath, _OpValue( value ) )
 
 def   AbsPathValue( operation = None ):
-  return Operation( operation, _doAction, _abdPath, None )
+  return Operation( operation, _doAction, _absPath, None )
 
 def   UpdateValue( value, operation = None ):
   return Operation( operation, _doAction, _updateOperator, _OpValue( value ) )
@@ -185,6 +190,7 @@ def   TruthValue( value, operation = None ):
 
 #//===========================================================================//
 
+#noinspection PyProtectedMember
 class OptionValueProxy (object):
   
   def   __init__( self, option_value, name, options, key = NotImplemented ):
@@ -481,6 +487,7 @@ class ConditionGenerator( object ):
   
 #//===========================================================================//
 
+#noinspection PyProtectedMember
 class Options (object):
   
   def     __init__( self, parent = None ):
@@ -600,7 +607,7 @@ class Options (object):
   def   _get_value( self, name, raise_ex ):
     try:
       return self.__dict__['__opt_values'][ name ]
-    except KeyError as e:
+    except KeyError:
       parent = self.__dict__['__parent']
       if parent is not None:
         value = parent._get_value( name, False )
@@ -663,7 +670,7 @@ class Options (object):
       try:
         values[ value ].add( name )
       except KeyError:
-        values[ value ] = set([ name ])
+        values[ value ] = {name}
     
     return values.items()
   
@@ -725,8 +732,6 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   __getMergeValueNames( self, names ):
-    
-    value = None
     
     for name in names:
       value = self._get_value( name, raise_ex = False )
@@ -825,9 +830,9 @@ class Options (object):
   
   def   __removeChild( self, child ):
     
-    def   _filterChild( ref, removed_child = child ):
-      child = ref()
-      return (child is not None) and (child is not removed_child)
+    def   _filterChild( child_ref, removed_child = child ):
+      filter_child = child_ref()
+      return (filter_child is not None) and (filter_child is not removed_child)
     
     self.__dict__['__children'] = list( filter( _filterChild, self.__dict__['__children'] ) )
   

@@ -21,8 +21,6 @@ __all__ = (
   'Value', 'StringValue', 'IStringValue', 'SignatureValue',
 )
 
-import hashlib
-
 from aql.utils import strSignature, dataSignature
 from .aql_value_pickler import pickleable
 
@@ -36,7 +34,7 @@ class   ErrorInvalidValueContentType( Exception ):
 
 class   ErrorInvalidValueBytesContentType( Exception ):
   def   __init__( self, content ):
-    msg = "Value content type must be bytes or  bytearray, content type: '%s'" % str(type(content))
+    msg = "Value content type must be bytes or bytearray, content type: '%s'" % str(type(content))
     self.content = content
     super(type(self), self).__init__( msg )
 
@@ -140,6 +138,7 @@ class   SignatureContent( ContentBase ):
   
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 @pickleable
 class   BytesContent ( ContentBase ):
   
@@ -181,6 +180,7 @@ class   BytesContent ( ContentBase ):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 @pickleable
 class   StringContent ( ContentBase ):
   
@@ -219,10 +219,11 @@ class   StringContent ( ContentBase ):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 @pickleable
 class   IStringContent ( StringContent ):
   
-  __slots__ = ('low_case_str')
+  __slots__ = ('low_case_str',)
   
   def   __eq__( self, other ):
     return type(self) == type(other) and (self.signature == other.signature)
@@ -240,6 +241,7 @@ class   IStringContent ( StringContent ):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 @pickleable
 class   Value (object):
   
@@ -280,7 +282,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    return ( self.name, self.content )
+    return self.name, self.content
   
   #//-------------------------------------------------------//
   

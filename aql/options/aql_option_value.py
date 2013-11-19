@@ -22,8 +22,6 @@ __all__ = (
   'ErrorOptionValueMergeNonOptionValue'
 )
 
-import operator
-
 from aql.util_types import toSequence
 
 #//===========================================================================//
@@ -90,6 +88,7 @@ class   Operation( object ):
 
 #//===========================================================================//
 
+#noinspection PyUnusedLocal
 def   _simpleAction( options, context, dest_value, action, *args, **kw ):
   return action( dest_value, *args, **kw )
 

@@ -19,7 +19,7 @@
 
 import os
 
-from .aql_project import Project
+from .aql_project import Project, ProjectConfig
 
 #//===========================================================================//
 

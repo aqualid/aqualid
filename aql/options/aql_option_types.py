@@ -177,6 +177,7 @@ class   BoolOptionType (OptionType):
   
   def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
     
+    #noinspection PyTypeChecker
     super(BoolOptionType,self).__init__( bool, description, group )
     
     if style is None:
@@ -357,6 +358,7 @@ class   EnumOptionType (OptionType):
 #//===========================================================================//
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class   RangeOptionType (OptionType):
   
   __slots__ = (
@@ -364,9 +366,10 @@ class   RangeOptionType (OptionType):
     'max_value',
     'auto_correct',
   )
-  
+
   def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, auto_correct = True ):
     
+    #noinspection PyTypeChecker
     super(RangeOptionType,self).__init__( value_type, description, group )
     
     self.setRange( min_value, max_value, auto_correct )
@@ -440,20 +443,9 @@ class   RangeOptionType (OptionType):
 #//===========================================================================//
 #//===========================================================================//
 
-#   release_size.flags.value.append( '-Os' )
-#   release_size.flags += '-Os'
-#   release_size.has( 'flags', '-Os' ).flags -= '-O3'
-#   release_size.eq( 'defines', '' ).flags -= '-O3'
-#   options.If().cppdefines( 1, '__getitem__', 'DEBUG' )
-#   options.If().cppdefines['DEBUG'].eq( 0 ).ccflags += '-O3'
-#   options.If().cppdefines['DEBUG'][ 0 ].ccflags += '-O3'
-#   options.If().cppdefines['DEBUG'][ 0 ].ccflags += '-O3'
-
-#   options.If().eq( 'cppdefines' ['DEBUG'].eq( 0 ).ccflags += '-O3'
-
 class   ListOptionType (OptionType):
   
-  __slots__ = ('item_type')
+  __slots__ = ('item_type',)
   
   #//=======================================================//
   

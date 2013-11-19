@@ -31,10 +31,12 @@ from aql.utils import fileSignature, fileTimeSignature
 
 
 #//===========================================================================//
+_file_content_cache = {}
 
+#noinspection PyAttributeOutsideInit
 class   FileContentBase( ContentBase ):
   
-  __slots__ = ('path', )
+  __slots__ = ('path', 'signature')
   
   def   __new__( cls, path = None, signature = None, use_cache = False ):
     
@@ -57,10 +59,10 @@ class   FileContentBase( ContentBase ):
     return self
   
   #//-------------------------------------------------------//
-  
-  def   _getSignature( self, path, use_cache = False, file_content_cache = {} ):
-    
-    cache = file_content_cache.setdefault( self.__class__, {})
+
+  def   _getSignature( self, path, use_cache = False ):
+
+    cache = _file_content_cache.setdefault( self.__class__, {})
     
     if use_cache:
       try:
@@ -97,7 +99,7 @@ class   FileContentBase( ContentBase ):
     return (type(self) == type(other)) and self.signature and (self.signature == other.signature)
   
   def   __getnewargs__(self):
-    return ( None, self.signature )
+    return None, self.signature
   
   def   __str__( self ):
     return str(self.signature)
@@ -106,7 +108,8 @@ class   FileContentBase( ContentBase ):
 
 @pickleable
 class   FileContentChecksum (FileContentBase):
-  
+
+  #noinspection PyMethodMayBeStatic
   def   _sign( self, path ):
     return fileSignature( path )
 
@@ -115,6 +118,7 @@ class   FileContentChecksum (FileContentBase):
 @pickleable
 class   FileContentTimeStamp (FileContentBase):
   
+  #noinspection PyMethodMayBeStatic
   def   _sign( self, path ):
     return fileTimeSignature( path )
 
@@ -137,7 +141,7 @@ class   FileName (str):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    return (None, super(FileName,self).__getnewargs__()[0] )
+    return None, super(FileName,self).__getnewargs__()[0]
 
 #//===========================================================================//
 
@@ -164,19 +168,19 @@ class   FileValue (Value):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   actual( self, use_cache = True ):
     content = self.content
     
     if not content:
       return False
     
-    return content == type(content)( self.name, use_cache = True )
+    return content == type(content)( self.name, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   
-  def   remove( self, os_remove = os.remove ):
+  def   remove( self ):
     try:
-      os_remove( self.name )
+      os.remove( self.name )
     except OSError:
       pass
 
