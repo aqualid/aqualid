@@ -1,6 +1,5 @@
 import os
 import re
-import shutil
 import hashlib
 import itertools
 
@@ -40,10 +39,12 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class GccCompilerImpl (aql.Builder):
   
   __slots__ = ( 'cmd', 'language', 'shared')
-  
+
+  #noinspection PyUnusedLocal
   def   __init__(self, options, language, shared ):
     self.language = language
     self.shared = shared
@@ -143,7 +144,7 @@ class GccCompilerImpl (aql.Builder):
 
 class GccCompiler(aql.Builder):
   
-  __slots__ = ('compiler')
+  __slots__ = ('compiler',)
   
   def   __init__(self, options, language, shared ):
     self.compiler = GccCompilerImpl( options, language, shared )
@@ -212,10 +213,12 @@ class GccCompiler(aql.Builder):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class GccArchiver(aql.Builder):
   
   __slots__ = ('cmd', 'target')
-  
+
+  #noinspection PyUnusedLocal
   def   __init__( self, options, target ):
     self.target = target
     
@@ -281,10 +284,12 @@ class GccArchiver(aql.Builder):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class GccLinker(aql.Builder):
   
   __slots__ = ('cmd', 'language', 'target', 'shared' )
-  
+
+  #noinspection PyUnusedLocal
   def   __init__( self, options, target, language, shared ):
     self.language = language
     self.target = target
@@ -553,6 +558,7 @@ class ToolGccCommon( aql.Tool ):
 
 #//===========================================================================//
 
+#noinspection PyMethodMayBeStatic
 @aql.tool('c++', 'g++', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   
@@ -572,7 +578,8 @@ class ToolGxx( ToolGccCommon ):
     return GccLinker( options, target, 'c++', shared = False )
 
 #//===========================================================================//
-  
+
+#noinspection PyMethodMayBeStatic
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   

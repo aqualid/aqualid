@@ -43,6 +43,7 @@ from aql.util_types import toSequence
 
 #//===========================================================================//
 
+#noinspection PyUnusedLocal
 class   ErrorProgramNotFound( Exception ):
   def   __init__( self, program, env ):
     msg = "Program '%s' has not been found" % str(program)
@@ -95,8 +96,10 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
   fd = os.open( str(filename), flags )
   try:
     if sync:
+      #noinspection PyTypeChecker
       f = io.open( fd, mode, 0 )
     else:
+      #noinspection PyTypeChecker
       f = io.open( fd, mode )
   except:
     os.close( fd )
@@ -215,7 +218,8 @@ def   getFunctionName( currentframe = inspect.currentframe ):
 
 def   printStacks():
   id2name = dict([(th.ident, th.name) for th in threading.enumerate()])
-  
+
+  #noinspection PyProtectedMember
   for thread_id, stack in sys._current_frames().items():
     print("\n" + ("=" * 64) )
     print("Thread: %s (%s)" % (id2name.get(thread_id,""), thread_id))
@@ -225,6 +229,7 @@ def   printStacks():
 #//===========================================================================//
 
 try:
+  #noinspection PyUnresolvedReferences
   _getargspec = inspect.getfullargspec
 except AttributeError:
   _getargspec = inspect.getargspec

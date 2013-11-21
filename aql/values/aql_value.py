@@ -134,6 +134,7 @@ class   SignatureContent( ContentBase ):
     return str(self.data)
   
   def   __getnewargs__(self):
+    #noinspection PyRedundantParentheses
     return (self.data, )
   
 #//===========================================================================//
@@ -169,6 +170,7 @@ class   BytesContent ( ContentBase ):
     return str(self.data)
   
   def   __getnewargs__(self):
+    #noinspection PyRedundantParentheses
     return (self.data, )
   
   def   __getattr__( self, attr ):
@@ -208,6 +210,7 @@ class   StringContent ( ContentBase ):
     return self.data
   
   def   __getnewargs__(self):
+    #noinspection PyRedundantParentheses
     return (self.data, )
   
   def   __getattr__( self, attr ):
@@ -241,7 +244,7 @@ class   IStringContent ( StringContent ):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
+#noinspection PyAttributeOutsideInit,PyMethodMayBeStatic
 @pickleable
 class   Value (object):
   
@@ -285,7 +288,7 @@ class   Value (object):
     return self.name, self.content
   
   #//-------------------------------------------------------//
-  
+
   def   __getstate__(self):
     return {}
   

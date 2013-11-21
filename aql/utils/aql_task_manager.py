@@ -165,7 +165,8 @@ class TaskManager (object):
       self.__stop()
   
   #//-------------------------------------------------------//
-  
+
+  #noinspection PyUnusedLocal
   def   failHandler( self, err ):
     self.exit_event.set()
   

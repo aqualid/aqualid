@@ -106,14 +106,15 @@ class ValuesXash (object):
     return value
   
   #//-------------------------------------------------------//
-  
-  def   getKey( self, ref ):
+
+  @staticmethod
+  def   getKey( ref ):
     pairs, index = ref
     if index != -1:
       return pairs[index][0]
-    
+
     return None
-  
+
   #//-------------------------------------------------------//
   
   def   find(self, value):

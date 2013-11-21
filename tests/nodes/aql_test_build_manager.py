@@ -1,6 +1,5 @@
 import sys
 import os.path
-import shutil
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 

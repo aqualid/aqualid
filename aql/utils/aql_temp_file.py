@@ -42,15 +42,16 @@ class Tempfile (object):
   
   def   __enter__(self):
     return self
-  
+
+  #noinspection PyUnusedLocal
   def   __exit__(self, exc_type, exc_value, traceback):
     self.remove()
   
-  def write( self, buffer ):
-    self.__handle.write( buffer )
+  def write( self, data ):
+    self.__handle.write( data )
   
-  def read( self, buffer ):
-    self.__handle.read( buffer )
+  def read( self, data ):
+    self.__handle.read( data )
   
   def seek( self, offset, whence = os.SEEK_SET ):
     self.__handle.seek( offset )
@@ -81,7 +82,7 @@ class Tempfile (object):
 #//===========================================================================//
 
 class Tempdir( object ):
-  __slots__ = ('path')
+  __slots__ = ('path',)
   
   def   __init__( self, prefix = 'tmp', suffix = '', dir = None, name = None ):
     
@@ -95,7 +96,7 @@ class Tempdir( object ):
       if dir is not None:
         name = os.path.join( dir, name )
       
-      name = os.path.absname( name )
+      name = os.path.abspath( name )
       
       if not os.path.isdir( name ):
         os.makedirs( name )
@@ -107,7 +108,8 @@ class Tempdir( object ):
   
   def   __enter__(self):
     return self
-  
+
+  #noinspection PyUnusedLocal
   def   __exit__(self, exc_type, exc_value, traceback):
     self.remove()
   

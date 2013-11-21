@@ -49,7 +49,7 @@ _logger = Logger( "AQL" )
 
 #//---------------------------------------------------------------------------//
 
-def   setLogLevel( level = logging.NOTSET, logger = _logger ):
+def   setLogLevel( level = logging.NOTSET ):
   _logger.setLevel( level )
 
 #//---------------------------------------------------------------------------//

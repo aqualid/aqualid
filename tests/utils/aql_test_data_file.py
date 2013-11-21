@@ -124,7 +124,7 @@ class TestDataFile( AqlTestCase ):
         
         df.flush()
         
-        df2 = DataFile( tmp.name );
+        df2 = DataFile( tmp.name )
         try:
           df2.selfTest()
           added_keys = []
@@ -167,7 +167,7 @@ class TestDataFile( AqlTestCase ):
           
           added_keys = []
           deleted_keys = []
-          df3 = DataFile( tmp.name );
+          df3 = DataFile( tmp.name )
           try:
             df3.selfTest()
             for key in list(data_hash)[2:4]:

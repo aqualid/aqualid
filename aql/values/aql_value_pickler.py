@@ -42,19 +42,19 @@ class   ValuePickler (object):
   
   def   __init__( self ):
     
-    buffer = io.BytesIO()
+    membuf = io.BytesIO()
     
-    pickler = pickle.Pickler( buffer, protocol = pickle.HIGHEST_PROTOCOL )
+    pickler = pickle.Pickler( membuf, protocol = pickle.HIGHEST_PROTOCOL )
     pickler.fast = True
     
-    unpickler = pickle.Unpickler( buffer )
+    unpickler = pickle.Unpickler( membuf )
     
     pickler.persistent_id = self.persistent_id
     unpickler.persistent_load = self.persistent_load
     
     self.pickler = pickler
     self.unpickler = unpickler
-    self.buffer = buffer
+    self.buffer = membuf
   
   #//-------------------------------------------------------//
   @staticmethod
@@ -66,7 +66,7 @@ class   ValuePickler (object):
     try:
       type_id = known_type_names[ type_name ]
       
-      return (type_id, value.__getnewargs__())
+      return type_id, value.__getnewargs__()
     except KeyError:
       return None
   
@@ -86,21 +86,21 @@ class   ValuePickler (object):
   #//-------------------------------------------------------//
   
   def   dumps( self, value ):
-    buffer = self.buffer
-    buffer.seek(0)
-    buffer.truncate(0)
+    buf = self.buffer
+    buf.seek(0)
+    buf.truncate(0)
     self.pickler.dump( value )
     
-    return buffer.getvalue()
+    return buf.getvalue()
  
   #//-------------------------------------------------------//
   
   def   loads( self, bytes_object ):
-    buffer = self.buffer
-    buffer.seek(0)
-    buffer.truncate(0)
-    buffer.write( bytes_object )
-    buffer.seek(0)
+    buf = self.buffer
+    buf.seek(0)
+    buf.truncate(0)
+    buf.write( bytes_object )
+    buf.seek(0)
     
     return self.unpickler.load()
 
@@ -114,7 +114,7 @@ def   _typeName( value_type ):
 def  pickleable( value_type, known_type_names = _known_type_names, known_type_ids = _known_type_ids ):
   if type(value_type) is type:
     type_name = _typeName( value_type )
-    type_id = binascii.crc32( type_name.encode( encoding = "utf-8" ) ) & 0xFFFFFFFF;
+    type_id = binascii.crc32( type_name.encode( encoding = "utf-8" ) ) & 0xFFFFFFFF
     
     other_type = known_type_ids.setdefault( type_id, value_type )
     if other_type is not value_type:

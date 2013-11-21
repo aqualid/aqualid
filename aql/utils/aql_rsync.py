@@ -21,10 +21,8 @@ __all__ = (
   'RemoteHost', 'Rsync',
 )
 
-import sys
 import os.path
 import itertools
-import tempfile
 
 from aql.util_types import toSequence
 from .aql_utils import execCommand, whereProgram
@@ -34,7 +32,7 @@ from .aql_utils import execCommand, whereProgram
 class RemoteHost (object):
   __slots__ = ('address', 'login', 'key_file')
   
-  def   __init__( self, host, login, key_file ):
+  def   __init__( self, address, login, key_file ):
     self.address = address
     self.login = login
     self.key_file = key_file
@@ -183,12 +181,12 @@ class   Rsync( object ):
     
     files = []
     
-    for file in toSequence( local_files ):
-      file = norm_lpath( file )
-      if file.startswith( local_path ):
-        file = file[len(local_path):]
+    for local_file in toSequence( local_files ):
+      local_file = norm_lpath( local_file )
+      if local_file.startswith( local_path ):
+        local_file = local_file[len(local_path):]
       
-      files.append( file )
+      files.append( local_file )
     
     return files
   

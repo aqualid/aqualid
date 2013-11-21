@@ -112,6 +112,7 @@ def _sortDepends( dep_sort_data ):
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class ValuesFile (object):
   
   __slots__ = (
@@ -157,7 +158,7 @@ class ValuesFile (object):
       
       keys = kvalue.content.data
       
-      if kvalue_key in keys: # cyslic dependency
+      if kvalue_key in keys: # cyclic dependency
         return DependsValue( kvalue.name )
       
       for key in keys:
@@ -210,7 +211,8 @@ class ValuesFile (object):
     return self
   
   #//-------------------------------------------------------//
-  
+
+  #noinspection PyUnusedLocal
   def   __exit__(self, exc_type, exc_value, traceback):
     self.close()
   
@@ -342,7 +344,7 @@ class ValuesFile (object):
         remove_keys = []
         
         for value in values:
-          key, val = xash.find( value )
+          key, val = self.xash.find( value )
           if val is not None:
             remove_keys.append( key )
         
