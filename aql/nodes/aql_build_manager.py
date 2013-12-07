@@ -196,11 +196,13 @@ class _NodesTree (object):
           self.node2deps[ node ] = set()
           self.dep2nodes[ node ] = set()
           self.tail_nodes.add( node )
-          
-          self.__add( node.sourceNodes() )   # TODO: recursively add sources and depends
+
+          node_srcnodes = node.sourceNodes()
+
+          self.__add( node_srcnodes )       # TODO: recursively add sources and depends
           self.__add( node.dep_nodes )      # It would be better to rewrite this code to aviod the recursion
           
-          self.__depends( node, node.sourceNodes() )
+          self.__depends( node, node_srcnodes )
           self.__depends( node, node.dep_nodes )
     
   #//-------------------------------------------------------//
@@ -420,6 +422,7 @@ class _NodesBuilder (object):
     
     if not completed_nodes and not rebuild_nodes:
       completed_nodes, failed_nodes = self.__getFinishedNodes()
+      # print("completed_nodes: %s" % (completed_nodes,))
     
     return completed_nodes, failed_nodes, rebuild_nodes
   
@@ -430,6 +433,7 @@ class _NodesBuilder (object):
     failed_nodes = {}
     
     finished_tasks = self.task_manager.finishedTasks()
+    # print("finished_tasks: %s" % (len(finished_tasks), ))
     
     vfiles = self.vfiles
     

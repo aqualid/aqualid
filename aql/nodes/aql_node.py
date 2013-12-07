@@ -24,17 +24,28 @@ __all__ = (
 import hashlib
 
 from aql.util_types import toSequence
-from aql.values import Value, SignatureValue, NoContent, DependsValue, DependsValueContent
+from aql.values import Value, SignatureValue, DependsValue, DependsValueContent
 
 #//===========================================================================//
 
 class   ErrorNodeDependencyInvalid( Exception ):
   def   __init__( self, dep ):
     msg = "Invalid node dependency: %s" % (dep,)
-    super(ErrorNodeDependencyCyclic, self).__init__( msg )
+    super(ErrorNodeDependencyInvalid, self).__init__( msg )
+
+class   ErrorNoTargets( Exception ):
+  def   __init__( self, node ):
+    msg = "Node targets are not built yet: %s" % (node.buildStr())
+    super(ErrorNoTargets, self).__init__( msg )
+
+class   ErrorNoDeps( Exception ):
+  def   __init__( self, node ):
+    msg = "Node dependencies are not built yet: %s" % (node.buildStr())
+    super(ErrorNoDeps, self).__init__( msg )
 
 #//===========================================================================//
 
+#noinspection PyAttributeOutsideInit
 class Node (object):
   
   __slots__ = \
@@ -85,7 +96,7 @@ class Node (object):
     dep_nodes = self.dep_nodes
     dep_values = self.dep_values
     for src_value in self.sources():
-      node = Node( builder, None, src_value )
+      node = Node( builder, src_value )
       node.dep_nodes = dep_nodes
       node.dep_values = dep_values
       nodes.append( node )
@@ -202,9 +213,7 @@ class Node (object):
   
   def   __getSourceValues(self):
     values = []
-    
-    makeValues = self.builder.makeValues
-    
+
     for value in self._sources:
       if isinstance( value, Node ):
         values += value.targets()
@@ -213,9 +222,9 @@ class Node (object):
         values.append( value )
       
       else:
-        values += makeValues( value, use_cache = True )
-    
-    return values
+        values += self.builder.makeValues( value, use_cache = True )
+
+    return tuple(values)
   
   #//=======================================================//
   
@@ -223,7 +232,7 @@ class Node (object):
     return self.source_values
   
   def   sourceNodes(self):
-    return filter( lambda node: isinstance(node,Node), self._sources )
+    return tuple( filter( lambda node: isinstance(node,Node), self._sources ) )
   
   #//=======================================================//
   
@@ -242,19 +251,25 @@ class Node (object):
   #//=======================================================//
   
   def   targets(self):
-    targets = self.targets_value.content.data
-    return targets if targets else tuple()
+    content = self.targets_value.content
+    if not content:
+      raise ErrorNoTargets( self )
+
+    return content.data
   
   #//=======================================================//
   
   def   sideEffects(self):
-    itargets = self.itargets_value.content.data
-    return itargets if itargets else tuple()
+    content = self.itargets_value.content
+    if not content:
+      raise ErrorNoDeps( self )
+
+    return content.data
   
   #//=======================================================//
   
   def   setTargets( self, targets, itargets = None, ideps = None ):
-    
+
     makeValues = self.builder.makeValues
     
     target_values = makeValues( targets, use_cache = False )

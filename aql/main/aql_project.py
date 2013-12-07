@@ -29,9 +29,9 @@ import os
 import types
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, execFile, flattenList, findFiles
-from aql.util_types import FilePath, FilePaths, SplitListType, toSequence
+from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, UniqueList
 from aql.values import Value, FileValue
-from aql.options import optionValueEvaluator, builtinOptions, Options
+from aql.options import builtinOptions, Options #, optionValueEvaluator
 from aql.nodes import BuildManager, Node
 
 from .aql_tools import ToolsManager
@@ -148,13 +148,15 @@ class ProjectConfig( object ):
 
 #//===========================================================================//
 
-@optionValueEvaluator
+#@optionValueEvaluator
 def   _evalNode( value ):
   if isinstance( value, Node ):
     values = value.targets()
-  else:
+  elif isinstance( value, (list, tuple, UniqueList, Value ) ):
     values = toSequence( value )
-  
+  else:
+    return value
+
   opt_value = []
   
   for value in values:
@@ -175,23 +177,36 @@ def   _evalNode( value ):
 
 class _ToolBuilderProxy( object ):
   
-  def   __init__( self, method, options, args_kw ):
+  def   __init__( self, method, options, args_kw, options_kw ):
     
     self._tool_builder = None
     self._tool_method = method
+
+    if options_kw:
+      options = options.override()
+
     self._tool_options = options
     self._tool_args_kw = args_kw
-  
-  def   __evalArgs( self ):
-    return { name: _evalNode( value ) for name, value in self._tool_args_kw.items() }
+    self._tool_options_kw = options_kw
+
+  @staticmethod
+  def   __evalKW( kw ):
+    return { name: _evalNode( value ) for name, value in kw.items() }
   
   def   __getattr__( self, attr ):
     builder = self._tool_builder
     if builder is None:
-      args_kw = self.__evalArgs()
-      builder = self._tool_method( self._tool_options, **args_kw )
+      args_kw = self.__evalKW( self._tool_args_kw )
+
+      options = self._tool_options
+
+      options_kw = self.__evalKW( self._tool_options_kw )
+      if options_kw:
+        options.update( options_kw )
+
+      builder = self._tool_method( options, **args_kw )
       self._tool_builder = builder
-    
+
     return getattr( builder, attr )
   
 
@@ -205,7 +220,7 @@ class BuilderWrapper( object ):
     self.method = method
     self.project = project
     self.options = options
-  
+
   #//-------------------------------------------------------//
   
   @staticmethod
@@ -260,18 +275,18 @@ class BuilderWrapper( object ):
     
     if options_kw:
       options = options.override()
-      options.update( options_kw )
+    #  options.update( options_kw )
     
-    return options, dep_nodes, sources, args_kw
+    return options, dep_nodes, sources, args_kw, options_kw
   
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
-    options, dep_nodes, sources, args_kw = self.__getOptionsAndArgs( kw )
+    options, dep_nodes, sources, args_kw, options_kw = self.__getOptionsAndArgs( kw )
     sources += args
     sources = flattenList( sources )
     
-    builder = _ToolBuilderProxy( self.method, options, args_kw )
+    builder = _ToolBuilderProxy( self.method, options, args_kw, options_kw )
     
     node = Node( builder, sources )
     node.depends( dep_nodes )
@@ -394,6 +409,7 @@ class ProjectTools( object ):
 
 #//===========================================================================//
 
+#noinspection PyProtectedMember,PyAttributeOutsideInit
 class Project( object ):
   
   def   __init__( self, options, targets ):
@@ -409,6 +425,9 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   _override( self ):
+    """
+    @rtype : Project
+    """
     other = super(Project,self).__new__( self.__class__ )
     
     other.targets       = self.targets
@@ -426,13 +445,13 @@ class Project( object ):
       self.script_locals = self.__getSciptLocals()
       return self.script_locals
     
-    raise AttributeError("No attribute '%s'" % str(atrr) )
+    raise AttributeError("No attribute '%s'" % str(attr) )
     
   #//-------------------------------------------------------//
   
   def   __getSciptLocals( self ):
     
-    locals = {
+    script_locals = {
       'options'   : self.options,
       'tools'     : self.tools,
       'Tool'      : self.tools.Tools,
@@ -447,9 +466,9 @@ class Project( object ):
       
       member = getattr( self, name )
       if isinstance( member, types.MethodType ):
-        locals.setdefault( name, member )
+        script_locals.setdefault( name, member )
     
-    return locals
+    return script_locals
   
   #//-------------------------------------------------------//
   
@@ -459,16 +478,17 @@ class Project( object ):
     
     files_cache = self.files_cache
     
-    locals = files_cache.get( script, None )
-    if locals is not None:
-      return locals
-    
-    self.files_cache.setdefault( script, {} )
-    
+    script_result = files_cache.get( script, None )
+    if script_result is not None:
+      return script_result
+
+    cur_dir = os.getcwd()
+
     try:
-      cur_dir = os.getcwd()
       os.chdir( script.dir )
-      return execFile( script, script_locals )
+      script_result = execFile( script, script_locals )
+      files_cache[ script ] = script_result
+      return script_result
     finally:
       os.chdir( cur_dir )
   
@@ -483,9 +503,9 @@ class Project( object ):
     
     script_locals = { 'options': self.options }
     
-    locals = self._execScript( options_file, script_locals )
+    script_locals = self._execScript( options_file, script_locals )
     
-    options.update( locals )
+    self.options.update( script_locals )
   
   #//-------------------------------------------------------//
   

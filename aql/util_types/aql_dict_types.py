@@ -116,15 +116,15 @@ def   SplitDictType( dict_type, separators ):
       if not isinstance( items_str, str ):
         return items_str
       
-      for sep in other_seps:
-        items_str = items_str.replace( sep, sep )
-      
+      for s in other_seps:
+        items_str = items_str.replace( s, sep )
+
       items = []
       
       for v in filter( None, items_str.split( sep ) ):
         key, sep, value = v.partition('=')
         items.append( (key, value) )
-      
+
       return items
     
     #//-------------------------------------------------------//

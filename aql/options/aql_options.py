@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Options', 'optionValueEvaluator',
+  'Options', #'optionValueEvaluator',
   'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
   'ErrorOptionsOperationIsNotSpecified',
   'ErrorOptionsForeignOptionValue', 'ErrorOptionsMergeNonOptions'
@@ -88,13 +88,13 @@ class   _OpValue( tuple ):
 
 #//===========================================================================//
 
-_evaluators = []
-
-def   optionValueEvaluator( evaluator ):
-  global _evaluators
-  _evaluators.append( evaluator )
-  
-  return evaluator
+#_evaluators = []
+#
+#def   optionValueEvaluator( evaluator ):
+#  global _evaluators
+#  _evaluators.append( evaluator )
+#
+#  return evaluator
 
 #//===========================================================================//
 
@@ -119,8 +119,8 @@ def   _evalValue( options, context, other ):
   if key is not NotImplemented:
     other = DictItem( key, other )
   
-  for evaluator in _evaluators:
-    other = evaluator( other )
+  #for evaluator in _evaluators:
+  #  other = evaluator( other )
   
   return other
 

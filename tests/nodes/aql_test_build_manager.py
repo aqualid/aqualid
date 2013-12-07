@@ -62,7 +62,7 @@ class ChecksumBuilder (Builder):
       
       target_values.append( FileValue( chcksum_filename ) )
     
-    return node.setTargets( target_values )
+    node.setTargets( target_values )
 
 #//===========================================================================//
 
@@ -112,13 +112,14 @@ def   _addNodesToBM( builder, src_files ):
     for s in src_files:
       src_values.append( FileValue( s ) )
     
-    checksums_node = Node( builder, None, src_values )
-    checksums_node2 = Node( builder, checksums_node, None )
+    checksums_node = Node( builder, src_values )
+    checksums_node2 = Node( builder, checksums_node )
     
     bm.add( checksums_node ); bm.selfTest()
     bm.add( checksums_node2 ); bm.selfTest()
-  except:
+  except Exception:
     bm.close()
+    raise
   
   return bm
 
@@ -175,7 +176,7 @@ class MultiChecksumBuilder (Builder):
     
     for source_value in node.sources():
       
-      n = Node( self.builder, None, source_value )
+      n = Node( self.builder, source_value )
       if n.actual( vfile ):
         targets += n.targets()
       else:
@@ -258,15 +259,15 @@ class TestBuildManager( AqlTestCase ):
     
     builder = CopyValueBuilder( options )
     
-    node0 = Node( builder, None, value1,  )
-    node1 = Node( builder, node0, None )
-    node2 = Node( builder, node1, None )
-    node3 = Node( builder, None, value2 )
-    node4 = Node( builder, None, value3 )
-    node5 = Node( builder, node4, None )
+    node0 = Node( builder, value1,  )
+    node1 = Node( builder, node0 )
+    node2 = Node( builder, node1 )
+    node3 = Node( builder, value2 )
+    node4 = Node( builder, value3 )
+    node5 = Node( builder, node4 )
     
-    node6 = Node( builder, node5, None )
-    node6.depends( [node0, node1], None )
+    node6 = Node( builder, node5 )
+    node6.depends( [node0, node1] )
     
     bm.add( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
     bm.add( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
@@ -276,15 +277,15 @@ class TestBuildManager( AqlTestCase ):
     bm.add( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
     bm.add( node6 ); bm.selfTest(); self.assertEqual( len(bm), 7 )
     
-    node0.depends( node3, None ); bm.depends( node0, node3 ); bm.selfTest()
-    node1.depends( node3, None ); bm.depends( node1, node3 ); bm.selfTest()
-    node2.depends( node3, None ); bm.depends( node2, node3 ); bm.selfTest()
-    node3.depends( node4, None ); bm.depends( node3, node4 ); bm.selfTest()
-    node0.depends( node5, None ); bm.depends( node0, node5 ); bm.selfTest()
-    node5.depends( node3, None ); bm.depends( node5, node3 ); bm.selfTest()
+    node0.depends( node3 ); bm.depends( node0, node3 ); bm.selfTest()
+    node1.depends( node3 ); bm.depends( node1, node3 ); bm.selfTest()
+    node2.depends( node3 ); bm.depends( node2, node3 ); bm.selfTest()
+    node3.depends( node4 ); bm.depends( node3, node4 ); bm.selfTest()
+    node0.depends( node5 ); bm.depends( node0, node5 ); bm.selfTest()
+    node5.depends( node3 ); bm.depends( node5, node3 ); bm.selfTest()
     
     with self.assertRaises(ErrorNodeDependencyCyclic):
-      node4.depends( node3, None ); bm.depends( node4, node3 ); bm.selfTest()
+      node4.depends( node3 ); bm.depends( node4, node3 ); bm.selfTest()
   
   #//-------------------------------------------------------//
   
@@ -394,7 +395,7 @@ class TestBuildManager( AqlTestCase ):
           for s in src_files:
             src_values.append( FileValue( s ) )
           
-          node = Node( builder, None, src_values )
+          node = Node( builder, src_values )
           
           bm.add( node )
           _build( bm )
@@ -407,7 +408,7 @@ class TestBuildManager( AqlTestCase ):
           bm = BuildManager()
           builder = MultiChecksumBuilder( options, 0, 256 )
           
-          node = Node( builder, None, src_values )
+          node = Node( builder, src_values )
           bm.add( node ); bm.selfTest()
           bm.status(); bm.selfTest()
           
@@ -440,11 +441,11 @@ class TestBuildManager( AqlTestCase ):
           for s in src_files:
             src_values.append( FileValue( s ) )
           
-          node0 = Node( builder, None, None )
-          node1 = Node( builder, None, src_values )
-          node2 = Node( builder, node1, None )
-          node3 = Node( builder, node2, None )
-          node4 = Node( builder, node3, None )
+          node0 = Node( builder, None )
+          node1 = Node( builder, src_values )
+          node2 = Node( builder, node1 )
+          node3 = Node( builder, node2 )
+          node4 = Node( builder, node3 )
           
           bm.add( node0 )
           bm.add( node1 )
