@@ -109,14 +109,14 @@ class TestNodes( AqlTestCase ):
         options = builtinOptions()
         builder = ChecksumBuilder( options )
         
-        node = Node( builder, None, [value1, value2, value3] )
+        node = Node( builder, [value1, value2, value3] )
         
         self.assertFalse( node.actual( vfile ) )
         builder.build( node )
         builder.save( vfile, node )
         self.assertTrue( node.actual( vfile ) )
         
-        node = Node( builder, None, [value1, value2, value3] )
+        node = Node( builder, [value1, value2, value3] )
         self.assertTrue( node.actual( vfile ) )
         builder.build( node )
         builder.save( vfile, node )
@@ -128,18 +128,16 @@ class TestNodes( AqlTestCase ):
   #//===========================================================================//
 
   def   _rebuildNode( self, vfile, builder, values, deps, tmp_files):
-    nodes, values = _splitNodes( values )
-    
-    node = Node( builder, nodes, values )
-    node.depends( *_splitNodes(deps) )
+    node = Node( builder, values )
+    node.depends( deps )
     
     self.assertFalse( node.actual( vfile ) )
     builder.build( node )
     builder.save( vfile, node )
     self.assertTrue( node.actual( vfile ) )
     
-    node = Node( builder, nodes, values )
-    node.depends( *_splitNodes(deps) )
+    node = Node( builder, values )
+    node.depends( deps )
     
     self.assertTrue( node.actual( vfile ) )
     builder.build( node )
@@ -289,7 +287,7 @@ class TestSpeedBuilder (Builder):
 
 def   _testNoBuildSpeed( vfile, builder, source_values ):
   for source in source_values:
-    node = Node( builder, None, [ FileValue( source, _FileContentType ) ] )
+    node = Node( builder, FileValue( source, _FileContentType ) )
     if not node.actual( vfile ):
       raise AssertionError( "node is not actual" )
 
@@ -332,7 +330,7 @@ class TestNodesSpeed ( AqlTestCase ):
           builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
           
           for source in source_files:
-            node = Node( builder, None, [ FileValue( source, _FileContentType ) ] )
+            node = Node( builder, FileValue( source, _FileContentType ) )
             self.assertFalse( node.actual( vfile ) )
             builder.build( node )
             builder.save( vfile, node )

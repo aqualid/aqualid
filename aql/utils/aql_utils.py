@@ -416,7 +416,9 @@ except AttributeError:
 def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH, stdin = None ):
   
   cmd_file = None
-  
+  if isinstance(cmd, str):
+    cmd = [ cmd ]
+
   if file_flag:
     cmd_length = sum( map(len, cmd ) ) + len(cmd) - 1
     

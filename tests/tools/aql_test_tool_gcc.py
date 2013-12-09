@@ -5,9 +5,9 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, Tempdir, finishHandleEvents
-from aql.util_types import FilePath, FilePaths
-from aql.values import FileValue, FileContentTimeStamp, FileContentChecksum, ValuesFile
+from aql.utils import Tempfile, Tempdir, finishHandleEvents, whereProgram
+from aql.util_types import FilePath
+from aql.values import FileValue, FileContentChecksum, ValuesFile
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
@@ -41,20 +41,20 @@ class TestToolGcc( AqlTestCase ):
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
       
-      options.cxx = "C:\\MinGW32\\bin\\g++.exe"
-      
+      if not options.cxx:
+        options.cxx = whereProgram( "g++" )
+
       options.build_dir_prefix = build_dir
       
-      cpp_compiler = GccCompiler( options, 'c++' )
+      cpp_compiler = GccCompiler( options, 'c++', shared = False )
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
       
-      bm = BuildManager( vfilename, 4, True )
       vfile = ValuesFile( vfilename )
       
       try:
         obj = Node( cpp_compiler, src_files )
-        pre_nodes = obj.prebuild( bm, vfile )
+        pre_nodes = obj.builder.prebuild( vfile, obj )
         for node in pre_nodes:
           self.assertFalse( node.actual( vfile ) )
           node.build( None, vfile )
