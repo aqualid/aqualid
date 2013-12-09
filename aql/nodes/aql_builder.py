@@ -44,8 +44,6 @@ def   _makeDir( path_dir, _path_cache = set() ):
 
 def   _buildPath( build_path, strip_src_path, src_path = None ):
   
-  filename = ''
-  
   if not src_path:
     filename = ''
   
@@ -75,6 +73,7 @@ def   _makeFileValues( content_type, values, use_cache ):
 
 #//===========================================================================//
 
+# noinspection PyAttributeOutsideInit
 class Builder (object):
   """
   Base class for all builders
@@ -110,7 +109,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   getSignature( self ):
-    raise NotImplementedError( "Must be implemented in a child class." % attr )
+    raise NotImplementedError( "Must be implemented in a child class.")
   
   #//-------------------------------------------------------//
   
@@ -129,11 +128,11 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   actual( self, vfile, node ):
-    result = node.actual( vfile )
-    return result
-  
+    return node.actual( vfile )
+
   #//-------------------------------------------------------//
-  
+
+  # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
     vfile.addValues( node.values() )
   
@@ -150,7 +149,7 @@ class Builder (object):
   
   def   prebuildFinished( self, vfile, node, prebuild_nodes ):
     """
-    Called when all node returned by the prebuild() methods has been built
+    Called when all node returned by the prebuild() method has been built
     """
     pass
   
@@ -163,7 +162,8 @@ class Builder (object):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
-  
+
+  # noinspection PyMethodMayBeStatic
   def   clear( self, vfile, node ):
     """
     Cleans produced values

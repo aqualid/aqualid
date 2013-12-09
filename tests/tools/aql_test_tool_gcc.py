@@ -37,14 +37,14 @@ class TestToolGcc( AqlTestCase ):
       os.makedirs( src_dir )
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
-      
+
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
       
       if not options.cxx:
         options.cxx = whereProgram( "g++" )
 
-      options.build_dir_prefix = build_dir
+      options.build_dir = build_dir
       
       cpp_compiler = GccCompiler( options, 'c++', shared = False )
       
@@ -56,18 +56,21 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, src_files )
         pre_nodes = obj.builder.prebuild( vfile, obj )
         for node in pre_nodes:
-          self.assertFalse( node.actual( vfile ) )
-          node.build( None, vfile )
-          self.assertTrue( node.actual( vfile ) )
-        
-        self.assertFalse( obj.actual( vfile ) )
-        obj.prebuildFinished( bm, vfile, pre_nodes )
-        self.assertTrue( obj.actual( vfile ) )
+          builder = node.builder
+          self.assertFalse( builder.actual( vfile, node ) )
+          builder.build( node )
+          builder.save( vfile, node )
+          # self.assertTrue( builder.actual( vfile, node ) )
+
+        obj.builder.prebuildFinished( vfile, obj, pre_nodes )
+
+        self.assertTrue( obj.builder.actual( vfile, obj ) )
+        self.assertFalse( obj.builder.prebuild( vfile, obj ) )
         
         vfile.close(); vfile.open( vfilename )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
+        self.assertFalse( obj.builder.prebuild( vfile, obj ) )
         
         vfile.close(); vfile.open( vfilename )
         
@@ -77,9 +80,9 @@ class TestToolGcc( AqlTestCase ):
         FileValue( hdr_files[0], use_cache = False )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertFalse( obj.actual( vfile ) )
+        self.assertTrue( obj.builder.prebuild( vfile, obj ) )
         
-        pre_nodes = obj.prebuild( bm, vfile )
+        pre_nodes = obj.builder.prebuild( vfile )
         for node in pre_nodes:
           if not node.actual( vfile ):
             node.build( None, vfile )

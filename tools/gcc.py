@@ -119,7 +119,7 @@ class GccCompilerImpl (aql.Builder):
     
     source = node.sources()[0]
     obj_file = self.buildPath( source )
-    
+
     cwd = obj_file.dir
     obj_file = obj_file.change( prefix = prefix ) + suffix
     
