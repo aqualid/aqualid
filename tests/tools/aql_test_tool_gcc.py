@@ -15,7 +15,6 @@ from gcc import GccCompiler, GccArchiver, ToolGccCommon
 
 #//===========================================================================//
 
-@skip
 class TestToolGcc( AqlTestCase ):
   
   #//-------------------------------------------------------//
@@ -25,7 +24,24 @@ class TestToolGcc( AqlTestCase ):
     finishHandleEvents()
   
   #//-------------------------------------------------------//
-  
+
+  def   _buildObj(self, obj, vfile ):
+    pre_nodes = obj.builder.prebuild( vfile, obj )
+    self.assertTrue( pre_nodes )
+
+    for node in pre_nodes:
+      builder = node.builder
+      self.assertFalse( builder.actual( vfile, node ) )
+      builder.build( node )
+      builder.save( vfile, node )
+
+    obj.builder.prebuildFinished( vfile, obj, pre_nodes )
+
+    self.assertTrue( obj.builder.actual( vfile, obj ) )
+    self.assertFalse( obj.builder.prebuild( vfile, obj ) )
+
+  #//-------------------------------------------------------//
+
   def test_gcc_compiler(self):
     
     with Tempdir() as tmp_dir:
@@ -54,22 +70,14 @@ class TestToolGcc( AqlTestCase ):
       
       try:
         obj = Node( cpp_compiler, src_files )
-        pre_nodes = obj.builder.prebuild( vfile, obj )
-        for node in pre_nodes:
-          builder = node.builder
-          self.assertFalse( builder.actual( vfile, node ) )
-          builder.build( node )
-          builder.save( vfile, node )
-          # self.assertTrue( builder.actual( vfile, node ) )
 
-        obj.builder.prebuildFinished( vfile, obj, pre_nodes )
+        self._buildObj( obj, vfile )
 
-        self.assertTrue( obj.builder.actual( vfile, obj ) )
-        self.assertFalse( obj.builder.prebuild( vfile, obj ) )
-        
         vfile.close(); vfile.open( vfilename )
         
         obj = Node( cpp_compiler, src_files )
+
+        self.assertTrue( obj.builder.actual( vfile, obj ) )
         self.assertFalse( obj.builder.prebuild( vfile, obj ) )
         
         vfile.close(); vfile.open( vfilename )
@@ -80,22 +88,16 @@ class TestToolGcc( AqlTestCase ):
         FileValue( hdr_files[0], use_cache = False )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.builder.prebuild( vfile, obj ) )
-        
-        pre_nodes = obj.builder.prebuild( vfile )
-        for node in pre_nodes:
-          if not node.actual( vfile ):
-            node.build( None, vfile )
-          self.assertTrue( node.actual( vfile ) )
-        
-        self.assertFalse( obj.actual( vfile ) )
-        obj.prebuildFinished( bm, vfile, pre_nodes )
-        self.assertTrue( obj.actual( vfile ) )
-        
+        self.assertEqual( len(obj.builder.prebuild( vfile, obj )), 1 )
+
+        self._buildObj( obj, vfile )
+
         vfile.close(); vfile.open( vfilename )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
+
+        self.assertTrue( obj.builder.actual( vfile, obj ) )
+        self.assertFalse( obj.builder.prebuild( vfile, obj ) )
         
       finally:
         vfile.close()
@@ -113,52 +115,47 @@ class TestToolGcc( AqlTestCase ):
       os.makedirs( src_dir )
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
-      
+
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
+
+      if not options.cxx:
+        options.cxx = whereProgram( "g++" )
+
+      options.build_dir = build_dir
       
-      options.cxx = "C:\\MinGW32\\bin\\g++.exe"
+      cpp_compiler = GccCompiler( options, 'c++', shared = False )
       
-      options.build_dir_prefix = build_dir
-      
-      cpp_compiler = GccCompiler( options, 'c++' )
-      
-      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
-      
-      bm = BuildManager( vfilename, 4, True )
-      vfile = ValuesFile( vfilename )
+      bm = BuildManager()
       try:
         
         obj = Node( cpp_compiler, src_files )
-        self.assertFalse( obj.actual( vfile ) )
-        
+
         bm.add( obj )
-        bm.build()
+        bm.build( jobs = 4, keep_going = False )
         
         bm.close()
         
         obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
-        
+
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
         FileValue( hdr_files[0], use_cache = False )
         
-        bm = BuildManager( vfilename, 4, True )
+        bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
         bm.add( obj )
-        bm.build()
+        bm.build( jobs = 4, keep_going = False )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
-        
+
       finally:
-        vfile.close()
         bm.close()
   
   #//-------------------------------------------------------//
-  
+
+  @skip
   def test_gcc_ar(self):
     
     #~ with Tempdir() as tmp_dir:

@@ -430,7 +430,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
       cmd_file.write( args_str )
       cmd_file.close()
       
-      cmd = [cmd[0], file_flag + cmd_file.name ]
+      cmd = [cmd[0], file_flag + cmd_file.name]
   
   try:
     cmd = map(str, cmd)
