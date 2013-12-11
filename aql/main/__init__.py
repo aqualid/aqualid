@@ -17,5 +17,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+from .aql_main import *
 from .aql_project import *
 from .aql_tools import *

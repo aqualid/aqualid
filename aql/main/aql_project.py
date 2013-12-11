@@ -102,7 +102,7 @@ class ProjectConfig( object ):
       CLIOption( "-u", "--up",              "search_up",      bool,       False,        "Search up directory tree for a make file." ),
       
       CLIOption( "-o", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
-      CLIOption( "-I", "--tool-paths",      "tool_paths",     Paths,      [],           "Paths to tools and setup scripts.", 'FILE PATH, ...'),
+      CLIOption( "-I", "--tools-path",      "tools_path",     Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Continue build even if any target failed." ),
       CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
       CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
@@ -124,6 +124,11 @@ class ProjectConfig( object ):
     ignore_options = {'directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet', 'search_up'}
     for name,value in cli_config.items():
       if (name not in ignore_options) and (value is not None):
+        if name == 'tools_path':
+          value = map( os.path.abspath, value )
+        elif name == 'build_dir':
+          value = os.path.abspath( value )
+
         cli_options[ name ] = value
     
     log_level = 1
@@ -135,9 +140,10 @@ class ProjectConfig( object ):
       log_level -= 1
     
     cli_options['log_level'] = log_level
-    
+
     options.update( cli_options )
-    
+    print( "options.tools_path: %s" % (options.tools_path,))
+
     if cli_config.list_options:
       printOptions( options )
     
@@ -326,7 +332,7 @@ class ProjectTools( object ):
     self.tools_cache = {}
     
     tools = ToolsManager.instance()
-    tools.loadTools( self.project.options.tool_paths.value() )
+    tools.loadTools( self.project.options.tools_path.value() )
     
     self.tools = tools
   
@@ -382,10 +388,10 @@ class ProjectTools( object ):
   
   def   Tools( self, *tool_names, **kw ):
     
-    tool_paths = kw.pop('tool_paths', [])
+    tools_path = kw.pop('tools_path', [])
     options = kw.pop( 'options', None )
     
-    self.tools.loadTools( tool_paths )
+    self.tools.loadTools( tools_path )
     
     if options is None:
       options = self.project.options
@@ -394,7 +400,7 @@ class ProjectTools( object ):
       options = options.override()
       options.update( kw )
     
-    self.tools.loadTools( options.tool_paths.value() )
+    self.tools.loadTools( options.tools_path.value() )
     
     tools = [ self.__addTool( tool_name, options ) for tool_name in tool_names ]
     
@@ -593,7 +599,7 @@ class Project( object ):
   c = Clean( objs )
   
   
-  prj = aql.Project( tool_paths )
+  prj = aql.Project( tools_path )
   
   prj.Tool('c').Compile( c_files, optimization = 'size', debug_symbols = False )
   
@@ -604,13 +610,13 @@ class Project( object ):
   
   prj.Compile( c_files, optimization = 'size', debug_symbols = False )
   
-  prj_c = aql.Project( prj_cfg, tool_paths )
+  prj_c = aql.Project( prj_cfg, tools_path )
   prj_c.Tool( 'c' )
   prj_c.Compile( cpp_files, optimization = 'speed' )
   
   #//-------------------------------------------------------//
   
-  prj = aql.Project( prj_cfg, tool_paths )
+  prj = aql.Project( prj_cfg, tools_path )
   prj.Tool( 'c++', 'c' )
   
   cpp_objs = prj.CompileCpp( cpp_files, optimization = 'size' )
@@ -624,7 +630,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  prj = aql.Project( prj_cfg, tool_paths )
+  prj = aql.Project( prj_cfg, tools_path )
   
   prj.Tools( 'g++', 'gcc' )
   

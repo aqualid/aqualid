@@ -67,7 +67,7 @@ def   _build_options():
   
   #//-------------------------------------------------------//
   
-  options.tool_paths    = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search paths" )
+  options.tools_path    = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search path" )
   options.keep_going    = BoolOptionType( description = "Continue build even if any target failed." )
   options.build_always  = BoolOptionType( description = "Unconditionally build all targets." )
   options.jobs          = RangeOptionType( 1, 32, description = "Number of parallel jobs to build targets." )

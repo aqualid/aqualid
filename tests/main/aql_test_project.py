@@ -89,7 +89,7 @@ options.build_variant = "final"
   #//-------------------------------------------------------//
   
   def   test_prj_tools( self ):
-    prj = Project( tool_paths = '../../tools' )
+    prj = Project( tools_path = '../../tools' )
     objs = prj.c.Compile( 'file0.cpp' )
     prj.Build()
 
