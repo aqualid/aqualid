@@ -135,10 +135,9 @@ class GccCompilerImpl (aql.Builder):
       node.setTargets( obj_file, ideps = _readDeps( dep_file ) )
   
   #//-------------------------------------------------------//
-  
-  def   buildStr( self, node ):
-    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
 
+  def   __str__( self ):
+    return ' '.join( self.cmd )
 
 #//===========================================================================//
 
@@ -207,9 +206,9 @@ class GccCompiler(aql.Builder):
     node.setTargets( targets )
   
   #//-------------------------------------------------------//
-  
-  def   buildStr( self, node ):
-    return self.compiler.buildStr( node )
+
+  def   __str__( self ):
+    return str(self.compiler)
 
 #//===========================================================================//
 
@@ -278,9 +277,8 @@ class GccArchiver(aql.Builder):
     node.setTargets( archive )
   
   #//-------------------------------------------------------//
-  
-  def   buildStr( self, node ):
-    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
+  def   __str__( self ):
+    return ' '.join( self.cmd )
 
 #//===========================================================================//
 
@@ -380,9 +378,9 @@ class GccLinker(aql.Builder):
     node.setTargets( target )
   
   #//-------------------------------------------------------//
-  
-  def   buildStr( self, node ):
-    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
+
+  def   __str__( self ):
+    return ' '.join( self.cmd )
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION

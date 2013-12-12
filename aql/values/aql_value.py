@@ -314,7 +314,12 @@ class   Value (object):
     return (self.name != other.name) or (self.content != other.content)
   
   #//-------------------------------------------------------//
-  
+
+  def   get(self):
+    return self.content.data
+
+  #//-------------------------------------------------------//
+
   def   __str__(self):
     return str(self.name)
   

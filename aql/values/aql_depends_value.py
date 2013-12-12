@@ -31,6 +31,11 @@ class   ErrorValueUnpickleable ( Exception ):
     msg = "Value '%s' can't be serialized." % type(value).__name__ 
     super(type(self), self).__init__( msg )
 
+class   ErrorNoDependsValues( Exception ):
+  def   __init__( self ):
+    msg = "No depends values."
+    super(type(self), self).__init__( msg )
+
 #//===========================================================================//
 
 @pickleable
@@ -133,7 +138,16 @@ class   DependsValue (Value):
     return super(DependsValue,cls).__new__(cls, name, content )
   
   #//-------------------------------------------------------//
-  
+
+  def get(self):
+    values = self.content.data
+    if values is None:
+      raise ErrorNoDependsValues()
+
+    return [ v.get() for v in values ]
+
+  #//-------------------------------------------------------//
+
   def   actual( self, use_cache = True ):
     try:
       for value in self.content.data:

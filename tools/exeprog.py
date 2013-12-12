@@ -53,13 +53,7 @@ class ExecuteCommand (aql.Builder):
     
     targets = node.targets()
     
-    cmd = []
-    
-    for target in node.targets():
-      if isinstance( target, FileValue ):
-        cmd.append( target.name )
-      elif isinstance( target, (StringValue, IStringValue) ):
-        cmd.append( target.content.data )
+    cmd = [ target.get() for target in node.targets() ]
     
     env = self.options.env.value().copy( value_type = str )
     
@@ -75,24 +69,3 @@ class ExecuteCommand (aql.Builder):
 
   def   makeValues( self, values, use_cache = False ):
     return self.makeFileValues( values, use_cache )
-
-
-#//===========================================================================//
-  
-@aql.tool('c', 'gcc', 'cc')
-class ToolGcc( ToolGccCommon ):
-  
-  def   Object( self, options ):
-    return GccCompiler( options, 'c', shared = False )
-  
-  def   SharedObject( self, options ):
-    return GccCompiler( options, 'c', shared = True )
-  
-  def   Library( self, options, target ):
-    return GccArchiver( options, target )
-  
-  def   SharedLibrary( self, options, target ):
-    return GccLinker( options, target, 'c', shared = True )
-  
-  def   Program( self, options, target ):
-    return GccLinker( options, target, 'c', shared = False )

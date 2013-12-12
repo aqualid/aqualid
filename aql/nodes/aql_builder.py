@@ -184,7 +184,8 @@ class Builder (object):
     """
     Returns user friendly builder action string
     """
-    return str(self) + ': ' + ', '.join( map( str, node.sources() ) )
+    file_names = tuple( src.get() for src in node.sources() )
+    return str(self) + ': ' + ', '.join( file_names )
   
   #//-------------------------------------------------------//
   

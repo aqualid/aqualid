@@ -167,7 +167,12 @@ class   FileValue (Value):
     return super(FileValue, cls).__new__( cls, name, content )
   
   #//-------------------------------------------------------//
-  
+
+  def   get(self):
+    return self.name
+
+  #//-------------------------------------------------------//
+
   def   actual( self, use_cache = True ):
     content = self.content
     
