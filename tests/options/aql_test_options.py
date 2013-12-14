@@ -277,7 +277,7 @@ class TestOptions( AqlTestCase ):
     self.assertRaises( ErrorOptionsOperationIsNotSpecified, options.appendValue, 'warn_level', 1 )
     
     options.test = 1
-    self.assertEqual( options.test.value(), 1 )
+    self.assertEqual( options.test.get(), 1 )
     
     options.opt += options.opt
     
@@ -468,7 +468,7 @@ class TestOptions( AqlTestCase ):
     
     options.target_os = "windows"
     
-    self.assertEqual( options.build_dir_name.value(), 'windows_debug' )
+    self.assertEqual( options.build_dir_name.get(), 'windows_debug' )
     
     options.target_arch = "x86-32"
     
@@ -489,11 +489,11 @@ class TestOptions( AqlTestCase ):
     options2.target_os.setDefault( "windows" )
     options2.target_arch.setDefault( "x86-32" )
     
-    self.assertEqual( options2.build_dir_name.value(), 'windows_x86-32_debug' )
+    self.assertEqual( options2.build_dir_name.get(), 'windows_x86-32_debug' )
     self.assertEqual( options.build_dir_name, 'debug' )
     
     options2.join()
-    self.assertEqual( options.build_dir_name.value(), 'windows_x86-32_debug' )
+    self.assertEqual( options.build_dir_name.get(), 'windows_x86-32_debug' )
 
 #//===========================================================================//
 

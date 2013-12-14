@@ -21,7 +21,7 @@ def   _setOperator( dest_value, value ):
 
 def   _doAction( options, context, dest_value, op, value ):
   if isinstance( value, OptionValue ):
-    value = value.value( options, context )
+    value = value.get( options, context )
   return op( dest_value, value )
 
 def   SetValue( value, operation = None ):
@@ -56,7 +56,7 @@ class TestOptionValue( AqlTestCase ):
     opt_value.appendValue( cond_value2 )
     opt_value.appendValue( cond_value3 )
     
-    self.assertEqual( opt_value.value( options = {}, context = None ), 5 )
+    self.assertEqual( opt_value.get( options = {}, context = None ), 5 )
   
   #//---------------------------------------------------------------------------//
   
@@ -68,16 +68,16 @@ class TestOptionValue( AqlTestCase ):
     cond_false = Condition( cond_false, _condition, flag = True )
     
     opt_value.appendValue( ConditionalValue( AddValue( 2 ), cond_false ) )
-    self.assertEqual( opt_value.value( {}, None ), 0 )
+    self.assertEqual( opt_value.get( {}, None ), 0 )
     
     opt_value.appendValue( ConditionalValue( AddValue( 3 ), cond_true ) )
-    self.assertEqual( opt_value.value( {}, None ), 3 )
+    self.assertEqual( opt_value.get( {}, None ), 3 )
     
     opt_value.appendValue( ConditionalValue( AddValue( 1 ), cond_true ) )
-    self.assertEqual( opt_value.value( {}, None ), 4 )
+    self.assertEqual( opt_value.get( {}, None ), 4 )
     
     opt_value.appendValue( ConditionalValue( AddValue( 1 ), cond_false ) )
-    self.assertEqual( opt_value.value( {}, None ), 4 )
+    self.assertEqual( opt_value.get( {}, None ), 4 )
     
     opt_value2 = OptionValue( OptionType( int ) )
     
@@ -85,25 +85,25 @@ class TestOptionValue( AqlTestCase ):
     
     opt_value2.appendValue( ConditionalValue( SetValue( 7 ), cond_true ) )
     
-    self.assertEqual( opt_value.value( {}, None ), 7 )
-    self.assertEqual( opt_value2.value( {}, None ), 7 )
+    self.assertEqual( opt_value.get( {}, None ), 7 )
+    self.assertEqual( opt_value2.get( {}, None ), 7 )
     
     opt_value2.appendValue( ConditionalValue( SetValue( 8 ), cond_true ) )
     
-    self.assertEqual( opt_value.value( {}, None ), 8 )
-    self.assertEqual( opt_value2.value( {}, None ), 8 )
+    self.assertEqual( opt_value.get( {}, None ), 8 )
+    self.assertEqual( opt_value2.get( {}, None ), 8 )
     
     opt_value.appendValue( ConditionalValue( SubValue( 1, AddValue( 1 ) ), cond_true ) )
     
-    self.assertEqual( opt_value.value( {}, None ), 8 )
+    self.assertEqual( opt_value.get( {}, None ), 8 )
     
     tmp_opt_value = opt_value.copy()
     
-    self.assertEqual( tmp_opt_value.value( {}, None ), 8 )
+    self.assertEqual( tmp_opt_value.get( {}, None ), 8 )
     
     tmp_opt_value.appendValue( ConditionalValue( Operation( AddValue( 2 ), None ), cond_true ) )
     
-    self.assertEqual( tmp_opt_value.value( {}, None ), 10 )
+    self.assertEqual( tmp_opt_value.get( {}, None ), 10 )
   
   #//---------------------------------------------------------------------------//
   
@@ -111,16 +111,16 @@ class TestOptionValue( AqlTestCase ):
     opt_value = OptionValue( OptionType( int ) )
     
     opt_value.appendValue( ConditionalValue( SetValue( 1 ) ) )
-    self.assertEqual( opt_value.value( {}, None ), 1 )
+    self.assertEqual( opt_value.get( {}, None ), 1 )
     opt_value.appendValue( ConditionalValue( SetValue( 0 ) ) )
-    self.assertEqual( opt_value.value( {}, None ), 0 )
+    self.assertEqual( opt_value.get( {}, None ), 0 )
     
     opt_value_list = OptionValue( ListOptionType( value_type = int ) )
     opt_value_list.appendValue( ConditionalValue( SetValue( 1 ) ) )
-    self.assertEqual( opt_value_list.value( {}, None ), 1 )
+    self.assertEqual( opt_value_list.get( {}, None ), 1 )
     
     opt_value_list.appendValue( ConditionalValue( AddValue( 0 ) ) )
-    self.assertEqual( opt_value_list.value( {}, None ), "1, 0" )
+    self.assertEqual( opt_value_list.get( {}, None ), "1, 0" )
   
   #//---------------------------------------------------------------------------//
   
@@ -134,7 +134,7 @@ class TestOptionValue( AqlTestCase ):
     opt_value.appendValue( ConditionalValue( SetValue( 2 ) ) )
     opt_value.appendValue( ConditionalValue( SimpleOperation( _modValue ) ) )
     
-    self.assertEqual( opt_value.value( {}, None ), 3 )
+    self.assertEqual( opt_value.get( {}, None ), 3 )
   
   #//---------------------------------------------------------------------------//
   
@@ -144,10 +144,10 @@ class TestOptionValue( AqlTestCase ):
     opt_value = OptionValue( value_type )
     
     opt_value.appendValue( ConditionalValue( SetValue( 'size' ) ) )
-    self.assertEqual( opt_value.value( {}, None ), value_type(1) )
+    self.assertEqual( opt_value.get( {}, None ), value_type(1) )
     
     opt_value.appendValue( ConditionalValue( SetValue( 'ultra' ) ) )
-    self.assertRaises( ErrorOptionTypeUnableConvertValue, opt_value.value, {}, None )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, opt_value.get, {}, None )
   
   #//---------------------------------------------------------------------------//
   
@@ -156,22 +156,22 @@ class TestOptionValue( AqlTestCase ):
     opt_value2 = OptionValue( RangeOptionType( min_value = 0, max_value = 5 ) )
     
     opt_value1.appendValue( ConditionalValue( SetValue( 1 ) ) )
-    self.assertEqual( opt_value1.value( {}, None ), 1 )
+    self.assertEqual( opt_value1.get( {}, None ), 1 )
     
     opt_value2.appendValue( ConditionalValue( SetValue( 2 ) ) )
-    self.assertEqual( opt_value2.value( {}, None ), 2 )
+    self.assertEqual( opt_value2.get( {}, None ), 2 )
     
     opt_value1.appendValue( ConditionalValue( AddValue( opt_value2 ) ) )
-    self.assertEqual( opt_value1.value( {}, None ), 3 )
+    self.assertEqual( opt_value1.get( {}, None ), 3 )
     
     opt_value2.appendValue( ConditionalValue( AddValue( opt_value1 ) ) )
     
-    self.assertEqual( opt_value2.value( {}, None ), 5 )
+    self.assertEqual( opt_value2.get( {}, None ), 5 )
     
     opt_value1.appendValue( ConditionalValue( AddValue( opt_value2 ) ) )
     
-    self.assertEqual( opt_value2.value( {}, None ), opt_value2.option_type(7) )
-    self.assertEqual( opt_value1.value( {}, None ), 7 )
+    self.assertEqual( opt_value2.get( {}, None ), opt_value2.option_type(7) )
+    self.assertEqual( opt_value1.get( {}, None ), 7 )
     
     # opt1: 1 + opt2 + opt2 = 1 + 3 + 3
     # opt2: 2 + opt1 = 2 + 1 + 2 + 2
@@ -197,13 +197,13 @@ class TestOptionValue( AqlTestCase ):
     opt_value.appendValue( cond_value3 )
     opt_value.appendValue( cond_value4 )
     
-    self.assertEqual( opt_value.value( {}, None ), [1,2] )
+    self.assertEqual( opt_value.get( {}, None ), [1,2] )
     
     opt_value.prependValue( cond_value3 )
-    self.assertEqual( opt_value.value( {}, None ), [2,1,2] )
+    self.assertEqual( opt_value.get( {}, None ), [2,1,2] )
     
     opt_value = copy.copy( opt_value )
-    self.assertEqual( opt_value.value( {}, None ), [2,1,2] )
+    self.assertEqual( opt_value.get( {}, None ), [2,1,2] )
     
     self.assertIs( opt_value.option_type, opt_type1 )
   
@@ -219,7 +219,7 @@ class TestOptionValue( AqlTestCase ):
     
     opt_value.appendValue( cond_value )
     
-    self.assertEqual( opt_value.value( {}, None ), {3:4} )
+    self.assertEqual( opt_value.get( {}, None ), {3:4} )
     
     opt_type1 = OptionType( value_type = Dict )
 

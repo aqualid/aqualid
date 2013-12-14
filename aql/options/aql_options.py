@@ -76,10 +76,10 @@ class   _OpValue( tuple ):
     
     return super(_OpValue, cls).__new__( cls, (value.name, value.key) )
   
-  def   value( self, options, context ):
+  def   get( self, options, context ):
     name, key = self
     
-    value = getattr( options, name ).value( context )
+    value = getattr( options, name ).get( context )
     
     if key is not NotImplemented:
       value = value[ key ]
@@ -105,13 +105,13 @@ def   _evalValue( options, context, other ):
     key = NotImplemented
   
   if isinstance( other, _OpValue ):
-    other = other.value( options, context )
+    other = other.get( options, context )
   
   elif isinstance( other, OptionValueProxy ):
     if other.options is not options:
-      other = other.value( context = None )
+      other = other.get( context = None )
     else:
-      other = other.value( context )
+      other = other.get( context )
   
   elif isinstance( other, OptionValue ):
     other = options.value( other, context )
@@ -227,7 +227,7 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   value( self, context = None ):
+  def   get( self, context = None ):
     self.child_ref = None
     
     v = self.options.value( self.option_value, context )
@@ -289,21 +289,21 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   __bool__(self):
-    return bool( self.value( context = None ) )
+    return bool( self.get( context = None ) )
   
   def   __nonzero__(self):
-    return bool( self.value( context = None ) )
+    return bool( self.get( context = None ) )
   
   def   __str__(self):
-    return str( self.value( context = None ) )
+    return str( self.get( context = None ) )
   
   #//-------------------------------------------------------//
   
   def   isTrue( self, context ):
-    return bool( self.value( context ) )
+    return bool( self.get( context ) )
   
   def   isFalse( self, context ):
-    return not bool( self.value( context ) )
+    return not bool( self.get( context ) )
   
   #//-------------------------------------------------------//
   
@@ -328,7 +328,7 @@ class OptionValueProxy (object):
     self.child_ref = None
     
     other = _evalValue( self.options, context, other )
-    value = self.value( context )
+    value = self.get( context )
     
     if not isinstance( value, (Dict, List)) and (self.key is NotImplemented):
       other = self.option_value.option_type( other )
@@ -339,7 +339,7 @@ class OptionValueProxy (object):
   
   def   has( self, context, other ):
     other = _evalValue( self.options, context, other )
-    value = self.value( context )
+    value = self.get( context )
     
     return other in value
   
@@ -347,7 +347,7 @@ class OptionValueProxy (object):
   
   def   hasAny( self, context, values ):
     
-    value = self.value( context )
+    value = self.get( context )
     values = _evalValue( self.options, context, values )
     
     for other in toSequence( values ):
@@ -359,7 +359,7 @@ class OptionValueProxy (object):
   
   def   hasAll( self, context, values ):
     
-    value = self.value( context )
+    value = self.get( context )
     values = _evalValue( self.options, context, values )
     
     for other in toSequence( values ):
@@ -371,7 +371,7 @@ class OptionValueProxy (object):
   
   def   oneOf( self, context, values ):
     
-    value = self.value( context )
+    value = self.get( context )
     values = _evalValue( self.options, context, values )
     
     for other in values:
@@ -722,10 +722,10 @@ class Options (object):
     for name, value in other.items():
       
       if isinstance( value, OptionValueProxy ):
-        value = value.value( context = None )
+        value = value.get( context = None )
       
       elif isinstance( value, OptionValue ):
-        value = value.value( options, context = None )
+        value = value.get( options, context = None )
       
       self.__set_value( name, value, UpdateValue )
   
@@ -882,7 +882,7 @@ class Options (object):
     try:
       value = cache[ option_value ]
     except KeyError:
-      value = option_value.value( self, context )
+      value = option_value.get( self, context )
       cache[ option_value ] = value
     
     return value

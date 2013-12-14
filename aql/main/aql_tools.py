@@ -204,7 +204,7 @@ class ToolsManager( Singleton ):
           setup_options.join()
       
       try:
-        env = tool_options.env.value().copy( value_type = str )
+        env = tool_options.env.get().copy( value_type = str )
         
         options_kw = tool_info.tool_class.setup( tool_options, env )
         

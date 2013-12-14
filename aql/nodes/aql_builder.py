@@ -103,7 +103,7 @@ class Builder (object):
   
   def getName( self ):
       cls = self.__class__
-      build_dir = self.options.build_path.value()
+      build_dir = self.options.build_path.get()
       return '.'.join( [ cls.__module__, cls.__name__, str(build_dir) ] )
   
   #//-------------------------------------------------------//
@@ -196,7 +196,7 @@ class Builder (object):
   
   def   buildPath( self, src_path = None ):
     options = self.options
-    return _buildPath( options.build_path.value(), bool(options.build_dir_suffix.value()), src_path )
+    return _buildPath( options.build_path.get(), bool(options.build_dir_suffix.get()), src_path )
   
   #//-------------------------------------------------------//
   

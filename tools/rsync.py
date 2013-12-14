@@ -45,16 +45,16 @@ class RSyncBuilder (Builder):
     self.scontent_type = scontent_type
     self.tcontent_type = tcontent_type
     
-    host = options.rsync_host.value()
+    host = options.rsync_host.get()
     if host:
       host = RemoteHost( host, options.rsync_login, options.rsync_key_file )
       host_address = host.address
     else:
       host_address = ''
     
-    env = options.env.value().copy( value_type = str )
+    env = options.env.get().copy( value_type = str )
     
-    rsync = Rsync( rsync = options.rsync.value(), host = host, cygwin_paths = options.rsync_cygwin.value(), env = env )
+    rsync = Rsync( rsync = options.rsync.get(), host = host, cygwin_paths = options.rsync_cygwin.get(), env = env )
     
     self.rsync = rsync
     

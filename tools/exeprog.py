@@ -16,7 +16,7 @@ node = ExecuteCommand('gcc --help -v')
 
 tools.cpp.cxx
 
-node = ExecuteCommand( tools.cpp.cxx.value(), '--help -v')
+node = ExecuteCommand( tools.cpp.cxx, '--help -v')
 node = ExecuteMethod( target = my_function )
 
 side_node = SideEffects( prog_node )
@@ -51,11 +51,9 @@ class ExecuteCommand (aql.Builder):
   
   def   build( self, node ):
     
-    targets = node.targets()
-    
     cmd = [ target.get() for target in node.targets() ]
     
-    env = self.options.env.value().copy( value_type = str )
+    env = self.options.env.get().copy( value_type = str )
     
     result = aql.execCommand( cmd, cwd, env = env )
     

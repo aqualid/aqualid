@@ -57,23 +57,23 @@ class GccCompilerImpl (aql.Builder):
     options = self.options
     
     if language == 'c++':
-      cmd = [ options.cxx.value() ]
+      cmd = [ options.cxx.get() ]
     else:
-      cmd = [ options.cc.value() ]
+      cmd = [ options.cc.get() ]
     
     cmd += ['-c', '-pipe', '-MMD', '-x', language ]
     if language == 'c++':
-      cmd += options.cxxflags.value()
+      cmd += options.cxxflags.get()
     else:
-      cmd += options.cflags.value()
+      cmd += options.cflags.get()
     
     if self.shared:
       cmd += ['-fPIC']
     
-    cmd += options.ccflags.value()
-    cmd += itertools.chain( *itertools.product( ['-D'], options.cppdefines.value() ) )
-    cmd += itertools.chain( *itertools.product( ['-I'], options.cpppath.value() ) )
-    cmd += itertools.chain( *itertools.product( ['-I'], options.ext_cpppath.value() ) )
+    cmd += options.ccflags.get()
+    cmd += itertools.chain( *itertools.product( ['-D'], options.cppdefines.get() ) )
+    cmd += itertools.chain( *itertools.product( ['-I'], options.cpppath.get() ) )
+    cmd += itertools.chain( *itertools.product( ['-I'], options.ext_cpppath.get() ) )
     
     return cmd
   
@@ -81,8 +81,8 @@ class GccCompilerImpl (aql.Builder):
   
   def   getName( self ):
     options = self.options
-    prefix = options.prefix.value()
-    suffix = options.shobjsuffix.value() if self.shared else options.objsuffix.value()
+    prefix = options.prefix.get()
+    suffix = options.shobjsuffix.get() if self.shared else options.objsuffix.get()
     
     name = super(GccCompilerImpl, self).getName()
     
@@ -114,8 +114,8 @@ class GccCompilerImpl (aql.Builder):
     
     options = self.options
     
-    prefix = options.prefix.value()
-    suffix = options.shobjsuffix.value() if self.shared else options.objsuffix.value()
+    prefix = options.prefix.get()
+    suffix = options.shobjsuffix.get() if self.shared else options.objsuffix.get()
     
     source = node.sources()[0]
     obj_file = self.buildPath( source )
@@ -224,7 +224,7 @@ class GccArchiver(aql.Builder):
   #//-------------------------------------------------------//
   
   def   getCmd( self ):
-    return [ self.options.lib.value(), 'rcs' ]
+    return [ self.options.lib.get(), 'rcs' ]
   #//-------------------------------------------------------//
   
   def   getSignature( self ):
@@ -235,8 +235,8 @@ class GccArchiver(aql.Builder):
   def   getName(self):
     options = self.options
     
-    prefix = options.libprefix.value() + options.prefix.value()
-    suffix = options.libsuffix.value()
+    prefix = options.libprefix.get() + options.prefix.get()
+    suffix = options.libsuffix.get()
     
     name = super(GccArchiver, self).getName()
     
@@ -257,8 +257,8 @@ class GccArchiver(aql.Builder):
   def   build( self, node ):
     
     options = self.options
-    prefix = options.libprefix.value() + options.prefix.value()
-    suffix = options.libsuffix.value()
+    prefix = options.libprefix.get() + options.prefix.get()
+    suffix = options.libsuffix.get()
     
     obj_files = node.sources()
     archive = self.buildPath( self.target ).change( prefix = prefix ) + suffix
@@ -301,18 +301,18 @@ class GccLinker(aql.Builder):
     options = self.options
     
     if language == 'c++':
-      cmd = [ options.cxx.value() ]
+      cmd = [ options.cxx.get() ]
     else:
-      cmd = [ options.cc.value() ]
+      cmd = [ options.cc.get() ]
     
     cmd += [ '-pipe' ]
     
     if self.shared:
       cmd += [ '-shared' ]
     
-    cmd += options.linkflags.value()
-    cmd += itertools.chain( *itertools.product( ['-L'], options.libpath.value() ) )
-    cmd += itertools.chain( *itertools.product( ['-l'], options.libs.value() ) )
+    cmd += options.linkflags.get()
+    cmd += itertools.chain( *itertools.product( ['-L'], options.libpath.get() ) )
+    cmd += itertools.chain( *itertools.product( ['-l'], options.libs.get() ) )
     
     return cmd
   
@@ -327,11 +327,11 @@ class GccLinker(aql.Builder):
     options = self.options
     
     if self.shared:
-      prefix = options.shlibprefix.value()
-      suffix = options.shlibsuffix.value()
+      prefix = options.shlibprefix.get()
+      suffix = options.shlibsuffix.get()
     else:
       prefix = ''
-      suffix = options.progsuffix.value()
+      suffix = options.progsuffix.get()
     
     name = super(GccLinker, self).getName()
     
@@ -354,12 +354,12 @@ class GccLinker(aql.Builder):
     obj_files = node.sources()
     
     if self.shared:
-      prefix = self.options.shlibprefix.value()
-      suffix = self.options.shlibsuffix.value()
+      prefix = self.options.shlibprefix.get()
+      suffix = self.options.shlibsuffix.get()
       
       target = self.buildPath( self.target ).change( prefix = prefix, ext = suffix )
     else:
-      suffix = self.options.progsuffix.value()
+      suffix = self.options.progsuffix.get()
       
       target = self.buildPath( self.target ) + suffix
     
@@ -467,8 +467,8 @@ class ToolGccCommon( aql.Tool ):
   @staticmethod
   def   setup( options, env ):
     
-    gcc_prefix = options.gcc_prefix.value()
-    gcc_suffix = options.gcc_suffix.value()
+    gcc_prefix = options.gcc_prefix.get()
+    gcc_suffix = options.gcc_suffix.get()
     
     """
     cfg_keys = ( gcc_prefix, gcc_suffix )

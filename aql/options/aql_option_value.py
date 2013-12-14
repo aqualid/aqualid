@@ -187,7 +187,7 @@ class OptionValue (object):
   
   #//-------------------------------------------------------//
   
-  def   value( self, options, context ):
+  def   get( self, options, context ):
     
     if context is None:
       context = {}

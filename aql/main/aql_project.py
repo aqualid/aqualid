@@ -332,7 +332,7 @@ class ProjectTools( object ):
     self.tools_cache = {}
     
     tools = ToolsManager.instance()
-    tools.loadTools( self.project.options.tools_path.value() )
+    tools.loadTools( self.project.options.tools_path.get() )
     
     self.tools = tools
   
@@ -400,7 +400,7 @@ class ProjectTools( object ):
       options = options.override()
       options.update( kw )
     
-    self.tools.loadTools( options.tools_path.value() )
+    self.tools.loadTools( options.tools_path.get() )
     
     tools = [ self.__addTool( tool_name, options ) for tool_name in tool_names ]
     
@@ -557,8 +557,8 @@ class Project( object ):
   #//=======================================================//
   
   def   Build( self ):
-    keep_going = self.options.keep_going.value()
-    jobs = self.options.jobs.value()
+    keep_going = self.options.keep_going.get()
+    jobs = self.options.jobs.get()
     
     failed_nodes = self.build_manager.build( jobs, keep_going )
     
