@@ -1,9 +1,3 @@
-import os
-import re
-import shutil
-import hashlib
-import itertools
-
 import aql
 
 """
@@ -16,7 +10,7 @@ node = ExecuteCommand('gcc --help -v')
 
 tools.cpp.cxx
 
-node = ExecuteCommand( tools.cpp.cxx, '--help -v')
+node = ExecuteCommand( tools.cpp.cxx, '--help -v' )
 node = ExecuteMethod( target = my_function )
 
 side_node = SideEffects( prog_node )
@@ -36,14 +30,17 @@ dir_node = FileDir( prog_node )
 class ExecuteCommand (aql.Builder):
   
   __slots__ = ('args',)
-  
+
+  __id_keys__ = tuple()
+  __signature_keys__ = ('env',)
+
   #//-------------------------------------------------------//
   
   def   __init__(self, options, args ):
     self.args = args
   
   #//-------------------------------------------------------//
-  
+
   def   getSignature( self ):
     return bytearray()
   
@@ -51,13 +48,13 @@ class ExecuteCommand (aql.Builder):
   
   def   build( self, node ):
     
-    cmd = [ target.get() for target in node.targets() ]
+    cmd = list( node.sources() )
     
     env = self.options.env.get().copy( value_type = str )
     
-    result = aql.execCommand( cmd, cwd, env = env )
+    result = aql.execCommand( cmd, env = env )
     
-    value = self.makeValue( [result.returncode, result.out, result.err] )
+    value = aql.Value( value_name, [result.returncode, result.out, result.err] )
     node.setTargets( value )
   
   #//-------------------------------------------------------//
@@ -66,4 +63,4 @@ class ExecuteCommand (aql.Builder):
     return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
 
   def   makeValues( self, values, use_cache = False ):
-    return self.makeFileValues( values, use_cache )
+    return map( aql.StringValue, values )

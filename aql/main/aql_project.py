@@ -166,12 +166,9 @@ def   _evalNode( value ):
   opt_value = []
   
   for value in values:
-    if isinstance( value, FileValue ):
-      value = FilePath( value.name )
-    
-    elif isinstance( value, Value ):
-      value = value.content.data
-
+    if isinstance( value, Value ):
+      value = value.get()
+      
     opt_value.append( value )
   
   if len(opt_value) == 1:

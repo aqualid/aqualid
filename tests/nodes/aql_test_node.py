@@ -41,7 +41,7 @@ class ChecksumBuilder (Builder):
     target_values = []
     itarget_values = []
     
-    for source_value in node.sources():
+    for source_value in node.sourceValues():
       content = source_value.content.data.encode()
       chcksum = hashlib.md5()
       chcksum.update( content )
@@ -72,7 +72,7 @@ class CopyBuilder (Builder):
     
     idep = Value( str(node), b'' )
     
-    for source_value in node.sources():
+    for source_value in node.sourceValues():
       new_name = source_value.name + '.' + self.ext
       new_iname = source_value.name + '.' + self.iext
       
@@ -267,7 +267,7 @@ class TestSpeedBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    for source_value in node.sources():
+    for source_value in node.sourceValues():
       new_name = source_value.name + '.' + self.ext
       idep_name = source_value.name + '.' + self.idep
       

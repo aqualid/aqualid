@@ -42,19 +42,23 @@ def   _addPrefix( prefix, values ):
 #noinspection PyAttributeOutsideInit
 class GccCompilerImpl (aql.Builder):
   
-  __slots__ = ( 'cmd', 'language', 'shared')
-
-  #noinspection PyUnusedLocal
-  def   __init__(self, options, language, shared ):
-    self.language = language
-    self.shared = shared
-    
+  NAME_ATTRS = ( 'prefix', 'suffix' )
+  SIGNATURE_ATTRS = ('cmd', )
+  
   #//-------------------------------------------------------//
   
-  def   getCmd( self ):
+  #noinspection PyUnusedLocal
+  def   __init__(self, options, language, shared ):
     
-    language = self.language
-    options = self.options
+    self.prefix = options.prefix.get()
+    self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
+    
+    self.cmd = self.__getCmd( options, language, shared )
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __getCmd( options, language, shared ):
     
     if language == 'c++':
       cmd = [ options.cxx.get() ]
@@ -67,7 +71,7 @@ class GccCompilerImpl (aql.Builder):
     else:
       cmd += options.cflags.get()
     
-    if self.shared:
+    if shared:
       cmd += ['-fPIC']
     
     cmd += options.ccflags.get()
@@ -79,32 +83,6 @@ class GccCompilerImpl (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getName( self ):
-    options = self.options
-    prefix = options.prefix.get()
-    suffix = options.shobjsuffix.get() if self.shared else options.objsuffix.get()
-    
-    name = super(GccCompilerImpl, self).getName()
-    
-    return '.'.join( [ name, prefix, suffix ] )
-  
-  #//-------------------------------------------------------//
-  
-  def   getSignature( self ):
-    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, attr ):
-    
-    if attr == 'cmd':
-      self.cmd = cmd = self.getCmd()
-      return cmd
-    
-    return super( GccCompilerImpl, self).__getattr__( attr )
-  
-  #//-------------------------------------------------------//
-  
   def   actual( self, vfile, node ):
     return False
   #//-------------------------------------------------------//
@@ -112,14 +90,12 @@ class GccCompilerImpl (aql.Builder):
   
   def   build( self, node ):
     
-    options = self.options
-    
-    prefix = options.prefix.get()
-    suffix = options.shobjsuffix.get() if self.shared else options.objsuffix.get()
+    prefix = self.prefix
+    suffix = self.suffix
     
     source = node.sources()[0]
     obj_file = self.buildPath( source )
-
+    
     cwd = obj_file.dir
     obj_file = obj_file.change( prefix = prefix ) + suffix
     
@@ -215,53 +191,23 @@ class GccCompiler(aql.Builder):
 #noinspection PyAttributeOutsideInit
 class GccArchiver(aql.Builder):
   
-  __slots__ = ('cmd', 'target')
+  NAME_ATTRS = ('target', 'prefix', 'suffix')
+  SIGNATURE_ATTRS = ('cmd', )
 
   #noinspection PyUnusedLocal
   def   __init__( self, options, target ):
     self.target = target
+    self.prefix = options.libprefix.get() + options.prefix.get()
+    self.suffix = options.libsuffix.get()
+
+    self.cmd = [ options.lib.get(), 'rcs' ]
     
-  #//-------------------------------------------------------//
-  
-  def   getCmd( self ):
-    return [ self.options.lib.get(), 'rcs' ]
-  #//-------------------------------------------------------//
-  
-  def   getSignature( self ):
-    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
-  
-  #//-------------------------------------------------------//
-  
-  def   getName(self):
-    options = self.options
-    
-    prefix = options.libprefix.get() + options.prefix.get()
-    suffix = options.libsuffix.get()
-    
-    name = super(GccArchiver, self).getName()
-    
-    return '.'.join( [ name, self.target, prefix, suffix ] )
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, attr ):
-    
-    if attr == 'cmd':
-      self.cmd = cmd = self.getCmd()
-      return cmd
-    
-    return super(GccArchiver,self).__getattr__( attr )
-  
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     
-    options = self.options
-    prefix = options.libprefix.get() + options.prefix.get()
-    suffix = options.libsuffix.get()
-    
     obj_files = node.sources()
-    archive = self.buildPath( self.target ).change( prefix = prefix ) + suffix
+    archive = self.buildPath( self.target ).change( prefix = self.prefix ) + self.suffix
     
     cmd = list(self.cmd)
     
@@ -285,20 +231,26 @@ class GccArchiver(aql.Builder):
 #noinspection PyAttributeOutsideInit
 class GccLinker(aql.Builder):
   
+  NAME_ATTRS = ('target', 'prefix', 'suffix')
+  SIGNATURE_ATTRS = ('cmd', )
+  
   __slots__ = ('cmd', 'language', 'target', 'shared' )
 
   #noinspection PyUnusedLocal
   def   __init__( self, options, target, language, shared ):
-    self.language = language
+    if shared:
+      self.prefix = options.shlibprefix.get() + options.prefix.get()
+      self.suffix = options.shlibsuffix.get()
+    else:
+      self.prefix = options.shlibprefix.get() + options.prefix.get()
+      self.suffix = options.progsuffix.get()
+    
     self.target = target
-    self.shared = shared
     
   #//-------------------------------------------------------//
   
-  def   getCmd( self ):
-    
-    language = self.language
-    options = self.options
+  @staticmethod
+  def   __getCmd( options, language, shared ):
     
     if language == 'c++':
       cmd = [ options.cxx.get() ]
@@ -307,7 +259,7 @@ class GccLinker(aql.Builder):
     
     cmd += [ '-pipe' ]
     
-    if self.shared:
+    if shared:
       cmd += [ '-shared' ]
     
     cmd += options.linkflags.get()
@@ -318,50 +270,11 @@ class GccLinker(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getSignature( self ):
-    return hashlib.md5( ''.join( self.cmd ).encode('utf-8') ).digest()
-  
-  #//-------------------------------------------------------//
-  
-  def   getName( self ):
-    options = self.options
-    
-    if self.shared:
-      prefix = options.shlibprefix.get()
-      suffix = options.shlibsuffix.get()
-    else:
-      prefix = ''
-      suffix = options.progsuffix.get()
-    
-    name = super(GccLinker, self).getName()
-    
-    return '.'.join( [ name, self.target, prefix, suffix ] )
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, attr ):
-    
-    if attr == 'cmd':
-      self.cmd = cmd = self.getCmd()
-      return cmd
-    
-    return super(GccLinker,self).__getattr__( attr )
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, node ):
     
     obj_files = node.sources()
     
-    if self.shared:
-      prefix = self.options.shlibprefix.get()
-      suffix = self.options.shlibsuffix.get()
-      
-      target = self.buildPath( self.target ).change( prefix = prefix, ext = suffix )
-    else:
-      suffix = self.options.progsuffix.get()
-      
-      target = self.buildPath( self.target ) + suffix
+    target = self.buildPath( self.target ).change( prefix = self.prefix, ext = self.suffix )
     
     cmd = list(self.cmd)
     

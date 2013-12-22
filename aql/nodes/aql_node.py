@@ -95,7 +95,7 @@ class Node (object):
     
     dep_nodes = self.dep_nodes
     dep_values = self.dep_values
-    for src_value in self.sources():
+    for src_value in self.sourceValues():
       node = Node( builder, src_value )
       node.dep_nodes = dep_nodes
       node.dep_values = dep_values
@@ -110,7 +110,7 @@ class Node (object):
     names = [ self.builder.name.encode('utf-8') ]
     sign  = [ self.builder.signature ]
     
-    sources = sorted( self.sources(), key = lambda v: v.name )
+    sources = sorted( self.sourceValues(), key = lambda v: v.name )
     
     names += ( value.name.encode('utf-8') for value in sources )
     
@@ -229,6 +229,9 @@ class Node (object):
   #//=======================================================//
   
   def   sources(self):
+    return tuple( src.get() for src in self.source_values )
+  
+  def   sourceValues(self):
     return self.source_values
   
   def   sourceNodes(self):

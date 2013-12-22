@@ -23,6 +23,7 @@ __all__ = (
 
 import os
 import errno
+import hashlib
 
 from aql.util_types import toSequence, FilePath, FilePaths
 from aql.values import Value, FileValue, FileContentChecksum, FileContentTimeStamp
@@ -78,38 +79,54 @@ class Builder (object):
   """
   Base class for all builders
   
-  'options' - builder's options
   'name' - uniquely identifies builder
   'signature' - uniquely identifies builder's parameters
   
   """
   
-  __slots__ = (
-    'options',
-    'name',
-    'signature',
-  )
-   
+  NAME_ATTRS = None
+  SIGNATURE_ATTRS = None
+  
   #//-------------------------------------------------------//
   
   def   __new__(cls, options, *args, **kw):
     
     self = super(Builder, cls).__new__(cls)
-    self.options = options
+    
+    self.build_path = options.build_path.get()
+    self.strip_src_dir = bool(options.build_dir_suffix.get())
+    self.file_signature_type = options.file_signature.get()
     
     return self
   
   #//-------------------------------------------------------//
-  
+
   def getName( self ):
-      cls = self.__class__
-      build_dir = self.options.build_path.get()
-      return '.'.join( [ cls.__module__, cls.__name__, str(build_dir) ] )
+    
+    cls = self.__class__
+    name = [ cls.__module__, cls.__name__, self.build_path, self.strip_src_dir ]
+    
+    if self.NAME_ATTRS:
+      for attr_name in self.NAME_ATTRS:
+        value = getattr( self, attr_name )
+        name.append( value )
+            
+    return '.'.join( map(str, name) )
   
   #//-------------------------------------------------------//
   
   def   getSignature( self ):
-    raise NotImplementedError( "Must be implemented in a child class.")
+    sign = []
+    
+    if self.SIGNATURE_ATTRS:
+      for attr_name in self.SIGNATURE_ATTRS:
+        value = getattr( self, attr_name )
+        sign.append( value )
+    
+    sign =  '.'.join( map(str, sign) )
+    
+    return hashlib.md5( ''.join( sign ).encode('utf-8') ).digest()
+
   
   #//-------------------------------------------------------//
   
@@ -184,8 +201,7 @@ class Builder (object):
     """
     Returns user friendly builder action string
     """
-    file_names = tuple( src.get() for src in node.sources() )
-    return str(self) + ': ' + ', '.join( file_names )
+    return str(self) + ': ' + ', '.join( node.sources() )
   
   #//-------------------------------------------------------//
   
@@ -195,8 +211,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   buildPath( self, src_path = None ):
-    options = self.options
-    return _buildPath( options.build_path.get(), bool(options.build_dir_suffix.get()), src_path )
+    return _buildPath( self.build_path, self.strip_src_dir, src_path )
   
   #//-------------------------------------------------------//
   
@@ -208,7 +223,7 @@ class Builder (object):
   def   __fileContentType( self ):
     content_type = NotImplemented
     
-    file_signature = self.options.file_signature
+    file_signature = self.file_signature_type
     
     if file_signature == 'checksum':
       content_type = FileContentChecksum

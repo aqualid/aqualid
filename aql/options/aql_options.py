@@ -648,25 +648,30 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   keys( self ):
-    return self._itemsDict().keys()
+    for opt_value, names  in self._itemsByValue():
+      yield next(iter(names))
   
   #//-------------------------------------------------------//
   
   def   values( self ):
-    return self._itemsDict().values()
+    for opt_value, names  in self._itemsByValue():
+      name = next(iter(names))
+      yield OptionValueProxy( opt_value, name, self )
   
   #//-------------------------------------------------------//
   
   def   items( self ):
-    return self._itemsDict().items()
+    for opt_value, names  in self._itemsByValue():
+      name = next(iter(names))
+      yield name, OptionValueProxy( opt_value, name, self )
   
   #//-------------------------------------------------------//
   
-  def   itemsByValue( self ):
+  def   _itemsByValue( self ):
     
     values = {}
     
-    for name, value in self.items():
+    for name, value in self._itemsDict().items():
       try:
         values[ value ].add( name )
       except KeyError:
@@ -676,26 +681,20 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   isParentValue( self, opt_value ):
+  def   _isParentValue( self, opt_value ):
     parent = self.__dict__['__parent']
-    return parent and (opt_value in parent.values())
+    return parent and (opt_value in parent._itemsDict().values() )
   
   #//-------------------------------------------------------//
   
-  def   valueNames( self, opt_value ):
-    names = set()
-    
-    for name, value in self.items():
-      if value is opt_value:
-        names.add( name )
-    
-    return names
+  def   _valueNames( self, opt_value ):
+    return set( name for name, value in self._itemsDict().items() if value is opt_value )
   
   #//-------------------------------------------------------//
   
   def   setGroup( self, group, opt_values = None ):
     if opt_values is None:
-      opt_values = self.values()
+      opt_values = set(self._itemsDict().values())
     
     for opt_value in toSequence(opt_values):
       if isinstance( opt_value, OptionValueProxy ):
@@ -736,14 +735,14 @@ class Options (object):
     for name in names:
       value = self._get_value( name, raise_ex = False )
       if value is not None:
-        value_names = self.valueNames( value )
+        value_names = self._valueNames( value )
         
         new_names = (names - value_names)
         for new_name in new_names:
           if self._get_value( new_name, raise_ex = False ) is not None:
             raise ErrorOptionsMergeDifferentOptions( new_name, value_names.pop() )
         
-        if self.isParentValue( value ):
+        if self._isParentValue( value ):
           value = value.copy()
           new_names = names | value_names
         
@@ -765,7 +764,7 @@ class Options (object):
     
     self.clearCache()
     
-    for value, names in other.itemsByValue():
+    for value, names in other._itemsByValue():
       self_value, new_names = self.__getMergeValueNames( names )
       
       if self_value is None:
@@ -863,7 +862,7 @@ class Options (object):
     
     other = Options()
     
-    for opt_value, names in self.itemsByValue():
+    for opt_value, names in self._itemsByValue():
       other.__set_opt_value( opt_value.copy(), names )
     
     return other
@@ -900,8 +899,8 @@ class Options (object):
     
     self.clearCache()
     
-    if self.isParentValue( opt_value ):
-      names = self.valueNames( opt_value )
+    if self._isParentValue( opt_value ):
+      names = self._valueNames( opt_value )
       opt_value = opt_value.copy()
       self.__set_opt_value( opt_value, names )
     
