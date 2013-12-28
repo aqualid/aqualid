@@ -29,38 +29,31 @@ dir_node = FileDir( prog_node )
 
 class ExecuteCommand (aql.Builder):
   
-  __slots__ = ('args',)
-
-  __id_keys__ = tuple()
-  __signature_keys__ = ('env',)
+  NAME_ATTRS = None
+  SIGNATURE_ATTRS = ('env', )
 
   #//-------------------------------------------------------//
   
-  def   __init__(self, options, args ):
-    self.args = args
-  
-  #//-------------------------------------------------------//
-
-  def   getSignature( self ):
-    return bytearray()
+  def   __init__(self, options ):
+    self.env = options.env.get().copy( value_type = str )
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     
-    cmd = list( node.sources() )
+    cmd = node.sources()
+    cwd = self.buildPath()
     
-    env = self.options.env.get().copy( value_type = str )
+    result = aql.execCommand( cmd, env = self.env, cwd = cwd)
     
-    result = aql.execCommand( cmd, env = env )
+    if result.failed():
+      raise result
     
-    value = aql.Value( value_name, [result.returncode, result.out, result.err] )
-    node.setTargets( value )
+    targets = ( result.out, result.err )
+    
+    node.setTargets( targets )
   
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
     return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
-
-  def   makeValues( self, values, use_cache = False ):
-    return map( aql.StringValue, values )

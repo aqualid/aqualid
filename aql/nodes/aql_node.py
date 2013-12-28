@@ -22,7 +22,9 @@ __all__ = (
 )
 
 import hashlib
+import pickle
 
+from aql.utils import newHash
 from aql.util_types import toSequence
 from aql.values import Value, SignatureValue, DependsValue, DependsValueContent
 
@@ -107,51 +109,50 @@ class Node (object):
   
   def   __setValues( self ):
     
-    names = [ self.builder.name.encode('utf-8') ]
+    names = [ self.builder.name ]
     sign  = [ self.builder.signature ]
     
     sources = sorted( self.sourceValues(), key = lambda v: v.name )
     
-    names += ( value.name.encode('utf-8') for value in sources )
+    names += ( value.name for value in sources )
     
     sign += ( value.content.signature for value in sources )
     
     deps = self.dependencies()
     
-    sign += ( value.name.encode('utf-8') for value in deps )
+    sign += ( value.name for value in deps )
     sign += ( value.content.signature for value in deps )
     
     #//-------------------------------------------------------//
     #// Signature
     
-    sign_hash = hashlib.md5()
+    sign_hash = newHash()
     for s in sign:
       sign_hash.update( s )
     
-    signature = sign_hash.digest()
-    
     #//-------------------------------------------------------//
     #// Name key
-    name_hash = hashlib.md5()
-    for s in names:
-      name_hash.update( s )
+    name_hash = newHash()
+    names_dump = pickle.dumps( names, protocol = pickle.HIGHEST_PROTOCOL )
+    name_hash.update( names_dump )
     
-    name_key = name_hash.digest()
-    
-    self.sources_value = SignatureValue( name_key, signature )
+    self.sources_value = SignatureValue( name_hash.digest(), sign_hash.digest() )
     
     #//-------------------------------------------------------//
     #// Targets
     
-    name_hash.update( b'targets' )
-    self.targets_value = DependsValue( name_hash.digest() )
+    targets_hash = name_hash.copy()
+    targets_hash.update( b'targets' )
+    self.targets_value = DependsValue( targets_hash.digest() )
     
-    name_hash.update( b'itargets' )
-    self.itargets_value = DependsValue( name_hash.digest() )
+    itargets_hash = name_hash.copy()
+    itargets_hash.update( b'itargets' )
+    self.itargets_value = DependsValue( itargets_hash.digest() )
     
-    name_hash.update( b'ideps' )
-    self.ideps_value = DependsValue( name_hash.digest() )
-  
+    ideps_hash = name_hash.copy()
+    ideps_hash.update( b'ideps' )
+    self.ideps_value = DependsValue( ideps_hash.digest() )
+    
   #//=======================================================//
   
   def   __getattr__( self, attr ):
@@ -213,18 +214,40 @@ class Node (object):
   
   def   __getSourceValues(self):
     values = []
-
-    for value in self._sources:
-      if isinstance( value, Node ):
-        values += value.targets()
+    
+    makeValue = self.builder.makeValue
+    
+    for src in self._sources:
       
-      elif isinstance( value, Value ):
-        values.append( value )
+      if isinstance( src, Node ):
+        values += src.targets()
+      
+      elif isinstance( src, Value ):
+        values.append( src )
       
       else:
-        values += self.builder.makeValues( value, use_cache = True )
-
+        values.append( makeValue( name = None, content = src, use_cache = True ) )
+      
     return tuple(values)
+  
+  #//=======================================================//
+  
+  def   __makeTargetValues(self, values, name_tag ):
+    
+    name_hash = newHash()
+    name_hash.update( self.sources_value.name )
+    
+    targets = []
+    
+    makeValue = self.builder.makeValue
+    for value in toSequence( values ):
+      
+      name_hash.update( name_tag )
+      name_hash.digest()
+      value = makeValue( name_hash.digest(), value, use_cache = False )
+      targets.append( value )
+    
+    return targets
   
   #//=======================================================//
   
@@ -235,7 +258,7 @@ class Node (object):
     return self.source_values
   
   def   sourceNodes(self):
-    return tuple( filter( lambda node: isinstance(node,Node), self._sources ) )
+    return tuple( node for node in self._sources if isinstance(node,Node) )
   
   #//=======================================================//
   
@@ -272,16 +295,30 @@ class Node (object):
   #//=======================================================//
   
   def   setTargets( self, targets, itargets = None, ideps = None ):
-
-    makeValues = self.builder.makeValues
     
-    target_values = makeValues( targets, use_cache = False )
-    itarget_values = makeValues( itargets, use_cache = False )
-    idep_values = makeValues( ideps, use_cache = True )
+    makeTargetValues = self.__makeTargetValues
     
-    self.targets_value.content = DependsValueContent( target_values )
+    target_values   = makeTargetValues( targets,  name_tag = "target"  )
+    itarget_values  = makeTargetValues( itargets, name_tag = "itarget" )
+    idep_values     = makeTargetValues( ideps,    name_tag = "idep"    )
+    
+    self.targets_value.content  = DependsValueContent( target_values )
     self.itargets_value.content = DependsValueContent( itarget_values )
-    self.ideps_value.content = DependsValueContent( idep_values )
+    self.ideps_value.content    = DependsValueContent( idep_values )
+  
+  #//=======================================================//
+  
+  def   setFileTargets( self, targets, itargets = None, ideps = None ):
+    
+    makeFileValues = self.builder.makeFileValues
+    
+    target_values   = makeFileValues( targets,  use_cache = False )
+    itarget_values  = makeFileValues( itargets, use_cache = False )
+    idep_values     = makeFileValues( ideps,    use_cache = False )
+    
+    self.targets_value.content  = DependsValueContent( target_values )
+    self.itargets_value.content = DependsValueContent( itarget_values )
+    self.ideps_value.content    = DependsValueContent( idep_values )
   
   #//-------------------------------------------------------//
   

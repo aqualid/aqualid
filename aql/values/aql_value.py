@@ -18,19 +18,15 @@
 #
 __all__ = (
   'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'SignatureContent',
-  'Value', 'StringValue', 'IStringValue', 'SignatureValue',
+  'Value', 'StringValue', 'IStringValue', 'SignatureValue', 'makeContent',
 )
+
+import pickle
 
 from aql.utils import strSignature, dataSignature
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
-
-class   ErrorInvalidValueContentType( Exception ):
-  def   __init__( self, content ):
-    msg = "Value content type must be based on ContentBase, content type: '%s'" % str(type(content))
-    self.content = content
-    super(type(self), self).__init__( msg )
 
 class   ErrorInvalidValueBytesContentType( Exception ):
   def   __init__( self, content ):
@@ -51,22 +47,23 @@ class ContentBase( object ):
     pass
   
   def   __eq__( self, other ):
-    raise NotImplementedError("Abstract method should be implemented in child classes")
+    return type(self) == type(other) and (self.signature == other.signature)
+  
+  def   __bool__( self ):
+    return True
+  
+  def   __str__( self ):
+    return str(self.data)
+  
+  def   __getnewargs__(self):
+    #noinspection PyRedundantParentheses
+    return (self.data, )
   
   def   __ne__( self, other ):
     return not self.__eq__( other )
   
-  def   __bool__( self ):
-    raise NotImplementedError("Abstract method should be implemented in child classes")
-  
   def   __nonzero__( self ):
     return self.__bool__()
-  
-  def   __str__( self ):
-    raise NotImplementedError("Abstract method should be implemented in child classes")
-  
-  def   __getnewargs__(self):
-    raise NotImplementedError("Abstract method should be implemented in child classes")
   
   def   __getstate__(self):
     return {}
@@ -97,7 +94,7 @@ class _NoContent( ContentBase ):
   def   __str__( self ):
     return "<Not exists>"
   def   __getnewargs__(self):
-    return ()
+    return tuple()
 
 NoContent = _NoContent()
 
@@ -124,19 +121,6 @@ class   SignatureContent( ContentBase ):
     
     return self
   
-  def   __eq__( self, other ):
-    return type(self) == type(other) and (self.signature == other.signature)
-  
-  def   __bool__( self ):
-    return True
-  
-  def   __str__( self ):
-    return str(self.data)
-  
-  def   __getnewargs__(self):
-    #noinspection PyRedundantParentheses
-    return (self.data, )
-  
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
@@ -159,19 +143,6 @@ class   BytesContent ( ContentBase ):
     self.data = data
     
     return self
-  
-  def   __eq__( self, other ):
-    return type(self) == type(other) and (self.signature == other.signature)
-  
-  def   __bool__( self ):
-    return True
-  
-  def   __str__( self ):
-    return str(self.data)
-  
-  def   __getnewargs__(self):
-    #noinspection PyRedundantParentheses
-    return (self.data, )
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
@@ -200,19 +171,6 @@ class   StringContent ( ContentBase ):
     
     return self
   
-  def   __eq__( self, other ):
-    return type(self) == type(other) and (self.signature == other.signature)
-  
-  def   __bool__( self ):
-    return True
-  
-  def   __str__( self ):
-    return self.data
-  
-  def   __getnewargs__(self):
-    #noinspection PyRedundantParentheses
-    return (self.data, )
-  
   def   __getattr__( self, attr ):
     if attr == 'signature':
       self.signature = strSignature( self.data )
@@ -220,16 +178,13 @@ class   StringContent ( ContentBase ):
     
     return super(StringContent,self).__getattr__( attr )
 
-#//===========================================================================//
+#//============================signature===============================================//
 
 #noinspection PyAttributeOutsideInit
 @pickleable
 class   IStringContent ( StringContent ):
   
   __slots__ = ('low_case_str',)
-  
-  def   __eq__( self, other ):
-    return type(self) == type(other) and (self.signature == other.signature)
   
   def   __getattr__( self, attr ):
     if attr == 'low_case_str':
@@ -241,6 +196,50 @@ class   IStringContent ( StringContent ):
       return self.signature
     
     return super(IStringContent,self).__getattr__( attr )
+
+#//===========================================================================//
+
+#noinspection PyAttributeOutsideInit
+@pickleable
+class   OtherContent ( ContentBase ):
+  
+  def   __new__( cls, data = None ):
+    
+    if type(data) is cls:
+      return data
+    
+    if data is None:
+      return NoContent
+    
+    self = super(OtherContent,cls).__new__(cls)
+    
+    self.data = data
+    
+    return self
+  
+  def   __getattr__( self, attr ):
+    if attr == 'signature':
+      bytes_data = pickle.dumps( self.data )
+      self.signature = dataSignature( bytes_data )
+      return self.signature
+    
+    return super(OtherContent,self).__getattr__( attr )
+
+#//===========================================================================//
+
+def   makeContent( content ):
+  if (content is NotImplemented) or (content is None):
+    content = NoContent
+  
+  if not isinstance( content, ContentBase ):
+    if isinstance( content, (bytes, bytearray)):
+      content = BytesContent( content )
+    elif isinstance( content, str):
+      content = StringContent( content )
+    else:
+      content = OtherContent( content )
+  
+  return content
 
 #//===========================================================================//
 
@@ -263,19 +262,13 @@ class   Value (object):
       
       return type(other)( name, content )
     
+    
     self = super(Value,cls).__new__(cls)
     
+    content = makeContent( content )
     
-    if (content is NotImplemented) or (content is None):
-      content = NoContent
-    
-    if not isinstance( content, ContentBase ):
-      if isinstance( content, (bytes, bytearray)):
-        content = BytesContent( content )
-      elif isinstance( content, str):
-        content = StringContent( content )
-      else:
-        raise ErrorInvalidValueContentType( content )
+    if name is None:
+      name = content.signature
     
     self.name = name
     self.content = content

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -19,7 +19,8 @@
 
 __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
-  'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles', 'loadModule',
+  'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
+  'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'flattenList',
 )
@@ -138,8 +139,13 @@ def   execFile( filename, in_locals ):
 
 #//===========================================================================//
 
+def   newHash():
+  return hashlib.md5()
+
+#//===========================================================================//
+
 def   dataSignature( data ):
-  sig = hashlib.md5()
+  sig = newHash()
   sig.update( data )
   return sig.digest()
 
@@ -150,9 +156,10 @@ def   strSignature( str_value ):
 
 #//===========================================================================//
 
-def   fileSignature( filename, chunk_size = hashlib.md5().block_size * (2 ** 12) ):
+def   fileSignature( filename ):
   
-  checksum = hashlib.md5()
+  checksum = newHash()
+  chunk_size = checksum.block_size * 4096
   
   with openFile( filename, binary = True ) as f:
     read = f.read

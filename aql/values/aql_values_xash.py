@@ -33,11 +33,12 @@ class ValuesXash (object):
   #//-------------------------------------------------------//
   
   def   getRef( self, value ):
+    value_id = (type(value), value.name )
     pairs = self.pairs.setdefault( hash(value.name), [] )
     
     index = 0
     for key, val in pairs:
-      if val.name == value.name:
+      if (type(val), val.name) == value_id:
         return pairs, index
       
       index += 1

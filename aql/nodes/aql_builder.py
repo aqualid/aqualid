@@ -26,7 +26,8 @@ import errno
 import hashlib
 
 from aql.util_types import toSequence, FilePath, FilePaths
-from aql.values import Value, FileValue, FileContentChecksum, FileContentTimeStamp
+from aql.values import Value, FileValue, FileName
+from aql.values import ContentBase, FileContentChecksum, FileContentTimeStamp
 
 #//===========================================================================//
 
@@ -58,19 +59,6 @@ def   _buildPath( build_path, strip_src_path, src_path = None ):
   _makeDir( build_path )
   
   return build_path.join( filename )
-
-#//===========================================================================//
-
-def   _makeFileValues( content_type, values, use_cache ):
-  
-  file_values = []
-  values = toSequence( values )
-  for value in values:
-    if not isinstance( value, Value ):
-      value = FileValue( value, content = content_type, use_cache = use_cache )
-    file_values.append( value )
-  
-  return file_values
 
 #//===========================================================================//
 
@@ -220,7 +208,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   __fileContentType( self ):
+  def   fileContentType( self ):
     content_type = NotImplemented
     
     file_signature = self.file_signature_type
@@ -235,13 +223,42 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeValues( self, values, use_cache = False ):
-    return self.makeFileValues( values, use_cache )
+  def   makeValue(self, name, content, use_cache = False ):
+    if isinstance( content, Value):
+      return content
+    
+    if isinstance( name, (FileName, FilePath) ):
+      if not isinstance(content, ContentBase) and issubclass(content, ContentBase):
+        content = self.fileContentType()
+        
+      return FileValue( name, content = content, use_cache = use_cache )
+      
+    return Value( name, content )
+  
+  #//-------------------------------------------------------//
+  
+  def   makeFileValue( self, filename, content, use_cache = False ):
+    if isinstance( content, Value):
+      return content
+    
+    if not isinstance(content, ContentBase) and issubclass(content, ContentBase):
+      content = self.fileContentType()
+
+    return FileValue( filename, content = content, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   
   def   makeFileValues( self, values, use_cache = False ):
-    content_type = self.__fileContentType()
-    return _makeFileValues( content_type, values, use_cache )
+    
+    content_type = self.fileContentType()
+    file_values = []
+    
+    for value in toSequence(values):
+      if not isinstance(value, Value):
+        value = FileValue( value, content_type, use_cache = use_cache )
+      
+      file_values.append( value )
+    
+    return tuple( file_values )
   
 
