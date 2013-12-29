@@ -21,7 +21,7 @@ __all__ = (
   'Node',
 )
 
-from aql.utils import newHash, dumpValue
+from aql.utils import newHash, dumpData
 from aql.util_types import toSequence, FilePath
 from aql.values import Value, SignatureValue, DependsValue, DependsValueContent, FileName, makeContent
 
@@ -130,7 +130,7 @@ class Node (object):
     #//-------------------------------------------------------//
     #// Name key
     name_hash = newHash()
-    names_dump = dumpValue( names )
+    names_dump = dumpData( names )
     name_hash.update( names_dump )
     
     self.sources_value = SignatureValue( name_hash.digest(), sign_hash.digest() )

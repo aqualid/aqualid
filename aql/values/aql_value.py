@@ -17,13 +17,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 __all__ = (
-  'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'SignatureContent',
+  'ContentBase', 'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'SignatureContent',
   'Value', 'StringValue', 'IStringValue', 'SignatureValue', 'makeContent',
 )
 
-import pickle
-
-from aql.utils import strSignature, dataSignature
+from aql.utils import strSignature, dataSignature, dumpData
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
@@ -219,7 +217,7 @@ class   OtherContent ( ContentBase ):
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
-      bytes_data = pickle.dumps( self.data )
+      bytes_data = dumpData( self.data )
       self.signature = dataSignature( bytes_data )
       return self.signature
     

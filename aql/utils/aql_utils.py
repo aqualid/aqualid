@@ -19,7 +19,7 @@
 
 __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
-  'dumpValue',
+  'dumpData',
   'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
@@ -145,8 +145,8 @@ def   execFile( filename, in_locals ):
 
 #//===========================================================================//
 
-def   dumpValue( value ):
-  return pickle.dumps( value, protocol = pickle.HIGHEST_PROTOCOL )
+def   dumpData( data, protocol = pickle.HIGHEST_PROTOCOL ):
+  return pickle.dumps( data, protocol = protocol )
 
 #//===========================================================================//
 

@@ -26,6 +26,7 @@ import errno
 import hashlib
 
 from aql.util_types import toSequence, FilePath, FilePaths
+from aql.utils import dumpData
 from aql.values import Value, FileValue, FileName
 from aql.values import ContentBase, FileContentChecksum, FileContentTimeStamp
 
@@ -100,7 +101,7 @@ class Builder (object):
         name.append( value )
             
     # return '.'.join( map(str, name) )
-    return name
+    return tuple( name )
   
   #//-------------------------------------------------------//
   
@@ -112,9 +113,9 @@ class Builder (object):
         value = getattr( self, attr_name )
         sign.append( value )
     
-    sign =  '.'.join( map(str, sign) )
+    sign = dumpData( sign )
     
-    return hashlib.md5( ''.join( sign ).encode('utf-8') ).digest()
+    return hashlib.md5( sign ).digest()
 
   
   #//-------------------------------------------------------//
