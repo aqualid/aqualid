@@ -21,12 +21,9 @@ __all__ = (
   'Node',
 )
 
-import hashlib
-import pickle
-
-from aql.utils import newHash
-from aql.util_types import toSequence
-from aql.values import Value, SignatureValue, DependsValue, DependsValueContent
+from aql.utils import newHash, dumpValue
+from aql.util_types import toSequence, FilePath
+from aql.values import Value, SignatureValue, DependsValue, DependsValueContent, FileName, makeContent
 
 #//===========================================================================//
 
@@ -133,7 +130,7 @@ class Node (object):
     #//-------------------------------------------------------//
     #// Name key
     name_hash = newHash()
-    names_dump = pickle.dumps( names, protocol = pickle.HIGHEST_PROTOCOL )
+    names_dump = dumpValue( names )
     name_hash.update( names_dump )
     
     self.sources_value = SignatureValue( name_hash.digest(), sign_hash.digest() )
@@ -232,7 +229,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __makeTargetValues(self, values, name_tag ):
+  def   __makeTargetValues(self, values ):
     
     name_hash = newHash()
     name_hash.update( self.sources_value.name )
@@ -242,9 +239,16 @@ class Node (object):
     makeValue = self.builder.makeValue
     for value in toSequence( values ):
       
-      name_hash.update( name_tag )
-      name_hash.digest()
-      value = makeValue( name_hash.digest(), value, use_cache = False )
+      if not isinstance( value, Value):
+        if isinstance( value, (FileName, FilePath) ):
+          value = self.builder.makeFileValue( value, None, use_cache = False )
+        else:
+          content = makeContent( value )
+          target_name_hash = name_hash.copy()
+          target_name_hash.update( content.signature )
+          
+          value = Value( target_name_hash.digest(), content )
+          
       targets.append( value )
     
     return targets
@@ -298,9 +302,9 @@ class Node (object):
     
     makeTargetValues = self.__makeTargetValues
     
-    target_values   = makeTargetValues( targets,  name_tag = "target"  )
-    itarget_values  = makeTargetValues( itargets, name_tag = "itarget" )
-    idep_values     = makeTargetValues( ideps,    name_tag = "idep"    )
+    target_values   = makeTargetValues( targets )
+    itarget_values  = makeTargetValues( itargets )
+    idep_values     = makeTargetValues( ideps )
     
     self.targets_value.content  = DependsValueContent( target_values )
     self.itargets_value.content = DependsValueContent( itarget_values )

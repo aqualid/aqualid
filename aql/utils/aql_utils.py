@@ -19,6 +19,7 @@
 
 __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
+  'dumpValue',
   'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
@@ -39,6 +40,11 @@ import subprocess
 import tempfile
 import itertools
 import multiprocessing
+
+try:
+  import cPickle as pickle
+except ImportError:
+  import pickle
 
 from aql.util_types import toSequence
 
@@ -136,6 +142,11 @@ def   execFile( filename, in_locals ):
   out_locals = {}
   exec( code, in_locals, out_locals )
   return out_locals
+
+#//===========================================================================//
+
+def   dumpValue( value ):
+  return pickle.dumps( value, protocol = pickle.HIGHEST_PROTOCOL )
 
 #//===========================================================================//
 
@@ -349,7 +360,6 @@ def   removeFiles( files ):
     except OSError as ex:
       if ex.errno != errno.ENOENT:
         raise
-
 
 #//===========================================================================//
 

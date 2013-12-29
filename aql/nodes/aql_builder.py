@@ -99,7 +99,8 @@ class Builder (object):
         value = getattr( self, attr_name )
         name.append( value )
             
-    return '.'.join( map(str, name) )
+    # return '.'.join( map(str, name) )
+    return name
   
   #//-------------------------------------------------------//
   

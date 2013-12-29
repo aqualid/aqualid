@@ -60,9 +60,9 @@ class ChecksumBuilder (Builder):
       with open( chcksum_filename, 'wb' ) as f:
         f.write( chcksum.digest() )
       
-      target_values.append( FileValue( chcksum_filename ) )
+      target_values.append( chcksum_filename )
     
-    node.setTargets( target_values )
+    node.setFileTargets( target_values )
 
 #//===========================================================================//
 

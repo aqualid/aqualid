@@ -47,8 +47,8 @@ class ChecksumBuilder (Builder):
       chcksum.update( content )
       chcksum_sha512 = hashlib.sha512()
       chcksum_sha512.update( content )
-      target_values.append( SignatureValue( source_value.name + '_chksum', chcksum.digest() ) )
-      itarget_values.append( SignatureValue( source_value.name + '_chcksum_sha512', chcksum_sha512.digest() ) )
+      target_values.append( chcksum.digest() )
+      itarget_values.append( chcksum_sha512.digest() )
     
     node.setTargets( target_values, itarget_values )
 
@@ -70,7 +70,7 @@ class CopyBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    idep = Value( str(node), b'' )
+    idep = b''
     
     for source_value in node.sourceValues():
       new_name = source_value.name + '.' + self.ext
@@ -79,10 +79,10 @@ class CopyBuilder (Builder):
       shutil.copy( source_value.name, new_name )
       shutil.copy( source_value.name, new_iname )
       
-      target_values.append( FileValue( new_name ) )
-      itarget_values.append( FileValue( new_iname ) )
+      target_values.append( new_name )
+      itarget_values.append( new_iname )
     
-    node.setTargets( target_values, itarget_values, idep )
+    node.setFileTargets( target_values, itarget_values, idep )
 
 #//===========================================================================//
 
