@@ -29,18 +29,14 @@ class CopyValueBuilder (Builder):
 
 class ChecksumBuilder (Builder):
   
-  __slots__ = (
-    'offset',
-    'length',
-    'replace_ext',
-  )
+  NAME_ATTRS = ('replace_ext',)
+  SIGNATURE_ATTRS = ('offset', 'length')
   
   def   __init__(self, options, offset, length, replace_ext = False ):
     
     self.offset = offset
     self.length = length
     self.replace_ext = replace_ext
-    self.signature = str(str(self.offset) + '.' + str(self.length)).encode('utf-8')
   
   #//-------------------------------------------------------//
   
@@ -240,11 +236,11 @@ def   eventBuildStatusOutdatedNode( node ):
 class TestBuildManager( AqlTestCase ):
   
   def   setUp( self ):
-    disableDefaultHandlers()
+    # disableDefaultHandlers()
     pass
   
   def   tearDown( self ):
-    enableDefaultHandlers()
+    # enableDefaultHandlers()
     pass
   
   def test_bm_deps(self):

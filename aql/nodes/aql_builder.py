@@ -116,7 +116,6 @@ class Builder (object):
     sign = dumpData( sign )
     
     return hashlib.md5( sign ).digest()
-
   
   #//-------------------------------------------------------//
   
@@ -135,12 +134,20 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   actual( self, vfile, node ):
-    return node.actual( vfile )
+    
+    result = node.actual( vfile )
+    
+    if  __debug__:
+      print("node.actual(): result: %s, node: %s" % (result, node.name()))
+    
+    return result
 
   #//-------------------------------------------------------//
 
   # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
+    if  __debug__:
+      print("node.save(): node: %s" % (node.name(), ))
     vfile.addValues( node.values() )
   
   #//-------------------------------------------------------//
@@ -196,7 +203,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   __str__( self ):
-    return self.name
+    return str(self.name)
   
   #//-------------------------------------------------------//
   

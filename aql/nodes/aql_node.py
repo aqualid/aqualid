@@ -132,6 +132,10 @@ class Node (object):
     name_hash = newHash()
     names_dump = dumpData( names )
     name_hash.update( names_dump )
+    if __debug__:
+      print( "node.__setValues(): names: %s" % (names,) )
+      print( "node.__setValues(): name types: %s" % (tuple(map(id, names)),) )
+      print( "node.__setValues(): name_hash: %s" % (name_hash.digest(),) )
     
     self.sources_value = SignatureValue( name_hash.digest(), sign_hash.digest() )
     
@@ -162,6 +166,11 @@ class Node (object):
       return source_values
     
     raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
+  
+  #//=======================================================//
+  
+  def   name(self):
+    return self.sources_value.name
   
   #//=======================================================//
   
@@ -236,7 +245,6 @@ class Node (object):
     
     targets = []
     
-    makeValue = self.builder.makeValue
     for value in toSequence( values ):
       
       if not isinstance( value, Value):
