@@ -3,7 +3,6 @@ import os.path
 import timeit
 import shutil
 import hashlib
-from binascii import hexlify
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
@@ -11,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.util_types import toSequence
 from aql.utils import Tempfile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
-from aql.values import SignatureValue, StringValue, Value, NoContent, FileValue, FileContentTimeStamp, FileContentChecksum, DependsValue, ValuesFile
+from aql.values import StringValue, Value, FileValue, FileContentChecksum, ValuesFile
 from aql.nodes import Node, Builder
 
 
@@ -70,14 +69,14 @@ class CopyBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    idep = b''
+    idep = self.makeValue( b'' )
     
-    for source_value in node.sourceValues():
-      new_name = source_value.name + '.' + self.ext
-      new_iname = source_value.name + '.' + self.iext
+    for src in node.sources():
+      new_name = src + '.' + self.ext
+      new_iname = src + '.' + self.iext
       
-      shutil.copy( source_value.name, new_name )
-      shutil.copy( source_value.name, new_iname )
+      shutil.copy( src, new_name )
+      shutil.copy( src, new_iname )
       
       target_values.append( new_name )
       itarget_values.append( new_iname )

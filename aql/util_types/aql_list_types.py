@@ -25,7 +25,7 @@ __all__ = ( 'toSequence', 'isSequence', 'UniqueList', 'List', 'ValueListType', '
 def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
   
   try:
-    if not isinstance( value, str ):
+    if not isinstance( value, (str, bytes, bytearray) ):
       iter( value )
       return value
   except TypeError:

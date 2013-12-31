@@ -124,19 +124,15 @@ class Node (object):
     #// Signature
     
     sign_hash = newHash()
-    for s in sign:
-      sign_hash.update( s )
+    sign_dump = dumpData( sign )
+    sign_hash.update( sign_dump )
     
     #//-------------------------------------------------------//
     #// Name key
     name_hash = newHash()
     names_dump = dumpData( names )
     name_hash.update( names_dump )
-    if __debug__:
-      print( "node.__setValues(): names: %s" % (names,) )
-      print( "node.__setValues(): name types: %s" % (tuple(map(id, names)),) )
-      print( "node.__setValues(): name_hash: %s" % (name_hash.digest(),) )
-    
+          
     self.sources_value = SignatureValue( name_hash.digest(), sign_hash.digest() )
     
     #//-------------------------------------------------------//
@@ -232,34 +228,9 @@ class Node (object):
         values.append( src )
       
       else:
-        values.append( makeValue( name = None, content = src, use_cache = True ) )
+        values.append( makeValue( src, use_cache = True ) )
       
     return tuple(values)
-  
-  #//=======================================================//
-  
-  def   __makeTargetValues(self, values ):
-    
-    name_hash = newHash()
-    name_hash.update( self.sources_value.name )
-    
-    targets = []
-    
-    for value in toSequence( values ):
-      
-      if not isinstance( value, Value):
-        if isinstance( value, (FileName, FilePath) ):
-          value = self.builder.makeFileValue( value, None, use_cache = False )
-        else:
-          content = makeContent( value )
-          target_name_hash = name_hash.copy()
-          target_name_hash.update( content.signature )
-          
-          value = Value( target_name_hash.digest(), content )
-          
-      targets.append( value )
-    
-    return targets
   
   #//=======================================================//
   
@@ -308,7 +279,7 @@ class Node (object):
   
   def   setTargets( self, targets, itargets = None, ideps = None ):
     
-    makeTargetValues = self.__makeTargetValues
+    makeTargetValues = self.builder.makeValues
     
     target_values   = makeTargetValues( targets )
     itarget_values  = makeTargetValues( itargets )

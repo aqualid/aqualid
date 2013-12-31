@@ -63,6 +63,17 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
+  def   __getnewargs__(self):
+    #noinspection PyRedundantParentheses
+    return (str(self), )
+  
+  def   __getstate__(self):
+    return {}
+  def   __setstate__(self,state):
+    pass
+  
+  #//-------------------------------------------------------//
+  
   @staticmethod
   def   __convert( other ):
     return other if isinstance( other, FilePath ) else FilePath( other )

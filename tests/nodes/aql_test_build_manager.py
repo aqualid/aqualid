@@ -292,7 +292,7 @@ class TestBuildManager( AqlTestCase ):
       options = builtinOptions()
       options.build_dir = tmp_dir
       
-      src_files = _generateSourceFiles( 3, 201 )
+      src_files = _generateSourceFiles( 1, 201 )
       try:
         
         builder = ChecksumBuilder( options, 0, 256 )

@@ -137,8 +137,8 @@ class Builder (object):
     
     result = node.actual( vfile )
     
-    if  __debug__:
-      print("node.actual(): result: %s, node: %s" % (result, node.name()))
+    # if  __debug__:
+    #   print("node.actual(): result: %s, node: %s" % (result, node.name()))
     
     return result
 
@@ -146,8 +146,8 @@ class Builder (object):
 
   # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
-    if  __debug__:
-      print("node.save(): node: %s" % (node.name(), ))
+    # if  __debug__:
+    #   print("node.save(): node: %s" % (node.name(), ))
     vfile.addValues( node.values() )
   
   #//-------------------------------------------------------//
@@ -232,28 +232,27 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeValue(self, name, content, use_cache = False ):
-    if isinstance( content, Value):
-      return content
+  def   makeValue(self, value, use_cache = False ):
+    if isinstance( value, Value):
+      return value
     
-    if isinstance( name, (FileName, FilePath) ):
-      if not isinstance(content, ContentBase) and issubclass(content, ContentBase):
-        content = self.fileContentType()
-        
-      return FileValue( name, content = content, use_cache = use_cache )
+    if isinstance( value, (FileName, FilePath) ):
+      return FileValue( value, content = self.fileContentType(), use_cache = use_cache )
       
-    return Value( name, content )
+    return Value( name = None, content = value )
   
   #//-------------------------------------------------------//
   
-  def   makeFileValue( self, filename, content, use_cache = False ):
-    if isinstance( content, Value):
-      return content
+  def   makeFileValue( self, value, use_cache = False ):
+    if isinstance( value, Value):
+      return value
     
-    if not isinstance(content, ContentBase) and issubclass(content, ContentBase):
-      content = self.fileContentType()
-
-    return FileValue( filename, content = content, use_cache = use_cache )
+    return FileValue( value, content = self.fileContentType(), use_cache = use_cache )
+  
+  #//-------------------------------------------------------//
+  
+  def   makeValues( self, values, use_cache = False ):
+    return tuple( self.makeValue( value, use_cache = use_cache ) for value in toSequence(values) )
   
   #//-------------------------------------------------------//
   
