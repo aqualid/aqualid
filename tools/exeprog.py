@@ -56,4 +56,4 @@ class ExecuteCommand (aql.Builder):
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return ' '.join( self.cmd ) + ' ' + ' '.join( map( str, node.sources() ) )
+    return ' '.join( map( str, node.sources() ) )
