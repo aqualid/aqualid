@@ -138,7 +138,7 @@ class Builder (object):
     result = node.actual( vfile )
     
     # if  __debug__:
-    #   print("node.actual(): result: %s, node: %s" % (result, node.name()))
+    #   print("builder.actual(): result: %s, node: %s" % (result, node.name()))
     
     return result
 
@@ -147,7 +147,7 @@ class Builder (object):
   # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
     # if  __debug__:
-    #   print("node.save(): node: %s" % (node.name(), ))
+    #   print("builder.save(): node: %s" % (node.name(), ))
     vfile.addValues( node.values() )
   
   #//-------------------------------------------------------//

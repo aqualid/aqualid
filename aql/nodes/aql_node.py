@@ -281,9 +281,9 @@ class Node (object):
     
     makeTargetValues = self.builder.makeValues
     
-    target_values   = makeTargetValues( targets )
-    itarget_values  = makeTargetValues( itargets )
-    idep_values     = makeTargetValues( ideps )
+    target_values   = makeTargetValues( targets,  use_cache = False )
+    itarget_values  = makeTargetValues( itargets, use_cache = False )
+    idep_values     = makeTargetValues( ideps,    use_cache = False )
     
     self.targets_value.content  = DependsValueContent( target_values )
     self.itargets_value.content = DependsValueContent( itarget_values )

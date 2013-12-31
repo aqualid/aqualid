@@ -108,7 +108,7 @@ class GccCompilerImpl (aql.Builder):
       if result.failed():
         raise result
       
-      node.setTargets( obj_file, ideps = _readDeps( dep_file ) )
+      node.setFileTargets( obj_file, ideps = _readDeps( dep_file ) )
   
   #//-------------------------------------------------------//
 
@@ -151,7 +151,7 @@ class GccCompiler(aql.Builder):
       else:
         src_nodes.append( src_node )
     
-    node.setTargets( targets )
+    node.setFileTargets( targets )
     
     return src_nodes
   
@@ -167,7 +167,7 @@ class GccCompiler(aql.Builder):
       else:
         src_nodes.append( src_node )
     
-    node.setTargets( targets )
+    node.setFileTargets( targets )
     
     return src_nodes
   
@@ -179,7 +179,7 @@ class GccCompiler(aql.Builder):
     for pre_node in pre_nodes:
       targets += pre_node.targets()
     
-    node.setTargets( targets )
+    node.setFileTargets( targets )
   
   #//-------------------------------------------------------//
 
@@ -220,7 +220,7 @@ class GccArchiver(aql.Builder):
     if result.failed():
       raise result
     
-    node.setTargets( archive )
+    node.setFileTargets( archive )
   
   #//-------------------------------------------------------//
   def   __str__( self ):
@@ -288,7 +288,7 @@ class GccLinker(aql.Builder):
     if result.failed():
       raise result
     
-    node.setTargets( target )
+    node.setFileTargets( target )
   
   #//-------------------------------------------------------//
 
