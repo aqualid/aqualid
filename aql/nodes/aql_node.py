@@ -133,22 +133,22 @@ class Node (object):
     names_dump = dumpData( names )
     name_hash.update( names_dump )
           
-    self.sources_value = SignatureValue( name_hash.digest(), sign_hash.digest() )
+    self.sources_value = SignatureValue( sign_hash.digest() )
     
     #//-------------------------------------------------------//
     #// Targets
     
     targets_hash = name_hash.copy()
     targets_hash.update( b'targets' )
-    self.targets_value = DependsValue( targets_hash.digest() )
+    self.targets_value = DependsValue( name = targets_hash.digest() )
     
     itargets_hash = name_hash.copy()
     itargets_hash.update( b'itargets' )
-    self.itargets_value = DependsValue( itargets_hash.digest() )
+    self.itargets_value = DependsValue( name = itargets_hash.digest() )
     
     ideps_hash = name_hash.copy()
     ideps_hash.update( b'ideps' )
-    self.ideps_value = DependsValue( ideps_hash.digest() )
+    self.ideps_value = DependsValue( name = ideps_hash.digest() )
     
   #//=======================================================//
   

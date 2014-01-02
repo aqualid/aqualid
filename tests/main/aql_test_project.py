@@ -56,7 +56,7 @@ options.build_variant = "final"
       def   __init__(self):
         self.signature = b''
       def   build( self, build_manager, vfile, node ):
-        return self.nodeTargets( Value( "value1", b"" ) )
+        return self.nodeTargets( Value( name = "value1", content = b"" ) )
     
     class TestTool:
       def   TestBuilder( self, prj, options ):

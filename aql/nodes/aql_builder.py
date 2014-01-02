@@ -239,7 +239,7 @@ class Builder (object):
     if isinstance( value, (FileName, FilePath) ):
       return FileValue( value, content = self.fileContentType(), use_cache = use_cache )
       
-    return Value( name = None, content = value )
+    return Value( content = value, name = None )
   
   #//-------------------------------------------------------//
   

@@ -161,10 +161,11 @@ class   FileValue (Value):
     
     if content is NotImplemented:
       content = FileContentChecksum( name, use_cache = use_cache )
+    
     elif type(content) is type:
       content = content( name, use_cache = use_cache )
     
-    return super(FileValue, cls).__new__( cls, name, content )
+    return super(FileValue, cls).__new__( cls, content = content, name = name )
   
   #//-------------------------------------------------------//
 

@@ -124,7 +124,7 @@ class   DependsValueContent (ContentBase):
 @pickleable
 class   DependsValue (Value):
   
-  def   __new__( cls, name, content = None ):
+  def   __new__( cls, content = None, name = None ):
     
     if isinstance( name, DependsValue ):
       other = name
@@ -135,7 +135,7 @@ class   DependsValue (Value):
     
     content = DependsValueContent( content )
     
-    return super(DependsValue,cls).__new__(cls, name, content )
+    return super(DependsValue,cls).__new__(cls, name = name, content = content )
   
   #//-------------------------------------------------------//
 

@@ -12,8 +12,8 @@ from aql.values import Value, IStringContent
 class TestStrValue( AqlTestCase ):
   def test_str_value(self):
     
-    value1 = Value('results_link', 'http://buildsrv.com/results.out')
-    value2 = Value('results_link', 'http://buildsrv.com/results.out')
+    value1 = Value( name = 'results_link', content = 'http://buildsrv.com/results.out')
+    value2 = Value( name = 'results_link', content = 'http://buildsrv.com/results.out')
     
     self.assertEqual( value1, value1 )
     self.assertEqual( value1, value2 )
@@ -34,8 +34,8 @@ class TestStrValue( AqlTestCase ):
 
   def test_str_value_save_load(self):
     
-    value1 = Value('results_link', 'http://buildsrv.com/results.out')
-    value2 = Value('results_link', IStringContent(value1.content))
+    value1 = Value( name = 'results_link', content = 'http://buildsrv.com/results.out')
+    value2 = Value( name = 'results_link', content = IStringContent(value1.content))
     
     self._testSaveLoad( value1 )
     self._testSaveLoad( value2 )
@@ -44,7 +44,7 @@ class TestStrValue( AqlTestCase ):
 
   def test_str_empty_value_save_load(self):
     
-    value1 = Value('results_link')
+    value1 = Value( name = 'results_link')
     value2 = Value( value1 )
     
     self._testSaveLoad( value1 )

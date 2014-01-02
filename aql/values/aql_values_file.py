@@ -104,7 +104,7 @@ def _sortDepends( dep_sort_data ):
   
   for key, value_keys in dep_sort_data.items():
     value = value_keys[0]
-    value = DependsValue( value.name, None )
+    value = DependsValue( name = value.name, content = None )
     sorted_deps.append( value )
     eventFileValuesCyclicDependencyValue( value )
   
@@ -136,11 +136,11 @@ class ValuesFile (object):
       key = find_value( value )[0]
       if key is None:
         eventFileValuesDependencyValueHasUnknownValue( dep_value, value )
-        return DependsValue( dep_value.name )
+        return DependsValue( name = dep_value.name )
       
       value_keys_append( key )
     
-    return DependsValue( dep_value.name, DependsKeyContent( value_keys ) )
+    return DependsValue( name = dep_value.name, content = DependsKeyContent( value_keys ) )
   
   #//---------------------------------------------------------------------------//
   
@@ -159,20 +159,20 @@ class ValuesFile (object):
       keys = kvalue.content.data
       
       if kvalue_key in keys: # cyclic dependency
-        return DependsValue( kvalue.name )
+        return DependsValue( name = kvalue.name )
       
       for key in keys:
         v = get_value( key )
         if isinstance( v, DependsValue ):
           v = self.__makeDepends( v, kvalue_key )
           if not v.content:
-            return DependsValue( kvalue.name )
+            return DependsValue( name = kvalue.name )
         
         values_append( v )
     except KeyError:
-      return DependsValue( kvalue.name )
+      return DependsValue( name = kvalue.name )
     
-    return DependsValue( kvalue.name, values )
+    return DependsValue( name = kvalue.name, content = values )
   
   #//---------------------------------------------------------------------------//
   
@@ -288,7 +288,7 @@ class ValuesFile (object):
       for value in values:
         key, val = find( value )
         if val is None:
-          val = type(value)( value.name, None )
+          val = type(value)( name = value.name, content = None )
         else:
           if isinstance( val, DependsValue ):
             val = self.__makeDepends( val, key )

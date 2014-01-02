@@ -35,10 +35,10 @@ class TestValuesFile( AqlTestCase ):
   def test_xash(self):
     xash = ValuesXash()
     
-    item1 = Value( TestValueName('test', 'value1'), '1' )
-    item2 = Value( TestValueName('test', 'value2'), '1' )
-    item2_ = Value( TestValueName('test', 'value2'), '1' )
-    item3 = Value( TestValueName('test3', 'value3'), '1' )
+    item1 = Value( name = TestValueName('test', 'value1'), content = '1' )
+    item2 = Value( name = TestValueName('test', 'value2'), content = '1' )
+    item2_ = Value( name = TestValueName('test', 'value2'), content = '1' )
+    item3 = Value( name = TestValueName('test3', 'value3'), content = '1' )
     
     xash.selfTest()
     
@@ -63,7 +63,7 @@ class TestValuesFile( AqlTestCase ):
     
     self.assertEqual( len(xash), count )
     
-    new_item1 = Value( TestValueName('testing', 'value'), '1' )
+    new_item1 = Value( name = TestValueName('testing', 'value'), content = '1' )
     xash[ 1 ] = new_item1; xash.selfTest()
     self.assertEqual( xash.find( item1 ), (None, None) )
     self.assertEqual( xash.find( new_item1 ), (1, new_item1) );

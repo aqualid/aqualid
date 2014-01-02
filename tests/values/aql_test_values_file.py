@@ -17,9 +17,9 @@ class TestValuesFile( AqlTestCase ):
       try:
         vfile.selfTest()
         
-        value1 = Value( "target_url1", "http://aql.org/download" )
-        value2 = Value( "target_url2", "http://aql.org/download2" )
-        value3 = Value( "target_url3", "http://aql.org/download3" )
+        value1 = Value( name = "target_url1", content = "http://aql.org/download" )
+        value2 = Value( name = "target_url2", content = "http://aql.org/download2" )
+        value3 = Value( name = "target_url3", content = "http://aql.org/download3" )
         
         values = [ value1, value2, value3 ]
         
@@ -32,7 +32,7 @@ class TestValuesFile( AqlTestCase ):
         vfile.clear(); vfile.selfTest()
         #//-------------------------------------------------------//
         
-        dep_value = DependsValue( "urls", values )
+        dep_value = DependsValue( name = "urls", content = values )
         values.insert( 0, dep_value )
         
         vfile.addValues( values ); vfile.selfTest()
@@ -50,7 +50,7 @@ class TestValuesFile( AqlTestCase ):
           
           #//-------------------------------------------------------//
           
-          values[0] = DependsValue( "urls", reversed(values[1:]) )
+          values[0] = DependsValue( name = "urls", content = reversed(values[1:]) )
           
           vfile2.addValues( values ); vfile2.selfTest()
           s_values = vfile.findValues( values ); vfile.selfTest()
@@ -58,7 +58,7 @@ class TestValuesFile( AqlTestCase ):
           
           #//-------------------------------------------------------//
           
-          value1 = Value( value1.name, "http://aql.org/download1" )
+          value1 = Value( name = value1.name, content = "http://aql.org/download1" )
           
           vfile2.addValues( [ value1 ] ); vfile2.selfTest()
           s_value1 = vfile.findValues( [ value1 ] )[0]; vfile.selfTest()
@@ -66,7 +66,7 @@ class TestValuesFile( AqlTestCase ):
           
           #//-------------------------------------------------------//
           
-          dep_value = DependsValue( "urls", reversed(values) )
+          dep_value = DependsValue( name = "urls", content = reversed(values) )
           
           vfile2.addValues( [dep_value] ); vfile2.selfTest()
           s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
@@ -75,17 +75,17 @@ class TestValuesFile( AqlTestCase ):
           
           #//-------------------------------------------------------//
           
-          dep_value2 = DependsValue( "urls2", [ dep_value ] )
+          dep_value2 = DependsValue( name = "urls2", content = [ dep_value ] )
           vfile2.addValues( [dep_value2] ); vfile2.selfTest()
           
-          dep_value = DependsValue( "urls", [ dep_value2 ] )
+          dep_value = DependsValue( name = "urls", content = [ dep_value2 ] )
           vfile2.addValues( [dep_value] ); vfile2.selfTest()
           
           s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
           
           #//-------------------------------------------------------//
           
-          dep_value = DependsValue( "urls", [ value1 ] )
+          dep_value = DependsValue( name = "urls", content = [ value1 ] )
           vfile.addValues( [dep_value, value1] ); vfile.selfTest()
           
           df = DataFile( tmp.name )
@@ -113,22 +113,22 @@ class TestValuesFile( AqlTestCase ):
       try:
         vfile.selfTest()
         
-        value1 = Value( "target_url1", "http://aql.org/download" )
-        value2 = Value( "target_url2", "http://aql.org/download2" )
-        value3 = Value( "target_url3", "http://aql.org/download3" )
+        value1 = Value( name = "target_url1", content = "http://aql.org/download" )
+        value2 = Value( name = "target_url2", content = "http://aql.org/download2" )
+        value3 = Value( name = "target_url3", content = "http://aql.org/download3" )
         
         values = [ value1, value2, value3 ]
         
-        dep_value1 = DependsValue( "urls1", values )
+        dep_value1 = DependsValue( name = "urls1", content = values )
         
-        value4 = Value( "target_url4", "http://aql.org/download4" )
-        dep_value2 = DependsValue( "urls2", [ dep_value1, value4 ] )
+        value4 = Value( name = "target_url4", content = "http://aql.org/download4" )
+        dep_value2 = DependsValue( name = "urls2", content = [ dep_value1, value4 ] )
         
-        value5 = Value( "target_url5", "http://aql.org/download5" )
-        dep_value3 = DependsValue( "urls3", [ dep_value1, value5 ] )
+        value5 = Value( name = "target_url5", content = "http://aql.org/download5" )
+        dep_value3 = DependsValue( name = "urls3", content = [ dep_value1, value5 ] )
         
-        value6 = Value( "target_url6", "http://aql.org/download6" )
-        dep_value4 = DependsValue( "urls4", [ dep_value1, dep_value2, dep_value3, value6 ] )
+        value6 = Value( name = "target_url6", content = "http://aql.org/download6" )
+        dep_value4 = DependsValue( name = "urls4", content = [ dep_value1, dep_value2, dep_value3, value6 ] )
         
         all_dep_values = [dep_value4, dep_value3, dep_value2, dep_value1]
         
@@ -144,7 +144,7 @@ class TestValuesFile( AqlTestCase ):
         for value, s_value in zip( all_values, s_all_values ):
           self.assertEqual( value, s_value )
         
-        value3 = Value( "target_url3", "http://aql.org/download3/0" )
+        value3 = Value( name = "target_url3", content = "http://aql.org/download3/0" )
         
         vfile.addValues( [value3] ); vfile.selfTest()
         
@@ -167,18 +167,18 @@ class TestValuesFile( AqlTestCase ):
         
         values = []
         
-        value1 = Value( "target_url1", "http://aql.org/download" )
-        value2 = Value( "target_url2", "http://aql.org/download2" )
-        dep_value = DependsValue( "urls1", [ value1, value2 ] )
+        value1 = Value( name = "target_url1", content = "http://aql.org/download" )
+        value2 = Value( name = "target_url2", content = "http://aql.org/download2" )
+        dep_value = DependsValue( name = "urls1", content = [ value1, value2 ] )
         
         values += [value1, value2, dep_value ]
         
         vfile.addValues( values ); vfile.selfTest()
         
-        value1 = Value( "target_url3", "http://aql.org/download3" )
-        value2 = Value( "target_url4", "http://aql.org/download4" )
+        value1 = Value( name = "target_url3", content = "http://aql.org/download3" )
+        value2 = Value( name = "target_url4", content = "http://aql.org/download4" )
         
-        dep_value = DependsValue( "urls1", [ value1, value2 ] )
+        dep_value = DependsValue( name = "urls1", content = [ value1, value2 ] )
         vfile.addValues( [ dep_value, value1, value2 ] ); vfile.selfTest()
       
       finally:
@@ -194,7 +194,7 @@ class TestValuesFile( AqlTestCase ):
         
         values = []
         
-        dep_value = DependsValue( "urls1", [] )
+        dep_value = DependsValue( name = "urls1", content = [] )
         
         values += [dep_value ]
         
@@ -211,7 +211,7 @@ class TestValuesFile( AqlTestCase ):
   def   test_value_file_speed(self):
     values = []
     for i in range(0, 100000):
-      value = Value( "target_url%s" % i, "http://aql.org/download" )
+      value = Value( name = "target_url%s" % i, content = "http://aql.org/download" )
       values.append( value )
     
     with Tempfile() as tmp:

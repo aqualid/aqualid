@@ -232,7 +232,7 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                v = Value( node.ideps_value.content.data[0].name, None )
+                v = Value( name = node.ideps_value.content.data[0].name, content = None )
                 vfile.addValues( [v] )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )

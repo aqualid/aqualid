@@ -35,15 +35,15 @@ class TestValuePickler( AqlTestCase ):
       v = vpick.loads( vpick.dumps( value ) )
       self.assertEqual( value, v )
     
-    value = Value( tmp.name, '123-345' )
+    value = Value( name = tmp.name, content = '123-345' )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = Value( tmp.name, IStringContent('123-345') )
+    value = Value( name = tmp.name, content = IStringContent('123-345') )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = Value( tmp.name, None )
+    value = Value( name = tmp.name, content = None )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value.name, v.name )
     self.assertFalse( v.content )

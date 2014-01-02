@@ -249,16 +249,13 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name, content = NotImplemented ):
+  def   __new__( cls, content = NotImplemented, name = None ):
     
-    if isinstance( name, Value ):
-      other = name
-      name = other.name
-      
-      if content is NotImplemented:
-        content = other.content
-      
-      return type(other)( name, content )
+    if isinstance( content, Value ):
+      if name is None:
+        return content
+        
+      return type(content)( content = content, name = name )
     
     
     self = super(Value,cls).__new__(cls)
@@ -289,7 +286,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   copy( self ):
-    return type(self)( self.name, self.content )
+    return type(self)( content = self.content, name = self.name )
   
   #//-------------------------------------------------------//
   
@@ -299,10 +296,10 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   __eq__( self, other):
-    return (self.name == other.name) and (self.content == other.content)
+    return (type(self) == type(other)) and (self.name == other.name) and (self.content == other.content)
   
   def   __ne__( self, other):
-    return (self.name != other.name) or (self.content != other.content)
+    return not self.__eq__( other )
   
   #//-------------------------------------------------------//
 
@@ -336,47 +333,45 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr ):
-    if attr == 'data':
-      self.data = self.content.data
-      return self.data
-    
-    if attr == 'signature':
-      self.signature = self.content.signature
-      return self.signature
-    
-    raise AttributeError( attr )
+  # def   __getattr__( self, attr ):
+  #   if attr == 'data':
+  #     self.data = self.content.data
+  #     return self.data
+  #   
+  #   if attr == 'signature':
+  #     self.signature = self.content.signature
+  #     return self.signature
+  #   
+  #   raise AttributeError( attr )
   
 #//===========================================================================//
 
 @pickleable
 class   StringValue (Value):
   
-  def   __new__( cls, name, content = NotImplemented ):
+  def   __new__( cls, content = NotImplemented, name = None ):
     
-    if (content is not NotImplemented) and not isinstance( content, StringContent ):
-      content = StringContent( content )
+    content = StringContent( content )
     
-    return super(StringValue,cls).__new__( cls, name, content )
+    return super(StringValue,cls).__new__( cls, content = content, name = name )
 
 #//===========================================================================//
 
 @pickleable
 class   IStringValue (Value):
   
-  def   __new__( cls, name, content = NotImplemented ):
+  def   __new__( cls, content = NotImplemented, name = None ):
     
-    if (content is not NotImplemented) and not isinstance( content,IStringContent ):
-      content = IStringContent( content )
+    content = IStringContent( content )
     
-    return super(IStringValue,cls).__new__( cls, name, content )
+    return super(IStringValue,cls).__new__( cls, content = content, name = name )
 
 #//===========================================================================//
 
 @pickleable
 class   SignatureValue (Value):
   
-  def   __new__( cls, name, content = NotImplemented ):
+  def   __new__( cls, content = NotImplemented, name = None ):
     
     content = SignatureContent( content )
-    return super(SignatureValue,cls).__new__( cls, name, content )
+    return super(SignatureValue,cls).__new__( cls, content = content, name = name )

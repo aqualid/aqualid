@@ -21,7 +21,7 @@ class CopyValueBuilder (Builder):
     target_values = []
     
     for source_value in node.sourceValues():
-      target_values.append( Value( source_value.name + '_copy', source_value.content ) )
+      target_values.append( Value( name = source_value.name + '_copy', content = source_value.content ) )
     
     return self.nodeTargets( target_values )
 
@@ -43,13 +43,13 @@ class ChecksumBuilder (Builder):
   def   build( self, node ):
     target_values = []
     
-    for source_value in node.sourceValues():
+    for src in node.sources():
       
-      chcksum = fileChecksum( source_value.name, self.offset, self.length, 'sha512' )
+      chcksum = fileChecksum( src, self.offset, self.length, 'sha512' )
       if self.replace_ext:
-        chcksum_filename = os.path.splitext(source_value.name)[0] + '.chksum'
+        chcksum_filename = os.path.splitext(src)[0] + '.chksum'
       else:
-        chcksum_filename = source_value.name + '.chksum'
+        chcksum_filename = src + '.chksum'
       
       chcksum_filename = self.buildPath( chcksum_filename )
       
