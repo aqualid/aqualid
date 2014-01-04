@@ -133,7 +133,9 @@ class Node (object):
     names_dump = dumpData( names )
     name_hash.update( names_dump )
           
-    self.sources_value = SignatureValue( sign_hash.digest() )
+    self.sources_value = SignatureValue( content = sign_hash.digest() )
+    # if __debug__:
+    #   print( "self.sources_value.name : %s (%s)" % (self.sources_value.name, type(self.sources_value.name) ) )
     
     #//-------------------------------------------------------//
     #// Targets
@@ -202,10 +204,14 @@ class Node (object):
     values = vfile.findValues( values )
     
     if self.sources_value != values.pop(0):
+      # if __debug__:
+      #   print( "non-actual sources of node: %s" % (self.name()))
       return False
     
     for value in values:
       if not value.actual():
+        # if __debug__:
+        #   print( "non-actual target '%s' of node: %s" % (value, self.name()))
         return False
     
     self.targets_value, self.itargets_value, self.ideps_value = values

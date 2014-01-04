@@ -59,7 +59,7 @@ def   eventBuildingNodes( total_nodes ):
 
 @eventStatus
 def   eventBuildNodeFailed( node, error ):
-  #~ logError("Failed node: %s" % node.buildStr() )
+  logError("Failed node: %s" % node.buildStr() )
   logError("Error: %s" % str(error) )
   try:
     traceback.print_tb( error.__traceback__ )
@@ -71,14 +71,12 @@ def   eventBuildNodeFailed( node, error ):
 @eventStatus
 def   eventNodeBuilding( node ):
   logInfo("Building node: %s" % node.buildStr() )
-  #~ logInfo("Building node: %s" % ( node, ) )
 
 #//===========================================================================//
 
 @eventStatus
 def   eventNodeBuildingFinished( node ):
   logInfo("Finished node: %s" % node.buildStr() )
-  #~ logInfo("Finished node: %s" % ( node, ) )
 
 #//===========================================================================//
 

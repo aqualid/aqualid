@@ -31,6 +31,19 @@ from aql.utils import fileSignature, fileTimeSignature
 
 
 #//===========================================================================//
+
+class   ErrorFileValueNoName( Exception ):
+  def   __init__( self ):
+    msg = "Filename is not specified"
+    super(type(self), self).__init__( msg )
+
+class   ErrorFileValueInvalidContentType( Exception ):
+  def   __init__( self, content_type ):
+    msg = "Content type must inherited from ContentBase. Invalid content type: '%s'" % (content_type, )
+    super(type(self), self).__init__( msg )
+
+
+#//===========================================================================//
 _file_content_cache = {}
 
 #noinspection PyAttributeOutsideInit
@@ -148,24 +161,54 @@ class   FileName (str):
 @pickleable
 class   FileValue (Value):
   
-  def   __new__( cls, name, content = NotImplemented, use_cache = False ):
+  def   __new__( cls, content = NotImplemented, name = None, use_cache = False ):
     
-    if isinstance( name, FileValue ):
-      other = name
-      name = other.name
+    file_content = NotImplemented
+    file_name = None
+    content_type = FileContentChecksum
     
-      if content is NotImplemented:
-        content = type(other.content)
+    if isinstance( name, ContentBase):
+      file_content = name
+    
+    elif type(name) is type:
+      content_type = name
+    
     else:
-      name = FileName( name )
+      file_name = name
     
-    if content is NotImplemented:
-      content = FileContentChecksum( name, use_cache = use_cache )
+    if isinstance( content, FileValue ):
+      file_name = content.name
+      content_type = type(content.content)
+    
+    elif isinstance( content, ContentBase ):
+      file_content = content
     
     elif type(content) is type:
-      content = content( name, use_cache = use_cache )
+      content_type = content
     
-    return super(FileValue, cls).__new__( cls, content = content, name = name )
+    elif content is not NotImplemented:
+      file_name = content
+    
+    if file_name:
+      file_name = FileName( file_name )
+    else:
+      raise ErrorFileValueNoName()
+    
+    if file_content is NotImplemented:
+      if not issubclass( content_type, ContentBase ):
+        raise ErrorFileValueInvalidContentType( content_type )
+      
+      file_content = content_type( file_name, use_cache = use_cache )
+    
+    # if __debug__:
+    #   print( "FileValue(): content: %s, name: %s" % (type(file_content), type(file_name)) )
+
+    self = super(FileValue, cls).__new__( cls, content = file_content, name = file_name )
+    
+    # if __debug__:
+    #   print( "FileValue(): content: %s, name: %s" % (type(self.content), type(self.name)) )
+    
+    return self
   
   #//-------------------------------------------------------//
 
@@ -178,9 +221,19 @@ class   FileValue (Value):
     content = self.content
     
     if not content:
+      # if __debug__:
+      #   print( "FileValue.actual(): no content of file %s" % (self.name,))
       return False
     
-    return content == type(content)( self.name, use_cache = use_cache )
+    # if __debug__:
+    #   print("type(content): %s " % (type(content),) )
+    
+    result = (content == type(content)( self.name, use_cache = use_cache ))
+    # if __debug__:
+    #   if not result:
+    #     print( "FileValue.actual(): non-actual content of file %s" % (self.name,))
+    
+    return result
   
   #//-------------------------------------------------------//
   
@@ -195,12 +248,12 @@ class   FileValue (Value):
 @pickleable
 class   DirValue (FileValue):
   
-  def   __new__( cls, name, content = NotImplemented, use_cache = False ):
+  def   __new__( cls, content = NotImplemented, name = None, use_cache = False ):
     
     if content is NotImplemented:
       content = FileContentTimeStamp
     
-    return super(DirValue, cls).__new__( cls, name, content, use_cache = use_cache )
+    return super(DirValue, cls).__new__( cls, name = name, content = content, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   

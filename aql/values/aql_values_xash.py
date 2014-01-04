@@ -33,8 +33,9 @@ class ValuesXash (object):
   #//-------------------------------------------------------//
   
   def   getRef( self, value ):
-    value_id = (type(value), value.name )
-    pairs = self.pairs.setdefault( hash(value.name), [] )
+    value_name = value.name
+    value_id = (type(value), value_name )
+    pairs = self.pairs.setdefault( hash(value_name), [] )
     
     index = 0
     for key, val in pairs:

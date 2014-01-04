@@ -273,7 +273,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    return self.name, self.content
+    return self.content, self.name
   
   #//-------------------------------------------------------//
 

@@ -152,9 +152,19 @@ class   DependsValue (Value):
     try:
       for value in self.content.data:
         if not value.actual( use_cache = use_cache ):
+          # if __debug__:
+          #   print("DependsValue.actual(): non-actual value: %s" % (value,))
           return False
     
-    except TypeError:
+    except TypeError as ex:
+      # if __debug__:
+      #   print("DependsValue.actual(): Type Error: %s" % (ex,))
+      #   import traceback
+      #   try:
+      #     traceback.print_tb( ex.__traceback__ )
+      #   except AttributeError:
+      #     pass
+
       return False
     
     return True
