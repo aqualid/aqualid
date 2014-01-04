@@ -5,7 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.values import Value, IStringContent
+from aql.values import Value, StringContent, IStringContent
 
 #//===========================================================================//
 
@@ -21,7 +21,7 @@ class TestStrValue( AqlTestCase ):
     value2 = Value( value1 )
     self.assertEqual( value1, value2 )
     
-    value2.content = value2.content.data.upper()
+    value2.content = StringContent( value2.content.data.upper() )
     self.assertNotEqual( value1.content, value2.content )
     
     value2.content = IStringContent( value2.content )

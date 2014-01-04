@@ -252,11 +252,11 @@ class   Value (object):
   def   __new__( cls, content = NotImplemented, name = None ):
     
     if isinstance( content, Value ):
+      other = content
       if name is None:
-        return content
-        
-      return type(content)( content = content, name = name )
-    
+        name = other.name
+      
+      return type(content)( content = other.content, name = name )
     
     self = super(Value,cls).__new__(cls)
     

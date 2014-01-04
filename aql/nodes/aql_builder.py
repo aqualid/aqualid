@@ -237,7 +237,7 @@ class Builder (object):
       return value
     
     if isinstance( value, (FileName, FilePath) ):
-      return FileValue( value, content = self.fileContentType(), use_cache = use_cache )
+      return FileValue( name = value, content = self.fileContentType(), use_cache = use_cache )
       
     return Value( content = value, name = None )
   
@@ -247,7 +247,7 @@ class Builder (object):
     if isinstance( value, Value):
       return value
     
-    return FileValue( value, content = self.fileContentType(), use_cache = use_cache )
+    return FileValue( name = value, content = self.fileContentType(), use_cache = use_cache )
   
   #//-------------------------------------------------------//
   
@@ -263,7 +263,7 @@ class Builder (object):
     
     for value in toSequence(values):
       if not isinstance(value, Value):
-        value = FileValue( value, content_type, use_cache = use_cache )
+        value = FileValue( name = value, content = content_type, use_cache = use_cache )
       
       file_values.append( value )
     
