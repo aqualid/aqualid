@@ -30,6 +30,7 @@ import imp
 import io
 import os
 import sys
+import types
 import hashlib
 import struct
 import errno
@@ -255,15 +256,22 @@ except AttributeError:
 #//===========================================================================//
 
 def   getFunctionArgs( function, getargspec = _getargspec ):
-  return getargspec( function )[:4]
+  
+  args = getargspec( function )[:4]
+  
+  if type(function) is types.MethodType:
+    if function.__self__:
+      args = tuple( [ args[0][1:] ] + list(args[1:]) ) 
+  
+  return args
 
 #//===========================================================================//
 
-def   equalFunctionArgs( function1, function2, getargspec = _getargspec):
+def   equalFunctionArgs( function1, function2 ):
   if function1 is function2:
     return True
   
-  return getargspec( function1 )[0:3] == getargspec( function2 )[0:3]
+  return getFunctionArgs( function1 )[0:3] == getFunctionArgs( function2 )[0:3]
 
 #//===========================================================================//
 

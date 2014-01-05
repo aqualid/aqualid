@@ -21,7 +21,7 @@ __all__ = (
   'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_INFO', 'EVENT_DEBUG', 'EVENT_ALL',
   'eventWarning',  'eventStatus',  'eventInfo',  'eventDebug',
   'eventHandler', 'disableEvents', 'enableEvents', 'finishHandleEvents',
-  'disableDefaultHandlers', 'enableDefaultHandlers',
+  'disableDefaultHandlers', 'enableDefaultHandlers', 'addUserHandler', 'removeUserHandler',
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )
 
@@ -118,6 +118,18 @@ class EventManager( Singleton ):
         raise ErrorEventUserHandlerWrongArgs( event, user_handler )
       
       self.user_handlers.setdefault( event, [] ).append( user_handler )
+  
+  #//-------------------------------------------------------//
+  
+  def   removeUserHandler( self, user_handlers ):
+    
+    with self.lock:
+      for event, handlers in self.user_handlers.items():
+        for user_handler in toSequence( user_handlers ):
+          try:
+            handlers.remove( user_handler )
+          except ValueError:
+            pass
   
   #//-------------------------------------------------------//
   
@@ -241,5 +253,15 @@ def   enableDefaultHandlers():
 
 def   finishHandleEvents():
   EventManager.instance().finish()
+
+#//===========================================================================//
+
+def   addUserHandler( handler, event = None ):
+    EventManager.instance().addUserHandler( handler, event )
+
+#//===========================================================================//
+
+def   removeUserHandler( handler ):
+    EventManager.instance().removeUserHandler( handler )
 
 #//===========================================================================//

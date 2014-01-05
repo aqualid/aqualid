@@ -51,7 +51,7 @@ class ExecuteCommand (aql.Builder):
     
     targets = ( result.out, result.err )
     
-    node.setTargets( targets )
+    node.setTargets( [ targets ] )
   
   #//-------------------------------------------------------//
   

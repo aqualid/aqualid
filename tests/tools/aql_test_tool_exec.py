@@ -5,7 +5,8 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempdir, finishHandleEvents, whereProgram
+from aql.utils import Tempdir, finishHandleEvents, whereProgram,\
+    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 from aql.util_types import FilePath
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
@@ -18,9 +19,42 @@ class TestToolExec( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  @classmethod
-  def   tearDownClass( cls ):
-    finishHandleEvents()
+  def   eventNodeBuilding( self, node ):
+    self.building_started += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   eventNodeBuildingFinished( self, node ):
+    self.building_finished += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   eventBuildStatusActualNode( self, node ):
+    self.actual_node += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   eventBuildStatusOutdatedNode( self, node ):
+    self.outdated_node += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   setUp( self ):
+    disableDefaultHandlers()
+    
+    self.building_started = 0
+    addUserHandler( self.eventNodeBuilding, "eventNodeBuilding" )
+    
+    self.building_finished = 0
+    addUserHandler( self.eventNodeBuildingFinished, "eventNodeBuildingFinished" )
+  
+  #//-------------------------------------------------------//
+  
+  def   tearDown( self ):
+    removeUserHandler( self.eventNodeBuilding )
+    removeUserHandler( self.eventNodeBuildingFinished )
+
+    enableDefaultHandlers()
   
   #//-------------------------------------------------------//
 
@@ -44,7 +78,11 @@ class TestToolExec( AqlTestCase ):
         result = Node( exec_cmd, cmd )
 
         bm.add( result )
-        bm.build( jobs = 4, keep_going = False )
+        
+        bm.build( jobs = 1, keep_going = False )
+        
+        self.assertEqual( self.building_started, 1 )
+        self.assertEqual( self.building_started, self.building_finished )
         
         bm.close()
         
@@ -52,7 +90,11 @@ class TestToolExec( AqlTestCase ):
 
         bm = BuildManager()
         bm.add( result )
-        bm.build( jobs = 4, keep_going = False )
+        
+        self.building_started = 0
+        bm.build( jobs = 1, keep_going = False )
+        
+        self.assertEqual( self.building_started, 0 )
         
       finally:
         bm.close()
