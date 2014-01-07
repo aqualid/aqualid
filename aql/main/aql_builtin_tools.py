@@ -1,4 +1,12 @@
-import aql
+
+from aql.utils import execCommand
+from aql.nodes import Builder
+
+from .aql_tools import Tool
+
+__all__ = ( "ExecuteCommand",
+            "BuiltinTool"
+          )
 
 """
 Unique Value - name + type
@@ -22,12 +30,9 @@ dir_node = RemoveFiles( prog_node )
 node = FindFiles( dir_node )
 
 dir_node = FileDir( prog_node )
-
-
-
 """
 
-class ExecuteCommand (aql.Builder):
+class ExecuteCommand (Builder):
   
   NAME_ATTRS = None
   SIGNATURE_ATTRS = ('env', )
@@ -44,7 +49,7 @@ class ExecuteCommand (aql.Builder):
     cmd = node.sources()
     cwd = self.buildPath()
     
-    result = aql.execCommand( cmd, env = self.env, cwd = cwd)
+    result = execCommand( cmd, env = self.env, cwd = cwd)
     
     if result.failed():
       raise result
@@ -57,3 +62,16 @@ class ExecuteCommand (aql.Builder):
   
   def   buildStr( self, node ):
     return ' '.join( map( str, node.sources() ) )
+
+#//===========================================================================//
+
+class BuiltinTool( Tool ):
+  
+  def   ExecuteCommand( self, options ):
+    return ExecuteCommand( options )
+  
+  def   DirName(self, options):
+    raise NotImplementedError()
+  
+  def   BaseName(self, options):
+    raise NotImplementedError()

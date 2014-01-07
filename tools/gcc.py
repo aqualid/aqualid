@@ -395,11 +395,12 @@ class ToolGccCommon( aql.Tool ):
     
     gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
     specs = _getGccSpecs( gcc )
-    specs['cc'] = gcc
-    specs['cxx'] = gxx
-    specs['lib'] = ar
     
-    return specs
+    options.update( specs )
+    
+    options.cc = gcc
+    options.cxx = gxx
+    options.lib = ar
   
   #//-------------------------------------------------------//
   

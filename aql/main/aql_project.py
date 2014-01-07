@@ -30,11 +30,12 @@ import types
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, execFile, flattenList, findFiles
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, UniqueList
-from aql.values import Value, FileValue
+from aql.values import Value
 from aql.options import builtinOptions, Options #, optionValueEvaluator
 from aql.nodes import BuildManager, Node
 
 from .aql_tools import ToolsManager
+from .aql_builtin_tools import BuiltinTool
 
 #//===========================================================================//
 
@@ -184,10 +185,6 @@ class _ToolBuilderProxy( object ):
     
     self._tool_builder = None
     self._tool_method = method
-
-    if options_kw:
-      options = options.override()
-
     self._tool_options = options
     self._tool_args_kw = args_kw
     self._tool_options_kw = options_kw
@@ -200,18 +197,19 @@ class _ToolBuilderProxy( object ):
     builder = self._tool_builder
     if builder is None:
       args_kw = self.__evalKW( self._tool_args_kw )
-
+      
       options = self._tool_options
-
-      options_kw = self.__evalKW( self._tool_options_kw )
+      
+      options_kw = self._tool_options_kw
       if options_kw:
+        options = options.override()
+        options_kw = self.__evalKW( options_kw )
         options.update( options_kw )
-
+      
       builder = self._tool_method( options, **args_kw )
       self._tool_builder = builder
 
     return getattr( builder, attr )
-  
 
 #//===========================================================================//
 
@@ -275,10 +273,6 @@ class BuilderWrapper( object ):
           args_kw[ name ] = value
         else:
           options_kw[ name ] = value
-    
-    if options_kw:
-      options = options.override()
-    #  options.update( options_kw )
     
     return options, dep_nodes, sources, args_kw, options_kw
   
@@ -355,15 +349,13 @@ class ProjectTools( object ):
     except KeyError:
       pass
     
-    tool_options = options.override()
-    
-    tool, names = self.tools.getTool( tool_name, tool_options )
+    tool, tool_names, tool_options = self.tools.getTool( tool_name, options )
     
     tool = ToolWrapper( tool, self.project, tool_options )
     
     attrs = self.__dict__
     
-    for name in names:
+    for name in tool_names:
       if name not in attrs:
         attrs[ name ] = tool
         name_tools = self.tools_cache.setdefault( name, {} )
@@ -374,6 +366,11 @@ class ProjectTools( object ):
   #//-------------------------------------------------------//
   
   def   __getattr__( self, name ):
+    
+    tool_method = getattr( BuiltinTool, name, None )
+    if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType ) ):
+      return BuilderWrapper( tool_method, self.project, self.project.options )
+    
     return self.__addTool( name, self.project.options )
   
   #//-------------------------------------------------------//
@@ -497,11 +494,6 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   ExecuteMethod( self, method, *args, **kw ):
-    raise NotImplementedError()
-  
-  #//-------------------------------------------------------//
-  
   def   ReadOptions( self, options_file ):
     
     script_locals = { 'options': self.options }
@@ -524,7 +516,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   BuildDir( self, build_dir ):
+  def   SetBuildDir( self, build_dir ):
     self.options.build_dir = FilePath(build_dir).abs()
   
   #//-------------------------------------------------------//
@@ -544,13 +536,6 @@ class Project( object ):
   def   AlwaysBuild( self, node ):
     raise NotImplementedError()
   
-  def   DirName(self, node):
-    raise NotImplementedError()
-  
-  def   BaseName(self, node):
-    raise NotImplementedError()
-    
-    
   #//=======================================================//
   
   def   Build( self ):

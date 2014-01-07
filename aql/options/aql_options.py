@@ -515,11 +515,13 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   conflictWith( self, **kw ):
+  def   conflictsWith( self, **kw ):
     for key, value in kw.items():
-      opt_value = getattr( self, key )
-      if opt_value.isSetNotTo( value ):
-        return True
+      opt_value = self._get_value( key, raise_ex = False )
+      if opt_value is not None:
+        opt_value = OptionValueProxy( opt_value, key, self )
+        if opt_value.isSetNotTo( value ):
+          return True
     
     return False
   
@@ -637,10 +639,11 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   _itemsDict( self ):
+  def   _itemsDict( self, with_parent = True ):
     
     parent = self.__dict__['__parent']
-    its = parent._itemsDict() if parent is not None else dict()
+    its = parent._itemsDict() if (parent is not None) and with_parent else {}
+      
     its.update( self.__dict__['__opt_values'] )
     
     return its
@@ -660,18 +663,18 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   items( self ):
-    for opt_value, names  in self._itemsByValue():
+  def   items( self, with_parent = True ):
+    for opt_value, names  in self._itemsByValue( with_parent = with_parent ):
       name = next(iter(names))
       yield name, OptionValueProxy( opt_value, name, self )
   
   #//-------------------------------------------------------//
   
-  def   _itemsByValue( self ):
+  def   _itemsByValue( self, with_parent = True ):
     
     values = {}
     
-    for name, value in self._itemsDict().items():
+    for name, value in self._itemsDict( with_parent = with_parent ).items():
       try:
         values[ value ].add( name )
       except KeyError:

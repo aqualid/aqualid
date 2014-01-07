@@ -204,11 +204,15 @@ class ToolsManager( Singleton ):
           setup_options.join()
       
       try:
+        setup_options = tool_options.override()
+        
         env = tool_options.env.get().copy( value_type = str )
         
-        options_kw = tool_info.tool_class.setup( tool_options, env )
+        tool_info.tool_class.setup( setup_options, env )
         
-        if tool_options.conflictWith( **options_kw ):
+        options_kw = dict( setup_options.items( with_parent = False ) )
+        
+        if tool_options.conflictsWith( **options_kw ):
           raise NotImplementedError()
         
         tool_options.update( options_kw )
@@ -219,12 +223,13 @@ class ToolsManager( Singleton ):
         if not isinstance( err, NotImplementedError ):
           eventToolsToolFailed( tool_info.tool_class, err )
           raise
+        setup_options.clear()
         tool_options.clear()
       else:
-        tool_options.join()
+        setup_options.join()
         
         tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
-        return tool_obj, tool_names
+        return tool_obj, tool_names, tool_options
     
     raise ErrorToolNotFound( tool_name )
   
@@ -262,8 +267,7 @@ class Tool( object ):
   
   @staticmethod
   def   setup( options, env ):
-    options_kw = {}
-    return options_kw
+    pass
   
   @staticmethod
   def   options():

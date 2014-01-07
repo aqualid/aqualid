@@ -3,39 +3,31 @@ import sys
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import AqlTestCase, runLocalTests
 
-from aql.utils import Tempdir, finishHandleEvents, whereProgram,\
+from aql.utils import Tempdir, whereProgram,\
     removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 from aql.util_types import FilePath
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from exeprog import ExecuteCommand
+from aql.main import ExecuteCommand
 
 #//===========================================================================//
 
 class TestToolExec( AqlTestCase ):
   
   #//-------------------------------------------------------//
-  
+
+  # noinspection PyUnusedLocal
   def   eventNodeBuilding( self, node ):
     self.building_started += 1
   
   #//-------------------------------------------------------//
   
+  # noinspection PyUnusedLocal
   def   eventNodeBuildingFinished( self, node ):
     self.building_finished += 1
-  
-  #//-------------------------------------------------------//
-  
-  def   eventBuildStatusActualNode( self, node ):
-    self.actual_node += 1
-  
-  #//-------------------------------------------------------//
-  
-  def   eventBuildStatusOutdatedNode( self, node ):
-    self.outdated_node += 1
   
   #//-------------------------------------------------------//
   
