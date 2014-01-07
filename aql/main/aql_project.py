@@ -118,7 +118,7 @@ class ProjectConfig( object ):
     config = cli_config.config
     
     if config:
-      cli_config.readConfig( config, { 'options', options })
+      cli_config.readConfig( config, { 'options': options })
     
     cli_options = {}
     
@@ -129,7 +129,7 @@ class ProjectConfig( object ):
           value = map( os.path.abspath, value )
         elif name == 'build_dir':
           value = os.path.abspath( value )
-
+    
         cli_options[ name ] = value
     
     log_level = 1
@@ -141,10 +141,9 @@ class ProjectConfig( object ):
       log_level -= 1
     
     cli_options['log_level'] = log_level
-
+    
     options.update( cli_options )
-    print( "options.tools_path: %s" % (options.tools_path,))
-
+    
     if cli_config.list_options:
       printOptions( options )
     
@@ -240,8 +239,6 @@ class BuilderWrapper( object ):
       if method.__self__ is None:
         raise ErrorProjectBuilderMethodUnbound( method )
       
-      min_args += 1 # add self argument
-    
     if len(f_args) < min_args:
       raise ErrorProjectBuilderMethodFewArguments( method )
     
@@ -367,11 +364,13 @@ class ProjectTools( object ):
   
   def   __getattr__( self, name ):
     
-    tool_method = getattr( BuiltinTool, name, None )
-    if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType ) ):
-      return BuilderWrapper( tool_method, self.project, self.project.options )
+    options = self.project.options
     
-    return self.__addTool( name, self.project.options )
+    tool_method = getattr( BuiltinTool( options ), name, None )
+    if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType ) ):
+      return BuilderWrapper( tool_method, self.project, options )
+    
+    return self.__addTool( name, options )
   
   #//-------------------------------------------------------//
   

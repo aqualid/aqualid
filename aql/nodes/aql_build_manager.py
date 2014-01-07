@@ -47,7 +47,7 @@ def   eventBuildStatusActualNode( node ):
 
 @eventWarning
 def   eventBuildTargetTwiceByNodes( value, node1, node2 ):
-  logWarning("Target '%s' is built twice by different nodes: '%s', '%s' " % ( value.name, node1, node2 ) )
+  logWarning("Target '%s' is built twice by different nodes: '%s', '%s' " % ( value.name, node1.buildStr(), node2.buildStr() ) )
 
 #//===========================================================================//
 

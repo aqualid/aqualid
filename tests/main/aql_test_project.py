@@ -8,7 +8,8 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.values import Value
 from aql.nodes import Node, Builder
-from aql.utils import Tempfile
+from aql.utils import Tempfile, Tempdir,\
+  removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 from aql.main import Project, ProjectConfig, \
                      ErrorProjectBuilderMethodExists, \
                      ErrorProjectBuilderMethodWithKW, \
@@ -18,12 +19,40 @@ from aql.main import Project, ProjectConfig, \
 
 #//===========================================================================//
 
-@skip
 class TestProject( AqlTestCase ):
   
-  def test_prj_config(self):
+  # noinspection PyUnusedLocal
+  def   eventNodeBuilding( self, node ):
+    self.building_started += 1
+  
+  #//-------------------------------------------------------//
+  
+  # noinspection PyUnusedLocal
+  def   eventNodeBuildingFinished( self, node ):
+    self.building_finished += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   setUp( self ):
+    disableDefaultHandlers()
     
-    args = "-v".split()
+    self.building_started = 0
+    addUserHandler( self.eventNodeBuilding, "eventNodeBuilding" )
+    
+    self.building_finished = 0
+    addUserHandler( self.eventNodeBuildingFinished, "eventNodeBuildingFinished" )
+  
+  #//-------------------------------------------------------//
+  
+  def   tearDown( self ):
+    removeUserHandler( self.eventNodeBuilding )
+    removeUserHandler( self.eventNodeBuildingFinished )
+
+    enableDefaultHandlers()
+  
+  #//-------------------------------------------------------//
+  
+  def test_prj_config(self):
     
     with Tempfile() as f:
       cfg = b"""
@@ -35,17 +64,16 @@ options.build_variant = "final"
 """
       f.write( cfg )
       f.flush()
-    
+      
+      args = ["-v", "-c", f.name ]
       cfg = ProjectConfig( args )
-      cfg.readConfig( f.name )
-    
-    prj = Project( cfg )
-    
-    self.assertEqual( prj.options.bv, 'final' )
-    self.assertEqual( prj.config.jobs, 5 )
+      
+      self.assertEqual( cfg.options.bv, 'final' )
+      self.assertEqual( cfg.options.jobs, 5 )
   
   #//-------------------------------------------------------//
   
+  @skip
   def   test_prj_add_builder( self ):
     cfg = ProjectConfig( [] )
     prj = Project( cfg )
@@ -86,11 +114,27 @@ options.build_variant = "final"
   
   #//-------------------------------------------------------//
   
-  def   test_prj_tools( self ):
-    prj = Project( tools_path = '../../tools' )
-    objs = prj.c.Compile( 'file0.cpp' )
-    prj.Build()
-
+  def   test_prj_builtin_tools( self ):
+    
+    with Tempdir() as tmp_dir:
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
+      prj.Build()
+      
+      self.assertEqual( self.building_started, 1 )
+      self.assertEqual( self.building_finished, 1 )
+      
+      self.building_started = 0
+      
+      prj = Project( cfg.options, cfg.targets )
+      prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
+      prj.Build()
+      
+      self.assertEqual( self.building_started, 0 )
 
 #//===========================================================================//
 

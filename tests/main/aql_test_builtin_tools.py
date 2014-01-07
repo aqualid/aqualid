@@ -5,7 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import AqlTestCase, runLocalTests
 
-from aql.utils import Tempdir, whereProgram,\
+from aql.utils import Tempdir, whereProgram, finishHandleEvents, \
     removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 from aql.util_types import FilePath
 from aql.nodes import Node, BuildManager
@@ -43,6 +43,8 @@ class TestToolExec( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   tearDown( self ):
+    finishHandleEvents()
+    
     removeUserHandler( self.eventNodeBuilding )
     removeUserHandler( self.eventNodeBuildingFinished )
 

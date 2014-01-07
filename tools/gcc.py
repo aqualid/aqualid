@@ -191,27 +191,26 @@ class GccCompiler(aql.Builder):
 #noinspection PyAttributeOutsideInit
 class GccArchiver(aql.Builder):
   
-  NAME_ATTRS = ('target', 'prefix', 'suffix')
+  NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
 
   #noinspection PyUnusedLocal
   def   __init__( self, options, target ):
-    self.target = target
-    self.prefix = options.libprefix.get() + options.prefix.get()
-    self.suffix = options.libsuffix.get()
+    
+    prefix = options.libprefix.get() + options.prefix.get()
+    suffix = options.libsuffix.get()
+    
+    self.target = self.buildPath( target ).change( prefix = prefix ) + suffix
 
-    self.cmd = [ options.lib.get(), 'rcs' ]
+    self.cmd = [ options.lib.get(), 'rcs', self.target ]
     
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     
     obj_files = node.sources()
-    archive = self.buildPath( self.target ).change( prefix = self.prefix ) + self.suffix
     
     cmd = list(self.cmd)
-    
-    cmd += [ archive ]
     cmd += aql.FilePaths( obj_files )
     
     cwd = self.buildPath()
@@ -220,7 +219,7 @@ class GccArchiver(aql.Builder):
     if result.failed():
       raise result
     
-    node.setFileTargets( archive )
+    node.setFileTargets( self.target )
   
   #//-------------------------------------------------------//
   def   __str__( self ):
@@ -231,26 +230,26 @@ class GccArchiver(aql.Builder):
 #noinspection PyAttributeOutsideInit
 class GccLinker(aql.Builder):
   
-  NAME_ATTRS = ('target', 'prefix', 'suffix')
+  NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
   
-  __slots__ = ('cmd', 'language', 'target', 'shared' )
-
   #noinspection PyUnusedLocal
   def   __init__( self, options, target, language, shared ):
     if shared:
-      self.prefix = options.shlibprefix.get() + options.prefix.get()
-      self.suffix = options.shlibsuffix.get()
+      prefix = options.shlibprefix.get() + options.prefix.get()
+      suffix = options.shlibsuffix.get()
     else:
-      self.prefix = options.shlibprefix.get() + options.prefix.get()
-      self.suffix = options.progsuffix.get()
+      prefix = options.prefix.get()
+      suffix = options.progsuffix.get()
     
-    self.target = target
+    self.target = self.buildPath( target ).change( prefix = prefix, ext = suffix )
+    
+    self.cmd = self.__getCmd( options, self.target, language, shared )
     
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __getCmd( options, language, shared ):
+  def   __getCmd( options, target, language, shared ):
     
     if language == 'c++':
       cmd = [ options.cxx.get() ]
@@ -266,6 +265,8 @@ class GccLinker(aql.Builder):
     cmd += itertools.chain( *itertools.product( ['-L'], options.libpath.get() ) )
     cmd += itertools.chain( *itertools.product( ['-l'], options.libs.get() ) )
     
+    cmd += [ '-o', target ]
+    
     return cmd
   
   #//-------------------------------------------------------//
@@ -274,13 +275,9 @@ class GccLinker(aql.Builder):
     
     obj_files = node.sources()
     
-    target = self.buildPath( self.target ).change( prefix = self.prefix, ext = self.suffix )
-    
     cmd = list(self.cmd)
     
-    cmd_objs = [ '-o', target ]
-    cmd_objs += map( str, obj_files )
-    cmd[3:3] = cmd_objs
+    cmd[2:2] = map( str, obj_files )
     
     cwd = self.buildPath()
     
@@ -288,7 +285,7 @@ class GccLinker(aql.Builder):
     if result.failed():
       raise result
     
-    node.setFileTargets( target )
+    node.setFileTargets( self.target )
   
   #//-------------------------------------------------------//
 

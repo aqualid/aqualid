@@ -5,13 +5,15 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, Tempdir, finishHandleEvents, whereProgram
+from aql.utils import Tempfile, Tempdir, whereProgram, finishHandleEvents, \
+    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
+
 from aql.util_types import FilePath
 from aql.values import FileValue, FileContentChecksum, ValuesFile
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from gcc import GccCompiler, GccArchiver, ToolGccCommon
+from gcc import GccCompiler, GccArchiver, GccLinker, ToolGccCommon
 
 #//===========================================================================//
 
@@ -19,9 +21,26 @@ class TestToolGcc( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  @classmethod
-  def   tearDownClass( cls ):
+  # noinspection PyUnusedLocal
+  def   eventNodeBuildingFinished( self, node ):
+    self.built_nodes += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   setUp( self ):
+    # disableDefaultHandlers()
+    
+    self.built_nodes = 0
+    addUserHandler( self.eventNodeBuildingFinished, "eventNodeBuildingFinished" )
+  
+  #//-------------------------------------------------------//
+  
+  def   tearDown( self ):
     finishHandleEvents()
+    
+    removeUserHandler( self.eventNodeBuildingFinished )
+
+    enableDefaultHandlers()
   
   #//-------------------------------------------------------//
 
@@ -52,7 +71,9 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
+      num_src_files = 5
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
 
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
@@ -70,9 +91,9 @@ class TestToolGcc( AqlTestCase ):
       
       try:
         obj = Node( cpp_compiler, src_files )
-
+        
         self._buildObj( obj, vfile )
-
+        
         vfile.close(); vfile.open( vfilename )
         
         obj = Node( cpp_compiler, src_files )
@@ -114,7 +135,9 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
+      num_src_files = 5
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
 
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
@@ -132,12 +155,15 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, src_files )
 
         bm.add( obj )
+        
+        self.built_nodes = 0
+        
         bm.build( jobs = 4, keep_going = False )
+        
+        self.assertEqual( self.built_nodes, num_src_files )
         
         bm.close()
         
-        obj = Node( cpp_compiler, src_files )
-
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
@@ -146,20 +172,20 @@ class TestToolGcc( AqlTestCase ):
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
         bm.add( obj )
+        
+        self.built_nodes = 0
         bm.build( jobs = 4, keep_going = False )
         
-        obj = Node( cpp_compiler, src_files )
-
+        self.assertEqual( self.built_nodes, 1 )
+        
       finally:
         bm.close()
   
   #//-------------------------------------------------------//
 
-  @skip
   def test_gcc_ar(self):
     
-    #~ with Tempdir() as tmp_dir:
-      tmp_dir = Tempdir()
+    with Tempdir() as tmp_dir:
       
       root_dir = FilePath(tmp_dir)
       build_dir = root_dir.join('build')
@@ -167,60 +193,125 @@ class TestToolGcc( AqlTestCase ):
       src_dir   = root_dir.join('src')
       os.makedirs( src_dir )
       
-      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', 5 )
+      num_src_files = 5
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
       
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
       
-      options.cxx = "C:\\MinGW32\\bin\\g++.exe"
-      options.lib = "C:\\MinGW32\\bin\\ar.exe"
+      if not options.cxx:
+        options.cxx = whereProgram( "g++" )
       
-      options.build_dir_prefix = build_dir
+      if not options.lib:
+        options.lib = whereProgram( "ar" )
       
-      cpp_compiler = GccCompiler( options, 'c++' )
-      archiver = GccArchiver( 'foo', options )
+      options.build_dir = build_dir
       
-      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+      cpp_compiler = GccCompiler( options, 'c++', shared = False )
+      archiver = GccArchiver( options, target = 'foo' )
       
-      bm = BuildManager( vfilename, 4, True )
-      vfile = ValuesFile( vfilename )
+      bm = BuildManager()
       try:
-        
         obj = Node( cpp_compiler, src_files )
         lib = Node( archiver, obj )
-        self.assertFalse( obj.actual( vfile ) )
         
         bm.add( obj )
         bm.add( lib )
-        bm.build()
+        
+        self.built_nodes = 0
+        bm.build( jobs = 4, keep_going = False)
+        self.assertEqual( self.built_nodes, num_src_files + 1 )
         
         bm.close()
-        
-        obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
-        lib = Node( archiver, obj )
-        self.assertTrue( lib.actual( vfile ) )
         
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
         FileValue( hdr_files[0], use_cache = False )
         
-        bm = BuildManager( vfilename, 4, True )
+        bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
         lib = Node( archiver, obj )
         bm.add( obj )
         bm.add( lib )
-        bm.build()
         
-        obj = Node( cpp_compiler, src_files )
-        self.assertTrue( obj.actual( vfile ) )
-        
-        lib = Node( archiver, obj )
-        self.assertTrue( lib.actual( vfile ) )
+        self.built_nodes = 0
+        bm.build( jobs = 4, keep_going = False)
+        self.assertEqual( self.built_nodes, 1 )
         
       finally:
-        vfile.close()
+        bm.close()
+  
+  #//-------------------------------------------------------//
+  
+  def test_gcc_link(self):
+    
+    with Tempdir() as tmp_dir:
+      
+      root_dir = FilePath(tmp_dir)
+      build_dir = root_dir.join('build')
+      
+      src_dir   = root_dir.join('src')
+      os.makedirs( src_dir )
+      
+      num_src_files = 5
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      
+      main_src_file = self.generateMainCppFile( src_dir, 'main')
+      
+      options = builtinOptions()
+      options.merge( ToolGccCommon.options() )
+      
+      if not options.cxx:
+        options.cxx = whereProgram( "g++" )
+      
+      if not options.lib:
+        options.lib = whereProgram( "ar" )
+      
+      options.build_dir = build_dir
+      
+      cpp_compiler = GccCompiler( options, 'c++', shared = False )
+      archiver = GccArchiver( options, target = 'foo' )
+      linker = GccLinker( options, target = 'main_foo', language = 'c++', shared = False )
+      
+      bm = BuildManager()
+      try:
+        obj = Node( cpp_compiler, src_files )
+        main_obj = Node( cpp_compiler, main_src_file )
+        foo_lib = Node( archiver, obj )
+        foo_prog = Node( linker, [ foo_lib, main_obj ] )
+        
+        bm.add( foo_prog )
+        
+        self.built_nodes = 0
+        bm.build( jobs = 1, keep_going = False)
+        self.assertEqual( self.built_nodes, num_src_files + 3 )
+        
+        bm.close()
+        
+        obj = Node( cpp_compiler, src_files )
+        lib = Node( archiver, obj )
+        
+        with open( hdr_files[0], 'a' ) as f:
+          f.write("// end of file")
+        
+        FileValue( hdr_files[0], use_cache = False )
+        
+        bm = BuildManager()
+        obj = Node( cpp_compiler, src_files )
+        main_obj = Node( cpp_compiler, main_src_file )
+        foo_lib = Node( archiver, obj )
+        foo_prog = Node( linker, [ foo_lib, main_obj ] )
+        
+        bm.add( foo_prog )
+        
+        self.built_nodes = 0
+        bm.build( jobs = 1, keep_going = False)
+        self.assertEqual( self.built_nodes, 1 )
+        
+      finally:
         bm.close()
   
 #//===========================================================================//

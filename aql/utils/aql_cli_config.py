@@ -137,11 +137,11 @@ class   CLIConfig( object ):
   
   #//-------------------------------------------------------//
   
-  def   readConfig( self, config_file, in_locals = None ):
-    if in_locals is None:
-      in_locals = {}
+  def   readConfig( self, config_file, config_locals = None ):
+    if config_locals is None:
+      config_locals = {}
     
-    exec_locals = execFile( config_file, in_locals )
+    exec_locals = execFile( config_file, config_locals )
     for name, value in exec_locals.items():
       self.setDefault( name, value )
   

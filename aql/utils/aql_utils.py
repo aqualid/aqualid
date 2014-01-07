@@ -137,11 +137,11 @@ def writeBinFile( filename, buf ):
 
 #//===========================================================================//
 
-def   execFile( filename, in_locals ):
+def   execFile( filename, file_locals ):
   source = readTextFile( filename )
   code = compile( source, filename, 'exec' )
   out_locals = {}
-  exec( code, in_locals, out_locals )
+  exec( code, file_locals, out_locals )
   return out_locals
 
 #//===========================================================================//
@@ -461,6 +461,9 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
     cmd = map(str, cmd)
     
     try:
+      # if __debug__:
+      #   print("execCommand: %s" % (cmd, ) )
+      
       p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
       (stdoutdata, stderrdata) = p.communicate()
       returncode = p.returncode

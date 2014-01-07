@@ -18,6 +18,15 @@ void  %s()
 {}
 """
 
+MAIN_SRC_FILE_TEMPLATE = """
+#include <cstdio>
+
+int  main()
+{
+  return 0;
+}
+"""
+
 HDR_FILE_TEMPLATE = """
 #ifndef HEADER_%s_INCLUDED
 #define HEADER_%s_INCLUDED
@@ -43,6 +52,19 @@ class AqlTestCase( TestCaseBase ):
     else:
       self.assertFalse( loaded_value.content )
   
+  #//===========================================================================//
+
+  def   generateMainCppFile( self, dir, name, content = None ):
+    if not content:
+      content = MAIN_SRC_FILE_TEMPLATE
+    
+    src_file = dir.join( name + '.cpp' )
+    
+    with open( src_file, 'w' ) as f:
+      f.write( content )
+          
+    return src_file
+
   #//===========================================================================//
 
   def   generateCppFile( self, dir, name ):
