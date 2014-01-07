@@ -35,12 +35,13 @@ dir_node = FileDir( prog_node )
 class ExecuteCommand (Builder):
   
   NAME_ATTRS = None
-  SIGNATURE_ATTRS = ('env', )
+  SIGNATURE_ATTRS = ('env_path', )
 
   #//-------------------------------------------------------//
   
   def   __init__(self, options ):
     self.env = options.env.get().copy( value_type = str )
+    self.env_path = list( options.env['PATH'].get() )
   
   #//-------------------------------------------------------//
   

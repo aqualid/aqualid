@@ -109,6 +109,9 @@ class Node (object):
     names = [ self.builder.name ]
     sign  = [ self.builder.signature ]
     
+    # if __debug__:
+    #   print( "builder name: '%s', signature: '%s'" % (names, sign) )
+    
     sources = sorted( self.sourceValues(), key = lambda v: v.name )
     
     names += ( value.name for value in sources )
