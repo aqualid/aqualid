@@ -18,7 +18,6 @@
 #
 
 __all__ = ( 'Project', 'ProjectConfig',
-            'ErrorProjectBuilderMethodExists',
             'ErrorProjectBuilderMethodFewArguments',
             'ErrorProjectBuilderMethodUnbound',
             'ErrorProjectBuilderMethodWithKW',
@@ -49,13 +48,6 @@ class   ErrorProjectInvalidMethod( Exception ):
 class   ErrorProjectBuilderMethodWithKW( Exception ):
   def   __init__( self, method ):
     msg = "Keyword arguments are not allowed in builder method: '%s'" % str(method)
-    super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
-class   ErrorProjectBuilderMethodExists( Exception ):
-  def   __init__( self, method_name ):
-    msg = "Builder method '%s' is already added to project" % str(method_name)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -526,14 +518,13 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Ignore( self, node, dependency ):
-    raise NotImplementedError()
-  
   def   Alias( self, alias, node ):
     raise NotImplementedError()
   
+  #//-------------------------------------------------------//
+  
   def   AlwaysBuild( self, node ):
-    raise NotImplementedError()
+    node.depends( Value() )
   
   #//=======================================================//
   
@@ -553,75 +544,3 @@ class Project( object ):
     pass
 
 #//===========================================================================//
-
-"""
-  ReadOptions('../../aql.config')
-  
-  # options
-  # tools
-  
-  libs = Include('src/aql.make')
-  
-  cpp_paths = ReadLibConfig('config.cfg')
-  
-  cpp.options.cpp_paths += cpp_paths
-  
-  
-  c, cpp = Tools('c', 'c++')
-  
-  c.LinkProgram( src_files, libs )
-  
-  cpp = tools.cpp
-  
-  objs = cpp.Compile( cpp_files )
-  lib = cpp.SharedLibrary( objs )
-  objs = cpp.Compile( objs, options = lib.options )
-  
-  c = Clean( objs )
-  
-  
-  prj = aql.Project( tools_path )
-  
-  prj.Tool('c').Compile( c_files, optimization = 'size', debug_symbols = False )
-  
-  cpp = prj.Tool( 'c++' )
-  cpp.Compile( cpp_files, optimization = 'speed' )
-  
-  prj.Tool('c++')
-  
-  prj.Compile( c_files, optimization = 'size', debug_symbols = False )
-  
-  prj_c = aql.Project( prj_cfg, tools_path )
-  prj_c.Tool( 'c' )
-  prj_c.Compile( cpp_files, optimization = 'speed' )
-  
-  #//-------------------------------------------------------//
-  
-  prj = aql.Project( prj_cfg, tools_path )
-  prj.Tool( 'c++', 'c' )
-  
-  cpp_objs = prj.CompileCpp( cpp_files, optimization = 'size' )
-  c_objs = prj.CompileC( c_files, optimization = 'speed' )
-  objs = prj.Compile( c_cpp_files )
-  
-  cpp_lib = prj.LinkSharedLib( cpp_objs )
-  c_lib = prj.LinkLibrary( c_objs )
-  
-  prog = prj.LinkProgram( [ objs, prj.FilterLibs( cpp_lib ), c_lib ] )
-  
-  #//-------------------------------------------------------//
-  
-  prj = aql.Project( prj_cfg, tools_path )
-  
-  prj.Tools( 'g++', 'gcc' )
-  
-  cpp_objs = prj.cpp.Compile( cpp_files, optimization = 'size' )
-  c_objs = prj.c.Compile( c_files, optimization = 'speed' )
-  
-  cpp_lib = prj.cpp.LinkSharedLib( cpp_objs )
-  c_lib = prj.c.LinkLibrary( c_objs )
-  
-  prog = prj.cpp.LinkProgram( [ objs, prj.FilterLibs( cpp_lib ), c_lib ] )
-  
-  
-  """

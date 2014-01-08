@@ -11,7 +11,6 @@ from aql.nodes import Node, Builder
 from aql.utils import Tempfile, Tempdir,\
   removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 from aql.main import Project, ProjectConfig, \
-                     ErrorProjectBuilderMethodExists, \
                      ErrorProjectBuilderMethodWithKW, \
                      ErrorProjectBuilderMethodFewArguments, \
                      ErrorProjectBuilderMethodUnbound, \
@@ -103,7 +102,6 @@ options.build_variant = "final"
     #~ prj.AddBuilder( TestTool().TestBuilder )
     #~ self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
     
-    self.assertRaises( ErrorProjectBuilderMethodExists, prj.AddBuilder, TestTool().TestBuilder )
     self.assertRaises( ErrorProjectBuilderMethodWithKW, prj.AddBuilder, TestTool().TestBuilder2 )
     self.assertRaises( ErrorProjectBuilderMethodFewArguments, prj.AddBuilder, TestTool().TestBuilder3 )
     self.assertRaises( ErrorProjectInvalidMethod, prj.AddBuilder, "TestTool().TestBuilder3" )

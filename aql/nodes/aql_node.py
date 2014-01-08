@@ -22,8 +22,8 @@ __all__ = (
 )
 
 from aql.utils import newHash, dumpData
-from aql.util_types import toSequence, FilePath
-from aql.values import Value, SignatureValue, DependsValue, DependsValueContent, FileName, makeContent
+from aql.util_types import toSequence
+from aql.values import Value, SignatureValue, DependsValue, DependsValueContent
 
 #//===========================================================================//
 
@@ -114,21 +114,35 @@ class Node (object):
     
     sources = sorted( self.sourceValues(), key = lambda v: v.name )
     
-    names += ( value.name for value in sources )
-    
-    sign += ( value.content.signature for value in sources )
+    for value in sources:
+      names.append( value.name )
+      if sign is not None:
+        content = value.content
+        if content:
+          sign.append( content.signature )
+        else:
+          sign = None
     
     deps = self.dependencies()
     
-    sign += ( value.name for value in deps )
-    sign += ( value.content.signature for value in deps )
+    if sign is not None:
+      for value in deps:
+        content = value.content
+        if content:
+          sign.append( value.name )
+          sign.append( content.signature )
+        else:
+          sign = None
+          break
     
     #//-------------------------------------------------------//
     #// Signature
     
-    sign_hash = newHash()
-    sign_dump = dumpData( sign )
-    sign_hash.update( sign_dump )
+    if sign is not None:
+      sign_hash = newHash()
+      sign_dump = dumpData( sign )
+      sign_hash.update( sign_dump )
+      sign = sign_hash.digest()
     
     #//-------------------------------------------------------//
     #// Name key
@@ -136,7 +150,7 @@ class Node (object):
     names_dump = dumpData( names )
     name_hash.update( names_dump )
           
-    self.sources_value = SignatureValue( content = sign_hash.digest() )
+    self.sources_value = SignatureValue( name = name_hash.digest(), content = sign )
     # if __debug__:
     #   print( "self.sources_value.name : %s (%s)" % (self.sources_value.name, type(self.sources_value.name) ) )
     
