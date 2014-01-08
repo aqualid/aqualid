@@ -103,7 +103,7 @@ class   SignatureContent( ContentBase ):
   
   def   __new__( cls, data = None ):
     
-    if type(data) is cls:
+    if isinstance(data, ContentBase ):
       return data
     
     if data is None:
@@ -127,7 +127,7 @@ class   BytesContent ( ContentBase ):
   
   def   __new__( cls, data = None ):
     
-    if type(data) is cls:
+    if isinstance(data, ContentBase ):
       return data
     
     if data is None:
@@ -157,7 +157,7 @@ class   StringContent ( ContentBase ):
   
   def   __new__(cls, data = None ):
     
-    if type(data) is cls:
+    if isinstance(data, ContentBase ):
       return data
     
     if data is None:
@@ -203,7 +203,7 @@ class   OtherContent ( ContentBase ):
   
   def   __new__( cls, data = None ):
     
-    if type(data) is cls:
+    if isinstance(data, ContentBase ):
       return data
     
     if data is None:

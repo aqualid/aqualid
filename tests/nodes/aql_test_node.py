@@ -120,6 +120,13 @@ class TestNodes( AqlTestCase ):
         builder.build( node )
         builder.save( vfile, node )
         self.assertTrue( node.actual( vfile ) )
+        
+        node = Node( builder, [value1, value2, value3] )
+        node.depends( Value() )
+        self.assertFalse( node.actual( vfile ) )
+        builder.build( node )
+        builder.save( vfile, node )
+        self.assertFalse( node.actual( vfile ) )
       
       finally:
         vfile.close()

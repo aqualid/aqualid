@@ -24,10 +24,10 @@ class TestStrValue( AqlTestCase ):
     value2.content = StringContent( value2.content.data.upper() )
     self.assertNotEqual( value1.content, value2.content )
     
-    value2.content = IStringContent( value2.content )
+    value2.content = IStringContent( value2.content.data )
     self.assertNotEqual( value1.content, value2.content )
     
-    value1.content = IStringContent( value1.content )
+    value1.content = IStringContent( value1.content.data )
     self.assertEqual( value1.content, value2.content )
 
   #//===========================================================================//
