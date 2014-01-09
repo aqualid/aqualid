@@ -1,0 +1,28 @@
+
+import os
+
+BuildDir('output')
+
+cpp = Tool('c++', tool_paths = '../tools' )
+
+cpp.options.include = os.path.abspath('.')
+
+libs = []
+
+for i in range(1):
+  
+  src_files = []
+  
+  for k in range(2):
+    src_files.append( 'lib_%d/class_%d.cpp' % (i, k) )
+  
+  objs = cpp.Object( src_files )
+  shared_objs = cpp.SharedObject( src_files )
+  
+  lib = cpp.Library( objs, target = '%s' % i )
+  sh_lib = cpp.SharedLibrary( shared_objs, target = '%s' % i )
+  
+  libs.append( lib )
+
+main_obj = cpp.Object( 'main.cpp' )
+prog = cpp.Program( main_obj, libs, target = 'test' )

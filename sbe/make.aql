@@ -1,0 +1,39 @@
+
+import os
+
+src_dir = os.path.abspath('../../sbe')
+tests_dir = os.path.join( src_dir, 'tests')
+
+SetBuildDir('output')
+
+cpp = Tool('c++', tools_path = '../tools' )
+
+cpp.options.include = src_dir
+
+src_files = FindFiles( tests_dir, suffixes = '.cpp' )
+
+for src in src_files[:1]:
+    
+    obj = cpp.Object( src )
+    
+    test_name = os.path.splitext( os.path.split(src)[1] )[0]
+    
+    test_app = cpp.Program( obj, target = test_name )
+    
+    #~ # Create some useful aliases
+    #~ env.Alias( 'build_' + test_name, test_app )     # 'build_<test case name>' - to build only certain test case
+    #~ env.Alias( 'build', test_app )                  # 'build' - to build all test cases
+    #~ env.Default( test_app )                         # mark it as default target
+    
+    # Execute the test case program
+    test = tools.ExecuteCommand( test_app )
+    
+    # Mark it as 'AlwaysBuild' which is mean that we should rerun the test case even if its program was not changed after the last run.
+    AlwaysBuild( test )
+    
+    # Create some useful aliases for test case execution
+    #~ env.Alias( 'run_' + test_name, test )           # 'run_<test case name>' - to run only certain test case
+    #~ env.Alias( ['run', 'test'], test )              # 'run' - to run all test cases
+
+# As you can see, there is no platform specific code here.
+# And this is true, this build script can be used to build and run a code on any platform (Windows, Linux & etc)

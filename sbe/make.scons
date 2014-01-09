@@ -1,0 +1,50 @@
+# This is main build script, which is used to build all unit tests of SBE
+
+import os.path
+
+# Aqualid exports an environment under name 'env', we need to import it for further using
+Import('env')
+
+# Add Aqualid's tools: 'aql_tool_flexelint' and 'aql_tool_unittest', same as SCons's tool
+env.Tool('aql_tool_flexelint')
+env.Tool('aql_tool_unittest')
+
+# Get an instance of Aqualid's options from the environment, each environment is linked with only one instance of Aqualid's options
+options = env.aqlOptions()
+
+# Add a parent directory C prepocessor search path.
+# Option 'cpppath' is analog of SCons' CPPPATH.
+# Aqualid's options are more functional so it's recommended to them whenever it's possible
+options.cpppath += '#/..'
+
+# Get all source files from the current folder and its subfolders
+# aqlFindFiles() is utility function, very similar to glob() or SCons' Glob
+src_files = env.aqlFindFiles( '.', '*.cpp' )
+
+# Iterate over all found source files
+for s in src_files:
+    
+    # Get a test case name from the source file name
+    test_name = os.path.splitext( os.path.split(s)[1] )[0]
+    
+    # Build the test case
+    test_app = env.Program( test_name, s )
+    
+    # Create some useful aliases
+    env.Alias( 'build_' + test_name, test_app )     # 'build_<test case name>' - to build only certain test case
+    env.Alias( 'build', test_app )                  # 'build' - to build all test cases
+    env.Default( test_app )                         # mark it as default target
+    
+    # Execute the test case program
+    test = env.UnitTest( test_app, UT_VERBOSE = 1 )
+    
+    # Mark it as 'AlwaysBuild' which is mean that we should rerun the test case even if its program was not changed after the last run.
+    env.AlwaysBuild( test )
+    
+    # Create some useful aliases for test case execution
+    env.Alias( 'run_' + test_name, test )           # 'run_<test case name>' - to run only certain test case
+    env.Alias( ['run', 'test'], test )              # 'run' - to run all test cases
+
+
+# As you can see, there is no platform specific code here.
+# And this is true, this build script can be used to build and run a code on any platform (Windows, Linux & etc)
