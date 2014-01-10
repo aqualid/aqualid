@@ -50,6 +50,7 @@ __all__ = (
 
 import threading
 
+from aql.util_types import toSequence
 from aql.utils import DataFile, FileLock, eventWarning, logWarning
 
 from .aql_values_xash import ValuesXash
@@ -285,7 +286,7 @@ class ValuesFile (object):
       out_values = []
       
       find = self.xash.find
-      for value in values:
+      for value in toSequence( values ):
         key, val = find( value )
         if val is None:
           val = type(value)( name = value.name, content = None )

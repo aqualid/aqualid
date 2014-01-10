@@ -53,7 +53,7 @@ class   FileContentBase( ContentBase ):
   
   def   __new__( cls, path = None, signature = None, use_cache = False ):
     
-    if type(path) is cls:
+    if isinstance(path, ContentBase):
       return path
     
     if not signature and (path is None):

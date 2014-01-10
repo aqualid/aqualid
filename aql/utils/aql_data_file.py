@@ -76,7 +76,7 @@ class   DataFileChunk (object):
     
     capacity = self.capacity
     if capacity < size:
-      self.capacity = size + size // 2
+      self.capacity = size + size // 4
       oversize = self.capacity - capacity
     
     self.size = size

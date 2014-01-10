@@ -35,13 +35,13 @@ from aql.values import ValuesFile
 
 @eventStatus
 def   eventBuildStatusOutdatedNode( node ):
-  logInfo("Outdated node: %s" % node )
+  logInfo("Outdated node: %s" % node.buildStr() )
 
 #//===========================================================================//
 
 @eventStatus
 def   eventBuildStatusActualNode( node ):
-  logInfo("Actual node: %s" % node )
+  logInfo("Actual node: %s" % node.buildStr() )
 
 #//===========================================================================//
 
@@ -414,6 +414,7 @@ class _NodesBuilder (object):
           continue
       
       if builder.actual( vfile, node ):
+        # eventBuildStatusActualNode( node )
         completed_nodes.append( node )
       else:
         addTask( node, _buildNode, builder, node )

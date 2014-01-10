@@ -21,9 +21,12 @@ __all__ = (
   'Node',
 )
 
+import itertools
+
 from aql.utils import newHash, dumpData
 from aql.util_types import toSequence
-from aql.values import Value, SignatureValue, DependsValue, DependsValueContent
+
+from aql.values import Value, NoContent, ContentBase, pickleable
 
 #//===========================================================================//
 
@@ -37,10 +40,126 @@ class   ErrorNoTargets( Exception ):
     msg = "Node targets are not built yet: %s" % (node.buildStr())
     super(ErrorNoTargets, self).__init__( msg )
 
-class   ErrorNoDeps( Exception ):
+class   ErrorNoImplicitDeps( Exception ):
   def   __init__( self, node ):
-    msg = "Node dependencies are not built yet: %s" % (node.buildStr())
-    super(ErrorNoDeps, self).__init__( msg )
+    msg = "Node implicit dependencies are not built yet: %s" % (node.buildStr())
+    super(ErrorNoTargets, self).__init__( msg )
+
+#//===========================================================================//
+
+@pickleable
+class   NodeContent( ContentBase ):
+  
+  __slots__ = (
+                'sources_sign',
+                'targets',
+                'itargets',
+                'ideps',
+              )
+  
+  def   __new__( cls, sources_sign, targets = None, itargets = None, ideps = None ):
+    
+    if isinstance(sources_sign, ContentBase):
+      return sources_sign
+    
+    self = super(NodeContent,cls).__new__(cls)
+    
+    self.sources_sign = sources_sign
+    self.targets = targets
+    self.itargets = itargets
+    self.ideps = ideps
+    
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __bool__( self ):
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):
+    if type(self) != type(other):
+      # if __debug__:
+      #   print("NodeContent.eq(): Different type: %s" % type(other) )
+      return False
+    
+    if (not self.sources_sign) or (self.sources_sign != other.sources_sign):
+      # if __debug__:
+      #   print("NodeContent.eq(): Changed sources signature" )
+      return False
+    
+    for targets, other_targets in ((self.targets,other.targets),(self.itargets,other.itargets),(self.ideps,other.ideps) ):
+      if (not targets) or (targets != other_targets):
+        # if __debug__:
+        #   print("NodeContent.eq(): Changed targets" )
+        return False
+    
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   actual(self, other ):
+    
+    if type(self) != type(other):
+      # if __debug__:
+      #   print("NodeContent.actual(): Wrong type: %s" % type(other) )
+      return False
+    
+    if (not self.sources_sign) or (self.sources_sign != other.sources_sign):
+      # if __debug__:
+      #   print("NodeContent.actual(): Changed sources signature" )
+      return False
+    
+    if (self.targets is None) or (self.itargets is None) or (self.ideps is None):
+      # if __debug__:
+      #   print("NodeContent.actual(): No targets yet." )
+      return False
+    
+    for value in itertools.chain( self.targets, self.itargets, self.ideps ):
+      if not value.actual():
+        # if __debug__:
+        #   print( "NodeContent.actual(): Changed target value: %s" % (value, ) )
+        return False
+    
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   remove(self):
+    
+    targets = itertools.chain( toSequence( self.targets ), toSequence( self.itargets ) )
+    
+    for value in targets:
+      value.remove()
+  
+  #//-------------------------------------------------------//
+  
+  def   __getnewargs__(self):
+    return self.sources_sign, self.targets, self.itargets, self.ideps
+
+#//===========================================================================//
+
+@pickleable
+class   NodeValue (Value):
+  
+  def   get(self):
+    return self.name
+
+  #//-------------------------------------------------------//
+
+  def   actual( self, other ):
+    content = self.content
+    if not content:
+      return False
+    
+    return content.actual( other.content )
+  
+  #//-------------------------------------------------------//
+  
+  def   remove( self ):
+    if self.content:
+      self.content.remove()
 
 #//===========================================================================//
 
@@ -57,10 +176,12 @@ class Node (object):
     'dep_nodes',
     'dep_values',
     
-    'sources_value',
-    'targets_value',
-    'itargets_value',
-    'ideps_value',
+    'node_value',
+    
+    # 'sources_value',
+    # 'targets_value',
+    # 'itargets_value',
+    # 'ideps_value',
   )
   
   #//-------------------------------------------------------//
@@ -104,7 +225,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __setValues( self ):
+  def   __setValue( self ):
     
     names = [ self.builder.name ]
     sign  = [ self.builder.signature ]
@@ -149,32 +270,19 @@ class Node (object):
     name_hash = newHash()
     names_dump = dumpData( names )
     name_hash.update( names_dump )
-          
-    self.sources_value = SignatureValue( name = name_hash.digest(), content = sign )
+    
+    self.node_value = node_value = NodeValue( name = name_hash.digest(), content = NodeContent( sources_sign = sign ) )
+    
     # if __debug__:
-    #   print( "self.sources_value.name : %s (%s)" % (self.sources_value.name, type(self.sources_value.name) ) )
+    #   print("Node.__setValue: name: %s (%s)" % (node_value.name, self) )
     
-    #//-------------------------------------------------------//
-    #// Targets
-    
-    targets_hash = name_hash.copy()
-    targets_hash.update( b'targets' )
-    self.targets_value = DependsValue( name = targets_hash.digest() )
-    
-    itargets_hash = name_hash.copy()
-    itargets_hash.update( b'itargets' )
-    self.itargets_value = DependsValue( name = itargets_hash.digest() )
-    
-    ideps_hash = name_hash.copy()
-    ideps_hash.update( b'ideps' )
-    self.ideps_value = DependsValue( name = ideps_hash.digest() )
+    return node_value
     
   #//=======================================================//
   
   def   __getattr__( self, attr ):
-    if attr in ('sources_value', 'targets_value', 'itargets_value', 'ideps_value'):
-      self.__setValues()
-      return getattr(self, attr)
+    if attr == 'node_value':
+      return self.__setValue()
     
     if attr == 'source_values':
       self.source_values = source_values = self.__getSourceValues()
@@ -185,56 +293,35 @@ class Node (object):
   #//=======================================================//
   
   def   name(self):
-    return self.sources_value.name
+    return self.node_value.name
   
   #//=======================================================//
   
   def   values( self ):
-    
-    values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
-    
-    targets = self.targets_value.content.data
-    if targets: values += targets
-    
-    itargets = self.itargets_value.content.data
-    if itargets: values += itargets
-    
-    ideps = self.ideps_value.content.data
-    if ideps: values += ideps
-    
-    return values
+    return [ self.node_value ]
   
   #//=======================================================//
   
   def   load( self, vfile ):
-    
-    values = [ self.targets_value, self.itargets_value, self.ideps_value ]
-    values = vfile.findValues( values )
-    
-    self.targets_value, self.itargets_value, self.ideps_value = values
+    self.node_value = vfile.findValues( self.node_value )[0]
   
   #//=======================================================//
   
   def   actual( self, vfile  ):
     
-    values = [ self.sources_value, self.targets_value, self.itargets_value, self.ideps_value ]
-    values = vfile.findValues( values )
+    node_value = vfile.findValues( self.node_value )[0]
     
-    if self.sources_value != values.pop(0):
+    if not node_value:
       # if __debug__:
-      #   print( "non-actual sources of node: %s" % (self.name()))
+      #   print( "no previous info of node: %s" % (self.name(),))
       return False
     
-    for value in values:
-      if not value.actual():
-        # if __debug__:
-        #   print( "non-actual target '%s' of node: %s" % (value, self.name()))
-        return False
+    if not node_value.actual( self.node_value ):
+      return False
     
-    self.targets_value, self.itargets_value, self.ideps_value = values
-    
+    self.node_value = node_value
     return True
-  
+    
   #//=======================================================//
   
   def   __getSourceValues(self):
@@ -272,7 +359,7 @@ class Node (object):
     values = []
     
     for node in self.dep_nodes:
-      values += toSequence( node.targets_value.content.data )
+      values += toSequence( node.targets() )
     
     values += self.dep_values
     
@@ -282,49 +369,46 @@ class Node (object):
   
   #//=======================================================//
   
-  def   targets(self):
-    content = self.targets_value.content
+  def   _getTargets(self, attr, error ):
+    content = self.node_value.content
     if not content:
-      raise ErrorNoTargets( self )
-
-    return content.data
+      raise error( self )
+    
+    targets = getattr(content, attr )
+    if targets is None:
+      raise error( self )
+    
+    return targets
   
   #//=======================================================//
+  
+  def   targets(self):
+    return self._getTargets( attr = 'targets', error = ErrorNoTargets )
   
   def   sideEffects(self):
-    content = self.itargets_value.content
-    if not content:
-      raise ErrorNoDeps( self )
-
-    return content.data
+    return self._getTargets( attr = 'itargets', error = ErrorNoTargets )
+  
+  def   implicitDependencies(self):
+    return self._getTargets( attr = 'ideps', error = ErrorNoImplicitDeps )
   
   #//=======================================================//
   
-  def   setTargets( self, targets, itargets = None, ideps = None ):
+  def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
     
-    makeTargetValues = self.builder.makeValues
+    if valuesMaker is None:
+      valuesMaker = self.builder.makeValues
     
-    target_values   = makeTargetValues( targets,  use_cache = False )
-    itarget_values  = makeTargetValues( itargets, use_cache = False )
-    idep_values     = makeTargetValues( ideps,    use_cache = False )
+    node_content = self.node_value.content
     
-    self.targets_value.content  = DependsValueContent( target_values )
-    self.itargets_value.content = DependsValueContent( itarget_values )
-    self.ideps_value.content    = DependsValueContent( idep_values )
+    node_content.targets  = valuesMaker( targets,  use_cache = False )
+    node_content.itargets = valuesMaker( itargets, use_cache = False )
+    node_content.ideps    = valuesMaker( ideps,    use_cache = False )
   
   #//=======================================================//
   
   def   setFileTargets( self, targets, itargets = None, ideps = None ):
-    
-    makeFileValues = self.builder.makeFileValues
-    
-    target_values   = makeFileValues( targets,  use_cache = False )
-    itarget_values  = makeFileValues( itargets, use_cache = False )
-    idep_values     = makeFileValues( ideps,    use_cache = False )
-    
-    self.targets_value.content  = DependsValueContent( target_values )
-    self.itargets_value.content = DependsValueContent( itarget_values )
-    self.ideps_value.content    = DependsValueContent( idep_values )
+    self.setTargets( targets = targets, itargets = itargets, ideps = ideps,
+                     valuesMaker = self.builder.makeFileValues )
   
   #//-------------------------------------------------------//
   

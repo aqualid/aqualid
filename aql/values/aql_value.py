@@ -331,19 +331,6 @@ class   Value (object):
   def   remove( self ):
     pass
   
-  #//-------------------------------------------------------//
-  
-  # def   __getattr__( self, attr ):
-  #   if attr == 'data':
-  #     self.data = self.content.data
-  #     return self.data
-  #   
-  #   if attr == 'signature':
-  #     self.signature = self.content.signature
-  #     return self.signature
-  #   
-  #   raise AttributeError( attr )
-  
 #//===========================================================================//
 
 @pickleable
