@@ -133,6 +133,45 @@ options.build_variant = "final"
       prj.Build()
       
       self.assertEqual( self.building_started, 0 )
+  
+  #//-------------------------------------------------------//
+  
+  def   test_prj_targets( self ):
+    
+    with Tempdir() as tmp_dir:
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir, "test"] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      cmd = prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
+      cmd_other = prj.tools.ExecuteCommand( "python", "-c", "print('test other')" )
+      
+      prj.Alias('test', cmd )
+      prj.Build()
+      
+      self.assertEqual( self.building_finished, 1 )
+  
+  #//-------------------------------------------------------//
+  
+  def   test_prj_default_targets( self ):
+    
+    with Tempdir() as tmp_dir:
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      cmd = prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
+      cmd_other = prj.tools.ExecuteCommand( "python", "-c", "print('test other')" )
+      cmd_other2 = prj.tools.ExecuteCommand( "python", "-c", "print('test other2')" )
+      
+      prj.Default( [cmd_other, cmd_other2] )
+      prj.Build()
+      
+      self.assertEqual( self.building_finished, 2 )
+      
+      
 
 #//===========================================================================//
 

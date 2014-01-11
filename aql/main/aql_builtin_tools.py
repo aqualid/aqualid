@@ -35,13 +35,15 @@ dir_node = FileDir( prog_node )
 class ExecuteCommand (Builder):
   
   NAME_ATTRS = None
-  SIGNATURE_ATTRS = ('env_path', )
+  SIGNATURE_ATTRS = ('env_path', 'with_output' )
 
   #//-------------------------------------------------------//
   
-  def   __init__(self, options ):
+  def   __init__(self, options, with_output = False ):
+    self.with_output = with_output
     self.env = options.env.get().copy( value_type = str )
     self.env_path = list( options.env['PATH'].get() )
+    
   
   #//-------------------------------------------------------//
   
@@ -55,9 +57,12 @@ class ExecuteCommand (Builder):
     if result.failed():
       raise result
     
-    targets = ( result.out, result.err )
-    
-    node.setTargets( [ targets ] )
+    if self.with_output:
+      targets = [ ( result.out, result.err ) ]
+    else:
+      targets = []
+      
+    node.setTargets( targets )
   
   #//-------------------------------------------------------//
   
@@ -68,8 +73,8 @@ class ExecuteCommand (Builder):
 
 class BuiltinTool( Tool ):
   
-  def   ExecuteCommand( self, options ):
-    return ExecuteCommand( options )
+  def   ExecuteCommand( self, options, with_output = False ):
+    return ExecuteCommand( options, with_output = False )
   
   def   DirName(self, options):
     raise NotImplementedError()

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012,2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2012-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -26,6 +26,7 @@ __all__ = ( 'Project', 'ProjectConfig',
 
 import os
 import types
+import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, execFile, flattenList, findFiles
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, UniqueList
@@ -407,7 +408,9 @@ class Project( object ):
     
     self.targets = targets
     self.options = options
-    self.files_cache = {}
+    self.scripts_cache = {}
+    self.aliases = {}
+    self.defaults = []
     
     self.build_manager = BuildManager()
     
@@ -422,8 +425,10 @@ class Project( object ):
     other = super(Project,self).__new__( self.__class__ )
     
     other.targets       = self.targets
-    other.files_cache   = self.files_cache
+    other.scripts_cache = self.scripts_cache
     other.build_manager = self.build_manager
+    other.aliases       = self.aliases
+    other.defaults      = self.defaults
     other.options       = self.options.override()
     other.tools         = self.tools._override( other )
     
@@ -467,9 +472,9 @@ class Project( object ):
     
     script = FilePath( script ).abs()
     
-    files_cache = self.files_cache
+    scripts_cache = self.scripts_cache
     
-    script_result = files_cache.get( script, None )
+    script_result = scripts_cache.get( script, None )
     if script_result is not None:
       return script_result
 
@@ -478,7 +483,7 @@ class Project( object ):
     try:
       os.chdir( script.dir )
       script_result = execFile( script, script_locals )
-      files_cache[ script ] = script_result
+      scripts_cache[ script ] = script_result
       return script_result
     finally:
       os.chdir( cur_dir )
@@ -519,24 +524,50 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   Alias( self, alias, node ):
-    raise NotImplementedError()
+    for alias, node in itertools.product( toSequence( alias ), toSequence( node ) ):
+      self.aliases.setdefault( alias, []).append( node )
+    
+  #//-------------------------------------------------------//
+  
+  def   Default( self, node ):
+    for node in toSequence( node ):
+      self.defaults.append( node )
   
   #//-------------------------------------------------------//
   
   def   AlwaysBuild( self, node ):
-    node.depends( Value() )
+    null_value = Value()
+    for node in toSequence( node ):
+      node.depends( null_value )
+  
+  #//=======================================================//
+  
+  def   _getBuildNodes( self ):
+    target_nodes = []
+    
+    for alias in self.targets:
+      target_nodes += self.aliases.get( alias, [] )
+    
+    if not target_nodes:
+      target_nodes = self.defaults
+    
+    if not target_nodes:
+      target_nodes = None
+    
+    return target_nodes
   
   #//=======================================================//
   
   def   Build( self ):
     keep_going = self.options.keep_going.get()
     jobs = self.options.jobs.get()
+    build_nodes = self._getBuildNodes()
     
-    failed_nodes = self.build_manager.build( jobs, keep_going )
-    
-    finishHandleEvents()
-    
-    return failed_nodes
+    try:
+      failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes )
+      return failed_nodes
+    finally:
+      finishHandleEvents()
   
   #//=======================================================//
   
