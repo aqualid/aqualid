@@ -302,6 +302,19 @@ class Node (object):
   
   #//=======================================================//
   
+  # noinspection PyMethodMayBeStatic
+  def   clear( self, vfile ):
+    """
+    Cleans produced values
+    """
+    self.load( vfile )
+    
+    self.node_value.remove()
+    
+    vfile.removeValues( self.values() )
+  
+  #//=======================================================//
+  
   def   actual( self, vfile  ):
     
     node_value = vfile.findValues( self.node_value )[0]

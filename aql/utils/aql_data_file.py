@@ -327,6 +327,7 @@ class DataFile (object):
     if stream is not None:
       stream.seek( 0 )
       stream.truncate( 0 )
+      stream.flush()
     
     self.locations.clear()
     self.file_size = 0

@@ -177,23 +177,6 @@ class Builder (object):
   
   #//-------------------------------------------------------//
 
-  # noinspection PyMethodMayBeStatic
-  def   clear( self, vfile, node ):
-    """
-    Cleans produced values
-    """
-    node.load( vfile )
-    
-    for value in node.targets():
-      value.remove()
-    
-    for value in node.sideEffects():
-      value.remove()
-    
-    vfile.removeValues( node.values() )
-  
-  #//-------------------------------------------------------//
-  
   def   buildStr( self, node ):
     """
     Returns user friendly builder action string

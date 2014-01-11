@@ -87,6 +87,13 @@ class   ErrorNodeDependencyCyclic( Exception ):
 
 #//===========================================================================//
 
+class   ErrorNodeUnknown(Exception):
+  def   __init__( self, node ):
+    msg = "Unknown node '%s'" % (node, )
+    super(ErrorNodeUnknown, self).__init__( msg )
+
+#//===========================================================================//
+
 class   ErrorNodeDependencyUnknown(Exception):
   def   __init__( self, node, dep_node ):
     msg = "Unable to add dependency to node '%s' from node '%s'" % (node, dep_node)
@@ -198,7 +205,7 @@ class _NodesTree (object):
           node_srcnodes = node.sourceNodes()
 
           self.__add( node_srcnodes )       # TODO: recursively add sources and depends
-          self.__add( node.dep_nodes )      # It would be better to rewrite this code to aviod the recursion
+          self.__add( node.dep_nodes )      # It would be better to rewrite this code to avoid the recursion
           
           self.__depends( node, node_srcnodes )
           self.__depends( node, node.dep_nodes )
@@ -257,7 +264,10 @@ class _NodesTree (object):
     while nodes:
       node = nodes.pop()
       
-      deps = node2deps[ node ] - all_nodes
+      try:
+        deps = node2deps[ node ] - all_nodes
+      except KeyError as node:
+        raise ErrorNodeUnknown( node.args[0] )
       
       all_nodes.update( deps )
       nodes.update( deps )
@@ -272,6 +282,8 @@ class _NodesTree (object):
     dep2nodes = self.dep2nodes
     
     ignore_nodes = set(node2deps) - self.__getAllNodes( nodes )
+    
+    self.tail_nodes -= ignore_nodes
     
     for node in ignore_nodes:
       del node2deps[ node ]
@@ -381,6 +393,7 @@ def   _buildNode( builder, node ):
 
 #//===========================================================================//
 
+# noinspection PyAttributeOutsideInit
 class _NodesBuilder (object):
   
   __slots__ = \
@@ -524,7 +537,8 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   __checkAlreadyBuilt( self, target_nodes, node ):
+  @staticmethod
+  def   __checkAlreadyBuilt( target_nodes, node ):
     values = []
     values += node.targets()
     values += node.sideEffects()
@@ -537,11 +551,11 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, build_nodes = None ):
+  def   build( self, jobs, keep_going, nodes = None ):
     
     nodes_tree = self._nodes
-    if build_nodes is not None:
-      nodes_tree.shrinkTo( build_nodes )
+    if nodes is not None:
+      nodes_tree.shrinkTo( nodes )
     
     with _NodesBuilder( jobs, keep_going ) as nodes_builder:
       
@@ -588,17 +602,16 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self ):
+  def   clear( self, nodes = None ):
     
-    getTails = self._nodes.tails
-    
-    removeTailNode = self._nodes.removeTail
+    nodes_tree = self._nodes
+    if nodes is not None:
+      nodes_tree.shrinkTo( nodes )
     
     with _VFiles() as vfiles:
-      clear_values = {}
       
       while True:
-        tails = getTails()
+        tails = nodes_tree.tails()
         
         if not tails:
           break
@@ -606,9 +619,9 @@ class BuildManager (object):
         for node in tails:
           vfile = vfiles[ node ]
           
-          node.builder.clear( vfile, node )
+          node.clear( vfile )
           
-          removeTailNode( node )
+          nodes_tree.removeTail( node )
   
   #//-------------------------------------------------------//
   

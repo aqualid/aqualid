@@ -25,7 +25,7 @@ class CopyValueBuilder (Builder):
     for source_value in node.sourceValues():
       target_values.append( Value( name = source_value.name + '_copy', content = source_value.content ) )
     
-    return self.nodeTargets( target_values )
+    node.setTargets( target_values )
 
 #//===========================================================================//
 
@@ -126,7 +126,7 @@ def   _addNodesToBM( builder, src_files ):
 def   _build( bm ):
   try:
     bm.selfTest()
-    failed_nodes = bm.build( 1, False )
+    failed_nodes = bm.build( jobs = 1, keep_going = False )
     for node,err in failed_nodes:
       
       print( "Failed node: %s" % (err,))
@@ -224,7 +224,7 @@ class TestBuildManager( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   setUp( self ):
-    disableDefaultHandlers()
+    # disableDefaultHandlers()
     
     self.building_started = 0
     addUserHandler( self.eventNodeBuilding, "eventNodeBuilding" )
@@ -263,7 +263,7 @@ class TestBuildManager( AqlTestCase ):
     
     builder = CopyValueBuilder( options )
     
-    node0 = Node( builder, value1,  )
+    node0 = Node( builder, value1 )
     node1 = Node( builder, node0 )
     node2 = Node( builder, node1 )
     node3 = Node( builder, value2 )
@@ -335,6 +335,64 @@ class TestBuildManager( AqlTestCase ):
         
       finally:
         _removeFiles( src_files )
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_nodes(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+    
+      bm = BuildManager()
+      
+      value1 = StringValue( name = "target_url1", content = "http://aql.org/download" )
+      value2 = StringValue( name = "target_url2", content = "http://aql.org/download2" )
+      value3 = StringValue( name = "target_url3", content = "http://aql.org/download3" )
+      
+      builder = CopyValueBuilder( options )
+      
+      node1 = Node( builder, value1 )
+      copy_node1 = Node( builder, node1 )
+      copy2_node1 = Node( builder, copy_node1 )
+      node2 = Node( builder, value2 )
+      node3 = Node( builder, value3 )
+      copy_node3 = Node( builder, node3 )
+      
+      copy2_node3 = Node( builder, copy_node3 )
+      copy2_node3.depends( [node1, copy_node1] )
+      
+      bm.add( [copy2_node1, node2, copy2_node3])
+      
+      #// --------- //
+      
+      self.building_finished = 0
+      bm.build( jobs = 1, keep_going = False )
+      self.assertEqual( self.building_finished, 7 )
+      
+      #// --------- //
+      
+      bm.add( [copy2_node1, node2, copy2_node3])
+      
+      bm.clear()
+      
+      #// --------- //
+      
+      bm.add( [copy2_node1, node2, copy2_node3] )
+      
+      self.building_finished = 0
+      bm.build( jobs = 1, keep_going = False, nodes = [copy_node1] )
+      self.assertEqual( self.building_finished, 2 )
+      
+      #// --------- //
+      
+      bm.add( [copy2_node1, node2, copy2_node3] )
+      
+      self.building_finished = 0
+      bm.build( jobs = 1, keep_going = False, nodes = [node2, copy_node3] )
+      self.assertEqual( self.building_finished, 3 )
+      
+      #// --------- //
   
   #//-------------------------------------------------------//
   
