@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -45,71 +45,15 @@ v.content.signature
 
 __all__ = (
   'ValuesFile',
-  'eventFileValuesCyclicDependencyValue', 'eventFileValuesDependencyValueHasUnknownValue',
 )
 
 import threading
 
 from aql.util_types import toSequence
-from aql.utils import DataFile, FileLock, eventWarning, logWarning
+from aql.utils import DataFile, FileLock
 
 from .aql_values_xash import ValuesXash
-from .aql_depends_value import DependsValue, DependsKeyContent
 from .aql_value_pickler import ValuePickler
-
-#//===========================================================================//
-
-@eventWarning
-def   eventFileValuesCyclicDependencyValue( value ):
-  logWarning("Internal error: Cyclic dependency value: %s" % value )
-
-#//===========================================================================//
-
-@eventWarning
-def   eventFileValuesDependencyValueHasUnknownValue( dep_value, value ):
-  logWarning("Internal error: Dependency value: '%s' has unknown value: '%s'" % (dep_value, value) )
-
-#//===========================================================================//
-
-def _sortDepends( dep_sort_data ):
-  
-  all_keys = set( dep_sort_data )
-  
-  for key, value_keys in dep_sort_data.items():
-    value_keys[1] &= all_keys
-  
-  sorted_deps = []
-  
-  added_keys = set()
-  
-  while True:
-    tmp_dep_sort_data = {}
-    
-    for key, value_keys in dep_sort_data.items():
-      value, dep_keys = value_keys
-      if dep_keys:
-        tmp_dep_sort_data[ key ] = value_keys
-      else:
-        sorted_deps.append( value )
-        added_keys.add( key )
-    
-    if not added_keys:
-      break
-    
-    dep_sort_data = tmp_dep_sort_data
-    
-    for key, value_keys in dep_sort_data.items():
-      value_keys[1] -= added_keys
-    
-    added_keys.clear()
-  
-  for key, value_keys in dep_sort_data.items():
-    value = value_keys[0]
-    value = DependsValue( name = value.name, content = None )
-    sorted_deps.append( value )
-    eventFileValuesCyclicDependencyValue( value )
-  
-  return sorted_deps
 
 #//===========================================================================//
 
@@ -124,76 +68,6 @@ class ValuesFile (object):
     'file_lock',
     'loads',
     'dumps')
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __makeDependsKey( self, dep_value ):
-    
-    value_keys = set()
-    value_keys_append = value_keys.add
-    
-    find_value = self.xash.find
-    for value in dep_value.content.data:
-      key = find_value( value )[0]
-      if key is None:
-        eventFileValuesDependencyValueHasUnknownValue( dep_value, value )
-        return DependsValue( name = dep_value.name )
-      
-      value_keys_append( key )
-    
-    return DependsValue( name = dep_value.name, content = DependsKeyContent( value_keys ) )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __makeDepends( self, kvalue, kvalue_key ):
-    
-    values = []
-    values_append = values.append
-    
-    get_value = self.xash.__getitem__
-    
-    try:
-      
-      if not kvalue.content:
-        return kvalue
-      
-      keys = kvalue.content.data
-      
-      if kvalue_key in keys: # cyclic dependency
-        return DependsValue( name = kvalue.name )
-      
-      for key in keys:
-        v = get_value( key )
-        if isinstance( v, DependsValue ):
-          v = self.__makeDepends( v, kvalue_key )
-          if not v.content:
-            return DependsValue( name = kvalue.name )
-        
-        values_append( v )
-    except KeyError:
-      return DependsValue( name = kvalue.name )
-    
-    return DependsValue( name = kvalue.name, content = values )
-  
-  #//---------------------------------------------------------------------------//
-  
-  @staticmethod
-  def   __sortValues( values ):
-    
-    sorted_values = []
-    
-    dep_values = {}
-    
-    for value in values:
-      if isinstance(value, DependsValue ):
-        try:
-          dep_values[ id(value) ] = [value, set(map(id, value.content.data))]
-        except TypeError:
-          sorted_values.append( value )
-      else:
-        sorted_values.append( value )
-    
-    return sorted_values, _sortDepends( dep_values )
   
   #//---------------------------------------------------------------------------//
   
@@ -291,10 +165,7 @@ class ValuesFile (object):
         if val is None:
           val = type(value)( name = value.name, content = None )
         else:
-          if isinstance( val, DependsValue ):
-            val = self.__makeDepends( val, key )
-          else:
-            val = val.copy()
+          val = val.copy()
         
         out_values.append( val )
       
@@ -320,7 +191,6 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   addValues( self, values ):
-    values, dep_values = self.__sortValues( values )
     
     with self.lock:
       with self.file_lock.writeLock():
@@ -328,10 +198,6 @@ class ValuesFile (object):
         
         for value in values:
           self.__addValue( value.copy() )
-        
-        for dep_value in dep_values:
-          value = self.__makeDependsKey( dep_value )
-          self.__addValue( value )
         
         self.data_file.flush()
   

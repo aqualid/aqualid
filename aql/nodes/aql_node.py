@@ -177,11 +177,6 @@ class Node (object):
     'dep_values',
     
     'node_value',
-    
-    # 'sources_value',
-    # 'targets_value',
-    # 'itargets_value',
-    # 'ideps_value',
   )
   
   #//-------------------------------------------------------//

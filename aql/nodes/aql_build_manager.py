@@ -28,7 +28,7 @@ import threading
 import traceback
 
 from aql.util_types import toSequence
-from aql.utils import eventInfo, eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
+from aql.utils import eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
 #//===========================================================================//
@@ -102,7 +102,7 @@ class   InternalErrorRemoveNonTailNode( Exception ):
 #//===========================================================================//
 
 class   InternalErrorRemoveUnknownTailNode(Exception):
-  def   __init__( self, node, dep_node ):
+  def   __init__( self, node ):
     msg = "Remove unknown tail node: : %s" % str(node)
     super(InternalErrorRemoveUnknownTailNode, self).__init__( msg )
 
@@ -175,7 +175,7 @@ class _NodesTree (object):
       
       #//-------------------------------------------------------//
       
-      current_node_deps |= new_deps
+      current_node_deps.update( new_deps )
       
       #//-------------------------------------------------------//
       
@@ -249,6 +249,39 @@ class _NodesTree (object):
   
   #//-------------------------------------------------------//
   
+  def   __getAllNodes(self, nodes ):
+    nodes = set(toSequence(nodes))
+    all_nodes = set( nodes )
+    
+    node2deps = self.node2deps
+    while nodes:
+      node = nodes.pop()
+      
+      deps = node2deps[ node ] - all_nodes
+      
+      all_nodes.update( deps )
+      nodes.update( deps )
+    
+    return all_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   shrinkTo(self, nodes ):
+    
+    node2deps = self.node2deps
+    dep2nodes = self.dep2nodes
+    
+    ignore_nodes = set(node2deps) - self.__getAllNodes( nodes )
+    
+    for node in ignore_nodes:
+      del node2deps[ node ]
+      del dep2nodes[ node ]
+    
+    for dep_nodes in dep2nodes.values():
+      dep_nodes.difference_update( ignore_nodes ) 
+  
+  #//-------------------------------------------------------//
+  
   def   selfTest( self ):
     with self.lock:
       if set(self.node2deps) != set(self.dep2nodes):
@@ -275,7 +308,7 @@ class _NodesTree (object):
           if node not in self.dep2nodes[dep]:
             raise AssertionError("node not in self.dep2nodes[dep]: dep: %s, node: %s"  % (dep, node) )
       
-      if (all_dep_nodes - set(self.dep2nodes)):
+      if all_dep_nodes - set(self.dep2nodes):
         raise AssertionError("Not all deps are added")
 
 #//===========================================================================//
@@ -481,11 +514,6 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   jobs( self ):
-    return self._jobs
-  
-  #//-------------------------------------------------------//
-  
   def   __len__(self):
     return len(self._nodes)
   
@@ -509,36 +537,31 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going ):
+  def   build( self, jobs, keep_going, build_nodes = None ):
+    
+    nodes_tree = self._nodes
+    if build_nodes is not None:
+      nodes_tree.shrinkTo( build_nodes )
     
     with _NodesBuilder( jobs, keep_going ) as nodes_builder:
       
-      self._jobs = nodes_builder.jobs
-      
-      eventBuildingNodes( len(self._nodes) )
+      eventBuildingNodes( len(nodes_tree) )
       
       target_nodes = {}
       
-      get_tails = self._nodes.tails
-      
-      build_nodes = nodes_builder.build
-      removeTailNode = self._nodes.removeTail
-      
       waiting_nodes = set()
-      waitingDiff = waiting_nodes.difference_update
-      
       failed_nodes = {}
       
       while True:
         
-        tails = get_tails()
+        tails = nodes_tree.tails()
         tails -= waiting_nodes
         tails.difference_update( failed_nodes )
         
         if not tails and not waiting_nodes:
           break
         
-        completed_nodes, tmp_failed_nodes, rebuild_nodes = build_nodes( self, tails )
+        completed_nodes, tmp_failed_nodes, rebuild_nodes = nodes_builder.build( self, tails )
         
         if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
           break
@@ -547,13 +570,13 @@ class BuildManager (object):
         
         waiting_nodes |= tails
         
-        waitingDiff( completed_nodes )
-        waitingDiff( tmp_failed_nodes )
-        waitingDiff( rebuild_nodes )
+        waiting_nodes.difference_update( completed_nodes )
+        waiting_nodes.difference_update( tmp_failed_nodes )
+        waiting_nodes.difference_update( rebuild_nodes )
         
         for node in completed_nodes:
           self.__checkAlreadyBuilt( target_nodes, node )
-          removeTailNode( node )
+          nodes_tree.removeTail( node )
       
       return tuple( failed_nodes.items() )
     

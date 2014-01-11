@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -353,6 +353,31 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
+  def   modify(self, key, data ):
+    
+    stream = self.stream
+    
+    locations = self.locations
+    location = locations[ key ]
+    
+    tail_offset = location.offset + location.chunkSize()
+    chunk, oversize = location.pack( key, data )
+    
+    if oversize > 0:
+      chunk += bytearray( location.capacity - location.size )
+      
+      stream.seek( tail_offset ); chunk += stream.read()
+      
+      self.file_size += oversize
+      self.__moveLocations( location.offset, oversize )
+      
+    self.file_header.save( stream )
+    
+    stream.seek( location.offset )
+    stream.write( chunk )
+  
+  #//-------------------------------------------------------//
+  
   def   replace(self, key, data ):
     
     stream = self.stream
@@ -375,8 +400,6 @@ class DataFile (object):
       self.file_size += oversize
       self.__moveLocations( location.offset, oversize )
       
-    self.file_header.save( stream )
-    
     stream.seek( location.offset )
     stream.write( chunk )
     
