@@ -306,15 +306,17 @@ class ValuesFile (object):
     
     xash = self.xash
     
+    reserve = not value.content.FIXED_SIZE
+    
     key, val = xash.find( value )
     if val is not None:
       if value.content != val.content:
         data = self.dumps( value )
-        new_key = self.data_file.replace( key, data )
+        new_key = self.data_file.replace( key, data, reserve )
         xash[ new_key ] = value
     else:
       data = self.dumps( value )
-      key = self.data_file.append( data )
+      key = self.data_file.append( data, reserve )
       xash[ key ] = value
   
   #//---------------------------------------------------------------------------//

@@ -68,7 +68,7 @@ class   DataFileChunk (object):
   
   #//-------------------------------------------------------//
   
-  def   pack( self, key, data, header_struct = header_struct ):
+  def   pack( self, key, data, reserve = True, header_struct = header_struct ):
     
     size = len(data)
     
@@ -76,7 +76,10 @@ class   DataFileChunk (object):
     
     capacity = self.capacity
     if capacity < size:
-      self.capacity = size + size // 4
+      self.capacity = size
+      if reserve:
+        self.capacity += size // 4
+      
       oversize = self.capacity - capacity
     
     self.size = size
@@ -334,7 +337,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def append( self, data, Location = DataFileChunk):
+  def append( self, data, reserve = True, Location = DataFileChunk):
     
     stream  = self.stream
     key     = self.file_header.nextKey( stream )
@@ -342,7 +345,7 @@ class DataFile (object):
     
     location = Location( offset )
     
-    chunk, oversize = location.pack( key, data )
+    chunk, oversize = location.pack( key, data, reserve )
     
     stream.seek( offset )
     stream.write( chunk )
@@ -354,7 +357,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   modify(self, key, data ):
+  def   modify(self, key, data, reserve = True ):
     
     stream = self.stream
     
@@ -362,7 +365,7 @@ class DataFile (object):
     location = locations[ key ]
     
     tail_offset = location.offset + location.chunkSize()
-    chunk, oversize = location.pack( key, data )
+    chunk, oversize = location.pack( key, data, reserve )
     
     if oversize > 0:
       chunk += bytearray( location.capacity - location.size )
@@ -379,7 +382,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   replace(self, key, data ):
+  def   replace(self, key, data, reserve = True ):
     
     stream = self.stream
     
@@ -391,7 +394,7 @@ class DataFile (object):
     locations[ key ] = location
     
     tail_offset = location.offset + location.chunkSize()
-    chunk, oversize = location.pack( key, data )
+    chunk, oversize = location.pack( key, data, reserve )
     
     if oversize > 0:
       chunk += bytearray( location.capacity - location.size )

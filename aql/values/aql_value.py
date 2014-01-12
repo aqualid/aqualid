@@ -36,6 +36,8 @@ class   ErrorInvalidValueBytesContentType( Exception ):
 
 class ContentBase( object ):
   
+  FIXED_SIZE = False
+  
   __slots__ = ('data', 'signature')
   
   def   __new__( cls, *args, **kw ):
@@ -79,6 +81,8 @@ class ContentBase( object ):
 @pickleable
 class _NoContent( ContentBase ):
   
+  FIXED_SIZE = True
+  
   def   __new__( cls, *args ):
     self = super(_NoContent,cls).__new__(cls)
     self.data = None
@@ -100,6 +104,8 @@ NoContent = _NoContent()
 
 @pickleable
 class   SignatureContent( ContentBase ):
+  
+  FIXED_SIZE = True
   
   def   __new__( cls, data = None ):
     

@@ -49,6 +49,8 @@ _file_content_cache = {}
 #noinspection PyAttributeOutsideInit
 class   FileContentBase( ContentBase ):
   
+  FIXED_SIZE = True
+  
   __slots__ = ('path', 'signature')
   
   def   __new__( cls, path = None, signature = None, use_cache = False ):
