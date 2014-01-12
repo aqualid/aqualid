@@ -126,14 +126,16 @@ class   DependsValue (Value):
   
   def   __new__( cls, content = None, name = None ):
     
-    if isinstance( name, DependsValue ):
-      other = name
-      name = other.name
+    if isinstance( content, DependsValue ):
       
-      if content is None:
-        content = other.content
+      if (name is None) or (name == content.name):
+        return content
+      
+      name = content.name
+      content = content.content
     
-    content = DependsValueContent( content )
+    else:
+      content = DependsValueContent( content )
     
     return super(DependsValue,cls).__new__(cls, name = name, content = content )
   
