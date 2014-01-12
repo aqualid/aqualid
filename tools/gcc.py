@@ -54,6 +54,7 @@ class GccCompilerImpl (aql.Builder):
     self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
     
     self.cmd = self.__getCmd( options, language, shared )
+    self.makeValue = self.makeFileValue
   
   #//-------------------------------------------------------//
   
@@ -123,6 +124,7 @@ class GccCompiler(aql.Builder):
   
   def   __init__(self, options, language, shared ):
     self.compiler = GccCompilerImpl( options, language, shared )
+    self.makeValue = self.makeFileValue
   
   #//-------------------------------------------------------//
   
@@ -204,6 +206,8 @@ class GccArchiver(aql.Builder):
 
     self.cmd = [ options.lib.get(), 'rcs', self.target ]
     
+    self.makeValue = self.makeFileValue
+    
   #//-------------------------------------------------------//
   
   def   build( self, node ):
@@ -245,6 +249,7 @@ class GccLinker(aql.Builder):
     self.target = self.buildPath( target ).change( prefix = prefix, ext = suffix )
     
     self.cmd = self.__getCmd( options, self.target, language, shared )
+    self.makeValue = self.makeFileValue
     
   #//-------------------------------------------------------//
   
