@@ -60,7 +60,7 @@ def   _build_options():
   
   #//-------------------------------------------------------//
   
-  file_signature = EnumOptionType(  values =  [('checksum', 'md5'), ('timestamp', 'time')],
+  file_signature = EnumOptionType(  values =  [('checksum', 'md5', 'sign'), ('timestamp', 'time')],
                                     default = 'checksum',
                                     description = "Type used to detect changes in dependency files" )
   

@@ -117,7 +117,7 @@ class RSyncBuilder (Builder):
   
   def   put( self, build_manager, vfile, node ):
     
-    local_files = FilePaths( node.sources() )
+    local_files = FilePaths( node.getSources() )
     
     local_path = self.local_path
     

@@ -30,6 +30,7 @@ import operator
 import weakref
 
 from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
+from aql.utils import evaluateValue
 
 from .aql_option_types import OptionType, autoOptionType
 from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition
@@ -122,7 +123,7 @@ def   _evalValue( options, context, other ):
   #for evaluator in _evaluators:
   #  other = evaluator( other )
   
-  return other
+  return evaluateValue( other )
 
 #//===========================================================================//
 

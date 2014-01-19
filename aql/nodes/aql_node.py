@@ -37,12 +37,12 @@ class   ErrorNodeDependencyInvalid( Exception ):
 
 class   ErrorNoTargets( Exception ):
   def   __init__( self, node ):
-    msg = "Node targets are not built yet: %s" % (node.buildStr())
+    msg = "Node targets are not built yet: %s" % (node.getBuildStr( detailed = True ))
     super(ErrorNoTargets, self).__init__( msg )
 
 class   ErrorNoImplicitDeps( Exception ):
   def   __init__( self, node ):
-    msg = "Node implicit dependencies are not built yet: %s" % (node.buildStr())
+    msg = "Node implicit dependencies are not built yet: %s" % (node.getBuildStr( detailed = True ))
     super(ErrorNoImplicitDeps, self).__init__( msg )
 
 #//===========================================================================//
@@ -207,11 +207,9 @@ class Node (object):
   def   split( self, builder ):
     nodes = []
     
-    dep_nodes = self.dep_nodes
-    dep_values = self.dep_values
-    for src_value in self.sourceValues():
+    dep_values = self.getDepValues()
+    for src_value in self.getSourceValues():
       node = Node( builder, src_value )
-      node.dep_nodes = dep_nodes
       node.dep_values = dep_values
       nodes.append( node )
     
@@ -219,28 +217,43 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __setValue( self ):
+  def   initiate(self):
+    self.builder = self.builder.initiate()
+    self.__setSourceValues()
+    self.__setValues()
     
-    names = [ self.builder.name ]
+  #//=======================================================//
+  
+  def   __setValues( self ):
+    
+    sources = sorted( self.getSourceValues(), key = lambda v: v.name )
+    
+    #//-------------------------------------------------------//
+    #// Get Node name
+    
+    names = self.builder.getTargets( self )
+    if names:
+      names = sorted( (value.name,type(value)) for value in names )
+    else:
+      names = [ self.builder.name ]
+      names += [ value.name for value in sources ]
+      
+    #//-------------------------------------------------------//
+    #// Get Node signature
+
     sign  = [ self.builder.signature ]
     
-    # if __debug__:
-    #   print( "builder name: '%s', signature: '%s'" % (names, sign) )
-    
-    sources = sorted( self.sourceValues(), key = lambda v: v.name )
-    
     for value in sources:
-      names.append( value.name )
-      if sign is not None:
-        content = value.content
-        if content:
-          sign.append( content.signature )
-        else:
-          sign = None
-    
-    deps = self.dependencies()
+      content = value.content
+      if content:
+        sign.append( content.signature )
+      else:
+        sign = None
+        break
     
     if sign is not None:
+      deps = self.getDepValues()
+      
       for value in deps:
         content = value.content
         if content:
@@ -250,8 +263,11 @@ class Node (object):
           sign = None
           break
     
+    # if __debug__:
+    #   print( "builder name: '%s', signature: '%s'" % (names, sign) )
+    
     #//-------------------------------------------------------//
-    #// Signature
+    #// Signature key
     
     if sign is not None:
       sign_hash = newHash()
@@ -275,32 +291,39 @@ class Node (object):
     
   #//=======================================================//
   
-  def   __getattr__( self, attr ):
-    if attr in ('node_value', 'ideps_value'):
-      self.__setValue()
-      return getattr( self, attr )
+  def   __setSourceValues(self):
+    values = []
     
-    if attr == 'source_values':
-      self.source_values = source_values = self.__getSourceValues()
-      return source_values
+    makeValue = self.builder.makeValue
     
-    raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
+    for src in self._sources:
+      
+      if isinstance( src, Node ):
+        values += src.getTargetValues()
+      
+      elif isinstance( src, Value ):
+        values.append( src )
+      
+      else:
+        values.append( makeValue( src, use_cache = True ) )
+      
+    self.source_values = tuple(values)
   
   #//=======================================================//
   
-  def   name(self):
+  def   getName(self):
     return self.node_value.name
   
   #//=======================================================//
   
-  def   values( self ):
+  def   save( self, vfile ):
     values = [ self.ideps_value, self.node_value ]
     
     ideps = self.ideps_value.content.data
     if ideps:
       values += ideps
     
-    return values
+    vfile.addValues( values )
   
   #//=======================================================//
   
@@ -316,9 +339,14 @@ class Node (object):
     """
     self.load( vfile )
     
-    self.node_value.remove()
+    vfile.removeValues( [ self.node_value, self.ideps_value ] )
     
-    vfile.removeValues( [ self.ideps_value, self.node_value ] )
+    self.builder.clear( self )
+  
+  #//=======================================================//
+  
+  def   removeTargets(self):
+    self.node_value.remove()
   
   #//=======================================================//
   
@@ -328,7 +356,7 @@ class Node (object):
     
     if not node_value:
       # if __debug__:
-      #   print( "no previous info of node: %s" % (self.name(),))
+      #   print( "no previous info of node: %s" % (self.getName(),))
       return False
     
     if not node_value.actual( self.node_value ):
@@ -336,7 +364,7 @@ class Node (object):
     
     if not ideps_value.actual():
       # if __debug__:
-      #   print( "ideps are not actual: %s" % (self.name(),))
+      #   print( "ideps are not actual: %s" % (self.getName(),))
       return False
     
     self.node_value = node_value
@@ -346,42 +374,22 @@ class Node (object):
     
   #//=======================================================//
   
-  def   __getSourceValues(self):
-    values = []
-    
-    makeValue = self.builder.makeValue
-    
-    for src in self._sources:
-      
-      if isinstance( src, Node ):
-        values += src.targets()
-      
-      elif isinstance( src, Value ):
-        values.append( src )
-      
-      else:
-        values.append( makeValue( src, use_cache = True ) )
-      
-    return tuple(values)
-  
-  #//=======================================================//
-  
-  def   sources(self):
+  def   getSources(self):
     return tuple( src.get() for src in self.source_values )
   
-  def   sourceValues(self):
+  def   getSourceValues(self):
     return self.source_values
   
-  def   sourceNodes(self):
+  def   getSourceNodes(self):
     return tuple( node for node in self._sources if isinstance(node,Node) )
   
   #//=======================================================//
   
-  def   dependencies(self):
+  def   getDepValues(self):
     values = []
     
     for node in self.dep_nodes:
-      values += toSequence( node.targets() )
+      values += toSequence( node.getTargetValues() )
     
     values += self.dep_values
     
@@ -404,10 +412,20 @@ class Node (object):
   
   #//=======================================================//
   
-  def   targets(self):
+  def   get(self):
+    return self.getTargets()
+  
+  #//=======================================================//
+  
+  def   getTargets(self):
+    return tuple( target.get() for target in self.getTargetValues() )
+  
+  #//=======================================================//
+  
+  def   getTargetValues(self):
     return self._getTargets( attr = 'targets', error = ErrorNoTargets )
   
-  def   sideEffects(self):
+  def   getSideEffectValues(self):
     return self._getTargets( attr = 'itargets', error = ErrorNoTargets )
   
   #//=======================================================//
@@ -433,5 +451,50 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   buildStr( self ):
-    return self.builder.buildStr( self )
+  @staticmethod
+  def   __makeArgsStr( args, detailed ):
+    args = [ str(arg) for arg in toSequence(args) ]
+    
+    if detailed or (len(args) < 3):
+      return ' '.join( args )
+    
+    wish_size = 128
+    
+    args_str = [ args.pop(0) ]
+    last = args.pop()
+    
+    size = len(args_str[0]) + len(last)
+    
+    for arg in args:
+      size += len(arg)
+      
+      if size > wish_size:
+        args_str.append('...')
+        break
+      
+    args_str.append( last )
+    
+    return ' '.join( args_str )
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStr( self, detailed = False ):
+    
+    args = self.builder.getBuildStrArgs( self, detailed = detailed )
+    
+    name    = self.builder.__class__.__name__
+    args    = iter(args)
+    name    = next(args, self.builder.__class__.__name__ )
+    sources = next(args, None )
+    targets = next(args, None )
+    
+    name  = str(name)
+    sources = self.__makeArgsStr( sources, detailed )
+    targets = self.__makeArgsStr( targets, detailed )
+    
+    if sources:
+      name += ": " + sources
+    if targets:
+      name += "-> " + targets
+    
+    return name

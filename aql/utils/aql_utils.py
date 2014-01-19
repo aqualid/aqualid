@@ -23,23 +23,26 @@ __all__ = (
   'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'flattenList',
+  'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
+  'flattenList', 'evaluateValue',
+  "Chrono",
 )
 
-import imp
 import io
 import os
+import imp
 import sys
+import time
 import types
-import hashlib
-import struct
 import errno
-import threading
-import traceback
+import struct
+import hashlib
 import inspect
-import subprocess
 import tempfile
 import itertools
+import traceback
+import threading
+import subprocess
 import multiprocessing
 
 try:
@@ -47,7 +50,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import toSequence
+from aql.util_types import toSequence, UniqueList
 
 #//===========================================================================//
 
@@ -600,3 +603,63 @@ def   flattenList( seq ):
     i += 1
   
   return out_list
+
+#//===========================================================================//
+
+_SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
+
+def  evaluateValue( value, simple_types = _SIMPLE_TYPES ):
+  
+  if isinstance( value, simple_types ):
+    return value
+  
+  if isinstance( value, (list, tuple, UniqueList) ):
+    result = []
+    for v in value:
+      result.append( _evalValueHelper( v ) )
+    
+    return result
+  
+  try:
+    return value.get()
+  except Exception:
+    pass
+  
+  return value
+
+#//===========================================================================//
+
+class   Chrono (object):
+  __slots__ = ('elapsed', )
+  
+  def   __init__(self):
+    self.elapsed = 0
+  
+  def   __enter__(self):
+    self.elapsed = time.time()
+    return self
+  
+  def   __exit__(self, exc_type, exc_val, exc_tb):
+    self.elapsed = time.time() - self.elapsed
+    
+    return False
+  
+  def   get(self):
+    return self.elapsed
+  
+  def   __str__(self):
+    elapsed = self.elapsed
+    
+    minutes = int(elapsed / 60)
+    seconds = int(elapsed - minutes * 60)
+    milisecs = int((elapsed - int(elapsed)) * 1000)
+    
+    result = []
+    if minutes:
+      result.append("%s min" % minutes)
+      milisecs = 0
+    
+    if seconds:   result.append("%s sec" % seconds)
+    if milisecs:  result.append("%s ms" % milisecs)
+    
+    return ' '.join( result )

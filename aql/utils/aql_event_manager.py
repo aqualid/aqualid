@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -18,29 +18,27 @@
 #
 
 __all__ = (
-  'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_INFO', 'EVENT_DEBUG', 'EVENT_ALL',
-  'eventWarning',  'eventStatus',  'eventInfo',  'eventDebug',
+  'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
+  'eventWarning',  'eventStatus',  'eventDebug',
   'eventHandler', 'disableEvents', 'enableEvents', 'finishHandleEvents',
   'disableDefaultHandlers', 'enableDefaultHandlers', 'addUserHandler', 'removeUserHandler',
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )
 
 import types
-import threading
+import itertools
 
 from aql.util_types import Singleton, toSequence
 
 from .aql_utils import equalFunctionArgs
-from .aql_task_manager import TaskManager
 
 #//===========================================================================//
 
 EVENT_WARNING = 0
 EVENT_STATUS = 1
-EVENT_INFO = 2
-EVENT_DEBUG = 3
+EVENT_DEBUG = 2
 
-EVENT_ALL = ( EVENT_DEBUG, EVENT_INFO, EVENT_STATUS, EVENT_WARNING )
+EVENT_ALL = ( EVENT_DEBUG, EVENT_STATUS, EVENT_WARNING )
 
 #//===========================================================================//
 
@@ -71,8 +69,6 @@ class EventManager( Singleton ):
   
   __slots__ = \
   (
-    'lock',
-    'tm',
     'default_handlers',
     'user_handlers',
     'ignored_events',
@@ -81,11 +77,9 @@ class EventManager( Singleton ):
   
   #//-------------------------------------------------------//
 
-  def   __init__(self):
-    self.lock = threading.Lock()
+  def   __init__(self ):
     self.default_handlers = {}
     self.user_handlers = {}
-    self.tm = TaskManager( 0 )
     self.ignored_events = set()
     self.disable_defaults = False
   
@@ -95,11 +89,10 @@ class EventManager( Singleton ):
     if not event:
       event = handler.__name__
     
-    with self.lock:
-      pair = (handler, importance_level)
-      other = self.default_handlers.setdefault( event, pair )
-      if other != pair:
-        raise ErrorEventHandlerAlreadyDefined( event, other[0], handler )
+    pair = (handler, importance_level)
+    other = self.default_handlers.setdefault( event, pair )
+    if other != pair:
+      raise ErrorEventHandlerAlreadyDefined( event, other[0], handler )
   
   #//-------------------------------------------------------//
   
@@ -108,47 +101,43 @@ class EventManager( Singleton ):
     if not event:
       event = user_handler.__name__
     
-    with self.lock:
-      try:
-        defualt_handler = self.default_handlers[ event ][0]
-      except KeyError:
-        raise ErrorEventHandlerUnknownEvent( event )
-      
-      if not equalFunctionArgs( defualt_handler, user_handler ):
-        raise ErrorEventUserHandlerWrongArgs( event, user_handler )
-      
-      self.user_handlers.setdefault( event, [] ).append( user_handler )
+    try:
+      defualt_handler = self.default_handlers[ event ][0]
+    except KeyError:
+      raise ErrorEventHandlerUnknownEvent( event )
+    
+    if not equalFunctionArgs( defualt_handler, user_handler ):
+      raise ErrorEventUserHandlerWrongArgs( event, user_handler )
+    
+    self.user_handlers.setdefault( event, [] ).append( user_handler )
   
   #//-------------------------------------------------------//
   
   def   removeUserHandler( self, user_handlers ):
     
-    with self.lock:
-      for event, handlers in self.user_handlers.items():
-        for user_handler in toSequence( user_handlers ):
-          try:
-            handlers.remove( user_handler )
-          except ValueError:
-            pass
+    for event, handlers in self.user_handlers.items():
+      for user_handler in toSequence( user_handlers ):
+        try:
+          handlers.remove( user_handler )
+        except ValueError:
+          pass
   
   #//-------------------------------------------------------//
   
   def   sendEvent( self, event, *args, **kw ):
     
-    with self.lock:
-      if event in self.ignored_events:
-        return
-      
-      handlers = list(self.user_handlers.get( event, [] ))
-      if not self.disable_defaults:
-        default_handler = self.default_handlers[ event ][0]
-        handlers.append( default_handler )
+    if event in self.ignored_events:
+      return
     
-    self.tm.start( len(handlers) )
+    if not self.disable_defaults:
+      default_handlers = [ self.default_handlers[ event ][0] ]
+    else:
+      default_handlers = []
     
-    add_task = self.tm.addTask
-    for handler in handlers:
-      add_task( None, handler, *args, **kw )
+    user_handlers = self.user_handlers.get( event, [] )
+    
+    for handler in itertools.chain( user_handlers, default_handlers ):
+      handler( *args, **kw )
   
   #//-------------------------------------------------------//
   
@@ -170,7 +159,6 @@ class EventManager( Singleton ):
   
   def   enableEvents( self, event_filters, enable ):
     
-    with self.lock:
       events = self.__getEvents( event_filters )
       
       if enable:
@@ -180,19 +168,9 @@ class EventManager( Singleton ):
   
   #//-------------------------------------------------------//
   
-  def   disableDefaultHandlers( self ):
-    self.disable_defaults = True
+  def   enableDefaultHandlers( self, enable ):
+    self.disable_defaults = bool(enable)
   
-  #//-------------------------------------------------------//
-  
-  def   enableDefaultHandlers( self ):
-    self.disable_defaults = False
-  
-  #//-------------------------------------------------------//
-  
-  def   finish( self ):
-    self.tm.finish()
-
 #//===========================================================================//
 
 def   _eventImpl( handler, importance_level, event = None ):
@@ -212,7 +190,6 @@ def   _eventImpl( handler, importance_level, event = None ):
 
 def   eventWarning( handler ):  return _eventImpl( handler, EVENT_WARNING )
 def   eventStatus( handler ):   return _eventImpl( handler, EVENT_STATUS )
-def   eventInfo( handler ):     return _eventImpl( handler, EVENT_INFO )
 def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )
 
 #//===========================================================================//
@@ -242,17 +219,12 @@ def   disableEvents( event_filters ):
 #//===========================================================================//
 
 def   disableDefaultHandlers():
-  EventManager.instance().disableDefaultHandlers()
+  EventManager.instance().enableDefaultHandlers( False )
 
 #//===========================================================================//
 
 def   enableDefaultHandlers():
-  EventManager.instance().enableDefaultHandlers()
-
-#//===========================================================================//
-
-def   finishHandleEvents():
-  EventManager.instance().finish()
+  EventManager.instance().enableDefaultHandlers( True )
 
 #//===========================================================================//
 

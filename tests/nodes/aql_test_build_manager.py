@@ -22,7 +22,7 @@ class CopyValueBuilder (Builder):
   def   build( self, node ):
     target_values = []
     
-    for source_value in node.sourceValues():
+    for source_value in node.getSourceValues():
       target_values.append( Value( name = source_value.name + '_copy', content = source_value.content ) )
     
     node.setTargets( target_values )
@@ -45,7 +45,7 @@ class ChecksumBuilder (Builder):
   def   build( self, node ):
     target_values = []
     
-    for src in node.sources():
+    for src in node.getSources():
       
       chcksum = fileChecksum( src, self.offset, self.length, 'sha512' )
       if self.replace_ext:
@@ -53,7 +53,7 @@ class ChecksumBuilder (Builder):
       else:
         chcksum_filename = src + '.chksum'
       
-      chcksum_filename = self.buildPath( chcksum_filename )
+      chcksum_filename = self.getBuildPath( chcksum_filename )
       
       with open( chcksum_filename, 'wb' ) as f:
         f.write( chcksum.digest() )
@@ -172,11 +172,11 @@ class MultiChecksumBuilder (Builder):
     targets = []
     sub_nodes = []
     
-    for source_value in node.sourceValues():
+    for source_value in node.getSourceValues():
       
       n = Node( self.builder, source_value )
       if n.actual( vfile ):
-        targets += n.targets()
+        targets += n.getTargetValues()
       else:
         sub_nodes.append( n )
     
@@ -188,9 +188,9 @@ class MultiChecksumBuilder (Builder):
   
   def   prebuildFinished( self, vfile, node, sub_nodes ):
     
-    targets = list( node.targets() )
+    targets = list( node.getTargetValues() )
     for sub_node in sub_nodes:
-      targets += sub_node.targets()
+      targets += sub_node.getTargetValues()
     
     node.setTargets( targets )
   

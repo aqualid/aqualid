@@ -40,7 +40,7 @@ class ChecksumBuilder (Builder):
     target_values = []
     itarget_values = []
     
-    for source_value in node.sourceValues():
+    for source_value in node.getSourceValues():
       content = source_value.content.data.encode()
       chcksum = hashlib.md5()
       chcksum.update( content )
@@ -71,7 +71,7 @@ class CopyBuilder (Builder):
     
     idep = self.makeValue( b'' )
     
-    for src in node.sources():
+    for src in node.getSources():
       new_name = src + '.' + self.ext
       new_iname = src + '.' + self.iext
       
@@ -150,10 +150,10 @@ class TestNodes( AqlTestCase ):
     builder.save( vfile, node )
     self.assertTrue( node.actual( vfile ) )
     
-    for tmp_file in node.targets():
+    for tmp_file in node.getTargetValues():
       tmp_files.append( tmp_file.name )
     
-    for tmp_file in node.sideEffects():
+    for tmp_file in node.getSideEffectValues():
       tmp_files.append( tmp_file.name )
     
     return node
@@ -221,7 +221,7 @@ class TestNodes( AqlTestCase ):
                 node3 = self._rebuildNode( vfile, builder3, [value2], [], tmp_files )
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                node_tname = node.targets()[0].name
+                node_tname = node.getTargetValues()[0].name
                 
                 with open( node_tname, 'wb' ) as f:
                   f.write( b'333' )
@@ -231,11 +231,11 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                with open( node.sideEffects()[0].name, 'wb' ) as f:
+                with open( node.getSideEffectValues()[0].name, 'wb' ) as f:
                   f.write( b'abc' )
                   f.flush()
                 
-                FileValue( node.sideEffects()[0].name, use_cache = False )
+                FileValue( node.getSideEffectValues()[0].name, use_cache = False )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
@@ -273,7 +273,7 @@ class TestSpeedBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    for source_value in node.sourceValues():
+    for source_value in node.getSourceValues():
       new_name = source_value.name + '.' + self.ext
       idep_name = source_value.name + '.' + self.idep
       

@@ -20,8 +20,6 @@
 __all__ = (
   'BuildManager',
   'ErrorNodeDependencyCyclic', 'ErrorNodeDependencyUnknown',
-  'eventBuildNodeFailed', 'eventBuildStatusActualNode', 'eventBuildStatusOutdatedNode', 'eventBuildTargetTwiceByNodes',
-  'eventBuildingNodes', 'eventNodeBuilding', 'eventNodeBuildingFinished',
 )
 
 import threading
@@ -34,20 +32,21 @@ from aql.values import ValuesFile
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildStatusOutdatedNode( node ):
-  logInfo("Outdated node: %s" % node.buildStr() )
+def   eventBuildStatusOutdatedNode( node, detailed ):
+  logInfo("Outdated node: %s" % node.getBuildStr( detailed ) )
 
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildStatusActualNode( node ):
-  logInfo("Actual node: %s" % node.buildStr() )
+def   eventBuildStatusActualNode( node, detailed ):
+  logInfo("Actual node: %s" % node.getBuildStr( detailed ) )
 
 #//===========================================================================//
 
 @eventWarning
-def   eventBuildTargetTwiceByNodes( value, node1, node2 ):
-  logWarning("Target '%s' is built twice by different nodes: '%s', '%s' " % ( value.name, node1.buildStr(), node2.buildStr() ) )
+def   eventBuildTargetTwiceByNodes( value, node1, node2, detailed ):
+  logWarning("Target '%s' is built twice by different nodes: '%s', '%s' " %
+             ( value.name, node1.getBuildStr( detailed ), node2.getBuildStr( detailed ) ) )
 
 #//===========================================================================//
 
@@ -59,24 +58,34 @@ def   eventBuildingNodes( total_nodes ):
 
 @eventStatus
 def   eventBuildNodeFailed( node, error ):
-  logError("Failed node: %s" % node.buildStr() )
-  logError("Error: %s" % str(error) )
-  try:
-    traceback.print_tb( error.__traceback__ )
-  except AttributeError:
-    pass
+  
+  msg = node.getBuildStr( detailed = True )
+  msg += '\n' + str(error)
+  logError( msg )
+  
+  if __debug__:
+    try:
+      traceback.print_tb( error.__traceback__ )
+    except AttributeError:
+      pass
 
 #//===========================================================================//
 
 @eventStatus
 def   eventNodeBuilding( node ):
-  logInfo("Building node: %s" % node.buildStr() )
+  pass
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeBuildingFinished( node ):
-  logInfo("Finished node: %s" % node.buildStr() )
+def   eventNodeBuildingFinished( node, out, detailed ):
+  
+  msg = node.getBuildStr( detailed )
+  if detailed:
+    msg += out
+  
+  logInfo( msg )
+    
 
 #//===========================================================================//
 
@@ -202,7 +211,7 @@ class _NodesTree (object):
           self.dep2nodes[ node ] = set()
           self.tail_nodes.add( node )
 
-          node_srcnodes = node.sourceNodes()
+          node_srcnodes = node.getSourceNodes()
 
           self.__add( node_srcnodes )       # TODO: recursively add sources and depends
           self.__add( node.dep_nodes )      # It would be better to rewrite this code to avoid the recursion
@@ -340,15 +349,14 @@ class  _VFiles( object ):
   
   #//-------------------------------------------------------//
   
-  def   __getitem__( self, node ):
+  def   __getitem__( self, builder ):
     
-    builder = node.builder
     builder_name = builder.name
     
     try:
       vfilename = self.names[ builder_name ]
     except KeyError:
-      build_path = builder.buildPath()
+      build_path = builder.getBuildPath()
       vfilename = build_path.join('.aql.db').abs()
       self.names[ builder_name ] = vfilename
     
@@ -382,13 +390,13 @@ class  _VFiles( object ):
 
 #//===========================================================================//
 
-def   _buildNode( builder, node ):
+def   _buildNode( builder, node, detailed ):
   
   eventNodeBuilding( node )
   
-  builder.build( node )
+  out = builder.build( node )
   
-  eventNodeBuildingFinished( node )
+  eventNodeBuildingFinished( node, out, detailed )
 
 
 #//===========================================================================//
@@ -443,9 +451,9 @@ class _NodesBuilder (object):
     addTask = self.task_manager.addTask
     
     for node in nodes:
-      vfile = vfiles[ node ]
-      
       builder = node.builder
+      
+      vfile = vfiles[ builder ]
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
@@ -540,8 +548,8 @@ class BuildManager (object):
   @staticmethod
   def   __checkAlreadyBuilt( target_nodes, node ):
     values = []
-    values += node.targets()
-    values += node.sideEffects()
+    values += node.getTargetValues()
+    values += node.getSideEffectValues()
     
     for value in values:
       other_node, other_value = target_nodes.setdefault( value.name, (node, value) )

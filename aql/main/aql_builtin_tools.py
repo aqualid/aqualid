@@ -49,8 +49,8 @@ class ExecuteCommand (Builder):
   
   def   build( self, node ):
     
-    cmd = node.sources()
-    cwd = self.buildPath()
+    cmd = node.getSources()
+    cwd = self.getBuildPath()
     
     result = execCommand( cmd, env = self.env, cwd = cwd)
     
@@ -67,7 +67,7 @@ class ExecuteCommand (Builder):
   #//-------------------------------------------------------//
   
   def   buildStr( self, node ):
-    return ' '.join( map( str, node.sources() ) )
+    return ' '.join( map( str, node.getSources() ) )
 
 #//===========================================================================//
 

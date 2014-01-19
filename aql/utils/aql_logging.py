@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'setLogLevel', 'logCritical',  'logWarning',  'logError',  'logDebug',  'logInfo',
+  'setLogLevel', 'logCritical',  'logWarning',  'logError',  'logDebug',  'logInfo', 'addLogHandler',
                  'LOG_CRITICAL', 'LOG_WARNING', 'LOG_ERROR', 'LOG_DEBUG', 'LOG_INFO',
 )
 
@@ -37,7 +37,7 @@ class Logger( logging.Logger ):
     self = logging.getLogger( name )
     handler = logging.StreamHandler()
     
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s: %(message)s")
+    formatter = LogFormatter()
     handler.setFormatter(formatter)
     
     self.addHandler( handler )
@@ -49,38 +49,40 @@ _logger = Logger( "AQL" )
 
 #//---------------------------------------------------------------------------//
 
-def   setLogLevel( level = logging.NOTSET ):
-  _logger.setLevel( level )
-
+class LogFormatter( object ):
+  
+  __slots__ = ('info', 'other')
+  
+  def   __init__(self):
+    self.info = logging.Formatter()
+    self.other = logging.Formatter("%(levelname)s: %(message)s")
+  
+  def formatTime(self, record, datefmt=None):
+    if record.levelno == logging.INFO:
+      return self.info.formatTime( record, datefmt = datefmt)
+    else:
+      return self.other.formatTime( record, datefmt = datefmt)
+  
+  def format(self, record ):
+    if record.levelno == logging.INFO:
+      return self.info.format( record )
+    else:
+      return self.other.format( record )
+    
+  def formatException(self, ei):
+    return self.other.formatException( ei )
+  
+  def usesTime(self):
+    return self.other.usesTime()
+  
 #//---------------------------------------------------------------------------//
 
-def   logCritical( msg, *args, **kwargs ):
-  global _logger
-  _logger.critical( msg, *args, **kwargs )
+setLogLevel   = _logger.setLevel
+logCritical   = _logger.critical
+logError      = _logger.error
+logWarning    = _logger.warning
+logInfo       = _logger.info
+logDebug      = _logger.debug
+addLogHandler = _logger.addHandler
 
 #//---------------------------------------------------------------------------//
-
-def   logError( msg, *args, **kwargs ):
-    global _logger
-    _logger.error( msg, *args, **kwargs )
-
-#//---------------------------------------------------------------------------//
-
-def   logWarning( msg, *args, **kwargs ):
-    global _logger
-    _logger.warning( msg, *args, **kwargs )
-
-#//---------------------------------------------------------------------------//
-
-def   logInfo( msg, *args, **kwargs ):
-    global _logger
-    _logger.info( msg, *args, **kwargs )
-
-#//---------------------------------------------------------------------------//
-
-def   logDebug( msg, *args, **kwargs ):
-    global _logger
-    _logger.debug( msg, *args, **kwargs )
-
-#//---------------------------------------------------------------------------//
-

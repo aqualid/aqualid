@@ -150,7 +150,7 @@ class ProjectConfig( object ):
 #@optionValueEvaluator
 def   _evalNode( value ):
   if isinstance( value, Node ):
-    values = value.targets()
+    values = value.getTargetValues()
   elif isinstance( value, (list, tuple, UniqueList, Value ) ):
     values = toSequence( value )
   else:

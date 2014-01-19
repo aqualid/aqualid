@@ -91,14 +91,11 @@ class GccCompilerImpl (aql.Builder):
   
   def   build( self, node ):
     
-    prefix = self.prefix
-    suffix = self.suffix
-    
-    source = node.sources()[0]
-    obj_file = self.buildPath( source )
+    source = node.getSources()[0]
+    obj_file = self.getBuildPath( source )
     
     cwd = obj_file.dir
-    obj_file = obj_file.change( prefix = prefix ) + suffix
+    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
     
     with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
       
@@ -112,7 +109,43 @@ class GccCompilerImpl (aql.Builder):
       node.setFileTargets( obj_file, ideps = _readDeps( dep_file ) )
   
   #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, detailed = False ):
+    
+    source = str(node.getSources()[0])
+    obj_file = self.getBuildPath( source )
+    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
 
+    
+    if detailed:
+      name    = ' '.join( self.cmd )
+    else:
+      name    = self.cmd[0]
+      obj_file = obj_file.name_ext
+    
+    return name, source, obj_file
+  
+  #//-------------------------------------------------------//
+  
+  def   buildStr( self, node, detailed = False ):
+    
+    name, sources, targets
+    
+    source = str(node.getSources()[0])
+    obj_file = self.getBuildPath( source )
+    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
+
+    
+    if detailed:
+      name    = ' '.join( self.cmd )
+    else:
+      name    = self.cmd[0]
+      obj_file = obj_file.name_ext
+    
+    return name, source, obj_file
+  
+  #//-------------------------------------------------------//
+  
   def   __str__( self ):
     return ' '.join( self.cmd )
 
@@ -124,7 +157,7 @@ class GccCompiler(aql.Builder):
   
   def   __init__(self, options, language, shared ):
     self.compiler = GccCompilerImpl( options, language, shared )
-    self.makeValue = self.makeFileValue
+    self.makeValue = self.compiler.makeValue
   
   #//-------------------------------------------------------//
   
@@ -135,6 +168,11 @@ class GccCompiler(aql.Builder):
   
   def getSignature( self ):
       return self.compiler.signature
+  
+  #//-------------------------------------------------------//
+  
+  def   save( self, vfile, node ):
+    pass
   
   #//-------------------------------------------------------//
   
@@ -149,7 +187,7 @@ class GccCompiler(aql.Builder):
     src_nodes = []
     for src_node in node.split( self.compiler ):
       if src_node.actual( vfile ):
-        targets += src_node.targets()
+        targets += src_node.getTargetValues()
       else:
         src_nodes.append( src_node )
     
@@ -165,7 +203,7 @@ class GccCompiler(aql.Builder):
     src_nodes = []
     for src_node in node.split( self.compiler ):
       if src_node.actual( vfile ):
-        targets += src_node.targets()
+        targets += src_node.getTargetValues()
       else:
         src_nodes.append( src_node )
     
@@ -177,9 +215,9 @@ class GccCompiler(aql.Builder):
   
   def   prebuildFinished( self, vfile, node, pre_nodes ):
     
-    targets = list( node.targets() )
+    targets = list( node.getTargetValues() )
     for pre_node in pre_nodes:
-      targets += pre_node.targets()
+      targets += pre_node.getTargetValues()
     
     node.setFileTargets( targets )
   
@@ -202,7 +240,7 @@ class GccArchiver(aql.Builder):
     prefix = options.libprefix.get() + options.prefix.get()
     suffix = options.libsuffix.get()
     
-    self.target = self.buildPath( target ).change( prefix = prefix ) + suffix
+    self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
 
     self.cmd = [ options.lib.get(), 'rcs', self.target ]
     
@@ -212,12 +250,12 @@ class GccArchiver(aql.Builder):
   
   def   build( self, node ):
     
-    obj_files = node.sources()
+    obj_files = node.getSources()
     
     cmd = list(self.cmd)
     cmd += aql.FilePaths( obj_files )
     
-    cwd = self.buildPath()
+    cwd = self.getBuildPath()
     
     result = aql.execCommand( cmd, cwd, file_flag = '@' )
     if result.failed():
@@ -246,7 +284,7 @@ class GccLinker(aql.Builder):
       prefix = options.prefix.get()
       suffix = options.progsuffix.get()
     
-    self.target = self.buildPath( target ).change( prefix = prefix, ext = suffix )
+    self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
     
     self.cmd = self.__getCmd( options, self.target, language, shared )
     self.makeValue = self.makeFileValue
@@ -278,13 +316,13 @@ class GccLinker(aql.Builder):
   
   def   build( self, node ):
     
-    obj_files = node.sources()
+    obj_files = node.getSources()
     
     cmd = list(self.cmd)
     
     cmd[2:2] = map( str, obj_files )
     
-    cwd = self.buildPath()
+    cwd = self.getBuildPath()
     
     result = aql.execCommand( cmd, cwd, file_flag = '@' )
     if result.failed():

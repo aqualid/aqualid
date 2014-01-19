@@ -21,7 +21,34 @@ __all__ = ( 'main', )
 
 import os
 
+from aql.utils import eventStatus, finishHandleEvents, logInfo, Chrono
 from .aql_project import Project, ProjectConfig
+
+#//===========================================================================//
+
+@eventStatus
+def   eventReadingScripts():
+  logInfo("Reading scripts..." )
+
+@eventStatus
+def   eventReadingScriptsDone( elapsed ):
+  logInfo("Reading scripts finished (%s)" % elapsed)
+
+#//===========================================================================//
+
+@eventStatus
+def   eventBuilding():
+  logInfo("Building targets...")
+
+@eventStatus
+def   eventBuildingDone( elapsed ):
+  logInfo("Building targets finished (%s)" % elapsed)
+
+#//===========================================================================//
+
+@eventStatus
+def   eventBuildSummary( elapsed ):
+  logInfo("Total time: %s" % elapsed)
 
 #//===========================================================================//
 
@@ -43,18 +70,35 @@ def   _findMakeScript( start_dir, main_script, main_script_default ):
 #//===========================================================================//
 
 def   main():
-  prj_cfg = ProjectConfig()
+  try:
+    with Chrono() as total_elapsed:
+      prj_cfg = ProjectConfig()
+      
+      if prj_cfg.directory:
+        os.chdir( prj_cfg.directory )
+      
+      makefile = prj_cfg.makefile
+      targets = prj_cfg.targets
+      options = prj_cfg.options
+      
+      prj = Project( options, targets )
+      
+      eventReadingScripts()
+      
+      with Chrono() as elapsed:
+        prj.Include( makefile )
+      
+      eventReadingScriptsDone( elapsed )
+      
+      eventBuilding()
+      
+      with elapsed:
+        prj.Build()
+      
+      eventBuildingDone( elapsed )
+          
+    eventBuildSummary( total_elapsed )
+  finally:
+    finishHandleEvents()
   
-  if prj_cfg.directory:
-    os.chdir( prj_cfg.directory )
-  
-  makefile = prj_cfg.makefile
-  targets = prj_cfg.targets
-  options = prj_cfg.options
-  
-  prj = Project( options, targets )
-  
-  prj.Include( makefile )
-  prj.Build()
-
 #//===========================================================================//
