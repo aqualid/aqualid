@@ -182,7 +182,7 @@ class   FileValue (Value):
       file_name = content.name
       content_type = type(content.content)
     
-    elif isinstance( content, ContentBase ):
+    elif isinstance( content, ContentBase ) or (content is None):
       file_content = content
     
     elif type(content) is type:

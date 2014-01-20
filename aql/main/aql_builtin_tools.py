@@ -35,15 +35,13 @@ dir_node = FileDir( prog_node )
 class ExecuteCommand (Builder):
   
   NAME_ATTRS = None
-  SIGNATURE_ATTRS = ('env_path', 'with_output' )
+  SIGNATURE_ATTRS = ('env_path', )
 
   #//-------------------------------------------------------//
   
-  def   __init__(self, options, with_output = False ):
-    self.with_output = with_output
+  def   __init__(self, options ):
     self.env = options.env.get().copy( value_type = str )
     self.env_path = list( options.env['PATH'].get() )
-    
   
   #//-------------------------------------------------------//
   
@@ -52,22 +50,28 @@ class ExecuteCommand (Builder):
     cmd = node.getSources()
     cwd = self.getBuildPath()
     
-    result = execCommand( cmd, env = self.env, cwd = cwd)
+    result = execCommand( cmd, env = self.env, cwd = cwd )
     
     if result.failed():
       raise result
     
-    if self.with_output:
-      targets = [ ( result.out, result.err ) ]
-    else:
-      targets = []
-      
-    node.setTargets( targets )
+    self.setTargets( targets = [] )
   
   #//-------------------------------------------------------//
   
-  def   buildStr( self, node ):
-    return ' '.join( map( str, node.getSources() ) )
+  def   getBuildStrArgs( self, node, detailed = False ):
+    
+    sources = node.getSources()
+    
+    if detailed:
+      name    = ' '.join( self.cmd[:-2] )
+      target = self.target
+    else:
+      name    = aql.FilePath(self.cmd[0]).name
+      sources  = [ aql.FilePath(source).name_ext for source in sources ]
+      target  = aql.FilePath(self.target).name_ext
+    
+    return name, sources, target
 
 #//===========================================================================//
 

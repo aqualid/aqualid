@@ -38,7 +38,7 @@ class ContentBase( object ):
   
   FIXED_SIZE = False
   
-  __slots__ = ('data', 'signature')
+  __slots__ = ('signature',)
   
   def   __new__( cls, *args, **kw ):
     return super(ContentBase,cls).__new__(cls)
@@ -52,12 +52,12 @@ class ContentBase( object ):
   def   __bool__( self ):
     return True
   
-  def   __str__( self ):
-    return str(self.data)
+  def   get( self ):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   __getnewargs__(self):
     #noinspection PyRedundantParentheses
-    return (self.data, )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   __ne__( self, other ):
     return not self.__eq__( other )
@@ -85,9 +85,11 @@ class _NoContent( ContentBase ):
   
   def   __new__( cls, *args ):
     self = super(_NoContent,cls).__new__(cls)
-    self.data = None
     self.signature = bytearray()
     return self
+  
+  def   get( self ):
+    return None
   
   def   __eq__( self, other ):
     return False
@@ -104,6 +106,8 @@ NoContent = _NoContent()
 
 @pickleable
 class   SignatureContent( ContentBase ):
+  
+  __slots__ = ('data',)
   
   FIXED_SIZE = True
   
@@ -125,11 +129,20 @@ class   SignatureContent( ContentBase ):
     
     return self
   
+  def get( self ):
+    return self.data
+  
+  def   __getnewargs__(self):
+    return (self.data, )
+
+  
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
 @pickleable
 class   BytesContent ( ContentBase ):
+  
+  __slots__ = ('data',)
   
   def   __new__( cls, data = None ):
     
@@ -154,12 +167,20 @@ class   BytesContent ( ContentBase ):
       return self.signature
     
     return super(BytesContent,self).__getattr__( attr )
+  
+  def get( self ):
+    return self.data
+  
+  def   __getnewargs__(self):
+    return (self.data, )
 
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
 @pickleable
 class   StringContent ( ContentBase ):
+  
+  __slots__ = ('data',)
   
   def   __new__(cls, data = None ):
     
@@ -181,6 +202,13 @@ class   StringContent ( ContentBase ):
       return self.signature
     
     return super(StringContent,self).__getattr__( attr )
+  
+  def get( self ):
+    return self.data
+  
+  def   __getnewargs__(self):
+    return (self.data, )
+
 
 #//============================signature===============================================//
 
@@ -201,11 +229,14 @@ class   IStringContent ( StringContent ):
     
     return super(IStringContent,self).__getattr__( attr )
 
+
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
 @pickleable
 class   OtherContent ( ContentBase ):
+  
+  __slots__ = ('data',)
   
   def   __new__( cls, data = None ):
     
@@ -229,6 +260,12 @@ class   OtherContent ( ContentBase ):
     
     return super(OtherContent,self).__getattr__( attr )
 
+  def get( self ):
+    return self.data
+  
+  def   __getnewargs__(self):
+    return (self.data, )
+
 #//===========================================================================//
 
 def   makeContent( content ):
@@ -251,7 +288,7 @@ def   makeContent( content ):
 @pickleable
 class   Value (object):
   
-  __slots__ = ( 'name', 'content', 'data', 'signature' )
+  __slots__ = ( 'name', 'content' )
   
   #//-------------------------------------------------------//
   
@@ -310,7 +347,7 @@ class   Value (object):
   #//-------------------------------------------------------//
 
   def   get(self):
-    return self.content.data
+    return self.content.get()
 
   #//-------------------------------------------------------//
 

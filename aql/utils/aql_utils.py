@@ -154,8 +154,8 @@ def   dumpData( data, protocol = pickle.HIGHEST_PROTOCOL ):
 
 #//===========================================================================//
 
-def   newHash():
-  return hashlib.md5()
+def   newHash( data = '' ):
+  return hashlib.md5( data )
 
 #//===========================================================================//
 

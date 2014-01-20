@@ -18,15 +18,14 @@
 #
 
 __all__ = (
-  'Builder',
+  'Builder', 'BuildSplitter',
 )
 
 import os
 import errno
-import hashlib
 
 from aql.util_types import toSequence, FilePath
-from aql.utils import dumpData, evaluateValue
+from aql.utils import dumpData, newHash, evaluateValue
 from aql.values import Value, FileValue, FileName
 from aql.values import FileContentChecksum, FileContentTimeStamp
 
@@ -157,7 +156,7 @@ class Builder (object):
     
     sign = dumpData( sign )
     
-    self.signature = hashlib.md5( sign ).digest()
+    self.signature = newHash( sign ).digest()
   
   #//-------------------------------------------------------//
   

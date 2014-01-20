@@ -40,7 +40,7 @@ def   _addPrefix( prefix, values ):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccCompilerImpl (aql.Builder):
+class GccCompiler (aql.Builder):
   
   NAME_ATTRS = ( 'prefix', 'suffix' )
   SIGNATURE_ATTRS = ('cmd', )
@@ -84,18 +84,29 @@ class GccCompilerImpl (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   actual( self, vfile, node ):
-    return False
+  def   getTargetValues( self, node ):
+    
+    obj_file = self._getObj( node )[0]
+    
+    target = aql.FileValue( content = None, name = obj_file )
+    
+    return target
+  
   #//-------------------------------------------------------//
   
+  def   _getObj(self, node ):
+    source = node.getSources()[0]
+    obj_file = self.getBuildPath( source )
+    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
+    
+    return obj_file, source
+
+  #//-------------------------------------------------------//
   
   def   build( self, node ):
     
-    source = node.getSources()[0]
-    obj_file = self.getBuildPath( source )
-    
+    obj_file, source = self._getObj( node )
     cwd = obj_file.dir
-    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
     
     with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
       
@@ -112,120 +123,17 @@ class GccCompilerImpl (aql.Builder):
   
   def   getBuildStrArgs( self, node, detailed = False ):
     
-    source = str(node.getSources()[0])
-    obj_file = self.getBuildPath( source )
-    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
-
+    obj_file, source = self._getObj( node )
     
     if detailed:
       name    = ' '.join( self.cmd )
     else:
-      name    = self.cmd[0]
+      name    = aql.FilePath(self.cmd[0]).name
+      source  = aql.FilePath(source).name_ext
       obj_file = obj_file.name_ext
     
     return name, source, obj_file
   
-  #//-------------------------------------------------------//
-  
-  def   buildStr( self, node, detailed = False ):
-    
-    name, sources, targets
-    
-    source = str(node.getSources()[0])
-    obj_file = self.getBuildPath( source )
-    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
-
-    
-    if detailed:
-      name    = ' '.join( self.cmd )
-    else:
-      name    = self.cmd[0]
-      obj_file = obj_file.name_ext
-    
-    return name, source, obj_file
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return ' '.join( self.cmd )
-
-#//===========================================================================//
-
-class GccCompiler(aql.Builder):
-  
-  __slots__ = ('compiler',)
-  
-  def   __init__(self, options, language, shared ):
-    self.compiler = GccCompilerImpl( options, language, shared )
-    self.makeValue = self.compiler.makeValue
-  
-  #//-------------------------------------------------------//
-  
-  def getName( self ):
-      return self.compiler.name
-  
-  #//-------------------------------------------------------//
-  
-  def getSignature( self ):
-      return self.compiler.signature
-  
-  #//-------------------------------------------------------//
-  
-  def   save( self, vfile, node ):
-    pass
-  
-  #//-------------------------------------------------------//
-  
-  def   actual( self, vfile, node ):
-    return True
-  
-  #//-------------------------------------------------------//
-  
-  def   _splitNodes( self, vfile, node ):
-    targets = []
-    
-    src_nodes = []
-    for src_node in node.split( self.compiler ):
-      if src_node.actual( vfile ):
-        targets += src_node.getTargetValues()
-      else:
-        src_nodes.append( src_node )
-    
-    node.setFileTargets( targets )
-    
-    return src_nodes
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuild( self, vfile, node ):
-    targets = []
-    
-    src_nodes = []
-    for src_node in node.split( self.compiler ):
-      if src_node.actual( vfile ):
-        targets += src_node.getTargetValues()
-      else:
-        src_nodes.append( src_node )
-    
-    node.setFileTargets( targets )
-    
-    return src_nodes
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuildFinished( self, vfile, node, pre_nodes ):
-    
-    targets = list( node.getTargetValues() )
-    for pre_node in pre_nodes:
-      targets += pre_node.getTargetValues()
-    
-    node.setFileTargets( targets )
-  
-  #//-------------------------------------------------------//
-
-  def   __str__( self ):
-    return str(self.compiler)
-
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
@@ -264,8 +172,26 @@ class GccArchiver(aql.Builder):
     node.setFileTargets( self.target )
   
   #//-------------------------------------------------------//
-  def   __str__( self ):
-    return ' '.join( self.cmd )
+  
+  def   getTargetValues( self, node ):
+    target = aql.FileValue( content = None, name = self.target )
+    return target
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, detailed = False ):
+    
+    sources = node.getSources()
+    
+    if detailed:
+      name    = ' '.join( self.cmd[:-1] )
+      target = self.target
+    else:
+      name    = aql.FilePath(self.cmd[0]).name
+      sources  = [ aql.FilePath(source).name_ext for source in sources ]
+      target  = aql.FilePath(self.target).name_ext
+    
+    return name, sources, target
 
 #//===========================================================================//
 
@@ -330,10 +256,27 @@ class GccLinker(aql.Builder):
     
     node.setFileTargets( self.target )
   
+  def   getTargetValues( self, node ):
+    target = aql.FileValue( content = None, name = self.target )
+    return target
+  
   #//-------------------------------------------------------//
-
-  def   __str__( self ):
-    return ' '.join( self.cmd )
+  
+  def   getBuildStrArgs( self, node, detailed = False ):
+    
+    sources = node.getSources()
+    
+    if detailed:
+      name    = ' '.join( self.cmd[:-2] )
+      target = self.target
+    else:
+      name    = aql.FilePath(self.cmd[0]).name
+      sources  = [ aql.FilePath(source).name_ext for source in sources ]
+      target  = aql.FilePath(self.target).name_ext
+    
+    return name, sources, target
+  
+  #//-------------------------------------------------------//
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION
@@ -515,10 +458,10 @@ class ToolGccCommon( aql.Tool ):
 class ToolGxx( ToolGccCommon ):
   
   def   Object( self, options ):
-    return GccCompiler( options, 'c++', shared = False )
+    return aql.BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
   
   def   SharedObject( self, options ):
-    return GccCompiler( options, 'c++', shared = True )
+    return aql.BuildSplitter( GccCompiler( options, 'c++', shared = True ) )
   
   def   Library( self, options, target ):
     return GccArchiver( options, target )
@@ -536,10 +479,10 @@ class ToolGxx( ToolGccCommon ):
 class ToolGcc( ToolGccCommon ):
   
   def   Object( self, options ):
-    return GccCompiler( options, 'c', shared = False )
+    return aql.BuildSplitter( GccCompiler( options, 'c', shared = False ) )
   
   def   SharedObject( self, options ):
-    return GccCompiler( options, 'c', shared = True )
+    return aql.BuildSplitter( GccCompiler( options, 'c', shared = True ) )
   
   def   Library( self, options, target ):
     return GccArchiver( options, target )
