@@ -451,6 +451,9 @@ class _NodesBuilder (object):
     addTask = self.task_manager.addTask
     
     for node in nodes:
+      
+      node.initiate()
+      
       builder = node.builder
       
       vfile = vfiles[ builder ]
@@ -625,6 +628,9 @@ class BuildManager (object):
           break
         
         for node in tails:
+          
+          node.initiate()
+          
           vfile = vfiles[ node ]
           
           node.clear( vfile )
@@ -648,7 +654,12 @@ class BuildManager (object):
           break
         
         for node in tails:
+          
+          node.initiate()
+          
           vfile = vfiles[ node ]
+          
+          # TODO: add support for prebuild
           if not node.builder.actual( vfile, node ):
             eventBuildStatusOutdatedNode( node )
             outdated_nodes.add( node )

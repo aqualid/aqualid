@@ -150,10 +150,10 @@ class   DependsValue (Value):
 
   #//-------------------------------------------------------//
 
-  def   actual( self, use_cache = True ):
+  def   actual( self ):
     try:
       for value in self.content.data:
-        if not value.actual( use_cache = use_cache ):
+        if not value.actual():
           # if __debug__:
           #   print("DependsValue.actual(): non-actual value: %s" % (value,))
           return False

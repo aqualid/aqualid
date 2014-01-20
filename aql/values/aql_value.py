@@ -329,7 +329,7 @@ class   Value (object):
   
   #//-------------------------------------------------------//
   
-  def   actual( self, use_cache = True ):
+  def   actual( self ):
     return bool(self.content)
   
   #//-------------------------------------------------------//

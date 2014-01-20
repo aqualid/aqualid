@@ -45,7 +45,7 @@ def   _makeDir( path_dir, _path_cache = set() ):
 
 #//===========================================================================//
 
-class BuilderProxy( object ):
+class BuilderInitiator( object ):
   
   __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw', 'options_kw' )
   
@@ -95,10 +95,10 @@ class BuilderProxy( object ):
     builder.__init__( options, *args, **kw )
     
     if not hasattr( builder, 'name' ):
-      builder.name = builder.getName()
+      builder.setName()
     
     if not hasattr( builder, 'signature' ):
-      builder.signature = builder.getSignature()
+      builder.setSignature()
     
     self.is_initiated = True
     
@@ -124,7 +124,7 @@ class Builder (object):
   def   __new__(cls, options, *args, **kw):
     
     self = super(Builder, cls).__new__(cls)
-    return BuilderProxy( self, options, args, kw )
+    return BuilderInitiator( self, options, args, kw )
   
   #//-------------------------------------------------------//
   
@@ -133,7 +133,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
 
-  def getName( self ):
+  def setName( self ):
     
     cls = self.__class__
     name = [ cls.__module__, cls.__name__, self.build_path, self.strip_src_dir ]
@@ -143,11 +143,11 @@ class Builder (object):
         value = getattr( self, attr_name )
         name.append( value )
             
-    return tuple( name )
+    self.name = tuple( name )
   
   #//-------------------------------------------------------//
   
-  def   getSignature( self ):
+  def   setSignature( self ):
     sign = []
     
     if self.SIGNATURE_ATTRS:
@@ -157,7 +157,7 @@ class Builder (object):
     
     sign = dumpData( sign )
     
-    return hashlib.md5( sign ).digest()
+    self.signature = hashlib.md5( sign ).digest()
   
   #//-------------------------------------------------------//
   
@@ -175,7 +175,7 @@ class Builder (object):
   # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
     # if  __debug__:
-    #   print("builder.save(): node: %s" % (node.name(), ))
+    #   print("builder.save(): node: %s" % (node.getName(), ))
     node.save( vfile )
   
   #//-------------------------------------------------------//
@@ -211,7 +211,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
 
-  def   getTargets( self, node ):
+  def   getTargetValues( self, node ):
     """
     If it's possible returns target values of the node, otherwise None 
     """
@@ -226,11 +226,6 @@ class Builder (object):
     targets = node.getTargets()
     
     return name, sources, targets
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__( self ):
-    return str(self.name)
   
   #//-------------------------------------------------------//
   
@@ -317,13 +312,13 @@ class BuildSplitter(Builder):
   
   #//-------------------------------------------------------//
   
-  def getName( self ):
-      return self.builder.name
+  def setName( self ):
+      self.name = self.builder.name
   
   #//-------------------------------------------------------//
   
-  def getSignature( self ):
-      return self.builder.signature
+  def setSignature( self ):
+      self.signature = self.builder.signature
   
   #//-------------------------------------------------------//
   
@@ -348,9 +343,4 @@ class BuildSplitter(Builder):
     for pre_node in pre_nodes:
       targets += pre_node.getTargetValues()
     
-    node.setFileTargets( targets )
-  
-  #//-------------------------------------------------------//
-
-  def   __str__( self ):
-    return str(self.builder)
+    node.setTargets( targets )

@@ -97,8 +97,7 @@ class   NodeContent( ContentBase ):
   
   #//-------------------------------------------------------//
   
-  def   actual(self, other ):
-    
+  def   actualSources( self, other ):
     if type(self) != type(other):
       # if __debug__:
       #   print("NodeContent.actual(): Wrong type: %s" % type(other) )
@@ -108,6 +107,11 @@ class   NodeContent( ContentBase ):
       # if __debug__:
       #   print("NodeContent.actual(): Changed sources signature" )
       return False
+
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
     
     if (self.targets is None) or (self.itargets is None):
       # if __debug__:
@@ -146,12 +150,19 @@ class   NodeValue (Value):
 
   #//-------------------------------------------------------//
 
-  def   actual( self, other ):
+  def   actualSources( self, other ):
     content = self.content
     if not content:
       return False
     
-    return content.actual( other.content )
+    return content.actualSources( other.content )
+  
+  def   actual( self, use_cache = True ):
+    content = self.content
+    if not content:
+      return False
+    
+    return content.actual()
   
   #//-------------------------------------------------------//
   
@@ -220,30 +231,43 @@ class Node (object):
   def   initiate(self):
     self.builder = self.builder.initiate()
     self.__setSourceValues()
-    self.__setValues()
+    self.__setNodeValue()
     
   #//=======================================================//
   
-  def   __setValues( self ):
+  def   __initiateIds(self):
+    node_value = self.node_value
+    if not node_value.name:
+      self.__setName( node_value )
+      self.__setSignature( node_value )
+      
+      self.ideps_value = DependsValue( name = node_value.name )
     
-    sources = sorted( self.getSourceValues(), key = lambda v: v.name )
+  #//=======================================================//
+  
+  def   __setName(self, node_value ):
     
-    #//-------------------------------------------------------//
-    #// Get Node name
-    
-    names = self.builder.getTargets( self )
-    if names:
-      names = sorted( (value.name,type(value)) for value in names )
+    targets = node_value.content.targets
+    if targets:
+      names = sorted( (value.name,type(value)) for value in targets )
     else:
+      sources = sorted( self.getSourceValues(), key = lambda v: v.name )
       names = [ self.builder.name ]
       names += [ value.name for value in sources ]
-      
-    #//-------------------------------------------------------//
-    #// Get Node signature
-
+    
+    name_hash = newHash()
+    names_dump = dumpData( names )
+    name_hash.update( names_dump )
+    
+    node_value.name = name_hash.digest()
+  
+  #//=======================================================//
+  
+  def   __setSignature(self, node_value ):
+    
     sign  = [ self.builder.signature ]
     
-    for value in sources:
+    for value in self.getSourceValues():
       content = value.content
       if content:
         sign.append( content.signature )
@@ -263,31 +287,25 @@ class Node (object):
           sign = None
           break
     
-    # if __debug__:
-    #   print( "builder name: '%s', signature: '%s'" % (names, sign) )
-    
-    #//-------------------------------------------------------//
-    #// Signature key
-    
     if sign is not None:
       sign_hash = newHash()
       sign_dump = dumpData( sign )
       sign_hash.update( sign_dump )
       sign = sign_hash.digest()
     
-    #//-------------------------------------------------------//
-    #// Name key
-    name_hash = newHash()
-    names_dump = dumpData( names )
-    name_hash.update( names_dump )
+    node_value.content.sources_sign = sign
+  
+  #//=======================================================//
+  
+  def   __setNodeValue( self ):
     
-    self.node_value = NodeValue( name = name_hash.digest(), content = NodeContent( sources_sign = sign ) )
+    name = b''
+    sign = b''
+    targets = self.builder.getTargetValues( self )
     
-    name_hash.update( b"ideps" )
-    self.ideps_value = DependsValue( name = name_hash.digest() )
+    node_content = NodeContent( sources_sign = sign, targets = targets )
     
-    # if __debug__:
-    #   print("Node.__setValue: name: %s (%s)" % (node_value.name, self) )
+    self.node_value = NodeValue( name = name, content = node_content )
     
   #//=======================================================//
   
@@ -328,7 +346,17 @@ class Node (object):
   #//=======================================================//
   
   def   load( self, vfile ):
-    self.ideps_value, self.node_value = vfile.findValues( [ self.ideps_value, self.node_value ] )
+    
+    self.__initiateIds()
+    
+    self.ideps_value, node_value = vfile.findValues( [ self.ideps_value, self.node_value ] )
+    node_content = node_value.content
+    if node_content:
+      node_targets = node_content.targets
+      if node_targets is not None:
+        self.node_value.content.targets = node_targets
+      
+      self.node_value.content.itargets = node_content.itargets
   
   #//=======================================================//
   
@@ -352,6 +380,8 @@ class Node (object):
   
   def   actual( self, vfile  ):
     
+    self.__initiateIds()
+    
     ideps_value, node_value = vfile.findValues( [self.ideps_value, self.node_value] )
     
     if not node_value:
@@ -359,12 +389,15 @@ class Node (object):
       #   print( "no previous info of node: %s" % (self.getName(),))
       return False
     
-    if not node_value.actual( self.node_value ):
+    if not node_value.actualSources( self.node_value ):
       return False
     
     if not ideps_value.actual():
       # if __debug__:
       #   print( "ideps are not actual: %s" % (self.getName(),))
+      return False
+    
+    if not node_value.actual():
       return False
     
     self.node_value = node_value
@@ -482,19 +515,18 @@ class Node (object):
     
     args = self.builder.getBuildStrArgs( self, detailed = detailed )
     
-    name    = self.builder.__class__.__name__
     args    = iter(args)
     name    = next(args, self.builder.__class__.__name__ )
     sources = next(args, None )
     targets = next(args, None )
     
-    name  = str(name)
+    build_str  = str(name)
     sources = self.__makeArgsStr( sources, detailed )
     targets = self.__makeArgsStr( targets, detailed )
     
     if sources:
-      name += ": " + sources
+      build_str += ": " + sources
     if targets:
-      name += "-> " + targets
+      build_str += "-> " + targets
     
-    return name
+    return build_str

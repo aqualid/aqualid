@@ -219,7 +219,7 @@ class   FileValue (Value):
 
   #//-------------------------------------------------------//
 
-  def   actual( self, use_cache = True ):
+  def   actual( self ):
     content = self.content
     
     if not content:
@@ -230,7 +230,7 @@ class   FileValue (Value):
     # if __debug__:
     #   print("type(content): %s " % (type(content),) )
     
-    result = (content == type(content)( self.name, use_cache = use_cache ))
+    result = (content == type(content)( self.name, use_cache = True ))
     # if __debug__:
     #   if not result:
     #     print( "FileValue.actual(): non-actual content of file %s" % (self.name,))
