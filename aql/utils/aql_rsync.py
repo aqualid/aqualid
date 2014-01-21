@@ -25,7 +25,7 @@ import os.path
 import itertools
 
 from aql.util_types import toSequence
-from .aql_utils import execCommand, whereProgram
+from .aql_utils import executeCommand, whereProgram
 
 #//===========================================================================//
 
@@ -165,7 +165,7 @@ class   Rsync( object ):
         cmd += local_path
         cmd += remote_path
       
-      result = execCommand( cmd, env = self.env, stdin = tmp_r )
+      result = executeCommand( cmd, env = self.env, stdin = tmp_r )
       if result.failed():
         raise result
     

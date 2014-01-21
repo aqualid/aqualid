@@ -113,11 +113,11 @@ class GccCompiler (aql.Builder):
       cmd = list(self.cmd)
       cmd += ['-o', obj_file, '-MF', dep_file, str(source) ]
       
-      result = aql.execCommand( cmd, cwd, file_flag = '@' )
-      if result.failed():
-        raise result
+      out = self.execCmd( cmd, cwd, file_flag = '@' )
       
       node.setFileTargets( obj_file, ideps = _readDeps( dep_file ) )
+      
+      return out
   
   #//-------------------------------------------------------//
   
@@ -165,11 +165,12 @@ class GccArchiver(aql.Builder):
     
     cwd = self.getBuildPath()
     
-    result = aql.execCommand( cmd, cwd, file_flag = '@' )
-    if result.failed():
-      raise result
+    
+    out = self.execCmd( cmd, cwd, file_flag = '@' )
     
     node.setFileTargets( self.target )
+    
+    return out
   
   #//-------------------------------------------------------//
   
@@ -250,11 +251,11 @@ class GccLinker(aql.Builder):
     
     cwd = self.getBuildPath()
     
-    result = aql.execCommand( cmd, cwd, file_flag = '@' )
-    if result.failed():
-      raise result
+    out = self.execCmd( cmd, cwd, file_flag = '@' )
     
     node.setFileTargets( self.target )
+    
+    return out
   
   def   getTargetValues( self, node ):
     target = aql.FileValue( content = None, name = self.target )
@@ -315,7 +316,7 @@ def   _findGcc( env, gcc_prefix, gcc_suffix ):
 #//===========================================================================//
 
 def   _getGccSpecs( gcc ):
-  result = aql.execCommand( [gcc, '-v'] )
+  result = aql.executeCommand( [gcc, '-v'] )
   
   target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
   version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )

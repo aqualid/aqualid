@@ -20,7 +20,7 @@
 __all__ = (
   'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
   'eventWarning',  'eventStatus',  'eventDebug',
-  'eventHandler', 'disableEvents', 'enableEvents', 'finishHandleEvents',
+  'eventHandler', 'disableEvents', 'enableEvents',
   'disableDefaultHandlers', 'enableDefaultHandlers', 'addUserHandler', 'removeUserHandler',
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )

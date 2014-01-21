@@ -89,6 +89,11 @@ class   Dict (dict):
   
   #//-------------------------------------------------------//
   
+  def   dump( self ):
+    return { str(key): str(value) for key, value in self.items() }
+  
+  #//-------------------------------------------------------//
+  
   def   copy( self, key_type = None, value_type = None ):
     
     other = Dict()

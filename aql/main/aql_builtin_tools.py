@@ -1,5 +1,5 @@
 
-from aql.utils import execCommand
+from aql.util_types import FilePath
 from aql.nodes import Builder
 
 from .aql_tools import Tool
@@ -34,44 +34,16 @@ dir_node = FileDir( prog_node )
 
 class ExecuteCommand (Builder):
   
-  NAME_ATTRS = None
-  SIGNATURE_ATTRS = ('env_path', )
-
-  #//-------------------------------------------------------//
-  
-  def   __init__(self, options ):
-    self.env = options.env.get().copy( value_type = str )
-    self.env_path = list( options.env['PATH'].get() )
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, node ):
-    
     cmd = node.getSources()
-    cwd = self.getBuildPath()
-    
-    result = execCommand( cmd, env = self.env, cwd = cwd )
-    
-    if result.failed():
-      raise result
-    
-    self.setTargets( targets = [] )
+    out = self.execCmd( cmd )
+    return out
   
   #//-------------------------------------------------------//
   
   def   getBuildStrArgs( self, node, detailed = False ):
-    
-    sources = node.getSources()
-    
-    if detailed:
-      name    = ' '.join( self.cmd[:-2] )
-      target = self.target
-    else:
-      name    = aql.FilePath(self.cmd[0]).name
-      sources  = [ aql.FilePath(source).name_ext for source in sources ]
-      target  = aql.FilePath(self.target).name_ext
-    
-    return name, sources, target
+    cmd = ' '.join( node.getSources() )
+    return cmd
 
 #//===========================================================================//
 

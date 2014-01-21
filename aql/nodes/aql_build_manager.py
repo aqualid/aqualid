@@ -72,7 +72,7 @@ def   eventBuildNodeFailed( node, error ):
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeBuilding( node ):
+def   eventNodeBuilding( node, detailed ):
   pass
 
 #//===========================================================================//
@@ -81,11 +81,10 @@ def   eventNodeBuilding( node ):
 def   eventNodeBuildingFinished( node, out, detailed ):
   
   msg = node.getBuildStr( detailed )
-  if detailed:
+  if detailed and out:
     msg += out
   
   logInfo( msg )
-    
 
 #//===========================================================================//
 
@@ -392,7 +391,7 @@ class  _VFiles( object ):
 
 def   _buildNode( builder, node, detailed ):
   
-  eventNodeBuilding( node )
+  eventNodeBuilding( node, detailed )
   
   out = builder.build( node )
   
@@ -442,7 +441,7 @@ class _NodesBuilder (object):
     
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, nodes ):
+  def   build( self, build_manager, nodes, detailed ):
     completed_nodes = []
     failed_nodes = {}
     rebuild_nodes = []
@@ -474,7 +473,7 @@ class _NodesBuilder (object):
         # eventBuildStatusActualNode( node )
         completed_nodes.append( node )
       else:
-        addTask( node, _buildNode, builder, node )
+        addTask( node, _buildNode, builder, node, detailed )
     
     if not completed_nodes and not rebuild_nodes:
       completed_nodes, failed_nodes = self.__getFinishedNodes()
@@ -562,7 +561,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, nodes = None ):
+  def   build( self, jobs, keep_going, nodes = None, detailed = False ):
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -586,7 +585,7 @@ class BuildManager (object):
         if not tails and not waiting_nodes:
           break
         
-        completed_nodes, tmp_failed_nodes, rebuild_nodes = nodes_builder.build( self, tails )
+        completed_nodes, tmp_failed_nodes, rebuild_nodes = nodes_builder.build( self, tails, detailed )
         
         if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
           break
@@ -639,7 +638,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   status( self ):
+  def   status( self, detailed ):
     
     with _VFiles() as vfiles:
       getTails = self._nodes.tails
@@ -661,8 +660,8 @@ class BuildManager (object):
           
           # TODO: add support for prebuild
           if not node.builder.actual( vfile, node ):
-            eventBuildStatusOutdatedNode( node )
+            eventBuildStatusOutdatedNode( node, detailed )
             outdated_nodes.add( node )
           else:
-            eventBuildStatusActualNode( node )
+            eventBuildStatusActualNode( node, detailed )
             removeTailNode( node )

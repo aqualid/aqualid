@@ -25,7 +25,7 @@ import os
 import errno
 
 from aql.util_types import toSequence, FilePath
-from aql.utils import dumpData, newHash, evaluateValue
+from aql.utils import dumpData, newHash, evaluateValue, executeCommand
 from aql.values import Value, FileValue, FileName
 from aql.values import FileContentChecksum, FileContentTimeStamp
 
@@ -90,6 +90,7 @@ class BuilderInitiator( object ):
     builder.build_path = options.build_path.get()
     builder.strip_src_dir = bool(options.build_dir_suffix.get())
     builder.file_signature_type = options.file_signature.get()
+    builder.env = options.env.get().dump()
     
     builder.__init__( options, *args, **kw )
     
@@ -298,6 +299,22 @@ class Builder (object):
       file_values.append( value )
     
     return tuple( file_values )
+  
+  #//-------------------------------------------------------//
+  
+  def   execCmd(self, cmd, cwd = None, env = None, file_flag = None ):
+    
+    if env is None:
+      env = self.env
+    
+    if cwd is None:
+      cwd = self.getBuildPath()
+    
+    result = executeCommand( cmd, cwd = cwd, env = env, file_flag = file_flag )
+    if result.failed():
+      raise result
+    
+    return result.out + '\n' + result.err
 
 #//===========================================================================//  
 

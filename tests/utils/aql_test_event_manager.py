@@ -8,7 +8,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import eventWarning, eventStatus, eventHandler, \
-      disableEvents, finishHandleEvents, disableDefaultHandlers, enableDefaultHandlers, \
+      disableEvents, disableDefaultHandlers, enableDefaultHandlers, \
       EVENT_STATUS, EVENT_WARNING, \
       ErrorEventHandlerAlreadyDefined, ErrorEventHandlerUnknownEvent, ErrorEventUserHandlerWrongArgs
 
@@ -40,20 +40,17 @@ class TestEventManager( AqlTestCase ):
     
     status = []
     testEvent1( status )
-    finishHandleEvents()
     self.assertIn( "default-event1", status )
     self.assertIn( "user-event1", status )
     
     status = []
     testEvent1( status )
-    finishHandleEvents()
     self.assertIn( "default-event1", status )
     self.assertIn( "user-event1", status )
     
     status = []
     disableDefaultHandlers()
     testEvent1( status )
-    finishHandleEvents()
     self.assertNotIn( "default-event1", status )
     self.assertIn( "user-event1", status )
     
@@ -62,7 +59,6 @@ class TestEventManager( AqlTestCase ):
     disableEvents( EVENT_WARNING )
     testEvent1( status )
     testEvent2( status )
-    finishHandleEvents()
     self.assertNotIn( "default-event1", status )
     self.assertNotIn( "user-event1", status )
     self.assertIn( "default-event2", status )

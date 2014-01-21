@@ -32,23 +32,6 @@ LOG_DEBUG = logging.DEBUG
 
 #//---------------------------------------------------------------------------//
 
-class Logger( logging.Logger ):
-  def   __new__( cls, name ):
-    self = logging.getLogger( name )
-    handler = logging.StreamHandler()
-    
-    formatter = LogFormatter()
-    handler.setFormatter(formatter)
-    
-    self.addHandler( handler )
-    self.setLevel( logging.DEBUG )
-    
-    return self
-
-_logger = Logger( "AQL" )
-
-#//---------------------------------------------------------------------------//
-
 class LogFormatter( object ):
   
   __slots__ = ('info', 'other')
@@ -76,6 +59,24 @@ class LogFormatter( object ):
     return self.other.usesTime()
   
 #//---------------------------------------------------------------------------//
+
+class Logger( logging.Logger ):
+  def   __new__( cls, name ):
+    self = logging.getLogger( name )
+    handler = logging.StreamHandler()
+    
+    formatter = LogFormatter()
+    handler.setFormatter(formatter)
+    
+    self.addHandler( handler )
+    self.setLevel( logging.DEBUG )
+    
+    return self
+
+
+#//---------------------------------------------------------------------------//
+
+_logger = Logger( "AQL" )
 
 setLogLevel   = _logger.setLevel
 logCritical   = _logger.critical

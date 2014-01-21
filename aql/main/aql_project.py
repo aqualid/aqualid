@@ -28,7 +28,7 @@ import os
 import types
 import itertools
 
-from aql.utils import CLIConfig, CLIOption, getFunctionArgs, finishHandleEvents, execFile, flattenList, findFiles
+from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, UniqueList
 from aql.values import Value
 from aql.options import builtinOptions, Options #, optionValueEvaluator
@@ -563,11 +563,8 @@ class Project( object ):
     jobs = self.options.jobs.get()
     build_nodes = self._getBuildNodes()
     
-    try:
-      failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes )
-      return failed_nodes
-    finally:
-      finishHandleEvents()
+    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes, detailed = False )
+    return failed_nodes
   
   #//=======================================================//
   

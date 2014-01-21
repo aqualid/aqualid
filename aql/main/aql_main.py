@@ -21,7 +21,7 @@ __all__ = ( 'main', )
 
 import os
 
-from aql.utils import eventStatus, finishHandleEvents, logInfo, Chrono
+from aql.utils import eventStatus, logInfo, Chrono
 from .aql_project import Project, ProjectConfig
 
 #//===========================================================================//
@@ -70,35 +70,32 @@ def   _findMakeScript( start_dir, main_script, main_script_default ):
 #//===========================================================================//
 
 def   main():
-  try:
-    with Chrono() as total_elapsed:
-      prj_cfg = ProjectConfig()
-      
-      if prj_cfg.directory:
-        os.chdir( prj_cfg.directory )
-      
-      makefile = prj_cfg.makefile
-      targets = prj_cfg.targets
-      options = prj_cfg.options
-      
-      prj = Project( options, targets )
-      
-      eventReadingScripts()
-      
-      with Chrono() as elapsed:
-        prj.Include( makefile )
-      
-      eventReadingScriptsDone( elapsed )
-      
-      eventBuilding()
-      
-      with elapsed:
-        prj.Build()
-      
-      eventBuildingDone( elapsed )
-          
-    eventBuildSummary( total_elapsed )
-  finally:
-    finishHandleEvents()
+  with Chrono() as total_elapsed:
+    prj_cfg = ProjectConfig()
+    
+    if prj_cfg.directory:
+      os.chdir( prj_cfg.directory )
+    
+    makefile = prj_cfg.makefile
+    targets = prj_cfg.targets
+    options = prj_cfg.options
+    
+    prj = Project( options, targets )
+    
+    eventReadingScripts()
+    
+    with Chrono() as elapsed:
+      prj.Include( makefile )
+    
+    eventReadingScriptsDone( elapsed )
+    
+    eventBuilding()
+    
+    with elapsed:
+      prj.Build()
+    
+    eventBuildingDone( elapsed )
+        
+  eventBuildSummary( total_elapsed )
   
 #//===========================================================================//

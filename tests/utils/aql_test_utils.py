@@ -9,7 +9,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, execCommand, ErrorProgramNotFound, findFiles, flattenList
+                      whereProgram, executeCommand, ErrorProgramNotFound, findFiles, flattenList
 
 class TestUtils( AqlTestCase ):
 
@@ -110,7 +110,7 @@ class TestUtils( AqlTestCase ):
   #//===========================================================================//
   
   def   test_exec_command( self ):
-    result = execCommand("route")
+    result = executeCommand("route")
     self.assertTrue( result.out or result.err )
   
   #//===========================================================================//

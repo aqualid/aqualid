@@ -23,7 +23,7 @@ __all__ = (
   'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'execCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
+  'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
   'flattenList', 'evaluateValue',
   "Chrono",
 )
@@ -154,7 +154,7 @@ def   dumpData( data, protocol = pickle.HIGHEST_PROTOCOL ):
 
 #//===========================================================================//
 
-def   newHash( data = '' ):
+def   newHash( data = b'' ):
   return hashlib.md5( data )
 
 #//===========================================================================//
@@ -413,10 +413,10 @@ class   ExecCommandResult( Exception ):
     if msg:
       msg = "Command failed: %s%s" % (msg, cmd)
       
-      if err:
-        msg += '\n' + err
-      elif out:
+      if out:
         msg += '\n' + out
+      elif err:
+        msg += '\n' + err
     
     self.exception = exception
     self.returncode = returncode
@@ -441,7 +441,7 @@ except AttributeError:
 
 #//===========================================================================//
 
-def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH, stdin = None ):
+def executeCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH, stdin = None ):
   
   cmd_file = None
   if isinstance(cmd, str):
@@ -465,7 +465,7 @@ def execCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length =
     
     try:
       # if __debug__:
-      #   print("execCommand: %s" % (cmd, ) )
+      #   print("Execute command: %s" % (cmd, ) )
       
       p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
       (stdoutdata, stderrdata) = p.communicate()
@@ -616,7 +616,7 @@ def  evaluateValue( value, simple_types = _SIMPLE_TYPES ):
   if isinstance( value, (list, tuple, UniqueList) ):
     result = []
     for v in value:
-      result.append( _evalValueHelper( v ) )
+      result.append( evaluateValue( v ) )
     
     return result
   

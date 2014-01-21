@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import fileChecksum, Tempfile, Tempdir, \
-  finishHandleEvents, disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
+  disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
 
 from aql.values import Value, StringValue, FileValue
 from aql.options import builtinOptions
@@ -143,7 +143,6 @@ def   _build( bm ):
     bm.selfTest()
     bm.close()
     bm.selfTest()
-    finishHandleEvents()
 
 #//===========================================================================//
 
@@ -203,22 +202,22 @@ class MultiChecksumBuilder (Builder):
 
 class TestBuildManager( AqlTestCase ):
   
-  def   eventNodeBuilding( self, node ):
+  def   eventNodeBuilding( self, node, detailed ):
     self.building_started += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeBuildingFinished( self, node ):
+  def   eventNodeBuildingFinished( self, node, out, detailed ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//
   
-  def   eventBuildStatusActualNode( self, node ):
+  def   eventBuildStatusActualNode( self, node, detailed ):
     self.actual_node += 1
   
   #//-------------------------------------------------------//
   
-  def   eventBuildStatusOutdatedNode( self, node ):
+  def   eventBuildStatusOutdatedNode( self, node, detailed ):
     self.outdated_node += 1
   
   #//-------------------------------------------------------//
@@ -416,7 +415,6 @@ class TestBuildManager( AqlTestCase ):
           self.actual_node = self.outdated_node = 0
           bm.status(); bm.selfTest()
           
-          finishHandleEvents()
           self.assertEqual( self.outdated_node, 0)
           self.assertEqual( self.actual_node, 2 )
           
@@ -465,7 +463,6 @@ class TestBuildManager( AqlTestCase ):
           bm.add( node ); bm.selfTest()
           bm.status(); bm.selfTest()
           
-          finishHandleEvents()
           self.assertEqual( self.outdated_node, 0 )
           self.assertEqual( self.actual_node, 1 )
         
