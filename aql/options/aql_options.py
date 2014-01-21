@@ -117,13 +117,14 @@ def   _evalValue( options, context, other ):
   elif isinstance( other, OptionValue ):
     other = options.value( other, context )
   
+  other = evaluateValue( other )
+  
   if key is not NotImplemented:
     other = DictItem( key, other )
-  
   #for evaluator in _evaluators:
   #  other = evaluator( other )
   
-  return evaluateValue( other )
+  return other
 
 #//===========================================================================//
 

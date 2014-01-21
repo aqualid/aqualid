@@ -613,15 +613,23 @@ def  evaluateValue( value, simple_types = _SIMPLE_TYPES ):
   if isinstance( value, simple_types ):
     return value
   
-  if isinstance( value, (list, tuple, UniqueList) ):
+  if isinstance( value, (list, UniqueList) ):
+    for i,v in enumerate(value):
+      value[i] = evaluateValue( v )
+    
+    return value
+  
+  if isinstance( value, tuple):
     result = []
+
     for v in value:
       result.append( evaluateValue( v ) )
     
     return result
   
   try:
-    return value.get()
+    value = value.get()
+    return value
   except Exception:
     pass
   
