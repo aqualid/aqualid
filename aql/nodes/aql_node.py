@@ -78,19 +78,19 @@ class   NodeContent( ContentBase ):
   
   def   __eq__( self, other ):
     if type(self) != type(other):
-      # if __debug__:
-      #   print("NodeContent.eq(): Different type: %s" % type(other) )
+      if __debug__:
+        print("NodeContent.eq(): Different type: %s" % type(other) )
       return False
     
     if (not self.sources_sign) or (self.sources_sign != other.sources_sign):
-      # if __debug__:
-      #   print("NodeContent.eq(): Changed sources signature" )
+      if __debug__:
+        print("NodeContent.eq(): Changed sources signature" )
       return False
     
     for targets, other_targets in ((self.targets,other.targets),(self.itargets,other.itargets)):
       if (targets is None) or (targets != other_targets):
-        # if __debug__:
-        #   print("NodeContent.eq(): Changed targets" )
+        if __debug__:
+          print("NodeContent.eq(): Changed targets" )
         return False
     
     return True
@@ -99,13 +99,13 @@ class   NodeContent( ContentBase ):
   
   def   actualSources( self, other ):
     if type(self) != type(other):
-      # if __debug__:
-      #   print("NodeContent.actual(): Wrong type: %s" % type(other) )
+      if __debug__:
+        print("NodeContent.actual(): Wrong type: %s" % type(other) )
       return False
     
     if (not self.sources_sign) or (self.sources_sign != other.sources_sign):
-      # if __debug__:
-      #   print("NodeContent.actual(): Changed sources signature" )
+      if __debug__:
+        print("NodeContent.actual(): Changed sources signature" )
       return False
 
   
@@ -114,14 +114,14 @@ class   NodeContent( ContentBase ):
   def   actual( self ):
     
     if (self.targets is None) or (self.itargets is None):
-      # if __debug__:
-      #   print("NodeContent.actual(): No targets yet." )
+      if __debug__:
+        print("NodeContent.actual(): No targets yet." )
       return False
     
     for value in itertools.chain( self.targets, self.itargets ):
       if not value.actual():
-        # if __debug__:
-        #   print( "NodeContent.actual(): Changed target value: %s" % (value, ) )
+        if __debug__:
+          print( "NodeContent.actual(): Changed target value: %s" % (value, ) )
         return False
     
     return True
@@ -385,16 +385,16 @@ class Node (object):
     ideps_value, node_value = vfile.findValues( [self.ideps_value, self.node_value] )
     
     if not node_value:
-      # if __debug__:
-      #   print( "no previous info of node: %s" % (self.getName(),))
+      if __debug__:
+        print( "no previous info of node: %s" % (self.getName(),))
       return False
     
     if not node_value.actualSources( self.node_value ):
       return False
     
     if not ideps_value.actual():
-      # if __debug__:
-      #   print( "ideps are not actual: %s" % (self.getName(),))
+      if __debug__:
+        print( "ideps are not actual: %s" % (self.getName(),))
       return False
     
     if not node_value.actual():
@@ -527,6 +527,6 @@ class Node (object):
     if sources:
       build_str += ": " + sources
     if targets:
-      build_str += "-> " + targets
+      build_str += " => " + targets
     
     return build_str

@@ -30,7 +30,6 @@ import operator
 import weakref
 
 from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
-from aql.utils import evaluateValue
 
 from .aql_option_types import OptionType, autoOptionType
 from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition
@@ -89,13 +88,34 @@ class   _OpValue( tuple ):
 
 #//===========================================================================//
 
-#_evaluators = []
-#
-#def   optionValueEvaluator( evaluator ):
-#  global _evaluators
-#  _evaluators.append( evaluator )
-#
-#  return evaluator
+# _SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
+# 
+# def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
+#   
+#   if isinstance( value, simple_types ):
+#     return value
+#   
+#   if isinstance( value, (list, UniqueList) ):
+#     for i,v in enumerate(value):
+#       value[i] = _evaluateValue( v )
+#     
+#     return value
+#   
+#   if isinstance( value, tuple ):
+#     result = []
+#     
+#     for v in value:
+#       result.append( _evaluateValue( v ) )
+#     
+#     return result
+#   
+#   try:
+#     value = value.get()
+#     return value
+#   except Exception:
+#     pass
+#   
+#   return value
 
 #//===========================================================================//
 
@@ -117,10 +137,11 @@ def   _evalValue( options, context, other ):
   elif isinstance( other, OptionValue ):
     other = options.value( other, context )
   
-  other = evaluateValue( other )
+  # other = _evaluateValue( other ) # tODO: remove this conversion when add type casts to Values and Node  
   
   if key is not NotImplemented:
     other = DictItem( key, other )
+  
   #for evaluator in _evaluators:
   #  other = evaluator( other )
   

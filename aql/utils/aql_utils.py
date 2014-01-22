@@ -24,7 +24,7 @@ __all__ = (
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
-  'flattenList', 'evaluateValue',
+  'flattenList',
   "Chrono",
 )
 
@@ -603,37 +603,6 @@ def   flattenList( seq ):
     i += 1
   
   return out_list
-
-#//===========================================================================//
-
-_SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
-
-def  evaluateValue( value, simple_types = _SIMPLE_TYPES ):
-  
-  if isinstance( value, simple_types ):
-    return value
-  
-  if isinstance( value, (list, UniqueList) ):
-    for i,v in enumerate(value):
-      value[i] = evaluateValue( v )
-    
-    return value
-  
-  if isinstance( value, tuple):
-    result = []
-
-    for v in value:
-      result.append( evaluateValue( v ) )
-    
-    return result
-  
-  try:
-    value = value.get()
-    return value
-  except Exception:
-    pass
-  
-  return value
 
 #//===========================================================================//
 

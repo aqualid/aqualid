@@ -493,8 +493,11 @@ class _NodesBuilder (object):
     vfiles = self.vfiles
     
     for node, exception in finished_tasks:
+      
+      builder = node.builder
+      
       if exception is None:
-        node.builder.save( vfiles[ node ], node )
+        builder.save( vfiles[ builder ], node )
         completed_nodes.append( node )
       else:
         eventBuildNodeFailed( node, exception )
@@ -630,7 +633,7 @@ class BuildManager (object):
           
           node.initiate()
           
-          vfile = vfiles[ node ]
+          vfile = vfiles[ node.builder ]
           
           node.clear( vfile )
           
@@ -656,10 +659,12 @@ class BuildManager (object):
           
           node.initiate()
           
-          vfile = vfiles[ node ]
+          builder = node.builder
+          
+          vfile = vfiles[ builder ]
           
           # TODO: add support for prebuild
-          if not node.builder.actual( vfile, node ):
+          if not builder.actual( vfile, node ):
             eventBuildStatusOutdatedNode( node, detailed )
             outdated_nodes.add( node )
           else:

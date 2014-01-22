@@ -24,10 +24,12 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, FilePath
-from aql.utils import dumpData, newHash, evaluateValue, executeCommand
+from aql.util_types import toSequence, FilePath, UniqueList
+from aql.utils import dumpData, newHash, executeCommand
 from aql.values import Value, FileValue, FileName
 from aql.values import FileContentChecksum, FileContentTimeStamp
+
+from .aql_node import Node
 
 #//===========================================================================//
 
@@ -41,6 +43,39 @@ def   _makeDir( path_dir, _path_cache = set() ):
           raise
     
     _path_cache.add( path_dir )
+
+#//===========================================================================//
+
+_SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
+
+def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
+  
+  if isinstance( value, simple_types ):
+    return value
+  
+  if isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
+    result = []
+    
+    for v in value:
+      result.append( _evaluateValue( v ) )
+          
+    return result
+  
+  if isinstance( value, dict ):
+    result = {}
+    
+    for key,v in value.items():
+      result[ key ] = _evaluateValue( v )
+    
+    return result
+  
+  if isinstance( value, Value ):
+    return value.get()
+  
+  if isinstance( value, Node ):
+    return value.get()
+  
+  return value
 
 #//===========================================================================//
 
@@ -65,7 +100,7 @@ class BuilderInitiator( object ):
   #//=======================================================//
   
   @staticmethod
-  def   __evalKW( kw, _evalValue = evaluateValue ):
+  def   __evalKW( kw, _evalValue = _evaluateValue ):
     return { name: _evalValue( value ) for name, value in kw.items() }
   
   #//=======================================================//
@@ -75,7 +110,7 @@ class BuilderInitiator( object ):
       return self.builder
     
     kw = self.__evalKW( self.kw )
-    args = map( evaluateValue, self.args )
+    args = map( _evaluateValue, self.args )
     
     options = self.options
     
