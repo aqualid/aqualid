@@ -413,7 +413,7 @@ class TestBuildManager( AqlTestCase ):
         bm = _addNodesToBM( builder, src_files )
         try:
           self.actual_node = self.outdated_node = 0
-          bm.status(); bm.selfTest()
+          bm.status( detailed = True ); bm.selfTest()
           
           self.assertEqual( self.outdated_node, 0)
           self.assertEqual( self.actual_node, 2 )

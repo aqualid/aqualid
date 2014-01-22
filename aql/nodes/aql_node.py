@@ -107,7 +107,8 @@ class   NodeContent( ContentBase ):
       if __debug__:
         print("NodeContent.actual(): Changed sources signature" )
       return False
-
+    
+    return True
   
   #//-------------------------------------------------------//
   
@@ -398,6 +399,8 @@ class Node (object):
       return False
     
     if not node_value.actual():
+      if __debug__:
+        print( "Targets are not actual: %s" % (self.getName(),))
       return False
     
     self.node_value = node_value

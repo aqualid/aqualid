@@ -200,8 +200,8 @@ class Builder (object):
     
     result = node.actual( vfile )
     
-    # if  __debug__:
-    #   print("builder.actual(): result: %s, node: %s" % (result, node.name()))
+    if  __debug__:
+      print("builder.actual(): result: %s, node: %s" % (result, node.getName()))
     
     return result
 
@@ -209,8 +209,8 @@ class Builder (object):
 
   # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
-    # if  __debug__:
-    #   print("builder.save(): node: %s" % (node.getName(), ))
+    if  __debug__:
+      print("builder.save(): node: %s" % (node.getName(), ))
     node.save( vfile )
   
   #//-------------------------------------------------------//

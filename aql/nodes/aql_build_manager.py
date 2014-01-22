@@ -470,7 +470,7 @@ class _NodesBuilder (object):
           continue
       
       if builder.actual( vfile, node ):
-        # eventBuildStatusActualNode( node )
+        # eventBuildStatusActualNode( node, detailed )
         completed_nodes.append( node )
       else:
         addTask( node, _buildNode, builder, node, detailed )
