@@ -10,7 +10,7 @@ from aql.utils import fileChecksum, Tempfile, Tempdir, \
 
 from aql.values import Value, StringValue, FileValue
 from aql.options import builtinOptions
-from aql.nodes import Node, Builder, BuildManager, ErrorNodeDependencyCyclic
+from aql.nodes import Node, Builder, BuildSplitter, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 
@@ -150,53 +150,6 @@ def   _buildChecksums( builder, src_files ):
   
   bm = _addNodesToBM( builder, src_files )
   _build( bm )
-
-#//===========================================================================//
-
-class MultiChecksumBuilder (Builder):
-  
-  __slots__ = (
-    'builder',
-  )
-  
-  def   __init__(self, options, offset, length ):
-    
-    self.builder = ChecksumBuilder( options, offset, length )
-    self.signature = self.builder.signature
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuild( self, vfile, node ):
-    
-    targets = []
-    sub_nodes = []
-    
-    for source_value in node.getSourceValues():
-      
-      n = Node( self.builder, source_value )
-      if n.actual( vfile ):
-        targets += n.getTargetValues()
-      else:
-        sub_nodes.append( n )
-    
-    node.setTargets( targets )
-    
-    return sub_nodes
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuildFinished( self, vfile, node, sub_nodes ):
-    
-    targets = list( node.getTargetValues() )
-    for sub_node in sub_nodes:
-      targets += sub_node.getTargetValues()
-    
-    node.setTargets( targets )
-  
-  #//-------------------------------------------------------//
-  
-  def   actual( self, vfile, node ):
-    return True
 
 #//===========================================================================//
 
@@ -439,7 +392,7 @@ class TestBuildManager( AqlTestCase ):
           self.building_started = self.building_finished = 0
           self.actual_node = self.outdated_node = 0
           
-          builder = MultiChecksumBuilder( options, 0, 256 )
+          builder = BuildSplitter( options, ChecksumBuilder( options, 0, 256 ) )
           
           src_values = []
           for s in src_files:
@@ -457,11 +410,11 @@ class TestBuildManager( AqlTestCase ):
           self.actual_node = self.outdated_node = 0
           
           bm = BuildManager()
-          builder = MultiChecksumBuilder( options, 0, 256 )
+          builder = BuildSplitter( options, ChecksumBuilder( options, 0, 256 ) )
           
           node = Node( builder, src_values )
           bm.add( node ); bm.selfTest()
-          bm.status(); bm.selfTest()
+          bm.status( detailed = True ); bm.selfTest()
           
           self.assertEqual( self.outdated_node, 0 )
           self.assertEqual( self.actual_node, 1 )

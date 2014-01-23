@@ -37,6 +37,9 @@ class ExecuteCommand (Builder):
   def   build( self, node ):
     cmd = node.getSources()
     out = self.execCmd( cmd )
+    
+    node.setTargets( None )
+    
     return out
   
   #//-------------------------------------------------------//

@@ -24,12 +24,22 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, FilePath, UniqueList
-from aql.utils import dumpData, newHash, executeCommand
+from aql.util_types import toSequence, isSequence, FilePath, UniqueList
+from aql.utils import dumpData, newHash, executeCommand, eventDebug, logDebug
 from aql.values import Value, FileValue, FileName
 from aql.values import FileContentChecksum, FileContentTimeStamp
 
 from .aql_node import Node
+
+#//===========================================================================//
+
+@eventDebug
+def   eventExecCmd( cmd, cwd, env ):
+  
+  if isSequence( cmd ):
+    cmd = ' '.join( cmd )
+  
+  logDebug("EXEC: %s" % (cmd, ) )
 
 #//===========================================================================//
 
@@ -106,8 +116,10 @@ class BuilderInitiator( object ):
   #//=======================================================//
   
   def   initiate( self ):
+    builder = self.builder
+    
     if self.is_initiated:
-      return self.builder
+      return builder
     
     kw = self.__evalKW( self.kw )
     args = map( _evaluateValue, self.args )
@@ -119,8 +131,6 @@ class BuilderInitiator( object ):
       options = options.override()
       options_kw = self.__evalKW( options_kw )
       options.update( options_kw )
-    
-    builder = self.builder
     
     builder.build_path = options.build_path.get()
     builder.strip_src_dir = bool(options.build_dir_suffix.get())
@@ -349,7 +359,11 @@ class Builder (object):
     if result.failed():
       raise result
     
-    return result.out + '\n' + result.err
+    out = result.out + '\n' + result.err
+    
+    eventExecCmd( cmd, cwd, env )
+    
+    return out
 
 #//===========================================================================//  
 

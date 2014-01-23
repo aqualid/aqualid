@@ -31,7 +31,7 @@ import itertools
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, UniqueList
 from aql.values import Value
-from aql.options import builtinOptions, Options #, optionValueEvaluator
+from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
 
 from .aql_tools import ToolsManager
@@ -147,64 +147,6 @@ class ProjectConfig( object ):
 
 #//===========================================================================//
 
-#@optionValueEvaluator
-def   _evalNode( value ):
-  if isinstance( value, Node ):
-    values = value.getTargetValues()
-  elif isinstance( value, (list, tuple, UniqueList, Value ) ):
-    values = toSequence( value )
-  else:
-    return value
-
-  opt_value = []
-  
-  for value in values:
-    if isinstance( value, Value ):
-      value = value.get()
-      
-    opt_value.append( value )
-  
-  if len(opt_value) == 1:
-    opt_value = opt_value[0]
-  
-  return opt_value
-
-#//===========================================================================//
-
-class _ToolBuilderProxy( object ):
-  
-  def   __init__( self, method, options, args_kw, options_kw ):
-    
-    self._tool_builder = None
-    self._tool_method = method
-    self._tool_options = options
-    self._tool_args_kw = args_kw
-    self._tool_options_kw = options_kw
-
-  @staticmethod
-  def   __evalKW( kw ):
-    return { name: _evalNode( value ) for name, value in kw.items() }
-  
-  def   __getattr__( self, attr ):
-    builder = self._tool_builder
-    if builder is None:
-      args_kw = self.__evalKW( self._tool_args_kw )
-      
-      options = self._tool_options
-      
-      options_kw = self._tool_options_kw
-      if options_kw:
-        options = options.override()
-        options_kw = self.__evalKW( options_kw )
-        options.update( options_kw )
-      
-      builder = self._tool_method( options, **args_kw )
-      self._tool_builder = builder
-
-    return getattr( builder, attr )
-
-#//===========================================================================//
-
 class BuilderWrapper( object ):
   __slots__ = ( 'project', 'options', 'method', 'arg_names')
   
@@ -273,7 +215,8 @@ class BuilderWrapper( object ):
     sources += args
     sources = flattenList( sources )
     
-    builder = _ToolBuilderProxy( self.method, options, args_kw, options_kw )
+    builder = self.method( options, **args_kw )
+    builder.setOptionsKw( options_kw )
     
     node = Node( builder, sources )
     node.depends( dep_nodes )

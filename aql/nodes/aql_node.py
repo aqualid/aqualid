@@ -435,38 +435,38 @@ class Node (object):
   
   #//=======================================================//
   
-  def   _getTargets(self, attr, error ):
-    content = self.node_value.content
-    if not content:
-      raise error( self )
-    
-    targets = getattr(content, attr )
-    if targets is None:
-      raise error( self )
-    
-    return targets
-  
-  #//=======================================================//
-  
   def   get(self):
     return self.getTargets()
   
   #//=======================================================//
   
   def   getTargets(self):
-    return tuple( target.get() for target in self.getTargetValues() )
+    targets = self.node_value.content.targets
+    return tuple( target.get() for target in toSequence( targets ) )
   
   #//=======================================================//
   
   def   getTargetValues(self):
-    return self._getTargets( attr = 'targets', error = ErrorNoTargets )
+    targets = self.node_value.content.targets
+    if targets is None:
+      raise ErrorNoTargets( self )
+      
+    return targets
+  
+  #//=======================================================//
   
   def   getSideEffectValues(self):
-    return self._getTargets( attr = 'itargets', error = ErrorNoTargets )
+    targets = self.node_value.content.itargets
+    if targets is None:
+      raise ErrorNoTargets( self )
+      
+    return targets
   
   #//=======================================================//
   
   def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
+    
+    self.__initiateIds()
     
     if valuesMaker is None:
       valuesMaker = self.builder.makeValues
