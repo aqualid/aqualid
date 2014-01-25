@@ -21,13 +21,13 @@ from aql.main import Project, ProjectConfig, \
 class TestProject( AqlTestCase ):
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuilding( self, node ):
+  def   eventNodeBuilding( self, node, detailed ):
     self.building_started += 1
   
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node ):
+  def   eventNodeBuildingFinished( self, node, out, detailed ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//

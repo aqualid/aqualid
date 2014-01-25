@@ -10,7 +10,7 @@ from aql.utils import Tempfile, Tempdir, whereProgram, \
 
 from aql.util_types import FilePath
 from aql.values import FileValue, FileContentChecksum, ValuesFile
-from aql.nodes import Node, BuildManager
+from aql.nodes import Node, BuildManager, BuildSplitter
 from aql.options import builtinOptions
 
 from gcc import GccCompiler, GccArchiver, GccLinker, ToolGccCommon
@@ -22,7 +22,7 @@ class TestToolGcc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node ):
+  def   eventNodeBuildingFinished( self, node, out, detailed ):
     self.built_nodes += 1
   
   #//-------------------------------------------------------//
@@ -43,20 +43,40 @@ class TestToolGcc( AqlTestCase ):
   #//-------------------------------------------------------//
 
   def   _buildObj(self, obj, vfile ):
-    pre_nodes = obj.builder.prebuild( vfile, obj )
+    obj.initiate()
+    
+    pre_nodes = obj.builder.prebuild( obj )
     self.assertTrue( pre_nodes )
 
     for node in pre_nodes:
+      node.initiate()
       builder = node.builder
-      self.assertFalse( builder.actual( vfile, node ) )
-      builder.build( node )
-      builder.save( vfile, node )
+      if not builder.actual( vfile, node ):
+        builder.build( node )
+        builder.save( vfile, node )
 
-    obj.builder.prebuildFinished( vfile, obj, pre_nodes )
-
-    self.assertTrue( obj.builder.actual( vfile, obj ) )
-    self.assertFalse( obj.builder.prebuild( vfile, obj ) )
-
+    obj.builder.prebuildFinished( obj, pre_nodes )
+    
+    self._verifyActual( obj, vfile )
+  
+  #//-------------------------------------------------------//
+  
+  def   _verifyActual(self, obj, vfile, num_of_unactuals = 0 ):
+    obj.initiate()
+    
+    actual = True
+    
+    for node in obj.builder.prebuild( obj ):
+      node.initiate()
+      if not node.builder.actual( vfile, node ):
+        num_of_unactuals -= 1
+        actual = False
+    
+    if actual:
+      self.assertTrue( obj.builder.actual( vfile, obj ))
+    
+    self.assertEqual( num_of_unactuals, 0 )
+    
   #//-------------------------------------------------------//
 
   def test_gcc_compiler(self):
@@ -81,7 +101,7 @@ class TestToolGcc( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      cpp_compiler = GccCompiler( options, 'c++', shared = False )
+      cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++', shared = False ) )
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
       
@@ -95,9 +115,7 @@ class TestToolGcc( AqlTestCase ):
         vfile.close(); vfile.open( vfilename )
         
         obj = Node( cpp_compiler, src_files )
-
-        self.assertTrue( obj.builder.actual( vfile, obj ) )
-        self.assertFalse( obj.builder.prebuild( vfile, obj ) )
+        self._verifyActual( obj, vfile )
         
         vfile.close(); vfile.open( vfilename )
         
@@ -107,17 +125,15 @@ class TestToolGcc( AqlTestCase ):
         FileValue( hdr_files[0], use_cache = False )
         
         obj = Node( cpp_compiler, src_files )
-        self.assertEqual( len(obj.builder.prebuild( vfile, obj )), 1 )
+        self._verifyActual( obj, vfile, 1 )
 
         self._buildObj( obj, vfile )
 
         vfile.close(); vfile.open( vfilename )
         
         obj = Node( cpp_compiler, src_files )
-
-        self.assertTrue( obj.builder.actual( vfile, obj ) )
-        self.assertFalse( obj.builder.prebuild( vfile, obj ) )
         
+        self._verifyActual( obj, vfile )
       finally:
         vfile.close()
   
@@ -145,7 +161,7 @@ class TestToolGcc( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      cpp_compiler = GccCompiler( options, 'c++', shared = False )
+      cpp_compiler = BuildSplitter(options, GccCompiler( options, 'c++', shared = False ) )
       
       bm = BuildManager()
       try:
@@ -206,7 +222,7 @@ class TestToolGcc( AqlTestCase ):
       
       options.build_dir = build_dir
       
-      cpp_compiler = GccCompiler( options, 'c++', shared = False )
+      cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++', shared = False ) )
       archiver = GccArchiver( options, target = 'foo' )
       
       bm = BuildManager()
@@ -214,11 +230,10 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, src_files )
         lib = Node( archiver, obj )
         
-        bm.add( obj )
         bm.add( lib )
         
         self.built_nodes = 0
-        bm.build( jobs = 4, keep_going = False)
+        bm.build( jobs = 1, keep_going = False)
         self.assertEqual( self.built_nodes, num_src_files + 1 )
         
         bm.close()
@@ -270,7 +285,7 @@ class TestToolGcc( AqlTestCase ):
       
       options.build_dir = build_dir
       
-      cpp_compiler = GccCompiler( options, 'c++', shared = False )
+      cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++', shared = False ) )
       archiver = GccArchiver( options, target = 'foo' )
       linker = GccLinker( options, target = 'main_foo', language = 'c++', shared = False )
       
@@ -331,7 +346,7 @@ class TestToolGccSpeed( AqlTestCase ):
     
     options.build_dir_prefix = build_dir
     
-    cpp_compiler = GccCompiler( options, 'c++' )
+    cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++' ) )
   
     #//-------------------------------------------------------//
     

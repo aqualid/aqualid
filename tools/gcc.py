@@ -106,12 +106,12 @@ class GccCompiler (aql.Builder):
   def   build( self, node ):
     
     obj_file, source = self._getObj( node )
-    cwd = obj_file.dir
+    cwd = obj_file.dirname()
     
     with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
       
       cmd = list(self.cmd)
-      cmd += ['-o', obj_file, '-MF', dep_file, str(source) ]
+      cmd += ['-o', obj_file, '-MF', dep_file, source ]
       
       out = self.execCmd( cmd, cwd, file_flag = '@' )
       
@@ -128,9 +128,9 @@ class GccCompiler (aql.Builder):
     if detailed:
       name    = ' '.join( self.cmd )
     else:
-      name    = aql.FilePath(self.cmd[0]).name
-      source  = aql.FilePath(source).name_ext
-      obj_file = obj_file.name_ext
+      name    = aql.FilePath(self.cmd[0]).name()
+      source  = aql.FilePath(source).filename()
+      obj_file = obj_file.filename()
     
     return name, source, obj_file
   
@@ -163,10 +163,9 @@ class GccArchiver(aql.Builder):
     cmd = list(self.cmd)
     cmd += aql.FilePaths( obj_files )
     
-    cwd = self.getBuildPath()
+    cwd = self.target.dirname()
     
-    
-    out = self.execCmd( cmd, cwd, file_flag = '@' )
+    out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
     node.setFileTargets( self.target )
     
@@ -188,9 +187,9 @@ class GccArchiver(aql.Builder):
       name    = ' '.join( self.cmd[:-1] )
       target = self.target
     else:
-      name    = aql.FilePath(self.cmd[0]).name
-      sources  = [ aql.FilePath(source).name_ext for source in sources ]
-      target  = aql.FilePath(self.target).name_ext
+      name    = aql.FilePath(self.cmd[0]).name()
+      sources  = [ aql.FilePath(source).filename() for source in sources ]
+      target  = self.target.filename()
     
     return name, sources, target
 
@@ -249,9 +248,9 @@ class GccLinker(aql.Builder):
     
     cmd[2:2] = map( str, obj_files )
     
-    cwd = self.getBuildPath()
+    cwd = self.target.dirname()
     
-    out = self.execCmd( cmd, cwd, file_flag = '@' )
+    out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
     node.setFileTargets( self.target )
     
@@ -271,9 +270,9 @@ class GccLinker(aql.Builder):
       name    = ' '.join( self.cmd[:-2] )
       target = self.target
     else:
-      name    = aql.FilePath(self.cmd[0]).name
-      sources  = [ aql.FilePath(source).name_ext for source in sources ]
-      target  = aql.FilePath(self.target).name_ext
+      name    = aql.FilePath(self.cmd[0]).name()
+      sources  = [ aql.FilePath(source).filename() for source in sources ]
+      target  = self.target.filename()
     
     return name, sources, target
   

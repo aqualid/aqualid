@@ -35,11 +35,9 @@ from .aql_node import Node
 
 @eventDebug
 def   eventExecCmd( cmd, cwd, env ):
-  
-  if isSequence( cmd ):
-    cmd = ' '.join( cmd )
-  
-  logDebug("EXEC: %s" % (cmd, ) )
+  # cmd = ' '.join( cmd )
+  # logDebug("EXEC: %s" % (cmd, ) )
+  pass
 
 #//===========================================================================//
 
@@ -210,8 +208,8 @@ class Builder (object):
     
     result = node.actual( vfile )
     
-    if  __debug__:
-      print("builder.actual(): result: %s, node: %s" % (result, node.getName()))
+    # if  __debug__:
+    #   print("builder.actual(): result: %s, node: %s" % (result, node.getName()))
     
     return result
 
@@ -219,13 +217,13 @@ class Builder (object):
 
   # noinspection PyMethodMayBeStatic
   def   save( self, vfile, node ):
-    if  __debug__:
-      print("builder.save(): node: %s" % (node.getName(), ))
+    # if  __debug__:
+    #   print("builder.save(): node: %s" % (node.getName(), ))
     node.save( vfile )
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, vfile, node ):
+  def   prebuild( self, node ):
     """
     Could be used to dynamically generate nodes which need to be built before the node
     Returns list of nodes
@@ -234,7 +232,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, vfile, node, prebuild_nodes ):
+  def   prebuildFinished( self, node, prebuild_nodes ):
     """
     Called when all nodes returned by the prebuild() method have been built
     """
@@ -282,10 +280,10 @@ class Builder (object):
     
     else:
       src_path = FilePath( src_path )
-      filename = src_path.name_ext
+      filename = src_path.filename()
       
       if not self.strip_src_dir:
-        build_path = build_path.merge( src_path.dir )
+        build_path = build_path.joinFromCommon( src_path.dirname() )
       
     _makeDir( build_path )
     
@@ -355,6 +353,8 @@ class Builder (object):
     if cwd is None:
       cwd = self.getBuildPath()
     
+    cmd = tuple( str(c) for c in toSequence(cmd) )
+    
     result = executeCommand( cmd, cwd = cwd, env = env, file_flag = file_flag )
     if result.failed():
       raise result
@@ -397,12 +397,12 @@ class BuildSplitter(Builder):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, vfile, node ):
+  def   prebuild( self, node ):
     return node.split( self.builder )
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, vfile, node, pre_nodes ):
+  def   prebuildFinished( self, node, pre_nodes ):
     
     targets = []
     for pre_node in pre_nodes:

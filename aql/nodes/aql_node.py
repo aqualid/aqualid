@@ -45,6 +45,11 @@ class   ErrorNoImplicitDeps( Exception ):
     msg = "Node implicit dependencies are not built yet: %s" % (node.getBuildStr( detailed = True ))
     super(ErrorNoImplicitDeps, self).__init__( msg )
 
+class   ErrorNodeNotInitialized( Exception ):
+  def   __init__( self, node ):
+    msg = "Node is not initialized yet: %s" % (node, )
+    super(ErrorNodeNotInitialized, self).__init__( msg )
+
 #//===========================================================================//
 
 @pickleable
@@ -78,19 +83,19 @@ class   NodeContent( ContentBase ):
   
   def   __eq__( self, other ):
     if type(self) != type(other):
-      if __debug__:
-        print("NodeContent.eq(): Different type: %s" % type(other) )
+      # if __debug__:
+      #   print("NodeContent.eq(): Different type: %s" % type(other) )
       return False
     
     if (not self.sources_sign) or (self.sources_sign != other.sources_sign):
-      if __debug__:
-        print("NodeContent.eq(): Changed sources signature" )
+      # if __debug__:
+      #   print("NodeContent.eq(): Changed sources signature" )
       return False
     
     for targets, other_targets in ((self.targets,other.targets),(self.itargets,other.itargets)):
       if (targets is None) or (targets != other_targets):
-        if __debug__:
-          print("NodeContent.eq(): Changed targets" )
+        # if __debug__:
+        #   print("NodeContent.eq(): Changed targets" )
         return False
     
     return True
@@ -199,6 +204,8 @@ class Node (object):
     self._sources = toSequence( sources )
     self.dep_nodes = set()
     self.dep_values = []
+    self.node_value = None
+    self.source_values = None
   
   #//=======================================================//
   
@@ -230,13 +237,19 @@ class Node (object):
   #//=======================================================//
   
   def   initiate(self):
-    self.builder = self.builder.initiate()
-    self.__setSourceValues()
-    self.__setNodeValue()
+    if self.node_value is None:
+      self.builder = self.builder.initiate()
+      self.__setSourceValues()
+      self.__setNodeValue()
     
   #//=======================================================//
   
   def   __initiateIds(self):
+    
+    if __debug__:
+      if self.node_value is None:
+        raise ErrorNodeNotInitialized( self )
+    
     node_value = self.node_value
     if not node_value.name:
       self.__setName( node_value )
@@ -331,11 +344,19 @@ class Node (object):
   #//=======================================================//
   
   def   getName(self):
+    if __debug__:
+      if self.node_value is None:
+        raise ErrorNodeNotInitialized( self )
+    
     return self.node_value.name
   
   #//=======================================================//
   
   def   save( self, vfile ):
+    if __debug__:
+      if self.node_value is None:
+        raise ErrorNodeNotInitialized( self )
+    
     values = [ self.ideps_value, self.node_value ]
     
     ideps = self.ideps_value.content.data
@@ -375,6 +396,10 @@ class Node (object):
   #//=======================================================//
   
   def   removeTargets(self):
+    if __debug__:
+      if self.node_value is None:
+        raise ErrorNodeNotInitialized( self )
+    
     self.node_value.remove()
   
   #//=======================================================//
@@ -386,21 +411,21 @@ class Node (object):
     ideps_value, node_value = vfile.findValues( [self.ideps_value, self.node_value] )
     
     if not node_value:
-      if __debug__:
-        print( "no previous info of node: %s" % (self.getName(),))
+      # if __debug__:
+      #   print( "no previous info of node: %s" % (self.getName(),))
       return False
     
     if not node_value.actualSources( self.node_value ):
       return False
     
     if not ideps_value.actual():
-      if __debug__:
-        print( "ideps are not actual: %s" % (self.getName(),))
+      # if __debug__:
+      #   print( "ideps are not actual: %s" % (self.getName(),))
       return False
     
     if not node_value.actual():
-      if __debug__:
-        print( "Targets are not actual: %s" % (self.getName(),))
+      # if __debug__:
+      #   print( "Targets are not actual: %s" % (self.getName(),))
       return False
     
     self.node_value = node_value
@@ -411,9 +436,16 @@ class Node (object):
   #//=======================================================//
   
   def   getSources(self):
+    if __debug__:
+      if self.source_values is None:
+        raise ErrorNodeNotInitialized()
+    
     return tuple( src.get() for src in self.source_values )
   
   def   getSourceValues(self):
+    if self.source_values is None:
+      raise ErrorNodeNotInitialized()
+    
     return self.source_values
   
   def   getSourceNodes(self):
@@ -441,16 +473,24 @@ class Node (object):
   #//=======================================================//
   
   def   getTargets(self):
+    if __debug__:
+      if self.node_value is None:
+        raise ErrorNodeNotInitialized( self )
+    
     targets = self.node_value.content.targets
     return tuple( target.get() for target in toSequence( targets ) )
   
   #//=======================================================//
   
   def   getTargetValues(self):
+    if __debug__:
+      if self.node_value is None:
+        raise ErrorNodeNotInitialized( self )
+    
     targets = self.node_value.content.targets
     if targets is None:
       raise ErrorNoTargets( self )
-      
+    
     return targets
   
   #//=======================================================//
@@ -507,6 +547,8 @@ class Node (object):
       if size > wish_size:
         args_str.append('...')
         break
+      
+      args_str.append( arg )
       
     args_str.append( last )
     

@@ -355,8 +355,7 @@ class  _VFiles( object ):
     try:
       vfilename = self.names[ builder_name ]
     except KeyError:
-      build_path = builder.getBuildPath()
-      vfilename = build_path.join('.aql.db').abs()
+      vfilename = builder.getBuildPath( '.aql.db' )
       self.names[ builder_name ] = vfilename
     
     try:
@@ -460,9 +459,9 @@ class _NodesBuilder (object):
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
       if pre_nodes:
-        builder.prebuildFinished( vfile, node, pre_nodes )
+        builder.prebuildFinished( node, pre_nodes )
       else:
-        pre_nodes = builder.prebuild( vfile, node )
+        pre_nodes = builder.prebuild( node )
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           build_manager.depends( node, pre_nodes )

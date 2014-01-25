@@ -54,11 +54,11 @@ class AqlTestCase( TestCaseBase ):
   
   #//===========================================================================//
 
-  def   generateMainCppFile( self, dir, name, content = None ):
+  def   generateMainCppFile( self, dirname, name, content = None ):
     if not content:
       content = MAIN_SRC_FILE_TEMPLATE
     
-    src_file = dir.join( name + '.cpp' )
+    src_file = dirname.join( name + '.cpp' )
     
     with open( src_file, 'w' ) as f:
       f.write( content )
@@ -67,12 +67,12 @@ class AqlTestCase( TestCaseBase ):
 
   #//===========================================================================//
 
-  def   generateCppFile( self, dir, name ):
+  def   generateCppFile( self, dirname, name ):
     src_content = SRC_FILE_TEMPLATE % ( name, 'foo_' + name )
     hdr_content = HDR_FILE_TEMPLATE % ( name.upper(), name.upper(), 'foo_' + name )
     
-    src_file = dir.join( name + '.cpp' )
-    hdr_file = dir.join( name + '.h' )
+    src_file = dirname.join( name + '.cpp' )
+    hdr_file = dirname.join( name + '.h' )
     
     with open( src_file, 'w' ) as f:
       f.write( src_content )
@@ -84,11 +84,11 @@ class AqlTestCase( TestCaseBase ):
 
   #//===========================================================================//
 
-  def   generateCppFiles( self, dir, name, count ):
+  def   generateCppFiles( self, dirname, name, count ):
     src_files = FilePaths()
     hdr_files = FilePaths()
     for i in range( count ):
-      src_file, hdr_file = self.generateCppFile( dir, name + str(i) )
+      src_file, hdr_file = self.generateCppFile( dirname, name + str(i) )
       src_files.append( src_file )
       hdr_files.append( hdr_file )
     

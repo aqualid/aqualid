@@ -1,10 +1,9 @@
 import sys
 import os.path
-import timeit
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import AqlTestCase, runLocalTests
 
 from aql.util_types import FilePath, FilePaths
 
@@ -32,26 +31,26 @@ class TestPathTypes( AqlTestCase ):
     
     p = FilePath( file1 )
     p2 = FilePath( file2 )
-    self.assertEqual( p.name_ext, os.path.basename(file1) )
-    self.assertEqual( p.dir, os.path.dirname(file1) )
-    self.assertEqual( p.name, os.path.splitext( os.path.basename(file1) )[0] )
-    self.assertEqual( p.ext, os.path.splitext( os.path.basename(file1) )[1] )
-    self.assertIn( p.drive, [ os.path.splitdrive( file1 )[0], _splitunc( file1 )[0] ] )
+    self.assertEqual( p.filename(), os.path.basename(file1) )
+    self.assertEqual( p.dirname(), os.path.dirname(file1) )
+    self.assertEqual( p.name(), os.path.splitext( os.path.basename(file1) )[0] )
+    self.assertEqual( p.ext(), os.path.splitext( os.path.basename(file1) )[1] )
+    self.assertIn( p.drive(), [ os.path.splitdrive( file1 )[0], _splitunc( file1 )[0] ] )
     
-    self.assertEqual( p.merge( p2 ), os.path.join( p, os.path.basename(p2.dir), p2.name_ext ) )
-    self.assertEqual( p.merge( host_file ), os.path.join( p, *(filter(None, host_file.split('/'))) ) )
+    self.assertEqual( p.joinFromCommon( p2 ), os.path.join( p, os.path.basename(p2.dirname()), p2.filename() ) )
+    self.assertEqual( p.joinFromCommon( host_file ), os.path.join( p, *(filter(None, host_file.split('/'))) ) )
     
     if disk_file:
-      self.assertEqual( p.merge( disk_file ), os.path.join( p, 'a', os.path.splitdrive( file1 )[1].strip( os.path.sep ) ) )
-    self.assertEqual( p.merge( '' ), file1 )
-    self.assertEqual( p.merge( '.' ), file1 )
-    self.assertEqual( p.merge( '..' ), p.dir )
-    self.assertEqual( FilePath('foo/bar').merge( 'bar/foo/file.txt' ), 'foo/bar/bar/foo/file.txt' )
-    self.assertEqual( FilePath('foo/bar').merge( 'foo/file.txt' ), 'foo/bar/file.txt' )
+      self.assertEqual( p.joinFromCommon( disk_file ), os.path.join( p, 'a', os.path.splitdrive( file1 )[1].strip( os.path.sep ) ) )
+    self.assertEqual( p.joinFromCommon( '' ), file1 )
+    self.assertEqual( p.joinFromCommon( '.' ), file1 )
+    self.assertEqual( p.joinFromCommon( '..' ), p.dirname() )
+    self.assertEqual( FilePath('foo/bar').joinFromCommon( 'bar/foo/file.txt' ), 'foo/bar/bar/foo/file.txt' )
+    self.assertEqual( FilePath('foo/bar').joinFromCommon( 'foo/file.txt' ), 'foo/bar/file.txt' )
     
     self.assertEqual( FilePath('foo/bar').join( 'foo/file.txt' ), 'foo/bar/foo/file.txt' )
-    self.assertEqual( FilePath('foo/bar').join( ['foo'], 'file.txt' ), 'foo/bar/foo/file.txt' )
-    self.assertEqual( FilePath('foo/bar').join( ['foo', 'foo2'], 'test', 'file.txt' ), 'foo/bar/foo/foo2/test/file.txt' )
+    self.assertEqual( FilePath('foo/bar').join( 'foo', 'file.txt' ), 'foo/bar/foo/file.txt' )
+    self.assertEqual( FilePath('foo/bar').join( 'foo', 'foo2', 'test', 'file.txt' ), 'foo/bar/foo/foo2/test/file.txt' )
   
   #//=======================================================//
   
@@ -61,7 +60,7 @@ class TestPathTypes( AqlTestCase ):
     paths += ['file0.txt', 'file1.txt', 'file2.txt' ]
     
     self.assertEqual( paths.change( ext = '.ttt'), ['file0.ttt', 'file1.ttt', 'file2.ttt' ] )
-    self.assertEqual( paths.change( dir = 'foo/bar'), ['foo/bar/file0.txt', 'foo/bar/file1.txt', 'foo/bar/file2.txt' ] )
+    self.assertEqual( paths.change( dirname = 'foo/bar'), ['foo/bar/file0.txt', 'foo/bar/file1.txt', 'foo/bar/file2.txt' ] )
   
   #//=======================================================//
   
@@ -167,12 +166,12 @@ class TestPathTypes( AqlTestCase ):
     self.assertEqual( paths_ttt, ['abc/file0.ttt', 'abc/file1.ttt', 'def/file2.ttt'])
     self.assertEqual( paths_eee, ['abc/file0.eee', 'abc/file1.eee', 'def/file2.eee'])
     
-    paths_foo, paths_bar = paths.change( dir = ['foo', 'bar'] )
+    paths_foo, paths_bar = paths.change( dirname = ['foo', 'bar'] )
     
     self.assertEqual( paths_foo, ['foo/file0.txt', 'foo/file1.txt', 'foo/file2.txt'])
     self.assertEqual( paths_bar, ['bar/file0.txt', 'bar/file1.txt', 'bar/file2.txt'])
     
-    paths_foo_ttt, paths_foo_eee, paths_bar_ttt, paths_bar_eee = paths.change( dir = ['foo', 'bar'], ext = ['.ttt', '.eee'] )
+    paths_foo_ttt, paths_foo_eee, paths_bar_ttt, paths_bar_eee = paths.change( dirname = ['foo', 'bar'], ext = ['.ttt', '.eee'] )
     
     self.assertEqual( paths_foo_ttt, ['foo/file0.ttt', 'foo/file1.ttt', 'foo/file2.ttt'])
     self.assertEqual( paths_foo_eee, ['foo/file0.eee', 'foo/file1.eee', 'foo/file2.eee'])

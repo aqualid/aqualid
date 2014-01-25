@@ -129,10 +129,10 @@ class EventManager( Singleton ):
     if event in self.ignored_events:
       return
     
-    if not self.disable_defaults:
-      default_handlers = [ self.default_handlers[ event ][0] ]
-    else:
+    if self.disable_defaults:
       default_handlers = []
+    else:
+      default_handlers = [ self.default_handlers[ event ][0] ]
     
     user_handlers = self.user_handlers.get( event, [] )
     
@@ -169,7 +169,7 @@ class EventManager( Singleton ):
   #//-------------------------------------------------------//
   
   def   enableDefaultHandlers( self, enable ):
-    self.disable_defaults = bool(enable)
+    self.disable_defaults = not enable
   
 #//===========================================================================//
 
@@ -218,7 +218,7 @@ def   disableEvents( event_filters ):
 
 #//===========================================================================//
 
-def   disableDefaultHandlers():
+def   disableDefaultHandlers( ):
   EventManager.instance().enableDefaultHandlers( False )
 
 #//===========================================================================//

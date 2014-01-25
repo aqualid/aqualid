@@ -95,45 +95,64 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
+  def   __add__(self, other):
+    return FilePath( super(FilePath,self).__add__( other ) )
+  
+  def   __iadd__(self, other):
+    return FilePath( super(FilePath,self).__add__( other ) )
+  
+  #//-------------------------------------------------------//
+  
   def   __hash__( self ):
     return super(FilePath, self).__hash__()
   
   #//-------------------------------------------------------//
   
-  def   __getattr__( self, attr ):
-    if attr in ['name_ext', 'dir']:
-      self.dir, self.name_ext = map( FilePathBase, os.path.split( self ) )
-      return getattr( self, attr )
+  def   abspath(self):
+    return FilePath( os.path.abspath(self) )
+  
+  def   filename(self):
+    return FilePath( os.path.basename(self) )
+  
+  def   dirname(self):
+    return FilePath( os.path.dirname(self) )
+  
+  def   ext(self):
+    return FilePathBase( os.path.splitext(self)[1] )
+  
+  def   name(self):
+    return FilePathBase( os.path.splitext(self.filename())[0] )
+  
+  def   drive(self):
+    drive, path = os.path.splitdrive( self )
+    if not drive:
+      drive, path = _splitunc( path )
     
-    elif attr in ['name', 'ext']:
-      self.name, self.ext = map( FilePathBase, os.path.splitext( self.name_ext ) )
-      return getattr( self, attr )
-    
-    elif attr == 'dir_name':
-      self.dir_name = FilePathBase( os.path.join( self.dir, self.name ) )
-      return self.dir_name
-    
-    elif attr in ['seq', 'drive']:
-      self.drive, self.seq = self.__makeSeq( self )
-      return getattr( self, attr )
-    
-    raise AttributeError( "%s instance has no attribute '%s'" % (type(self), attr) )
+    return FilePathBase( drive )
   
   #//-------------------------------------------------------//
   
-  def   change( self, dir = None, name = None, ext = None, prefix = None ):
-    if dir is None: dir = self.dir
-    if name is None: name = self.name
-    if ext is None: ext = self.ext
+  def   change( self, dirname = None, name = None, ext = None, prefix = None ):
+    
+    self_dirname, self_filename = os.path.split( self )
+    self_name, self_ext = os.path.splitext( self_filename )
+    
+    if dirname is None: dirname = self_dirname
+    if name is None: name = self_name
+    if ext is None: ext = self_ext
     if prefix: name = prefix + name
     
-    return FilePath( os.path.join( dir, name + ext ) )
+    return FilePath( os.path.join( dirname, name + ext ) )
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __makeSeq( path ):
-    drive, path = os.path.splitdrive( path )
+  def   join( self, *paths ):
+    return FilePath( os.path.join( self, *paths ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getSeq( self ):
+    drive, path = os.path.splitdrive( self )
     if not drive:
       drive, path = _splitunc( path )
     
@@ -143,38 +162,29 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   join( self, path, *paths ):
-    paths = itertools.chain( toSequence( path ), paths )
-    return FilePath( os.path.join( self, *paths ) )
-  
-  #//-------------------------------------------------------//
-  
-  def   abs( self ):
-    return FilePath( os.path.abspath( self ) )
-  
-  #//-------------------------------------------------------//
-  
-  def   merge( self, other ):
+  def   joinFromCommon( self, other ):
     other = FilePath( other )
     
-    seq = self.seq
-    other_seq = other.seq
+    drive, seq = self.__getSeq()
+    other_drive, other_seq = other.__getSeq()
     
     path = self
     
-    if self.drive == other.drive:
+    if drive == other_drive:
       i = 0
-      for i, parts in enumerate( zip( seq, other.seq ) ):
+      
+      for i, parts in enumerate( zip( seq, other_seq ) ):
         if parts[0] != parts[1]:
           break
       
-      path = os.path.join( path, *other_seq[i:] )
+      other_seq = other_seq[i:]
       
     else:
-      drive = other.drive.replace(':','')
-      filter( None, drive.split( os.path.sep ) )
-      path = os.path.join( path, *filter( None, drive.split( os.path.sep ) ) )
-      path = os.path.join( path, *other_seq )
+      other_drive = other_drive.replace(':','')
+      other_drive = filter( None, other_drive.split( os.path.sep ) )
+      other_seq = itertools.chain( other_drive, other_seq )
+      
+    path = os.path.join( path, *other_seq )
     
     return FilePath( path )
 
@@ -184,9 +194,9 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
   
   #//-------------------------------------------------------//
   
-  def   change( self, dir = None, ext = None ):
+  def   change( self, dirname = None, ext = None ):
     
-    dirs = tuple( toSequence(dir) )
+    dirs = tuple( toSequence(dirname) )
     if not dirs: dirs = (None,)
     
     exts = tuple( toSequence(ext) )
@@ -202,7 +212,7 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
       i = 0
       for d in dirs:
         for ext in exts:
-          paths[i].append( path_change( dir = d, ext = ext ) )
+          paths[i].append( path_change( dirname = d, ext = ext ) )
           i += 1
         
     
@@ -254,10 +264,10 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
 
       #noinspection PyTypeChecker
       for filepath in files:
-        if (len(group_files) >= group_size) or (filepath.name in group_names):
+        if (len(group_files) >= group_size) or (filepath.name() in group_names):
           rest_files.append( filepath )
         else:
-          group_names.add( filepath.name )
+          group_names.add( filepath.name() )
           group_files.append( filepath )
       
       groups.append( group_files )
@@ -290,8 +300,11 @@ class   FilePaths( ValueListType( UniqueList, FilePath ) ):
     group_size = min( max_group_size, group_size )
     
     for index, file_path in files:
-      if (last_dir != file_path.dir) or (len(group_files) >= group_size):
-        last_dir = file_path.dir
+      
+      file_path_dir = file_path.dirname()
+      
+      if (last_dir != file_path_dir) or (len(group_files) >= group_size):
+        last_dir = file_path_dir
         
         if group_files:
           groups.append( group_files )

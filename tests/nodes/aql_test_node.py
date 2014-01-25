@@ -89,11 +89,9 @@ class TestNodes( AqlTestCase ):
   
   def   setUp( self ):
     disableDefaultHandlers()
-    pass
   
   def   tearDown( self ):
     enableDefaultHandlers()
-    pass
   
   def test_node_value(self):
     
@@ -109,6 +107,8 @@ class TestNodes( AqlTestCase ):
         builder = ChecksumBuilder( options )
         
         node = Node( builder, [value1, value2, value3] )
+        node.initiate()
+        builder = node.builder
         
         self.assertFalse( node.actual( vfile ) )
         builder.build( node )
@@ -116,6 +116,8 @@ class TestNodes( AqlTestCase ):
         self.assertTrue( node.actual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
+        node.initiate()
+        
         self.assertTrue( node.actual( vfile ) )
         builder.build( node )
         builder.save( vfile, node )
@@ -123,6 +125,8 @@ class TestNodes( AqlTestCase ):
         
         node = Node( builder, [value1, value2, value3] )
         node.depends( Value() )
+        node.initiate()
+        
         self.assertFalse( node.actual( vfile ) )
         builder.build( node )
         builder.save( vfile, node )
@@ -137,6 +141,9 @@ class TestNodes( AqlTestCase ):
     node = Node( builder, values )
     node.depends( deps )
     
+    node.initiate()
+    builder = node.builder
+    
     self.assertFalse( node.actual( vfile ) )
     builder.build( node )
     builder.save( vfile, node )
@@ -144,6 +151,8 @@ class TestNodes( AqlTestCase ):
     
     node = Node( builder, values )
     node.depends( deps )
+    
+    node.initiate()
     
     self.assertTrue( node.actual( vfile ) )
     builder.build( node )
@@ -294,6 +303,7 @@ class TestSpeedBuilder (Builder):
 def   _testNoBuildSpeed( vfile, builder, source_values ):
   for source in source_values:
     node = Node( builder, FileValue( source, _FileContentType ) )
+    node.initiate()
     if not node.actual( vfile ):
       raise AssertionError( "node is not actual" )
 
@@ -337,6 +347,7 @@ class TestNodesSpeed ( AqlTestCase ):
           
           for source in source_files:
             node = Node( builder, FileValue( source, _FileContentType ) )
+            node.initiate()
             self.assertFalse( node.actual( vfile ) )
             builder.build( node )
             builder.save( vfile, node )

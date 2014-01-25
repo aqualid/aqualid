@@ -141,7 +141,7 @@ class ProjectConfig( object ):
       printOptions( options )
     
     self.options = options
-    self.directory = cli_config.directory.abs()
+    self.directory = cli_config.directory.abspath()
     self.makefile = cli_config.makefile
     self.targets = cli_config.targets
 
@@ -413,7 +413,7 @@ class Project( object ):
   
   def   _execScript( self, script, script_locals ):
     
-    script = FilePath( script ).abs()
+    script = FilePath( script ).abspath()
     
     scripts_cache = self.scripts_cache
     
@@ -424,7 +424,7 @@ class Project( object ):
     cur_dir = os.getcwd()
 
     try:
-      os.chdir( script.dir )
+      os.chdir( script.dirname() )
       script_result = execFile( script, script_locals )
       scripts_cache[ script ] = script_result
       return script_result
@@ -456,7 +456,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   SetBuildDir( self, build_dir ):
-    self.options.build_dir = FilePath(build_dir).abs()
+    self.options.build_dir = FilePath(build_dir).abspath()
   
   #//-------------------------------------------------------//
   
