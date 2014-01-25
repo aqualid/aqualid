@@ -121,16 +121,16 @@ class GccCompiler (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, detailed = False ):
+  def   getBuildStrArgs( self, node, brief = True ):
     
     obj_file, source = self._getObj( node )
     
-    if detailed:
-      name    = ' '.join( self.cmd )
-    else:
+    if brief:
       name    = aql.FilePath(self.cmd[0]).name()
       source  = aql.FilePath(source).filename()
       obj_file = obj_file.filename()
+    else:
+      name    = ' '.join( self.cmd )
     
     return name, source, obj_file
   
@@ -179,17 +179,17 @@ class GccArchiver(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, detailed = False ):
+  def   getBuildStrArgs( self, node, brief = True ):
     
     sources = node.getSources()
     
-    if detailed:
-      name    = ' '.join( self.cmd[:-1] )
-      target = self.target
-    else:
+    if brief:
       name    = aql.FilePath(self.cmd[0]).name()
-      sources  = [ aql.FilePath(source).filename() for source in sources ]
+      sources = [ aql.FilePath(source).filename() for source in sources ]
       target  = self.target.filename()
+    else:
+      name    = ' '.join( self.cmd[:-1] )
+      target  = self.target
     
     return name, sources, target
 
@@ -262,17 +262,17 @@ class GccLinker(aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, detailed = False ):
+  def   getBuildStrArgs( self, node, brief = True ):
     
     sources = node.getSources()
     
-    if detailed:
-      name    = ' '.join( self.cmd[:-2] )
-      target = self.target
-    else:
+    if brief:
       name    = aql.FilePath(self.cmd[0]).name()
-      sources  = [ aql.FilePath(source).filename() for source in sources ]
+      sources = [ aql.FilePath(source).filename() for source in sources ]
       target  = self.target.filename()
+    else:
+      name    = ' '.join( self.cmd[:-2] )
+      target  = self.target
     
     return name, sources, target
   

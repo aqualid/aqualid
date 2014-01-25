@@ -44,7 +44,7 @@ class ExecuteCommand (Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, detailed = False ):
+  def   getBuildStrArgs( self, node, brief = True ):
     cmd = ' '.join( node.getSources() )
     return cmd
 

@@ -155,22 +155,22 @@ def   _buildChecksums( builder, src_files ):
 
 class TestBuildManager( AqlTestCase ):
   
-  def   eventNodeBuilding( self, node, detailed ):
+  def   eventNodeBuilding( self, node, brief ):
     self.building_started += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeBuildingFinished( self, node, out, detailed ):
+  def   eventNodeBuildingFinished( self, node, out, brief ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//
   
-  def   eventBuildStatusActualNode( self, node, detailed ):
+  def   eventBuildStatusActualNode( self, node, brief ):
     self.actual_node += 1
   
   #//-------------------------------------------------------//
   
-  def   eventBuildStatusOutdatedNode( self, node, detailed ):
+  def   eventBuildStatusOutdatedNode( self, node, brief ):
     self.outdated_node += 1
   
   #//-------------------------------------------------------//
@@ -366,7 +366,7 @@ class TestBuildManager( AqlTestCase ):
         bm = _addNodesToBM( builder, src_files )
         try:
           self.actual_node = self.outdated_node = 0
-          bm.status( detailed = True ); bm.selfTest()
+          bm.status( brief = False ); bm.selfTest()
           
           self.assertEqual( self.outdated_node, 0)
           self.assertEqual( self.actual_node, 2 )
@@ -414,7 +414,7 @@ class TestBuildManager( AqlTestCase ):
           
           node = Node( builder, src_values )
           bm.add( node ); bm.selfTest()
-          bm.status( detailed = True ); bm.selfTest()
+          bm.status( brief = False ); bm.selfTest()
           
           self.assertEqual( self.outdated_node, 0 )
           self.assertEqual( self.actual_node, 1 )

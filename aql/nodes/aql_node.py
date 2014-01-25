@@ -37,12 +37,12 @@ class   ErrorNodeDependencyInvalid( Exception ):
 
 class   ErrorNoTargets( Exception ):
   def   __init__( self, node ):
-    msg = "Node targets are not built yet: %s" % (node.getBuildStr( detailed = True ))
+    msg = "Node targets are not built yet: %s" % (node.getBuildStr( brief = False ))
     super(ErrorNoTargets, self).__init__( msg )
 
 class   ErrorNoImplicitDeps( Exception ):
   def   __init__( self, node ):
-    msg = "Node implicit dependencies are not built yet: %s" % (node.getBuildStr( detailed = True ))
+    msg = "Node implicit dependencies are not built yet: %s" % (node.getBuildStr( brief = False ))
     super(ErrorNoImplicitDeps, self).__init__( msg )
 
 class   ErrorNodeNotInitialized( Exception ):
@@ -528,10 +528,10 @@ class Node (object):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __makeArgsStr( args, detailed ):
+  def   __makeArgsStr( args, brief ):
     args = [ str(arg) for arg in toSequence(args) ]
     
-    if detailed or (len(args) < 3):
+    if not brief or (len(args) < 3):
       return ' '.join( args )
     
     wish_size = 128
@@ -556,9 +556,9 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStr( self, detailed = False ):
+  def   getBuildStr( self, brief = True ):
     
-    args = self.builder.getBuildStrArgs( self, detailed = detailed )
+    args = self.builder.getBuildStrArgs( self, brief = brief )
     
     args    = iter(args)
     name    = next(args, self.builder.__class__.__name__ )
@@ -566,8 +566,8 @@ class Node (object):
     targets = next(args, None )
     
     build_str  = str(name)
-    sources = self.__makeArgsStr( sources, detailed )
-    targets = self.__makeArgsStr( targets, detailed )
+    sources = self.__makeArgsStr( sources, brief )
+    targets = self.__makeArgsStr( targets, brief )
     
     if sources:
       build_str += ": " + sources

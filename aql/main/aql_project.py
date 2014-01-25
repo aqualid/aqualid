@@ -506,7 +506,7 @@ class Project( object ):
     jobs = self.options.jobs.get()
     build_nodes = self._getBuildNodes()
     
-    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes, detailed = False )
+    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes, brief = True )
     return failed_nodes
   
   #//=======================================================//
