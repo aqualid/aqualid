@@ -28,8 +28,8 @@ import os
 import types
 import itertools
 
-from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles
-from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, UniqueList
+from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount
+from aql.util_types import FilePath, FilePaths, SplitListType, toSequence
 from aql.values import Value
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
@@ -77,7 +77,8 @@ class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
 #noinspection PyUnresolvedReferences
 class ProjectConfig( object ):
   
-  __slots__ = ('directory', 'makefile', 'targets', 'options' )
+  __slots__ = ('directory', 'makefile', 'targets', 'options',
+               'verbose', 'log_level', 'jobs', 'keep_going', 'rebuild' )
   
   #//-------------------------------------------------------//
   
@@ -98,10 +99,11 @@ class ProjectConfig( object ):
       CLIOption( "-o", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tools-path",      "tools_path",     Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Continue build even if any target failed." ),
-      CLIOption( "-B", "--always-make",     "build_all",      bool,       False,        "Unconditionally make all targets." ),
+      CLIOption( "-r", "--rebuild",         "rebuild",        bool,       False,        "Unconditionally rebuild all targets." ),
       CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
       CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
+      CLIOption( "-d", "--debug",           "debug",          bool,       False,        "Debug logs." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -115,35 +117,37 @@ class ProjectConfig( object ):
     
     cli_options = {}
     
-    ignore_options = {'directory', 'makefile', 'list_options', 'config', 'verbose', 'quiet', 'search_up'}
+    ignore_options = {'list_options', 'config'}
+    ignore_options.update( ProjectConfig.__slots__ )
+    
     for name,value in cli_config.items():
       if (name not in ignore_options) and (value is not None):
-        if name == 'tools_path':
-          value = map( os.path.abspath, value )
-        elif name == 'build_dir':
-          value = os.path.abspath( value )
-    
         cli_options[ name ] = value
-    
-    log_level = 1
-    
-    if cli_config.verbose:
-      log_level += 1
-    
-    if cli_config.quiet:
-      log_level -= 1
-    
-    cli_options['log_level'] = log_level
     
     options.update( cli_options )
     
     if cli_config.list_options:
       printOptions( options )
     
-    self.options = options
-    self.directory = cli_config.directory.abspath()
-    self.makefile = cli_config.makefile
-    self.targets = cli_config.targets
+    #//-------------------------------------------------------//
+    
+    log_level = 1
+    if cli_config.debug:
+      log_level = 2
+    if cli_config.quiet:
+      log_level = 0
+    
+    #//-------------------------------------------------------//
+    
+    self.options    = options
+    self.directory  = cli_config.directory.abspath()
+    self.makefile   = cli_config.makefile
+    self.targets    = cli_config.targets
+    self.verbose    = cli_config.verbose
+    self.keep_going = cli_config.keep_going
+    self.rebuild    = cli_config.rebuild
+    self.jobs       = cli_config.jobs
+    self.log_level  = log_level
 
 #//===========================================================================//
 
@@ -379,6 +383,20 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
+  @staticmethod
+  def _setLogLevel( level ):
+    
+    if level <= 0:
+      level = LOG_WARNING
+    elif level == 1:
+      level = LOG_INFO
+    else:
+      level = LOG_DEBUG
+    
+    setLogLevel( level )
+  
+  #//-------------------------------------------------------//
+  
   def   __getattr__( self, attr ):
     if attr == 'script_locals':
       self.script_locals = self.__getSciptLocals()
@@ -501,12 +519,18 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   Build( self ):
-    keep_going = self.options.keep_going.get()
-    jobs = self.options.jobs.get()
+  def   Build( self, jobs = None, keep_going = False, verbose = False ):
+    brief = not verbose
+    
+    if not jobs:
+      jobs = cpuCount()
+    
+    if jobs > 32:
+      jobs = 32
+    
     build_nodes = self._getBuildNodes()
     
-    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes, brief = True )
+    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes, brief = brief )
     return failed_nodes
   
   #//=======================================================//

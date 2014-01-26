@@ -21,7 +21,8 @@ __all__ = ( 'main', )
 
 import os
 
-from aql.utils import eventStatus, logInfo, Chrono
+from aql.utils import eventStatus, logInfo, Chrono, \
+                      setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
 
 #//===========================================================================//
@@ -69,9 +70,24 @@ def   _findMakeScript( start_dir, main_script, main_script_default ):
 
 #//===========================================================================//
 
+def _setLogLevel( level ):
+  
+  if level <= 0:
+    level = LOG_WARNING
+  elif level == 1:
+    level = LOG_INFO
+  else:
+    level = LOG_DEBUG
+  
+  setLogLevel( level )
+
+#//===========================================================================//
+
 def   main():
   with Chrono() as total_elapsed:
     prj_cfg = ProjectConfig()
+    
+    _setLogLevel( prj_cfg.log_level )
     
     if prj_cfg.directory:
       os.chdir( prj_cfg.directory )
@@ -92,7 +108,7 @@ def   main():
     eventBuilding()
     
     with elapsed:
-      prj.Build()
+      prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
     
     eventBuildingDone( elapsed )
         

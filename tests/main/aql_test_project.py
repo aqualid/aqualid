@@ -57,18 +57,17 @@ class TestProject( AqlTestCase ):
       cfg = b"""
 abc = 123
 size = 100
-keep_going = True
-jobs=5
 options.build_variant = "final"
 """
       f.write( cfg )
       f.flush()
       
-      args = ["-v", "-c", f.name ]
+      args = ["-v", "-j", 5, "-c", f.name ]
       cfg = ProjectConfig( args )
       
       self.assertEqual( cfg.options.bv, 'final' )
-      self.assertEqual( cfg.options.jobs, 5 )
+      self.assertEqual( cfg.jobs, 5 )
+      self.assertTrue( cfg.verbose )
   
   #//-------------------------------------------------------//
   
