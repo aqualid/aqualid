@@ -359,11 +359,9 @@ class Builder (object):
     if result.failed():
       raise result
     
-    out = result.out + '\n' + result.err
-    
     eventExecCmd( cmd, cwd, env )
     
-    return out
+    return result.out
 
 #//===========================================================================//  
 

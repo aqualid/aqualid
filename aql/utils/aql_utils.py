@@ -81,8 +81,9 @@ if hasattr(os, 'O_BINARY'):
 else:
   _O_BINARY = 0
 
-def   openFile( filename, read = True, write = False, binary = False, sync = False, flags = _O_NOINHERIT ):
+def   openFile( filename, read = True, write = False, binary = False, sync = False ):
   
+  flags = _O_NOINHERIT
   mode = 'r'
   
   if not write:
@@ -112,11 +113,11 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
     else:
       #noinspection PyTypeChecker
       f = io.open( fd, mode )
+    
+    return f
   except:
     os.close( fd )
     raise
-  
-  return f
 
 #//===========================================================================//
 
@@ -397,31 +398,31 @@ def _decodeData( data ):
 #//===========================================================================//
 
 class   ExecCommandResult( Exception ):
-  __slots__ = ('returncode', 'out', 'err', 'exception')
+  __slots__ = ('returncode', 'out', 'exception')
   
   def   __init__( self, cmd, exception = None, returncode = None, out = None, err = None ):
-    msg = str()
+    
+    msg = ' '.join( toSequence(cmd) )
     
     if exception:
-      msg += str(exception) + ', '
+      msg += '\n' + str(exception)
     
-    if returncode:
-      msg += 'return code: ' + str(returncode) + ', '
-    
-    cmd = ' '.join( toSequence(cmd) )
-    
-    if msg:
-      msg = "Command failed: %s%s" % (msg, cmd)
+    else:    
+      if not out:
+        out = str()
       
+      if err:
+        out += '\n' + err
+  
       if out:
         msg += '\n' + out
-      elif err:
-        msg += '\n' + err
+      
+      if returncode:
+        msg += '\n' + "Exit status: %s" % (returncode,)
     
     self.exception = exception
     self.returncode = returncode
     self.out = out
-    self.err = err
     
     super(type(self), self).__init__( msg )
   

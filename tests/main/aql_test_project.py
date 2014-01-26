@@ -27,7 +27,7 @@ class TestProject( AqlTestCase ):
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, out, brief ):
+  def   eventNodeBuildingFinished( self, node, out, progress, brief ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//

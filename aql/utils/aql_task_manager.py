@@ -18,10 +18,11 @@
 #
 
 __all__ = (
-  'TaskManager',
+  'TaskManager', 'TaskResult'
 )
 
 import threading
+import collections
 
 from .aql_logging import logWarning
 
@@ -39,6 +40,10 @@ def   _exitEventFunction():
   raise _ExitException()
 
 _exit_task = ( None, _exitEventFunction, [], {} )
+
+#//===========================================================================//
+
+TaskResult = collections.namedtuple("TaskResult", ['task_id', 'error', 'result'] )
 
 #//===========================================================================//
 
@@ -69,10 +74,10 @@ class _TaskExecutor( threading.Thread ):
       task_id, func, args, kw = tasks.get()
       
       try:
-        func(*args, **kw)
+        result = func(*args, **kw)
         
         if task_id is not None:
-          success = (task_id, None)
+          success = TaskResult( task_id = task_id, result = result, error = None )
           finished_tasks.put( success )
       
       except _ExitException:
@@ -80,7 +85,7 @@ class _TaskExecutor( threading.Thread ):
       
       except (Exception, BaseException) as err:
         if task_id is not None:
-          fail = ( task_id, err )
+          fail = TaskResult( task_id = task_id, result = None, error = err )
           finished_tasks.put( fail )
         else:
           logWarning("Task failed with error: %s" % str(err) )
@@ -154,8 +159,8 @@ class TaskManager (object):
   #//-------------------------------------------------------//
   
   def   stop( self ):
+    self.exit_event.set()
     with self.lock:
-      self.exit_event.set()
       self.__stop()
   
   #//-------------------------------------------------------//
@@ -182,7 +187,7 @@ class TaskManager (object):
   
   #//-------------------------------------------------------//
   
-  def   finishedTasks( self ):
+  def   finishedTasks( self, block = True ):
     finished_tasks = []
     is_exit = self.exit_event.is_set
     
@@ -191,7 +196,8 @@ class TaskManager (object):
       if is_exit():
         self.__stop()
       
-      block = (self.unfinished_tasks > 0) and self.threads
+      if block:
+        block = (self.unfinished_tasks > 0) and self.threads
       
       while True:
         try:
