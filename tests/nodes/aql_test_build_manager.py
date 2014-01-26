@@ -392,7 +392,7 @@ class TestBuildManager( AqlTestCase ):
           self.building_started = self.building_finished = 0
           self.actual_node = self.outdated_node = 0
           
-          builder = BuildSplitter( options, ChecksumBuilder( options, 0, 256 ) )
+          builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
           
           src_values = []
           for s in src_files:
@@ -410,7 +410,7 @@ class TestBuildManager( AqlTestCase ):
           self.actual_node = self.outdated_node = 0
           
           bm = BuildManager()
-          builder = BuildSplitter( options, ChecksumBuilder( options, 0, 256 ) )
+          builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
           
           node = Node( builder, src_values )
           bm.add( node ); bm.selfTest()

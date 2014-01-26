@@ -89,7 +89,7 @@ def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
 
 class BuilderInitiator( object ):
   
-  __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw', 'options_kw' )
+  __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw', 'options_kw', 'cwd' )
   
   def   __init__( self, builder, options, args, kw ):
     
@@ -99,6 +99,7 @@ class BuilderInitiator( object ):
     self.args           = args
     self.kw             = kw
     self.options_kw     = None
+    self.cwd            = os.path.abspath( os.getcwd() )
   
   #//=======================================================//
   
@@ -119,23 +120,29 @@ class BuilderInitiator( object ):
     if self.is_initiated:
       return builder
     
-    kw = self.__evalKW( self.kw )
-    args = map( _evaluateValue, self.args )
+    os.chdir( self.cwd )
     
-    options = self.options
+    if isinstance(builder, BuildSplitter):
+      builder.__init__( self.args[0] )
     
-    options_kw = self.options_kw
-    if options_kw:
-      options = options.override()
-      options_kw = self.__evalKW( options_kw )
-      options.update( options_kw )
-    
-    builder.build_path = options.build_path.get()
-    builder.strip_src_dir = bool(options.build_dir_suffix.get())
-    builder.file_signature_type = options.file_signature.get()
-    builder.env = options.env.get().dump()
-    
-    builder.__init__( options, *args, **kw )
+    else:
+      kw = self.__evalKW( self.kw )
+      args = map( _evaluateValue, self.args )
+      
+      options = self.options
+      
+      options_kw = self.options_kw
+      if options_kw:
+        options = options.override()
+        options_kw = self.__evalKW( options_kw )
+        options.update( options_kw )
+      
+      builder.build_path = options.build_path.get()
+      builder.strip_src_dir = bool(options.build_dir_suffix.get())
+      builder.file_signature_type = options.file_signature.get()
+      builder.env = options.env.get().dump()
+      
+      builder.__init__( options, *args, **kw )
     
     if not hasattr( builder, 'name' ):
       builder.setName()
@@ -369,19 +376,22 @@ class BuildSplitter(Builder):
   
   __slots__ = ('builder',)
   
-  def   __init__( self, options, builder ):
-    self.builder = builder.initiate()
-    self.makeValue = self.builder.makeValue
+  def   __new__(cls, builder ):
+    
+    self = super(Builder, cls).__new__(cls)
+    return BuilderInitiator( self, None, args = (builder,), kw = None )
   
-  #//-------------------------------------------------------//
-  
-  def setName( self ):
-      self.name = self.builder.name
-  
-  #//-------------------------------------------------------//
-  
-  def setSignature( self ):
-      self.signature = self.builder.signature
+  def   __init__( self, builder ):
+    builder = builder.initiate()
+    
+    self.builder              = builder
+    self.makeValue            = builder.makeValue
+    self.build_path           = builder.build_path
+    self.strip_src_dir        = builder.strip_src_dir
+    self.file_signature_type  = builder.file_signature_type
+    self.env                  = builder.env
+    self.name                 = builder.name
+    self.signature            = builder.signature
   
   #//-------------------------------------------------------//
   

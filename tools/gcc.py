@@ -320,7 +320,7 @@ def   _getGccSpecs( gcc ):
   target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
   version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
   
-  out = result.err
+  out = result.out
   
   match = target_re.search( out )
   target = match.group(1).strip() if match else ''

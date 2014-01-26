@@ -101,7 +101,7 @@ class TestToolGcc( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
       
@@ -161,7 +161,7 @@ class TestToolGcc( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter(options, GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
       
       bm = BuildManager()
       try:
@@ -222,7 +222,7 @@ class TestToolGcc( AqlTestCase ):
       
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
       archiver = GccArchiver( options, target = 'foo' )
       
       bm = BuildManager()
@@ -285,7 +285,7 @@ class TestToolGcc( AqlTestCase ):
       
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
       archiver = GccArchiver( options, target = 'foo' )
       linker = GccLinker( options, target = 'main_foo', language = 'c++', shared = False )
       
@@ -346,7 +346,7 @@ class TestToolGccSpeed( AqlTestCase ):
     
     options.build_dir_prefix = build_dir
     
-    cpp_compiler = BuildSplitter( options, GccCompiler( options, 'c++' ) )
+    cpp_compiler = BuildSplitter( GccCompiler( options, 'c++' ) )
   
     #//-------------------------------------------------------//
     
