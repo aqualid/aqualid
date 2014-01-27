@@ -95,6 +95,11 @@ class   DependsValueContent (ContentBase):
   
   #//-------------------------------------------------------//
   
+  def   get( self ):
+    return self.data
+  
+  #//-------------------------------------------------------//
+  
   def   __bool__( self ):
     return True
   
@@ -142,7 +147,7 @@ class   DependsValue (Value):
   #//-------------------------------------------------------//
 
   def get(self):
-    values = self.content.data
+    values = self.content.get()
     if values is None:
       raise ErrorNoDependsValues()
 
@@ -151,14 +156,22 @@ class   DependsValue (Value):
   #//-------------------------------------------------------//
 
   def   actual( self ):
-    try:
-      for value in self.content.data:
-        if not value.actual():
-          # if __debug__:
-          #   print("DependsValue.actual(): non-actual value: %s" % (value,))
-          return False
+    values = self.content.get()
+    if values is None:
+      # if __debug__:
+      #   print("DependsValue.actual(): non-actual value: %s" % (value,))
+      return False
     
-    except TypeError as ex:
+    # if __debug__:
+    #   print("DependsValue.actual(): self.content type: %s" % (type(self.content),))
+    # 
+    for value in values:
+      if not value.actual():
+        # if __debug__:
+        #   print("DependsValue.actual(): non-actual value: %s" % (value,))
+        return False
+    
+    # except TypeError as ex:
       # if __debug__:
       #   print("DependsValue.actual(): Type Error: %s" % (ex,))
       #   import traceback
@@ -166,8 +179,6 @@ class   DependsValue (Value):
       #     traceback.print_tb( ex.__traceback__ )
       #   except AttributeError:
       #     pass
-
-      return False
     
     return True
 
