@@ -25,7 +25,7 @@ import os
 import errno
 
 from aql.util_types import toSequence, isSequence, FilePath, UniqueList
-from aql.utils import dumpData, newHash, executeCommand, eventDebug, logDebug
+from aql.utils import dumpData, newHash, executeCommand, eventDebug, logDebug, Chdir
 from aql.values import Value, FileValue, FileName
 from aql.values import FileContentChecksum, FileContentTimeStamp
 
@@ -120,39 +120,38 @@ class BuilderInitiator( object ):
     if self.is_initiated:
       return builder
     
-    os.chdir( self.cwd )
-    
-    if isinstance(builder, BuildSplitter):
-      builder.__init__( self.args[0] )
-    
-    else:
-      kw = self.__evalKW( self.kw )
-      args = map( _evaluateValue, self.args )
+    with Chdir( self.cwd ):
+      if isinstance(builder, BuildSplitter):
+        builder.__init__( self.args[0] )
       
-      options = self.options
+      else:
+        kw = self.__evalKW( self.kw )
+        args = map( _evaluateValue, self.args )
+        
+        options = self.options
+        
+        options_kw = self.options_kw
+        if options_kw:
+          options = options.override()
+          options_kw = self.__evalKW( options_kw )
+          options.update( options_kw )
+        
+        builder.build_path = options.build_path.get()
+        builder.strip_src_dir = bool(options.build_dir_suffix.get())
+        builder.file_signature_type = options.file_signature.get()
+        builder.env = options.env.get().dump()
+        
+        builder.__init__( options, *args, **kw )
       
-      options_kw = self.options_kw
-      if options_kw:
-        options = options.override()
-        options_kw = self.__evalKW( options_kw )
-        options.update( options_kw )
+      if not hasattr( builder, 'name' ):
+        builder.setName()
       
-      builder.build_path = options.build_path.get()
-      builder.strip_src_dir = bool(options.build_dir_suffix.get())
-      builder.file_signature_type = options.file_signature.get()
-      builder.env = options.env.get().dump()
+      if not hasattr( builder, 'signature' ):
+        builder.setSignature()
       
-      builder.__init__( options, *args, **kw )
-    
-    if not hasattr( builder, 'name' ):
-      builder.setName()
-    
-    if not hasattr( builder, 'signature' ):
-      builder.setSignature()
-    
-    self.is_initiated = True
-    
-    return builder
+      self.is_initiated = True
+      
+      return builder
 
 #//===========================================================================//
 

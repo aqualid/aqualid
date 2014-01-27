@@ -489,6 +489,9 @@ class _NodesBuilder (object):
     vfiles = self.vfiles
     addTask = self.task_manager.addTask
     
+    tasks_check_period = 10
+    added_tasks = 0
+    
     for node in nodes:
       
       node.initiate()
@@ -523,6 +526,11 @@ class _NodesBuilder (object):
         completed_nodes.append( node )
       else:
         addTask( node, _buildNode, builder, node, brief )
+        added_tasks += 1
+        
+        if added_tasks == tasks_check_period:
+          self.__getFinishedNodes( completed_nodes, failed_nodes, block = False )
+          added_tasks = 0
     
     block = (not completed_nodes) and (not rebuild_nodes)
     

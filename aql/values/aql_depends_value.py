@@ -162,23 +162,11 @@ class   DependsValue (Value):
       #   print("DependsValue.actual(): non-actual value: %s" % (value,))
       return False
     
-    # if __debug__:
-    #   print("DependsValue.actual(): self.content type: %s" % (type(self.content),))
-    # 
     for value in values:
       if not value.actual():
         # if __debug__:
         #   print("DependsValue.actual(): non-actual value: %s" % (value,))
         return False
-    
-    # except TypeError as ex:
-      # if __debug__:
-      #   print("DependsValue.actual(): Type Error: %s" % (ex,))
-      #   import traceback
-      #   try:
-      #     traceback.print_tb( ex.__traceback__ )
-      #   except AttributeError:
-      #     pass
     
     return True
 

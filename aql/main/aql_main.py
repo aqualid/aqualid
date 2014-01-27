@@ -20,8 +20,9 @@ __all__ = ( 'main', )
 
 
 import os
+import cProfile
 
-from aql.utils import eventStatus, logInfo, Chrono, \
+from aql.utils import eventStatus, logInfo, Chrono, Chdir, \
                       setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
 
@@ -83,35 +84,49 @@ def _setLogLevel( level ):
 
 #//===========================================================================//
 
-def   main():
+def   _main( prj_cfg ):
   with Chrono() as total_elapsed:
-    prj_cfg = ProjectConfig()
     
     _setLogLevel( prj_cfg.log_level )
     
-    if prj_cfg.directory:
-      os.chdir( prj_cfg.directory )
-    
-    makefile = prj_cfg.makefile
-    targets = prj_cfg.targets
-    options = prj_cfg.options
-    
-    prj = Project( options, targets )
-    
-    eventReadingScripts()
-    
-    with Chrono() as elapsed:
-      prj.Include( makefile )
-    
-    eventReadingScriptsDone( elapsed )
-    
-    eventBuilding()
-    
-    with elapsed:
-      prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
-    
-    eventBuildingDone( elapsed )
+    with Chdir( prj_cfg.directory ):
+      makefile = prj_cfg.makefile
+      targets = prj_cfg.targets
+      options = prj_cfg.options
+      
+      prj = Project( options, targets )
+      
+      eventReadingScripts()
+      
+      with Chrono() as elapsed:
+        prj.Include( makefile )
+      
+      eventReadingScriptsDone( elapsed )
+      
+      eventBuilding()
+      
+      with elapsed:
+        prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
+      
+      eventBuildingDone( elapsed )
         
   eventBuildSummary( total_elapsed )
+
+
+#//===========================================================================//
+
+def   main():
+  prj_cfg = ProjectConfig()
+  
+  profile = prj_cfg.profile
+  
+  if profile:
+    profiler = cProfile.Profile()
+    
+    profiler.runcall( _main, prj_cfg )
+    
+    profiler.dump_stats( profile )
+    
+    
   
 #//===========================================================================//

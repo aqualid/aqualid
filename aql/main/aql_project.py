@@ -28,7 +28,7 @@ import os
 import types
 import itertools
 
-from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount
+from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence
 from aql.values import Value
 from aql.options import builtinOptions, Options
@@ -78,7 +78,7 @@ class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options',
-               'verbose', 'log_level', 'jobs', 'keep_going', 'rebuild' )
+               'verbose', 'log_level', 'jobs', 'keep_going', 'rebuild', 'profile' )
   
   #//-------------------------------------------------------//
   
@@ -104,6 +104,7 @@ class ProjectConfig( object ):
       CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
       CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
       CLIOption( "-d", "--debug",           "debug",          bool,       False,        "Debug logs." ),
+      CLIOption( "-p", "--profile",         "profile",        FilePath,   None,         "Run under profiler and save the results in the specified file." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -147,6 +148,7 @@ class ProjectConfig( object ):
     self.keep_going = cli_config.keep_going
     self.rebuild    = cli_config.rebuild
     self.jobs       = cli_config.jobs
+    self.profile    = cli_config.profile
     self.log_level  = log_level
 
 #//===========================================================================//
@@ -441,13 +443,10 @@ class Project( object ):
 
     cur_dir = os.getcwd()
 
-    try:
-      os.chdir( script.dirname() )
+    with Chdir( script.dirname() ):
       script_result = execFile( script, script_locals )
       scripts_cache[ script ] = script_result
       return script_result
-    finally:
-      os.chdir( cur_dir )
   
   #//-------------------------------------------------------//
   

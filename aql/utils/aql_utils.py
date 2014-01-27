@@ -25,7 +25,7 @@ __all__ = (
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
   'flattenList',
-  "Chrono",
+  'Chrono', 'Chdir'
 )
 
 import io
@@ -641,3 +641,20 @@ class   Chrono (object):
     if milisecs:  result.append("%s ms" % milisecs)
     
     return ' '.join( result )
+#//===========================================================================//
+
+class   Chdir (object):
+  __slots__ = ('previous_path', )
+  
+  def   __init__(self, path = None ):
+    self.previous_path = os.getcwd()
+    
+    if path:
+      os.chdir( path )
+  
+  def   __enter__(self):
+    return self
+  
+  def   __exit__(self, exc_type, exc_val, exc_tb):
+    os.chdir( self.previous_path )
+    return False
