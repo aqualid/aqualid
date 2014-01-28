@@ -120,12 +120,19 @@ def   main():
   
   profile = prj_cfg.profile
   
-  if profile:
+  if not profile:
+    _main( prj_cfg )
+  else:
     profiler = cProfile.Profile()
     
     profiler.runcall( _main, prj_cfg )
     
     profiler.dump_stats( profile )
+  
+  # from meliae import scanner
+  # scanner.dump_all_objects('objs_dump.json')
+  # import objgraph
+  # objgraph.show_most_common_types( 20 )
     
     
   
