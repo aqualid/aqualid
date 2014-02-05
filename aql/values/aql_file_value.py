@@ -51,8 +51,6 @@ class   FileContentBase( ContentBase ):
   
   FIXED_SIZE = True
   
-  __slots__ = ('path', 'signature')
-  
   def   __new__( cls, path = None, signature = None, use_cache = False ):
     
     if isinstance(path, ContentBase):
@@ -66,10 +64,7 @@ class   FileContentBase( ContentBase ):
     if signature:
       self.signature = signature
     else:
-      if not use_cache:
-        self.signature = self._getSignature( path )
-      else:
-        self.path = path
+      self.signature = self._getSignature( path, use_cache = use_cache )
     
     return self
   
@@ -93,18 +88,6 @@ class   FileContentBase( ContentBase ):
     
     return signature
   
-  #//-------------------------------------------------------//
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      signature = self._getSignature( self.path, use_cache = True )
-      self.signature = signature
-      del self.path
-      
-      return signature
-    
-    return super(FileContentBase, self).__getattr__( attr )
-    
   #//-------------------------------------------------------//
   
   def   __bool__( self ):

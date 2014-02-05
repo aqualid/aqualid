@@ -24,7 +24,7 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, isSequence, FilePath, UniqueList
+from aql.util_types import toSequence, FilePath, UniqueList
 from aql.utils import dumpData, newHash, executeCommand, eventDebug, logDebug, Chdir
 from aql.values import Value, FileValue, FileName
 from aql.values import FileContentChecksum, FileContentTimeStamp
@@ -115,43 +115,37 @@ class BuilderInitiator( object ):
   #//=======================================================//
   
   def   initiate( self ):
-    builder = self.builder
     
     if self.is_initiated:
-      return builder
+      return self.builder
+    
+    builder = self.builder
     
     with Chdir( self.cwd ):
-      if isinstance(builder, BuildSplitter):
-        builder.__init__( self.args[0] )
+      kw = self.__evalKW( self.kw )
+      args = map( _evaluateValue, self.args )
       
-      else:
-        kw = self.__evalKW( self.kw )
-        args = map( _evaluateValue, self.args )
-        
-        options = self.options
-        
-        options_kw = self.options_kw
-        if options_kw:
-          options = options.override()
-          options_kw = self.__evalKW( options_kw )
-          options.update( options_kw )
-        
-        builder.build_path = options.build_path.get()
-        builder.strip_src_dir = bool(options.build_dir_suffix.get())
-        builder.file_signature_type = options.file_signature.get()
-        builder.env = options.env.get().dump()
-        
-        builder.__init__( options, *args, **kw )
+      options = self.options
+      
+      options_kw = self.options_kw
+      if options_kw:
+        options = options.override()
+        options_kw = self.__evalKW( options_kw )
+        options.update( options_kw )
+      
+      builder._initAttrs( options )
+      
+      builder.__init__( options, *args, **kw )
       
       if not hasattr( builder, 'name' ):
         builder.setName()
       
       if not hasattr( builder, 'signature' ):
         builder.setSignature()
-      
-      self.is_initiated = True
-      
-      return builder
+    
+    self.is_initiated = True
+    
+    return builder
 
 #//===========================================================================//
 
@@ -174,6 +168,14 @@ class Builder (object):
     
     self = super(Builder, cls).__new__(cls)
     return BuilderInitiator( self, options, args, kw )
+  
+  #//-------------------------------------------------------//
+  
+  def   _initAttrs(self, options ):
+    self.build_path = options.build_path.get()
+    self.strip_src_dir = bool(options.build_dir_suffix.get())
+    self.file_signature_type = options.file_signature.get()
+    self.env = options.env.get().dump()
   
   #//-------------------------------------------------------//
   
@@ -209,30 +211,16 @@ class Builder (object):
     self.signature = newHash( sign ).digest()
   
   #//-------------------------------------------------------//
-  
-  def   actual( self, vfile, node ):
-    
-    result = node.actual( vfile )
-    
-    # if  __debug__:
-    #   print("builder.actual(): result: %s, node: %s" % (result, node.getName()))
-    
-    return result
 
-  #//-------------------------------------------------------//
-
-  # noinspection PyMethodMayBeStatic
-  def   save( self, vfile, node ):
-    # if  __debug__:
-    #   print("builder.save(): node: %s" % (node.getName(), ))
-    node.save( vfile )
+  def   clear( self, node ):
+    node.removeTargets()
   
   #//-------------------------------------------------------//
   
   def   prebuild( self, node ):
     """
     Could be used to dynamically generate nodes which need to be built before the node
-    Returns list of nodes
+    Returns list of nodes or None
     """
     return None
   
@@ -241,25 +229,21 @@ class Builder (object):
   def   prebuildFinished( self, node, prebuild_nodes ):
     """
     Called when all nodes returned by the prebuild() method have been built
+    Returns True if node should not be built
     """
-    pass
+    return False
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     """
     Builds a node
-    Returns a string of stdout/stderr or None
+    Returns a build output string or None
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   
-  def   clear( self, node ):
-    node.removeTargets()
-  
-  #//-------------------------------------------------------//
-
   def   getTargetValues( self, node ):
     """
     If it's possible returns target values of the node, otherwise None 
@@ -373,39 +357,43 @@ class Builder (object):
 
 class BuildSplitter(Builder):
   
-  __slots__ = ('builder',)
+  __slots__ = ('builder', )
   
   def   __new__(cls, builder ):
     
-    self = super(Builder, cls).__new__(cls)
-    return BuilderInitiator( self, None, args = (builder,), kw = None )
-  
-  def   __init__( self, builder ):
-    builder = builder.initiate()
+    self =  super(Builder, cls).__new__(cls)
+    self.builder = builder
     
-    self.builder              = builder
-    self.makeValue            = builder.makeValue
-    self.build_path           = builder.build_path
-    self.strip_src_dir        = builder.strip_src_dir
-    self.file_signature_type  = builder.file_signature_type
-    self.env                  = builder.env
-    self.name                 = builder.name
-    self.signature            = builder.signature
+    return self
   
   #//-------------------------------------------------------//
   
-  def   save( self, vfile, node ):
+  def   initiate( self ):
+    self.builder = self.builder.initiate()
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__(self, attr ):
+    value = getattr(self.builder, attr )
+    setattr( self, attr, value )
+    return value
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self, node ):
     pass
   
   #//-------------------------------------------------------//
   
-  def   actual( self, vfile, node ):
-    return True
-  
-  #//-------------------------------------------------------//
-  
   def   prebuild( self, node ):
-    return node.split( self.builder )
+    
+    sources = node.getSourceValues()
+    if len(sources) > 1:
+      return node.split( self.builder )
+    
+    node.builder = self.builder
+    return None
   
   #//-------------------------------------------------------//
   
@@ -416,3 +404,5 @@ class BuildSplitter(Builder):
       targets += pre_node.getTargetValues()
     
     node.setTargets( targets )
+    
+    return True

@@ -18,12 +18,12 @@
 #
 __all__ = ( 'main', )
 
-
+import gc
 import os
 import cProfile
 
-from aql.utils import eventStatus, logInfo, Chrono, Chdir, \
-                      setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
+from aql.utils import eventStatus, Chrono, Chdir, memoryUsage, \
+                      logInfo, logDebug, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
 
 #//===========================================================================//
@@ -84,6 +84,14 @@ def _setLogLevel( level ):
 
 #//===========================================================================//
 
+def   _printMemoryStatus():
+  mem_usage = memoryUsage()
+  num_objects = len(gc.get_objects())
+  
+  logDebug("Objects: %s, memory usage: %s Kb" % (num_objects, mem_usage))
+
+#//===========================================================================//
+
 def   _main( prj_cfg ):
   with Chrono() as total_elapsed:
     
@@ -107,6 +115,9 @@ def   _main( prj_cfg ):
       
       with elapsed:
         prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
+      
+      if prj_cfg.memory:
+        _printMemoryStatus()
       
       eventBuildingDone( elapsed )
         

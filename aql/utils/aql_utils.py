@@ -23,7 +23,7 @@ __all__ = (
   'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount',
+  'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
   'flattenList',
   'Chrono', 'Chdir'
 )
@@ -553,6 +553,75 @@ def   cpuCount():
   cpu_count = 1 # unable to detect number of CPUs
   
   return cpu_count
+
+#//===========================================================================//
+
+def _memoryUsageSmaps():
+  private = 0
+  
+  with open("/proc/self/smaps") as smaps:
+    for line in smaps:
+      if line.startswith("Private"):
+        private += int(line.split()[1])
+  
+  return private
+
+#//===========================================================================//
+
+def _memoryUsageStatm():
+  PAGESIZE = os.sysconf("SC_PAGE_SIZE")
+  
+  with open('/proc/self/statm') as f: 
+    mem_stat = f.readline().split()
+    rss = int(mem_stat[1]) * PAGESIZE  
+    shared = int(mem_stat[2]) * PAGESIZE  
+    
+    private = rss - shared
+  
+  return private // 1024
+
+#//===========================================================================//
+
+def   memoryUsageLinux():
+  try:
+    return _memoryUsageSmaps()
+  except IOError:
+    try:
+      return _memoryUsageStatm()
+    except IOError:
+      return memoryUsageUnix()
+
+#//===========================================================================//
+
+def memoryUsageUnix():
+  res = resource.getrusage(resource.RUSAGE_SELF)
+  return res.ru_maxrss
+
+#//===========================================================================//
+
+def memoryUsageWindows():
+  process_handle = win32api.GetCurrentProcess()
+  memory_info = win32process.GetProcessMemoryInfo( process_handle )
+  return memory_info['PeakWorkingSetSize']
+
+try:
+  import resource
+  
+  if sys.platform[:5] == "linux":
+    memoryUsage = memoryUsageLinux
+  else:
+    memoryUsage = memoryUsageUnix
+
+except ImportError:
+  try:
+    import win32process
+    import win32api
+    
+    memoryUsage = memoryUsageWindows
+    
+  except ImportError:
+    def memoryUsage():
+      return 0
 
 #//===========================================================================//
 

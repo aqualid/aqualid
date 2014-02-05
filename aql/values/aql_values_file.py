@@ -289,7 +289,7 @@ class ValuesFile (object):
       for value in toSequence( values ):
         key, val = find( value )
         if val is None:
-          val = type(value)( name = value.name, content = None )
+          val = type(value)( name = value.name )
         else:
           if isinstance( val, DependsValue ):
             val = self.__makeDepends( val, key )
@@ -310,7 +310,7 @@ class ValuesFile (object):
     
     key, val = xash.find( value )
     if val is not None:
-      if value.content != val.content:
+      if value != val:
         data = self.dumps( value )
         new_key = self.data_file.replace( key, data, reserve )
         xash[ new_key ] = value

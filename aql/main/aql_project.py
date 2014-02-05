@@ -24,7 +24,6 @@ __all__ = ( 'Project', 'ProjectConfig',
             'ErrorProjectInvalidMethod',
           )
 
-import os
 import types
 import itertools
 
@@ -78,7 +77,7 @@ class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options',
-               'verbose', 'log_level', 'jobs', 'keep_going', 'rebuild', 'profile' )
+               'verbose', 'log_level', 'jobs', 'keep_going', 'rebuild', 'profile', 'memory' )
   
   #//-------------------------------------------------------//
   
@@ -104,6 +103,7 @@ class ProjectConfig( object ):
       CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
       CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
       CLIOption( "-d", "--debug",           "debug",          bool,       False,        "Debug logs." ),
+      CLIOption( "-m", "--memory",          "memory",         bool,       False,        "Display memory usage." ),
       CLIOption( "-p", "--profile",         "profile",        FilePath,   None,         "Run under profiler and save the results in the specified file." ),
     )
     
@@ -149,6 +149,7 @@ class ProjectConfig( object ):
     self.rebuild    = cli_config.rebuild
     self.jobs       = cli_config.jobs
     self.profile    = cli_config.profile
+    self.memory     = cli_config.memory
     self.log_level  = log_level
 
 #//===========================================================================//
@@ -385,20 +386,6 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def _setLogLevel( level ):
-    
-    if level <= 0:
-      level = LOG_WARNING
-    elif level == 1:
-      level = LOG_INFO
-    else:
-      level = LOG_DEBUG
-    
-    setLogLevel( level )
-  
-  #//-------------------------------------------------------//
-  
   def   __getattr__( self, attr ):
     if attr == 'script_locals':
       self.script_locals = self.__getSciptLocals()
@@ -440,8 +427,6 @@ class Project( object ):
     script_result = scripts_cache.get( script, None )
     if script_result is not None:
       return script_result
-
-    cur_dir = os.getcwd()
 
     with Chdir( script.dirname() ):
       script_result = execFile( script, script_locals )
@@ -522,14 +507,22 @@ class Project( object ):
     brief = not verbose
     
     if not jobs:
+      jobs = 0
+    else:
+      jobs = int(jobs)
+    
+    if not jobs:
       jobs = cpuCount()
     
-    if jobs > 32:
+    if jobs < 0:
+      jobs = 1
+    
+    elif jobs > 32:
       jobs = 32
     
     build_nodes = self._getBuildNodes()
     
-    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = keep_going, nodes = build_nodes, brief = brief )
+    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes, brief = brief )
     return failed_nodes
   
   #//=======================================================//

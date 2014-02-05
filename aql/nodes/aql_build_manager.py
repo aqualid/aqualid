@@ -44,9 +44,9 @@ def   eventBuildStatusActualNode( node, brief ):
 #//===========================================================================//
 
 @eventWarning
-def   eventBuildTargetTwiceByNodes( value, node1, node2, brief ):
-  logWarning("Target '%s' is built twice by different nodes: '%s', '%s' " %
-             ( value.name, node1.getBuildStr( brief ), node2.getBuildStr( brief ) ) )
+def   eventBuildTargetTwice( value, node1, brief ):
+  logWarning("Target '%s' is built twice. The last time built by: '%s' " %
+             ( value.name, node1.getBuildStr( brief )) )
 
 #//===========================================================================//
 
@@ -60,7 +60,7 @@ def   eventInitialNodes( total_nodes ):
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildNodeFailed( node, error ):
+def   eventFailedNode( node, error ):
   
   msg = node.getBuildStr( brief = False )
   msg += '\n' + str(error)
@@ -81,15 +81,35 @@ def   eventNodeBuilding( node, brief ):
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeBuildingFinished( node, out, progress, brief ):
+def   eventNodeBuildingActual( node, progress, brief ):
+  pass
+
+#//===========================================================================//
+
+@eventStatus
+def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   
   msg = node.getBuildStr( brief )
-  if not brief and out:
-    msg += out
+  if not brief and builder_output:
+    msg += builder_output
   
   msg = "(%s) %s" % (progress, msg)
   
   logInfo( msg )
+
+#//===========================================================================//
+
+@eventStatus
+def   eventNodeBuildingFailed( node, error ):
+  pass
+
+#//===========================================================================//
+
+@eventStatus
+def   eventNodeRemoved( node, progress, brief ):
+  msg = node.getClearStr( brief )
+  if msg:
+    logInfo( "(%s) Removed: %s" % (progress, msg) )
 
 #//===========================================================================//
 
@@ -244,12 +264,13 @@ class _NodesTree (object):
           self.tail_nodes.add( node )
 
           node_srcnodes = node.getSourceNodes()
+          node_depnodes = node.getDepNodes()
 
           self.__add( node_srcnodes )       # TODO: recursively add sources and depends
-          self.__add( node.dep_nodes )      # It would be better to rewrite this code to avoid the recursion
+          self.__add( node_depnodes )      # It would be better to rewrite this code to avoid the recursion
           
           self.__depends( node, node_srcnodes )
-          self.__depends( node, node.dep_nodes )
+          self.__depends( node, node_depnodes )
     
   #//-------------------------------------------------------//
   
@@ -421,12 +442,12 @@ class  _VFiles( object ):
 
 #//===========================================================================//
 
-def   _buildNode( builder, node, brief ):
+def   _buildNode( node, brief ):
   
   eventNodeBuilding( node, brief )
   
   # try:
-  out = builder.build( node )
+  out = node.build()
   # except Exception as ex:
   #   stat.incFailed()
   #   eventBuildNodeFailed( node, ex )
@@ -445,25 +466,33 @@ def   _buildNode( builder, node, brief ):
 
 #//===========================================================================//
 
+def   _clearNode( vfile, node, brief ):
+  
+  try:
+    node.clear( vfile )
+  except Exception as ex:
+    pass
+  else:
+    # stat.incCompleted()
+    eventNodeRemoved( node, 0, brief )
+
+#//===========================================================================//
+
 # noinspection PyAttributeOutsideInit
 class _NodesBuilder (object):
   
   __slots__ = \
   (
     'vfiles',
-    'stat',
-    'brief',
     'task_manager',
     'prebuild_nodes',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, jobs, keep_going, stat, brief ):
+  def   __init__( self, jobs, keep_going ):
     self.vfiles         = _VFiles()
     self.prebuild_nodes = {}
-    self.stat           = stat
-    self.brief          = brief
     self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going )
   
   #//-------------------------------------------------------//
@@ -478,98 +507,104 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, build_manager, nodes ):
-    stat = self.stat
-    brief = self.brief
-    
-    completed_nodes = []
-    failed_nodes = {}
-    rebuild_nodes = []
+  def   build( self, build_manager, nodes, brief ):
     
     vfiles = self.vfiles
     addTask = self.task_manager.addTask
     
     tasks_check_period = 10
     added_tasks = 0
+    block = True
     
     for node in nodes:
-      
-      node.initiate()
-      
-      builder = node.builder
-      
-      vfile = vfiles[ builder ]
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
       if pre_nodes:
-        builder.prebuildFinished( node, pre_nodes )
+        actual = node.prebuildFinished( node, pre_nodes )
+        if actual:
+          build_manager.actualNode( node )
+          continue
+      
       else:
-        pre_nodes = builder.prebuild( node )
+        node.initiate()
+        
+        pre_nodes = node.prebuild( node )
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           
-          total = len(build_manager)
-          
           build_manager.depends( node, pre_nodes )
-          
-          new_num = len(build_manager) - total
-          
-          stat.addTotal( new_num )
-          
-          rebuild_nodes.append( node )
+          build_manager.rebuildNode( node )
+          block = False
           continue
       
-      if builder.actual( vfile, node ):
-        # eventBuildStatusActualNode( node, brief )
-        stat.incCompleted()
-        completed_nodes.append( node )
+      vfile = vfiles[ node.builder ]
+      
+      if node.actual( vfile ):
+        build_manager.actualNode( node )
+        block = True
       else:
-        addTask( node, _buildNode, builder, node, brief )
+        addTask( node, _buildNode, node, brief )
         added_tasks += 1
         
-        if added_tasks == tasks_check_period:
-          self.__getFinishedNodes( completed_nodes, failed_nodes, block = False )
-          added_tasks = 0
+        if (added_tasks % tasks_check_period) == 0:
+          self.__getFinishedNodes( build_manager, block = False )
     
-    block = (not completed_nodes) and (not rebuild_nodes)
-    
-    self.__getFinishedNodes( completed_nodes, failed_nodes, block = block )
-    
-    # print("completed_nodes: %s" % (completed_nodes,))
-    
-    return completed_nodes, failed_nodes, rebuild_nodes
+    self.__getFinishedNodes( build_manager, block = block )
   
   #//-------------------------------------------------------//
   
-  def   __getFinishedNodes( self, completed_nodes, failed_nodes, block = True ):
+  def   __getFinishedNodes( self, build_manager, block = True ):
     finished_tasks = self.task_manager.finishedTasks( block = block )
     
     vfiles = self.vfiles
     
-    stat = self.stat
-    brief = self.brief
-    
     for task in finished_tasks:
-      
       node = task.task_id
-      
-      builder = node.builder
-      
       error = task.error
       
       if error is None:
-        stat.incCompleted()
-        eventNodeBuildingFinished( node, task.result, stat.getProgressStr(), brief )
-        
-        builder.save( vfiles[ builder ], node )
-        completed_nodes.append( node )
+        vfile = vfiles[ node.builder ]
+        node.save( vfile )
+        build_manager.completedNode( node, task.result )
       else:
-        stat.incFailed()
-        eventBuildNodeFailed( node, error )
-        failed_nodes[ node ] = error
+        build_manager.failedNode( node, error )
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self, build_manager, nodes ):
+    stat = self.stat
+    brief = self.brief
     
-    return completed_nodes, failed_nodes
+    completed_nodes = []
+    rebuild_nodes = []
+    
+    vfiles = self.vfiles
+    
+    for node in nodes:
+      
+      pre_nodes = self.prebuild_nodes.pop( node, None )
+      if pre_nodes:
+        actual = node.prebuildFinished( node, pre_nodes )
+        if actual:
+          continue
+        
+      else:
+        node.initiate()
+        
+        pre_nodes = node.prebuild( node )
+        if pre_nodes:
+          self.prebuild_nodes[ node ] = pre_nodes
+          
+          build_manager.depends( node, pre_nodes )
+          
+          rebuild_nodes.append( node )
+          continue
+      
+      vfile = vfiles[ node.builder ]
+      _clearNode( vfile, node, brief )
+      
+    return completed_nodes, rebuild_nodes
   
   #//-------------------------------------------------------//
   
@@ -588,14 +623,27 @@ class BuildManager (object):
   __slots__ = \
   (
     '_nodes',
-    '_jobs'
+    '_built_targets',
+    '_waiting_nodes',
+    '_failed_nodes',
+    'brief',
+    'completed',
+    'actual',
+    'failed',
   )
   
   #//-------------------------------------------------------//
   
   def   __init__(self):
     self._nodes = _NodesTree()
-    self._jobs = 1
+    
+    self._built_targets = {}
+    self._waiting_nodes = set()
+    self._failed_nodes = {}
+    self.brief = False
+    self.completed = 0
+    self.actual = 0
+    self.failed = 0
   
   #//-------------------------------------------------------//
   
@@ -619,21 +667,119 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __checkAlreadyBuilt( target_nodes, node ):
+  def   __checkAlreadyBuilt( self, node ):
     values = []
     values += node.getTargetValues()
     values += node.getSideEffectValues()
     
+    built_targets = self._built_targets
+    
     for value in values:
-      other_node, other_value = target_nodes.setdefault( value.name, (node, value) )
+      value_sign = value.content.signature
+      other_value_sign = built_targets.setdefault( (type(value), value.name), value_sign )
       
-      if other_value != value:
-        eventBuildTargetTwiceByNodes( value, node, other_node )
+      if other_value_sign != value_sign:
+        eventBuildTargetTwice( value, node, brief = self.brief )
   
   #//-------------------------------------------------------//
   
   def   build( self, jobs, keep_going, nodes = None, brief = True ):
+    
+    self.brief = brief
+    
+    nodes_tree = self._nodes
+    if nodes is not None:
+      nodes_tree.shrinkTo( nodes )
+    
+    with _NodesBuilder( jobs, keep_going, brief = brief) as nodes_builder:
+      
+      eventInitialNodes( len(nodes_tree) )
+      
+      # target_nodes = {}
+      
+      # waiting_nodes = set()
+      # failed_nodes = {}
+      
+      while True:
+        
+        tails = self.getTailNodes()
+        
+        if not tails and not self.isWaiting():
+          break
+        
+        nodes_builder.build( self, tails )
+        
+        completed_nodes, tmp_failed_nodes, rebuild_nodes = nodes_builder.build( self, tails )
+        
+        if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
+          break
+      
+      
+      
+  #//-------------------------------------------------------//
+  
+  def   getTailNodes(self):
+    
+    wait_nodes = self._waiting_nodes
+    
+    tails = self._nodes.tails()
+    tails -= wait_nodes
+    tails.difference_update( self._failed_nodes )
+    
+    wait_nodes.update( tails )
+    
+    return tails
+  
+  #//-------------------------------------------------------//
+  
+  def   isWaiting(self):
+    return bool(self._waiting_nodes)
+  
+  #//-------------------------------------------------------//
+  
+  def   completedNode( self, node, builder_output ):
+    self.__checkAlreadyBuilt( node )
+    self._nodes.removeTail( node )
+    self._waiting_nodes.remove( node )
+    self.completed += 1
+    
+    eventNodeBuildingFinished( node, builder_output, self.getProgressStr(), self.brief )
+    
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
+  def   actualNode( self, node ):
+    self.__checkAlreadyBuilt( node )
+    self._nodes.removeTail( node )
+    self._waiting_nodes.remove( node )
+    self.actual += 1
+    
+    eventNodeBuildingActual( node, self.getProgressStr(), self.brief )
+    
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
+  def   failedNode( self, node, error ):
+    self._waiting_nodes.remove( node )
+    self._failed_nodes[ node ] = error
+    
+    eventNodeBuildingFailed( node, self.brief )
+  
+  #//-------------------------------------------------------//
+  
+  def   rebuildNode( self, node ):
+    self._waiting_nodes.remove( node )
+  
+  #//-------------------------------------------------------//
+  
+  def   close( self ):
+    self._nodes = _NodesTree()
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self, nodes = None, brief = True ):
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -641,73 +787,20 @@ class BuildManager (object):
     
     stat = BuildStat( len(nodes_tree) )
     
-    with _NodesBuilder( jobs, keep_going, stat = stat, brief = brief) as nodes_builder:
-      
-      eventInitialNodes( len(nodes_tree) )
-      
-      target_nodes = {}
-      
-      waiting_nodes = set()
-      failed_nodes = {}
-      
+    with _NodesBuilder( jobs = 1, keep_going = False, stat = stat, brief = brief) as nodes_builder:
       while True:
         
-        tails = nodes_tree.tails()
-        tails -= waiting_nodes
-        tails.difference_update( failed_nodes )
-        
-        if not tails and not waiting_nodes:
-          break
-        
-        completed_nodes, tmp_failed_nodes, rebuild_nodes = nodes_builder.build( self, tails )
-        
-        if not (completed_nodes or tmp_failed_nodes or rebuild_nodes):
-          break
-        
-        failed_nodes.update( tmp_failed_nodes )
-        
-        waiting_nodes |= tails
-        
-        waiting_nodes.difference_update( completed_nodes )
-        waiting_nodes.difference_update( tmp_failed_nodes )
-        waiting_nodes.difference_update( rebuild_nodes )
-        
-        for node in completed_nodes:
-          self.__checkAlreadyBuilt( target_nodes, node )
-          nodes_tree.removeTail( node )
-        
-      return tuple( failed_nodes.items() )
-    
-  #//-------------------------------------------------------//
-  
-  def   close( self ):
-    self._nodes = _NodesTree()
-    self._jobs = 1
-  
-  #//-------------------------------------------------------//
-  
-  def   clear( self, nodes = None ):
-    
-    nodes_tree = self._nodes
-    if nodes is not None:
-      nodes_tree.shrinkTo( nodes )
-    
-    with _VFiles() as vfiles:
-      
-      while True:
         tails = nodes_tree.tails()
         
         if not tails:
           break
         
-        for node in tails:
-          
-          node.initiate()
-          
-          vfile = vfiles[ node.builder ]
-          
-          node.clear( vfile )
-          
+        completed_nodes, rebuild_nodes = nodes_builder.clear( self, tails )
+        
+        if not (completed_nodes or rebuild_nodes):
+          break
+        
+        for node in completed_nodes:
           nodes_tree.removeTail( node )
   
   #//-------------------------------------------------------//

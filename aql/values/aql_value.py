@@ -81,7 +81,7 @@ class ContentBase( object ):
 @pickleable
 class _NoContent( ContentBase ):
   
-  FIXED_SIZE = True
+  FIXED_SIZE = False
   
   def   __new__( cls, *args ):
     self = super(_NoContent,cls).__new__(cls)
@@ -329,7 +329,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   copy( self ):
-    return type(self)( content = self.content, name = self.name )
+    return type(self)( *self.__getnewargs__() )
   
   #//-------------------------------------------------------//
   
@@ -339,7 +339,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   __eq__( self, other):
-    return (type(self) == type(other)) and (self.name == other.name) and (self.content == other.content)
+    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
   
   def   __ne__( self, other):
     return not self.__eq__( other )
@@ -362,7 +362,7 @@ class   Value (object):
   #//-------------------------------------------------------//
   
   def   __nonzero__( self ):
-    return bool(self.content)
+    return self.__bool__()
   
   #//-------------------------------------------------------//
   
