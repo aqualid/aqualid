@@ -399,7 +399,10 @@ class Node (object):
     
     vfile.removeValues( [ node_value, ideps_value ] )
     
-    self.builder.clear( self )
+    try:
+      self.builder.clear( self )
+    except Exception:
+      pass
     
   #//=======================================================//
   
@@ -425,7 +428,7 @@ class Node (object):
     
     ideps_value, node_value = vfile.findValues( [ideps_value, node_value] )
     
-    if self.signature != node_value.sinature:
+    if self.signature != node_value.signature:
       # if __debug__:
       #   print( "Sources signature is changed" )
       return False

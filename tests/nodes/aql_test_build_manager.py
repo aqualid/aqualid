@@ -126,17 +126,9 @@ def   _addNodesToBM( builder, src_files ):
 def   _build( bm ):
   try:
     bm.selfTest()
-    failed_nodes = bm.build( jobs = 1, keep_going = False )
-    for node,err in failed_nodes:
-      
-      print( "Failed node: %s" % (err,))
-      try:
-        import traceback
-        traceback.print_tb( err.__traceback__ )
-      except AttributeError:
-        pass
-    
-    if failed_nodes:
+    success = bm.build( jobs = 1, keep_going = False )
+    if not success:
+      bm.printFails()
       raise Exception("Nodes failed")
     
   finally:
@@ -160,7 +152,7 @@ class TestBuildManager( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  def   eventNodeBuildingFinished( self, node, out, progress, brief ):
+  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//
@@ -194,7 +186,6 @@ class TestBuildManager( AqlTestCase ):
   
   def   tearDown( self ):
     removeUserHandler( [  self.eventNodeBuilding,
-                          self.eventNodeBuildingFinished,
                           self.eventNodeBuildingFinished,
                           self.eventBuildStatusOutdatedNode,
                           self.eventBuildStatusActualNode ] )
