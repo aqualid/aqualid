@@ -166,6 +166,7 @@ class   BoolOptionType (OptionType):
     'true_values',
     'false_values',
     'aliases',
+    'default',
   )
   
   #//-------------------------------------------------------//
@@ -175,7 +176,7 @@ class   BoolOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None ):
+  def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None, default = False ):
     
     #noinspection PyTypeChecker
     super(BoolOptionType,self).__init__( bool, description, group )
@@ -198,6 +199,7 @@ class   BoolOptionType (OptionType):
     self.true_value, self.false_value = style
     self.true_values  = set()
     self.false_values = set()
+    self.default = default
     
     self.addValues( true_values, false_values )
     self.addValues( self.true_value, self.false_value )
@@ -210,21 +212,16 @@ class   BoolOptionType (OptionType):
       return value
     
     if value is NotImplemented:
-      value = False
+      value = self.default
     
     value_str = IgnoreCaseString(value)
     if value_str in self.true_values:
-      value = True
+      return True
     
     if value_str in self.false_values:
-      value =  False
+      return  False
     
-    if value:
-      value = True
-    else:
-      value = False
-    
-    return bool( value )
+    return True if value else False
   
   #//-------------------------------------------------------//
   

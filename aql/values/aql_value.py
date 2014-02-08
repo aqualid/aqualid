@@ -21,7 +21,7 @@ __all__ = (
   'Value', 'StringValue', 'IStringValue', 'SignatureValue', 'makeContent',
 )
 
-from aql.utils import strSignature, dataSignature, dumpData
+from aql.utils import simpleObjectSignature, strSignature, dataSignature
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
@@ -254,8 +254,7 @@ class   OtherContent ( ContentBase ):
   
   def   __getattr__( self, attr ):
     if attr == 'signature':
-      bytes_data = dumpData( self.data )
-      self.signature = dataSignature( bytes_data )
+      self.signature = simpleObjectSignature( self.data )
       return self.signature
     
     return super(OtherContent,self).__getattr__( attr )

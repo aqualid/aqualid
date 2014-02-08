@@ -88,10 +88,12 @@ class CopyBuilder (Builder):
 class TestNodes( AqlTestCase ):
   
   def   setUp( self ):
+    super(TestNodes,self).setUp()
     disableDefaultHandlers()
   
   def   tearDown( self ):
     enableDefaultHandlers()
+    super(TestNodes,self).tearDown()
   
   def test_node_value(self):
     

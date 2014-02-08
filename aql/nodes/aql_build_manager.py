@@ -32,14 +32,22 @@ from aql.values import ValuesFile
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildStatusOutdatedNode( node, brief ):
-  logInfo("Outdated node: %s" % node.getBuildStr( brief ) )
+def   eventNodeStatusOutdated( node, progress, brief ):
+  msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( brief ))
+  if __debug__:
+    msg = '%s: %s' % (node.getName(), msg)
+  logInfo( msg )
 
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildStatusActualNode( node, brief ):
-  logInfo("Actual node: %s" % node.getBuildStr( brief ) )
+def   eventNodeStatusActual( node, progress, brief ):
+  
+  msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( brief ))
+  if __debug__:
+    msg = '%s: %s' % (node.getName(), msg)
+
+  logInfo( msg )
 
 #//===========================================================================//
 
@@ -95,6 +103,9 @@ def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   
   msg = "(%s) %s" % (progress, msg)
   
+  if __debug__:
+    msg = '%s: %s' % (node.getName(), msg)
+  
   logInfo( msg )
 
 #//===========================================================================//
@@ -107,8 +118,12 @@ def   eventNodeBuildingFailed( node, error ):
 
 @eventStatus
 def   eventNodeRemoved( node, progress, brief ):
-  msg = node.getClearStr( brief )
+  # msg = node.getClearStr( brief )
+  msg = node.getBuildStr( brief )
   if msg:
+    if __debug__:
+      msg = '%s: %s' % (node.getName(), msg)
+
     logInfo( "(%s) Removed: %s" % (progress, msg) )
 
 #//===========================================================================//
@@ -508,7 +523,7 @@ class _NodesBuilder (object):
         actual = node.prebuildFinished( pre_nodes )
         if actual:
           build_manager.actualNode( node )
-          changed = False
+          changed = True
           continue
       
       else:
@@ -519,7 +534,7 @@ class _NodesBuilder (object):
           self.prebuild_nodes[ node ] = pre_nodes
           
           build_manager.rebuildNode( node, pre_nodes )
-          changed = False
+          changed = True
           continue
       
       vfile = vfiles[ node.builder ]
@@ -570,14 +585,14 @@ class _NodesBuilder (object):
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       if pre_nodes:
-        actual = node.prebuildFinished( node, pre_nodes )
+        actual = node.prebuildFinished( pre_nodes )
         if actual:
           continue
         
       else:
         node.initiate()
         
-        pre_nodes = node.prebuild( node )
+        pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           
@@ -596,17 +611,17 @@ class _NodesBuilder (object):
     build_manager = self.build_manager
     
     for node in nodes:
-      
       pre_nodes = self.prebuild_nodes.pop( node, None )
       if pre_nodes:
-        actual = node.prebuildFinished( node, pre_nodes )
+        actual = node.prebuildFinished( pre_nodes )
         if actual:
+          build_manager.actualNodeStatus( node )
           continue
-        
+      
       else:
         node.initiate()
         
-        pre_nodes = node.prebuild( node )
+        pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
           
@@ -614,8 +629,10 @@ class _NodesBuilder (object):
           continue
       
       vfile = vfiles[ node.builder ]
-      node.clear( vfile )
-      build_manager.removedNode( node )
+      if node.actual( vfile ):
+        build_manager.actualNodeStatus( node )
+      else:
+        build_manager.outdatedNodeStatus( node )
   
   #//-------------------------------------------------------//
   
@@ -643,12 +660,17 @@ class BuildManager (object):
   
   def   __init__(self):
     self._nodes = _NodesTree()
+    self.__reset()
+  
+  #//-------------------------------------------------------//
+  
+  def   __reset(self, brief =  True ):
     
     self._built_targets = {}
     self._waiting_nodes = set()
     self._failed_nodes = {}
     
-    self.brief = False
+    self.brief = brief
     self.completed = 0
     self.actual = 0
   
@@ -728,6 +750,23 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   actualNodeStatus( self, node ):
+    self._nodes.removeTail( node )
+    self.actual += 1
+    self._waiting_nodes.remove( node )
+    
+    eventNodeStatusActual( node, self.getProgressStr(), self.brief )
+    
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
+  def   outdatedNodeStatus( self, node ):
+    eventNodeStatusOutdated( node, self.getProgressStr(), self.brief )
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
   def   failedNode( self, node, error ):
     self._waiting_nodes.remove( node )
     self._failed_nodes[ node ] = error
@@ -774,7 +813,7 @@ class BuildManager (object):
   
   def   build( self, jobs, keep_going, nodes = None, brief = True ):
     
-    self.brief = brief
+    self.__reset( brief )
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -812,7 +851,7 @@ class BuildManager (object):
   
   def   clear( self, nodes = None, brief = True ):
     
-    self.brief = brief
+    self.__reset( brief )
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -832,7 +871,7 @@ class BuildManager (object):
   
   def   status( self, nodes = None, brief = True ):
     
-    self.brief = brief
+    self.__reset( brief )
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -843,10 +882,7 @@ class BuildManager (object):
       while True:
         tails = self.getTailNodes()
         
-        if not (tails or self.isWaiting()):
+        if not tails:
           break
         
-        changed = nodes_builder.status( tails, brief )
-        
-        if not changed:
-          break
+        nodes_builder.status( tails )

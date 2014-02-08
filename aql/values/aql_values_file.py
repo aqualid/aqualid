@@ -351,6 +351,8 @@ class ValuesFile (object):
           if val is not None:
             remove_keys.append( key )
         
+        print( "Remove keys: %s" % (remove_keys,))
+        
         self.data_file.remove( remove_keys )
         self.data_file.flush()
   

@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'FileContentChecksum', 'FileContentTimeStamp', 'FileName',
+  'FileContentChecksum', 'FileContentTimeStamp',
   'FileValue', 'DirValue',
 )
 
@@ -123,27 +123,6 @@ class   FileContentTimeStamp (FileContentBase):
 #//===========================================================================//
 
 @pickleable
-class   FileName (str):
-  def     __new__(cls, path = None, full_path = None ):
-    if type(path) is cls:
-      return path
-    
-    if full_path is None:
-      if path is None:
-        return super(FileName,cls).__new__(cls)
-    
-      full_path = os.path.normcase( os.path.abspath( str(path) ) )
-    
-    return super(FileName,cls).__new__(cls, full_path)
-  
-  #//-------------------------------------------------------//
-  
-  def     __getnewargs__(self):
-    return None, super(FileName,self).__getnewargs__()[0]
-
-#//===========================================================================//
-
-@pickleable
 class   FileValue (Value):
   
   def   __new__( cls, content = NotImplemented, name = None, use_cache = False ):
@@ -175,7 +154,7 @@ class   FileValue (Value):
       file_name = content
     
     if file_name:
-      file_name = FileName( file_name )
+      file_name = os.path.normcase( os.path.abspath( str(file_name) ) )
     else:
       raise ErrorFileValueNoName()
     

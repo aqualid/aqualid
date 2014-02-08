@@ -25,8 +25,8 @@ import os
 import errno
 
 from aql.util_types import toSequence, FilePath, UniqueList
-from aql.utils import dumpData, newHash, executeCommand, eventDebug, logDebug, Chdir
-from aql.values import Value, FileValue, FileName
+from aql.utils import simpleObjectSignature, executeCommand, eventDebug, logDebug, Chdir
+from aql.values import Value, FileValue
 from aql.values import FileContentChecksum, FileContentTimeStamp
 
 from .aql_node import Node
@@ -173,7 +173,7 @@ class Builder (object):
   
   def   _initAttrs(self, options ):
     self.build_path = options.build_path.get()
-    self.strip_src_dir = bool(options.build_dir_suffix.get())
+    self.relative_build_paths = options.relative_build_paths.get()
     self.file_signature_type = options.file_signature.get()
     self.env = options.env.get().dump()
   
@@ -187,14 +187,14 @@ class Builder (object):
   def setName( self ):
     
     cls = self.__class__
-    name = [ cls.__module__, cls.__name__, self.build_path, self.strip_src_dir ]
+    name = [ cls.__module__, cls.__name__, str(self.build_path), bool(self.relative_build_paths) ]
     
     if self.NAME_ATTRS:
       for attr_name in self.NAME_ATTRS:
         value = getattr( self, attr_name )
         name.append( value )
             
-    self.name = tuple( name )
+    self.name = simpleObjectSignature( name )
   
   #//-------------------------------------------------------//
   
@@ -206,9 +206,7 @@ class Builder (object):
         value = getattr( self, attr_name )
         sign.append( value )
     
-    sign = dumpData( sign )
-    
-    self.signature = newHash( sign ).digest()
+    self.signature = simpleObjectSignature( sign )
   
   #//-------------------------------------------------------//
 
@@ -272,7 +270,7 @@ class Builder (object):
       src_path = FilePath( src_path )
       filename = src_path.filename()
       
-      if not self.strip_src_dir:
+      if self.relative_build_paths:
         build_path = build_path.joinFromCommon( src_path.dirname() )
       
     _makeDir( build_path )
@@ -300,7 +298,7 @@ class Builder (object):
     if isinstance( value, Value):
       return value
     
-    if isinstance( value, (FileName, FilePath) ):
+    if isinstance( value, FilePath ):
       return FileValue( name = value, content = self.fileContentType(), use_cache = use_cache )
       
     return Value( content = value, name = None )

@@ -19,9 +19,8 @@
 
 __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
-  'dumpData',
-  'newHash', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum', 'findFiles',
-  'loadModule',
+  'simpleObjectSignature', 'objectSignature', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum',
+  'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
   'flattenList',
@@ -36,6 +35,7 @@ import time
 import types
 import errno
 import struct
+import marshal
 import hashlib
 import inspect
 import tempfile
@@ -58,6 +58,13 @@ from aql.util_types import toSequence, UniqueList
 class   ErrorProgramNotFound( Exception ):
   def   __init__( self, program, env ):
     msg = "Program '%s' has not been found" % str(program)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorUnmarshallableObject( Exception ):
+  def   __init__( self, obj ):
+    msg = "Unmarshallable object: '%s'" % (obj, )
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -150,8 +157,19 @@ def   execFile( filename, file_locals ):
 
 #//===========================================================================//
 
-def   dumpData( data, protocol = pickle.HIGHEST_PROTOCOL ):
-  return pickle.dumps( data, protocol = protocol )
+def   simpleObjectSignature( obj ):
+  try:
+    data = marshal.dumps( obj )
+  except ValueError:
+    raise ErrorUnmarshallableObject( obj )
+  
+  return hashlib.md5( data ).digest()
+  
+
+#//===========================================================================//
+
+def   objectSignature( obj ):
+  return hashlib.md5( pickle.dumps( obj, protocol = pickle.HIGHEST_PROTOCOL ) ).digest()
 
 #//===========================================================================//
 
@@ -161,20 +179,18 @@ def   newHash( data = b'' ):
 #//===========================================================================//
 
 def   dataSignature( data ):
-  sig = newHash()
-  sig.update( data )
-  return sig.digest()
+  return hashlib.md5( data ).digest()
 
 #//===========================================================================//
 
 def   strSignature( str_value ):
-  return dataSignature( str_value.encode('utf-8') )
+  return hashlib.md5( str_value.encode('utf-8') ).digest()
 
 #//===========================================================================//
 
 def   fileSignature( filename ):
   
-  checksum = newHash()
+  checksum = hashlib.md5()
   chunk_size = checksum.block_size * 4096
   
   with openFile( filename, binary = True ) as f:

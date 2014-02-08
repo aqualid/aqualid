@@ -26,6 +26,15 @@ class CopyValueBuilder (Builder):
       target_values.append( Value( name = source_value.name + '_copy', content = source_value.content ) )
     
     node.setTargets( target_values )
+  
+  def   getBuildStrArgs( self, node, brief = True ):
+    
+    name = self.__class__.__name__
+    sources = tuple( value.name for value in node.getSourceValues() )
+    targets = tuple( value.name for value in node.getTargetValues() )
+    
+    return name, sources, targets
+
 
 #//===========================================================================//
 
@@ -61,6 +70,22 @@ class ChecksumBuilder (Builder):
       target_values.append( chcksum_filename )
     
     node.setFileTargets( target_values )
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, brief = True ):
+    
+    name = self.__class__.__name__
+    
+    if brief:
+      sources = tuple( os.path.basename( value ) for value in node.getSources() )
+      targets = tuple( os.path.basename( value ) for value in node.getTargets() )
+    else:
+      sources = tuple( value.name for value in node.getSourceValues() )
+      targets = tuple( value.name for value in node.getTargetValues() )
+    
+    return name, sources, targets
+
 
 #//===========================================================================//
 
@@ -148,49 +173,63 @@ def   _buildChecksums( builder, src_files ):
 class TestBuildManager( AqlTestCase ):
   
   def   eventNodeBuilding( self, node, brief ):
-    self.building_started += 1
+    self.building_nodes += 1
   
   #//-------------------------------------------------------//
   
   def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
-    self.building_finished += 1
+    self.finished_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventBuildStatusActualNode( self, node, brief ):
-    self.actual_node += 1
+  def   eventNodeStatusActual( self, node, progress, brief ):
+    self.actual_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventBuildStatusOutdatedNode( self, node, brief ):
-    self.outdated_node += 1
+  def   eventNodeStatusOutdated( self, node, progress, brief ):
+    self.outdated_nodes += 1
+  
+  #//-------------------------------------------------------//
+  
+  def   eventNodeRemoved( self, node, progress, brief ):
+    self.removed_nodes += 1
   
   #//-------------------------------------------------------//
   
   def   setUp( self ):
+    super(TestBuildManager,self).setUp()
+    
     # disableDefaultHandlers()
     
-    self.building_started = 0
-    addUserHandler( self.eventNodeBuilding, "eventNodeBuilding" )
+    self.building_nodes = 0
+    addUserHandler( self.eventNodeBuilding )
     
-    self.building_finished = 0
-    addUserHandler( self.eventNodeBuildingFinished, "eventNodeBuildingFinished" )
+    self.finished_nodes = 0
+    addUserHandler( self.eventNodeBuildingFinished )
     
-    self.actual_node = 0
-    addUserHandler( self.eventBuildStatusActualNode, "eventBuildStatusActualNode" )
+    self.actual_nodes = 0
+    addUserHandler( self.eventNodeStatusActual )
     
-    self.outdated_node = 0
-    addUserHandler( self.eventBuildStatusOutdatedNode, "eventBuildStatusOutdatedNode" )
+    self.outdated_nodes = 0
+    addUserHandler( self.eventNodeStatusOutdated )
+    
+    self.removed_nodes = 0
+    addUserHandler( self.eventNodeRemoved )
   
   #//-------------------------------------------------------//
   
   def   tearDown( self ):
     removeUserHandler( [  self.eventNodeBuilding,
                           self.eventNodeBuildingFinished,
-                          self.eventBuildStatusOutdatedNode,
-                          self.eventBuildStatusActualNode ] )
+                          self.eventNodeStatusOutdated,
+                          self.eventNodeStatusActual,
+                          self.eventNodeRemoved,
+                      ] )
 
     enableDefaultHandlers()
+    
+    super(TestBuildManager,self).tearDown()
   
   #//-------------------------------------------------------//
   
@@ -243,38 +282,38 @@ class TestBuildManager( AqlTestCase ):
       options = builtinOptions()
       options.build_dir = tmp_dir
       
-      src_files = _generateSourceFiles( 1, 201 )
+      src_files = _generateSourceFiles( 5, 201 )
       try:
         
         builder = ChecksumBuilder( options, 0, 256 )
         
-        self.building_started = self.building_finished = 0
+        self.building_nodes = self.finished_nodes = 0
         _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_started, 2 )
-        self.assertEqual( self.building_started, self.building_finished )
+        self.assertEqual( self.building_nodes, 2 )
+        self.assertEqual( self.building_nodes, self.finished_nodes )
         
         #//-------------------------------------------------------//
         
-        self.building_started = self.building_finished = 0
+        self.building_nodes = self.finished_nodes = 0
         _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_started, 0 )
-        self.assertEqual( self.building_started, self.building_finished )
+        self.assertEqual( self.building_nodes, 0 )
+        self.assertEqual( self.building_nodes, self.finished_nodes )
         
         #//-------------------------------------------------------//
         
         builder = ChecksumBuilder( options, 32, 1024 )
         
-        self.building_started = self.building_finished = 0
+        self.building_nodes = self.finished_nodes = 0
         _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_started, 2 )
-        self.assertEqual( self.building_started, self.building_finished )
+        self.assertEqual( self.building_nodes, 2 )
+        self.assertEqual( self.building_nodes, self.finished_nodes )
         
         #//-------------------------------------------------------//
         
-        self.building_started = self.building_finished = 0
+        self.building_nodes = self.finished_nodes = 0
         _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_started, 0 )
-        self.assertEqual( self.building_started, self.building_started )
+        self.assertEqual( self.building_nodes, 0 )
+        self.assertEqual( self.building_nodes, self.building_nodes )
         
       finally:
         _removeFiles( src_files )
@@ -282,6 +321,18 @@ class TestBuildManager( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def test_bm_nodes(self):
+    
+    def _makeNodes( builder ):
+      node1 = Node( builder, value1 )
+      copy_node1 = Node( builder, node1 )
+      copy2_node1 = Node( builder, copy_node1 )
+      node2 = Node( builder, value2 )
+      node3 = Node( builder, value3 )
+      copy_node3 = Node( builder, node3 )
+      
+      copy2_node3 = Node( builder, copy_node3 )
+      copy2_node3.depends( [node1, copy_node1] )
+      return node1, node2, node3, copy_node1, copy_node3, copy2_node1, copy2_node3
     
     with Tempdir() as tmp_dir:
       options = builtinOptions()
@@ -295,45 +346,63 @@ class TestBuildManager( AqlTestCase ):
       
       builder = CopyValueBuilder( options )
       
-      node1 = Node( builder, value1 )
-      copy_node1 = Node( builder, node1 )
-      copy2_node1 = Node( builder, copy_node1 )
-      node2 = Node( builder, value2 )
-      node3 = Node( builder, value3 )
-      copy_node3 = Node( builder, node3 )
+      bm.add( _makeNodes( builder ) )
       
-      copy2_node3 = Node( builder, copy_node3 )
-      copy2_node3.depends( [node1, copy_node1] )
-      
-      bm.add( [copy2_node1, node2, copy2_node3])
-      
-      #// --------- //
-      
-      self.building_finished = 0
+      self.finished_nodes = 0
       bm.build( jobs = 1, keep_going = False )
-      self.assertEqual( self.building_finished, 7 )
+      bm.close()
+      self.assertEqual( self.finished_nodes, 7 )
       
       #// --------- //
       
-      bm.add( [copy2_node1, node2, copy2_node3])
+      bm.add( _makeNodes( builder ) )
       
+      self.actual_nodes = 0
+      bm.status()
+      bm.close()
+      self.assertEqual( self.actual_nodes, 7 )
+      
+      #// --------- //
+      
+      bm.add( _makeNodes( builder ) )
+      
+      self.removed_nodes = 0
       bm.clear()
+      bm.close()
+      self.assertEqual( self.removed_nodes, 7 )
       
       #// --------- //
       
-      bm.add( [copy2_node1, node2, copy2_node3] )
+      bm.add( _makeNodes( builder ) )
       
-      self.building_finished = 0
-      bm.build( jobs = 1, keep_going = False, nodes = [copy_node1] )
-      self.assertEqual( self.building_finished, 2 )
+      self.actual_nodes = 0
+      self.outdated_nodes = 0
+      bm.status()
+      bm.close()
+      self.assertEqual( self.actual_nodes, 0 )
+      self.assertEqual( self.outdated_nodes, 3 )
       
       #// --------- //
       
-      bm.add( [copy2_node1, node2, copy2_node3] )
+      nodes = _makeNodes( builder )
+      copy_node3 = nodes[4]
+      bm.add( nodes )
       
-      self.building_finished = 0
+      self.finished_nodes = 0
+      bm.build( jobs = 1, keep_going = False, nodes = copy_node3 )
+      bm.close()
+      self.assertEqual( self.finished_nodes, 2 )
+      
+      #// --------- //
+      
+      nodes = _makeNodes( builder )
+      node2 = nodes[1]; copy_node3  = nodes[4]
+      bm.add( nodes )
+      
+      self.finished_nodes = 0
       bm.build( jobs = 1, keep_going = False, nodes = [node2, copy_node3] )
-      self.assertEqual( self.building_finished, 3 )
+      bm.close()
+      self.assertEqual( self.finished_nodes, 1 )
       
       #// --------- //
   
@@ -349,18 +418,18 @@ class TestBuildManager( AqlTestCase ):
       try:
         builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
         
-        self.building_started = self.building_finished = 0
+        self.building_nodes = self.finished_nodes = 0
         _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_started, 2 )
-        self.assertEqual( self.building_started, self.building_finished )
+        self.assertEqual( self.building_nodes, 2 )
+        self.assertEqual( self.building_nodes, self.finished_nodes )
         
         bm = _addNodesToBM( builder, src_files )
         try:
-          self.actual_node = self.outdated_node = 0
+          self.actual_nodes = self.outdated_nodes = 0
           bm.status( brief = False ); bm.selfTest()
           
-          self.assertEqual( self.outdated_node, 0)
-          self.assertEqual( self.actual_node, 2 )
+          self.assertEqual( self.outdated_nodes, 0)
+          self.assertEqual( self.actual_nodes, 2 )
           
         finally:
           bm.close()
@@ -380,8 +449,8 @@ class TestBuildManager( AqlTestCase ):
       try:
         bm = BuildManager()
         try:
-          self.building_started = self.building_finished = 0
-          self.actual_node = self.outdated_node = 0
+          self.building_nodes = self.finished_nodes = 0
+          self.actual_nodes = self.outdated_nodes = 0
           
           builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
           
@@ -394,11 +463,11 @@ class TestBuildManager( AqlTestCase ):
           bm.add( node )
           _build( bm )
           
-          self.assertEqual( self.building_started, 3 )
+          self.assertEqual( self.building_nodes, 3 )
           
           #//-------------------------------------------------------//
           
-          self.actual_node = self.outdated_node = 0
+          self.actual_nodes = self.outdated_nodes = 0
           
           bm = BuildManager()
           builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
@@ -407,8 +476,8 @@ class TestBuildManager( AqlTestCase ):
           bm.add( node ); bm.selfTest()
           bm.status( brief = False ); bm.selfTest()
           
-          self.assertEqual( self.outdated_node, 0 )
-          self.assertEqual( self.actual_node, 1 )
+          self.assertEqual( self.outdated_nodes, 0 )
+          self.assertEqual( self.actual_nodes, 4 )
         
         finally:
           bm.close()

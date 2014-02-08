@@ -22,9 +22,10 @@ __all__ = (
 )
 
 import os
+import binascii
 import itertools
 
-from aql.utils import newHash, dumpData, Chdir
+from aql.utils import simpleObjectSignature, Chdir
 from aql.util_types import toSequence
 
 from aql.values import Value, DependsValue, pickleable
@@ -135,12 +136,16 @@ class Node (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, builder, sources ):
+  def   __init__( self, builder, sources, cwd = None ):
     
     self.builder = builder
     self.builder_data = None
     
-    self.cwd = os.path.abspath( os.getcwd() )
+    if cwd is None:
+      self.cwd = os.path.abspath( os.getcwd() )
+    else:
+      self.cwd = cwd
+    
     self.sources = toSequence( sources )
     self.source_values = None
     self.dep_nodes = set()
@@ -271,17 +276,17 @@ class Node (object):
       names = [ self.builder.name ]
       names += [ value.name for value in sources ]
     
-    name_hash = newHash()
-    names_dump = dumpData( names )
-    name_hash.update( names_dump )
-    
-    self.name = name_hash.digest()
+    self.name = simpleObjectSignature( names )
   
   #//=======================================================//
   
   def   __setSignature( self ):
     
     sign  = [ self.builder.signature ]
+    
+    # if __debug__:
+    #   srcs = tuple( src.name for src in self.getSourceValues())
+    #   print("%s: sources: %s" % (self.getName(), srcs) )
     
     for value in self.getSourceValues():
       content = value.content
@@ -290,6 +295,10 @@ class Node (object):
       else:
         sign = None
         break
+    
+    # if __debug__:
+    #   deps = tuple( dep.name for dep in self.getDepValues())
+    #   print("%s: deps: %s" % (self.getName(), deps) )
     
     if sign is not None:
       deps = self.getDepValues()
@@ -303,11 +312,16 @@ class Node (object):
           sign = None
           break
     
+    # if __debug__:
+    #   print("%s: sig: %s (%s)" % (self.getName(), sign, type(sign)) )
+    #   print("%s: sig: %s" % (self.getName(), tuple(map(id, sign))) )
+    #   print("%s: dump sig: %s" % (self.getName(), dumpData( sign ) ) )
+    
     if sign is not None:
-      sign_hash = newHash()
-      sign_dump = dumpData( sign )
-      sign_hash.update( sign_dump )
-      sign = sign_hash.digest()
+      sign = simpleObjectSignature( sign )
+    
+    # if __debug__:
+    #   print("%s: sig: %s" % (self.getName(), sign) )
     
     self.signature = sign
   
@@ -330,7 +344,7 @@ class Node (object):
   #//=======================================================//
   
   def   getName(self):
-    return self.name
+    return binascii.hexlify( self.name )
   
   #//=======================================================//
   
@@ -359,13 +373,12 @@ class Node (object):
     ideps_value = DependsValue( name = self.name )
     
     ideps_value, node_value = vfile.findValues( [ ideps_value, node_value ] )
-    node_content = node_value.content
-    if node_content:
-      node_targets = node_content.targets
+    if node_value:
+      node_targets = node_value.targets
       if node_targets is not None:
         self.targets = node_targets
       
-      self.itargets = node_content.itargets
+      self.itargets = node_value.itargets
     
     if ideps_value.content:
       self.ideps = ideps_value.content.data
@@ -419,8 +432,8 @@ class Node (object):
     self.__initiateIds()
     
     if not self.signature:
-      # if __debug__:
-      #   print( "Sources signature is False" )
+      if __debug__:
+        print( "Sources signature is False" )
       return False
     
     node_value = NodeValue( name = self.name )
@@ -429,18 +442,18 @@ class Node (object):
     ideps_value, node_value = vfile.findValues( [ideps_value, node_value] )
     
     if self.signature != node_value.signature:
-      # if __debug__:
-      #   print( "Sources signature is changed" )
+      if __debug__:
+        print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
       return False
     
     if not ideps_value.actual():
-      # if __debug__:
-      #   print( "ideps are not actual: %s" %type(self) (self.getName(),))
+      if __debug__:
+        print( "ideps are not actual: %s" %type(self) (self.getName(),))
       return False
     
     if not node_value.actual():
-      # if __debug__:
-      #   print( "Targets are not actual: %s" % (self.getName(),))
+      if __debug__:
+        print( "Targets are not actual: %s" % (self.getName(),))
       return False
     
     self.targets = node_value.targets
@@ -556,9 +569,11 @@ class Node (object):
   def   split( self, builder ):
     nodes = []
     
+    cwd = self.cwd
+    
     dep_values = self.getDepValues()
     for src_value in self.getSourceValues():
-      node = Node( builder, src_value )
+      node = Node( builder, src_value, cwd )
       node.dep_values = dep_values
       nodes.append( node )
     

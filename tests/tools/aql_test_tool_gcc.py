@@ -28,10 +28,11 @@ class TestToolGcc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   setUp( self ):
+    super(TestToolGcc,self).setUp()
     # disableDefaultHandlers()
     
     self.built_nodes = 0
-    addUserHandler( self.eventNodeBuildingFinished, "eventNodeBuildingFinished" )
+    addUserHandler( self.eventNodeBuildingFinished )
   
   #//-------------------------------------------------------//
   
@@ -39,6 +40,8 @@ class TestToolGcc( AqlTestCase ):
     removeUserHandler( self.eventNodeBuildingFinished )
 
     enableDefaultHandlers()
+    
+    super(TestToolGcc,self).tearDown()
   
   #//-------------------------------------------------------//
 
