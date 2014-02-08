@@ -110,19 +110,18 @@ class TestNodes( AqlTestCase ):
         
         node = Node( builder, [value1, value2, value3] )
         node.initiate()
-        builder = node.builder
         
         self.assertFalse( node.actual( vfile ) )
-        builder.build( node )
-        builder.save( vfile, node )
+        node.build()
+        node.save( vfile )
         self.assertTrue( node.actual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
         node.initiate()
         
         self.assertTrue( node.actual( vfile ) )
-        builder.build( node )
-        builder.save( vfile, node )
+        node.build()
+        node.save( vfile )
         self.assertTrue( node.actual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
@@ -130,8 +129,8 @@ class TestNodes( AqlTestCase ):
         node.initiate()
         
         self.assertFalse( node.actual( vfile ) )
-        builder.build( node )
-        builder.save( vfile, node )
+        node.build()
+        node.save( vfile )
         self.assertFalse( node.actual( vfile ) )
       
       finally:
@@ -144,11 +143,10 @@ class TestNodes( AqlTestCase ):
     node.depends( deps )
     
     node.initiate()
-    builder = node.builder
     
     self.assertFalse( node.actual( vfile ) )
-    builder.build( node )
-    builder.save( vfile, node )
+    node.build()
+    node.save( vfile )
     self.assertTrue( node.actual( vfile ) )
     
     node = Node( builder, values )
@@ -157,8 +155,8 @@ class TestNodes( AqlTestCase ):
     node.initiate()
     
     self.assertTrue( node.actual( vfile ) )
-    builder.build( node )
-    builder.save( vfile, node )
+    node.build()
+    node.save( vfile )
     self.assertTrue( node.actual( vfile ) )
     
     for tmp_file in node.getTargetValues():

@@ -404,3 +404,8 @@ class BuildSplitter(Builder):
     node.setTargets( targets )
     
     return True
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, brief = True ):
+    return self.builder.getBuildStrArgs( node, brief = brief )
