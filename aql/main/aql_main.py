@@ -88,7 +88,7 @@ def   _printMemoryStatus():
   mem_usage = memoryUsage()
   num_objects = len(gc.get_objects())
   
-  logDebug("Objects: %s, memory usage: %s Kb" % (num_objects, mem_usage))
+  logInfo("Objects: %s, memory usage: %s Kb" % (num_objects, mem_usage))
 
 #//===========================================================================//
 
@@ -114,7 +114,10 @@ def   _main( prj_cfg ):
       eventBuilding()
       
       with elapsed:
-        prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
+        success = prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
+      
+      if not success:
+        prj.PrintFails()
       
       if prj_cfg.memory:
         _printMemoryStatus()
@@ -122,6 +125,10 @@ def   _main( prj_cfg ):
       eventBuildingDone( elapsed )
         
   eventBuildSummary( total_elapsed )
+  
+  status = int(not success)
+  
+  return status
 
 
 #//===========================================================================//
@@ -132,13 +139,15 @@ def   main():
   profile = prj_cfg.profile
   
   if not profile:
-    _main( prj_cfg )
+    status = _main( prj_cfg )
   else:
     profiler = cProfile.Profile()
     
-    profiler.runcall( _main, prj_cfg )
+    status = profiler.runcall( _main, prj_cfg )
     
     profiler.dump_stats( profile )
+  
+  return status
   
   # from meliae import scanner
   # scanner.dump_all_objects('objs_dump.json')

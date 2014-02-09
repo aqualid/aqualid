@@ -235,7 +235,7 @@ class ValuesFile (object):
         for key, data in data_file:
           try:
             xash[ key ] = loads( data )
-          except ValueError:
+          except Exception:
             invalid_keys.append( key )
         
         data_file.remove( invalid_keys )

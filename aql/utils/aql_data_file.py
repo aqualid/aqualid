@@ -24,6 +24,12 @@ import struct
 
 from .aql_utils import openFile
 
+class   ErrorInvalidFileFormat( Exception ):
+  def   __init__( self ):
+    msg = "Corrupted or invalid file"
+    super(ErrorInvalidFileFormat, self).__init__( msg )
+
+
 class   DataFileChunk (object):
   __slots__ = \
   (
@@ -58,7 +64,7 @@ class   DataFileChunk (object):
     
     key, capacity, size = header_struct.unpack( header )
     if capacity < size:
-      raise AssertionError( "Invalid file format" )
+      raise ErrorInvalidFileFormat()
     
     self.offset = offset
     self.capacity = capacity
@@ -265,7 +271,12 @@ class DataFile (object):
     locations = self.locations
     
     while True:
-      key, location, size = loadLocation( stream, offset )
+      try:
+        key, location, size = loadLocation( stream, offset )
+      except Exception:
+        self.clear()
+        return
+      
       if key == -1:
         break
       
@@ -332,6 +343,7 @@ class DataFile (object):
       stream.truncate( 0 )
       stream.flush()
     
+    self.file_header = DataFileHeader()
     self.locations.clear()
     self.file_size = 0
   

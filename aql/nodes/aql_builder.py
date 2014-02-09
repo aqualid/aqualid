@@ -58,8 +58,14 @@ _SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
 
 def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
   
-  if isinstance( value, simple_types ):
+  value_type = type( value)
+  
+  if value_type in simple_types:
     return value
+  
+  for simple_type in simple_types:
+    if isinstance( value, simple_type ):
+      return simple_type(value)
   
   if isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
     result = []
@@ -78,10 +84,10 @@ def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
     return result
   
   if isinstance( value, Value ):
-    return value.get()
+    return _evaluateValue( value.get() )
   
   if isinstance( value, Node ):
-    return value.get()
+    return _evaluateValue( value.get() )
   
   return value
 
@@ -192,8 +198,7 @@ class Builder (object):
     if self.NAME_ATTRS:
       for attr_name in self.NAME_ATTRS:
         value = getattr( self, attr_name )
-        if isinstance(value, str):
-          value = str(value)
+        value = _evaluateValue( value )
         name.append( value )
             
     self.name = simpleObjectSignature( name )
@@ -206,8 +211,7 @@ class Builder (object):
     if self.SIGNATURE_ATTRS:
       for attr_name in self.SIGNATURE_ATTRS:
         value = getattr( self, attr_name )
-        if isinstance(value, str):
-          value = str(value)
+        value = _evaluateValue( value )
         sign.append( value )
     
     self.signature = simpleObjectSignature( sign )
@@ -357,13 +361,11 @@ class Builder (object):
 
 #//===========================================================================//  
 
-class BuildSplitter(Builder):
-  
-  __slots__ = ('builder', )
+class BuildSplitter(object):
   
   def   __new__(cls, builder ):
     
-    self =  super(Builder, cls).__new__(cls)
+    self =  super(BuildSplitter, cls).__new__(cls)
     self.builder = builder
     
     return self
@@ -408,8 +410,3 @@ class BuildSplitter(Builder):
     node.setTargets( targets )
     
     return True
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildStrArgs( self, node, brief = True ):
-    return self.builder.getBuildStrArgs( node, brief = brief )

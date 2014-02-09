@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -846,6 +846,14 @@ class BuildManager (object):
   def   printFails(self ):
     for node, error in self._failed_nodes.items():
       eventFailedNode( node, error )
+  
+  #//-------------------------------------------------------//
+  
+  def   printState(self):
+    logInfo("Wating nodes: %s" % len(self._waiting_nodes) )
+    logInfo("Failed nodes: %s" % len(self._failed_nodes) )
+    logInfo("Completed nodes: %s" % self.completed )
+    logInfo("Actual nodes: %s" % self.actual )
   
   #//-------------------------------------------------------//
   

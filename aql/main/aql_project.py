@@ -522,8 +522,13 @@ class Project( object ):
     
     build_nodes = self._getBuildNodes()
     
-    failed_nodes = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes, brief = brief )
-    return failed_nodes
+    is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes, brief = brief )
+    return is_ok
+  
+  #//=======================================================//
+  
+  def   PrintFails(self):
+    self.build_manager.printFails()
   
   #//=======================================================//
   

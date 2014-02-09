@@ -225,7 +225,8 @@ class Node (object):
           values.append( src )
         
         else:
-          values.append( makeValue( src, use_cache = True ) )
+          value = makeValue( src, use_cache = True )
+          values.append( value )
       
     self.sources = None
     self.source_values = tuple(values)
