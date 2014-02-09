@@ -27,7 +27,7 @@ class TestProject( AqlTestCase ):
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, out, progress, brief ):
+  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//
@@ -36,10 +36,10 @@ class TestProject( AqlTestCase ):
     disableDefaultHandlers()
     
     self.building_started = 0
-    addUserHandler( self.eventNodeBuilding, "eventNodeBuilding" )
+    addUserHandler( self.eventNodeBuilding )
     
     self.building_finished = 0
-    addUserHandler( self.eventNodeBuildingFinished, "eventNodeBuildingFinished" )
+    addUserHandler( self.eventNodeBuildingFinished )
   
   #//-------------------------------------------------------//
   

@@ -34,8 +34,8 @@ from aql.values import ValuesFile
 @eventStatus
 def   eventNodeStatusOutdated( node, progress, brief ):
   msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( brief ))
-  if __debug__:
-    msg = '%s: %s' % (node.getName(), msg)
+  # if __debug__:
+  #   msg = '%s: %s' % (node.getName(), msg)
   logInfo( msg )
 
 #//===========================================================================//
@@ -44,8 +44,8 @@ def   eventNodeStatusOutdated( node, progress, brief ):
 def   eventNodeStatusActual( node, progress, brief ):
   
   msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( brief ))
-  if __debug__:
-    msg = '%s: %s' % (node.getName(), msg)
+  # if __debug__:
+  #   msg = '%s: %s' % (node.getName(), msg)
 
   logInfo( msg )
 
@@ -103,8 +103,8 @@ def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   
   msg = "(%s) %s" % (progress, msg)
   
-  if __debug__:
-    msg = '%s: %s' % (node.getName(), msg)
+  # if __debug__:
+  #   msg = '%s: %s' % (node.getName(), msg)
   
   logInfo( msg )
 
@@ -121,8 +121,8 @@ def   eventNodeRemoved( node, progress, brief ):
   # msg = node.getClearStr( brief )
   msg = node.getBuildStr( brief )
   if msg:
-    if __debug__:
-      msg = '%s: %s' % (node.getName(), msg)
+    # if __debug__:
+    #   msg = '%s: %s' % (node.getName(), msg)
 
     logInfo( "(%s) Removed: %s" % (progress, msg) )
 

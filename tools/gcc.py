@@ -62,9 +62,9 @@ class GccCompiler (aql.Builder):
   def   __getCmd( options, language, shared ):
     
     if language == 'c++':
-      cmd = [ options.cxx.get() ]
+      cmd = [ str(options.cxx.get()) ]
     else:
-      cmd = [ options.cc.get() ]
+      cmd = [ str(options.cc.get()) ]
     
     cmd += ['-c', '-pipe', '-MMD', '-x', language ]
     if language == 'c++':
@@ -150,7 +150,7 @@ class GccArchiver(aql.Builder):
     
     self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
 
-    self.cmd = [ options.lib.get(), 'rcs', self.target ]
+    self.cmd = [ str(options.lib.get()), 'rcs', str(self.target) ]
     
     self.makeValue = self.makeFileValue
     
@@ -221,9 +221,9 @@ class GccLinker(aql.Builder):
   def   __getCmd( options, target, language, shared ):
     
     if language == 'c++':
-      cmd = [ options.cxx.get() ]
+      cmd = [ str(options.cxx.get()) ]
     else:
-      cmd = [ options.cc.get() ]
+      cmd = [ str(options.cc.get()) ]
     
     cmd += [ '-pipe' ]
     
@@ -234,7 +234,7 @@ class GccLinker(aql.Builder):
     cmd += itertools.chain( *itertools.product( ['-L'], options.libpath.get() ) )
     cmd += itertools.chain( *itertools.product( ['-l'], options.libs.get() ) )
     
-    cmd += [ '-o', target ]
+    cmd += [ '-o', str(target) ]
     
     return cmd
   

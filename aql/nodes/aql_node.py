@@ -432,8 +432,8 @@ class Node (object):
     self.__initiateIds()
     
     if not self.signature:
-      if __debug__:
-        print( "Sources signature is False" )
+      # if __debug__:
+      #   print( "Sources signature is False" )
       return False
     
     node_value = NodeValue( name = self.name )
@@ -442,18 +442,18 @@ class Node (object):
     ideps_value, node_value = vfile.findValues( [ideps_value, node_value] )
     
     if self.signature != node_value.signature:
-      if __debug__:
-        print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
+      # if __debug__:
+      #   print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
       return False
     
     if not ideps_value.actual():
-      if __debug__:
-        print( "ideps are not actual: %s" %type(self) (self.getName(),))
+      # if __debug__:
+      #   print( "ideps are not actual: %s" % (self.getName(),))
       return False
     
     if not node_value.actual():
-      if __debug__:
-        print( "Targets are not actual: %s" % (self.getName(),))
+      # if __debug__:
+      #   print( "Targets are not actual: %s" % (self.getName(),))
       return False
     
     self.targets = node_value.targets

@@ -192,6 +192,8 @@ class Builder (object):
     if self.NAME_ATTRS:
       for attr_name in self.NAME_ATTRS:
         value = getattr( self, attr_name )
+        if isinstance(value, str):
+          value = str(value)
         name.append( value )
             
     self.name = simpleObjectSignature( name )
@@ -204,6 +206,8 @@ class Builder (object):
     if self.SIGNATURE_ATTRS:
       for attr_name in self.SIGNATURE_ATTRS:
         value = getattr( self, attr_name )
+        if isinstance(value, str):
+          value = str(value)
         sign.append( value )
     
     self.signature = simpleObjectSignature( sign )

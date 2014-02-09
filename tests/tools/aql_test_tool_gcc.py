@@ -22,7 +22,7 @@ class TestToolGcc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, out, progress, brief ):
+  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
     self.built_nodes += 1
   
   #//-------------------------------------------------------//
@@ -48,19 +48,20 @@ class TestToolGcc( AqlTestCase ):
   def   _buildObj(self, obj, vfile ):
     obj.initiate()
     
-    pre_nodes = obj.builder.prebuild( obj )
+    pre_nodes = obj.prebuild()
     self.assertTrue( pre_nodes )
 
     for node in pre_nodes:
       node.initiate()
-      builder = node.builder
-      if not builder.actual( vfile, node ):
-        builder.build( node )
-        builder.save( vfile, node )
-
-    obj.builder.prebuildFinished( obj, pre_nodes )
+      if not node.actual( vfile ):
+        node.build()
+        node.save( vfile )
     
-    self._verifyActual( obj, vfile )
+    if pre_nodes:
+      actual = obj.prebuildFinished( pre_nodes )
+      self.assertTrue( actual )
+    else:
+      self._verifyActual( obj, vfile )
   
   #//-------------------------------------------------------//
   
@@ -69,14 +70,21 @@ class TestToolGcc( AqlTestCase ):
     
     actual = True
     
-    for node in obj.builder.prebuild( obj ):
+    pre_nodes = obj.prebuild()
+    
+    for node in pre_nodes:
       node.initiate()
-      if not node.builder.actual( vfile, node ):
+      if not node.actual( vfile ):
         num_of_unactuals -= 1
         actual = False
     
     if actual:
-      self.assertTrue( obj.builder.actual( vfile, obj ))
+      if pre_nodes:
+        actual = obj.prebuildFinished( pre_nodes )
+      else:
+        actual = obj.actual( vfile )
+      
+      self.assertTrue( actual )
     
     self.assertEqual( num_of_unactuals, 0 )
     
