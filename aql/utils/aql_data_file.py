@@ -24,11 +24,35 @@ import struct
 
 from .aql_utils import openFile
 
-class   ErrorInvalidFileFormat( Exception ):
-  def   __init__( self ):
-    msg = "Corrupted or invalid file"
-    super(ErrorInvalidFileFormat, self).__init__( msg )
+#//===========================================================================//
 
+class   ErrorDataFileFormatInvalid( Exception ):
+  def   __init__( self ):
+    msg = "Data file format is not valid."
+    super(ErrorDataFileFormatInvalid, self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorDataFileChunkInvalid( Exception ):
+  def   __init__( self ):
+    msg = "Data file chunk format is not valid."
+    super(ErrorDataFileChunkInvalid, self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorDataFileVersionInvalid( Exception ):
+  def   __init__( self ):
+    msg = "Data file version is changed."
+    super(ErrorDataFileVersionInvalid, self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorDataFileCorrupted( Exception ):
+  def   __init__( self ):
+    msg = "Data file is corrupted"
+    super(ErrorDataFileCorrupted, self).__init__( msg )
+
+#//===========================================================================//
 
 class   DataFileChunk (object):
   __slots__ = \
@@ -57,15 +81,15 @@ class   DataFileChunk (object):
     stream.seek( offset )
     header = stream.read( header_size )
     
-    if len(header) != header_size:
+    if len(header) < header_size:
       return -1, None, 0
     
-    self = cls.__new__(cls)
-    
     key, capacity, size = header_struct.unpack( header )
-    if capacity < size:
-      raise ErrorInvalidFileFormat()
     
+    if capacity < size:
+      raise ErrorDataFileChunkInvalid()
+    
+    self = cls.__new__(cls)
     self.offset = offset
     self.capacity = capacity
     self.size = size
@@ -134,68 +158,69 @@ class DataFileHeader( object ):
   
   __slots__ = \
   (
-    'version',
     'uid',
   )
   
-  header_struct = struct.Struct(">LQ") # big-endian, 4 bytes (file version), 8 bytes (next unique ID)
-  header_size = header_struct.size
-  max_version = (2 ** 32) - 1
-  max_uid = (2 ** 64) - 1
+  MAGIC_TAG = b".AQL.DB."
+  VERSION = 0
+  MAX_UID = (2 ** 64) - 1
+  
+  header_struct = struct.Struct(">8sLQ") # big-endian, 8 bytes(MAGIC TAG), 4 bytes (file version), 8 bytes (next unique ID)
   
   #//-------------------------------------------------------//
   
   def   __init__(self):
-    self.version = 0
     self.uid = 0
   
   #//-------------------------------------------------------//
   def   __eq__(self, other):
-    return (self.version == other.version) and (self.uid == other.uid)
+    return self.uid == other.uid
   
   #//-------------------------------------------------------//
   
   def   __ne__(self, other):
-    return (self.version != other.version) or (self.uid != other.uid)
+    return self.uid != other.uid
   
   #//-------------------------------------------------------//
   
-  def   update( self, stream, header_size = header_size, header_struct = header_struct ):
-    stream.seek( 0 )
-    header = stream.read( header_size )
-    
-    if len(header) != header_size:
-      self.version, self.uid = 0, 0
-      return True
-    
-    version = self.version
-    self.version, self.uid = header_struct.unpack( header )
-    
-    return version != self.version
+  @staticmethod
+  def   size( header_struct = header_struct ):
+    return header_struct.size
   
   #//-------------------------------------------------------//
   
-  def   save( self, stream, max_version = max_version, header_struct = header_struct ):
-    
-    if self.version < max_version:
-      self.version += 1
-    else:
-      self.version = 0
-    
-    header = header_struct.pack( self.version, self.uid )
-    
+  def   load(self, stream, header_struct = header_struct ):
     stream.seek(0)
-    return stream.write( header )
+    header = stream.read( header_struct.size )
+    
+    if header:
+      try:
+        tag, version, self.uid = header_struct.unpack( header )
+      except struct.error:
+        raise ErrorDataFileFormatInvalid()
+      
+      if tag != self.MAGIC_TAG:
+        raise ErrorDataFileFormatInvalid()
+      
+      if version != self.VERSION:
+        raise ErrorDataFileVersionInvalid()
   
   #//-------------------------------------------------------//
   
-  def   nextKey( self, stream, max_uid = max_uid ):
+  def   save( self, stream, header_struct = header_struct ):
+    header = header_struct.pack( self.MAGIC_TAG, self.VERSION, self.uid )
+    stream.seek(0)
+    stream.write( header )
+  
+  #//-------------------------------------------------------//
+  
+  def   nextKey( self, stream, max_uid = MAX_UID ):
     key = self.uid
     
     if key < max_uid:
       self.uid += 1
     else:
-      self.uid = 0
+      self.uid = 0    # it should never happen
     
     self.save( stream )
     
@@ -237,14 +262,14 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, filename ):
+  def   __init__( self, filename, force = False ):
     
     self.locations = {}
     self.file_header = DataFileHeader()
     self.file_size = 0
     self.stream = None
     
-    self.open( filename )
+    self.open( filename, force = force )
   
   #//-------------------------------------------------------//
   
@@ -257,78 +282,83 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def  open( self, filename, loadLocation = DataFileChunk.load):
+  def  open( self, filename, force = False ):
     self.close()
     
     stream = openFile( filename, write = True, binary = True, sync = False )
     
     self.stream = stream
     
-    self.file_header.update( stream )
+    try:
+      self.file_header.load( stream )
+    except ErrorDataFileVersionInvalid:
+      self.clear()
+      return
+    except ErrorDataFileFormatInvalid:
+      if not force:
+        raise
+      
+      self.clear()
+      return
     
-    offset = self.file_header.header_size
+    offset = self.file_header.size()
     stream = self.stream
     locations = self.locations
     
-    while True:
-      try:
-        key, location, size = loadLocation( stream, offset )
-      except Exception:
-        self.clear()
-        return
-      
-      if key == -1:
-        break
-      
-      locations[key] = location
-      offset += size
+    file_size = stream.seek( 0, os.SEEK_END )
+    
+    next_key = self.file_header.uid
+    
+    invalid_keys = []
+    
+    try:
+      while True:
+        key, location, size = DataFileChunk.load( stream, offset )
+        
+        if location is None:
+          break
+        
+        if (offset + location.size) > file_size:
+          raise ErrorDataFileChunkInvalid()
+        
+        if key >= next_key:
+          invalid_keys.append( key )
+        
+        locations[ key ] = location
+        offset += size
+    
+    except ErrorDataFileChunkInvalid:
+      stream.truncate( offset )
+      stream.flush()
+    
+    if invalid_keys:
+      self.remove( invalid_keys )
     
     self.file_size = offset
   
   #//-------------------------------------------------------//
   
-  def   update(self, loadLocation = DataFileChunk.load ):
-    if not self.file_header.update( self.stream ):
-      return set(), set()
-    
-    offset = self.file_header.header_size
-    
-    added_keys = set()
-    deleted_keys = set(self.locations)
-    
-    locations = {}
-    
+  def   __truncate( self, size ):
     stream = self.stream
-
-    while True:
-      key, location, size = loadLocation( stream, offset )
-      if key == -1:
-        break
-      
-      try:
-        deleted_keys.remove( key )
-      except KeyError:
-          added_keys.add( key )
-      
-      locations[key] = location
-      offset += size
-    
-    self.locations = locations
-    self.file_size = offset
-    
-    return added_keys, deleted_keys
+    if stream is not None:
+      stream.seek( size )
+      stream.truncate( size )
+      stream.flush()
   
   #//-------------------------------------------------------//
   
   def   flush(self):
-    if self.stream is not None:
-      self.stream.flush()
+    stream = self.stream
+    if stream is not None:
+      stream.flush()
   
   #//-------------------------------------------------------//
   
   def   close(self):
-    if self.stream is not None:
-      self.stream.close()
+    stream = self.stream
+    if stream is not None:
+      stream.flush()
+      stream.close()
       self.stream = None
       
       self.locations.clear()
@@ -337,25 +367,30 @@ class DataFile (object):
   #//-------------------------------------------------------//
   
   def   clear(self):
+    
+    file_header = DataFileHeader()
+    
     stream = self.stream
     if stream is not None:
-      stream.seek( 0 )
       stream.truncate( 0 )
+      file_header.save( stream )
       stream.flush()
-    
-    self.file_header = DataFileHeader()
+          
+    self.file_header = file_header
     self.locations.clear()
-    self.file_size = 0
+    self.file_size = file_header.size()
+
+    
   
   #//-------------------------------------------------------//
   
-  def append( self, data, reserve = True, Location = DataFileChunk):
+  def append( self, data, reserve = True ):
     
     stream  = self.stream
     key     = self.file_header.nextKey( stream )
     offset  = self.file_size
     
-    location = Location( offset )
+    location = DataFileChunk( offset )
     
     chunk, oversize = location.pack( key, data, reserve )
     
@@ -387,8 +422,6 @@ class DataFile (object):
       self.file_size += oversize
       self.__moveLocations( location.offset, oversize )
       
-    self.file_header.save( stream )
-    
     stream.seek( location.offset )
     stream.write( chunk )
   
@@ -424,24 +457,7 @@ class DataFile (object):
   #//-------------------------------------------------------//
   
   def   __delitem__(self, key):
-    stream = self.stream
-    location = self.locations[key]
-    
-    chunk_size = location.chunkSize()
-    offset = location.offset
-    
-    stream.seek( offset + chunk_size ); tail = stream.read()
-    
-    self.file_header.save( stream )
-    
-    stream.seek( offset )
-    stream.truncate( offset )
-    stream.write( tail )
-    
-    self.__moveLocations( offset, -chunk_size )
-    self.file_size -= chunk_size
-    
-    del self.locations[ key ]
+    self.remove( (key,) )
   
   #//-------------------------------------------------------//
   
@@ -505,9 +521,8 @@ class DataFile (object):
     
     stream = self.stream
     
-    self.file_header.save( stream )
-    stream.seek( start_offset )
     stream.truncate( start_offset )
+    stream.seek( start_offset )
     stream.write( rest_chunks )
     
     self.file_size = start_offset + len( rest_chunks )
@@ -543,11 +558,17 @@ class DataFile (object):
   def   selfTest( self ):
     
     if self.stream is not None:
-      file_size = self.file_header.header_size
+      file_size = self.file_header.size()
     else:
       file_size = 0
     
-    for location in self.locations.values():
+    next_key = self.file_header.uid
+    
+    for key,location in self.locations.items():
+      
+      if key >= next_key:
+        raise AssertionError("location.key (%s) >= next key (%s)" % (key, next_key))
+      
       if location.capacity < location.size:
         raise AssertionError("location.capacity(%s) < location.size (%s)" % (location.capacity, location.size))
       
@@ -570,7 +591,7 @@ class DataFile (object):
           raise AssertionError("Invalid real_file_size(%s), last_location: %s" % (real_file_size, last_location) )
       
       else:
-        if (file_size != real_file_size) and (real_file_size != 0 or file_size != self.file_header.header_size):
+        if (file_size != real_file_size) and (real_file_size != 0 or file_size != self.file_header.size()):
           raise AssertionError("file_size(%s) != real_file_size(%s)" % (file_size, real_file_size))
     
     prev_location = None
@@ -585,12 +606,12 @@ class DataFile (object):
     
     if self.stream is not None:
       file_header = DataFileHeader()
-      file_header.update( self.stream )
+      file_header.load( self.stream )
       
       if self.file_header != file_header:
         raise AssertionError("self.file_header != file_header")
       
-      offset = file_header.header_size
+      offset = file_header.size()
       
       while True:
         key, location, size = DataFileChunk.load( self.stream, offset )

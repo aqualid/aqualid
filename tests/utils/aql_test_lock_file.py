@@ -7,16 +7,16 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, FileLock
+from aql.utils import Tempfile, FileLock, ErrorFileLocked
 from aql.utils.aql_lock_file import GeneralFileLock
 
 #//===========================================================================//
 
-def   writeProcess( filename, event, LockType ):
+def   writeProcess( filename, event, LockType, **lock_flags ):
   
   flock = LockType( filename )
   
-  with flock.writeLock():
+  with flock.writeLock( **lock_flags ):
     event.set()
     
     time.sleep( 2 )
@@ -27,11 +27,11 @@ def   writeProcess( filename, event, LockType ):
 
 #//===========================================================================//
 
-def   readProcess( filename, event, LockType ):
+def   readProcess( filename, event, LockType, **lock_flags ):
   
   flock = LockType( filename )
   
-  with flock.readLock():
+  with flock.readLock( **lock_flags ):
     event.set()
     
     time.sleep( 2 )
@@ -86,7 +86,7 @@ class TestFileLock( AqlTestCase ):
       
       with flock1.writeLock():
         start_time = time.time()
-        with self.assertRaises(GeneralFileLock.Timeout):
+        with self.assertRaises( ErrorFileLocked ):
           with flock2.writeLock():
             self.assertFalse(True)
         self.assertGreaterEqual( time.time() - start_time, 3 )
@@ -170,6 +170,85 @@ class TestFileLock( AqlTestCase ):
           file.flush()
       
       p.join()
+
+  #//===========================================================================//
+
+  def _test_file_lock_no_wait(self, lock_type ):
+    
+    with Tempfile() as temp_file:
+      
+      flock = lock_type( temp_file.name )
+      
+      event = mp.Event()
+      
+      p = mp.Process( target = writeProcess, args = (temp_file.name, event, lock_type ) )
+      p.start()
+      
+      event.wait()
+      
+      self.assertRaises( ErrorFileLocked, flock.readLock, wait = False )
+      self.assertRaises( ErrorFileLocked, flock.writeLock, wait = False )
+      
+      p.join()
+  
+  #//===========================================================================//
+
+  def test_file_lock_no_wait(self):
+    self._test_file_lock_no_wait( FileLock )
+  
+  #//===========================================================================//
+
+  def test_general_file_lock_no_wait(self):
+    
+    if FileLock is GeneralFileLock:
+      return
+    
+    self._test_file_lock_no_wait( GeneralFileLock )
+  
+  #//===========================================================================//
+  
+  def test_file_lock_force(self):
+    
+    if FileLock is GeneralFileLock:
+      return
+    
+    with Tempfile() as temp_file:
+      
+      flock = FileLock( temp_file.name )
+      
+      event = mp.Event()
+      
+      p = mp.Process( target = writeProcess, args = (temp_file.name, event, FileLock ) )
+      p.start()
+      
+      event.wait()
+      
+      self.assertRaises( ErrorFileLocked, flock.readLock, wait = False, force = True )
+      self.assertRaises( ErrorFileLocked, flock.writeLock, wait = False, force = True )
+      
+      p.join()
+  
+  #//===========================================================================//
+  
+  def test_general_file_lock_force(self):
+    
+    with Tempfile() as temp_file:
+      
+      flock = GeneralFileLock( temp_file.name )
+      
+      event = mp.Event()
+      
+      p = mp.Process( target = writeProcess, args = (temp_file.name, event, GeneralFileLock ) )
+      p.start()
+      
+      event.wait()
+      
+      with flock.readLock( wait = False, force = True ):
+        with flock.writeLock( wait = False, force = True ):
+          pass
+              
+      p.join()
+
 
 #//=======================================================//
 

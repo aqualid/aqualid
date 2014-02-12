@@ -48,8 +48,6 @@ __all__ = (
   'eventFileValuesCyclicDependencyValue', 'eventFileValuesDependencyValueHasUnknownValue',
 )
 
-import threading
-
 from aql.util_types import toSequence
 from aql.utils import DataFile, FileLock, eventWarning, logWarning
 
@@ -71,48 +69,6 @@ def   eventFileValuesDependencyValueHasUnknownValue( dep_value, value ):
 
 #//===========================================================================//
 
-def _sortDepends( dep_sort_data ):
-  
-  all_keys = set( dep_sort_data )
-  
-  for key, value_keys in dep_sort_data.items():
-    value_keys[1] &= all_keys
-  
-  sorted_deps = []
-  
-  added_keys = set()
-  
-  while True:
-    tmp_dep_sort_data = {}
-    
-    for key, value_keys in dep_sort_data.items():
-      value, dep_keys = value_keys
-      if dep_keys:
-        tmp_dep_sort_data[ key ] = value_keys
-      else:
-        sorted_deps.append( value )
-        added_keys.add( key )
-    
-    if not added_keys:
-      break
-    
-    dep_sort_data = tmp_dep_sort_data
-    
-    for key, value_keys in dep_sort_data.items():
-      value_keys[1] -= added_keys
-    
-    added_keys.clear()
-  
-  for key, value_keys in dep_sort_data.items():
-    value = value_keys[0]
-    value = DependsValue( name = value.name, content = None )
-    sorted_deps.append( value )
-    eventFileValuesCyclicDependencyValue( value )
-  
-  return sorted_deps
-
-#//===========================================================================//
-
 #noinspection PyAttributeOutsideInit
 class ValuesFile (object):
   
@@ -120,7 +76,6 @@ class ValuesFile (object):
     'data_file',
     'xash',
     'pickler',
-    'lock' ,
     'file_lock',
     'loads',
     'dumps')
@@ -177,34 +132,13 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  @staticmethod
-  def   __sortValues( values ):
-    
-    sorted_values = []
-    
-    dep_values = {}
-    
-    for value in values:
-      if isinstance(value, DependsValue ):
-        try:
-          dep_values[ id(value) ] = [value, set(map(id, value.content.data))]
-        except TypeError:
-          sorted_values.append( value )
-      else:
-        sorted_values.append( value )
-    
-    return sorted_values, _sortDepends( dep_values )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __init__( self, filename ):
+  def   __init__( self, filename, force = False ):
     self.xash = ValuesXash()
     self.data_file = None
     self.pickler = ValuePickler()
     self.loads = self.pickler.loads
     self.dumps = self.pickler.dumps
-    self.lock = threading.Lock()
-    self.open( filename )
+    self.open( filename, force = force )
   
   #//---------------------------------------------------------------------------//
   
@@ -219,86 +153,56 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   open( self, filename ):
+  def   open( self, filename, force = False ):
     
     invalid_keys = []
     
-    with self.lock:
-      self.file_lock = FileLock( filename )
-      
-      with self.file_lock.writeLock():
-        data_file = DataFile( filename )
-        self.data_file = data_file
-        
-        xash = self.xash
-        loads = self.loads
-        for key, data in data_file:
-          try:
-            xash[ key ] = loads( data )
-          except Exception:
-            invalid_keys.append( key )
-        
-        data_file.remove( invalid_keys )
-        data_file.flush()
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __update( self ):
+    self.file_lock = FileLock( filename )
+    self.file_lock.writeLock( wait = False, force = force )
+    
+    data_file = DataFile( filename, force = force )
+    
+    self.data_file = data_file
     
     xash = self.xash
-    data_file = self.data_file
-    
-    added_keys, deleted_keys = data_file.update()
-    
-    #//-------------------------------------------------------//
-    
-    for del_key in deleted_keys:
-      del xash[ del_key ]
-    
-    invalid_keys = []
-    
     loads = self.loads
-    for key in added_keys:
+    for key, data in data_file:
       try:
-        xash[ key ] = loads( data_file[ key ] )
-      except ValueError:
+        xash[ key ] = loads( data )
+      except Exception:
         invalid_keys.append( key )
     
     data_file.remove( invalid_keys )
-    
+  
   #//---------------------------------------------------------------------------//
   
   def   close( self ):
+    
     if self.data_file is not None:
       self.data_file.close()
       self.data_file = None
+    
+    self.file_lock.releaseLock()
     
     self.xash.clear()
   
   #//---------------------------------------------------------------------------//
   
   def   findValues( self, values ):
-    with self.lock:
-      with self.file_lock.writeLock():
-        self.__update()
-        self.data_file.flush()
+    out_values = []
+    
+    find = self.xash.find
+    for value in toSequence( values ):
+      key, val = find( value )
+      if val is None:
+        val = type(value)( name = value.name )
+      else:
+        if isinstance( val, DependsValue ):
+          val = self.__makeDepends( val, key )
       
-      out_values = []
-      
-      find = self.xash.find
-      for value in toSequence( values ):
-        key, val = find( value )
-        if val is None:
-          val = type(value)( name = value.name )
-        else:
-          if isinstance( val, DependsValue ):
-            val = self.__makeDepends( val, key )
-          else:
-            val = val.copy()
-        
-        out_values.append( val )
-      
-      return out_values
+      out_values.append( val )
+    
+    return out_values
   
   #//---------------------------------------------------------------------------//
   
@@ -322,58 +226,36 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   addValues( self, values ):
-    values, dep_values = self.__sortValues( values )
-    
-    with self.lock:
-      with self.file_lock.writeLock():
-        self.__update()
-        
-        for value in values:
-          self.__addValue( value.copy() )
-        
-        for dep_value in dep_values:
-          value = self.__makeDependsKey( dep_value )
-          self.__addValue( value )
-        
-        self.data_file.flush()
+    for value in values:
+      if isinstance( value, DependsValue ):
+        value = self.__makeDependsKey( value )
+      
+      self.__addValue( value )
   
   #//---------------------------------------------------------------------------//
   
   def   removeValues( self, values ):
-    with self.lock:
-      with self.file_lock.writeLock():
-        self.__update()
-        
-        remove_keys = []
-        
-        for value in values:
-          key, val = self.xash.find( value )
-          if val is not None:
-            remove_keys.append( key )
-        
-        print( "Remove keys: %s" % (remove_keys,))
-        
-        self.data_file.remove( remove_keys )
-        self.data_file.flush()
+    remove_keys = []
+    
+    for value in values:
+      key, val = self.xash.find( value )
+      if val is not None:
+        remove_keys.append( key )
+    
+    self.data_file.remove( remove_keys )
   
   #//---------------------------------------------------------------------------//
   
   def   clear(self):
-    with self.lock:
-      with self.file_lock.writeLock():
-        if self.data_file is not None:
-          self.data_file.clear()
-      
-      self.xash.clear()
+    if self.data_file is not None:
+      self.data_file.clear()
+    
+    self.xash.clear()
   
   #//---------------------------------------------------------------------------//
   
   def   selfTest(self):
-    with self.lock:
-      with self.file_lock.writeLock():
-        self.__update()
-      
-        if self.data_file is not None:
-          self.data_file.selfTest()
-        
-        self.xash.selfTest()
+    if self.data_file is not None:
+      self.data_file.selfTest()
+    
+    self.xash.selfTest()

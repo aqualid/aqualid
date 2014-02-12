@@ -11,10 +11,10 @@ from aql.values import Value, NoContent, DependsValue, ValuesFile
 #//===========================================================================//
 
 class TestValuesFile( AqlTestCase ):
-  def test_value_file(self):
+  
+  def test_values_file(self):
     with Tempfile() as tmp:
-      vfile = ValuesFile( tmp.name )
-      try:
+      with ValuesFile( tmp.name ) as vfile:
         vfile.selfTest()
         
         value1 = Value( name = "target_url1", content = "http://aql.org/download" )
@@ -33,77 +33,27 @@ class TestValuesFile( AqlTestCase ):
         #//-------------------------------------------------------//
         
         dep_value = DependsValue( name = "urls", content = values )
-        values.insert( 0, dep_value )
+        values.append( dep_value )
         
         vfile.addValues( values ); vfile.selfTest()
         s_values = vfile.findValues( values ); vfile.selfTest()
         
-        self.assertEqual( values[0].content, s_values[0].content )
+        self.assertEqual( values[-1].content, s_values[-1].content )
         
         #//-------------------------------------------------------//
         
-        vfile2 = ValuesFile( tmp.name )
-        try:
-          vfile2.selfTest()
-          s_values2 = vfile2.findValues( values ); vfile.selfTest()
-          self.assertEqual( values, s_values2 )
-          
-          #//-------------------------------------------------------//
-          
-          values[0] = DependsValue( name = "urls", content = reversed(values[1:]) )
-          
-          vfile2.addValues( values ); vfile2.selfTest()
-          s_values = vfile.findValues( values ); vfile.selfTest()
-          self.assertEqual( values, s_values )
-          
-          #//-------------------------------------------------------//
-          
-          value1 = Value( name = value1.name, content = "http://aql.org/download1" )
-          
-          vfile2.addValues( [ value1 ] ); vfile2.selfTest()
-          s_value1 = vfile.findValues( [ value1 ] )[0]; vfile.selfTest()
-          self.assertEqual( value1, s_value1 )
-          
-          #//-------------------------------------------------------//
-          
-          dep_value = DependsValue( name = "urls", content = reversed(values) )
-          
-          vfile2.addValues( [dep_value] ); vfile2.selfTest()
-          s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
-          self.assertNotEqual( dep_value, s_dep_value )
-          self.assertIs( s_dep_value.content, NoContent)
-          
-          #//-------------------------------------------------------//
-          
-          dep_value2 = DependsValue( name = "urls2", content = [ dep_value ] )
-          vfile2.addValues( [dep_value2] ); vfile2.selfTest()
-          
-          dep_value = DependsValue( name = "urls", content = [ dep_value2 ] )
-          vfile2.addValues( [dep_value] ); vfile2.selfTest()
-          
-          s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
-          
-          #//-------------------------------------------------------//
-          
-          dep_value = DependsValue( name = "urls", content = [ value1 ] )
-          vfile.addValues( [dep_value, value1] ); vfile.selfTest()
-          
-          df = DataFile( tmp.name )
-          try:
-            value1_key, value1 = vfile.xash.find( value1 )
-            del df[value1_key]
-            
-            s_value1 = vfile.findValues( [value1] )[0]; vfile.selfTest()
-            self.assertNotEqual( s_value1.content, value1.content )
-            
-            s_value1 = vfile2.findValues( [value1] )[0]; vfile.selfTest()
-            self.assertNotEqual( s_value1.content, value1.content )
-          finally:
-            df.close()
-        finally:
-          vfile2.close()
-      finally:
-        vfile.close()
+        dep_value = DependsValue( name = "urls", content = [ value1 ] )
+        vfile.addValues( [dep_value, value1] ); vfile.selfTest()
+        
+        s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
+        self.assertEqual( dep_value, s_dep_value )
+        
+        value1 = Value( name = value1.name, content = "abc" )
+        
+        vfile.addValues( [value1] ); vfile.selfTest()
+        
+        s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
+        self.assertNotEqual( dep_value, s_dep_value )
 
   #//===========================================================================//
 
@@ -130,9 +80,9 @@ class TestValuesFile( AqlTestCase ):
         value6 = Value( name = "target_url6", content = "http://aql.org/download6" )
         dep_value4 = DependsValue( name = "urls4", content = [ dep_value1, dep_value2, dep_value3, value6 ] )
         
-        all_dep_values = [dep_value4, dep_value3, dep_value2, dep_value1]
+        all_dep_values = [dep_value1, dep_value2, dep_value3, dep_value4]
         
-        all_values = all_dep_values + values +[ value4, value5, value6 ]
+        all_values = values + [ value4, value5, value6 ] + all_dep_values
         
         vfile.addValues( all_values ); vfile.selfTest()
         self.assertEqual( vfile.findValues( all_values ), all_values )
@@ -161,8 +111,7 @@ class TestValuesFile( AqlTestCase ):
 
   def test_value_file_3(self):
     with Tempfile() as tmp:
-      vfile = ValuesFile( tmp.name )
-      try:
+      with ValuesFile( tmp.name ) as vfile:
         vfile.selfTest()
         
         values = []
@@ -179,10 +128,7 @@ class TestValuesFile( AqlTestCase ):
         value2 = Value( name = "target_url4", content = "http://aql.org/download4" )
         
         dep_value = DependsValue( name = "urls1", content = [ value1, value2 ] )
-        vfile.addValues( [ dep_value, value1, value2 ] ); vfile.selfTest()
-      
-      finally:
-        vfile.close()
+        vfile.addValues( [ value1, value2, dep_value ] ); vfile.selfTest()
 
   #//===========================================================================//
 
@@ -215,13 +161,10 @@ class TestValuesFile( AqlTestCase ):
       values.append( value )
     
     with Tempfile() as tmp:
-      vf = ValuesFile( tmp.name )
-      try:
+      with ValuesFile( tmp.name ) as vf:
         t = lambda addValues = vf.addValues, values = values: addValues( values )
         t = timeit.timeit( t, number = 1 )
         print("value picker: %s" % t)
-      finally:
-        vf.close()
 
 #//===========================================================================//
 
