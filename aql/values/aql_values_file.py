@@ -98,16 +98,22 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   __addValueToCache(self, key, value ):
-    value_id = self.__getValueId( value )
+  def   __addValueToCache(self, key, value_id, value ):
     self.value2key[ value_id ] = key
     self.key2value[ key ] = value
   
   #//---------------------------------------------------------------------------//
   
-  def   __updateValueKey(self, old_key, new_key ):
-    self.value2key[ (type(value), value.name) ] = key
-    self.key2value[ key ] = value
+  def   __updateValueInCache(self, old_key, new_key, value_id, value ):
+    self.value2key[ value_id ] = new_key
+    del self.key2value[ old_key ]
+    self.key2value[ new_key ] = value
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   __clearCache(self ):
+    self.value2key.clear()
+    self.key2value.clear()
   
   #//---------------------------------------------------------------------------//
   
@@ -133,8 +139,6 @@ class ValuesFile (object):
     
     values = []
     values_append = values.append
-    
-    get_value = self.xash.__getitem__
     
     try:
       
@@ -166,8 +170,6 @@ class ValuesFile (object):
     self.value2key = {}
     self.data_file = None
     self.pickler = ValuePickler()
-    self.loads = self.pickler.loads
-    self.dumps = self.pickler.dumps
     self.open( filename, force = force )
   
   #//---------------------------------------------------------------------------//
@@ -201,7 +203,8 @@ class ValuesFile (object):
       except Exception:
         invalid_keys.append( key )
       else:
-        self.__addValueToCache( key, value )
+        value_id = self.__getValueId( value )
+        self.__addValueToCache( key, value_id, value )
       
     data_file.remove( invalid_keys )
   
@@ -222,14 +225,13 @@ class ValuesFile (object):
   def   findValues( self, values ):
     out_values = []
     
-    
-    
-    for value in toSequence( values ):
+    for value in values:
       
       value_id = self.__getValueId( value )
+      
       key = self.__getKeyByValueId( value_id )
       if key is None:
-        val = value_id[0]( value_id[1] )
+        val = type(value)( name = value.name )
       else:
         val = self.__getValueByKey( key )
         if isinstance( val, DependsValue ):
@@ -245,19 +247,23 @@ class ValuesFile (object):
     
     reserve = not value.content.FIXED_SIZE
     
-    value_id = 
+    value_id = self.__getValueId( value )
+    key = self.__getKeyByValueId( value_id )
     
-    key, val = xash.find( value )
-    key = self.__getKeyByValue( value )
-    if val is not None:
+    if key is None:
+      data = self.pickler.dumps( value )
+      key = self.data_file.append( data, reserve )
+      
+      self.__addValueToCache( key, value_id, value )
+    
+    else:
+      val = self.__getValueByKey( key )
+      
       if value != val:
         data = self.pickler.dumps( value )
         new_key = self.data_file.replace( key, data, reserve )
-        xash[ new_key ] = value
-    else:
-      data = self.pickler.dumps( value )
-      key = self.data_file.append( data, reserve )
-      xash[ key ] = value
+        
+        self.__updateValueInCache(key, new_key, value_id, value )
   
   #//---------------------------------------------------------------------------//
   
@@ -274,8 +280,11 @@ class ValuesFile (object):
     remove_keys = []
     
     for value in values:
-      key, val = self.xash.find( value )
-      if val is not None:
+      
+      value_id = self.__getValueId( value )
+      key = self.__getKeyByValueId( value_id )
+      
+      if key is not None:
         remove_keys.append( key )
     
     self.data_file.remove( remove_keys )
@@ -286,7 +295,7 @@ class ValuesFile (object):
     if self.data_file is not None:
       self.data_file.clear()
     
-    self.xash.clear()
+    self.__clearCache()
   
   #//---------------------------------------------------------------------------//
   
@@ -294,4 +303,20 @@ class ValuesFile (object):
     if self.data_file is not None:
       self.data_file.selfTest()
     
-    self.xash.selfTest()
+    for key, value in self.key2value.items():
+      value_id = self.__getValueId( value )  
+      
+      if value_id not in self.value2key:
+        raise AssertionError("value (%s) not in self.value2key" % (value_id,))
+        
+      if key != self.value2key[ value_id ]:
+        raise AssertionError("key(%s) != self.value2key[ value_id(%) ](%s) % (key, value_id, self.value2key[ value_id ])" )
+    
+    size = len(self.key2value)
+    
+    if size != len(self.value2key):
+      raise AssertionError( "size(%s) != len(self.value2key)(%s)" % (size, len(self.value2key)) )
+    
+    data_file_size = len(self.data_file)
+    if data_file_size != size:
+      raise AssertionError("data_file_size(%s) != size(%s)" % (data_file_size, size))

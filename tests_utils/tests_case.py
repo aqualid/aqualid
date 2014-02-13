@@ -17,9 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-
-import imp
-import os.path
+import sys
 import unittest
 
 __all__ = ('TestCaseSuite', 'TestCaseBase')
@@ -97,12 +95,12 @@ class TestCaseSuite(unittest.TestSuite):
   
   #//-------------------------------------------------------//
   
-  def run( self, result ):
+  def run( self, result, debug = False):
     
     test_case_class = self.__getTestCaseClass()
     
     if self.__setUpTestCaseClass( test_case_class, result ):
-      super(TestCaseSuite, self).run( result )
+      super(TestCaseSuite, self).run( result, debug = debug )
     
     self.__tearDownTestCaseClass( test_case_class, result )
 

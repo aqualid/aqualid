@@ -23,7 +23,7 @@ import sys
 import os.path
 import unittest
 
-from tests_case import TestCaseSuite
+from tests_case import TestCaseSuite, TestCaseBase
 
 __all__ = ('testsSuite', 'localTestsSuite', 'skip', 'runSuite', 'runTests', 'runLocalTests' )
 
@@ -328,9 +328,9 @@ class Tests(dict):
     
     for module_name in sorted( modules ):
       test_classes = modules[ module_name ]
-      for test_class in sorted( test_classes, key = lambda test_class: test_class.__name__ ):
+      for test_class in sorted( test_classes, key = lambda t: t.__name__ ):
         methods = test_classes[ test_class ]
-        sorted_methods = sorted( methods, key = lambda method: method.__name__)
+        sorted_methods = sorted( methods, key = lambda m: m.__name__)
         
         sorted_tests.append( [ test_class, sorted_methods ] )
     
@@ -367,8 +367,6 @@ class Tests(dict):
   #//-------------------------------------------------------//
   
   def   list( self, verbose ):
-    """Method collects and returns all test names."""
-    
     if verbose:
       formatter = lambda m: m.__name__ if not m.__doc__ else m.__doc__ + '[' + m.__name__ + ']'
     else:
@@ -378,7 +376,6 @@ class Tests(dict):
     for test_class, methods in self.sorted():
       method_names = map( formatter, methods )
       test_names.append( ( "%s.%s" % (test_class.__module__ , test_class.__name__), method_names) )
-
     
     return test_names
   
@@ -408,7 +405,7 @@ class TestsSuiteMaker(object):
   def   load( self, path = None, test_modules_prefix = 'test', test_methods_prefix = 'test', verbose = False ):
     test_classes = _loadTestCaseClasses( path, test_modules_prefix, verbose )
     
-    return Tests( test_classes )
+    return Tests( test_classes, test_methods_prefix = test_methods_prefix )
   
   #//-------------------------------------------------------//
   
@@ -424,15 +421,6 @@ class TestsSuiteMaker(object):
   #//-------------------------------------------------------//
   
   def   tests( self, all_tests, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
-    """Method defines tests which should be run, should be skiped, from which tests testing will be started and
-    additionals tests.
-
-    Arguments:
-    all_tests       - start set of tests
-    run_tests       - base tests which should be run, default value is None
-    skip_tests      - tests should be skipped, default value is None
-    start_from_test - name of test from sequence of tests will be started, default value is None
-    """
     
     skip_test_methods = all_tests.getTestsByMethods( self.skip_test_methods )
     skip_test_classes = all_tests.getTestsByClasses( self.skip_test_classes )
@@ -461,22 +449,12 @@ class TestsSuiteMaker(object):
   #//-------------------------------------------------------//
   
   def   suite( self, tests, suite_class = TestCaseSuite, options = None ):
-    """Method makes test suite from tests.
-
-    tests       - tests which should be added in test suite
-    suite_class - test suite class
-    options     - specify options for tests, default value is None
-
-    """
-    
-    from tests_case import TestCaseBase
     
     main_suite = suite_class()
 
     keep_going = False
     if options is not None:
       keep_going = options.keep_going
-      main_suite.xunit_output_dir = options.xunit_output_dir
     
     for test_class, methods in tests.sorted():
       test_class.options = options
@@ -512,12 +490,7 @@ def  skip( test_case ):
 #//===========================================================================//
 
 def   _printTestsAndExit( tests, verbose ):
-  """Method prints all tests names and tests methods.
-
-  Aruments:
-  tests - test names which are processed in method
-  """
-
+  
   print("\n  Tests:\n==================")
   for test_name, methods in tests.list( verbose ):
     print( test_name + ":\n\t\t" + "\n\t\t".join( methods ) + '\n')
@@ -549,8 +522,6 @@ def   testsSuite( path = None, test_modules_prefix = 'test_', test_methods_prefi
   if list_tests:
     _printTestsAndExit(tests, verbose )
 
-  TestsNum().setNum(len(tests))
-  
   return _suite_maker.suite( tests, suite_class, options )
 
 #//===========================================================================//
@@ -580,26 +551,14 @@ def   runSuite( suite ):
   """
 
   try:
-    test_runner = None
-    
-    if hasattr(suite, "xunit_output_dir" ) and suite.xunit_output_dir != None:
-      from .. import xmlrunner
-      test_runner = xmlrunner.XMLTestRunner( output = suite.xunit_output_dir, verbosity=2, descriptions=True )
-    else:
-      test_runner = unittest.TextTestRunner()
+    test_runner = unittest.TextTestRunner()
 
     result = test_runner.run( suite )
     if not result.wasSuccessful():
       exit(1)
-    
+  
   except KeyboardInterrupt:
     print("\nInterrupted by user")
-  
-  except URLError:
-    print("\nConnection refused")
-    
-  finally:
-    print(TestsStatistic())
 
 #//===========================================================================//
 
@@ -634,8 +593,6 @@ def   runLocalTests( suite_class = TestCaseSuite, options = None ):
 #//===========================================================================//
 
 if __name__ == "__main__":
-  
-  from tests_case import TestCaseBase
   
   #@skip
   class Foo(TestCaseBase) :
