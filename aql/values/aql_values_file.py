@@ -51,7 +51,6 @@ __all__ = (
 from aql.util_types import toSequence
 from aql.utils import DataFile, FileLock, eventWarning, logWarning
 
-from .aql_values_xash import ValuesXash
 from .aql_depends_value import DependsValue, DependsKeyContent
 from .aql_value_pickler import ValuePickler
 
@@ -73,12 +72,42 @@ def   eventFileValuesDependencyValueHasUnknownValue( dep_value, value ):
 class ValuesFile (object):
   
   __slots__ = (
+    
     'data_file',
-    'xash',
-    'pickler',
     'file_lock',
-    'loads',
-    'dumps')
+    'key2value',
+    'value2key',
+    'pickler',
+  )
+  
+  #//---------------------------------------------------------------------------//
+  
+  @staticmethod
+  def   __getValueId( value ):
+    return type(value), value.name
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   __getValueByKey(self, key ):
+    return self.key2value.get(key, None )
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   __getKeyByValueId(self, value_id ):
+    return self.value2key.get( value_id, None )
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   __addValueToCache(self, key, value ):
+    value_id = self.__getValueId( value )
+    self.value2key[ value_id ] = key
+    self.key2value[ key ] = value
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   __updateValueKey(self, old_key, new_key ):
+    self.value2key[ (type(value), value.name) ] = key
+    self.key2value[ key ] = value
   
   #//---------------------------------------------------------------------------//
   
@@ -133,7 +162,8 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   __init__( self, filename, force = False ):
-    self.xash = ValuesXash()
+    self.key2value = {}
+    self.value2key = {}
     self.data_file = None
     self.pickler = ValuePickler()
     self.loads = self.pickler.loads
@@ -164,14 +194,15 @@ class ValuesFile (object):
     
     self.data_file = data_file
     
-    xash = self.xash
-    loads = self.loads
+    loads = self.pickler.loads
     for key, data in data_file:
       try:
-        xash[ key ] = loads( data )
+        value = loads( data )
       except Exception:
         invalid_keys.append( key )
-    
+      else:
+        self.__addValueToCache( key, value )
+      
     data_file.remove( invalid_keys )
   
   #//---------------------------------------------------------------------------//
@@ -184,19 +215,23 @@ class ValuesFile (object):
     
     self.file_lock.releaseLock()
     
-    self.xash.clear()
+    self.__clearCache()
   
   #//---------------------------------------------------------------------------//
   
   def   findValues( self, values ):
     out_values = []
     
-    find = self.xash.find
+    
+    
     for value in toSequence( values ):
-      key, val = find( value )
-      if val is None:
-        val = type(value)( name = value.name )
+      
+      value_id = self.__getValueId( value )
+      key = self.__getKeyByValueId( value_id )
+      if key is None:
+        val = value_id[0]( value_id[1] )
       else:
+        val = self.__getValueByKey( key )
         if isinstance( val, DependsValue ):
           val = self.__makeDepends( val, key )
       
@@ -208,18 +243,19 @@ class ValuesFile (object):
   
   def   __addValue( self, value ):
     
-    xash = self.xash
-    
     reserve = not value.content.FIXED_SIZE
     
+    value_id = 
+    
     key, val = xash.find( value )
+    key = self.__getKeyByValue( value )
     if val is not None:
       if value != val:
-        data = self.dumps( value )
+        data = self.pickler.dumps( value )
         new_key = self.data_file.replace( key, data, reserve )
         xash[ new_key ] = value
     else:
-      data = self.dumps( value )
+      data = self.pickler.dumps( value )
       key = self.data_file.append( data, reserve )
       xash[ key ] = value
   

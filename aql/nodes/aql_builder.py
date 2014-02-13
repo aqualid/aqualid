@@ -363,12 +363,8 @@ class Builder (object):
 
 class BuildSplitter(object):
   
-  def   __new__(cls, builder ):
-    
-    self =  super(BuildSplitter, cls).__new__(cls)
+  def   __init__(self, builder ):
     self.builder = builder
-    
-    return self
   
   #//-------------------------------------------------------//
   
