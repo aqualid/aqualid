@@ -5,8 +5,8 @@ import timeit
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, DataFile
-from aql.values import Value, NoContent, DependsValue, ValuesFile
+from aql.utils import Tempfile
+from aql.values import Value, SignatureValue, NoContent, DependsValue, ValuesFile
 
 #//===========================================================================//
 
@@ -145,6 +145,31 @@ class TestValuesFile( AqlTestCase ):
         values += [dep_value ]
         
         vfile.addValues( values ); vfile.selfTest()
+        
+        vfile.close()
+        vfile.open( tmp.name ); vfile.selfTest()
+      finally:
+        vfile.close()
+
+  #//===========================================================================//
+
+  def test_value_file_same_name(self):
+    with Tempfile() as tmp:
+      vfile = ValuesFile( tmp.name )
+      try:
+        vfile.selfTest()
+        
+        values = []
+        
+        value1 = Value( name = "test1", content = "test" )
+        value2 = SignatureValue( name = value1.name, content = b"1234354545" )
+        
+        vfile.addValues( [ value1, value2 ] ); vfile.selfTest()
+        
+        values = [ Value( name = value1.name), SignatureValue( name = value2.name, content = b'' ) ]
+        values = vfile.findValues( values )
+        self.assertEqual( value1, values[0] )
+        self.assertEqual( value2, values[1] )
         
         vfile.close()
         vfile.open( tmp.name ); vfile.selfTest()

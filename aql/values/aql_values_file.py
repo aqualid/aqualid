@@ -48,7 +48,6 @@ __all__ = (
   'eventFileValuesCyclicDependencyValue', 'eventFileValuesDependencyValueHasUnknownValue',
 )
 
-from aql.util_types import toSequence
 from aql.utils import DataFile, FileLock, eventWarning, logWarning
 
 from .aql_depends_value import DependsValue, DependsKeyContent
@@ -122,9 +121,9 @@ class ValuesFile (object):
     value_keys = set()
     value_keys_append = value_keys.add
     
-    find_value = self.xash.find
     for value in dep_value.content.data:
-      key = find_value( value )[0]
+      value_id = self.__getValueId( value )
+      key = self.__getKeyByValueId( value_id )
       if key is None:
         eventFileValuesDependencyValueHasUnknownValue( dep_value, value )
         return DependsValue( name = dep_value.name )
@@ -151,7 +150,11 @@ class ValuesFile (object):
         return DependsValue( name = kvalue.name )
       
       for key in keys:
-        v = get_value( key )
+        v = self.__getValueByKey( key )
+        
+        if v is None:
+          return DependsValue( name = kvalue.name )
+        
         if isinstance( v, DependsValue ):
           v = self.__makeDepends( v, kvalue_key )
           if not v.content:

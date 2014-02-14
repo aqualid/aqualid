@@ -228,3 +228,65 @@ class   DirValue (FileValue):
       pass
 
 #//===========================================================================//
+
+@pickleable
+class   FileValueBase (Value):
+  
+  def   __new__( cls, name, signature = None ):
+    
+    if name:
+      name = os.path.normcase( os.path.abspath( str(name) ) )
+    else:
+      raise ErrorFileValueNoName()
+    
+    if file_content is NotImplemented:
+      if not issubclass( content_type, ContentBase ):
+        raise ErrorFileValueInvalidContentType( content_type )
+      
+      file_content = content_type( file_name, use_cache = use_cache )
+    
+    # if __debug__:
+    #   print( "FileValue(): content: %s, name: %s" % (type(file_content), type(file_name)) )
+
+    self = super(FileValue, cls).__new__( cls, content = file_content, name = file_name )
+    
+    # if __debug__:
+    #   print( "FileValue(): content: %s, name: %s" % (type(self.content), type(self.name)) )
+    
+    return self
+  
+  #//-------------------------------------------------------//
+
+  def   get(self):
+    return self.name
+
+  #//-------------------------------------------------------//
+
+  def   actual( self ):
+    content = self.content
+    
+    if not content:
+      # if __debug__:
+      #   print( "FileValue.actual(): no content of file %s" % (self.name,))
+      return False
+    
+    # if __debug__:
+    #   print("type(content): %s " % (type(content),) )
+    
+    result = (content == type(content)( self.name, use_cache = True ))
+    # if __debug__:
+    #   if not result:
+    #     print( "FileValue.actual(): non-actual content of file %s" % (self.name,))
+    
+    return result
+  
+  #//-------------------------------------------------------//
+  
+  def   remove( self ):
+    try:
+      os.remove( self.name )
+    except OSError:
+      pass
+
+
+#//===========================================================================//

@@ -101,4 +101,4 @@ if __name__ == '__main__':
   options = TestsOptions.instance()
   options.setDefault( 'test_modules_prefix', 'aql_test_' )
   
-  runTests()
+  runTests( options = options )

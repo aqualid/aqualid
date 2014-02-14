@@ -404,3 +404,93 @@ class   SignatureValue (Value):
     
     content = SignatureContent( content )
     return super(SignatureValue,cls).__new__( cls, content = content, name = name )
+
+#//===========================================================================//
+
+class   ValueBase (object):
+  
+  __slots__ = ( 'name', )
+  
+  #//-------------------------------------------------------//
+  
+  def   __new__( cls, name ):
+    
+    if isinstance( content, Value ):
+      other = content
+      if name is None:
+        name = other.name
+      
+      return type(content)( content = other.content, name = name )
+    
+    self = super(Value,cls).__new__(cls)
+    
+    content = makeContent( content )
+    
+    if name is None:
+      name = content.signature
+    
+    self.name = name
+    self.content = content
+    
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def     __getnewargs__(self):
+    return self.content, self.name
+  
+  #//-------------------------------------------------------//
+
+  def   __getstate__(self):
+    return {}
+  
+  def   __setstate__(self, state):
+    pass
+  
+  #//-------------------------------------------------------//
+  
+  def   copy( self ):
+    return type(self)( *self.__getnewargs__() )
+  
+  #//-------------------------------------------------------//
+  
+  def   __copy__( self ):
+    return self.copy()
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other):
+    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
+  
+  def   __ne__( self, other):
+    return not self.__eq__( other )
+  
+  #//-------------------------------------------------------//
+
+  def   get(self):
+    return self.content.get()
+
+  #//-------------------------------------------------------//
+
+  def   __str__(self):
+    return str(self.name)
+  
+  #//-------------------------------------------------------//
+  
+  def   __bool__( self ):
+    return bool(self.content)
+  
+  #//-------------------------------------------------------//
+  
+  def   __nonzero__( self ):
+    return self.__bool__()
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    return bool(self.content)
+  
+  #//-------------------------------------------------------//
+  
+  def   remove( self ):
+    pass

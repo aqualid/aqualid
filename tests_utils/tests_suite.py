@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -77,8 +77,8 @@ def  _findTestModuleFiles( path, test_modules_prefix ):
   
   for root, dirs, files in os.walk( path ):
     for file_name in files:
-      file_name = file_name.lower()
-      if file_name.startswith( test_modules_prefix ) and file_name.endswith('.py'):
+      file_name_low = file_name.lower()
+      if file_name_low.startswith( test_modules_prefix ) and file_name_low.endswith('.py'):
         test_case_modules.append( os.path.join(root, file_name))
     dirs[:] = filter( lambda d: not d.startswith('.') or d.startswith('__'), dirs )
   
@@ -109,7 +109,6 @@ def   _loadTestModule( module_file, verbose ):
 #//===========================================================================//
 
 def   _loadTestModules( path, test_modules_prefix, verbose ):
-  
   test_modules = []
   module_files = []
   
@@ -565,7 +564,7 @@ def   runSuite( suite ):
 def   runTests( suite_class = TestCaseSuite, options = None ):
   if options is None:
     from tests_options import TestsOptions
-    options = TestsOptions()
+    options = TestsOptions.instance()
   
   suite = testsSuite( options.tests_dirs, options.test_modules_prefix, options.test_methods_prefix,
                       options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options )
@@ -580,7 +579,7 @@ def   runTests( suite_class = TestCaseSuite, options = None ):
 def   runLocalTests( suite_class = TestCaseSuite, options = None ):
   if options is None:
     from tests_options import TestsOptions
-    options = TestsOptions()
+    options = TestsOptions.instance()
   
   suite = localTestsSuite( options.test_methods_prefix,
                            options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options )
