@@ -17,7 +17,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-import os.path
 import optparse
 
 __all__ = ( 'TestsOptions', )
@@ -44,7 +43,9 @@ def   _toSequence( value ):
 #//===========================================================================//
 
 def   _execFile( filename, in_context ):
-  source = readTextFile( filename )
+  with open( filename ) as f:
+    source = f.read()
+  
   code = compile( source, filename, 'exec' )
   out_context = {}
   exec( code, in_context, out_context )
@@ -310,6 +311,11 @@ class   TestsOptions( Singleton ):
   
   #//-------------------------------------------------------//
   
+  def   __getattr__( self, name ):
+    return None
+  
+  #//-------------------------------------------------------//
+  
   def   items( self ):
     for name, value in self.__dict__.items():
       if not name.startswith("_") and (name != "targets"):
@@ -320,7 +326,7 @@ class   TestsOptions( Singleton ):
   def   dump( self ):
     values = []
     for name in sorted( self.__dict__ ):
-      if not name.startswith('__'):
+      if not name.startswith('_'):
         values.append( [ name, getattr(self, name) ] )
     
     return values
