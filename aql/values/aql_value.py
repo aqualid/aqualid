@@ -17,8 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 __all__ = (
-  'ContentBase', 'NoContent', 'StringContent', 'IStringContent', 'BytesContent', 'SignatureContent',
-  'Value', 'StringValue', 'IStringValue', 'SignatureValue', 'makeContent',
+  'ValueBase', 'SignatureValue', 'SimpleValue', 'NullValue',
 )
 
 from aql.utils import simpleObjectSignature, strSignature, dataSignature
@@ -26,421 +25,66 @@ from .aql_value_pickler import pickleable
 
 #//===========================================================================//
 
-class   ErrorInvalidValueBytesContentType( Exception ):
-  def   __init__( self, content ):
-    msg = "Value content type must be bytes or bytearray, content type: '%s'" % str(type(content))
-    self.content = content
+class   ErrorValueNameEmpty( Exception ):
+  def   __init__( self ):
+    msg = "Vale name is empty"
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class ContentBase( object ):
-  
-  FIXED_SIZE = False
-  
-  __slots__ = ('signature',)
-  
-  def   __new__( cls, *args, **kw ):
-    return super(ContentBase,cls).__new__(cls)
-  
-  def   __init__( self, *args, **kw ):
-    pass
-  
-  def   __eq__( self, other ):
-    return type(self) == type(other) and (self.signature == other.signature)
-  
-  def   __bool__( self ):
-    return True
-  
-  def   get( self ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  def   __getnewargs__(self):
-    #noinspection PyRedundantParentheses
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  def   __ne__( self, other ):
-    return not self.__eq__( other )
-  
-  def   __nonzero__( self ):
-    return self.__bool__()
-  
-  def   __getstate__(self):
-    return {}
-  def   __setstate__(self,state):
-    pass
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      raise NotImplementedError("Attribute '%s' must be set by child classes" % str(attr))
-    
-    raise AttributeError( attr )
+class   ErrorSignatureValueInvalidDataType( Exception ):
+  def   __init__( self, data ):
+    msg = "Signature value data type must be bytes or bytearray, actual type: '%s'" % (type(data),)
+    super(type(self), self).__init__( msg )
 
-#//===========================================================================//
-
-@pickleable
-class _NoContent( ContentBase ):
-  
-  FIXED_SIZE = False
-  
-  def   __new__( cls, *args ):
-    self = super(_NoContent,cls).__new__(cls)
-    self.signature = bytearray()
-    return self
-  
-  def   get( self ):
-    return None
-  
-  def   __eq__( self, other ):
-    return False
-  def   __bool__( self ):
-    return False
-  def   __str__( self ):
-    return "<Not exists>"
-  def   __getnewargs__(self):
-    return tuple()
-
-NoContent = _NoContent()
-
-#//===========================================================================//
-
-@pickleable
-class   SignatureContent( ContentBase ):
-  
-  __slots__ = ('data',)
-  
-  FIXED_SIZE = True
-  
-  def   __new__( cls, data = None ):
-    
-    if isinstance(data, ContentBase ):
-      return data
-    
-    if data is None:
-      return NoContent
-    
-    if not isinstance( data, (bytes, bytearray) ):
-      raise ErrorInvalidValueBytesContentType( data )
-    
-    self = super(SignatureContent,cls).__new__(cls)
-    
-    self.data = data
-    self.signature = data
-    
-    return self
-  
-  def get( self ):
-    return self.data
-  
-  def   __getnewargs__(self):
-    return (self.data, )
-
-  
-#//===========================================================================//
-
-#noinspection PyAttributeOutsideInit
-@pickleable
-class   BytesContent ( ContentBase ):
-  
-  __slots__ = ('data',)
-  
-  def   __new__( cls, data = None ):
-    
-    if isinstance(data, ContentBase ):
-      return data
-    
-    if data is None:
-      return NoContent
-    
-    if not isinstance( data, (bytes, bytearray) ):
-      raise ErrorInvalidValueBytesContentType( data )
-    
-    self = super(BytesContent,cls).__new__(cls)
-    
-    self.data = data
-    
-    return self
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      self.signature = dataSignature( self.data )
-      return self.signature
-    
-    return super(BytesContent,self).__getattr__( attr )
-  
-  def get( self ):
-    return self.data
-  
-  def   __getnewargs__(self):
-    return (self.data, )
-
-#//===========================================================================//
-
-#noinspection PyAttributeOutsideInit
-@pickleable
-class   StringContent ( ContentBase ):
-  
-  __slots__ = ('data',)
-  
-  def   __new__(cls, data = None ):
-    
-    if isinstance(data, ContentBase ):
-      return data
-    
-    if data is None:
-      return NoContent
-    
-    self = super(StringContent,cls).__new__(cls)
-    
-    self.data = str(data)
-    
-    return self
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      self.signature = strSignature( self.data )
-      return self.signature
-    
-    return super(StringContent,self).__getattr__( attr )
-  
-  def get( self ):
-    return self.data
-  
-  def   __getnewargs__(self):
-    return (self.data, )
-
-
-#//============================signature===============================================//
-
-#noinspection PyAttributeOutsideInit
-@pickleable
-class   IStringContent ( StringContent ):
-  
-  __slots__ = ('low_case_str',)
-  
-  def   __getattr__( self, attr ):
-    if attr == 'low_case_str':
-      self.low_case_str = self.data.lower()
-      return self.low_case_str
-    
-    if attr == 'signature':
-      self.signature = strSignature( self.low_case_str )
-      return self.signature
-    
-    return super(IStringContent,self).__getattr__( attr )
-
-
-#//===========================================================================//
-
-#noinspection PyAttributeOutsideInit
-@pickleable
-class   OtherContent ( ContentBase ):
-  
-  __slots__ = ('data',)
-  
-  def   __new__( cls, data = None ):
-    
-    if isinstance(data, ContentBase ):
-      return data
-    
-    if data is None:
-      return NoContent
-    
-    self = super(OtherContent,cls).__new__(cls)
-    
-    self.data = data
-    
-    return self
-  
-  def   __getattr__( self, attr ):
-    if attr == 'signature':
-      self.signature = simpleObjectSignature( self.data )
-      return self.signature
-    
-    return super(OtherContent,self).__getattr__( attr )
-
-  def get( self ):
-    return self.data
-  
-  def   __getnewargs__(self):
-    return (self.data, )
-
-#//===========================================================================//
-
-def   makeContent( content ):
-  if (content is NotImplemented) or (content is None):
-    content = NoContent
-  
-  if not isinstance( content, ContentBase ):
-    if isinstance( content, (bytes, bytearray)):
-      content = BytesContent( content )
-    elif isinstance( content, str):
-      content = StringContent( content )
-    else:
-      content = OtherContent( content )
-  
-  return content
-
-#//===========================================================================//
-
-#noinspection PyAttributeOutsideInit,PyMethodMayBeStatic
-@pickleable
-class   Value (object):
-  
-  __slots__ = ( 'name', 'content' )
-  
-  #//-------------------------------------------------------//
-  
-  def   __new__( cls, content = NotImplemented, name = None ):
-    
-    if isinstance( content, Value ):
-      other = content
-      if name is None:
-        name = other.name
-      
-      return type(content)( content = other.content, name = name )
-    
-    self = super(Value,cls).__new__(cls)
-    
-    content = makeContent( content )
-    
-    if name is None:
-      name = content.signature
-    
-    self.name = name
-    self.content = content
-    
-    return self
-  
-  #//-------------------------------------------------------//
-  
-  def     __getnewargs__(self):
-    return self.content, self.name
-  
-  #//-------------------------------------------------------//
-
-  def   __getstate__(self):
-    return {}
-  
-  def   __setstate__(self, state):
-    pass
-  
-  #//-------------------------------------------------------//
-  
-  def   copy( self ):
-    return type(self)( *self.__getnewargs__() )
-  
-  #//-------------------------------------------------------//
-  
-  def   __copy__( self ):
-    return self.copy()
-  
-  #//-------------------------------------------------------//
-  
-  def   __eq__( self, other):
-    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
-  
-  def   __ne__( self, other):
-    return not self.__eq__( other )
-  
-  #//-------------------------------------------------------//
-
-  def   get(self):
-    return self.content.get()
-
-  #//-------------------------------------------------------//
-
-  def   __str__(self):
-    return str(self.name)
-  
-  #//-------------------------------------------------------//
-  
-  def   __bool__( self ):
-    return bool(self.content)
-  
-  #//-------------------------------------------------------//
-  
-  def   __nonzero__( self ):
-    return self.__bool__()
-  
-  #//-------------------------------------------------------//
-  
-  def   actual( self ):
-    return bool(self.content)
-  
-  #//-------------------------------------------------------//
-  
-  def   remove( self ):
-    pass
-  
-#//===========================================================================//
-
-@pickleable
-class   StringValue (Value):
-  
-  def   __new__( cls, content = NotImplemented, name = None ):
-    
-    content = StringContent( content )
-    
-    return super(StringValue,cls).__new__( cls, content = content, name = name )
-
-#//===========================================================================//
-
-@pickleable
-class   IStringValue (Value):
-  
-  def   __new__( cls, content = NotImplemented, name = None ):
-    
-    content = IStringContent( content )
-    
-    return super(IStringValue,cls).__new__( cls, content = content, name = name )
-
-#//===========================================================================//
-
-@pickleable
-class   SignatureValue (Value):
-  
-  def   __new__( cls, content = NotImplemented, name = None ):
-    
-    content = SignatureContent( content )
-    return super(SignatureValue,cls).__new__( cls, content = content, name = name )
+class   ErrorTextValueInvalidDataType( Exception ):
+  def   __init__( self, text ):
+    msg = "Text value data type must be string, actual type: '%s'" % (type(text),)
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
 class   ValueBase (object):
   
-  __slots__ = ( 'name', )
+  IS_SIZE_FIXED = False
+  
+  __slots__ = ( 'name', 'signature' )
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name ):
+  def   __new__( cls, name, signature ):
     
-    if isinstance( content, Value ):
-      other = content
-      if name is None:
-        name = other.name
-      
-      return type(content)( content = other.content, name = name )
+    if not name:
+      raise ErrorValueNameEmpty()
     
-    self = super(Value,cls).__new__(cls)
-    
-    content = makeContent( content )
-    
-    if name is None:
-      name = content.signature
-    
+    self = super(ValueBase,cls).__new__(cls)
     self.name = name
-    self.content = content
-    
+    self.signature = signature
     return self
   
   #//-------------------------------------------------------//
   
+  def   valueId(self):
+    return self.name, type(self)
+  
+  #//-------------------------------------------------------//
+  
+  def   get(self):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
   def     __getnewargs__(self):
-    return self.content, self.name
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
 
+  # noinspection PyMethodMayBeStatic
   def   __getstate__(self):
     return {}
   
@@ -460,16 +104,12 @@ class   ValueBase (object):
   #//-------------------------------------------------------//
   
   def   __eq__( self, other):
-    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
+    return (type(self) == type(other)) and \
+           (self.__getnewargs__() == other.__getnewargs__())
   
   def   __ne__( self, other):
     return not self.__eq__( other )
   
-  #//-------------------------------------------------------//
-
-  def   get(self):
-    return self.content.get()
-
   #//-------------------------------------------------------//
 
   def   __str__(self):
@@ -478,19 +118,114 @@ class   ValueBase (object):
   #//-------------------------------------------------------//
   
   def   __bool__( self ):
-    return bool(self.content)
-  
-  #//-------------------------------------------------------//
+    return bool(self.signature)
   
   def   __nonzero__( self ):
     return self.__bool__()
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
-    return bool(self.content)
+  def   remove( self ):
+    pass
+
+#//===========================================================================//
+
+# noinspection PyUnresolvedReferences
+@pickleable
+class   SimpleValue ( ValueBase ):
+  
+  __slots__ = ('data', )
+  
+  def   __new__(cls, data = None, name = None, signature = None ):
+    
+    if data is None:
+      signature = None
+    else:
+      if signature is None:
+        signature = simpleObjectSignature( data )
+    
+    if not name:
+      name = signature
+    
+    self = super(SimpleValue, cls).__new__( cls, name, signature )
+    self.data = data
+    
+    return self
+  
+  #//-------------------------------------------------------//
+
+  def   get(self):
+    return self.data
   
   #//-------------------------------------------------------//
   
-  def   remove( self ):
-    pass
+  def     __getnewargs__(self):
+    return self.data, self.name, self.signature
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    return bool(self.signature)
+
+#//===========================================================================//
+
+# noinspection PyUnresolvedReferences
+@pickleable
+class   NullValue ( ValueBase ):
+  
+  def   __new__(cls):
+    
+    name = ''
+    signature = None
+    
+    return super(NullValue, cls).__new__( cls, name, signature )
+  
+  #//-------------------------------------------------------//
+
+  def   get(self):
+    return None
+  
+  #//-------------------------------------------------------//
+  
+  def     __getnewargs__(self):
+    return tuple()
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    return False
+
+#//===========================================================================//
+
+@pickleable
+class   SignatureValue (ValueBase):
+  
+  IS_SIZE_FIXED = True
+  
+  def   __new__( cls, data = None, name = None ):
+    
+    if data is not None:
+      if not isinstance( data, (bytes, bytearray) ):
+        raise ErrorSignatureValueInvalidDataType( data )
+    
+    if not name:
+      name = data
+    
+    return super(SignatureValue, cls).__new__( cls, name, data )
+  
+  #//-------------------------------------------------------//
+
+  def   get(self):
+    return self.signature
+
+  #//-------------------------------------------------------//
+  
+  def     __getnewargs__(self):
+    return self.signature, self.name
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    return bool(self.signature)
+
+#//===========================================================================//

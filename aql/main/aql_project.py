@@ -29,7 +29,7 @@ import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence
-from aql.values import Value
+from aql.values import NullValue
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
 
@@ -205,7 +205,7 @@ class BuilderWrapper( object ):
         sources += toSequence( value )
       else:
         for v in toSequence( value ):
-          if isinstance( v, (Node, Value)):
+          if isinstance( v, Node):
             dep_nodes.append( v )
         
         if name in self.arg_names:
@@ -481,7 +481,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   AlwaysBuild( self, node ):
-    null_value = Value()
+    null_value = NullValue()
     for node in toSequence( node ):
       node.depends( null_value )
   

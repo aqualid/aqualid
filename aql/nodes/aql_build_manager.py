@@ -804,7 +804,7 @@ class BuildManager (object):
     
     for value in values:
       value_sign = value.content.signature
-      other_value_sign = built_targets.setdefault( (type(value), value.name), value_sign )
+      other_value_sign = built_targets.setdefault( value.valueId(), value_sign )
       
       if other_value_sign != value_sign:
         eventBuildTargetTwice( value, node, brief = self.brief )

@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.util_types import toSequence
 from aql.utils import Tempfile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
-from aql.values import StringValue, Value, FileValue, FileContentChecksum, ValuesFile
+from aql.values import SimpleValue, NullValue, FileChecksumValue, ValuesFile
 from aql.nodes import Node, Builder
 
 
@@ -101,9 +101,9 @@ class TestNodes( AqlTestCase ):
       
       vfile = ValuesFile( tmp.name )
       try:
-        value1 = StringValue( "target_url1", "http://aql.org/download" )
-        value2 = StringValue( "target_url2", "http://aql.org/download2" )
-        value3 = StringValue( "target_url3", "http://aql.org/download3" )
+        value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
+        value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
+        value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
         
         options = builtinOptions()
         builder = ChecksumBuilder( options )
@@ -125,7 +125,7 @@ class TestNodes( AqlTestCase ):
         self.assertTrue( node.actual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
-        node.depends( Value() )
+        node.depends( NullValue() )
         node.initiate()
         
         self.assertFalse( node.actual( vfile ) )
@@ -180,8 +180,8 @@ class TestNodes( AqlTestCase ):
         try:
           with Tempfile( suffix = '.1' ) as tmp1:
             with Tempfile( suffix = '.2' ) as tmp2:
-              value1 = FileValue( tmp1.name )
-              value2 = FileValue( tmp2.name )
+              value1 = FileChecksumValue( tmp1.name )
+              value2 = FileChecksumValue( tmp2.name )
               
               options = builtinOptions()
               
@@ -196,11 +196,11 @@ class TestNodes( AqlTestCase ):
               
               tmp1.write(b'123')
               tmp1.flush()
-              value1 = FileValue( tmp1.name )
+              value1 = FileChecksumValue( tmp1.name )
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
               with Tempfile( suffix = '.3' ) as tmp3:
-                value3 = FileValue( tmp3.name )
+                value3 = FileChecksumValue( tmp3.name )
                 
                 node3 = self._rebuildNode( vfile, builder, [value3], [], tmp_files )
                 
@@ -220,10 +220,10 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                dep = StringValue( "dep1", "1" )
+                dep = SimpleValue( "1", name = "dep1" )
                 node = self._rebuildNode( vfile, builder, [value1, node3], [dep], tmp_files )
                 
-                dep = StringValue( "dep1", "11" )
+                dep = SimpleValue( "11", name = "dep1" )
                 node = self._rebuildNode( vfile, builder, [value1, node3], [dep], tmp_files )
                 node3 = self._rebuildNode( vfile, builder3, [value1], [], tmp_files )
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
@@ -236,7 +236,7 @@ class TestNodes( AqlTestCase ):
                   f.write( b'333' )
                   f.flush()
                 
-                FileValue( node_tname, use_cache = False )
+                FileChecksumValue( node_tname, use_cache = False )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
@@ -244,7 +244,7 @@ class TestNodes( AqlTestCase ):
                   f.write( b'abc' )
                   f.flush()
                 
-                FileValue( node.getSideEffectValues()[0].name, use_cache = False )
+                FileChecksumValue( node.getSideEffectValues()[0].name, use_cache = False )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
@@ -263,7 +263,7 @@ class TestNodes( AqlTestCase ):
 
 #//===========================================================================//
 
-_FileContentType = FileContentChecksum
+_FileValueType = FileChecksumValue
 
 class TestSpeedBuilder (Builder):
   
@@ -288,8 +288,8 @@ class TestSpeedBuilder (Builder):
       
       shutil.copy( source_value.name, new_name )
       
-      target_values.append( FileValue( new_name, _FileContentType ) )
-      idep_values.append( FileValue( idep_name, _FileContentType ) )
+      target_values.append( _FileValueType( new_name ) )
+      idep_values.append( _FileValueType( idep_name ) )
     
     node.setTargets( target_values, itarget_values, idep_values )
   
@@ -302,7 +302,7 @@ class TestSpeedBuilder (Builder):
 
 def   _testNoBuildSpeed( vfile, builder, source_values ):
   for source in source_values:
-    node = Node( builder, FileValue( source, _FileContentType ) )
+    node = Node( builder, _FileValueType( source ) )
     node.initiate()
     if not node.actual( vfile ):
       raise AssertionError( "node is not actual" )
@@ -346,7 +346,7 @@ class TestNodesSpeed ( AqlTestCase ):
           builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
           
           for source in source_files:
-            node = Node( builder, FileValue( source, _FileContentType ) )
+            node = Node( builder, _FileValueType( source ) )
             node.initiate()
             self.assertFalse( node.actual( vfile ) )
             builder.build( node )

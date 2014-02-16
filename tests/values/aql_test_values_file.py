@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values import Value, SignatureValue, NoContent, DependsValue, ValuesFile
+from aql.values import SimpleValue, SignatureValue, ValuesFile
 
 #//===========================================================================//
 
@@ -17,9 +17,9 @@ class TestValuesFile( AqlTestCase ):
       with ValuesFile( tmp.name ) as vfile:
         vfile.selfTest()
         
-        value1 = Value( name = "target_url1", content = "http://aql.org/download" )
-        value2 = Value( name = "target_url2", content = "http://aql.org/download2" )
-        value3 = Value( name = "target_url3", content = "http://aql.org/download3" )
+        value1 = SimpleValue( "http://aql.org/download" )
+        value2 = SimpleValue( "http://aql.org/download2" )
+        value3 = SimpleValue( "http://aql.org/download3" )
         
         values = [ value1, value2, value3 ]
         
@@ -27,33 +27,33 @@ class TestValuesFile( AqlTestCase ):
         
         s_values = vfile.findValues( values ); vfile.selfTest()
         
-        self.assertEqual( values, s_values )
+        self.assertSequenceEqual( values, s_values )
         
         vfile.clear(); vfile.selfTest()
-        #//-------------------------------------------------------//
         
-        dep_value = DependsValue( name = "urls", content = values )
-        values.append( dep_value )
+        #//-------------------------------------------------------//
         
         vfile.addValues( values ); vfile.selfTest()
+        value_keys = vfile.getKeys( values )
         s_values = vfile.findValues( values ); vfile.selfTest()
+        dep_values = vfile.getValues( value_keys ); vfile.selfTest()
         
-        self.assertEqual( values[-1].content, s_values[-1].content )
+        self.assertSequenceEqual( s_values, dep_values )
         
         #//-------------------------------------------------------//
         
-        dep_value = DependsValue( name = "urls", content = [ value1 ] )
-        vfile.addValues( [dep_value, value1] ); vfile.selfTest()
+        vfile.addValue( value1 ); vfile.selfTest()
+        value_keys = vfile.getKeys( [value1] )
         
-        s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
-        self.assertEqual( dep_value, s_dep_value )
+        s_dep_value = vfile.getValues( value_keys )[0]; vfile.selfTest()
+        self.assertEqual( value1, s_dep_value )
         
-        value1 = Value( name = value1.name, content = "abc" )
+        value1 = SimpleValue( "abc", name = value1.name )
         
-        vfile.addValues( [value1] ); vfile.selfTest()
+        vfile.addValue( value1 ); vfile.selfTest()
         
-        s_dep_value = vfile.findValues( [dep_value] )[0]; vfile.selfTest()
-        self.assertNotEqual( dep_value, s_dep_value )
+        s_dep_value = vfile.getValues( value_keys ); vfile.selfTest()
+        self.assertIsNone( s_dep_value )
 
   #//===========================================================================//
 
@@ -63,9 +63,9 @@ class TestValuesFile( AqlTestCase ):
       try:
         vfile.selfTest()
         
-        value1 = Value( name = "target_url1", content = "http://aql.org/download" )
-        value2 = Value( name = "target_url2", content = "http://aql.org/download2" )
-        value3 = Value( name = "target_url3", content = "http://aql.org/download3" )
+        value1 = SimpleValue( "http://aql.org/download",  name = "target_url1" )
+        value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
+        value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
         
         values = [ value1, value2, value3 ]
         

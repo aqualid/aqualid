@@ -11,7 +11,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values import Value, NoContent, IStringContent, FileValue, FileContentTimeStamp, ValuePickler, pickleable
+from aql.values import FileChecksumValue, FileTimestampValue, SimpleValue, ValuePickler, pickleable
 
 #//===========================================================================//
 
@@ -20,7 +20,7 @@ class TestValuePickler( AqlTestCase ):
     
     with Tempfile() as tmp:
       vpick = ValuePickler()
-      value = FileValue( tmp.name )
+      value = FileChecksumValue( tmp.name )
       
       vl = vpick.dumps( value )
       vl = vpick.dumps( value )
@@ -31,19 +31,19 @@ class TestValuePickler( AqlTestCase ):
       v = vpick.loads( vl )
       self.assertEqual( value, v )
       
-      value = FileValue( tmp.name, FileContentTimeStamp )
+      value = FileTimestampValue( tmp.name )
       v = vpick.loads( vpick.dumps( value ) )
       self.assertEqual( value, v )
     
-    value = Value( name = tmp.name, content = '123-345' )
+    value = SimpleValue( '123-345', name = tmp.name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = Value( name = tmp.name, content = IStringContent('123-345') )
+    value = SimpleValue( '123-345', name = tmp.name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = Value( name = tmp.name, content = None )
+    value = SimpleValue( name = tmp.name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value.name, v.name )
     self.assertFalse( v.content )
@@ -61,7 +61,7 @@ class TestValuePickler( AqlTestCase ):
     with Tempfile() as tmp:
       
       vpick = ValuePickler()
-      value = FileValue( tmp.name )
+      value = FileChecksumValue( tmp.name )
       
       t = lambda pload = vpick.loads, pdump = vpick.dumps, value = value: pload( pdump( value ) )
       t = timeit.timeit( t, number = 10000 )

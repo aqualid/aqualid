@@ -8,7 +8,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import fileChecksum, Tempfile, Tempdir, \
   disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
 
-from aql.values import Value, StringValue, FileValue
+from aql.values import SimpleValue, FileChecksumValue
 from aql.options import builtinOptions
 from aql.nodes import Node, Builder, BuildSplitter, BuildManager, ErrorNodeDependencyCyclic
 
@@ -23,7 +23,8 @@ class CopyValueBuilder (Builder):
     target_values = []
     
     for source_value in node.getSourceValues():
-      target_values.append( Value( name = source_value.name + '_copy', content = source_value.content ) )
+      copy_value = SimpleValue( source_value.get(), name = source_value.name + '_copy' )
+      target_values.append( copy_value )
     
     node.setTargets( target_values )
   
@@ -133,7 +134,7 @@ def   _addNodesToBM( builder, src_files ):
     
     src_values = []
     for s in src_files:
-      src_values.append( FileValue( s ) )
+      src_values.append( FileChecksumValue( s ) )
     
     checksums_node = Node( builder, src_values )
     checksums_node2 = Node( builder, checksums_node )
@@ -237,9 +238,9 @@ class TestBuildManager( AqlTestCase ):
     
     bm = BuildManager()
     
-    value1 = StringValue( "target_url1", "http://aql.org/download" )
-    value2 = StringValue( "target_url2", "http://aql.org/download2" )
-    value3 = StringValue( "target_url3", "http://aql.org/download3" )
+    value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
+    value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
+    value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
     
     options = builtinOptions()
     
@@ -340,9 +341,9 @@ class TestBuildManager( AqlTestCase ):
     
       bm = BuildManager()
       
-      value1 = StringValue( name = "target_url1", content = "http://aql.org/download" )
-      value2 = StringValue( name = "target_url2", content = "http://aql.org/download2" )
-      value3 = StringValue( name = "target_url3", content = "http://aql.org/download3" )
+      value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
+      value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
+      value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
       
       builder = CopyValueBuilder( options )
       
@@ -456,7 +457,7 @@ class TestBuildManager( AqlTestCase ):
           
           src_values = []
           for s in src_files:
-            src_values.append( FileValue( s ) )
+            src_values.append( FileChecksumValue( s ) )
           
           node = Node( builder, src_values )
           
@@ -506,7 +507,7 @@ class TestBuildManager( AqlTestCase ):
         try:
           src_values = []
           for s in src_files:
-            src_values.append( FileValue( s ) )
+            src_values.append( FileChecksumValue( s ) )
           
           node0 = Node( builder, None )
           node1 = Node( builder, src_values )
@@ -550,7 +551,7 @@ class TestBuildManagerSpeed( AqlTestCase ):
     
     bm = BuildManager()
     
-    value = StringValue( "target_url1", "http://aql.org/download" )
+    value = SimpleValue( "http://aql.org/download", name = "target_url1" )
     builder = CopyValueBuilder()
     
     node = Node( builder, value )

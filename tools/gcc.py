@@ -88,7 +88,8 @@ class GccCompiler (aql.Builder):
     
     obj_file = self._getObj( node )[0]
     
-    target = aql.FileValue( content = None, name = obj_file )
+    value_type = self.fileValueType()
+    target = value_type( name = obj_file, signature = None )
     
     return target
   
@@ -174,7 +175,8 @@ class GccArchiver(aql.Builder):
   #//-------------------------------------------------------//
   
   def   getTargetValues( self, node ):
-    target = aql.FileValue( content = None, name = self.target )
+    value_type = self.fileValueType()
+    target = value_type( name = self.target, signature = None )
     return target
   
   #//-------------------------------------------------------//
@@ -257,7 +259,8 @@ class GccLinker(aql.Builder):
     return out
   
   def   getTargetValues( self, node ):
-    target = aql.FileValue( content = None, name = self.target )
+    value_type = self.fileValueType()
+    target = value_type( name = self.target, signature = None )
     return target
   
   #//-------------------------------------------------------//

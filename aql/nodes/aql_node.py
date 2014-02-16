@@ -28,7 +28,7 @@ import itertools
 from aql.utils import simpleObjectSignature, Chdir
 from aql.util_types import toSequence
 
-from aql.values import Value, DependsValue, pickleable
+from aql.values import ValueBase, pickleable
 
 #//===========================================================================//
 
@@ -54,59 +54,53 @@ class   ErrorNodeNotInitialized( Exception ):
 
 #//===========================================================================//
 
+def   _actualValues( values ):
+  if values is None:
+    return False
+  
+  for value in values:
+    if not value.actual():
+      return False
+      
+  return True
+
+#//===========================================================================//
+
 @pickleable
-class   NodeValue (Value):
+class   NodeValue (ValueBase):
   
   __slots__ = (
-                'signature',
-                'targets',
-                'itargets',
-              )
+    'targets',
+    'itargets',
+    'idep_keys',
+  )
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name, signature = None, targets = None, itargets = None ):
+  def   __new__( cls, name, signature = None, targets = None, itargets = None, idep_keys = None ):
     
-    self = super(NodeValue,cls).__new__(cls, name = name )
+    self = super(NodeValue,cls).__new__(cls, name, signature )
     
-    self.signature  = signature
     self.targets    = targets
     self.itargets   = itargets
+    self.idep_keys  = idep_keys
     
     return self
   
   #//-------------------------------------------------------//
   
+  def   get(self):
+    return self.name
+  
+  #//-------------------------------------------------------//
+  
   def     __getnewargs__(self):
-    return self.name, self.signature, self.targets, self.itargets
-  
-  #//-------------------------------------------------------//
-  
-  def     actual( self ):
-    
-    if self.targets is None:
-      return False
-    
-    for value in itertools.chain( toSequence(self.targets),toSequence(self.itargets) ):
-      if not value.actual():
-        return False
-        
-    return True
-  
-  #//-------------------------------------------------------//
-  
-  def   __eq__( self, other ):
-    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
-  
-  #//-------------------------------------------------------//
-  
-  def   copy( self ):
-    return NodeValue( *self.__getnewargs__() )
+    return self.name, self.signature, self.targets, self.itargets, self.idep_keys
   
   #//-------------------------------------------------------//
   
   def   __bool__( self ):
-    return (self.signature is not None) and (self.targets is not None) and (self.itargets is not None)
+    return (self.signature is not None) and (self.targets is not None)
   
   #//-------------------------------------------------------//
 
@@ -169,7 +163,7 @@ class Node (object):
       if isinstance( value, Node ):
         dep_nodes.add( value )
       
-      elif isinstance( value, Value ):
+      elif isinstance( value, ValueBase ):
         dep_values.append( value )
       
       else:
@@ -221,7 +215,7 @@ class Node (object):
         if isinstance( src, Node ):
           values += src.getTargetValues()
         
-        elif isinstance( src, Value ):
+        elif isinstance( src, ValueBase ):
           values.append( src )
         
         else:
@@ -271,7 +265,7 @@ class Node (object):
     
     targets = self.targets
     if targets:
-      names = sorted( (value.name,type(value)) for value in targets )
+      names = sorted( value.valueId() for value in targets )
     else:
       sources = sorted( self.getSourceValues(), key = lambda v: v.name )
       names = [ self.builder.name ]
@@ -354,15 +348,14 @@ class Node (object):
       if self.itargets is None:
         raise ErrorNoTargets( self )
     
-    node_value = NodeValue( name = self.name, signature = self.signature, targets = self.targets, itargets = self.itargets )
-    
     ideps = self.ideps
-    ideps_value = DependsValue( name = self.name, content = ideps )
+    vfile.addValues( ideps )
+    idep_keys = vfile.getKeys( ideps )
     
-    values = list(ideps)
-    values += [ ideps_value, node_value ]
+    node_value = NodeValue( name = self.name, signature = self.signature,
+                            targets = self.targets, itargets = self.itargets, idep_keys = idep_keys )
     
-    vfile.addValues( values )
+    vfile.addValue( node_value )
   
   #//=======================================================//
   
@@ -371,18 +364,15 @@ class Node (object):
     self.__initiateIds()
     
     node_value = NodeValue( name = self.name )
-    ideps_value = DependsValue( name = self.name )
     
-    ideps_value, node_value = vfile.findValues( [ ideps_value, node_value ] )
+    node_value = vfile.findValue( node_value )
     if node_value:
       node_targets = node_value.targets
       if node_targets is not None:
         self.targets = node_targets
       
       self.itargets = node_value.itargets
-    
-    if ideps_value.content:
-      self.ideps = ideps_value.content.data
+      self.ideps = vfile.getValues( node_value.idep_keys ) 
   
   #//=======================================================//
   
@@ -409,9 +399,8 @@ class Node (object):
     self.load( vfile )
     
     node_value = NodeValue( name = self.name )
-    ideps_value = DependsValue( name = self.name )
     
-    vfile.removeValues( [ node_value, ideps_value ] )
+    vfile.removeValues( [ node_value ] )
     
     try:
       self.builder.clear( self )
@@ -438,27 +427,29 @@ class Node (object):
       return False
     
     node_value = NodeValue( name = self.name )
-    ideps_value = DependsValue( name = self.name )
     
-    ideps_value, node_value = vfile.findValues( [ideps_value, node_value] )
+    node_value = vfile.findValue( node_value )
+    
+    if node_value is None:
+      return False
     
     if self.signature != node_value.signature:
       # if __debug__:
       #   print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
       return False
     
-    if not ideps_value.actual():
+    targets   = node_value.targets
+    itargets  = node_value.itargets
+    ideps     = vfile.getValues( node_value.idep_keys )
+    
+    if not (_actualValues( ideps ) and _actualValues( targets ) and _actualValues( itargets )):
       # if __debug__:
-      #   print( "ideps are not actual: %s" % (self.getName(),))
+      #   print( "targets/itargets/ideps are not actual: %s" % (self.getName(),))
       return False
     
-    if not node_value.actual():
-      # if __debug__:
-      #   print( "Targets are not actual: %s" % (self.getName(),))
-      return False
-    
-    self.targets = node_value.targets
-    self.itargets = node_value.itargets
+    self.targets  = targets
+    self.itargets = itargets
+    self.ideps    = ideps
     
     return True
     

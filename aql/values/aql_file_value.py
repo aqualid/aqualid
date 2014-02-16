@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -18,17 +18,15 @@
 #
 
 __all__ = (
-  'FileContentChecksum', 'FileContentTimeStamp',
-  'FileValue', 'DirValue',
+  'FileValueBase', 'FileChecksumValue', 'FileTimestampValue', 'DirValue',
 )
 
 import os
 
-from .aql_value import Value, ContentBase, NoContent
+from .aql_value import ValueBase
 from .aql_value_pickler import pickleable
 
 from aql.utils import fileSignature, fileTimeSignature
-
 
 #//===========================================================================//
 
@@ -37,142 +35,21 @@ class   ErrorFileValueNoName( Exception ):
     msg = "Filename is not specified"
     super(type(self), self).__init__( msg )
 
-class   ErrorFileValueInvalidContentType( Exception ):
-  def   __init__( self, content_type ):
-    msg = "Content type must inherited from ContentBase. Invalid content type: '%s'" % (content_type, )
-    super(type(self), self).__init__( msg )
+#//===========================================================================//
+
+def   _normFileName( name ):
+  if not name:
+    raise ErrorFileValueNoName()
+  
+  return os.path.normcase( os.path.abspath( str(name) ) )
 
 
 #//===========================================================================//
-_file_content_cache = {}
 
-#noinspection PyAttributeOutsideInit
-class   FileContentBase( ContentBase ):
+class   FileValueBase (ValueBase):
   
-  FIXED_SIZE = True
-  
-  def   __new__( cls, path = None, signature = None, use_cache = False ):
-    
-    if isinstance(path, ContentBase):
-      return path
-    
-    if not signature and (path is None):
-      return NoContent
-    
-    self = super(FileContentBase,cls).__new__(cls)
-    
-    if signature:
-      self.signature = signature
-    else:
-      self.signature = self._getSignature( path, use_cache = use_cache )
-    
-    return self
-  
-  #//-------------------------------------------------------//
-
-  def   _getSignature( self, path, use_cache = False ):
-
-    cache = _file_content_cache.setdefault( self.__class__, {})
-    
-    if use_cache:
-      try:
-        return cache[ path ]
-      except KeyError:
-        pass
-    
-    try:
-      signature = self._sign( path )
-      cache[ path ] = signature
-    except (OSError, IOError):
-      signature = bytearray()
-    
-    return signature
-  
-  #//-------------------------------------------------------//
-  
-  def   __bool__( self ):
-    return bool(self.signature)
-  
-  def   __eq__( self, other ):
-    return (type(self) == type(other)) and self.signature and (self.signature == other.signature)
-  
-  def   __getnewargs__(self):
-    return None, self.signature
-  
-  def   __str__( self ):
-    return str(self.signature)
-
-#//===========================================================================//
-
-@pickleable
-class   FileContentChecksum (FileContentBase):
-
-  #noinspection PyMethodMayBeStatic
-  def   _sign( self, path ):
-    return fileSignature( path )
-
-#//===========================================================================//
-
-@pickleable
-class   FileContentTimeStamp (FileContentBase):
-  
-  #noinspection PyMethodMayBeStatic
-  def   _sign( self, path ):
-    return fileTimeSignature( path )
-
-#//===========================================================================//
-
-@pickleable
-class   FileValue (Value):
-  
-  def   __new__( cls, content = NotImplemented, name = None, use_cache = False ):
-    
-    file_content = NotImplemented
-    file_name = None
-    content_type = FileContentChecksum
-    
-    if isinstance( name, ContentBase):
-      file_content = name
-    
-    elif type(name) is type:
-      content_type = name
-    
-    else:
-      file_name = name
-    
-    if isinstance( content, FileValue ):
-      file_name = content.name
-      content_type = type(content.content)
-    
-    elif isinstance( content, ContentBase ) or (content is None):
-      file_content = content
-    
-    elif type(content) is type:
-      content_type = content
-    
-    elif content is not NotImplemented:
-      file_name = content
-    
-    if file_name:
-      file_name = os.path.normcase( os.path.abspath( str(file_name) ) )
-    else:
-      raise ErrorFileValueNoName()
-    
-    if file_content is NotImplemented:
-      if not issubclass( content_type, ContentBase ):
-        raise ErrorFileValueInvalidContentType( content_type )
-      
-      file_content = content_type( file_name, use_cache = use_cache )
-    
-    # if __debug__:
-    #   print( "FileValue(): content: %s, name: %s" % (type(file_content), type(file_name)) )
-
-    self = super(FileValue, cls).__new__( cls, content = file_content, name = file_name )
-    
-    # if __debug__:
-    #   print( "FileValue(): content: %s, name: %s" % (type(self.content), type(self.name)) )
-    
-    return self
+  def   __new__( cls, name, signature = None ):
+    return super(FileValueBase, cls).__new__( cls, name, signature )
   
   #//-------------------------------------------------------//
 
@@ -180,24 +57,14 @@ class   FileValue (Value):
     return self.name
 
   #//-------------------------------------------------------//
-
-  def   actual( self ):
-    content = self.content
-    
-    if not content:
-      # if __debug__:
-      #   print( "FileValue.actual(): no content of file %s" % (self.name,))
-      return False
-    
-    # if __debug__:
-    #   print("type(content): %s " % (type(content),) )
-    
-    result = (content == type(content)( self.name, use_cache = True ))
-    # if __debug__:
-    #   if not result:
-    #     print( "FileValue.actual(): non-actual content of file %s" % (self.name,))
-    
-    return result
+  
+  def     __getnewargs__(self):
+    return self.name, self.signature
+  
+  #//-------------------------------------------------------//
+  
+  def   __bool__( self ):
+    return bool(self.signature)
   
   #//-------------------------------------------------------//
   
@@ -209,15 +76,118 @@ class   FileValue (Value):
 
 #//===========================================================================//
 
-@pickleable
-class   DirValue (FileValue):
+# noinspection PyDefaultArgument
+def   _getFileChecksum( path, use_cache = False, _cache = {} ):
+  if use_cache:
+    try:
+      return _cache[ path ]
+    except KeyError:
+      pass
   
-  def   __new__( cls, content = NotImplemented, name = None, use_cache = False ):
+  try:
+    signature = fileSignature( path )
+  except (OSError, IOError):
+    return None
+  
+  _cache[ path ] = signature
+  return signature
+
+#//===========================================================================//
+
+# noinspection PyDefaultArgument
+def   _getFileTimestamp( path, use_cache = False, _cache = {} ):
+  if use_cache:
+    try:
+      return _cache[ path ]
+    except KeyError:
+      pass
+  
+  try:
+    signature = fileTimeSignature( path )
+  except (OSError, IOError):
+    return None
+  
+  _cache[ path ] = signature
+  return signature
+
+#//===========================================================================//
+
+@pickleable
+class FileChecksumValue( FileValueBase ):
+  
+  IS_SIZE_FIXED = True
+  
+  def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
     
-    if content is NotImplemented:
-      content = FileContentTimeStamp
+    name = _normFileName( name )
+      
+    if signature is NotImplemented:
+      signature = _getFileChecksum( name, use_cache = use_cache )
     
-    return super(DirValue, cls).__new__( cls, name = name, content = content, use_cache = use_cache )
+    self = super(FileChecksumValue, cls).__new__( cls, name, signature )
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    if not self.signature:
+      return False
+    
+    signature = _getFileChecksum( self.name, use_cache = True )
+    
+    return self.signature == signature
+
+#//===========================================================================//
+
+@pickleable
+class FileTimestampValue( FileValueBase ):
+  
+  IS_SIZE_FIXED = True
+  
+  def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
+    
+    name = _normFileName( name )
+    
+    if signature is NotImplemented:
+      signature = _getFileTimestamp( name, use_cache = use_cache )
+    
+    self = super(FileTimestampValue, cls).__new__( cls, name, signature )
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    if not self.signature:
+      return False
+    
+    signature = _getFileTimestamp( self.name, use_cache = True )
+    
+    return self.signature == signature
+
+#//===========================================================================//
+
+@pickleable
+class   DirValue (FileValueBase):
+  
+  IS_SIZE_FIXED = True
+  
+  def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
+    
+    if signature is NotImplemented:
+      signature = _getFileTimestamp( name, use_cache = use_cache )
+    
+    self = super(DirValue, cls).__new__( cls, name, signature )
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   actual( self ):
+    if not self.signature:
+      return False
+    
+    signature = _getFileTimestamp( self.name, use_cache = True )
+    
+    return self.signature == signature
   
   #//-------------------------------------------------------//
   
@@ -227,66 +197,3 @@ class   DirValue (FileValue):
     except OSError:
       pass
 
-#//===========================================================================//
-
-@pickleable
-class   FileValueBase (Value):
-  
-  def   __new__( cls, name, signature = None ):
-    
-    if name:
-      name = os.path.normcase( os.path.abspath( str(name) ) )
-    else:
-      raise ErrorFileValueNoName()
-    
-    if file_content is NotImplemented:
-      if not issubclass( content_type, ContentBase ):
-        raise ErrorFileValueInvalidContentType( content_type )
-      
-      file_content = content_type( file_name, use_cache = use_cache )
-    
-    # if __debug__:
-    #   print( "FileValue(): content: %s, name: %s" % (type(file_content), type(file_name)) )
-
-    self = super(FileValue, cls).__new__( cls, content = file_content, name = file_name )
-    
-    # if __debug__:
-    #   print( "FileValue(): content: %s, name: %s" % (type(self.content), type(self.name)) )
-    
-    return self
-  
-  #//-------------------------------------------------------//
-
-  def   get(self):
-    return self.name
-
-  #//-------------------------------------------------------//
-
-  def   actual( self ):
-    content = self.content
-    
-    if not content:
-      # if __debug__:
-      #   print( "FileValue.actual(): no content of file %s" % (self.name,))
-      return False
-    
-    # if __debug__:
-    #   print("type(content): %s " % (type(content),) )
-    
-    result = (content == type(content)( self.name, use_cache = True ))
-    # if __debug__:
-    #   if not result:
-    #     print( "FileValue.actual(): non-actual content of file %s" % (self.name,))
-    
-    return result
-  
-  #//-------------------------------------------------------//
-  
-  def   remove( self ):
-    try:
-      os.remove( self.name )
-    except OSError:
-      pass
-
-
-#//===========================================================================//

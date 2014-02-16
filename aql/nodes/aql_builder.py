@@ -26,8 +26,7 @@ import errno
 
 from aql.util_types import toSequence, FilePath, UniqueList
 from aql.utils import simpleObjectSignature, executeCommand, eventDebug, logDebug, Chdir
-from aql.values import Value, FileValue
-from aql.values import FileContentChecksum, FileContentTimeStamp
+from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
 from .aql_node import Node
 
@@ -83,7 +82,7 @@ def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
     
     return result
   
-  if isinstance( value, Value ):
+  if isinstance( value, ValueBase ):
     return _evaluateValue( value.get() )
   
   if isinstance( value, Node ):
@@ -287,37 +286,27 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   fileContentType( self ):
-    content_type = NotImplemented
-    
-    file_signature = self.file_signature_type
-    
-    if file_signature == 'checksum':
-      content_type = FileContentChecksum
-    
-    elif file_signature == 'timestamp':
-      content_type = FileContentTimeStamp
-    
-    return content_type
+  def   fileValueType( self ):
+    return FileTimestampValue if self.file_signature_type == 'timestamp' else FileChecksumValue 
   
   #//-------------------------------------------------------//
   
   def   makeValue(self, value, use_cache = False ):
-    if isinstance( value, Value):
+    if isinstance( value, ValueBase):
       return value
     
     if isinstance( value, FilePath ):
-      return FileValue( name = value, content = self.fileContentType(), use_cache = use_cache )
-      
-    return Value( content = value, name = None )
+      return self.fileValueType()( name = value, use_cache = use_cache )
+    
+    return SimpleValue( value )
   
   #//-------------------------------------------------------//
   
   def   makeFileValue( self, value, use_cache = False ):
-    if isinstance( value, Value):
+    if isinstance( value, ValueBase):
       return value
     
-    return FileValue( name = value, content = self.fileContentType(), use_cache = use_cache )
+    return self.fileValueType()( name = value, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   
@@ -328,12 +317,12 @@ class Builder (object):
   
   def   makeFileValues( self, values, use_cache = False ):
     
-    content_type = self.fileContentType()
+    file_type = self.fileValueType()
     file_values = []
     
     for value in toSequence(values):
-      if not isinstance(value, Value):
-        value = FileValue( name = value, content = content_type, use_cache = use_cache )
+      if not isinstance(value, ValueBase):
+        value = file_type( name = value, use_cache = use_cache )
       
       file_values.append( value )
     

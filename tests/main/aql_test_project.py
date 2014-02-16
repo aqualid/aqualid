@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.values import Value
+from aql.values import SimpleValue
 from aql.nodes import Node, Builder
 from aql.utils import Tempfile, Tempdir,\
   removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
@@ -80,7 +80,7 @@ options.build_variant = "final"
       def   __init__(self):
         self.signature = b''
       def   build( self, build_manager, vfile, node ):
-        return self.nodeTargets( Value( name = "value1", content = b"" ) )
+        return self.nodeTargets( SimpleValue( b"", name = "value1" ) )
     
     class TestTool:
       def   TestBuilder( self, prj, options ):

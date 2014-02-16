@@ -17,53 +17,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-"""
-file chk sum
-file time sum
-
-str
-bytes
-
-Content:
-  data
-  signature
-
-Value: name, content, signature
-
-Save: name, content
-
-Value: name, data, signature
-
-v.name
-v.data
-v.signature
-
-v.name
-v.content.data
-v.content.signature
-"""
-
 __all__ = (
   'ValuesFile',
-  'eventFileValuesCyclicDependencyValue', 'eventFileValuesDependencyValueHasUnknownValue',
 )
 
-from aql.utils import DataFile, FileLock, eventWarning, logWarning
+from aql.utils import DataFile, FileLock
 
-from .aql_depends_value import DependsValue, DependsKeyContent
 from .aql_value_pickler import ValuePickler
 
 #//===========================================================================//
 
-@eventWarning
-def   eventFileValuesCyclicDependencyValue( value ):
-  logWarning("Internal error: Cyclic dependency value: %s" % value )
-
-#//===========================================================================//
-
-@eventWarning
-def   eventFileValuesDependencyValueHasUnknownValue( dep_value, value ):
-  logWarning("Internal error: Dependency value: '%s' has unknown value: '%s'" % (dep_value, value) )
+class   ErrorValuesFileUnknownValue( Exception ):
+  def   __init__( self, value ):
+    msg = "Unknown value: %s" % (value, )
+    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -78,12 +45,6 @@ class ValuesFile (object):
     'value2key',
     'pickler',
   )
-  
-  #//---------------------------------------------------------------------------//
-  
-  @staticmethod
-  def   __getValueId( value ):
-    return type(value), value.name
   
   #//---------------------------------------------------------------------------//
   
@@ -113,58 +74,6 @@ class ValuesFile (object):
   def   __clearCache(self ):
     self.value2key.clear()
     self.key2value.clear()
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __makeDependsKey( self, dep_value ):
-    
-    value_keys = set()
-    value_keys_append = value_keys.add
-    
-    for value in dep_value.content.data:
-      value_id = self.__getValueId( value )
-      key = self.__getKeyByValueId( value_id )
-      if key is None:
-        eventFileValuesDependencyValueHasUnknownValue( dep_value, value )
-        return DependsValue( name = dep_value.name )
-      
-      value_keys_append( key )
-    
-    return DependsValue( name = dep_value.name, content = DependsKeyContent( value_keys ) )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __makeDepends( self, kvalue, kvalue_key ):
-    
-    values = []
-    values_append = values.append
-    
-    try:
-      
-      if not kvalue.content:
-        return kvalue
-      
-      keys = kvalue.content.data
-      
-      if kvalue_key in keys: # cyclic dependency
-        return DependsValue( name = kvalue.name )
-      
-      for key in keys:
-        v = self.__getValueByKey( key )
-        
-        if v is None:
-          return DependsValue( name = kvalue.name )
-        
-        if isinstance( v, DependsValue ):
-          v = self.__makeDepends( v, kvalue_key )
-          if not v.content:
-            return DependsValue( name = kvalue.name )
-        
-        values_append( v )
-    except KeyError:
-      return DependsValue( name = kvalue.name )
-    
-    return DependsValue( name = kvalue.name, content = values )
   
   #//---------------------------------------------------------------------------//
   
@@ -206,7 +115,7 @@ class ValuesFile (object):
       except Exception:
         invalid_keys.append( key )
       else:
-        value_id = self.__getValueId( value )
+        value_id = value.valueId()
         self.__addValueToCache( key, value_id, value )
       
     data_file.remove( invalid_keys )
@@ -225,32 +134,20 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   findValues( self, values ):
-    out_values = []
+  def   findValue( self, value ):
+    key = self.__getKeyByValueId( value.valueId() )
+    if key is None:
+      return None
     
-    for value in values:
-      
-      value_id = self.__getValueId( value )
-      
-      key = self.__getKeyByValueId( value_id )
-      if key is None:
-        val = type(value)( name = value.name )
-      else:
-        val = self.__getValueByKey( key )
-        if isinstance( val, DependsValue ):
-          val = self.__makeDepends( val, key )
-      
-      out_values.append( val )
-    
-    return out_values
+    return self.__getValueByKey( key )
   
   #//---------------------------------------------------------------------------//
   
-  def   __addValue( self, value ):
+  def   addValue( self, value ):
     
-    reserve = not value.content.FIXED_SIZE
+    reserve = not value.IS_SIZE_FIXED
     
-    value_id = self.__getValueId( value )
+    value_id = value.valueId()
     key = self.__getKeyByValueId( value_id )
     
     if key is None:
@@ -270,12 +167,14 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
+  def   findValues(self, values ):
+    return tuple( map( self.findValue, values ) )
+  
+  #//---------------------------------------------------------------------------//
+  
   def   addValues( self, values ):
     for value in values:
-      if isinstance( value, DependsValue ):
-        value = self.__makeDependsKey( value )
-      
-      self.__addValue( value )
+      self.addValue( value )
   
   #//---------------------------------------------------------------------------//
   
@@ -284,13 +183,42 @@ class ValuesFile (object):
     
     for value in values:
       
-      value_id = self.__getValueId( value )
-      key = self.__getKeyByValueId( value_id )
+      key = self.__getKeyByValueId( value.valueId() )
       
       if key is not None:
         remove_keys.append( key )
     
     self.data_file.remove( remove_keys )
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   getKeys( self, values ):
+    keys = []
+    
+    for value in values:
+      key = self.__getKeyByValueId( value.valueId() )
+      
+      if key is None:
+        raise ErrorValuesFileUnknownValue( value )
+      
+      keys.append( key )
+    
+    return keys
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   getValues( self, keys ):
+    values = []
+    
+    for key in keys:
+      value = self.__getValueByKey( key )
+      
+      if value is None:
+        return None
+      
+      values.append( value )
+    
+    return values
   
   #//---------------------------------------------------------------------------//
   
@@ -307,7 +235,7 @@ class ValuesFile (object):
       self.data_file.selfTest()
     
     for key, value in self.key2value.items():
-      value_id = self.__getValueId( value )  
+      value_id = value.valueId()  
       
       if value_id not in self.value2key:
         raise AssertionError("value (%s) not in self.value2key" % (value_id,))

@@ -7,7 +7,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values.aql_file_value import FileValue, FileContentTimeStamp
+from aql.values.aql_file_value import FileChecksumValue, FileTimestampValue
 
 class TestFileValue( AqlTestCase ):
   def test_file_value(self):
@@ -18,8 +18,8 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
 
-      temp_file_value1 = FileValue( temp_file.name )
-      temp_file_value2 = FileValue( temp_file.name )
+      temp_file_value1 = FileChecksumValue( temp_file.name )
+      temp_file_value2 = FileChecksumValue( temp_file.name )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
       
@@ -28,9 +28,9 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( reversed_test_string.encode() )
       temp_file.flush()
       
-      temp_file_value2 = FileValue( temp_file_value1 )
+      temp_file_value2 = FileChecksumValue( temp_file_value1.name )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )
-      self.assertNotEqual( temp_file_value1.content, temp_file_value2.content )
+      self.assertNotEqual( temp_file_value1, temp_file_value2 )
 
   #//=======================================================//
 
@@ -46,13 +46,13 @@ class TestFileValue( AqlTestCase ):
       
       temp_file_name = temp_file.name
       
-      temp_file_value = FileValue( temp_file_name )
+      temp_file_value = FileChecksumValue( temp_file_name )
     
     self._testSaveLoad( temp_file_value )
     
-    file_value = FileValue( temp_file_name )
+    file_value = FileChecksumValue( temp_file_name )
     self.assertEqual( temp_file_value.name, file_value.name )
-    self.assertNotEqual( temp_file_value.content, file_value.content )
+    self.assertNotEqual( temp_file_value, file_value )
     self.assertFalse( file_value )
 
   #//=======================================================//
@@ -64,8 +64,8 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
       
-      temp_file_value1 = FileValue( temp_file.name, FileContentTimeStamp )
-      temp_file_value2 = FileValue( temp_file.name, FileContentTimeStamp )
+      temp_file_value1 = FileTimestampValue( temp_file.name )
+      temp_file_value2 = FileTimestampValue( temp_file.name )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
       
@@ -74,9 +74,9 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.close()
       
-      temp_file_value2 = FileValue( temp_file_value1, FileContentTimeStamp )
+      temp_file_value2 = FileTimestampValue( temp_file_value1 )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )
-      self.assertNotEqual( temp_file_value1.content, temp_file_value2.content )
+      self.assertNotEqual( temp_file_value1, temp_file_value2 )
 
   #//=======================================================//
 
@@ -92,24 +92,24 @@ class TestFileValue( AqlTestCase ):
       
       temp_file_name = temp_file.name
       
-      temp_file_value = FileValue( temp_file_name, FileContentTimeStamp )
+      temp_file_value = FileTimestampValue( temp_file_name )
       
     self._testSaveLoad( temp_file_value )
     
-    file_value = FileValue( temp_file_name, FileContentTimeStamp )
+    file_value = FileTimestampValue( temp_file_name )
     self.assertEqual( temp_file_value.name, file_value.name )
-    self.assertNotEqual( temp_file_value.content, file_value.content )
+    self.assertNotEqual( temp_file_value, file_value )
     self.assertFalse( file_value )
 
   #//=======================================================//
 
   def test_file_empty_value_save_load(self):
     
-    value1 = FileValue('__non_exist_file__')
+    value1 = FileChecksumValue('__non_exist_file__')
     #~ print( id(value1.content) )
     #~ print( value1.content.signature )
     
-    value2 = FileValue( value1, FileContentTimeStamp )
+    value2 = FileTimestampValue( value1.name )
     
     self._testSaveLoad( value1 )
     self._testSaveLoad( value2 )

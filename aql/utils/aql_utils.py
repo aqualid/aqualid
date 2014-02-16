@@ -158,10 +158,18 @@ def   execFile( filename, file_locals ):
 #//===========================================================================//
 
 def   simpleObjectSignature( obj ):
-  try:
-    data = marshal.dumps( obj )
-  except ValueError:
-    raise ErrorUnmarshallableObject( obj )
+  
+  if isinstance( obj, (bytes, bytearray) ):
+    data = obj
+  
+  elif isinstance( obj, str ):
+    data = obj.encode('utf-8')
+  
+  else:
+    try:
+      data = marshal.dumps( obj )
+    except ValueError:
+      raise ErrorUnmarshallableObject( obj )
   
   return hashlib.md5( data ).digest()
   
@@ -208,9 +216,8 @@ def   fileSignature( filename ):
 #//===========================================================================//
 
 def   fileTimeSignature( filename ):
-  stat = os.stat( filename )
+  stat = os.stat( str(filename) )
   return struct.pack( ">Qd", stat.st_size, stat.st_mtime )
-
 
 #//===========================================================================//
 

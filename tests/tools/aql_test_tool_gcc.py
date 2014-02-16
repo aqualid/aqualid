@@ -9,7 +9,7 @@ from aql.utils import Tempfile, Tempdir, whereProgram, \
     removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 
 from aql.util_types import FilePath
-from aql.values import FileValue, FileContentChecksum, ValuesFile
+from aql.values import FileChecksumValue, ValuesFile
 from aql.nodes import Node, BuildManager, BuildSplitter
 from aql.options import builtinOptions
 
@@ -133,7 +133,7 @@ class TestToolGcc( AqlTestCase ):
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
-        FileValue( hdr_files[0], use_cache = False )
+        FileChecksumValue( hdr_files[0], use_cache = False )
         
         obj = Node( cpp_compiler, src_files )
         self._verifyActual( obj, vfile, 1 )
@@ -192,7 +192,7 @@ class TestToolGcc( AqlTestCase ):
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
-        FileValue( hdr_files[0], use_cache = False )
+        FileChecksumValue( hdr_files[0], use_cache = False )
         
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
@@ -252,7 +252,7 @@ class TestToolGcc( AqlTestCase ):
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
-        FileValue( hdr_files[0], use_cache = False )
+        FileChecksumValue( hdr_files[0], use_cache = False )
         
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
@@ -321,7 +321,7 @@ class TestToolGcc( AqlTestCase ):
         with open( hdr_files[0], 'a' ) as f:
           f.write("// end of file")
         
-        FileValue( hdr_files[0], use_cache = False )
+        FileChecksumValue( hdr_files[0], use_cache = False )
         
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
@@ -357,6 +357,7 @@ class TestToolGccSpeed( AqlTestCase ):
     
     options.build_dir_prefix = build_dir
     
+    options.file_signature = 'md5'
     cpp_compiler = BuildSplitter( GccCompiler( options, 'c++' ) )
   
     #//-------------------------------------------------------//
@@ -369,7 +370,7 @@ class TestToolGccSpeed( AqlTestCase ):
     
     for i in range(200):
       src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
-      obj = Node( cpp_compiler, src_files, src_content_type = FileContentChecksum, target_content_type = FileContentChecksum )
+      obj = Node( cpp_compiler, src_files )
       bm.add( obj )
     
     #~ for i in range(200):
