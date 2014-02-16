@@ -803,7 +803,7 @@ class BuildManager (object):
     built_targets = self._built_targets
     
     for value in values:
-      value_sign = value.content.signature
+      value_sign = value.signature
       other_value_sign = built_targets.setdefault( value.valueId(), value_sign )
       
       if other_value_sign != value_sign:

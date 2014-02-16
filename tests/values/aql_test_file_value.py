@@ -22,11 +22,16 @@ class TestFileValue( AqlTestCase ):
       temp_file_value2 = FileChecksumValue( temp_file.name )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
+      self.assertTrue( temp_file_value1.actual() )
       
       reversed_test_string = str(reversed(test_string))
       temp_file.seek( 0 )
       temp_file.write( reversed_test_string.encode() )
       temp_file.flush()
+      
+      FileChecksumValue( temp_file_value1.name )
+      
+      self.assertFalse( temp_file_value1.actual() )
       
       temp_file_value2 = FileChecksumValue( temp_file_value1.name )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )
@@ -72,7 +77,10 @@ class TestFileValue( AqlTestCase ):
       time.sleep(2)
       temp_file.seek( 0 )
       temp_file.write( test_string.encode() )
-      temp_file.close()
+      temp_file.flush()
+      
+      FileTimestampValue( temp_file_value1.name )
+      self.assertFalse( temp_file_value1.actual() )
       
       temp_file_value2 = FileTimestampValue( temp_file_value1 )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )
@@ -81,8 +89,6 @@ class TestFileValue( AqlTestCase ):
   #//=======================================================//
 
   def test_file_value_time_save_load(self):
-    
-    temp_file_name = None
     
     with Tempfile() as temp_file:
       test_string = '1234567890'

@@ -46,7 +46,7 @@ class TestValuePickler( AqlTestCase ):
     value = SimpleValue( name = tmp.name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value.name, v.name )
-    self.assertFalse( v.content )
+    self.assertFalse( v )
     
     #value = Value( "1221", 12345 )
     #v = vpick.loads( vpick.dumps( value ) )

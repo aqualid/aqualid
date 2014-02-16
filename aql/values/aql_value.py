@@ -175,7 +175,7 @@ class   NullValue ( ValueBase ):
   
   def   __new__(cls):
     
-    name = ''
+    name = 'N'
     signature = None
     
     return super(NullValue, cls).__new__( cls, name, signature )

@@ -5,7 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.values import SimpleValue, SignatureValue
+from aql.values import SimpleValue, SignatureValue, NullValue
 
 #//===========================================================================//
 
@@ -19,7 +19,8 @@ class TestValues( AqlTestCase ):
     
     self.assertEqual( value1, value1 )
     self.assertEqual( value1, value2 )
-    self.assertEqual( [value1], [value2] )
+    
+    self.assertTrue( value1.actual() )
     
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
@@ -38,6 +39,9 @@ class TestValues( AqlTestCase ):
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
     
+    self.assertFalse( value1.actual() )
+    self.assertFalse( value2.actual() )
+    
     self._testSaveLoad( value1 )
     self._testSaveLoad( value2 )
 
@@ -52,6 +56,7 @@ class TestValues( AqlTestCase ):
     
     self.assertEqual( value1, value1 )
     self.assertEqual( value1, value2 )
+    self.assertTrue( value1.actual() )
     
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
@@ -70,8 +75,23 @@ class TestValues( AqlTestCase ):
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
     
+    self.assertFalse( value1.actual() )
+    self.assertFalse( value2.actual() )
+    
     self._testSaveLoad( value1 )
     self._testSaveLoad( value2 )
+  
+  #//===========================================================================//
+  
+  def test_null_value(self):
+    
+    value1 = NullValue()
+    value2 = NullValue()
+    self.assertEqual( value1, value2 )
+    
+    self.assertFalse( value1.actual() )
+    
+    self._testSaveLoad( value1 )
 
 #//=======================================================//
 

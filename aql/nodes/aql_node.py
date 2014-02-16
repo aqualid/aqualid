@@ -284,9 +284,8 @@ class Node (object):
     #   print("%s: sources: %s" % (self.getName(), srcs) )
     
     for value in self.getSourceValues():
-      content = value.content
-      if content:
-        sign.append( content.signature )
+      if value:
+        sign.append( value.signature )
       else:
         sign = None
         break
@@ -299,10 +298,9 @@ class Node (object):
       deps = self.getDepValues()
       
       for value in deps:
-        content = value.content
-        if content:
+        if value:
           sign.append( value.name )
-          sign.append( content.signature )
+          sign.append( value.signature )
         else:
           sign = None
           break

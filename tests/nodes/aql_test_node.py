@@ -41,7 +41,7 @@ class ChecksumBuilder (Builder):
     itarget_values = []
     
     for source_value in node.getSourceValues():
-      content = source_value.content.data.encode()
+      content = source_value.data.encode()
       chcksum = hashlib.md5()
       chcksum.update( content )
       chcksum_sha512 = hashlib.sha512()
