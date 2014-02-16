@@ -762,6 +762,9 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   outdatedNodeStatus( self, node ):
+    self._waiting_nodes.remove( node )
+    self._failed_nodes[ node ] = None
+    
     eventNodeStatusOutdated( node, self.getProgressStr(), self.brief )
     node.shrink()
   
@@ -785,7 +788,9 @@ class BuildManager (object):
     done = self.completed + self.actual
     total = len(self._nodes) + done
     
-    progress = "%s/%s" % (done, total)
+    processed = done + len(self._failed_nodes)
+    
+    progress = "%s/%s" % (processed, total)
     return progress
     
   #//-------------------------------------------------------//
