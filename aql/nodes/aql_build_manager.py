@@ -539,7 +539,7 @@ class _NodesBuilder (object):
       
       vfile = vfiles[ node.builder ]
       
-      if node.actual( vfile ):
+      if node.isActual( vfile ):
         build_manager.actualNode( node )
         changed = True
       else:
@@ -629,7 +629,7 @@ class _NodesBuilder (object):
           continue
       
       vfile = vfiles[ node.builder ]
-      if node.actual( vfile ):
+      if node.isActual( vfile ):
         build_manager.actualNodeStatus( node )
       else:
         build_manager.outdatedNodeStatus( node )

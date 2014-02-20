@@ -79,7 +79,12 @@ class   ValueBase (object):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   isActual( self ):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   getActual( self ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
@@ -93,19 +98,10 @@ class   ValueBase (object):
   
   #//-------------------------------------------------------//
   
-  def   copy( self ):
-    return type(self)( *self.__getnewargs__() )
-  
-  #//-------------------------------------------------------//
-  
-  def   __copy__( self ):
-    return self.copy()
-  
-  #//-------------------------------------------------------//
-  
   def   __eq__( self, other):
     return (type(self) == type(other)) and \
-           (self.__getnewargs__() == other.__getnewargs__())
+           (self.name == other.name) and \
+           (self.signature == other.signature)
   
   def   __ne__( self, other):
     return not self.__eq__( other )
@@ -164,8 +160,13 @@ class   SimpleValue ( ValueBase ):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   isActual( self ):
     return bool(self.signature)
+  
+  #//-------------------------------------------------------//
+  
+  def   getActual( self ):
+    return self
 
 #//===========================================================================//
 
@@ -192,8 +193,14 @@ class   NullValue ( ValueBase ):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   isActual( self ):
     return False
+  
+  #//-------------------------------------------------------//
+  
+  def   getActual( self ):
+    return self
+
 
 #//===========================================================================//
 
@@ -225,7 +232,13 @@ class   SignatureValue (ValueBase):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   isActual( self ):
     return bool(self.signature)
+  
+  #//-------------------------------------------------------//
+  
+  def   getActual( self ):
+    return self
+
 
 #//===========================================================================//

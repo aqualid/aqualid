@@ -177,6 +177,11 @@ class OptionValue (object):
     
   #//-------------------------------------------------------//
   
+  def   reset( self ):
+    self.conditional_values = []
+  
+  #//-------------------------------------------------------//
+  
   def   copy( self ):
     return OptionValue( self.option_type, self.default_conditional_value, self.conditional_values )
   

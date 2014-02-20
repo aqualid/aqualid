@@ -20,7 +20,7 @@ class TestValues( AqlTestCase ):
     self.assertEqual( value1, value1 )
     self.assertEqual( value1, value2 )
     
-    self.assertTrue( value1.actual() )
+    self.assertTrue( value1.isActual() )
     
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
@@ -39,8 +39,8 @@ class TestValues( AqlTestCase ):
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
     
-    self.assertFalse( value1.actual() )
-    self.assertFalse( value2.actual() )
+    self.assertFalse( value1.isActual() )
+    self.assertFalse( value2.isActual() )
     
     self._testSaveLoad( value1 )
     self._testSaveLoad( value2 )
@@ -56,7 +56,7 @@ class TestValues( AqlTestCase ):
     
     self.assertEqual( value1, value1 )
     self.assertEqual( value1, value2 )
-    self.assertTrue( value1.actual() )
+    self.assertTrue( value1.isActual() )
     
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
@@ -75,8 +75,8 @@ class TestValues( AqlTestCase ):
     value2 = value1.copy()
     self.assertEqual( value1, value2 )
     
-    self.assertFalse( value1.actual() )
-    self.assertFalse( value2.actual() )
+    self.assertFalse( value1.isActual() )
+    self.assertFalse( value2.isActual() )
     
     self._testSaveLoad( value1 )
     self._testSaveLoad( value2 )
@@ -89,7 +89,7 @@ class TestValues( AqlTestCase ):
     value2 = NullValue()
     self.assertEqual( value1, value2 )
     
-    self.assertFalse( value1.actual() )
+    self.assertFalse( value1.isActual() )
     
     self._testSaveLoad( value1 )
 

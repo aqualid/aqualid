@@ -54,12 +54,37 @@ class   ErrorNodeNotInitialized( Exception ):
 
 #//===========================================================================//
 
+def   _actualDeps( vfile, dep_keys ):
+  values = vfile.getValues( dep_keys )
+  
+  if values is None:
+    # if __debug__:
+    #   print( "ideps are None")
+    return False
+  
+  for key, value in zip(dep_keys, values):
+    if not value:
+      # if __debug__:
+      #   print( "idep '%s' is false" % (value,))
+      return False
+    
+    actual_value = value.getActual()
+    if value != actual_value:
+      # if __debug__:
+      #   print( "idep '%s' changed to '%s'" % (value, actual_value))
+      vfile.replaceValue( key, actual_value )
+      return False
+  
+  return True
+
+#//===========================================================================//
+
 def   _actualValues( values ):
   if values is None:
     return False
   
   for value in values:
-    if not value.actual():
+    if not value.isActual():
       return False
       
   return True
@@ -86,6 +111,11 @@ class   NodeValue (ValueBase):
     self.idep_keys  = idep_keys
     
     return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other):
+    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
   
   #//-------------------------------------------------------//
   
@@ -345,10 +375,10 @@ class Node (object):
     if __debug__:
       if self.itargets is None:
         raise ErrorNoTargets( self )
+      if self.ideps is None:
+        raise ErrorNoImplicitDeps( self )
     
-    ideps = self.ideps
-    vfile.addValues( ideps )
-    idep_keys = vfile.getKeys( ideps )
+    idep_keys = vfile.addValues( self.ideps )
     
     node_value = NodeValue( name = self.name, signature = self.signature,
                             targets = self.targets, itargets = self.itargets, idep_keys = idep_keys )
@@ -370,7 +400,6 @@ class Node (object):
         self.targets = node_targets
       
       self.itargets = node_value.itargets
-      self.ideps = vfile.getValues( node_value.idep_keys ) 
   
   #//=======================================================//
   
@@ -415,7 +444,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   actual( self, vfile ):
+  def   isActual( self, vfile ):
     
     self.__initiateIds()
     
@@ -438,16 +467,15 @@ class Node (object):
     
     targets   = node_value.targets
     itargets  = node_value.itargets
-    ideps     = vfile.getValues( node_value.idep_keys )
+    idep_keys = node_value.idep_keys
     
-    if not (_actualValues( ideps ) and _actualValues( targets ) and _actualValues( itargets )):
+    if not (_actualDeps( vfile, idep_keys ) and _actualValues( targets ) and _actualValues( itargets )):
       # if __debug__:
       #   print( "targets/itargets/ideps are not actual: %s" % (self.getName(),))
       return False
     
     self.targets  = targets
     self.itargets = itargets
-    self.ideps    = ideps
     
     return True
     

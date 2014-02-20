@@ -35,13 +35,13 @@ class TestToolRsync( AqlTestCase ):
       vfile = ValuesFile( vfilename )
       try:
         rsync_files = Node( rsync, [] )
-        self.assertFalse( rsync_files.actual( vfile ) )
+        self.assertFalse( rsync_files.isActual( vfile ) )
         
         bm.add( rsync_files )
         bm.build()
         
         rsync_files = Node( rsync, [] )
-        self.assertTrue( rsync_files.actual( vfile ) )
+        self.assertTrue( rsync_files.isActual( vfile ) )
       
       finally:
         vfile.close()
@@ -67,25 +67,25 @@ class TestToolRsync( AqlTestCase ):
       vfile = ValuesFile( vfilename )
       try:
         rsync_files = Node( rsync, [] )
-        self.assertFalse( rsync_files.actual( vfile ) )
+        self.assertFalse( rsync_files.isActual( vfile ) )
         
         bm.add( rsync_files )
         bm.build()
         
         rsync_files = Node( rsync, [] )
-        self.assertTrue( rsync_files.actual( vfile ) )
+        self.assertTrue( rsync_files.isActual( vfile ) )
         
         sync_files  = [ r'd:\test1_local\sbe\sbe\list\list.hpp',
                         r'd:\test1_local\sbe\sbe\path_finder\path_finder.hpp',
                       ]
         
         rsync_files = Node( rsync, sync_files )
-        self.assertFalse( rsync_files.actual( vfile ) )
+        self.assertFalse( rsync_files.isActual( vfile ) )
         bm.add( rsync_files )
         bm.build()
         
         rsync_files = Node( rsync, sync_files )
-        self.assertTrue( rsync_files.actual( vfile ) )
+        self.assertTrue( rsync_files.isActual( vfile ) )
         bm.add( rsync_files )
         bm.build()
       

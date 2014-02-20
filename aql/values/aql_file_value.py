@@ -129,7 +129,14 @@ class FileChecksumValue( FileValueBase ):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   getActual(self):
+    name = self.name
+    signature = _getFileChecksum( name, use_cache = True )
+    return super(FileChecksumValue, self).__new__( self.__class__, name, signature )
+  
+  #//-------------------------------------------------------//
+  
+  def   isActual( self ):
     if not self.signature:
       return False
     
@@ -156,7 +163,14 @@ class FileTimestampValue( FileValueBase ):
   
   #//-------------------------------------------------------//
   
-  def   actual( self ):
+  def   getActual(self):
+    name = self.name
+    signature = _getFileTimestamp( name, use_cache = True )
+    return super(FileTimestampValue, self).__new__( self.__class__, name, signature )
+  
+  #//-------------------------------------------------------//
+  
+  def   isActual( self ):
     if not self.signature:
       return False
     
@@ -167,29 +181,7 @@ class FileTimestampValue( FileValueBase ):
 #//===========================================================================//
 
 @pickleable
-class   DirValue (FileValueBase):
-  
-  IS_SIZE_FIXED = True
-  
-  def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
-    
-    if signature is NotImplemented:
-      signature = _getFileTimestamp( name, use_cache = use_cache )
-    
-    self = super(DirValue, cls).__new__( cls, name, signature )
-    return self
-  
-  #//-------------------------------------------------------//
-  
-  def   actual( self ):
-    if not self.signature:
-      return False
-    
-    signature = _getFileTimestamp( self.name, use_cache = True )
-    
-    return self.signature == signature
-  
-  #//-------------------------------------------------------//
+class   DirValue (FileTimestampValue):
   
   def   remove( self ):
     try:

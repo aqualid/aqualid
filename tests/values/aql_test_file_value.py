@@ -22,7 +22,7 @@ class TestFileValue( AqlTestCase ):
       temp_file_value2 = FileChecksumValue( temp_file.name )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
-      self.assertTrue( temp_file_value1.actual() )
+      self.assertTrue( temp_file_value1.isActual() )
       
       reversed_test_string = str(reversed(test_string))
       temp_file.seek( 0 )
@@ -31,7 +31,7 @@ class TestFileValue( AqlTestCase ):
       
       FileChecksumValue( temp_file_value1.name )
       
-      self.assertFalse( temp_file_value1.actual() )
+      self.assertFalse( temp_file_value1.isActual() )
       
       temp_file_value2 = FileChecksumValue( temp_file_value1.name )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )
@@ -80,7 +80,7 @@ class TestFileValue( AqlTestCase ):
       temp_file.flush()
       
       FileTimestampValue( temp_file_value1.name )
-      self.assertFalse( temp_file_value1.actual() )
+      self.assertFalse( temp_file_value1.isActual() )
       
       temp_file_value2 = FileTimestampValue( temp_file_value1 )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )

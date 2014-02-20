@@ -137,7 +137,7 @@ def   _evalValue( options, context, other ):
   elif isinstance( other, OptionValue ):
     other = options.value( other, context )
   
-  # other = _evaluateValue( other ) # tODO: remove this conversion when add type casts to Values and Node  
+  # other = _evaluateValue( other ) # TODO: remove this conversion when added type casts to Values and Node  
   
   if key is not NotImplemented:
     other = DictItem( key, other )
@@ -185,31 +185,31 @@ def   _doAction( options, context, dest_value, op, value ):
   return op( dest_value, value )
 
 def   _SetDefaultValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
+  return Operation( operation, _doAction, _setOperator, value )
 
 def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
+  return Operation( operation, _doAction, _setOperator, value )
 
 def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, _OpValue( value ) )
+  return Operation( operation, _doAction, operator.iadd, value )
 
 def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, _OpValue( value ) )
+  return Operation( operation, _doAction, operator.isub, value )
 
 def   JoinPathValue( value, operation = None ):
-  return Operation( operation, _doAction, _joinPath, _OpValue( value ) )
+  return Operation( operation, _doAction, _joinPath, value )
 
 def   AbsPathValue( operation = None ):
   return Operation( operation, _doAction, _absPath, None )
 
 def   UpdateValue( value, operation = None ):
-  return Operation( operation, _doAction, _updateOperator, _OpValue( value ) )
+  return Operation( operation, _doAction, _updateOperator, value )
 
 def   NotValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, _OpValue( value ) )
+  return Operation( operation, _doAction, _notOperator, value )
 
 def   TruthValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, _OpValue( value ) )
+  return Operation( operation, _doAction, _notOperator, value )
 
 #//===========================================================================//
 
@@ -566,10 +566,8 @@ class Options (object):
       key = NotImplemented
     
     if isinstance( value, OptionValueProxy ):
-      if value.options is not self:
-        raise ErrorOptionsForeignOptionValue( value )
-      
-      value = _OpValue( value )
+      if value.options is self:
+        value = _OpValue( value )
     
     if key is not NotImplemented:
       value = DictItem( key, value )
@@ -583,23 +581,26 @@ class Options (object):
     opt_value = self._get_value( name, raise_ex = False )
     
     if opt_value is None:
+      self.clearCache()
+      
       if isinstance( value, OptionType ):
-        value = OptionValue( value )
+        opt_value = OptionValue( value )
       
       elif isinstance( value, OptionValueProxy ):
-        if value.options is not self:
-          raise ErrorOptionsForeignOptionValue( value )
-        
-        value = value.option_value
+        if value.options is self:
+          opt_value = value.option_value
+        else:
+          opt_value = value.option_value.copy()
+          opt_value.reset()
+          value = ConditionalValue( SetValue( value )  )
+          opt_value.appendValue( value )
       
       elif not isinstance( value, OptionValue ):
         opt_value = OptionValue( autoOptionType( value ) )
-        value = ConditionalValue( SetValue( value ) )
+        value = self._makeCondValue( value, SetValue )
         opt_value.appendValue( value )
-        value = opt_value
       
-      self.clearCache()
-      self.__dict__['__opt_values'][ name ] = value
+      self.__dict__['__opt_values'][ name ] = opt_value
     
     else:
       if isinstance( value, OptionType ):

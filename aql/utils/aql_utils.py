@@ -217,7 +217,7 @@ def   fileSignature( filename ):
 
 def   fileTimeSignature( filename ):
   stat = os.stat( str(filename) )
-  return struct.pack( ">Qd", stat.st_size, stat.st_mtime )
+  return struct.pack( ">d", stat.st_mtime )
 
 #//===========================================================================//
 

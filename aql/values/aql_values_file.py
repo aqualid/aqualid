@@ -164,6 +164,20 @@ class ValuesFile (object):
         new_key = self.data_file.replace( key, data, reserve )
         
         self.__updateValueInCache(key, new_key, value_id, value )
+        
+        return new_key
+    
+    return key
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   replaceValue(self, key, value ):
+    reserve = not value.IS_SIZE_FIXED
+    
+    data = self.pickler.dumps( value )
+    new_key = self.data_file.replace( key, data, reserve )
+    
+    self.__updateValueInCache(key, new_key, value.valueId(), value )
   
   #//---------------------------------------------------------------------------//
   
@@ -173,8 +187,7 @@ class ValuesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   addValues( self, values ):
-    for value in values:
-      self.addValue( value )
+    return tuple( map( self.addValue, values ) )
   
   #//---------------------------------------------------------------------------//
   

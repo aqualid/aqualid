@@ -268,7 +268,14 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.warn_level, 3 )
     
     options2 = Options()
-    options2.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    options2.opt_other = RangeOptionType( min_value = 1, max_value = 100 )
+    
+    options.warn_level = options2.opt_other
+    
+    self.assertEqual( options.warn_level.get(), options2.opt_other.get() )
+    options2.opt_other = 4
+    self.assertEqual( options.warn_level.get(), options2.opt_other.get() )
+    
     self.assertRaises( ErrorOptionsForeignOptionValue, options.warn_level.set, options2.opt )
     
     options.warn_level.set( options.opt )

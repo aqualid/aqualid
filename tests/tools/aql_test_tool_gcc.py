@@ -53,7 +53,7 @@ class TestToolGcc( AqlTestCase ):
 
     for node in pre_nodes:
       node.initiate()
-      if not node.actual( vfile ):
+      if not node.isActual( vfile ):
         node.build()
         node.save( vfile )
     
@@ -74,7 +74,7 @@ class TestToolGcc( AqlTestCase ):
     
     for node in pre_nodes:
       node.initiate()
-      if not node.actual( vfile ):
+      if not node.isActual( vfile ):
         num_of_unactuals -= 1
         actual = False
     
@@ -82,7 +82,7 @@ class TestToolGcc( AqlTestCase ):
       if pre_nodes:
         actual = obj.prebuildFinished( pre_nodes )
       else:
-        actual = obj.actual( vfile )
+        actual = obj.isActual( vfile )
       
       self.assertTrue( actual )
     
