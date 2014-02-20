@@ -11,7 +11,7 @@ from aql.util_types import UpperCaseString, FilePath
 from aql.options import OptionType, StrOptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
                         builtinOptions, \
                         OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, JoinPathValue, \
-                        ErrorOptionsOperationIsNotSpecified, ErrorOptionsForeignOptionValue, \
+                        ErrorOptionsOperationIsNotSpecified, ErrorOptionsCyclicallyDependent, \
                         ErrorOptionsMergeNonOptions
 
 
@@ -268,15 +268,16 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.warn_level, 3 )
     
     options2 = Options()
-    options2.opt_other = RangeOptionType( min_value = 1, max_value = 100 )
+    options2.opt1 = RangeOptionType( min_value = 1, max_value = 100 )
+    options2.opt2 = RangeOptionType( min_value = 1, max_value = 100 )
     
-    options.warn_level = options2.opt_other
+    options.warn_level = options2.opt1
     
-    self.assertEqual( options.warn_level.get(), options2.opt_other.get() )
-    options2.opt_other = 4
-    self.assertEqual( options.warn_level.get(), options2.opt_other.get() )
+    self.assertEqual( options.warn_level.get(), options2.opt1.get() )
+    options2.opt1 = 4
+    self.assertEqual( options.warn_level.get(), options2.opt1.get() )
     
-    self.assertRaises( ErrorOptionsForeignOptionValue, options.warn_level.set, options2.opt )
+    self.assertRaises( ErrorOptionsCyclicallyDependent, options2.opt2.set, options.opt )
     
     options.warn_level.set( options.opt )
     self.assertEqual( options.warn_level, 2 )
@@ -300,8 +301,18 @@ class TestOptions( AqlTestCase ):
     options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
     
     options.opt = RangeOptionType( min_value = 1, max_value = 100 )
+    options2.opt2 = options.opt
     
-    self.assertRaises( ErrorOptionsForeignOptionValue, options2.__setattr__, 'opt', options.opt )
+    self.assertEqual( options.opt.get(), options2.opt2.get() )
+    options.opt = 50
+    self.assertEqual( options.opt.get(), options2.opt2.get() )
+    options2.opt2 = 48
+    options.opt = 20
+    self.assertNotEqual( options.opt.get(), options2.opt2.get() )
+    self.assertEqual( options.opt.get(), 20 )
+    self.assertEqual( options2.opt2.get(), 48 )
+    
+    # self.assertRaises( ErrorOptionsForeignOptionValue, options2.__setattr__, 'opt', options.opt )
     self.assertRaises( AttributeError, options.__getattr__, 'debug_on' )
     
     options.opt = options.warn_level

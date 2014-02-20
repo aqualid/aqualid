@@ -21,7 +21,7 @@ __all__ = (
   'Options', #'optionValueEvaluator',
   'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
   'ErrorOptionsOperationIsNotSpecified',
-  'ErrorOptionsForeignOptionValue', 'ErrorOptionsMergeNonOptions'
+  'ErrorOptionsCyclicallyDependent', 'ErrorOptionsMergeNonOptions'
 )
 
 import os.path
@@ -41,9 +41,9 @@ class   ErrorOptionsOperationIsNotSpecified( TypeError ):
     msg = "Operation type is not set for value: '%s'" % str(value)
     super(type(self), self).__init__( msg )
 
-class   ErrorOptionsForeignOptionValue( TypeError ):
-  def   __init__( self, value ):
-    msg = "Can't assign OptionValue owned by other options: %s" % str(value)
+class   ErrorOptionsCyclicallyDependent( TypeError ):
+  def   __init__( self ):
+    msg = "Options are cyclically dependent from each other."
     super(type(self), self).__init__( msg )
 
 class   ErrorOptionsMergeNonOptions( TypeError ):
@@ -520,7 +520,43 @@ class Options (object):
     self.__dict__['__children']     = []
     
     if parent is not None:
-      parent.__dict__['__children'].append( weakref.ref( self ) )
+      self.__dict__['__children'].append( weakref.ref( self ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   addChild(self, child ):
+    
+    children = self.__dict__['__children']
+    
+    for child_ref in children:
+      if child_ref() is child:
+        return
+    
+    if child.__isChild( self ):
+      raise ErrorOptionsCyclicallyDependent()
+    
+    self.__dict__['__children'].append( weakref.ref( child ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   __isChild(self, other ):
+    
+    children = list(self.__dict__['__children'])
+    
+    while children:
+      
+      child_ref = children.pop()
+      child = child_ref()
+      
+      if child is None:
+        continue
+      
+      if child is other:
+        return True
+      
+      children += child.__dict__['__children']
+    
+    return False
   
   #//-------------------------------------------------------//
   
@@ -568,6 +604,8 @@ class Options (object):
     if isinstance( value, OptionValueProxy ):
       if value.options is self:
         value = _OpValue( value )
+      else:
+        value.options.addChild( self )
     
     if key is not NotImplemented:
       value = DictItem( key, value )
@@ -592,7 +630,7 @@ class Options (object):
         else:
           opt_value = value.option_value.copy()
           opt_value.reset()
-          value = ConditionalValue( SetValue( value )  )
+          value = self._makeCondValue( value, SetValue )
           opt_value.appendValue( value )
       
       elif not isinstance( value, OptionValue ):
