@@ -520,7 +520,7 @@ class Options (object):
     self.__dict__['__children']     = []
     
     if parent is not None:
-      self.__dict__['__children'].append( weakref.ref( self ) )
+      parent.__dict__['__children'].append( weakref.ref( self ) )
   
   #//-------------------------------------------------------//
   
