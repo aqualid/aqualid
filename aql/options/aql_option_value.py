@@ -22,7 +22,10 @@ __all__ = (
   'ErrorOptionValueMergeNonOptionValue'
 )
 
-from aql.util_types import toSequence
+import os.path
+import operator
+
+from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
 
 #//===========================================================================//
 
@@ -30,6 +33,86 @@ class   ErrorOptionValueMergeNonOptionValue( TypeError ):
   def   __init__( self, value ):
     msg = "Unable to merge option value with non option value: '%s'" % str(type(value))
     super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+def   _setOperator( dest_value, value ):
+  if isinstance( dest_value, Dict ) and isinstance( value, DictItem ):
+    dest_value.update( value )
+    return dest_value
+  return value
+
+def   _joinPath( dest_value, value ):
+  return os.path.join( dest_value, value )
+
+#noinspection PyUnusedLocal
+def   _absPath( dest_value, value ):
+  return os.path.abspath( value )
+
+#noinspection PyUnusedLocal
+def   _notOperator( dest_value, value ):
+  return not value
+
+#noinspection PyUnusedLocal
+def   _truthOperator( dest_value, value ):
+  return bool(value)
+
+def   _updateOperator( dest_value, value ):
+  if isinstance( dest_value, (UniqueList, List) ):
+    dest_value += value
+    return dest_value
+  elif isinstance( dest_value, Dict ):
+    dest_value.update( value )
+    return dest_value
+  else:
+    return value
+
+def   _doAction( options, context, dest_value, op, value ):
+  value = _evalValue( options, context, value )
+  return op( dest_value, value )
+
+def   _SetDefaultValue( value, operation = None ):
+  return Operation( operation, _doAction, _setOperator, value )
+
+def   SetValue( value, operation = None ):
+  return Operation( operation, _doAction, _setOperator, value )
+
+def   AddValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.iadd, value )
+
+def   SubValue( value, operation = None ):
+  return Operation( operation, _doAction, operator.isub, value )
+
+def   JoinPathValue( value, operation = None ):
+  return Operation( operation, _doAction, _joinPath, value )
+
+def   AbsPathValue( operation = None ):
+  return Operation( operation, _doAction, _absPath, None )
+
+def   UpdateValue( value, operation = None ):
+  return Operation( operation, _doAction, _updateOperator, value )
+
+def   NotValue( value, operation = None ):
+  return Operation( operation, _doAction, _notOperator, value )
+
+def   TruthValue( value, operation = None ):
+  return Operation( operation, _doAction, _truthOperator, value )
+
+#//===========================================================================//
+
+def   _convertArgs( args, kw, convertor ):
+  if convertor is not None:
+    args = tuple( map( convertor, args ) )
+    kw = dict( (key, convertor(value)) for key, value in kw.items() )
+  
+  return args, kw
+
+def   _unconvertArgs( args, kw, options, context, unconvertor ):
+  if unconvertor is not None:
+    args = tuple( unconvertor(options, context, arg ) for arg in args )
+    kw = dict( (key, unconvertor(options, context, value)) for key, value in kw.items() )
+  
+  return args, kw
 
 #//===========================================================================//
 
@@ -50,12 +133,23 @@ class   Condition(object):
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, options, context ):
+  def   convert(self, convertor ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, convertor )
+    
+    cond = self.condition
+    if cond is not None:
+      cond.convert( convertor )
+  
+  #//-------------------------------------------------------//
+  
+  def   __call__( self, options, context, unconvertor ):
     if self.condition is not None:
       if not self.condition( options, context ):
         return False
     
-    return self.predicate( options, context, *self.args, **self.kw )
+    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconvertor )
+    
+    return self.predicate( options, context, *args, **kw )
 
 #//===========================================================================//
 
@@ -74,15 +168,23 @@ class   Operation( object ):
     self.args = args
     self.kw = kw
   
-  def   __call__( self, options, context, dest_value, value_type ):
+  def   convert(self, convertor ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, convertor )
+    
+    op = self.operation
+    if op is not None:
+      op.convert( convertor )
+  
+  def   __call__( self, options, context, dest_value, value_type, unconvertor ):
     if self.operation is not None:
-      dest_value = self.operation( options, context, dest_value, value_type )
-      dest_value = value_type( dest_value )
+      dest_value = self.operation( options, context, dest_value, value_type, unconvertor )
     
     if self.action is None:
       return dest_value
     
-    dest_value = self.action( options, context, dest_value, *self.args, **self.kw )
+    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconvertor )
+    
+    dest_value = self.action( options, context, dest_value, *args, **kw )
     dest_value = value_type( dest_value )
     return dest_value
 
@@ -106,15 +208,26 @@ class   ConditionalValue (object):
   
   def   __init__( self, operation, condition = None ):
     self.operation  = operation
-    self.condition = condition
+    self.condition  = condition
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, value, value_type, options, context ):
+  def   convert(self, convertor ):
     condition = self.condition
-    if (condition is None) or condition( options, context ):
+    if isinstance( condition, Condition ):
+      condition.convert( convertor )
+    
+    operation = self.operation
+    if isinstance( operation, Operation ):
+      operation.convert( convertor )
+  
+  #//-------------------------------------------------------//
+  
+  def   evaluate( self, value, value_type, options, context, unconvertor ):
+    condition = self.condition
+    if (condition is None) or condition( options, context, unconvertor ):
       if self.operation is not None:
-        value = self.operation( options, context, value, value_type )
+        value = self.operation( options, context, value, value_type, unconvertor )
     
     return value
 
@@ -192,7 +305,7 @@ class OptionValue (object):
   
   #//-------------------------------------------------------//
   
-  def   get( self, options, context ):
+  def   get( self, options, context, evaluator = None ):
     
     if context is None:
       context = {}
@@ -203,16 +316,17 @@ class OptionValue (object):
         pass
     
     value_type = self.option_type
+    
     value = value_type()
     context[ self ] = value
     
     if (not self.conditional_values) and (self.default_conditional_value is not None):
-        value = self.default_conditional_value( value, value_type, options, context )
+        value = self.default_conditional_value.evaluate( value, value_type, options, context, evaluator )
         context[ self ] = value
         return value
     
     for conditional_value in self.conditional_values:
-      value = conditional_value( value, value_type, options, context )
+      value = conditional_value.evaluate( value, value_type, options, context, evaluator )
       context[ self ] = value
     
     return value

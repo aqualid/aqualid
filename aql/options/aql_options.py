@@ -74,11 +74,14 @@ class   _OpValue( tuple ):
     if not isinstance( value, OptionValueProxy ):
       return value
     
-    return super(_OpValue, cls).__new__( cls, (value.name, value.key) )
+    return super(_OpValue, cls).__new__( cls, (value.name, value.key, value.options) )
   
   def   get( self, options, context ):
-    name, key = self
+    name, key, value_options = self
     
+    if not options._isParent( value_options ):
+      options = value_options
+      
     value = getattr( options, name ).get( context )
     
     if key is not NotImplemented:
@@ -185,31 +188,31 @@ def   _doAction( options, context, dest_value, op, value ):
   return op( dest_value, value )
 
 def   _SetDefaultValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
+  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
 
 def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
+  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
 
 def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, value )
+  return Operation( operation, _doAction, operator.iadd, _OpValue( value ) )
 
 def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, value )
+  return Operation( operation, _doAction, operator.isub, _OpValue( value ) )
 
 def   JoinPathValue( value, operation = None ):
-  return Operation( operation, _doAction, _joinPath, value )
+  return Operation( operation, _doAction, _joinPath, _OpValue( value ) )
 
 def   AbsPathValue( operation = None ):
   return Operation( operation, _doAction, _absPath, None )
 
 def   UpdateValue( value, operation = None ):
-  return Operation( operation, _doAction, _updateOperator, value )
+  return Operation( operation, _doAction, _updateOperator, _OpValue( value ) )
 
 def   NotValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, value )
+  return Operation( operation, _doAction, _notOperator, _OpValue( value ) )
 
 def   TruthValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, value )
+  return Operation( operation, _doAction, _truthOperator, _OpValue( value ) )
 
 #//===========================================================================//
 
@@ -532,14 +535,14 @@ class Options (object):
       if child_ref() is child:
         return
     
-    if child.__isChild( self ):
+    if child._isChild( self ):
       raise ErrorOptionsCyclicallyDependent()
     
-    self.__dict__['__children'].append( weakref.ref( child ) )
+    children.append( weakref.ref( child ) )
   
   #//-------------------------------------------------------//
   
-  def   __isChild(self, other ):
+  def   _isChild(self, other ):
     
     children = list(self.__dict__['__children'])
     
@@ -555,6 +558,19 @@ class Options (object):
         return True
       
       children += child.__dict__['__children']
+    
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  def   _isParent(self, other ):
+    parent = self.__dict__['__parent']
+    
+    while parent is not None:
+      if parent is other:
+        return True
+      
+      parent = parent.__dict__['__parent']
     
     return False
   
