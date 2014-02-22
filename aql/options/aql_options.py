@@ -18,8 +18,7 @@
 #
 
 __all__ = (
-  'Options', #'optionValueEvaluator',
-  'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
+  'Options',
   'ErrorOptionsOperationIsNotSpecified',
   'ErrorOptionsCyclicallyDependent', 'ErrorOptionsMergeNonOptions'
 )
@@ -32,7 +31,7 @@ import weakref
 from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
 
 from .aql_option_types import OptionType, autoOptionType
-from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition
+from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition, SetValue, AddValue, SubValue, UpdateValue
 
 #//===========================================================================//
 
@@ -74,20 +73,42 @@ class   _OpValue( tuple ):
     if not isinstance( value, OptionValueProxy ):
       return value
     
-    return super(_OpValue, cls).__new__( cls, (value.name, value.key, value.options) )
+    return super(_OpValue, cls).__new__( cls, (value.name, value.key ) )
   
   def   get( self, options, context ):
     name, key, value_options = self
     
-    if not options._isParent( value_options ):
-      options = value_options
-      
     value = getattr( options, name ).get( context )
     
     if key is not NotImplemented:
       value = value[ key ]
     
     return value
+
+#//===========================================================================//
+
+def   _storeOpValue( options, value ):
+  
+  if isinstance( value, DictItem ):
+    key, value = value
+  else:
+    key = NotImplemented
+  
+  if isinstance( value, DictItem ):
+    key, value = value
+  else:
+    key = NotImplemented
+  
+  if isinstance( value, OptionValueProxy ):
+    if value.options is options:
+      value = _OpValue( value )
+    else:
+      value.options.addChild( options )
+  
+  if key is not NotImplemented:
+    value = DictItem( key, value )
+  
+  return value
 
 #//===========================================================================//
 
@@ -145,74 +166,7 @@ def   _evalValue( options, context, other ):
   if key is not NotImplemented:
     other = DictItem( key, other )
   
-  #for evaluator in _evaluators:
-  #  other = evaluator( other )
-  
   return other
-
-#//===========================================================================//
-
-def   _setOperator( dest_value, value ):
-  if isinstance( dest_value, Dict ) and isinstance( value, DictItem ):
-    dest_value.update( value )
-    return dest_value
-  return value
-
-def   _joinPath( dest_value, value ):
-  return os.path.join( dest_value, value )
-
-#noinspection PyUnusedLocal
-def   _absPath( dest_value, value ):
-  return os.path.abspath( value )
-
-#noinspection PyUnusedLocal
-def   _notOperator( dest_value, value ):
-  return not value
-
-#noinspection PyUnusedLocal
-def   _truthOperator( dest_value, value ):
-  return bool(value)
-
-def   _updateOperator( dest_value, value ):
-  if isinstance( dest_value, (UniqueList, List) ):
-    dest_value += value
-    return dest_value
-  elif isinstance( dest_value, Dict ):
-    dest_value.update( value )
-    return dest_value
-  else:
-    return value
-
-def   _doAction( options, context, dest_value, op, value ):
-  value = _evalValue( options, context, value )
-  return op( dest_value, value )
-
-def   _SetDefaultValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
-
-def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, _OpValue( value ) )
-
-def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, _OpValue( value ) )
-
-def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, _OpValue( value ) )
-
-def   JoinPathValue( value, operation = None ):
-  return Operation( operation, _doAction, _joinPath, _OpValue( value ) )
-
-def   AbsPathValue( operation = None ):
-  return Operation( operation, _doAction, _absPath, None )
-
-def   UpdateValue( value, operation = None ):
-  return Operation( operation, _doAction, _updateOperator, _OpValue( value ) )
-
-def   NotValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, _OpValue( value ) )
-
-def   TruthValue( value, operation = None ):
-  return Operation( operation, _doAction, _truthOperator, _OpValue( value ) )
 
 #//===========================================================================//
 
@@ -230,26 +184,6 @@ class OptionValueProxy (object):
   
   def   isSet( self ):
     return self.option_value.isSet()
-  
-  #//-------------------------------------------------------//
-  
-  def   isSetNotTo( self, value ):
-    return self.option_value.isSet() and (self != value)
-  
-  def   isSetGreater( self, value ):
-    return self.option_value.isSet() and (self > value)
-  
-  def   isSetLess( self, value ):
-    return self.option_value.isSet() and (self < value)
-  
-  #//-------------------------------------------------------//
-  
-  def   setDefault( self, default_value ):
-    if not self.option_value.isSet():
-      self.set( default_value, _SetDefaultValue )
-      return True
-    
-    return self == default_value
   
   #//-------------------------------------------------------//
   
@@ -283,13 +217,13 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   set( self, value, operation_type = SetValue, condition = None ):
+  def   set( self, value, as_default = False ):
     self.child_ref = None
     
     if self.key is not NotImplemented:
       value = DictItem(self.key, value)
     
-    self.options._appendValue( self.option_value, value, operation_type, condition )
+    self.options._appendValue( self.option_value, value, SetValue )
   
   #//-------------------------------------------------------//
   
@@ -300,7 +234,7 @@ class OptionValueProxy (object):
     
     self.child_ref = None
     
-    self.options._appendValue( self.option_value, DictItem(key, value), SetValue )
+    self.options._appendValue( self.option_value, value, SetValue )
   
   #//-------------------------------------------------------//
   
@@ -333,27 +267,26 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   eq( self, context, other ):  return self.cmp( context, operator.eq, other )
-  def   ne( self, context, other ):  return self.cmp( context, operator.ne, other )
-  def   lt( self, context, other ):  return self.cmp( context, operator.lt, other )
-  def   le( self, context, other ):  return self.cmp( context, operator.le, other )
-  def   gt( self, context, other ):  return self.cmp( context, operator.gt, other )
-  def   ge( self, context, other ):  return self.cmp( context, operator.ge, other )
+  def   eq( self, context, other ):   return self.cmp( context, operator.eq, other )
+  def   ne( self, context, other ):   return self.cmp( context, operator.ne, other )
+  def   lt( self, context, other ):   return self.cmp( context, operator.lt, other )
+  def   le( self, context, other ):   return self.cmp( context, operator.le, other )
+  def   gt( self, context, other ):   return self.cmp( context, operator.gt, other )
+  def   ge( self, context, other ):   return self.cmp( context, operator.ge, other )
   
-  def   __eq__( self, other ):        return self.eq( None, other )
-  def   __ne__( self, other ):        return self.ne( None, other )
-  def   __lt__( self, other ):        return self.lt( None, other )
-  def   __le__( self, other ):        return self.le( None, other )
-  def   __gt__( self, other ):        return self.gt( None, other )
-  def   __ge__( self, other ):        return self.ge( None, other )
-  def   __contains__( self, other ):  return self.has( None, other )
+  def   __eq__( self, other ):        return self.eq( None, _evalValue( other ) )
+  def   __ne__( self, other ):        return self.ne( None, _evalValue( other ) )
+  def   __lt__( self, other ):        return self.lt( None, _evalValue( other ) )
+  def   __le__( self, other ):        return self.le( None, _evalValue( other ) )
+  def   __gt__( self, other ):        return self.gt( None, _evalValue( other ) )
+  def   __ge__( self, other ):        return self.ge( None, _evalValue( other ) )
+  def   __contains__( self, other ):  return self.has( None, _evalValue( other ) )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, context, cmp_operator, other ):
     self.child_ref = None
     
-    other = _evalValue( self.options, context, other )
     value = self.get( context )
     
     if not isinstance( value, (Dict, List)) and (self.key is NotImplemented):
@@ -364,43 +297,40 @@ class OptionValueProxy (object):
   #//-------------------------------------------------------//
   
   def   has( self, context, other ):
-    other = _evalValue( self.options, context, other )
     value = self.get( context )
+    other = self.option_value.option_type( other )
     
     return other in value
   
   #//-------------------------------------------------------//
   
-  def   hasAny( self, context, values ):
+  def   hasAny( self, context, others ):
     
     value = self.get( context )
-    values = _evalValue( self.options, context, values )
     
-    for other in toSequence( values ):
+    for other in toSequence( others ):
       if other in value:
         return True
     return False
   
   #//-------------------------------------------------------//
   
-  def   hasAll( self, context, values ):
+  def   hasAll( self, context, others ):
     
     value = self.get( context )
-    values = _evalValue( self.options, context, values )
     
-    for other in toSequence( values ):
+    for other in toSequence( others ):
       if other not in value:
         return False
     return True
   
   #//-------------------------------------------------------//
   
-  def   oneOf( self, context, values ):
+  def   oneOf( self, context, others ):
     
     value = self.get( context )
-    values = _evalValue( self.options, context, values )
     
-    for other in values:
+    for other in others:
       other = self.option_value.option_type( other )
       if value == other:
         return True
@@ -457,7 +387,10 @@ class ConditionGeneratorHelper( object ):
   
   def   __setitem__( self, key, value ):
     if not isinstance(value, ConditionGeneratorHelper):
-      self.options.appendValue( self.name, DictItem(key, value), SetValue, self.condition )
+      
+      value = DictItem(key, value)
+      
+      self.options.appendValue( self.name, value, SetValue, self.condition )
   
   #//-------------------------------------------------------//
   
@@ -509,7 +442,10 @@ class ConditionGenerator( object ):
   
   def     __setattr__(self, name, value):
     if not isinstance(value, ConditionGeneratorHelper):
-      self.__dict__['__options'].appendValue( name, value, SetValue, self.__dict__['__condition'] )
+      
+      condition  = self.__dict__['__condition']
+      
+      self.__dict__['__options'].appendValue( name, value, SetValue, condition )
   
 #//===========================================================================//
 
@@ -591,42 +527,14 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   conflictsWith( self, **kw ):
-    for key, value in kw.items():
-      opt_value = self._get_value( key, raise_ex = False )
+    for name, value in kw.items():
+      opt_value = self._get_value( name, raise_ex = False )
       if opt_value is not None:
-        opt_value = OptionValueProxy( opt_value, key, self )
-        if opt_value.isSetNotTo( value ):
+        opt_value = OptionValueProxy( opt_value, name, self )
+        if opt_value.isSet() and (opt_value != value):
           return True
     
     return False
-  
-  #//-------------------------------------------------------//
-  
-  def   _makeCondValue( self, value, operation_type = None, condition = None ):
-    if isinstance( value, Operation ):
-      return ConditionalValue( value, condition )
-    
-    elif isinstance( value, ConditionalValue ):
-      return value
-    
-    if operation_type is None:
-      raise ErrorOptionsOperationIsNotSpecified( value )
-    
-    if isinstance( value, DictItem ):
-      key, value = value
-    else:
-      key = NotImplemented
-    
-    if isinstance( value, OptionValueProxy ):
-      if value.options is self:
-        value = _OpValue( value )
-      else:
-        value.options.addChild( self )
-    
-    if key is not NotImplemented:
-      value = DictItem( key, value )
-    
-    return ConditionalValue( operation_type( value ), condition )
   
   #//-------------------------------------------------------//
   
@@ -651,6 +559,7 @@ class Options (object):
       
       elif not isinstance( value, OptionValue ):
         opt_value = OptionValue( autoOptionType( value ) )
+        
         value = self._makeCondValue( value, SetValue )
         opt_value.appendValue( value )
       
@@ -763,8 +672,7 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   _isParentValue( self, opt_value ):
-    parent = self.__dict__['__parent']
-    return parent and (opt_value in parent._itemsDict().values() )
+    return opt_value not in self.__dict__['__opt_values']
   
   #//-------------------------------------------------------//
   
@@ -805,7 +713,7 @@ class Options (object):
         value = value.get( context = None )
       
       elif isinstance( value, OptionValue ):
-        value = value.get( options, context = None )
+        value = options.value( value, context = None )
       
       self.__set_value( name, value, UpdateValue )
   
@@ -962,20 +870,33 @@ class Options (object):
     try:
       value = cache[ option_value ]
     except KeyError:
-      value = option_value.get( self, context )
+      value = option_value.get( self, context, _evalValue )
       cache[ option_value ] = value
     
     return value
   
   #//-------------------------------------------------------//
   
-  def   appendValue( self, name, value, operation_type = None, condition = None ):
+  def   _makeCondValue( self, value, operation_type, condition = None ):
+    if not isinstance( value, Operation ):
+      value = operation_type( value )
+    
+    value = ConditionalValue( value, condition )
+    
+    value.convert( self, _storeOpValue )
+    
+    return value
+  
+  #//-------------------------------------------------------//
+  
+  def   appendValue( self, name, value, operation_type, condition = None ):
     opt_value = self._get_value( name, raise_ex = True )
     self._appendValue( opt_value, value, operation_type, condition )
   
   #//-------------------------------------------------------//
   
-  def   _appendValue( self, opt_value, value, operation_type = None, condition = None ):
+  def   _appendValue( self, opt_value, value, operation_type, condition = None ):
+    
     value = self._makeCondValue( value, operation_type, condition )
     
     self.clearCache()
@@ -985,10 +906,7 @@ class Options (object):
       opt_value = opt_value.copy()
       self.__set_opt_value( opt_value, names )
     
-    if operation_type is _SetDefaultValue:
-      opt_value.setDefault( value )
-    else:
-      opt_value.appendValue( value )
+    opt_value.appendValue( value )
   
   #//-------------------------------------------------------//
   

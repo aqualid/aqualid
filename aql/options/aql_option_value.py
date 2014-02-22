@@ -19,6 +19,7 @@
 
 __all__ = (
   'Condition', 'Operation', 'ConditionalValue', 'OptionValue', 'SimpleOperation',
+  'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
   'ErrorOptionValueMergeNonOptionValue'
 )
 
@@ -36,28 +37,25 @@ class   ErrorOptionValueMergeNonOptionValue( TypeError ):
 
 #//===========================================================================//
 
-def   _setOperator( dest_value, value ):
+def   _setOperator( options, context, dest_value, value ):
   if isinstance( dest_value, Dict ) and isinstance( value, DictItem ):
     dest_value.update( value )
     return dest_value
   return value
 
-def   _joinPath( dest_value, value ):
+def   _joinPath( options, context, dest_value, value ):
   return os.path.join( dest_value, value )
 
-#noinspection PyUnusedLocal
-def   _absPath( dest_value, value ):
+def   _absPath( options, context, dest_value, value ):
   return os.path.abspath( value )
 
-#noinspection PyUnusedLocal
-def   _notOperator( dest_value, value ):
+def   _notOperator( options, context, dest_value, value ):
   return not value
 
-#noinspection PyUnusedLocal
-def   _truthOperator( dest_value, value ):
+def   _truthOperator( options, context, dest_value, value ):
   return bool(value)
 
-def   _updateOperator( dest_value, value ):
+def   _updateOperator( options, context, dest_value, value ):
   if isinstance( dest_value, (UniqueList, List) ):
     dest_value += value
     return dest_value
@@ -67,43 +65,43 @@ def   _updateOperator( dest_value, value ):
   else:
     return value
 
-def   _doAction( options, context, dest_value, op, value ):
-  value = _evalValue( options, context, value )
-  return op( dest_value, value )
+#noinspection PyUnusedLocal
+def   _simpleAction( options, context, dest_value, action, *args, **kw ):
+  return action( dest_value, *args, **kw )
 
-def   _SetDefaultValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
+def   SimpleOperation( action, *args, **kw ):
+  return Operation( None, _simpleAction, action, *args, **kw )
 
 def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
+  return Operation( operation, _setOperator, value )
 
 def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, value )
+  return Operation( operation, _simpleAction, operator.iadd, value )
 
 def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, value )
+  return Operation( operation, _simpleAction, operator.isub, value )
 
 def   JoinPathValue( value, operation = None ):
-  return Operation( operation, _doAction, _joinPath, value )
+  return Operation( operation, _joinPath, value )
 
 def   AbsPathValue( operation = None ):
-  return Operation( operation, _doAction, _absPath, None )
+  return Operation( operation, _absPath, None )
 
 def   UpdateValue( value, operation = None ):
-  return Operation( operation, _doAction, _updateOperator, value )
+  return Operation( operation, _updateOperator, value )
 
 def   NotValue( value, operation = None ):
-  return Operation( operation, _doAction, _notOperator, value )
+  return Operation( operation, _notOperator, value )
 
 def   TruthValue( value, operation = None ):
-  return Operation( operation, _doAction, _truthOperator, value )
+  return Operation( operation, _truthOperator, value )
 
 #//===========================================================================//
 
-def   _convertArgs( args, kw, convertor ):
+def   _convertArgs( args, kw, options, convertor ):
   if convertor is not None:
-    args = tuple( map( convertor, args ) )
-    kw = dict( (key, convertor(value)) for key, value in kw.items() )
+    args = tuple( convertor(options, arg ) for arg in args )
+    kw = dict( (key, convertor(options, value)) for key, value in kw.items() )
   
   return args, kw
 
@@ -133,12 +131,12 @@ class   Condition(object):
   
   #//-------------------------------------------------------//
   
-  def   convert(self, convertor ):
-    self.args, self.kw = _convertArgs( self.args, self.kw, convertor )
+  def   convert(self, options, convertor ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, options, convertor )
     
     cond = self.condition
     if cond is not None:
-      cond.convert( convertor )
+      cond.convert( options, convertor )
   
   #//-------------------------------------------------------//
   
@@ -168,12 +166,12 @@ class   Operation( object ):
     self.args = args
     self.kw = kw
   
-  def   convert(self, convertor ):
-    self.args, self.kw = _convertArgs( self.args, self.kw, convertor )
+  def   convert(self, options, convertor ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, options, convertor )
     
     op = self.operation
     if op is not None:
-      op.convert( convertor )
+      op.convert( options, convertor )
   
   def   __call__( self, options, context, dest_value, value_type, unconvertor ):
     if self.operation is not None:
@@ -190,15 +188,6 @@ class   Operation( object ):
 
 #//===========================================================================//
 
-#noinspection PyUnusedLocal
-def   _simpleAction( options, context, dest_value, action, *args, **kw ):
-  return action( dest_value, *args, **kw )
-
-def   SimpleOperation( action, *args, **kw ):
-  return Operation( None, _simpleAction, action, *args, **kw )
-
-#//===========================================================================//
-
 class   ConditionalValue (object):
   
   __slots__ = (
@@ -212,14 +201,14 @@ class   ConditionalValue (object):
   
   #//-------------------------------------------------------//
   
-  def   convert(self, convertor ):
+  def   convert(self, options, convertor ):
     condition = self.condition
     if isinstance( condition, Condition ):
-      condition.convert( convertor )
+      condition.convert( options, convertor )
     
     operation = self.operation
     if isinstance( operation, Operation ):
-      operation.convert( convertor )
+      operation.convert( options, convertor )
   
   #//-------------------------------------------------------//
   
