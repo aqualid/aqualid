@@ -93,16 +93,18 @@ class ProjectConfig( object ):
       CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
       CLIOption( "-l", "--list-options",    "list_options",   bool,       False,        "List all available options and exit." ),
       CLIOption( "-c", "--config",          "config",         FilePath,   None,         "The configuration file used to read CLI arguments." ),
-      CLIOption( "-C", "--clear",           "clear",          bool,       False,        "Cleans targets" ),
+      CLIOption( "-B", "--always",          "always",         bool,       False,        "Unconditionally build all targets." ),
+      CLIOption( "-R", "--clear",           "clear",          bool,       False,        "Cleans targets." ),
+      CLIOption( "-n", "--status",          "status",         bool,       False,        "Print status of targets." ),
       CLIOption( "-u", "--up",              "search_up",      bool,       False,        "Search up directory tree for a make file." ),
       
       CLIOption( "-b", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tools-path",      "tools_path",     Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
-      CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Continue build even if any target failed." ),
+      CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Keep going when some targets can't be built." ),
       CLIOption( "-r", "--rebuild",         "rebuild",        bool,       False,        "Unconditionally rebuilds all targets." ),
       CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
-      CLIOption( "-q", "--quiet",           "quiet",          bool,       False,        "Quiet mode." ),
+      CLIOption( "-s", "--silent",          "silent",         bool,       False,        "Silent mode." ),
       CLIOption( "-d", "--debug",           "debug",          bool,       False,        "Debug logs." ),
       CLIOption( "-m", "--memory",          "memory",         bool,       False,        "Display memory usage." ),
       CLIOption( "-p", "--profile",         "profile",        FilePath,   None,         "Run under profiler and save the results in the specified file." ),
@@ -136,7 +138,7 @@ class ProjectConfig( object ):
     log_level = 1
     if cli_config.debug:
       log_level = 2
-    if cli_config.quiet:
+    if cli_config.silent:
       log_level = 0
     
     #//-------------------------------------------------------//

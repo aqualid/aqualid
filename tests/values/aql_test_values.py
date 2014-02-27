@@ -22,9 +22,6 @@ class TestValues( AqlTestCase ):
     
     self.assertTrue( value1.isActual() )
     
-    value2 = value1.copy()
-    self.assertEqual( value1, value2 )
-    
     self._testSaveLoad( value2 )
     
     value2 = SimpleValue( 'http://buildsrv.com/results2.out')
@@ -36,7 +33,7 @@ class TestValues( AqlTestCase ):
   def test_str_empty_value_save_load(self):
     
     value1 = SimpleValue( name = 'results_link' )
-    value2 = value1.copy()
+    value2 = SimpleValue( name = value1.name )
     self.assertEqual( value1, value2 )
     
     self.assertFalse( value1.isActual() )
@@ -58,9 +55,6 @@ class TestValues( AqlTestCase ):
     self.assertEqual( value1, value2 )
     self.assertTrue( value1.isActual() )
     
-    value2 = value1.copy()
-    self.assertEqual( value1, value2 )
-    
     self._testSaveLoad( value2 )
     
     value2 = SignatureValue( b'http://buildsrv.com/results2.out')
@@ -72,7 +66,7 @@ class TestValues( AqlTestCase ):
   def test_sign_empty_value_save_load(self):
     
     value1 = SignatureValue( name = 'results_link' )
-    value2 = value1.copy()
+    value2 = SignatureValue( name = value1.name )
     self.assertEqual( value1, value2 )
     
     self.assertFalse( value1.isActual() )
