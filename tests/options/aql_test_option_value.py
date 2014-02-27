@@ -1,42 +1,29 @@
 import copy
 import sys
 import os.path
-import timeit
-import operator
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
-                        OptionValue, ConditionalValue, Condition, Operation, SimpleOperation, \
-                        ErrorOptionTypeUnableConvertValue
+                        OptionValue, ConditionalValue, Condition, SimpleOperation, SimpleInplaceOperation, \
+                        SetValue, iAddValue, iSubValue, ErrorOptionTypeUnableConvertValue
 
 from aql.util_types import Dict
 
 #//===========================================================================//
 
-def   _setOperator( dest_value, value ):
-  return value
-
-def   _doAction( options, context, dest_value, op, value ):
-  if isinstance( value, OptionValue ):
-    value = value.get( options, context )
-  return op( dest_value, value )
-
-def   SetValue( value, operation = None ):
-  return Operation( operation, _doAction, _setOperator, value )
-
-def   AddValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.iadd, value )
-
-def   SubValue( value, operation = None ):
-  return Operation( operation, _doAction, operator.isub, value )
-
-#//===========================================================================//
-
 def   _condition( options, context, flag, opt_value = None ):
   return flag
+
+
+def   _convertValue( options, context, value ):
+  if isinstance( value, OptionValue ):
+    value = value.get( options, context, _convertValue )
+  
+  return value
+
 
 class TestOptionValue( AqlTestCase ):
   
@@ -48,9 +35,9 @@ class TestOptionValue( AqlTestCase ):
     opt_value = OptionValue( opt_type1 )
     
     cond = Condition( None, _condition, flag = True, opt_value = opt_value )
-    cond_value  = ConditionalValue( AddValue( 2 ), cond )
-    cond_value2 = ConditionalValue( AddValue( 3 ), cond )
-    cond_value3 = ConditionalValue( AddValue( 3 ), cond )
+    cond_value  = ConditionalValue( iAddValue( 2 ), cond )
+    cond_value2 = ConditionalValue( iAddValue( 3 ), cond )
+    cond_value3 = ConditionalValue( iAddValue( 3 ), cond )
     
     opt_value.appendValue( cond_value )
     opt_value.appendValue( cond_value2 )
@@ -67,16 +54,16 @@ class TestOptionValue( AqlTestCase ):
     cond_false = Condition( cond_true,  _condition, flag = False )
     cond_false = Condition( cond_false, _condition, flag = True )
     
-    opt_value.appendValue( ConditionalValue( AddValue( 2 ), cond_false ) )
+    opt_value.appendValue( ConditionalValue( iAddValue( 2 ), cond_false ) )
     self.assertEqual( opt_value.get( {}, None ), 0 )
     
-    opt_value.appendValue( ConditionalValue( AddValue( 3 ), cond_true ) )
+    opt_value.appendValue( ConditionalValue( iAddValue( 3 ), cond_true ) )
     self.assertEqual( opt_value.get( {}, None ), 3 )
     
-    opt_value.appendValue( ConditionalValue( AddValue( 1 ), cond_true ) )
+    opt_value.appendValue( ConditionalValue( iAddValue( 1 ), cond_true ) )
     self.assertEqual( opt_value.get( {}, None ), 4 )
     
-    opt_value.appendValue( ConditionalValue( AddValue( 1 ), cond_false ) )
+    opt_value.appendValue( ConditionalValue( iAddValue( 1 ), cond_false ) )
     self.assertEqual( opt_value.get( {}, None ), 4 )
     
     opt_value2 = OptionValue( OptionType( int ) )
@@ -85,25 +72,25 @@ class TestOptionValue( AqlTestCase ):
     
     opt_value2.appendValue( ConditionalValue( SetValue( 7 ), cond_true ) )
     
-    self.assertEqual( opt_value.get( {}, None ), 7 )
-    self.assertEqual( opt_value2.get( {}, None ), 7 )
+    self.assertEqual( opt_value.get( {}, None, _convertValue ), 7 )
+    self.assertEqual( opt_value2.get( {}, None, _convertValue ), 7 )
     
     opt_value2.appendValue( ConditionalValue( SetValue( 8 ), cond_true ) )
     
-    self.assertEqual( opt_value.get( {}, None ), 8 )
-    self.assertEqual( opt_value2.get( {}, None ), 8 )
+    self.assertEqual( opt_value.get( {}, None, _convertValue ), 8 )
+    self.assertEqual( opt_value2.get( {}, None, _convertValue ), 8 )
     
-    opt_value.appendValue( ConditionalValue( SubValue( 1, AddValue( 1 ) ), cond_true ) )
+    opt_value.appendValue( ConditionalValue( iSubValue( 0 ), cond_true ) )
     
-    self.assertEqual( opt_value.get( {}, None ), 8 )
+    self.assertEqual( opt_value.get( {}, None, _convertValue ), 8 )
     
     tmp_opt_value = opt_value.copy()
     
-    self.assertEqual( tmp_opt_value.get( {}, None ), 8 )
+    self.assertEqual( tmp_opt_value.get( {}, None, _convertValue ), 8 )
     
-    tmp_opt_value.appendValue( ConditionalValue( Operation( AddValue( 2 ), None ), cond_true ) )
+    tmp_opt_value.appendValue( ConditionalValue( iAddValue( 2 ), cond_true ) )
     
-    self.assertEqual( tmp_opt_value.get( {}, None ), 10 )
+    self.assertEqual( tmp_opt_value.get( {}, None, _convertValue ), 10 )
   
   #//---------------------------------------------------------------------------//
   
@@ -119,7 +106,7 @@ class TestOptionValue( AqlTestCase ):
     opt_value_list.appendValue( ConditionalValue( SetValue( 1 ) ) )
     self.assertEqual( opt_value_list.get( {}, None ), 1 )
     
-    opt_value_list.appendValue( ConditionalValue( AddValue( 0 ) ) )
+    opt_value_list.appendValue( ConditionalValue( iAddValue( 0 ) ) )
     self.assertEqual( opt_value_list.get( {}, None ), "1, 0" )
   
   #//---------------------------------------------------------------------------//
@@ -127,12 +114,12 @@ class TestOptionValue( AqlTestCase ):
   def test_option_value4(self):
     opt_value = OptionValue( OptionType( int ) )
     
-    def   _modValue( value ):
+    def   _incValue( value ):
       return value + 1
     
     opt_value = OptionValue( OptionType( int ) )
     opt_value.appendValue( ConditionalValue( SetValue( 2 ) ) )
-    opt_value.appendValue( ConditionalValue( SimpleOperation( _modValue ) ) )
+    opt_value.appendValue( ConditionalValue( SimpleInplaceOperation( _incValue ) ) )
     
     self.assertEqual( opt_value.get( {}, None ), 3 )
   
@@ -156,22 +143,22 @@ class TestOptionValue( AqlTestCase ):
     opt_value2 = OptionValue( RangeOptionType( min_value = 0, max_value = 5 ) )
     
     opt_value1.appendValue( ConditionalValue( SetValue( 1 ) ) )
-    self.assertEqual( opt_value1.get( {}, None ), 1 )
+    self.assertEqual( opt_value1.get( {}, None, _convertValue ), 1 )
     
     opt_value2.appendValue( ConditionalValue( SetValue( 2 ) ) )
-    self.assertEqual( opt_value2.get( {}, None ), 2 )
+    self.assertEqual( opt_value2.get( {}, None, _convertValue ), 2 )
     
-    opt_value1.appendValue( ConditionalValue( AddValue( opt_value2 ) ) )
-    self.assertEqual( opt_value1.get( {}, None ), 3 )
+    opt_value1.appendValue( ConditionalValue( iAddValue( opt_value2 ) ) )
+    self.assertEqual( opt_value1.get( {}, None, _convertValue ), 3 )
     
-    opt_value2.appendValue( ConditionalValue( AddValue( opt_value1 ) ) )
+    opt_value2.appendValue( ConditionalValue( iAddValue( opt_value1 ) ) )
     
-    self.assertEqual( opt_value2.get( {}, None ), 5 )
+    self.assertEqual( opt_value2.get( {}, None, _convertValue ), 5 )
     
-    opt_value1.appendValue( ConditionalValue( AddValue( opt_value2 ) ) )
+    opt_value1.appendValue( ConditionalValue( iAddValue( opt_value2 ) ) )
     
-    self.assertEqual( opt_value2.get( {}, None ), opt_value2.option_type(7) )
-    self.assertEqual( opt_value1.get( {}, None ), 7 )
+    self.assertEqual( opt_value2.get( {}, None, _convertValue ), opt_value2.option_type(7) )
+    self.assertEqual( opt_value1.get( {}, None, _convertValue ), 7 )
     
     # opt1: 1 + opt2 + opt2 = 1 + 3 + 3
     # opt2: 2 + opt1 = 2 + 1 + 2 + 2
@@ -187,10 +174,10 @@ class TestOptionValue( AqlTestCase ):
     cond = Condition( None, _condition, flag = True, opt_value = opt_value )
     cond2 = Condition( cond, _condition, flag = False, opt_value = opt_value )
     
-    cond_value  = ConditionalValue( AddValue( 1 ), cond )
-    cond_value2 = ConditionalValue( AddValue( 0 ), cond2 )
-    cond_value3 = ConditionalValue( AddValue( 2 ), cond )
-    cond_value4 = ConditionalValue( AddValue( 1 ), cond2 )
+    cond_value  = ConditionalValue( iAddValue( 1 ), cond )
+    cond_value2 = ConditionalValue( iAddValue( 0 ), cond2 )
+    cond_value3 = ConditionalValue( iAddValue( 2 ), cond )
+    cond_value4 = ConditionalValue( iAddValue( 1 ), cond2 )
     
     opt_value.appendValue( cond_value )
     opt_value.appendValue( cond_value2 )

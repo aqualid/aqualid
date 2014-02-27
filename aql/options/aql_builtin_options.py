@@ -25,8 +25,11 @@ import os
 
 from aql.util_types import IgnoreCaseString, UpperCaseString
 
-from .aql_options import Options, JoinPathValue, SetValue, AddValue
-from .aql_option_types import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, StrOptionType, VersionOptionType
+from .aql_options import Options
+from .aql_option_value import SimpleOperation
+
+from .aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, \
+                              PathOptionType, StrOptionType, VersionOptionType
 
 #//===========================================================================//
 
@@ -217,11 +220,11 @@ def   _init_defaults( options ):
     #//-------------------------------------------------------//
     # build_dir_name set to <target OS>_<target arch>_<build variant>
     
-    options.If().target_os.ne('native').build_dir_name    = AddValue( '_', AddValue( options.target_os ) )
-    options.If().target_arch.ne('native').build_dir_name  = AddValue( '_', AddValue( options.target_arch ) )
+    options.If().target_os.ne('native').build_dir_name    += options.target_os + '_'
+    options.If().target_arch.ne('native').build_dir_name  += options.target_arch + '_'
     options.build_dir_name += options.build_variant
     
-    options.build_path = JoinPathValue( options.build_dir_name, SetValue( options.build_dir ) )
+    options.build_path = SimpleOperation( os.path.join, options.build_dir, options.build_dir_name )
     
     #//-------------------------------------------------------//
     

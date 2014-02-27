@@ -19,11 +19,8 @@
 
 __all__ = (
   'Options',
-  'ErrorOptionsOperationIsNotSpecified',
   'ErrorOptionsCyclicallyDependent', 'ErrorOptionsMergeNonOptions'
 )
-
-import os.path
 
 import operator
 import weakref
@@ -31,14 +28,10 @@ import weakref
 from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
 
 from .aql_option_types import OptionType, autoOptionType
-from .aql_option_value import OptionValue, Operation, ConditionalValue, Condition, SetValue, AddValue, SubValue, UpdateValue
+from .aql_option_value import OptionValue, InplaceOperation, ConditionalValue, Condition,\
+                              SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation
 
 #//===========================================================================//
-
-class   ErrorOptionsOperationIsNotSpecified( TypeError ):
-  def   __init__( self, value ):
-    msg = "Operation type is not set for value: '%s'" % str(value)
-    super(type(self), self).__init__( msg )
 
 class   ErrorOptionsCyclicallyDependent( TypeError ):
   def   __init__( self ):
@@ -67,18 +60,28 @@ class   ErrorOptionsJoinParent( TypeError ):
 
 #//===========================================================================//
 
-class   _OpValue( tuple ):
+class   _OpValueRef( tuple ):
   def   __new__( cls, value ):
-    
-    if not isinstance( value, OptionValueProxy ):
-      return value
-    
-    return super(_OpValue, cls).__new__( cls, (value.name, value.key ) )
+    return super(_OpValueRef, cls).__new__( cls, (value.name, value.key ) )
   
   def   get( self, options, context ):
-    name, key, value_options = self
+    name, key = self
     
     value = getattr( options, name ).get( context )
+    
+    if key is not NotImplemented:
+      value = value[ key ]
+    
+    return value
+
+class   _OpValueExRef( tuple ):
+  def   __new__( cls, value ):
+    return super(_OpValueExRef, cls).__new__( cls, (value.name, value.key, value.options ) )
+  
+  def   get( self ):
+    name, key, options = self
+    
+    value = getattr( options, name ).get()
     
     if key is not NotImplemented:
       value = value[ key ]
@@ -94,21 +97,39 @@ def   _storeOpValue( options, value ):
   else:
     key = NotImplemented
   
-  if isinstance( value, DictItem ):
-    key, value = value
-  else:
-    key = NotImplemented
-  
   if isinstance( value, OptionValueProxy ):
     if value.options is options:
-      value = _OpValue( value )
+      value = _OpValueRef( value )
     else:
       value.options.addChild( options )
+      value = _OpValueExRef( value )
   
   if key is not NotImplemented:
     value = DictItem( key, value )
   
   return value
+
+#//===========================================================================//
+
+def   _loadValue( options, context, value ):
+  if isinstance( value, DictItem ):
+    key, value = value
+  else:
+    key = NotImplemented
+  
+  if isinstance( value, _OpValueRef ):
+    value = value.get( options, context )
+      
+  elif isinstance( value, _OpValueExRef ):
+    value = value.get()
+  
+  # other = _evaluateValue( other ) # TODO: remove this conversion when added type casts to Values and Node  
+  
+  if key is not NotImplemented:
+    value = DictItem( key, value )
+  
+  return value
+
 
 #//===========================================================================//
 
@@ -143,30 +164,21 @@ def   _storeOpValue( options, value ):
 
 #//===========================================================================//
 
-def   _evalValue( options, context, other ):
-  if isinstance( other, DictItem ):
-    key, other = other
+def   _evalValue( value ):
+  if isinstance( value, DictItem ):
+    key, value = value
   else:
     key = NotImplemented
   
-  if isinstance( other, _OpValue ):
-    other = other.get( options, context )
-  
-  elif isinstance( other, OptionValueProxy ):
-    if other.options is not options:
-      other = other.get( context = None )
-    else:
-      other = other.get( context )
-  
-  elif isinstance( other, OptionValue ):
-    other = options.value( other, context )
+  if isinstance( value, OptionValueProxy ):
+    value = value.get()
   
   # other = _evaluateValue( other ) # TODO: remove this conversion when added type casts to Values and Node  
   
   if key is not NotImplemented:
-    other = DictItem( key, other )
+    value = DictItem( key, value )
   
-  return other
+  return value
 
 #//===========================================================================//
 
@@ -190,7 +202,7 @@ class OptionValueProxy (object):
   def   get( self, context = None ):
     self.child_ref = None
     
-    v = self.options.value( self.option_value, context )
+    v = self.options.evaluate( self.option_value, context )
     return v if self.key is NotImplemented else v[self.key]
   
   #//-------------------------------------------------------//
@@ -201,8 +213,28 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       other = DictItem(self.key, other)
     
-    self.options._appendValue( self.option_value, other, AddValue )
+    self.options._appendValue( self.option_value, other, iAddValue )
     return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __add__( self, other ):
+    return SimpleOperation( operator.add, self, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   __radd__( self, other ):
+    return SimpleOperation( operator.add, other, self )
+  
+  #//-------------------------------------------------------//
+  
+  def   __sub__( self, other ):
+    return SimpleOperation( operator.sub, self, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   __rsub__( self, other ):
+    return SimpleOperation( operator.sub, other, self )
   
   #//-------------------------------------------------------//
   
@@ -212,7 +244,7 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       other = DictItem(self.key, other)
     
-    self.options._appendValue( self.option_value, other, SubValue )
+    self.options._appendValue( self.option_value, other, iSubValue )
     return self
   
   #//-------------------------------------------------------//
@@ -231,6 +263,11 @@ class OptionValueProxy (object):
     child_ref = self.child_ref
     if (child_ref is not None) and (child_ref() is value):
       return
+    
+    if self.key is not NotImplemented:
+      raise KeyError( key )
+    
+    value = DictItem( key, value )
     
     self.child_ref = None
     
@@ -274,13 +311,13 @@ class OptionValueProxy (object):
   def   gt( self, context, other ):   return self.cmp( context, operator.gt, other )
   def   ge( self, context, other ):   return self.cmp( context, operator.ge, other )
   
-  def   __eq__( self, other ):        return self.eq( None, _evalValue( other ) )
-  def   __ne__( self, other ):        return self.ne( None, _evalValue( other ) )
-  def   __lt__( self, other ):        return self.lt( None, _evalValue( other ) )
-  def   __le__( self, other ):        return self.le( None, _evalValue( other ) )
-  def   __gt__( self, other ):        return self.gt( None, _evalValue( other ) )
-  def   __ge__( self, other ):        return self.ge( None, _evalValue( other ) )
-  def   __contains__( self, other ):  return self.has( None, _evalValue( other ) )
+  def   __eq__( self, other ):        return self.eq( None,   _evalValue( other ) )
+  def   __ne__( self, other ):        return self.ne( None,   _evalValue( other ) )
+  def   __lt__( self, other ):        return self.lt( None,   _evalValue( other ) )
+  def   __le__( self, other ):        return self.le( None,   _evalValue( other ) )
+  def   __gt__( self, other ):        return self.gt( None,   _evalValue( other ) )
+  def   __ge__( self, other ):        return self.ge( None,   _evalValue( other ) )
+  def   __contains__( self, other ):  return self.has( None,  _evalValue( other ) )
   
   #//-------------------------------------------------------//
   
@@ -298,7 +335,6 @@ class OptionValueProxy (object):
   
   def   has( self, context, other ):
     value = self.get( context )
-    other = self.option_value.option_type( other )
     
     return other in value
   
@@ -413,7 +449,7 @@ class ConditionGeneratorHelper( object ):
     if self.key is not NotImplemented:
       value = DictItem( self.key, value )
     
-    self.options.appendValue( self.name, value, AddValue, self.condition )
+    self.options.appendValue( self.name, value, iAddValue, self.condition )
     return self
   
   #//-------------------------------------------------------//
@@ -422,7 +458,7 @@ class ConditionGeneratorHelper( object ):
     if self.key is not NotImplemented:
       value = DictItem( self.key, value )
     
-    self.options.appendValue( self.name, value, SubValue, self.condition )
+    self.options.appendValue( self.name, value, iSubValue, self.condition )
     return self
 
 #//===========================================================================//
@@ -494,19 +530,6 @@ class Options (object):
         return True
       
       children += child.__dict__['__children']
-    
-    return False
-  
-  #//-------------------------------------------------------//
-  
-  def   _isParent(self, other ):
-    parent = self.__dict__['__parent']
-    
-    while parent is not None:
-      if parent is other:
-        return True
-      
-      parent = parent.__dict__['__parent']
     
     return False
   
@@ -713,9 +736,9 @@ class Options (object):
         value = value.get( context = None )
       
       elif isinstance( value, OptionValue ):
-        value = options.value( value, context = None )
+        value = options.evaluate( value, context = None )
       
-      self.__set_value( name, value, UpdateValue )
+      self.__set_value( name, value, iUpdateValue )
   
   #//-------------------------------------------------------//
   
@@ -858,7 +881,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   value( self, option_value, context  ):
+  def   evaluate( self, option_value, context  ):
     try:
       if context is not None:
         return context[ option_value ]
@@ -870,7 +893,7 @@ class Options (object):
     try:
       value = cache[ option_value ]
     except KeyError:
-      value = option_value.get( self, context, _evalValue )
+      value = option_value.get( self, context, _loadValue )
       cache[ option_value ] = value
     
     return value
@@ -878,7 +901,10 @@ class Options (object):
   #//-------------------------------------------------------//
   
   def   _makeCondValue( self, value, operation_type, condition = None ):
-    if not isinstance( value, Operation ):
+    if isinstance(value, ConditionalValue ):
+      return value
+    
+    if not isinstance( value, InplaceOperation ):
       value = operation_type( value )
     
     value = ConditionalValue( value, condition )

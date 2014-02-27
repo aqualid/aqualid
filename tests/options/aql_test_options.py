@@ -1,6 +1,5 @@
 import sys
 import os.path
-import timeit
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -8,12 +7,12 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.util_types import UpperCaseString, FilePath
 
-from aql.options import OptionType, StrOptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
+from aql.options import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
+                        DictOptionType, PathOptionType, StrOptionType, OptionType, \
                         builtinOptions, \
-                        OptionValue, ConditionalValue, Condition, Options, AddValue, SubValue, JoinPathValue, \
-                        ErrorOptionsOperationIsNotSpecified, ErrorOptionsCyclicallyDependent, \
+                        Options, iAddValue, \
+                        ErrorOptionsCyclicallyDependent, \
                         ErrorOptionsMergeNonOptions
-
 
 #//===========================================================================//
 
@@ -93,7 +92,7 @@ class TestOptions( AqlTestCase ):
     options2.warn_level = 1
     
     self.assertEqual( options.warn_level, options2.warn_level )
-    self.assertEqual( options.warn_level, options2.warn_level.option_value )
+    # self.assertEqual( options.warn_level, options2.warn_level.option_value )
     
     options.warn_level.set( 2 )
     self.assertEqual( options.warn_level, 2 )
@@ -257,7 +256,7 @@ class TestOptions( AqlTestCase ):
     options.opt = RangeOptionType( min_value = 1, max_value = 100 )
     options.warn_level = RangeOptionType( min_value = 0, max_value = 5 )
     
-    options.warn_level = AddValue( options.opt )
+    options.warn_level = iAddValue( options.opt )
     self.assertEqual( options.warn_level, 1 )
     
     options.If().warn_level.eq( options.opt ).warn_level += 1
@@ -282,14 +281,38 @@ class TestOptions( AqlTestCase ):
     options.warn_level.set( options.opt )
     self.assertEqual( options.warn_level, 2 )
     
-    self.assertRaises( ErrorOptionsOperationIsNotSpecified, options.appendValue, 'warn_level', 1 )
-    
     options.test = 1
     self.assertEqual( options.test.get(), 1 )
     
     options.opt += options.opt
     
     self.assertEqual( options.opt, 4 )
+  
+  #//-------------------------------------------------------//
+  
+  def   test_options_parent_refs(self):
+    options = Options()
+    
+    options.opt1 = RangeOptionType( min_value = 1, max_value = 100 )
+    options.opt2 = RangeOptionType( min_value = 0, max_value = 5 )
+    
+    options.opt1 = 10
+    options.opt2 = options.opt1
+    self.assertEqual( options.opt1, 10 )
+    self.assertEqual( options.opt2, 5 )
+    
+    options2 = options.override()
+    options2.opt1 = 3
+    self.assertEqual( options.opt1, 10 )
+    self.assertEqual( options2.opt1, 3 )
+    self.assertEqual( options2.opt2, 3 )
+    
+    options2.opt2 = options.opt1
+    self.assertEqual( options2.opt2, 5 )
+    
+    options.opt1 = 2
+    self.assertEqual( options2.opt1, 3 )
+    self.assertEqual( options2.opt2, 2 )
     
   #//-------------------------------------------------------//
   
@@ -302,12 +325,12 @@ class TestOptions( AqlTestCase ):
     
     options.opt = RangeOptionType( min_value = 1, max_value = 100 )
     options2.opt2 = options.opt
-    
     self.assertEqual( options.opt.get(), options2.opt2.get() )
     options.opt = 50
     self.assertEqual( options.opt.get(), options2.opt2.get() )
-    options2.opt2 = 48
     options.opt = 20
+    self.assertEqual( options.opt.get(), options2.opt2.get() )
+    options2.opt2 = 48
     self.assertNotEqual( options.opt.get(), options2.opt2.get() )
     self.assertEqual( options.opt.get(), 20 )
     self.assertEqual( options2.opt2.get(), 48 )
@@ -386,7 +409,8 @@ class TestOptions( AqlTestCase ):
     
     options.defines = DictOptionType( key_type = str, value_type = str )
     options.env = DictOptionType( key_type = UpperCaseString )
-    options.env['PATH'] = ListOptionType( value_type = FilePath, separators = os.pathsep )()
+    path = ListOptionType( value_type = FilePath, separators = os.pathsep )()
+    options.env['PATH'] = path
     options.env['HOME'] = FilePath()
     options.env['Path'] = '/work/bin'
     options.env['Path'] += '/usr/bin'
@@ -419,9 +443,9 @@ class TestOptions( AqlTestCase ):
     options.option1 = options.opt1
     options.option3 = options.opt3
     
-    options.opt1.setDefault( 50 )
-    options.opt2.setDefault( 3 )
-    options.opt3.setDefault( 0 )
+    options.opt1 = 50
+    options.opt2 = 3
+    options.opt3 = 0
     
     options2 = Options()
     options2.opt21 = RangeOptionType( min_value = 1, max_value = 100 )
@@ -504,14 +528,53 @@ class TestOptions( AqlTestCase ):
     
     options2 = options.override()
     
-    options2.target_os.setDefault( "windows" )
-    options2.target_arch.setDefault( "x86-32" )
+    options2.target_os = "windows"
+    options2.target_arch ="x86-32"
     
     self.assertEqual( options2.build_dir_name.get(), 'windows_x86-32_debug' )
     self.assertEqual( options.build_dir_name, 'debug' )
     
     options2.join()
     self.assertEqual( options.build_dir_name.get(), 'windows_x86-32_debug' )
+
+  #//=======================================================//
+  
+  def   test_options_radd(self):
+    
+    options = Options()
+    
+    options.build_dir_name  = StrOptionType()
+    options.prefix          = StrOptionType()
+    options.suffix          = StrOptionType()
+    
+    options.build_dir_name = options.prefix
+    options.build_dir_name += '_' + options.suffix
+    
+    options.prefix = "release"
+    options.suffix = "x86"
+    
+    self.assertEqual( options.build_dir_name, 'release_x86' )
+    
+    options.level     = OptionType( value_type = int )
+    options.min_level = OptionType( value_type = int )
+    options.max_level = OptionType( value_type = int )
+    
+    options.level     = options.min_level + 2
+    options.level     += options.max_level - options.min_level
+    options.level     = 100 - options.level
+    options.min_level = 5
+    options.max_level = 50
+    
+    self.assertEqual( options.level, 48 )
+    
+    options.level = 10 + (options.max_level - options.min_level)
+    self.assertEqual( options.level, 55 )
+    
+    options.level = 10 - (options.min_level - 2)
+    self.assertEqual( options.level, 7 )
+    
+    
+
 
 #//===========================================================================//
 

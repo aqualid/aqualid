@@ -18,12 +18,11 @@
 #
 
 __all__ = (
-  'Condition', 'Operation', 'ConditionalValue', 'OptionValue', 'SimpleOperation',
-  'SetValue', 'AddValue', 'SubValue', 'UpdateValue', 'NotValue', 'TruthValue', 'JoinPathValue',
+  'Condition', 'Operation', 'InplaceOperation', 'ConditionalValue', 'OptionValue', 'SimpleOperation', 'SimpleInplaceOperation',
+  'SetValue', 'iAddValue', 'iSubValue', 'iUpdateValue',
   'ErrorOptionValueMergeNonOptionValue'
 )
 
-import os.path
 import operator
 
 from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
@@ -43,18 +42,6 @@ def   _setOperator( options, context, dest_value, value ):
     return dest_value
   return value
 
-def   _joinPath( options, context, dest_value, value ):
-  return os.path.join( dest_value, value )
-
-def   _absPath( options, context, dest_value, value ):
-  return os.path.abspath( value )
-
-def   _notOperator( options, context, dest_value, value ):
-  return not value
-
-def   _truthOperator( options, context, dest_value, value ):
-  return bool(value)
-
 def   _updateOperator( options, context, dest_value, value ):
   if isinstance( dest_value, (UniqueList, List) ):
     dest_value += value
@@ -65,52 +52,76 @@ def   _updateOperator( options, context, dest_value, value ):
   else:
     return value
 
-#noinspection PyUnusedLocal
-def   _simpleAction( options, context, dest_value, action, *args, **kw ):
+def   _simpleAction( options, context, action, *args, **kw ):
+  return action( *args, **kw )
+
+def   _simpleInplaceAction( options, context, dest_value, action, *args, **kw ):
   return action( dest_value, *args, **kw )
 
 def   SimpleOperation( action, *args, **kw ):
-  return Operation( None, _simpleAction, action, *args, **kw )
+  return Operation( _simpleAction, action, *args, **kw )
 
-def   SetValue( value, operation = None ):
-  return Operation( operation, _setOperator, value )
+def   SimpleInplaceOperation( action, *args, **kw ):
+  return InplaceOperation( _simpleInplaceAction, action, *args, **kw )
 
-def   AddValue( value, operation = None ):
-  return Operation( operation, _simpleAction, operator.iadd, value )
+def   SetValue( value ):
+  return InplaceOperation( _setOperator, value )
 
-def   SubValue( value, operation = None ):
-  return Operation( operation, _simpleAction, operator.isub, value )
+def   iAddValue( value ):
+  return SimpleInplaceOperation( operator.iadd, value )
 
-def   JoinPathValue( value, operation = None ):
-  return Operation( operation, _joinPath, value )
+def   iSubValue( value ):
+  return SimpleInplaceOperation( operator.isub, value )
 
-def   AbsPathValue( operation = None ):
-  return Operation( operation, _absPath, None )
-
-def   UpdateValue( value, operation = None ):
-  return Operation( operation, _updateOperator, value )
-
-def   NotValue( value, operation = None ):
-  return Operation( operation, _notOperator, value )
-
-def   TruthValue( value, operation = None ):
-  return Operation( operation, _truthOperator, value )
+def   iUpdateValue( value ):
+  return InplaceOperation( _updateOperator, value )
 
 #//===========================================================================//
 
-def   _convertArgs( args, kw, options, convertor ):
-  if convertor is not None:
-    args = tuple( convertor(options, arg ) for arg in args )
-    kw = dict( (key, convertor(options, value)) for key, value in kw.items() )
+def   _convertArgs( args, kw, options, converter ):
+  tmp_args = []
+  for arg in args:
+    if isinstance( arg, Operation ):
+      arg.convert( options, converter )
+    else:
+      arg = converter( options, arg )
+    
+    tmp_args.append( arg )
   
-  return args, kw
+  tmp_kw = {}
+  for key,arg in kw.items():
+    if isinstance( arg, Operation ):
+      arg = arg.convert( options, converter )
+    elif converter is not None:
+      arg = converter( options, arg )
+    
+    tmp_kw[ key ] = arg
+  
+  return tmp_args, tmp_kw
 
-def   _unconvertArgs( args, kw, options, context, unconvertor ):
-  if unconvertor is not None:
-    args = tuple( unconvertor(options, context, arg ) for arg in args )
-    kw = dict( (key, unconvertor(options, context, value)) for key, value in kw.items() )
+#//===========================================================================//
+
+def   _unconvertArgs( args, kw, options, context, unconverter ):
   
-  return args, kw
+  tmp_args = []
+  for arg in args:
+    if isinstance( arg, Operation ):
+      arg = arg( options, context, unconverter )
+    elif unconverter is not None:
+      arg = unconverter( options, context, arg )
+    
+    tmp_args.append( arg )
+  
+  tmp_kw = {}
+  for key,arg in kw.items():
+    if isinstance( arg, Operation ):
+      arg = arg( options, context, unconverter )
+    elif unconverter is not None:
+      arg = unconverter( options, context, arg )
+    
+    tmp_kw[ key ] = arg
+  
+  return tmp_args, tmp_kw
 
 #//===========================================================================//
 
@@ -131,21 +142,21 @@ class   Condition(object):
   
   #//-------------------------------------------------------//
   
-  def   convert(self, options, convertor ):
-    self.args, self.kw = _convertArgs( self.args, self.kw, options, convertor )
+  def   convert(self, options, converter ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, options, converter )
     
     cond = self.condition
     if cond is not None:
-      cond.convert( options, convertor )
+      cond.convert( options, converter )
   
   #//-------------------------------------------------------//
   
-  def   __call__( self, options, context, unconvertor ):
+  def   __call__( self, options, context, unconverter ):
     if self.condition is not None:
-      if not self.condition( options, context ):
+      if not self.condition( options, context, unconverter ):
         return False
     
-    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconvertor )
+    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
     
     return self.predicate( options, context, *args, **kw )
 
@@ -156,31 +167,77 @@ class   Operation( object ):
     'action',
     'kw',
     'args',
-    'operation'
   )
   
-  def   __init__( self, operation, action, *args, **kw ):
-    
-    self.operation = operation
+  def   __init__( self, action, *args, **kw ):
     self.action = action
     self.args = args
     self.kw = kw
   
-  def   convert(self, options, convertor ):
-    self.args, self.kw = _convertArgs( self.args, self.kw, options, convertor )
-    
-    op = self.operation
-    if op is not None:
-      op.convert( options, convertor )
+  def   convert(self, options, converter ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, options, converter )
   
-  def   __call__( self, options, context, dest_value, value_type, unconvertor ):
-    if self.operation is not None:
-      dest_value = self.operation( options, context, dest_value, value_type, unconvertor )
+  #//-------------------------------------------------------//
+  
+  def   __call__( self, options, context, unconverter ):
+    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
+    result = self.action( options, context, *args, **kw )
+    return result
+
+  #//-------------------------------------------------------//
+  
+  def   __add__( self, other ):
+    return SimpleOperation( operator.add, self, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   __radd__( self, other ):
+    return SimpleOperation( operator.add, other, self )
+  
+  #//-------------------------------------------------------//
+  
+  def   __sub__( self, other ):
+    return SimpleOperation( operator.sub, self, other )
+  
+  #//-------------------------------------------------------//
+  
+  def   __rsub__( self, other ):
+    return SimpleOperation( operator.sub, other, self )
+
+
+#//===========================================================================//
+#OptionValueOperation
+
+class   InplaceOperation( object ):
+  __slots__ = (
+    'action',
+    'kw',
+    'args',
+    # 'operation'
+  )
+  
+  def   __init__( self, action, *args, **kw ):
+    
+    # self.operation = operation
+    self.action = action
+    self.args = args
+    self.kw = kw
+  
+  def   convert(self, options, converter ):
+    self.args, self.kw = _convertArgs( self.args, self.kw, options, converter )
+    
+    # op = self.operation
+    # if op is not None:
+    #   op.convert( options, converter )
+  
+  def   __call__( self, options, context, dest_value, value_type, unconverter ):
+    # if self.operation is not None:
+    #   dest_value = self.operation( options, context, dest_value, value_type, unconverter )
     
     if self.action is None:
       return dest_value
     
-    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconvertor )
+    args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
     
     dest_value = self.action( options, context, dest_value, *args, **kw )
     dest_value = value_type( dest_value )
@@ -191,32 +248,32 @@ class   Operation( object ):
 class   ConditionalValue (object):
   
   __slots__ = (
-    'operation',
+    'ioperation',
     'condition',
   )
   
-  def   __init__( self, operation, condition = None ):
-    self.operation  = operation
+  def   __init__( self, ioperation, condition = None ):
+    self.ioperation  = ioperation
     self.condition  = condition
   
   #//-------------------------------------------------------//
   
-  def   convert(self, options, convertor ):
+  def   convert(self, options, converter ):
     condition = self.condition
     if isinstance( condition, Condition ):
-      condition.convert( options, convertor )
+      condition.convert( options, converter )
     
-    operation = self.operation
-    if isinstance( operation, Operation ):
-      operation.convert( options, convertor )
+    ioperation = self.ioperation
+    if isinstance( ioperation, InplaceOperation ):
+      ioperation.convert( options, converter )
   
   #//-------------------------------------------------------//
   
-  def   evaluate( self, value, value_type, options, context, unconvertor ):
+  def   evaluate( self, value, value_type, options, context, unconverter ):
     condition = self.condition
-    if (condition is None) or condition( options, context, unconvertor ):
-      if self.operation is not None:
-        value = self.operation( options, context, value, value_type, unconvertor )
+    if (condition is None) or condition( options, context, unconverter ):
+      if self.ioperation is not None:
+        value = self.ioperation( options, context, value, value_type, unconverter )
     
     return value
 
