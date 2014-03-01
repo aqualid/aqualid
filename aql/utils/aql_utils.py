@@ -50,19 +50,19 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import toSequence, UniqueList
+from aql.util_types import toSequence, AqlException
 
 #//===========================================================================//
 
 #noinspection PyUnusedLocal
-class   ErrorProgramNotFound( Exception ):
+class   ErrorProgramNotFound( AqlException ):
   def   __init__( self, program, env ):
     msg = "Program '%s' has not been found" % str(program)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorUnmarshallableObject( Exception ):
+class   ErrorUnmarshallableObject( AqlException ):
   def   __init__( self, obj ):
     msg = "Unmarshallable object: '%s'" % (obj, )
     super(type(self), self).__init__( msg )
@@ -420,7 +420,7 @@ def _decodeData( data ):
 
 #//===========================================================================//
 
-class   ExecCommandResult( Exception ):
+class   ExecCommandResult( AqlException ):
   __slots__ = ('returncode', 'out', 'exception')
   
   def   __init__( self, cmd, exception = None, returncode = None, out = None, err = None ):

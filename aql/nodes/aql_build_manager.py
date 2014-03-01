@@ -25,7 +25,7 @@ __all__ = (
 import threading
 import traceback
 
-from aql.util_types import toSequence
+from aql.util_types import toSequence, AqlException
 from aql.utils import eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
@@ -128,35 +128,35 @@ def   eventNodeRemoved( node, progress, brief ):
 
 #//===========================================================================//
 
-class   ErrorNodeDependencyCyclic( Exception ):
+class   ErrorNodeDependencyCyclic( AqlException ):
   def   __init__( self, node ):
     msg = "Node has a cyclic dependency: %s" % str(node)
     super(ErrorNodeDependencyCyclic, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorNodeUnknown(Exception):
+class   ErrorNodeUnknown(AqlException):
   def   __init__( self, node ):
     msg = "Unknown node '%s'" % (node, )
     super(ErrorNodeUnknown, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorNodeDependencyUnknown(Exception):
+class   ErrorNodeDependencyUnknown(AqlException):
   def   __init__( self, node, dep_node ):
     msg = "Unable to add dependency to node '%s' from node '%s'" % (node, dep_node)
     super(ErrorNodeDependencyUnknown, self).__init__( msg )
 
 #//===========================================================================//
 
-class   InternalErrorRemoveNonTailNode( Exception ):
+class   InternalErrorRemoveNonTailNode( AqlException ):
   def   __init__( self, node ):
     msg = "Removing non-tail node: %s" % str(node)
     super(InternalErrorRemoveNonTailNode, self).__init__( msg )
 
 #//===========================================================================//
 
-class   InternalErrorRemoveUnknownTailNode(Exception):
+class   InternalErrorRemoveUnknownTailNode(AqlException):
   def   __init__( self, node ):
     msg = "Remove unknown tail node: : %s" % str(node)
     super(InternalErrorRemoveUnknownTailNode, self).__init__( msg )
@@ -504,7 +504,7 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, nodes, brief ):
+  def   build( self, nodes, brief, build_always = False ):
     
     build_manager = self.build_manager
     
@@ -539,7 +539,7 @@ class _NodesBuilder (object):
       
       vfile = vfiles[ node.builder ]
       
-      if node.isActual( vfile ):
+      if (not build_always) and node.isActual( vfile ):
         build_manager.actualNode( node )
         changed = True
       else:
@@ -587,6 +587,7 @@ class _NodesBuilder (object):
       if pre_nodes:
         actual = node.prebuildFinished( pre_nodes )
         if actual:
+          build_manager.removedNode( node, silent = True )
           continue
         
       else:
@@ -727,12 +728,13 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   removedNode( self, node ):
+  def   removedNode( self, node, silent = False ):
     self._nodes.removeTail( node )
     self._waiting_nodes.remove( node )
     self.completed += 1
     
-    eventNodeRemoved( node, self.getProgressStr(), self.brief )
+    if not silent:
+      eventNodeRemoved( node, self.getProgressStr(), self.brief )
     
     node.shrink()
   
@@ -816,7 +818,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, nodes = None, brief = True ):
+  def   build( self, jobs, keep_going, nodes = None, brief = True, build_always = False ):
     
     self.__reset( brief )
     
@@ -834,7 +836,7 @@ class BuildManager (object):
         if not (tails or self.isWaiting()):
           break
         
-        changed = nodes_builder.build( tails, brief )
+        changed = nodes_builder.build( tails, brief, build_always )
         
         if not changed:
           break
@@ -854,10 +856,16 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   printState(self):
+  def   printBuildState(self):
     logInfo("Wating nodes: %s" % len(self._waiting_nodes) )
     logInfo("Failed nodes: %s" % len(self._failed_nodes) )
     logInfo("Completed nodes: %s" % self.completed )
+    logInfo("Actual nodes: %s" % self.actual )
+  
+  #//-------------------------------------------------------//
+  
+  def   printStatusState(self):
+    logInfo("Outdated nodes: %s" % len(self._failed_nodes) )
     logInfo("Actual nodes: %s" % self.actual )
   
   #//-------------------------------------------------------//
@@ -899,3 +907,5 @@ class BuildManager (object):
           break
         
         nodes_builder.status( tails )
+    
+    return self.isOk()

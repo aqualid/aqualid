@@ -29,6 +29,8 @@ try:
 except ImportError:
   import pickle
 
+from aql.util_types import AqlException
+
 #//===========================================================================//
 
 _known_type_names = {}
@@ -118,7 +120,7 @@ def  pickleable( value_type, known_type_names = _known_type_names, known_type_id
     
     other_type = known_type_ids.setdefault( type_id, value_type )
     if other_type is not value_type:
-      raise Exception( "Two different type names have identical CRC32 checksum: '%s' and '%s'" % (_typeName( other_type ), type_name ) )
+      raise AqlException( "Two different type names have identical CRC32 checksum: '%s' and '%s'" % (_typeName( other_type ), type_name ) )
     
     known_type_names[ type_name ] = type_id
   

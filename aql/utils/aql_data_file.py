@@ -22,32 +22,34 @@ __all__ = ( 'DataFile', )
 import os
 import struct
 
+from aql.util_types import AqlException
+
 from .aql_utils import openFile
 
 #//===========================================================================//
 
-class   ErrorDataFileFormatInvalid( Exception ):
+class   ErrorDataFileFormatInvalid( AqlException ):
   def   __init__( self ):
     msg = "Data file format is not valid."
     super(ErrorDataFileFormatInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileChunkInvalid( Exception ):
+class   ErrorDataFileChunkInvalid( AqlException ):
   def   __init__( self ):
     msg = "Data file chunk format is not valid."
     super(ErrorDataFileChunkInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileVersionInvalid( Exception ):
+class   ErrorDataFileVersionInvalid( AqlException ):
   def   __init__( self ):
     msg = "Data file version is changed."
     super(ErrorDataFileVersionInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileCorrupted( Exception ):
+class   ErrorDataFileCorrupted( AqlException ):
   def   __init__( self ):
     msg = "Data file is corrupted"
     super(ErrorDataFileCorrupted, self).__init__( msg )

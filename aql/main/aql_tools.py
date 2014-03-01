@@ -21,7 +21,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
 
 import os
 
-from aql.util_types import toSequence, Singleton
+from aql.util_types import toSequence, Singleton, AqlException
 from aql.utils import logWarning, loadModule, findFiles, eventWarning
 
 #noinspection PyStatementEffect
@@ -49,17 +49,17 @@ def   eventToolsToolFailed( tool_class, err ):
 
 #//===========================================================================//
 
-class   ErrorToolInvalid( Exception ):
+class   ErrorToolInvalid( AqlException ):
   def   __init__( self, tool_class ):
     msg = "Invalid tool type: '%s'" % str(tool_class)
     super(type(self), self).__init__( msg )
 
-class   ErrorToolInvalidSetupMethod( Exception ):
+class   ErrorToolInvalidSetupMethod( AqlException ):
   def   __init__( self, method ):
     msg = "Invalid tool setup method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
 
-class   ErrorToolNotFound( Exception ):
+class   ErrorToolNotFound( AqlException ):
   def   __init__( self, tool_name ):
     msg = "Tool '%s' has not been found" % str(tool_name)
     super(type(self), self).__init__( msg )

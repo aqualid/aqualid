@@ -20,24 +20,25 @@ __all__ = (
   'ValueBase', 'SignatureValue', 'SimpleValue', 'NullValue',
 )
 
-from aql.utils import simpleObjectSignature, strSignature, dataSignature
+from aql.util_types import AqlException
+from aql.utils import simpleObjectSignature
 from .aql_value_pickler import pickleable
 
 #//===========================================================================//
 
-class   ErrorValueNameEmpty( Exception ):
+class   ErrorValueNameEmpty( AqlException ):
   def   __init__( self ):
     msg = "Vale name is empty"
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorSignatureValueInvalidDataType( Exception ):
+class   ErrorSignatureValueInvalidDataType( AqlException ):
   def   __init__( self, data ):
     msg = "Signature value data type must be bytes or bytearray, actual type: '%s'" % (type(data),)
     super(type(self), self).__init__( msg )
 
-class   ErrorTextValueInvalidDataType( Exception ):
+class   ErrorTextValueInvalidDataType( AqlException ):
   def   __init__( self, text ):
     msg = "Text value data type must be string, actual type: '%s'" % (type(text),)
     super(type(self), self).__init__( msg )

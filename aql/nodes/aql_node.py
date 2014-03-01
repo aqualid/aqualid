@@ -26,28 +26,28 @@ import binascii
 import itertools
 
 from aql.utils import simpleObjectSignature, Chdir
-from aql.util_types import toSequence
+from aql.util_types import toSequence, AqlException
 
 from aql.values import ValueBase, pickleable
 
 #//===========================================================================//
 
-class   ErrorNodeDependencyInvalid( Exception ):
+class   ErrorNodeDependencyInvalid( AqlException ):
   def   __init__( self, dep ):
     msg = "Invalid node dependency: %s" % (dep,)
     super(ErrorNodeDependencyInvalid, self).__init__( msg )
 
-class   ErrorNoTargets( Exception ):
+class   ErrorNoTargets( AqlException ):
   def   __init__( self, node ):
     msg = "Node targets are not built or set yet: %s" % (node.getBuildStr( brief = False ))
     super(ErrorNoTargets, self).__init__( msg )
 
-class   ErrorNoImplicitDeps( Exception ):
+class   ErrorNoImplicitDeps( AqlException ):
   def   __init__( self, node ):
     msg = "Node implicit dependencies are not built or set yet: %s" % (node.getBuildStr( brief = False ))
     super(ErrorNoImplicitDeps, self).__init__( msg )
 
-class   ErrorNodeNotInitialized( Exception ):
+class   ErrorNodeNotInitialized( AqlException ):
   def   __init__( self, node ):
     msg = "Node is not initialized yet: %s" % (node, )
     super(ErrorNodeNotInitialized, self).__init__( msg )

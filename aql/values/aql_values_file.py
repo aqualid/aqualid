@@ -21,13 +21,14 @@ __all__ = (
   'ValuesFile',
 )
 
+from aql.util_types import AqlException 
 from aql.utils import DataFile, FileLock
 
 from .aql_value_pickler import ValuePickler
 
 #//===========================================================================//
 
-class   ErrorValuesFileUnknownValue( Exception ):
+class   ErrorValuesFileUnknownValue( AqlException ):
   def   __init__( self, value ):
     msg = "Unknown value: %s" % (value, )
     super(type(self), self).__init__( msg )

@@ -25,18 +25,19 @@ __all__ = (
   'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues', 
 )
 
-from aql.util_types import toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
+from aql.util_types import AqlException, toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, \
+                          SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
 
-class   ErrorOptionTypeEnumAliasIsAlreadySet( Exception ):
+class   ErrorOptionTypeEnumAliasIsAlreadySet( AqlException ):
   def   __init__( self, option, value, current_value, new_value ):
     msg = "Alias '%s' of Enum Option '%s' can't be changed to '%s' from '%s'" % (value, option, new_value, current_value )
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorOptionTypeEnumValueIsAlreadySet( Exception ):
+class   ErrorOptionTypeEnumValueIsAlreadySet( AqlException ):
   def   __init__( self, option, value, new_value ):
     msg = "Value '%s' of Enum Option '%s' can't be changed to alias to '%s'" % (value, option, new_value )
     super(type(self), self).__init__( msg )

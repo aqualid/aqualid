@@ -19,7 +19,7 @@
 
 __all__ = (
   'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
-  'eventWarning',  'eventStatus',  'eventDebug',
+  'eventWarning',  'eventStatus',  'eventDebug', 'eventError',
   'eventHandler', 'disableEvents', 'enableEvents',
   'disableDefaultHandlers', 'enableDefaultHandlers', 'addUserHandler', 'removeUserHandler',
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
@@ -28,35 +28,36 @@ __all__ = (
 import types
 import itertools
 
-from aql.util_types import Singleton, toSequence
+from aql.util_types import Singleton, toSequence, AqlException
 
 from .aql_utils import equalFunctionArgs
 
 #//===========================================================================//
 
-EVENT_WARNING = 0
-EVENT_STATUS = 1
-EVENT_DEBUG = 2
+EVENT_ERROR = 0
+EVENT_WARNING = 1
+EVENT_STATUS = 2
+EVENT_DEBUG = 3
 
-EVENT_ALL = ( EVENT_DEBUG, EVENT_STATUS, EVENT_WARNING )
+EVENT_ALL = ( EVENT_DEBUG, EVENT_STATUS, EVENT_WARNING, EVENT_ERROR )
 
 #//===========================================================================//
 
-class   ErrorEventUserHandlerWrongArgs ( Exception ):
+class   ErrorEventUserHandlerWrongArgs ( AqlException ):
   def   __init__( self, event, handler ):
     msg = "Invalid arguments of event '%s' handler method: '%s'" % (event, handler)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorEventHandlerAlreadyDefined ( Exception ):
+class   ErrorEventHandlerAlreadyDefined ( AqlException ):
   def   __init__( self, event, handler, other_handler ):
     msg = "Duplicate event '%s' definition to default handlers: '%s', '%s'" % (event, handler, other_handler )
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorEventHandlerUnknownEvent ( Exception ):
+class   ErrorEventHandlerUnknownEvent ( AqlException ):
   def   __init__( self, event ):
     msg = "Unknown event: '%s'" % str(event)
     super(type(self), self).__init__( msg )
@@ -188,6 +189,7 @@ def   _eventImpl( handler, importance_level, event = None ):
 
 #//===========================================================================//
 
+def   eventError( handler ):    return _eventImpl( handler, EVENT_ERROR )
 def   eventWarning( handler ):  return _eventImpl( handler, EVENT_WARNING )
 def   eventStatus( handler ):   return _eventImpl( handler, EVENT_STATUS )
 def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )

@@ -28,7 +28,7 @@ import types
 import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
-from aql.util_types import FilePath, FilePaths, SplitListType, toSequence
+from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, AqlException
 from aql.values import NullValue
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node
@@ -38,35 +38,42 @@ from .aql_builtin_tools import BuiltinTool
 
 #//===========================================================================//
 
-class   ErrorProjectInvalidMethod( Exception ):
+class   ErrorProjectInvalidMethod( AqlException ):
   def   __init__( self, method ):
     msg = "Invalid project method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorProjectBuilderMethodWithKW( Exception ):
+class   ErrorProjectUnknownTarget( AqlException ):
+  def   __init__( self, target ):
+    msg = "Unknown build target: '%s'" % str(target)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+class   ErrorProjectBuilderMethodWithKW( AqlException ):
   def   __init__( self, method ):
     msg = "Keyword arguments are not allowed in builder method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorProjectBuilderMethodUnbound( Exception ):
+class   ErrorProjectBuilderMethodUnbound( AqlException ):
   def   __init__( self, method ):
     msg = "Unbound builder method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorProjectBuilderMethodFewArguments( Exception ):
+class   ErrorProjectBuilderMethodFewArguments( AqlException ):
   def   __init__( self, method ):
     msg = "Too few arguments in builder method: '%s'" % str(method)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
+class   ErrorProjectBuilderMethodInvalidOptions( AqlException ):
   def   __init__( self, value ):
     msg = "Type of 'options' argument must be Options, instead of : '%s'(%s)" % (type(value), value)
     super(type(self), self).__init__( msg )
@@ -77,7 +84,8 @@ class   ErrorProjectBuilderMethodInvalidOptions( Exception ):
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options',
-               'verbose', 'log_level', 'jobs', 'keep_going', 'rebuild', 'profile', 'memory' )
+               'verbose', 'log_level', 'jobs', 'keep_going',
+               'build_always', 'profile', 'memory', 'clean', 'status' )
   
   #//-------------------------------------------------------//
   
@@ -93,15 +101,14 @@ class ProjectConfig( object ):
       CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
       CLIOption( "-l", "--list-options",    "list_options",   bool,       False,        "List all available options and exit." ),
       CLIOption( "-c", "--config",          "config",         FilePath,   None,         "The configuration file used to read CLI arguments." ),
-      CLIOption( "-B", "--always",          "always",         bool,       False,        "Unconditionally build all targets." ),
-      CLIOption( "-R", "--clear",           "clear",          bool,       False,        "Cleans targets." ),
+      CLIOption( "-B", "--always",          "build_always",   bool,       False,        "Unconditionally build all targets." ),
+      CLIOption( "-R", "--clean",           "clean",          bool,       False,        "Cleans targets." ),
       CLIOption( "-n", "--status",          "status",         bool,       False,        "Print status of targets." ),
       CLIOption( "-u", "--up",              "search_up",      bool,       False,        "Search up directory tree for a make file." ),
       
       CLIOption( "-b", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tools-path",      "tools_path",     Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Keep going when some targets can't be built." ),
-      CLIOption( "-r", "--rebuild",         "rebuild",        bool,       False,        "Unconditionally rebuilds all targets." ),
       CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
       CLIOption( "-s", "--silent",          "silent",         bool,       False,        "Silent mode." ),
@@ -143,17 +150,19 @@ class ProjectConfig( object ):
     
     #//-------------------------------------------------------//
     
-    self.options    = options
-    self.directory  = cli_config.directory.abspath()
-    self.makefile   = cli_config.makefile
-    self.targets    = cli_config.targets
-    self.verbose    = cli_config.verbose
-    self.keep_going = cli_config.keep_going
-    self.rebuild    = cli_config.rebuild
-    self.jobs       = cli_config.jobs
-    self.profile    = cli_config.profile
-    self.memory     = cli_config.memory
-    self.log_level  = log_level
+    self.options      = options
+    self.directory    = cli_config.directory.abspath()
+    self.makefile     = cli_config.makefile
+    self.targets      = cli_config.targets
+    self.verbose      = cli_config.verbose
+    self.keep_going   = cli_config.keep_going
+    self.build_always = cli_config.build_always
+    self.clean        = cli_config.clean
+    self.status       = cli_config.status
+    self.jobs         = cli_config.jobs
+    self.profile      = cli_config.profile
+    self.memory       = cli_config.memory
+    self.log_level    = log_level
 
 #//===========================================================================//
 
@@ -493,8 +502,11 @@ class Project( object ):
   def   _getBuildNodes( self ):
     target_nodes = []
     
-    for alias in self.targets:
-      target_nodes += self.aliases.get( alias, [] )
+    try:
+      for alias in self.targets:
+        target_nodes += self.aliases[ alias ]
+    except KeyError as ex:
+      raise ErrorProjectUnknownTarget( ex.args[0] )
     
     if not target_nodes:
       target_nodes = self.defaults
@@ -506,7 +518,7 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   Build( self, jobs = None, keep_going = False, verbose = False ):
+  def   Build( self, jobs = None, keep_going = False, verbose = False, build_always = False ):
     brief = not verbose
     
     if not jobs:
@@ -525,17 +537,25 @@ class Project( object ):
     
     build_nodes = self._getBuildNodes()
     
-    is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes, brief = brief )
+    is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes,
+                                      brief = brief, build_always = build_always )
     return is_ok
   
   #//=======================================================//
   
-  def   PrintFails(self):
-    self.build_manager.printFails()
+  def Clean(self, verbose = False ):
+    brief = not verbose
+    build_nodes = self._getBuildNodes()
+    
+    self.build_manager.clear( nodes = build_nodes, brief = brief )
   
   #//=======================================================//
   
-  def   Clean( self ):
-    pass
-
-#//===========================================================================//
+  def Status(self, verbose = False ):
+    brief = not verbose
+    build_nodes = self._getBuildNodes()
+    
+    is_actual = self.build_manager.status( nodes = build_nodes, brief = brief )
+    return is_actual
+  
+  #//=======================================================//

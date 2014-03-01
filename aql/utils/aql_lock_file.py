@@ -23,7 +23,9 @@ import os
 import time
 import errno
 
-class   ErrorFileLocked( Exception ):
+from aql.util_types import AqlException
+
+class   ErrorFileLocked( AqlException ):
   def   __init__( self, filename ):
     msg = 'File "%s" is locked.' % (filename,)
     super(ErrorFileLocked, self).__init__( msg )

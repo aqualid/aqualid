@@ -18,11 +18,17 @@
 #
 
 __all__ = (
-  'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
+  'AqlException', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
 )
 
 import re
 import operator
+
+#//===========================================================================//
+#//===========================================================================//
+
+class  AqlException (Exception):
+  pass
 
 #//===========================================================================//
 #//===========================================================================//

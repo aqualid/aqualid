@@ -22,8 +22,9 @@ import gc
 import os
 import cProfile
 
-from aql.utils import eventStatus, Chrono, Chdir, memoryUsage, \
-                      logInfo, logDebug, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
+from aql.util_types import AqlException
+from aql.utils import eventStatus, eventError, Chrono, Chdir, memoryUsage, \
+                      logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
 
 #//===========================================================================//
@@ -35,6 +36,10 @@ def   eventReadingScripts():
 @eventStatus
 def   eventReadingScriptsDone( elapsed ):
   logInfo("Reading scripts finished (%s)" % elapsed)
+
+@eventError
+def   eventAqlError( error ):
+  logError( error )
 
 #//===========================================================================//
 
@@ -114,10 +119,18 @@ def   _main( prj_cfg ):
       eventBuilding()
       
       with elapsed:
-        success = prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, verbose = prj_cfg.verbose )
-      
-      if not success:
-        prj.PrintFails()
+        if prj_cfg.status:
+          success = prj.Status( verbose = prj_cfg.verbose )
+          prj.build_manager.printStatusState()
+          
+        elif prj_cfg.clean:
+          prj.Clean( verbose = prj_cfg.verbose )
+          success = True
+        else:
+          success = prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going,
+                               verbose = prj_cfg.verbose, build_always = prj_cfg.build_always )
+          if not success:
+            prj.build_manager.printFails()
       
       if prj_cfg.memory:
         _printMemoryStatus()
@@ -134,26 +147,22 @@ def   _main( prj_cfg ):
 #//===========================================================================//
 
 def   main():
-  prj_cfg = ProjectConfig()
-  
-  profile = prj_cfg.profile
-  
-  if not profile:
-    status = _main( prj_cfg )
-  else:
-    profiler = cProfile.Profile()
+  try:
+    prj_cfg = ProjectConfig()
     
-    status = profiler.runcall( _main, prj_cfg )
+    profile = prj_cfg.profile
     
-    profiler.dump_stats( profile )
-  
-  return status
-  
-  # from meliae import scanner
-  # scanner.dump_all_objects('objs_dump.json')
-  # import objgraph
-  # objgraph.show_most_common_types( 20 )
+    if not profile:
+      status = _main( prj_cfg )
+    else:
+      profiler = cProfile.Profile()
+      
+      status = profiler.runcall( _main, prj_cfg )
+      
+      profiler.dump_stats( profile )
     
-    
+    return status
+  except AqlException as ex:
+    eventAqlError( ex )
   
 #//===========================================================================//

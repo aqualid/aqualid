@@ -26,11 +26,12 @@ import os
 from .aql_value import ValueBase
 from .aql_value_pickler import pickleable
 
+from aql.util_types import AqlException
 from aql.utils import fileSignature, fileTimeSignature
 
 #//===========================================================================//
 
-class   ErrorFileValueNoName( Exception ):
+class   ErrorFileValueNoName( AqlException ):
   def   __init__( self ):
     msg = "Filename is not specified"
     super(type(self), self).__init__( msg )
