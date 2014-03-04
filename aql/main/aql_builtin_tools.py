@@ -52,8 +52,8 @@ class ExecuteCommand (Builder):
 
 class BuiltinTool( Tool ):
   
-  def   ExecuteCommand( self, options, with_output = False ):
-    return ExecuteCommand( options, with_output = False )
+  def   ExecuteCommand( self, options ):
+    return ExecuteCommand( options )
   
   def   DirName(self, options):
     raise NotImplementedError()

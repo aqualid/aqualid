@@ -121,8 +121,9 @@ class ToolsManager( Singleton ):
     if not issubclass( tool_class, Tool ):
       raise ErrorToolInvalid( tool_class )
     
-    self.tool_names.setdefault( tool_class, set() ).update( toSequence( names ) )
-    self.__addToMap( self.tool_classes, names, tool_class )
+    if names:
+      self.tool_names.setdefault( tool_class, set() ).update( toSequence( names ) )
+      self.__addToMap( self.tool_classes, names, tool_class )
   
   #//-------------------------------------------------------//
   
@@ -159,7 +160,7 @@ class ToolsManager( Singleton ):
     tools_info = []
     empty_list = tuple()
     
-    if isinstance( name, Tool ):
+    if issubclass( name, Tool ):
       tool_classes = ( name, )
     else:
       tool_classes = self.tool_classes.get( name, empty_list )

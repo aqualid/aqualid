@@ -354,6 +354,7 @@ class BuildSplitter(object):
   
   def   __init__(self, builder ):
     self.builder = builder
+    self.options = builder.options
   
   #//-------------------------------------------------------//
   

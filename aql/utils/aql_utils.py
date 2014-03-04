@@ -149,11 +149,33 @@ def writeBinFile( filename, buf ):
 #//===========================================================================//
 
 def   execFile( filename, file_locals ):
+  
+  module_name = os.path.basename( filename )
+  module_dir = os.path.dirname( filename )
+  
+  module = imp.new_module( module_name )
+  if file_locals:
+    file_locals.update( module.__dict__ )
+  else:
+    file_locals = module.__dict__
+  
   source = readTextFile( filename )
   code = compile( source, filename, 'exec' )
-  out_locals = {}
-  exec( code, file_locals, out_locals )
-  return out_locals
+  file_locals_orig = file_locals.copy()
+  
+  sys.path.insert(0, module_dir)
+  exec( code, file_locals )
+  sys.path.remove(module_dir)
+  
+  result = {}
+  for key,value in file_locals.items():
+    if key.startswith('_') or isinstance( value, types.ModuleType ):
+      continue
+    
+    if key not in file_locals_orig:
+      result[ key ] = value
+  
+  return result
 
 #//===========================================================================//
 
@@ -651,12 +673,16 @@ except ImportError:
 def   loadModule( module_file, update_sys_path = True ):
   
   module_file = os.path.abspath( module_file )
+  
   module_dir = os.path.dirname( module_file )
   module_name = os.path.splitext( os.path.basename( module_file ) )[0]
+  # module_name = os.path.basename( module_file )
   
   fp, pathname, description = imp.find_module( module_name, [ module_dir ] )
+  # pathname = module_file
+  # description = ('','r',imp.PY_SOURCE)
   
-  with fp:
+  with openFile( module_file ) as fp:
     m = imp.load_module( module_name, fp, pathname, description )
     if update_sys_path:
       sys_path = sys.path

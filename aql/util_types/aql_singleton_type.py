@@ -47,4 +47,5 @@ class Singleton( object ):
     
     Singleton.setInstance( cls, self )
     
+
     return self

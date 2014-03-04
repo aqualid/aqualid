@@ -143,6 +143,7 @@ class Node (object):
   (
     'builder',
     'builder_data',
+    'options',
     
     'name',
     'signature',
@@ -163,6 +164,7 @@ class Node (object):
   def   __init__( self, builder, sources, cwd = None ):
     
     self.builder = builder
+    self.options = builder.options
     self.builder_data = None
     
     if cwd is None:
@@ -362,6 +364,7 @@ class Node (object):
     self.signature = None
     self.builder = None
     self.builder_data = None
+    self.options = None
     self.ideps = None
   
   #//=======================================================//

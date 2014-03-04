@@ -1,6 +1,5 @@
 import os
 import re
-import hashlib
 import itertools
 
 import aql

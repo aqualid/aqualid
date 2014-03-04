@@ -164,5 +164,6 @@ def   main():
     return status
   except AqlException as ex:
     eventAqlError( ex )
+    raise
   
 #//===========================================================================//
