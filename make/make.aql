@@ -1,0 +1,40 @@
+import os
+import re
+
+import aql
+
+class AqlPreprocess (aql.Builder):
+  def   build( self, node ):
+    src_file = node.getSources()[0]
+    stripped_src_file = self.getBuildPath( src_file ).change( ext = '.aql.py')
+    
+    #~ std_imports = set()
+    
+    #~ aql_import_re = re.compile(r"^\s*from\s+.+\s+import\s+.+$")
+    aql_import_re = re.compile(r"^\s*from\s+.+\s+import\s+.+$", flags = re.MULTILINE )
+    
+    content = aql.readTextFile( src_file )
+    
+    content = aql_import_re.sub( "", content )
+    
+    aql.writeTextFile( stripped_src_file, content )
+    
+    node.setFileTargets( stripped_src_file )
+
+
+class AqlBuildTool( aql.Tool ):
+  
+  def   Preprocess( self, options ):
+    return aql.BuildSplitter( AqlPreprocess( options ) )
+
+#//===========================================================================//
+
+src_dir = os.path.abspath('../aql')
+
+SetBuildDir('output')
+
+src_files = FindFiles( src_dir, suffixes = '.py' )
+
+aql_tool = AddTool( AqlBuildTool )
+
+pre_files = aql_tool.Preprocess( src_files )

@@ -164,7 +164,7 @@ class Node (object):
   def   __init__( self, builder, sources, cwd = None ):
     
     self.builder = builder
-    self.options = builder.options
+    self.options = getattr( builder, 'options', None )
     self.builder_data = None
     
     if cwd is None:
@@ -591,6 +591,7 @@ class Node (object):
     nodes = []
     
     cwd = self.cwd
+    options = self.options
     
     dep_values = self.getDepValues()
     for src_value in self.getSourceValues():

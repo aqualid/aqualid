@@ -25,7 +25,7 @@ import os
 import errno
 
 from aql.util_types import toSequence, FilePath, UniqueList
-from aql.utils import simpleObjectSignature, executeCommand, eventDebug, logDebug, Chdir
+from aql.utils import simpleObjectSignature, executeCommand, eventDebug, Chdir
 from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
 from .aql_node import Node
@@ -34,6 +34,7 @@ from .aql_node import Node
 
 @eventDebug
 def   eventExecCmd( cmd, cwd, env ):
+  # from aql.utils import logDebug
   # cmd = ' '.join( cmd )
   # logDebug("EXEC: %s" % (cmd, ) )
   pass
@@ -354,7 +355,6 @@ class BuildSplitter(object):
   
   def   __init__(self, builder ):
     self.builder = builder
-    self.options = builder.options
   
   #//-------------------------------------------------------//
   

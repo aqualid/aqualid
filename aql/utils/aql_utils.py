@@ -50,7 +50,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import toSequence, AqlException
+from aql.util_types import toSequence, AqlException, FilePaths
 
 #//===========================================================================//
 
@@ -368,7 +368,7 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes = ('__', '.') ):
   
-  found_files = []
+  found_files = FilePaths()
   
   paths = toSequence(paths)
   ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
