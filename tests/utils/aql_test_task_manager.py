@@ -54,7 +54,7 @@ class TestTaskManager( AqlTestCase ):
     
     for i, t in enumerate( sorted(done_tasks) ):
       self.assertEqual( t[0], i )
-      self.assertIsInstance( t[1], Exception )
+      self.assertIsNotNone( t[1] )
 
   #//===========================================================================//
 
@@ -134,7 +134,7 @@ class TestTaskManager( AqlTestCase ):
     self.assertEqual( done_tasks[0], expected_tasks[0] )
     
     self.assertEqual( done_tasks[1].task_id, 1 )
-    self.assertIsInstance( done_tasks[1].error, Exception )
+    self.assertIsNotNone( done_tasks[1].error )
     
     self.assertEqual( done_tasks[2], expected_tasks[2] )
   
@@ -166,7 +166,7 @@ class TestTaskManager( AqlTestCase ):
     self.assertEqual( done_tasks[:3], expected_tasks[:3] )
     
     self.assertEqual( done_tasks[3].task_id, 3 )
-    self.assertIsInstance( done_tasks[3].error, Exception )
+    self.assertIsNotNone( done_tasks[3].error )
 
 #//===========================================================================//
 

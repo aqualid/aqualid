@@ -1,40 +1,300 @@
 import os
 import re
+import datetime
+import sysconfig
 
 import aql
 
-class AqlPreprocess (aql.Builder):
+HEADER = """#!/usr/bin/env python
+#
+# THIS FILE WAS AUTO-GENERATED FILE BY MAKE.AQL SCRIPT. DO NOT EDIT!
+#
+# Copyright (c) 2011-%s the developers of Aqualid project - http://aqualid.googlecode.com
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+# associated documentation files (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge, publish, distribute,
+# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or
+# substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+""" % datetime.date.today().year
+
+MAIN = """
+if __name__ == '__main__':
+  aql_module_name = os.path.splitext( os.path.basename( __file__ ) )[0]
+  aql_module = imp.new_module( aql_module_name )
+  aql_module_globals = globals().copy()
+  aql_module_globals.update( aql_module.__dict__ )
+  aql_module.__dict__.update( aql_module_globals )
+  sys.modules[ aql_module_name ] = aql_module
+  
+  sys.exit( main() )
+"""
+
+#//===========================================================================//
+
+class AqlPreprocess (aql.FileBuilder):
+  
+  def   getBuildStrArgs( self, node, brief = True ):
+    name = self.__class__.__name__
+    sources = node.getSources()
+    if brief:
+      sources = tuple( map( os.path.basename, sources ) )
+    return name, sources
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, node ):
     src_file = node.getSources()[0]
-    stripped_src_file = self.getBuildPath( src_file ).change( ext = '.aql.py')
     
-    #~ std_imports = set()
-    
-    #~ aql_import_re = re.compile(r"^\s*from\s+.+\s+import\s+.+$")
-    aql_import_re = re.compile(r"^\s*from\s+.+\s+import\s+.+$", flags = re.MULTILINE )
+    empty_re = re.compile(r'^\s*\r*\n', re.MULTILINE)
+    slash_re = re.compile(r'\\\r*\n', re.MULTILINE)
+    comments_re = re.compile(r"#.*$", re.MULTILINE )
+    all_stmt_re = re.compile(r"^__all__\s*=\s*\(.+?\)", re.MULTILINE | re.DOTALL )
     
     content = aql.readTextFile( src_file )
     
-    content = aql_import_re.sub( "", content )
+    content = slash_re.sub( "", content )
+    content = comments_re.sub( "", content )
+    content = all_stmt_re.sub( "", content )
     
-    aql.writeTextFile( stripped_src_file, content )
+    #//-------------------------------------------------------//
     
-    node.setFileTargets( stripped_src_file )
+    import_re = re.compile(r"^import\s+(.+)$", re.MULTILINE )
+    
+    std_imports = set()
+    def   importHandler( match, _std_imports = std_imports ):
+      module_name = match.group(1)
+      _std_imports.add(module_name)
+      return ""
+    
+    content = import_re.sub( importHandler, content )
+    
+    #//-------------------------------------------------------//
+    
+    aql_import_re = re.compile(r"^\s*from\s+(.+)\s+import\s+.+$", re.MULTILINE )
+    
+    aql_imports = set()
+    def   aqlImportHandler( match, _aql_imports = aql_imports ):
+      module_name = match.group(1)
+      
+      if module_name.startswith('.'):
+        module_name = os.sep + module_name[1:] + '.py'
+      else:
+        module_name = os.sep + module_name.replace('.', os.sep ) + os.sep
+      
+      _aql_imports.add(module_name)
+      return ""
+    
+    content = aql_import_re.sub( aqlImportHandler, content )
+    
+    #//-------------------------------------------------------//
+    
+    content = empty_re.sub( "", content )
+    
+    target = aql.SimpleValue( name = src_file, data = (std_imports, aql_imports, content) )
+    
+    node.setTargets( target )
 
+#//===========================================================================//
+
+class AqlLink (aql.Builder):
+  
+  def   __init__(self, options, target ):
+    prefix = options.prefix.get()
+    self.target = self.getBuildPath( target ).change( prefix = prefix )
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, brief = True ):
+    name = self.__class__.__name__
+    
+    sources = [ source.name for source in node.getSourceValues() ]
+    target  = self.target
+    
+    if brief:
+      sources = tuple( map( os.path.basename, sources ) )
+      target  = os.path.basename( self.target )
+    
+    return name, sources, target
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, node ):
+    value_type = self.fileValueType()
+    target = value_type( name = self.target, signature = None )
+    return target
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   _modToFiles( file2deps, modules ):
+    
+    mod2files = {}
+    
+    for mod in modules:
+      files = set()
+      for file in file2deps:
+        if file.find( mod ) != -1:
+          files.add( file )
+      
+      mod2files[ mod ] = files
+    
+    return mod2files
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   _getDep2Files( file2deps, mod2files ):
+    
+    dep2files = {}
+    
+    ordered_files = []
+    ordered_files_set = set()
+    
+    tmp_file2deps = {}
+    
+    for file, mods in file2deps.items():
+      for mod in mods:
+        files = mod2files[ mod ]
+        tmp_file2deps.setdefault( file, set() ).update( files )
+        for f in files:
+          dep2files.setdefault( f, set() ).add( file )
+    
+    
+    return dep2files, tmp_file2deps
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   _getContent( files_content, dep2files, file2deps, tails ):
+    
+    content = ""
+    while tails:
+      tail = tails.pop(0)
+      content += files_content[ tail ]
+      
+      files = dep2files.pop( tail, [] )
+      
+      for file in files:
+        deps = file2deps[ file ]
+        deps.remove( tail )
+        if not deps:
+          tails.append( file )
+          del file2deps[ file ]
+    
+    return content
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    
+    dep2files = {}
+    file2deps = {}
+    files_content = {}
+    modules = set()
+    tails = []
+    
+    std_modules = set()
+    
+    for value in node.getSourceValues():
+      file_name = value.name
+      mod_std_imports, mod_deps, mod_content = value.data
+      
+      if not mod_content:
+        continue
+      
+      if not mod_deps:
+        tails.append( file_name )
+      
+      files_content[ file_name ] = mod_content
+      file2deps[ file_name ] = mod_deps
+      
+      std_modules.update( mod_std_imports )
+      modules.update( mod_deps )
+    
+    mod2files = self._modToFiles( file2deps, modules )
+    
+    dep2files, file2deps = self._getDep2Files( file2deps, mod2files )
+    
+    content = self._getContent( files_content, dep2files, file2deps, tails )
+    
+    imports_content = '\n'.join( "import %s" % module for module in sorted(std_modules) )
+    
+    content = HEADER + '\n' + imports_content + '\n' + content + '\n' + MAIN
+    
+    aql.writeTextFile( self.target, content )
+    
+    node.setFileTargets( self.target )
+
+#//===========================================================================//
+
+class AqlInstall (aql.Builder):
+  
+  def   __init__(self, options, *kw ):
+    self.kw = kw
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, brief = True ):
+    name = self.__class__.__name__
+    
+    sources = node.getSources()
+    if brief:
+      sources = tuple( map( os.path.basename, sources ) )
+    
+    return name, sources
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    
+    import distutils.core
+    distutils.core.setup( **self.kw )
+    
+    node.setFileTargets( None )
+
+#//===========================================================================//
 
 class AqlBuildTool( aql.Tool ):
   
   def   Preprocess( self, options ):
     return aql.BuildSplitter( AqlPreprocess( options ) )
+  
+  def   Link( self, options, target ):
+    return AqlLink( options, target )
+  
+  # def   Install( self, options, **kw ):
+  #   return AqlInstall( options, **kw )
 
 #//===========================================================================//
 
 src_dir = os.path.abspath('../aql')
 
 SetBuildDir('output')
+options.build_dir_name = ''
 
 src_files = FindFiles( src_dir, suffixes = '.py' )
 
 aql_tool = AddTool( AqlBuildTool )
 
 pre_files = aql_tool.Preprocess( src_files )
+linked_file = aql_tool.Link( pre_files, target = "aql.py" )
+
+Alias('link', linked_file)
+Default( linked_file )
+
+#//-------------------------------------------------------//
+
+install_path = sysconfig.get_path('scripts')
+install = tools.Install( linked_file, target = install_path )
+
+Alias('install', install )

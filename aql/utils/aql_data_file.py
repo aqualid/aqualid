@@ -110,7 +110,7 @@ class   DataFileChunk (object):
     if capacity < size:
       self.capacity = size
       if reserve:
-        self.capacity += size // 4
+        self.capacity += min( size // 4, 64 )
       
       oversize = self.capacity - capacity
     

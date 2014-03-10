@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Builder', 'BuildSplitter',
+  'Builder', 'FileBuilder', 'BuildSplitter',
 )
 
 import os
@@ -41,7 +41,7 @@ def   eventExecCmd( cmd, cwd, env ):
 
 #//===========================================================================//
 
-def   _makeDir( path_dir, _path_cache = set() ):
+def   _makeBuildPath( path_dir, _path_cache = set() ):
   if path_dir not in _path_cache:
     if not os.path.isdir( path_dir ):
       try:
@@ -281,7 +281,7 @@ class Builder (object):
       if self.relative_build_paths:
         build_path = build_path.joinFromCommon( src_path.dirname() )
       
-    _makeDir( build_path )
+    _makeBuildPath( build_path )
     
     return build_path.join( filename )
   
@@ -348,6 +348,13 @@ class Builder (object):
     eventExecCmd( cmd, cwd, env )
     
     return result.out
+
+#//===========================================================================//
+
+class FileBuilder (Builder):
+  def   _initAttrs( self, options ):
+    super(FileBuilder,self)._initAttrs( options )
+    self.makeValue = self.makeFileValue
 
 #//===========================================================================//  
 

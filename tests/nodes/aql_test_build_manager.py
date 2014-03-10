@@ -87,45 +87,6 @@ class ChecksumBuilder (Builder):
     
     return name, sources, targets
 
-
-#//===========================================================================//
-
-def   _generateFile( start, stop ):
-  tmp = Tempfile()
-  tmp.write( bytearray( map( lambda v: v % 256, range( start, stop ) ) ) )
-  
-  tmp.close()
-  
-  return tmp.name
-
-#//===========================================================================//
-
-def   _removeFiles( files ):
-  for f in files:
-    try:
-      os.remove( f )
-    except (OSError, IOError):
-      pass
-
-#//===========================================================================//
-
-def   _generateSourceFiles( num, size ):
-  
-  src_files = []
-  
-  start = 0
-  
-  try:
-    while num > 0:
-      num -= 1
-      src_files.append( _generateFile( start, start + size ) )
-      start += size
-  except:
-    _removeFiles( src_files )
-    raise
-  
-  return src_files
-
 #//===========================================================================//
 
 def   _addNodesToBM( builder, src_files ):
@@ -283,41 +244,37 @@ class TestBuildManager( AqlTestCase ):
       options = builtinOptions()
       options.build_dir = tmp_dir
       
-      src_files = _generateSourceFiles( 5, 201 )
-      try:
-        
-        builder = ChecksumBuilder( options, 0, 256 )
-        
-        self.building_nodes = self.finished_nodes = 0
-        _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_nodes, 2 )
-        self.assertEqual( self.building_nodes, self.finished_nodes )
-        
-        #//-------------------------------------------------------//
-        
-        self.building_nodes = self.finished_nodes = 0
-        _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_nodes, 0 )
-        self.assertEqual( self.building_nodes, self.finished_nodes )
-        
-        #//-------------------------------------------------------//
-        
-        builder = ChecksumBuilder( options, 32, 1024 )
-        
-        self.building_nodes = self.finished_nodes = 0
-        _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_nodes, 2 )
-        self.assertEqual( self.building_nodes, self.finished_nodes )
-        
-        #//-------------------------------------------------------//
-        
-        self.building_nodes = self.finished_nodes = 0
-        _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_nodes, 0 )
-        self.assertEqual( self.building_nodes, self.building_nodes )
-        
-      finally:
-        _removeFiles( src_files )
+      src_files = self.generateSourceFiles( tmp_dir, 5, 201 )
+      
+      builder = ChecksumBuilder( options, 0, 256 )
+      
+      self.building_nodes = self.finished_nodes = 0
+      _buildChecksums( builder, src_files )
+      self.assertEqual( self.building_nodes, 2 )
+      self.assertEqual( self.building_nodes, self.finished_nodes )
+      
+      #//-------------------------------------------------------//
+      
+      self.building_nodes = self.finished_nodes = 0
+      _buildChecksums( builder, src_files )
+      self.assertEqual( self.building_nodes, 0 )
+      self.assertEqual( self.building_nodes, self.finished_nodes )
+      
+      #//-------------------------------------------------------//
+      
+      builder = ChecksumBuilder( options, 32, 1024 )
+      
+      self.building_nodes = self.finished_nodes = 0
+      _buildChecksums( builder, src_files )
+      self.assertEqual( self.building_nodes, 2 )
+      self.assertEqual( self.building_nodes, self.finished_nodes )
+      
+      #//-------------------------------------------------------//
+      
+      self.building_nodes = self.finished_nodes = 0
+      _buildChecksums( builder, src_files )
+      self.assertEqual( self.building_nodes, 0 )
+      self.assertEqual( self.building_nodes, self.building_nodes )
   
   #//-------------------------------------------------------//
   
@@ -415,28 +372,25 @@ class TestBuildManager( AqlTestCase ):
       options = builtinOptions()
       options.build_dir = tmp_dir
       
-      src_files = _generateSourceFiles( 3, 201 )
-      try:
-        builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
-        
-        self.building_nodes = self.finished_nodes = 0
-        _buildChecksums( builder, src_files )
-        self.assertEqual( self.building_nodes, 2 )
-        self.assertEqual( self.building_nodes, self.finished_nodes )
-        
-        bm = _addNodesToBM( builder, src_files )
-        try:
-          self.actual_nodes = self.outdated_nodes = 0
-          bm.status( brief = False ); bm.selfTest()
-          
-          self.assertEqual( self.outdated_nodes, 0)
-          self.assertEqual( self.actual_nodes, 2 )
-          
-        finally:
-          bm.close()
+      src_files = self.generateSourceFiles( tmp_dir, 3, 201 )
       
+      builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
+      
+      self.building_nodes = self.finished_nodes = 0
+      _buildChecksums( builder, src_files )
+      self.assertEqual( self.building_nodes, 2 )
+      self.assertEqual( self.building_nodes, self.finished_nodes )
+      
+      bm = _addNodesToBM( builder, src_files )
+      try:
+        self.actual_nodes = self.outdated_nodes = 0
+        bm.status( brief = False ); bm.selfTest()
+        
+        self.assertEqual( self.outdated_nodes, 0)
+        self.assertEqual( self.actual_nodes, 2 )
+        
       finally:
-        _removeFiles( src_files )
+        bm.close()
   
   #//-------------------------------------------------------//
   
@@ -446,47 +400,39 @@ class TestBuildManager( AqlTestCase ):
       options = builtinOptions()
       options.build_dir = tmp_dir
       
-      src_files = _generateSourceFiles( 3, 201 )
-      try:
-        bm = BuildManager()
-        try:
-          self.building_nodes = self.finished_nodes = 0
-          self.actual_nodes = self.outdated_nodes = 0
-          
-          builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
-          
-          src_values = []
-          for s in src_files:
-            src_values.append( FileChecksumValue( s ) )
-          
-          node = Node( builder, src_values )
-          
-          bm.add( node )
-          _build( bm )
-          
-          self.assertEqual( self.building_nodes, 3 )
-          
-          #//-------------------------------------------------------//
-          
-          self.actual_nodes = self.outdated_nodes = 0
-          
-          bm = BuildManager()
-          builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
-          
-          node = Node( builder, src_values )
-          bm.add( node ); bm.selfTest()
-          bm.status( brief = False ); bm.selfTest()
-          
-          self.assertEqual( self.outdated_nodes, 0 )
-          self.assertEqual( self.actual_nodes, 4 )
-        
-        finally:
-          bm.close()
-        
-        #//-------------------------------------------------------//
+      src_files = self.generateSourceFiles( tmp_dir, 3, 201 )
       
-      finally:
-        _removeFiles( src_files )
+      bm = BuildManager()
+      
+      self.building_nodes = self.finished_nodes = 0
+      self.actual_nodes = self.outdated_nodes = 0
+      
+      builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
+      
+      src_values = []
+      for s in src_files:
+        src_values.append( FileChecksumValue( s ) )
+      
+      node = Node( builder, src_values )
+      
+      bm.add( node )
+      _build( bm )
+      
+      self.assertEqual( self.building_nodes, 3 )
+      
+      #//-------------------------------------------------------//
+      
+      self.actual_nodes = self.outdated_nodes = 0
+      
+      bm = BuildManager()
+      builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
+      
+      node = Node( builder, src_values )
+      bm.add( node ); bm.selfTest()
+      bm.status( brief = False ); bm.selfTest()
+      
+      self.assertEqual( self.outdated_nodes, 0 )
+      self.assertEqual( self.actual_nodes, 4 )
   
   #//-------------------------------------------------------//
   
@@ -494,45 +440,39 @@ class TestBuildManager( AqlTestCase ):
   def test_bm_node_names(self):
     
     with Tempdir() as tmp_dir:
-      #~ tmp = Tempfile()
+      src_files = self.generateSourceFiles( tmp_dir, 3, 201 )
+      options = builtinOptions()
+      options.build_dir = tmp_dir
       
-      src_files = _generateSourceFiles( 3, 201 )
+      builder = ChecksumBuilder( options, 0, 256, replace_ext = False )
+      bm = BuildManager()
       try:
+        src_values = []
+        for s in src_files:
+          src_values.append( FileChecksumValue( s ) )
         
-        options = builtinOptions()
-        options.build_dir = tmp_dir
+        node0 = Node( builder, None )
+        node1 = Node( builder, src_values )
+        node2 = Node( builder, node1 )
+        node3 = Node( builder, node2 )
+        node4 = Node( builder, node3 )
         
-        builder = ChecksumBuilder( options, 0, 256, replace_ext = False )
-        bm = BuildManager()
-        try:
-          src_values = []
-          for s in src_files:
-            src_values.append( FileChecksumValue( s ) )
-          
-          node0 = Node( builder, None )
-          node1 = Node( builder, src_values )
-          node2 = Node( builder, node1 )
-          node3 = Node( builder, node2 )
-          node4 = Node( builder, node3 )
-          
-          bm.add( node0 )
-          bm.add( node1 )
-          bm.add( node2 )
-          bm.add( node3 )
-          bm.add( node4 )
-          
-          bm.build(1, False)
-          
-          print("node2: %s" % str(node4) )
-          print("node2: %s" % str(node3) )
-          print("node2: %s" % str(node2) )
-          print("node1: %s" % str(node1) )
-          print("node0: %s" % str(node0) )
-        finally:
-          bm.close()
+        bm.add( node0 )
+        bm.add( node1 )
+        bm.add( node2 )
+        bm.add( node3 )
+        bm.add( node4 )
+        
+        bm.build(1, False)
+        
+        print("node2: %s" % str(node4) )
+        print("node2: %s" % str(node3) )
+        print("node2: %s" % str(node2) )
+        print("node1: %s" % str(node1) )
+        print("node0: %s" % str(node0) )
       
       finally:
-        _removeFiles( src_files )
+        bm.close()
 
 #//===========================================================================//
 

@@ -27,6 +27,8 @@ from aql.utils import eventStatus, eventError, Chrono, Chdir, memoryUsage, \
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
 
+AQL_VERSION = "0.1"
+
 #//===========================================================================//
 
 @eventStatus
@@ -48,8 +50,9 @@ def   eventBuilding():
   logInfo("Building targets...")
 
 @eventStatus
-def   eventBuildingDone( elapsed ):
-  logInfo("Building targets finished (%s)" % elapsed)
+def   eventBuildingDone( success, elapsed ):
+  status = "finished" if success else "failed"
+  logInfo("Building targets %s (%s)" % (status, elapsed))
 
 #//===========================================================================//
 
@@ -135,7 +138,7 @@ def   _main( prj_cfg ):
       if prj_cfg.memory:
         _printMemoryStatus()
       
-      eventBuildingDone( elapsed )
+      eventBuildingDone( success, elapsed )
         
   eventBuildSummary( total_elapsed )
   
@@ -163,7 +166,7 @@ def   main():
     
     return status
   except AqlException as ex:
-    eventAqlError( ex )
+    # eventAqlError( ex )
     raise
   
 #//===========================================================================//

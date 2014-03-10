@@ -6,6 +6,7 @@ _search_paths = [ '.', 'tests_utils', 'tools' ]
 sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', p) ), _search_paths )
 
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
+from aql.utils  import Tempfile
 from aql.util_types import FilePaths
 
 #//===========================================================================//
@@ -90,6 +91,47 @@ class AqlTestCase( TestCaseBase ):
     
     return src_files, hdr_files
   
+  #//===========================================================================//
+  
+  @staticmethod
+  def   generateFile( tmp_dir, start, stop ):
+    tmp = Tempfile( dir = str(tmp_dir) )
+    tmp.write( bytearray( map( lambda v: v % 256, range( start, stop ) ) ) )
+    
+    tmp.close()
+    
+    return tmp.name
+  
+  #//===========================================================================//
+  
+  @staticmethod
+  def   removeFiles( files ):
+    for f in files:
+      try:
+        os.remove( f )
+      except (OSError, IOError):
+        pass
+  
+  #//===========================================================================//
+  
+  @staticmethod
+  def   generateSourceFiles( tmp_dir, num, size ):
+    
+    src_files = []
+    
+    start = 0
+    
+    try:
+      while num > 0:
+        num -= 1
+        src_files.append( AqlTestCase.generateFile( tmp_dir, start, start + size ) )
+        start += size
+    except:
+      AqlTestCase.removeFiles( src_files )
+      raise
+    
+    return src_files
+
 #//===========================================================================//
 
 if __name__ == '__main__':

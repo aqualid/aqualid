@@ -160,7 +160,7 @@ class ToolsManager( Singleton ):
     tools_info = []
     empty_list = tuple()
     
-    if issubclass( name, Tool ):
+    if (type(name) is type) and issubclass( name, Tool ):
       tool_classes = ( name, )
     else:
       tool_classes = self.tool_classes.get( name, empty_list )

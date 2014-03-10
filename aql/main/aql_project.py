@@ -24,6 +24,7 @@ __all__ = ( 'Project', 'ProjectConfig',
             'ErrorProjectInvalidMethod',
           )
 
+import os.path
 import types
 import itertools
 
@@ -470,7 +471,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   SetBuildDir( self, build_dir ):
-    self.options.build_dir = FilePath(build_dir).abspath()
+    self.options.build_dir = os.path.abspath(build_dir)
   
   #//-------------------------------------------------------//
   

@@ -71,14 +71,9 @@ def   eventInitialNodes( total_nodes ):
 def   eventFailedNode( node, error ):
   
   msg = node.getBuildStr( brief = False )
-  msg += '\n' + str(error)
-  logError( msg )
+  msg += '\n\n' + str(error)
   
-  if __debug__:
-    try:
-      traceback.print_tb( error.__traceback__ )
-    except AttributeError:
-      pass
+  logError( msg )
 
 #//===========================================================================//
 
@@ -282,7 +277,7 @@ class _NodesTree (object):
           node_depnodes = node.getDepNodes()
 
           self.__add( node_srcnodes )       # TODO: recursively add sources and depends
-          self.__add( node_depnodes )      # It would be better to rewrite this code to avoid the recursion
+          self.__add( node_depnodes )       # It would be better to rewrite this code to avoid the recursion
           
           self.__depends( node, node_srcnodes )
           self.__depends( node, node_depnodes )

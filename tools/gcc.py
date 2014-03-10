@@ -39,7 +39,7 @@ def   _addPrefix( prefix, values ):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccCompiler (aql.Builder):
+class GccCompiler (aql.FileBuilder):
   
   NAME_ATTRS = ( 'prefix', 'suffix' )
   SIGNATURE_ATTRS = ('cmd', )
@@ -53,7 +53,6 @@ class GccCompiler (aql.Builder):
     self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
     
     self.cmd = self.__getCmd( options, language, shared )
-    self.makeValue = self.makeFileValue
   
   #//-------------------------------------------------------//
   
@@ -137,7 +136,7 @@ class GccCompiler (aql.Builder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccArchiver(aql.Builder):
+class GccArchiver(aql.FileBuilder):
   
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
@@ -151,8 +150,6 @@ class GccArchiver(aql.Builder):
     self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
 
     self.cmd = [ str(options.lib.get()), 'rcs', str(self.target) ]
-    
-    self.makeValue = self.makeFileValue
     
   #//-------------------------------------------------------//
   
@@ -197,7 +194,7 @@ class GccArchiver(aql.Builder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccLinker(aql.Builder):
+class GccLinker(aql.FileBuilder):
   
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
@@ -214,7 +211,6 @@ class GccLinker(aql.Builder):
     self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
     
     self.cmd = self.__getCmd( options, self.target, language, shared )
-    self.makeValue = self.makeFileValue
     
   #//-------------------------------------------------------//
   

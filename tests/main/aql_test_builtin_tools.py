@@ -6,16 +6,16 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import AqlTestCase, runLocalTests
 
 from aql.utils import Tempdir, whereProgram, \
-    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
+    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers, Tempfile
 from aql.util_types import FilePath
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from aql.main import ExecuteCommand
+from aql.main import ExecuteCommand, InstallBuilder
 
 #//===========================================================================//
 
-class TestToolExec( AqlTestCase ):
+class TestBuiltinTools( AqlTestCase ):
   
   #//-------------------------------------------------------//
 
@@ -32,7 +32,7 @@ class TestToolExec( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   setUp( self ):
-    disableDefaultHandlers()
+    # disableDefaultHandlers()
     
     self.building_started = 0
     addUserHandler( self.eventNodeBuilding )
@@ -90,6 +90,55 @@ class TestToolExec( AqlTestCase ):
         
       finally:
         bm.close()
+  
+  #//-------------------------------------------------------//
+
+  def test_install(self):
+    
+    with Tempdir() as tmp_install_dir:
+      with Tempdir() as tmp_dir:
+        # tmp_install_dir = Tempdir()
+        # tmp_dir = Tempdir()
+        
+        build_dir = os.path.join( str(tmp_dir), 'output' )
+        
+        options = builtinOptions()
+  
+        options.build_dir = build_dir
+        
+        num_sources = 3
+        
+        sources = self.generateSourceFiles( tmp_dir, num_sources, 200 )
+        
+        installer = InstallBuilder( options, str(tmp_install_dir) )
+        
+        bm = BuildManager()
+        try:
+          
+          result = Node( installer, sources )
+  
+          bm.add( result )
+          
+          bm.build( jobs = 1, keep_going = False, brief = False)
+          
+          self.assertEqual( self.building_started, 1 )
+          self.assertEqual( self.building_started, self.building_finished )
+          
+          bm.close()
+          
+          result = Node( installer, sources )
+  
+          bm = BuildManager()
+          bm.add( result )
+          
+          self.building_started = 0
+          bm.build( jobs = 1, keep_going = False )
+          
+          self.assertEqual( self.building_started, 0 )
+          
+        finally:
+          bm.close()
+
   
   #//-------------------------------------------------------//
 

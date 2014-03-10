@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -91,7 +91,7 @@ def   _convertArgs( args, kw, options, converter ):
   tmp_kw = {}
   for key,arg in kw.items():
     if isinstance( arg, Operation ):
-      arg = arg.convert( options, converter )
+      arg.convert( options, converter )
     elif converter is not None:
       arg = converter( options, arg )
     

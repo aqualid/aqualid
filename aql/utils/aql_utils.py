@@ -368,7 +368,7 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes = ('__', '.') ):
   
-  found_files = FilePaths()
+  found_files = []
   
   paths = toSequence(paths)
   ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
@@ -405,7 +405,7 @@ def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes =
       
       dirs[:] = tmp_dirs
   
-  return found_files
+  return sorted(found_files)
 
 #//===========================================================================//
 

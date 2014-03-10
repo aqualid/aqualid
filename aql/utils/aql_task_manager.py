@@ -23,6 +23,7 @@ __all__ = (
 
 import threading
 import collections
+import traceback
 
 from .aql_logging import logWarning
 
@@ -84,11 +85,13 @@ class _TaskExecutor( threading.Thread ):
         break
       
       except (Exception, BaseException) as err:
+        err = traceback.format_exc()
+        
         if task_id is not None:
           fail = TaskResult( task_id = task_id, result = None, error = err )
           finished_tasks.put( fail )
         else:
-          logWarning("Task failed with error: %s" % str(err) )
+          logWarning( "Task failed with error: %s" % str(err) )
         
         self.fail_handler( err )
       

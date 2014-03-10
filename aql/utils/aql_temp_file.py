@@ -53,7 +53,7 @@ class Tempfile (object):
   def read( self, data ):
     self.__handle.read( data )
   
-  def seek( self, offset, whence = os.SEEK_SET ):
+  def seek( self, offset ):
     self.__handle.seek( offset )
   
   def tell( self ):

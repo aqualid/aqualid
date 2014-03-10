@@ -20,7 +20,7 @@
 import optparse
 
 from aql.util_types import SplitListType, ValueListType, UniqueList
-from aql.utils import execFile
+from .aql_utils import execFile
 
 __all__ = ( 'CLIOption', 'CLIConfig' )
 
