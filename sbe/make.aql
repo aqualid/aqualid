@@ -14,11 +14,9 @@ src_files = FindFiles( tests_dir, suffixes = '.cpp' )
 
 for src in src_files:
     
-    obj = cpp.Object( src )
-    
     test_name = os.path.splitext( os.path.split(src)[1] )[0]
     
-    test_app = cpp.Program( obj, target = test_name )
+    test_app = cpp.Program( src, target = test_name )
     
     # Create some useful aliases
     Alias( 'build_' + test_name, test_app )     # 'build_<test case name>' - to build only certain test case

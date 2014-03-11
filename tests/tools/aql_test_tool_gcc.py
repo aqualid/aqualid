@@ -234,7 +234,7 @@ class TestToolGcc( AqlTestCase ):
       options.build_dir = build_dir
       
       cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
-      archiver = GccArchiver( options, target = 'foo' )
+      archiver = GccArchiver( options, target = 'foo', language = 'c++')
       
       bm = BuildManager()
       try:
@@ -297,7 +297,7 @@ class TestToolGcc( AqlTestCase ):
       options.build_dir = build_dir
       
       cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
-      archiver = GccArchiver( options, target = 'foo' )
+      archiver = GccArchiver( options, target = 'foo', language = 'c++' )
       linker = GccLinker( options, target = 'main_foo', language = 'c++', shared = False )
       
       bm = BuildManager()

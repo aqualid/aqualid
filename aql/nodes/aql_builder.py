@@ -258,7 +258,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief = True ):
+  def   getBuildStrArgs( self, node, brief ):
     
     name = self.__class__.__name__
     sources = node.getSources()

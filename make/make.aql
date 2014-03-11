@@ -29,7 +29,7 @@ HEADER = """#!/usr/bin/env python
 
 MAIN = """
 if __name__ == '__main__':
-  aql_module_name = os.path.splitext( os.path.basename( __file__ ) )[0]
+  aql_module_name = "aql"
   aql_module = imp.new_module( aql_module_name )
   aql_module_globals = globals().copy()
   aql_module_globals.update( aql_module.__dict__ )

@@ -8,6 +8,12 @@ import aql
 #// BUILDERS IMPLEMENTATION
 #//===========================================================================//
 
+def   _isCCppSourceFile( source_file ):
+  ext = os.path.splitext( str(source_file) )[1]
+  return ext in ( ".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c" )
+
+#//===========================================================================//
+
 def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
   
   deps = aql.readTextFile( dep_file )
@@ -120,7 +126,7 @@ class GccCompiler (aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief = True ):
+  def   getBuildStrArgs( self, node, brief ):
     
     obj_file, source = self._getObj( node )
     
@@ -136,18 +142,58 @@ class GccCompiler (aql.FileBuilder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccArchiver(aql.FileBuilder):
+class GccLinkerBase(aql.FileBuilder):
   
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
 
-  #noinspection PyUnusedLocal
-  def   __init__( self, options, target ):
+  #//-------------------------------------------------------//
+  
+  def   prebuild( self, node ):
+    obj_files = []
+    
+    compiler = GccCompiler( node.options, self.language, shared = False )
+    src_nodes = []
+    for src_file in node.getSourceValues():
+      if _isCCppSourceFile( src_file.name ):
+        src_node = aql.Node( compiler, src_file, node.cwd )
+        src_nodes.append( src_node )
+      else:
+        obj_files.append( src_file )
+    
+    node.builder_data = obj_files
+    
+    return src_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   prebuildFinished( self, node, pre_nodes ):
+    
+    obj_files = node.builder_data
+    for pre_node in pre_nodes:
+      obj_files.extend( pre_node.getTargets() )
+    
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, node ):
+    value_type = self.fileValueType()
+    target = value_type( name = self.target, signature = None )
+    return target
+
+#//===========================================================================//
+
+#noinspection PyAttributeOutsideInit
+class GccArchiver(GccLinkerBase):
+  
+  def   __init__( self, options, target, language ):
     
     prefix = options.libprefix.get() + options.prefix.get()
     suffix = options.libsuffix.get()
     
     self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
+    self.language = language
 
     self.cmd = [ str(options.lib.get()), 'rcs', str(self.target) ]
     
@@ -155,10 +201,10 @@ class GccArchiver(aql.FileBuilder):
   
   def   build( self, node ):
     
-    obj_files = node.getSources()
+    obj_files = node.builder_data
     
     cmd = list(self.cmd)
-    cmd += aql.FilePaths( obj_files )
+    cmd += obj_files
     
     cwd = self.target.dirname()
     
@@ -170,16 +216,9 @@ class GccArchiver(aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, node ):
-    value_type = self.fileValueType()
-    target = value_type( name = self.target, signature = None )
-    return target
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildStrArgs( self, node, brief = True ):
+  def   getBuildStrArgs( self, node, brief ):
     
-    sources = node.getSources()
+    sources = node.builder_data
     
     if brief:
       name    = aql.FilePath(self.cmd[0]).name()
@@ -194,12 +233,8 @@ class GccArchiver(aql.FileBuilder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccLinker(aql.FileBuilder):
+class GccLinker(GccLinkerBase):
   
-  NAME_ATTRS = ('target', )
-  SIGNATURE_ATTRS = ('cmd', )
-  
-  #noinspection PyUnusedLocal
   def   __init__( self, options, target, language, shared ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
@@ -211,6 +246,7 @@ class GccLinker(aql.FileBuilder):
     self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
     
     self.cmd = self.__getCmd( options, self.target, language, shared )
+    self.language = language
     
   #//-------------------------------------------------------//
   
@@ -239,11 +275,11 @@ class GccLinker(aql.FileBuilder):
   
   def   build( self, node ):
     
-    obj_files = node.getSources()
+    obj_files = node.builder_data
     
     cmd = list(self.cmd)
     
-    cmd[2:2] = map( str, obj_files )
+    cmd[2:2] = obj_files
     
     cwd = self.target.dirname()
     
@@ -260,9 +296,9 @@ class GccLinker(aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief = True ):
+  def   getBuildStrArgs( self, node, brief ):
     
-    sources = node.getSources()
+    sources = node.builder_data
     
     if brief:
       name    = aql.FilePath(self.cmd[0]).name()
@@ -462,7 +498,7 @@ class ToolGxx( ToolGccCommon ):
     return aql.BuildSplitter( GccCompiler( options, 'c++', shared = True ) )
   
   def   Library( self, options, target ):
-    return GccArchiver( options, target )
+    return GccArchiver( options, target, 'c++' )
   
   def   SharedLibrary( self, options, target ):
     return GccLinker( options, target, 'c++', shared = True )
@@ -483,7 +519,7 @@ class ToolGcc( ToolGccCommon ):
     return aql.BuildSplitter( GccCompiler( options, 'c', shared = True ) )
   
   def   Library( self, options, target ):
-    return GccArchiver( options, target )
+    return GccArchiver( options, target, 'c' )
   
   def   SharedLibrary( self, options, target ):
     return GccLinker( options, target, 'c', shared = True )

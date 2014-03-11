@@ -3,7 +3,7 @@ import os
 
 SetBuildDir('output')
 
-cpp = Tool('c++')
+cpp = Tool('c++', tools_path = '../tools' )
 
 cpp.options.include = os.path.abspath('.')
 
@@ -11,16 +11,6 @@ libs = []
 
 for i in range(100):
   
-  src_files = []
+  src_files = ['lib_%d/class_%d.cpp' % (i, k) for k in range(10) ]
   
-  for k in range(10):
-    src_files.append( 'lib_%d/class_%d.cpp' % (i, k) )
-  
-  objs = cpp.Object( src_files )
-  
-  lib = cpp.Library( objs, target = '%s' % i )
-  
-  #~ libs.append( lib )
-
-#~ main_obj = cpp.Object( 'main.cpp' )
-#~ prog = cpp.Program( main_obj, libs, target = 'test' )
+  cpp.Library( src_files, target = '%s' % i )
