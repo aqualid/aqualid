@@ -114,13 +114,17 @@ class   Rsync( object ):
     'env',
   )
   
-  def   __init__( self, rsync, host, cygwin_paths = False, env = None ):
+  def   __init__( self, rsync, host, cygwin_paths = None, env = None ):
     
     if not rsync:
       rsync = whereProgram( 'rsync', env )
     
+    if cygwin_paths is None:
+      cygwin_paths = rsync.find( 'cygwin' ) != -1
+    
     self.cmd = (rsync, '-avzubsX')
     self.host = host if host else None
+    
     self.path_normalizer = PathNormalizer( cygwin_paths = cygwin_paths )
     self.env = env
   

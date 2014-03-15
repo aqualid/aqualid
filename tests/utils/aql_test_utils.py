@@ -9,7 +9,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, executeCommand, ErrorProgramNotFound, findFiles, flattenList
+                      whereProgram, executeCommand, ErrorProgramNotFound, findFiles, flattenList, commonDirName
 
 class TestUtils( AqlTestCase ):
 
@@ -139,6 +139,43 @@ class TestUtils( AqlTestCase ):
       l_flat.append( i )
     
     self.assertEqual( flattenList( l ), l_flat )
+  
+  #//===========================================================================//
+  
+  def   test_common_dirname( self ):
+    
+    paths = [ 'abc/cores',
+              'abc/cores2',
+            ]
+    
+    self.assertEqual( commonDirName( paths), "abc/" )
+    
+    paths = [ 'abc/cores1',
+              'abc/cores2',
+            ]
+    
+    self.assertEqual( commonDirName( paths), "abc/" )
+    
+    paths = [ 'abc/efg/cores1',
+              'abc/efg/cores/abc',
+              'abc/efg/cores2',
+            ]
+    
+    self.assertEqual( commonDirName( paths ), "abc/efg/" )
+    
+    paths = [ 'abc/efg/cores1',
+              'efg/efg/cores/abc',
+              'abc/efg/cores2',
+            ]
+    
+    self.assertEqual( commonDirName( paths ), "" )
+    
+    paths = [ '/abc/efg/cores1',
+              '/efg/efg/cores/abc',
+              '/abc/efg/cores2',
+            ]
+    
+    self.assertEqual( commonDirName( paths ), "/" )
   
 #//===========================================================================//
 

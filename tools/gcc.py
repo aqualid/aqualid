@@ -478,11 +478,6 @@ class ToolGccCommon( aql.Tool ):
     options.setGroup( "C/C++ compiler" )
     
     return options
-    
-  #//-------------------------------------------------------//
-  
-  def   FilterLibrary( self, options, libraries ):
-    pass
 
 
 #//===========================================================================//

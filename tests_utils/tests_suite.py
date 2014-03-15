@@ -119,7 +119,12 @@ def   _loadTestModules( path, test_modules_prefix, verbose ):
       module_files.append( path )
   
   for module_file in module_files:
-    test_modules.append( _loadTestModule( module_file, verbose ) )
+    try:
+      module = _loadTestModule( module_file, verbose )
+    except Exception as err:
+      print("Unable to load module: %s, error: %s" % (module_file, err))
+    else:
+      test_modules.append( module )
   
   return test_modules
 

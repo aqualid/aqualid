@@ -55,7 +55,7 @@ class AqlTestCase( TestCaseBase ):
     if not content:
       content = MAIN_SRC_FILE_TEMPLATE
     
-    src_file = dirname.join( name + '.cpp' )
+    src_file = os.path.join( dirname, name + '.cpp' )
     
     with open( src_file, 'w' ) as f:
       f.write( content )
@@ -68,8 +68,8 @@ class AqlTestCase( TestCaseBase ):
     src_content = SRC_FILE_TEMPLATE % ( name, 'foo_' + name )
     hdr_content = HDR_FILE_TEMPLATE % ( name.upper(), name.upper(), 'foo_' + name )
     
-    src_file = dirname.join( name + '.cpp' )
-    hdr_file = dirname.join( name + '.h' )
+    src_file = os.path.join( dirname, name + '.cpp' )
+    hdr_file = os.path.join( dirname, name + '.h' )
     
     with open( src_file, 'w' ) as f:
       f.write( src_content )

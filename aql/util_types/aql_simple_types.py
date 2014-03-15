@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -18,22 +18,35 @@
 #
 
 __all__ = (
-  'AqlException', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
+  'AqlException','uStr', 'toUnicode', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
 )
 
 import re
 import operator
 
 #//===========================================================================//
-#//===========================================================================//
 
 class  AqlException (Exception):
   pass
 
 #//===========================================================================//
+
+try:
+  uStr = unicode
+except NameError:
+  uStr = str
+
 #//===========================================================================//
 
-class   String (str):
+def toUnicode( obj, encoding = 'utf-8' ):
+  if isinstance( obj, (bytearray, bytes) ):
+    obj = uStr( obj, encoding )
+  
+  return obj
+
+#//===========================================================================//
+
+class   String (uStr):
 
   def     __new__( cls, value = None ):
     
@@ -48,7 +61,7 @@ class   String (str):
 #//===========================================================================//
 #//===========================================================================//
 
-class   IgnoreCaseString (str):
+class   IgnoreCaseString (uStr):
 
   def     __new__(cls, value = None ):
     

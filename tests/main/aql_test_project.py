@@ -169,8 +169,6 @@ options.build_variant = "final"
       prj.Build()
       
       self.assertEqual( self.building_finished, 2 )
-      
-      
 
 #//===========================================================================//
 

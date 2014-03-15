@@ -23,8 +23,8 @@ __all__ = (
   'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
-  'flattenList',
-  'Chrono', 'Chdir'
+  'flattenList', 'commonDirName', 'splitDrive',
+  'Chrono', 'Chdir',
 )
 
 import io
@@ -50,7 +50,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import toSequence, AqlException, FilePaths
+from aql.util_types import toSequence, AqlException
 
 #//===========================================================================//
 
@@ -722,6 +722,52 @@ def   flattenList( seq ):
     i += 1
   
   return out_list
+
+#//===========================================================================//
+
+try:
+  _splitunc = os.path.splitunc
+except AttributeError:
+  def _splitunc( path ):
+    return str(), path
+
+def   splitDrive( path ):
+  drive, path = os.path.splitdrive( path )
+  if not drive:
+    drive, path = _splitunc( path )
+  
+  return drive, path
+
+#//===========================================================================//
+
+def   commonDirName( paths ):
+  if not paths:
+    return ''
+  
+  paths = sorted(paths)
+  
+  min_drive, min_path = splitDrive( paths[0] )
+  max_drive, max_path = splitDrive( paths[-1] )
+  
+  if min_drive != max_drive:
+    return ''
+  
+  prefix = ''
+  
+  for i, c in enumerate(min_path):
+    t = max_path[i]
+    if c != t:
+      if i > 0:
+        prefix = os.path.dirname( min_path[:i] )
+        if min_path[i-1] != os.path.sep:
+          prefix += os.path.sep
+      
+      return min_drive + prefix 
+  
+  if min_path[-1] not in ( os.path.sep, os.path.altsep ):
+    min_path = os.path.dirname( min_path ) + os.path.sep
+  
+  return min_drive + min_path
 
 #//===========================================================================//
 

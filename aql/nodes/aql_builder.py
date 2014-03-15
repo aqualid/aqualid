@@ -24,9 +24,9 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, FilePath, UniqueList
+from aql.util_types import toSequence, FilePath, UniqueList, uStr
 from aql.utils import simpleObjectSignature, executeCommand, eventDebug, Chdir
-from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
+from aql.values import ValueBase, DirValue, FileChecksumValue, FileTimestampValue, SimpleValue
 
 from .aql_node import Node
 
@@ -54,7 +54,7 @@ def   _makeBuildPath( path_dir, _path_cache = set() ):
 
 #//===========================================================================//
 
-_SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
+_SIMPLE_TYPES = (uStr,int,float,complex,bool,bytes,bytearray)
 
 def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
   
@@ -331,7 +331,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   execCmd(self, cmd, cwd = None, env = None, file_flag = None ):
+  def   execCmd(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):
     
     if env is None:
       env = self.env
@@ -341,7 +341,7 @@ class Builder (object):
     
     cmd = tuple( str(c) for c in toSequence(cmd) )
     
-    result = executeCommand( cmd, cwd = cwd, env = env, file_flag = file_flag )
+    result = executeCommand( cmd, cwd = cwd, env = env, file_flag = file_flag, stdin = stdin )
     if result.failed():
       raise result
     
@@ -354,7 +354,8 @@ class Builder (object):
 class FileBuilder (Builder):
   def   _initAttrs( self, options ):
     super(FileBuilder,self)._initAttrs( options )
-    self.makeValue = self.makeFileValue
+    self.makeValue  = self.makeFileValue
+    self.makeValues = self.makeFileValues
 
 #//===========================================================================//  
 

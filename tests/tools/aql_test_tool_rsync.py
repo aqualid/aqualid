@@ -10,13 +10,30 @@ from aql.values import ValuesFile
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from rsync import RSyncGetBuilder, RSyncPutBuilder, rsyncOptions
+from aql.main import Project, ProjectConfig
+
+from rsync import RSyncPullBuilder
 
 #//===========================================================================//
 
 @skip
 class TestToolRsync( AqlTestCase ):
   
+  def test_rsync_pull(self):
+    with Tempdir() as tmp_dir:
+      with Tempdir() as src_dir:
+        with Tempdir() as target_dir:
+          src_files = self.generateCppFiles( src_dir.path, "src_test", 10 )
+          
+          cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
+          
+          prj = Project( cfg.options, cfg.targets )
+          
+          prj.tools.rsync.Push( src_files, target = target_dir )
+          prj.Build()
+  
+  #//=======================================================//
+    
   def test_rsync_get(self):
     
     with Tempdir() as tmp_dir:
