@@ -19,13 +19,15 @@
 
 __all__ = ( 'toSequence', 'isSequence', 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
 
+from .aql_simple_types import uStr
+
 #//===========================================================================//
 
 #noinspection PyShadowingBuiltins,PyRedundantParentheses
-def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, str = str ):
+def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, uStr = uStr, bytes = bytes, bytearray = bytearray ):
   
   try:
-    if not isinstance( value, (str, bytes, bytearray) ):
+    if not isinstance( value, (uStr, bytes, bytearray) ):
       iter( value )
       return value
   except TypeError:
@@ -39,10 +41,10 @@ def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, st
 #//===========================================================================//
 
 #noinspection PyShadowingBuiltins
-def   isSequence( value, iter = iter, isinstance = isinstance, str = str ):
+def   isSequence( value, iter = iter, isinstance = isinstance, uStr = uStr, bytes = bytes, bytearray = bytearray ):
   
   try:
-    if not isinstance( value, str ):
+    if not isinstance( value, (uStr, bytes, bytearray) ):
       iter( value )
       return True
   except TypeError:

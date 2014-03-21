@@ -19,7 +19,8 @@
 
 __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
-  'simpleObjectSignature', 'objectSignature', 'dataSignature', 'strSignature', 'fileSignature', 'fileTimeSignature', 'fileChecksum',
+  'newHash', 'dumpSimpleObject', 'simpleObjectSignature', 'objectSignature', 'dataSignature',
+  'fileSignature', 'fileTimeSignature', 'fileChecksum',
   'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
@@ -50,7 +51,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import toSequence, AqlException
+from aql.util_types import uStr, toSequence, AqlException
 
 #//===========================================================================//
 
@@ -87,6 +88,8 @@ if hasattr(os, 'O_BINARY'):
   _O_BINARY = os.O_BINARY
 else:
   _O_BINARY = 0
+
+#//---------------------------------------------------------------------------//
 
 def   openFile( filename, read = True, write = False, binary = False, sync = False ):
   
@@ -179,12 +182,12 @@ def   execFile( filename, file_locals ):
 
 #//===========================================================================//
 
-def   simpleObjectSignature( obj ):
+def   dumpSimpleObject( obj ):
   
   if isinstance( obj, (bytes, bytearray) ):
     data = obj
   
-  elif isinstance( obj, str ):
+  elif isinstance( obj, uStr ):
     data = obj.encode('utf-8')
   
   else:
@@ -193,13 +196,24 @@ def   simpleObjectSignature( obj ):
     except ValueError:
       raise ErrorUnmarshallableObject( obj )
   
-  return hashlib.md5( data ).digest()
-  
+  return data
 
 #//===========================================================================//
 
-def   objectSignature( obj ):
-  return hashlib.md5( pickle.dumps( obj, protocol = pickle.HIGHEST_PROTOCOL ) ).digest()
+def   dumpObject( obj ):
+  return pickle.dumps( obj, protocol = pickle.HIGHEST_PROTOCOL )
+
+#//===========================================================================//
+
+def   simpleObjectSignature( obj, common_hash = None ):
+  data = dumpSimpleObject( obj )
+  return dataSignature( data, common_hash )
+
+#//===========================================================================//
+
+def   objectSignature( obj, common_hash = None ):
+  data = dumpObject( obj )
+  return dataSignature( data, common_hash )
 
 #//===========================================================================//
 
@@ -208,13 +222,14 @@ def   newHash( data = b'' ):
 
 #//===========================================================================//
 
-def   dataSignature( data ):
-  return hashlib.md5( data ).digest()
-
-#//===========================================================================//
-
-def   strSignature( str_value ):
-  return hashlib.md5( str_value.encode('utf-8') ).digest()
+def   dataSignature( data, common_hash = None ):
+  if common_hash is None:
+    obj_hash = hashlib.md5( data )
+  else:
+    obj_hash = common_hash.copy()
+    obj_hash.update( data )
+  
+  return obj_hash.digest()
 
 #//===========================================================================//
 

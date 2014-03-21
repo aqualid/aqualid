@@ -10,7 +10,7 @@ from aql.utils import Tempfile, Tempdir, whereProgram, \
 
 from aql.util_types import FilePath
 from aql.values import FileChecksumValue, ValuesFile
-from aql.nodes import Node, BuildManager, BuildSplitter
+from aql.nodes import Node, BuildManager, BuildSingle
 from aql.options import builtinOptions
 
 from gcc import GccCompiler, GccArchiver, GccLinker, ToolGccCommon
@@ -112,7 +112,7 @@ class TestToolGcc( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
       
@@ -172,7 +172,7 @@ class TestToolGcc( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
       
       bm = BuildManager()
       try:
@@ -233,7 +233,7 @@ class TestToolGcc( AqlTestCase ):
       
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
       archiver = GccArchiver( options, target = 'foo', language = 'c++')
       
       bm = BuildManager()
@@ -296,7 +296,7 @@ class TestToolGcc( AqlTestCase ):
       
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
+      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
       archiver = GccArchiver( options, target = 'foo', language = 'c++' )
       linker = GccLinker( options, target = 'main_foo', language = 'c++', shared = False )
       
@@ -358,7 +358,7 @@ class TestToolGccSpeed( AqlTestCase ):
     options.build_dir_prefix = build_dir
     
     options.file_signature = 'md5'
-    cpp_compiler = BuildSplitter( GccCompiler( options, 'c++' ) )
+    cpp_compiler = BuildSingle( GccCompiler( options, 'c++' ) )
   
     #//-------------------------------------------------------//
     

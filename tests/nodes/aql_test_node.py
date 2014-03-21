@@ -8,10 +8,10 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.util_types import toSequence
-from aql.utils import Tempfile, disableDefaultHandlers, enableDefaultHandlers
+from aql.utils import Tempfile, Tempdir, writeBinFile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
 from aql.values import SimpleValue, NullValue, FileChecksumValue, ValuesFile
-from aql.nodes import Node, Builder
+from aql.nodes import Node, BatchNode, Builder, FileBuilder
 
 
 #//===========================================================================//
@@ -53,21 +53,20 @@ class ChecksumBuilder (Builder):
 
 #//===========================================================================//
 
-class CopyBuilder (Builder):
+class CopyBuilder (FileBuilder):
   
-  __slots__ = ('ext', 'iext')
+  SIGNATURE_ATTRS = ('ext', 'iext')
   
   def   __init__(self, options, ext, iext ):
+    self.built_src_count = 0
     self.ext = ext
     self.iext = iext
-    self.signature = str(ext + '|' + iext).encode('utf-8')
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     target_values = []
     itarget_values = []
-    idep_values = []
     
     idep = self.makeValue( b'' )
     
@@ -82,6 +81,26 @@ class CopyBuilder (Builder):
       itarget_values.append( new_iname )
     
     node.setFileTargets( target_values, itarget_values, idep )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildBatch( self, node ):
+    
+    self.built_src_count = 0
+    
+    idep = SimpleValue( b'1234' )
+    
+    for src_value in node.getSourceValues():
+      src = src_value.get()
+      
+      new_name = src + '.' + self.ext
+      new_iname = src + '.' + self.iext
+      
+      shutil.copy( src, new_name )
+      shutil.copy( src, new_iname )
+      
+      node.setSourceFileTargets( src_value, new_name, new_iname, idep )
+      self.built_src_count += 1
 
 #//===========================================================================//
 
@@ -89,7 +108,7 @@ class TestNodes( AqlTestCase ):
   
   def   setUp( self ):
     super(TestNodes,self).setUp()
-    disableDefaultHandlers()
+    # disableDefaultHandlers()
   
   def   tearDown( self ):
     enableDefaultHandlers()
@@ -246,11 +265,11 @@ class TestNodes( AqlTestCase ):
                 
                 FileChecksumValue( node.getSideEffectValues()[0].name, use_cache = False )
                 
-                node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
+                node = Node( builder, [value1] )
+                node.depends( [node3] )
+                node.initiate()
                 
-                # v = Value( name = node.implicitDependencies()[0].name, content = None )
-                # vfile.addValues( [v] )
-                # 
+                self.assertTrue( node.isActual( vfile ) )
                 # node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
         finally:
           vfile.close()
@@ -260,6 +279,63 @@ class TestNodes( AqlTestCase ):
           os.remove( tmp_file )
         except OSError:
           pass
+  
+  #//=======================================================//
+  
+  def test_node_batch(self):
+    
+    with Tempdir() as tmp_dir:
+      vfile_name = Tempfile( dir = str(tmp_dir) )
+      with ValuesFile( vfile_name ) as vfile:
+        src_files = self.generateSourceFiles( str(tmp_dir), 5, 100 )
+        
+        options = builtinOptions()
+        
+        builder = CopyBuilder( options, "tmp", "i" )
+        
+        node = BatchNode( builder, src_files )
+        dep = SimpleValue( "11", name = "dep1" )
+        node.depends( dep )
+        
+        node.initiate()
+        
+        self.assertFalse( node.isActual( vfile ) )
+        node.build()
+        node.save( vfile )
+        self.assertTrue( node.isActual( vfile ) )
+        self.assertEqual( node.builder.built_src_count, len(src_files) )
+        
+        #//-------------------------------------------------------//
+        
+        # node = BatchNode( builder, src_files )
+        # node.depends( dep )
+        # 
+        # node.initiate()
+        # 
+        # self.assertTrue( node.isActual( vfile ) )
+        # 
+        # node = BatchNode( builder, src_files[:-2] )
+        # node.depends( dep )
+        # 
+        # node.initiate()
+        # 
+        # self.assertTrue( node.isActual( vfile ) )
+        
+        #//-------------------------------------------------------//
+        
+        writeBinFile( src_files[1], b"src_file1" )
+        node.builder.makeFileValue( src_files[1] )
+        
+        node = BatchNode( builder, src_files )
+        node.depends( dep )
+        node.initiate()
+        
+        self.assertFalse( node.isActual( vfile ) )
+        node.build()
+        node.save( vfile )
+        self.assertTrue( node.isActual( vfile ) )
+        self.assertEqual( node.builder.built_src_count, 1 )
+
 
 #//===========================================================================//
 

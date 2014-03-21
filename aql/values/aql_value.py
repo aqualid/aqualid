@@ -70,6 +70,11 @@ class   ValueBase (object):
   
   #//-------------------------------------------------------//
   
+  def   __hash__(self):
+    return hash( self.valueId() )
+  
+  #//-------------------------------------------------------//
+  
   def   get(self):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   

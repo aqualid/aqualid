@@ -522,8 +522,6 @@ class _NodesBuilder (object):
           continue
       
       else:
-        node.initiate()
-        
         pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
@@ -586,8 +584,6 @@ class _NodesBuilder (object):
           continue
         
       else:
-        node.initiate()
-        
         pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
@@ -615,8 +611,6 @@ class _NodesBuilder (object):
           continue
       
       else:
-        node.initiate()
-        
         pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes

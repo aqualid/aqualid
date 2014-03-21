@@ -10,7 +10,7 @@ from aql.utils import fileChecksum, Tempfile, Tempdir, \
 
 from aql.values import SimpleValue, FileChecksumValue
 from aql.options import builtinOptions
-from aql.nodes import Node, Builder, BuildSplitter, BuildManager, ErrorNodeDependencyCyclic
+from aql.nodes import Node, Builder, BuildSingle, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 
@@ -407,7 +407,7 @@ class TestBuildManager( AqlTestCase ):
       self.building_nodes = self.finished_nodes = 0
       self.actual_nodes = self.outdated_nodes = 0
       
-      builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
+      builder = BuildSingle( ChecksumBuilder( options, 0, 256 ) )
       
       src_values = []
       for s in src_files:
@@ -425,7 +425,7 @@ class TestBuildManager( AqlTestCase ):
       self.actual_nodes = self.outdated_nodes = 0
       
       bm = BuildManager()
-      builder = BuildSplitter( ChecksumBuilder( options, 0, 256 ) )
+      builder = BuildSingle( ChecksumBuilder( options, 0, 256 ) )
       
       node = Node( builder, src_values )
       bm.add( node ); bm.selfTest()

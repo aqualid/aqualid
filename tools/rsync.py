@@ -142,7 +142,6 @@ class   RSyncPushBuilder( aql.Builder ):
   #//-------------------------------------------------------//
   
   def   build( self, node ):
-    
     sources = sorted( map( _normLocalPath, node.getSources() ) )
     
     sources_dir = aql.commonDirName( sources )

@@ -267,7 +267,7 @@ class AqlInstall (aql.Builder):
 class AqlBuildTool( aql.Tool ):
   
   def   Preprocess( self, options ):
-    return aql.BuildSplitter( AqlPreprocess( options ) )
+    return aql.BuildSingle( AqlPreprocess( options ) )
   
   def   Link( self, options, target ):
     return AqlLink( options, target )

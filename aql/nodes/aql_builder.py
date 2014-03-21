@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Builder', 'FileBuilder', 'BuildSplitter',
+  'Builder', 'FileBuilder', 'BuildSingle', 'BuildBatch',
 )
 
 import os
@@ -250,6 +250,15 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   buildBatch( self, node ):
+    """
+    Builds a node
+    Returns a build output string or None
+    """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
   def   getTargetValues( self, node ):
     """
     If it's possible returns target values of the node, otherwise None 
@@ -359,7 +368,7 @@ class FileBuilder (Builder):
 
 #//===========================================================================//  
 
-class BuildSplitter(object):
+class BuildSingle(object):
   
   def   __init__(self, builder ):
     self.builder = builder
@@ -404,3 +413,24 @@ class BuildSplitter(object):
     node.setTargets( targets )
     
     return True
+
+#//===========================================================================//  
+
+class BuildBatch(object):
+  
+  def   __init__(self, builder ):
+    self.builder = builder
+  
+  #//-------------------------------------------------------//
+  
+  def   initiate( self ):
+    builder = self.builder
+    self.builder = builder = builder.initiate()
+    return builder
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__(self, attr ):
+    value = getattr(self.builder, attr )
+    setattr( self, attr, value )
+    return value

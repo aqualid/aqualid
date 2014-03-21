@@ -19,7 +19,7 @@ from rsync import RSyncPullBuilder
 @skip
 class TestToolRsync( AqlTestCase ):
   
-  def test_rsync_pull(self):
+  def test_rsync_push(self):
     with Tempdir() as tmp_dir:
       with Tempdir() as src_dir:
         with Tempdir() as target_dir:
@@ -28,6 +28,9 @@ class TestToolRsync( AqlTestCase ):
           cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
           
           prj = Project( cfg.options, cfg.targets )
+          
+          prj.tools.rsync.Push( src_files, target = target_dir )
+          prj.Build()
           
           prj.tools.rsync.Push( src_files, target = target_dir )
           prj.Build()

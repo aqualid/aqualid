@@ -32,7 +32,7 @@ from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenLi
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, AqlException
 from aql.values import NullValue
 from aql.options import builtinOptions, Options
-from aql.nodes import BuildManager, Node
+from aql.nodes import BuildManager, Node, BatchNode, BuildBatch
 
 from .aql_tools import ToolsManager
 from .aql_builtin_tools import BuiltinTool
@@ -238,7 +238,11 @@ class BuilderWrapper( object ):
     builder = self.method( options, **args_kw )
     builder.setOptionsKw( options_kw )
     
-    node = Node( builder, sources )
+    if isinstance( builder, BuildBatch ):
+      node = BatchNode( builder, sources )
+    else:
+      node = Node( builder, sources )
+    
     node.depends( dep_nodes )
     
     self.project.AddNodes( node )

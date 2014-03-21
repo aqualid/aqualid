@@ -5,6 +5,6 @@ cpp = Tool('c++', tools_path = '../../tools' )
 
 #~ result = Include('other_make.aql')
 
-obj = cpp.Object( 'main.cpp' )
+obj = cpp.Compile( 'main.cpp' )
 
-lib = cpp.Library( obj, target = 'test' )
+lib = cpp.LinkLibrary( obj, target = 'test' )

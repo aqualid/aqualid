@@ -478,6 +478,29 @@ class ToolGccCommon( aql.Tool ):
     options.setGroup( "C/C++ compiler" )
     
     return options
+  
+  #//-------------------------------------------------------//
+  
+  def   Compile( self, options ):
+    return aql.BuildSingle( GccCompiler( options, self.language, shared = False ) )
+  
+  def   CompileShared( self, options ):
+    return aql.BuildSingle( GccCompiler( options, self.language, shared = True ) )
+  
+  def   CompileBatch( self, options ):
+    return aql.BuildBatch( GccCompiler( options, self.language, shared = False ) )
+  
+  def   CompileSharedBatch( self, options ):
+    return aql.BuildBatch( GccCompiler( options, self.language, shared = True ) )
+  
+  def   LinkLibrary( self, options, target ):
+    return GccArchiver( options, target, self.language )
+  
+  def   LinkSharedLibrary( self, options, target ):
+    return GccLinker( options, target, self.language, shared = True )
+  
+  def   LinkProgram( self, options, target ):
+    return GccLinker( options, target, self.language, shared = False )
 
 
 #//===========================================================================//
@@ -485,39 +508,11 @@ class ToolGccCommon( aql.Tool ):
 #noinspection PyMethodMayBeStatic
 @aql.tool('c++', 'g++', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
-  
-  def   Object( self, options ):
-    return aql.BuildSplitter( GccCompiler( options, 'c++', shared = False ) )
-  
-  def   SharedObject( self, options ):
-    return aql.BuildSplitter( GccCompiler( options, 'c++', shared = True ) )
-  
-  def   Library( self, options, target ):
-    return GccArchiver( options, target, 'c++' )
-  
-  def   SharedLibrary( self, options, target ):
-    return GccLinker( options, target, 'c++', shared = True )
-  
-  def   Program( self, options, target ):
-    return GccLinker( options, target, 'c++', shared = False )
+  language = "c++"
 
 #//===========================================================================//
 
 #noinspection PyMethodMayBeStatic
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
-  
-  def   Object( self, options ):
-    return aql.BuildSplitter( GccCompiler( options, 'c', shared = False ) )
-  
-  def   SharedObject( self, options ):
-    return aql.BuildSplitter( GccCompiler( options, 'c', shared = True ) )
-  
-  def   Library( self, options, target ):
-    return GccArchiver( options, target, 'c' )
-  
-  def   SharedLibrary( self, options, target ):
-    return GccLinker( options, target, 'c', shared = True )
-  
-  def   Program( self, options, target ):
-    return GccLinker( options, target, 'c', shared = False )
+  language = "c"

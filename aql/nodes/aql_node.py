@@ -18,14 +18,13 @@
 #
 
 __all__ = (
-  'Node',
+  'Node', 'BatchNode',
 )
 
 import os
 import binascii
-import itertools
 
-from aql.utils import simpleObjectSignature, Chdir
+from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir
 from aql.util_types import toSequence, AqlException
 
 from aql.values import ValueBase, pickleable
@@ -50,6 +49,11 @@ class   ErrorNoImplicitDeps( AqlException ):
 class   ErrorNodeNotInitialized( AqlException ):
   def   __init__( self, node ):
     msg = "Node is not initialized yet: %s" % (node, )
+    super(ErrorNodeNotInitialized, self).__init__( msg )
+
+class   ErrorNodeUnknownSource( AqlException ):
+  def   __init__( self, src_value ):
+    msg = "Unknown source value: %s" % (src_value, type(src_value))
     super(ErrorNodeNotInitialized, self).__init__( msg )
 
 #//===========================================================================//
@@ -88,6 +92,35 @@ def   _actualValues( values ):
       return False
       
   return True
+
+#//===========================================================================//
+
+def   _joinArgs( args, brief ):
+  args = [ str(arg) for arg in toSequence(args) ]
+  
+  if not brief or (len(args) < 3):
+    return ' '.join( args )
+  
+  wish_size = 128
+  
+  args_str = [ args.pop(0) ]
+  last = args.pop()
+  
+  size = len(args_str[0]) + len(last)
+  
+  for arg in args:
+    size += len(arg)
+    
+    if size > wish_size:
+      args_str.append('...')
+      break
+    
+    args_str.append( arg )
+    
+  args_str.append( last )
+  
+  return ' '.join( args_str )
+
 
 #//===========================================================================//
 
@@ -133,6 +166,40 @@ class   NodeValue (ValueBase):
     return (self.signature is not None) and (self.targets is not None)
   
   #//-------------------------------------------------------//
+  
+  def   actual( self, vfile ):
+    if not self.signature:
+      return False
+    
+    other = vfile.findValue( self )
+    
+    if other is None:
+      return False
+    
+    # if __debug__:
+    #   print( "self.signature: %s, other.signature: %s" % (self.signature, other.signature))
+    
+    if self.signature != other.signature:
+      # if __debug__:
+      #   print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
+      return False
+    
+    targets   = other.targets
+    itargets  = other.itargets
+    idep_keys = other.idep_keys
+    
+    if not (_actualDeps( vfile, idep_keys ) and _actualValues( targets )):
+      # if __debug__:
+      #   print( "targets/ideps are not actual: %s" % (self.getName(),))
+      return False
+    
+    self.targets = targets
+    self.itargets = itargets
+    
+    return True
+
+  
+  #//-------------------------------------------------------//
 
 #//===========================================================================//
 
@@ -144,13 +211,14 @@ class Node (object):
     'builder',
     'builder_data',
     'options',
+    'cwd',
     
     'name',
     'signature',
     
-    'cwd',
     'sources',
     'source_values',
+    
     'dep_nodes',
     'dep_values',
     
@@ -227,16 +295,87 @@ class Node (object):
   
   #//=======================================================//
   
-  def   initiate(self):
+  def   split( self, builder ):
+    nodes = []
     
-    if self.source_values is None:
-      self.builder = self.builder.initiate()
-      self.__setSourceValues()
-      self.targets = self.builder.getTargetValues( self )
+    cwd = self.cwd
+    
+    dep_values = self.getDepValues()
+    for src_value in self.getSourceValues():
+      node = Node( builder, src_value, cwd )
+      node.dep_values = dep_values
+      nodes.append( node )
+    
+    return nodes
   
   #//=======================================================//
   
-  def   __setSourceValues(self):
+  def   initiate(self):
+    if self.source_values is None:
+      self.builder = self.builder.initiate()
+      self._setSourceValues()
+      
+      self._initId()
+  
+  #//=======================================================//
+  
+  def   _initId(self):
+    self._setName()
+    self._setSignature()
+  
+  #//=======================================================//
+  
+  def   _addDepsSignature( self, sign ):
+    if sign is not None:
+      deps = self.getDepValues()
+      
+      for value in deps:
+        if value:
+          sign.append( value.name )
+          sign.append( value.signature )
+        else:
+          return None
+    
+    return sign
+  
+  #//=======================================================//
+  
+  def   _setName(self ):
+    
+    targets = self.builder.getTargetValues( self )
+    if targets:
+      self.targets = tuple( toSequence( targets ) )
+      names = sorted( value.valueId() for value in targets )
+    else:
+      sources = sorted( self.getSourceValues(), key = lambda v: v.name )
+      names = [ self.builder.name ]
+      names += [ value.name for value in sources ]
+    
+    self.name = simpleObjectSignature( names )
+  
+  #//=======================================================//
+  
+  def   _setSignature( self ):
+    
+    sign  = [ self.builder.signature ]
+    
+    for value in self.getSourceValues():
+      if value:
+        sign.append( value.signature )
+      else:
+        sign = None
+        break
+    
+    sign = self._addDepsSignature( sign )
+    
+    if sign is not None:
+      sign = simpleObjectSignature( sign )
+    
+    self.signature = sign
+  
+  #//=======================================================//
+  
+  def   _setSourceValues(self):
     values = []
     
     makeValue = self.builder.makeValue
@@ -260,11 +399,7 @@ class Node (object):
   #//=======================================================//
   
   def   getSources(self):
-    if __debug__:
-      if self.source_values is None:
-        raise ErrorNodeNotInitialized( self )
-    
-    return tuple( src.get() for src in self.source_values )
+    return tuple( src.get() for src in self.getSourceValues() )
   
   #//=======================================================//
   
@@ -281,79 +416,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   __initiateIds(self):
-    
-    if __debug__:
-      if self.source_values is None:
-        raise ErrorNodeNotInitialized( self )
-    
-    if self.name is None:
-      self.__setName()
-      self.__setSignature()
-    
-  #//=======================================================//
-  
-  def   __setName(self ):
-    
-    targets = self.targets
-    if targets:
-      names = sorted( value.valueId() for value in targets )
-    else:
-      sources = sorted( self.getSourceValues(), key = lambda v: v.name )
-      names = [ self.builder.name ]
-      names += [ value.name for value in sources ]
-    
-    self.name = simpleObjectSignature( names )
-  
-  #//=======================================================//
-  
-  def   __setSignature( self ):
-    
-    sign  = [ self.builder.signature ]
-    
-    # if __debug__:
-    #   srcs = tuple( src.name for src in self.getSourceValues())
-    #   print("%s: sources: %s" % (self.getName(), srcs) )
-    
-    for value in self.getSourceValues():
-      if value:
-        sign.append( value.signature )
-      else:
-        sign = None
-        break
-    
-    # if __debug__:
-    #   deps = tuple( dep.name for dep in self.getDepValues())
-    #   print("%s: deps: %s" % (self.getName(), deps) )
-    
-    if sign is not None:
-      deps = self.getDepValues()
-      
-      for value in deps:
-        if value:
-          sign.append( value.name )
-          sign.append( value.signature )
-        else:
-          sign = None
-          break
-    
-    # if __debug__:
-    #   print("%s: sig: %s (%s)" % (self.getName(), sign, type(sign)) )
-    #   print("%s: sig: %s" % (self.getName(), tuple(map(id, sign))) )
-    #   print("%s: dump sig: %s" % (self.getName(), dumpData( sign ) ) )
-    
-    if sign is not None:
-      sign = simpleObjectSignature( sign )
-    
-    # if __debug__:
-    #   print("%s: sig: %s" % (self.getName(), sign) )
-    
-    self.signature = sign
-  
-  #//=======================================================//
-  
   def   shrink(self):
-    
     self.cwd = None
     self.dep_nodes = None
     self.dep_values = None
@@ -365,7 +428,6 @@ class Node (object):
     self.builder = None
     self.builder_data = None
     self.options = None
-    self.ideps = None
   
   #//=======================================================//
   
@@ -374,45 +436,15 @@ class Node (object):
   
   #//=======================================================//
   
-  def   save( self, vfile ):
-    if __debug__:
-      if self.itargets is None:
-        raise ErrorNoTargets( self )
-      if self.ideps is None:
-        raise ErrorNoImplicitDeps( self )
-    
-    idep_keys = vfile.addValues( self.ideps )
-    
-    node_value = NodeValue( name = self.name, signature = self.signature,
-                            targets = self.targets, itargets = self.itargets, idep_keys = idep_keys )
-    
-    vfile.addValue( node_value )
-  
-  #//=======================================================//
-  
-  def   load( self, vfile ):
-    
-    self.__initiateIds()
-    
-    node_value = NodeValue( name = self.name )
-    
-    node_value = vfile.findValue( node_value )
-    if node_value:
-      node_targets = node_value.targets
-      if node_targets is not None:
-        self.targets = node_targets
-      
-      self.itargets = node_value.itargets
-  
-  #//=======================================================//
-  
   def   build(self):
+    self.targets = None
     output = self.builder.build( self )
     return output
   
   #//=======================================================//
   
   def   prebuild(self):
+    self.initiate()
     return self.builder.prebuild( self )
   
   #//=======================================================//
@@ -422,13 +454,37 @@ class Node (object):
   
   #//=======================================================//
   
+  def   save( self, vfile ):
+    
+    targets = self.targets
+    
+    if __debug__:
+      if targets is None:
+        raise ErrorNoTargets( self )
+    
+    idep_keys = vfile.addValues( self.ideps )
+    
+    node_value = NodeValue( name = self.name, signature = self.signature,
+                            targets = targets, itargets = self.itargets, idep_keys = idep_keys )
+    
+    vfile.addValue( node_value )
+  
+  #//=======================================================//
+  
   def   clear( self, vfile ):
     """
     Cleans produced values
     """
-    self.load( vfile )
-    
     node_value = NodeValue( name = self.name )
+    
+    node_value = vfile.findValue( node_value )
+    if node_value:
+      targets = node_value.targets
+      itargets = node_value.itargets
+      
+      if targets is not None:
+        self.targets  = targets
+        self.itargets = itargets
     
     vfile.removeValues( [ node_value ] )
     
@@ -439,74 +495,21 @@ class Node (object):
     
   #//=======================================================//
   
-  def   removeTargets(self):
-    targets = itertools.chain( toSequence( self.targets ), toSequence( self.itargets ) )
-    
-    for value in targets:
-      value.remove()
-  
-  #//=======================================================//
-  
   def   isActual( self, vfile ):
     
-    self.__initiateIds()
+    node_value = NodeValue( name = self.name, signature = self.signature )
     
-    if not self.signature:
-      # if __debug__:
-      #   print( "Sources signature is False" )
+    if not node_value.actual( vfile ):
       return False
     
-    node_value = NodeValue( name = self.name )
-    
-    node_value = vfile.findValue( node_value )
-    
-    if node_value is None:
-      return False
-    
-    if self.signature != node_value.signature:
-      # if __debug__:
-      #   print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
-      return False
-    
-    targets   = node_value.targets
-    itargets  = node_value.itargets
-    idep_keys = node_value.idep_keys
-    
-    if not (_actualDeps( vfile, idep_keys ) and _actualValues( targets ) and _actualValues( itargets )):
-      # if __debug__:
-      #   print( "targets/itargets/ideps are not actual: %s" % (self.getName(),))
-      return False
-    
-    self.targets  = targets
-    self.itargets = itargets
+    self.targets  = node_value.targets
+    self.itargets = node_value.itargets
     
     return True
     
   #//=======================================================//
   
-  def   get(self):
-    return self.getTargets()
-  
-  #//=======================================================//
-  
-  def   getTargets(self):
-    return tuple( target.get() for target in toSequence( self.targets ) )
-  
-  #//=======================================================//
-  
-  def   getTargetValues(self):
-    return toSequence( self.targets )
-  
-  #//=======================================================//
-  
-  def   getSideEffectValues(self):
-    return toSequence( self.itargets )
-  
-  #//=======================================================//
-  
   def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
-    
-    self.__initiateIds()
     
     if valuesMaker is None:
       valuesMaker = self.builder.makeValues
@@ -523,32 +526,40 @@ class Node (object):
   
   #//=======================================================//
   
-  @staticmethod
-  def   __makeArgsStr( args, brief ):
-    args = [ str(arg) for arg in toSequence(args) ]
+  def   get(self):
+    return self.getTargets()
+  
+  #//=======================================================//
+  
+  def   getTargets(self):
+    return tuple( target.get() for target in self.getTargetValues() )
+  
+  #//=======================================================//
+  
+  def   getTargetValues(self):
+    targets = self.targets
+    if targets is None:
+      return tuple()
     
-    if not brief or (len(args) < 3):
-      return ' '.join( args )
+    return targets 
+  
+  #//=======================================================//
+  
+  def   getSideEffectValues(self):
+    targets = self.itargets
+    if targets is None:
+      return tuple()
     
-    wish_size = 128
+    return targets
+  
+  #//=======================================================//
+  
+  def   removeTargets(self):
+    for value in self.getTargetValues():
+      value.remove()
     
-    args_str = [ args.pop(0) ]
-    last = args.pop()
-    
-    size = len(args_str[0]) + len(last)
-    
-    for arg in args:
-      size += len(arg)
-      
-      if size > wish_size:
-        args_str.append('...')
-        break
-      
-      args_str.append( arg )
-      
-    args_str.append( last )
-    
-    return ' '.join( args_str )
+    for value in self.getSideEffectValues():
+      value.remove()
   
   #//=======================================================//
   
@@ -562,8 +573,8 @@ class Node (object):
     targets = next(args, None )
     
     build_str  = str(name)
-    sources = self.__makeArgsStr( sources, brief )
-    targets = self.__makeArgsStr( targets, brief )
+    sources = _joinArgs( sources, brief )
+    targets = _joinArgs( targets, brief )
     
     if sources:
       build_str += ": " + sources
@@ -572,34 +583,236 @@ class Node (object):
     
     return build_str
   
-  #//-------------------------------------------------------//
+  #//=======================================================//
   
   def   getClearStr( self, brief = True ):
     
     args = self.builder.getBuildStrArgs( self, brief = brief )
     
     args    = iter(args)
-    name    = next(args, None )
-    sources = next(args, None )
+    next(args, None ) # name
+    next(args, None ) # sources
     targets = next(args, None )
     
-    return self.__makeArgsStr( targets, brief )
+    return _joinArgs( targets, brief )
+
+#//===========================================================================//
+
+#noinspection PyAttributeOutsideInit
+class BatchNode (Node):
+  
+  __slots__ = \
+    (
+      'node_values',
+      'changed_source_values',
+    )
+  
+  #//=======================================================//
+  
+  def   __init__( self, builder, sources, cwd = None ):
+    super(BatchNode,self).__init__( builder, sources, cwd )
+    
+    self.node_values = None
+    self.changed_source_values = None
+  
+  #//=======================================================//
+  
+  def   _initId(self):
+    self.name = self.builder.name
+    
+    name_hash = newHash( dumpSimpleObject( self.name ) )
+    sign_hash = self._setSignature()
+    
+    node_values = {}
+    
+    for src_value in self.source_values:
+      name = simpleObjectSignature( src_value.name, name_hash )
+      
+      if sign_hash and src_value.signature:
+        signature = simpleObjectSignature( src_value.signature, sign_hash )
+      else:
+        signature = None
+      
+      ideps = []
+      node_values[ src_value ] = NodeValue( name, signature ), ideps
+    
+    self.node_values = node_values
+      
+  #//=======================================================//
+  
+  def   _setSignature( self ):
+    
+    sign  = [ self.builder.signature ]
+    
+    sign = self._addDepsSignature( sign )
+    
+    if sign is None:
+      self.signature = None
+      return None
+    
+    sign_hash = newHash( dumpSimpleObject( sign ) )
+    self.signature = sign_hash.digest()
+    
+    return sign_hash
+    
+  
+  #//=======================================================//
+  def   _setSourceValues(self):
+    super(BatchNode,self)._setSourceValues()
+    self.changed_source_values = self.source_values
+  
+  #//=======================================================//
+  
+  def   getSourceValues(self):
+    if self.changed_source_values is None:
+      raise ErrorNodeNotInitialized( self )
+    
+    return self.changed_source_values
+  
+  
+  #//=======================================================//
+  
+  def   save( self, vfile ):
+    
+    for src_value in self.changed_source_values:
+      node_value, ideps = self.node_values[ src_value ]
+      if __debug__:
+        if node_value.targets is None:
+          raise ErrorNoTargets( self )
+      
+      node_value.idep_keys = vfile.addValues( ideps )
+      
+      vfile.addValue( node_value )
+  
+  #//=======================================================//
+  
+  def   clear( self, vfile ):
+    targets = []
+    itargets = []
+    node_values = []
+    
+    for node_value, ideps in self.node_values.values():
+      
+      node_value = vfile.findValue( node_value )
+      
+      if node_value:
+        node_values.append( node_value )
+        
+        if node_value.targets is not None:
+          targets   += node_value.targets
+          itargets  += node_value.itargets
+              
+    self.targets  = targets
+    self.itargets = itargets
+    
+    vfile.removeValues( node_values )
+    
+    try:
+      self.builder.clear( self )
+    except Exception:
+      pass
+  
+  #//=======================================================//
+  
+  def   build(self):
+    output = self.builder.buildBatch( self )
+    return output
+  
+  #//=======================================================//
+  
+  def   isActual( self, vfile ):
+    
+    if not self.signature:
+      # if __debug__:
+      #   print( "Sources signature is False" )
+      return False
+    
+    changed_sources = []
+    
+    for src_value, node_value in self.node_values.items():
+      node_value, ideps = node_value
+      
+      if not node_value.actual( vfile ):
+        changed_sources.append( src_value )
+    
+    self.changed_source_values = changed_sources
+    
+    is_actual = not changed_sources
+    
+    return is_actual
+  
+  #//=======================================================//
+  
+  def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
+    raise Exception( "setTargets() is not allowed for batch build." )
   
   #//=======================================================//
   
   def   split( self, builder ):
-    nodes = []
-    
-    cwd = self.cwd
-    options = self.options
-    
-    dep_values = self.getDepValues()
-    for src_value in self.getSourceValues():
-      node = Node( builder, src_value, cwd )
-      node.dep_values = dep_values
-      nodes.append( node )
-    
-    return nodes
+    raise Exception( "split() is not allowed for batch build." )
   
   #//=======================================================//
   
+  def   setSourceTargets( self, src_value, targets, itargets = None, ideps = None, valuesMaker = None ):
+    
+    if valuesMaker is None:
+      valuesMaker = self.builder.makeValues
+    
+    try:
+      node_value, node_ideps = self.node_values[ src_value ]
+    except KeyError:
+      raise ErrorNodeUnknownSource( src_value )
+    
+    node_value.targets  = valuesMaker( targets,   use_cache = False )
+    node_value.itargets = valuesMaker( itargets,  use_cache = False )
+    ideps               = valuesMaker( ideps,     use_cache = True )
+    
+    node_ideps[:] = ideps
+    
+  #//=======================================================//
+  
+  def   setSourceFileTargets( self, src_value, targets, itargets = None, ideps = None ):
+    self.setSourceTargets( src_value, targets = targets, itargets = itargets, ideps = ideps,
+                     valuesMaker = self.builder.makeFileValues )
+  
+  #//=======================================================//
+  
+  def   __populateTargets(self):
+    targets = []
+    itargets = []
+    
+    for src_value in self.source_values:
+      node_value, ideps = self.node_values[ src_value ]
+      targets += toSequence( node_value.targets )
+      itargets += toSequence( node_value.itargets )
+    
+    self.targets = tuple(targets)
+    self.itargets = tuple(itargets)
+  
+  #//=======================================================//
+  
+  def   getTargetValues(self):
+    targets = self.targets
+    if targets is None:
+      self.__populateTargets()
+      return self.targets
+    
+    return targets
+  
+  #//=======================================================//
+  
+  def   getSideEffectValues(self):
+    targets = self.itargets
+    if targets is None:
+      self.__populateTargets()
+      return self.itargets
+    
+    return targets
+  
+  #//=======================================================//
+  
+  def   shrink(self):
+    super( BatchNode, self).shrink()
+    
+    self.node_values = None
+    self.changed_source_values = None
