@@ -139,6 +139,8 @@ class TestUtils( AqlTestCase ):
       l_flat.append( i )
     
     self.assertEqual( flattenList( l ), l_flat )
+    self.assertEqual( flattenList( [] ), [] )
+    self.assertEqual( flattenList( [([1,3,4], [2,3])] ), [1,3,4,2,3] )
   
   #//===========================================================================//
   

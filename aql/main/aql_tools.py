@@ -230,6 +230,7 @@ class ToolsManager( Singleton ):
         setup_options.join()
         
         tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
+        
         return tool_obj, tool_names, tool_options
     
     raise ErrorToolNotFound( tool_name )

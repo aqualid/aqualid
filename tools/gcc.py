@@ -128,16 +128,18 @@ class GccCompiler (aql.FileBuilder):
   
   def   getBuildStrArgs( self, node, brief ):
     
-    obj_file, source = self._getObj( node )
+    sources = node.getSources()
+    targets = node.getTargets()
     
     if brief:
-      name    = aql.FilePath(self.cmd[0]).name()
-      source  = aql.FilePath(source).filename()
-      obj_file = obj_file.filename()
+      name = self.cmd[0]
+      name    = os.path.splitext( os.path.basename( name ) )[0]
+      sources = tuple( map( os.path.basename, sources ) )
+      targets = tuple( map( os.path.basename, targets ) )
     else:
       name    = ' '.join( self.cmd )
     
-    return name, source, obj_file
+    return name, sources, targets
   
 #//===========================================================================//
 
@@ -181,6 +183,22 @@ class GccLinkerBase(aql.FileBuilder):
     value_type = self.fileValueType()
     target = value_type( name = self.target, signature = None )
     return target
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, brief ):
+    
+    sources = tuple( src.get() for src in node.builder_data )
+    
+    if brief:
+      name    = os.path.splitext( os.path.basename(self.cmd[0]) )[0]
+      sources = tuple( map( os.path.basename, sources ) )
+      target  = os.path.basename( self.target )
+    else:
+      name    = ' '.join( self.cmd )
+      target  = self.target
+    
+    return name, sources, target
 
 #//===========================================================================//
 
@@ -195,7 +213,7 @@ class GccArchiver(GccLinkerBase):
     self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
     self.language = language
 
-    self.cmd = [ str(options.lib.get()), 'rcs', str(self.target) ]
+    self.cmd = [ str(options.lib.get()), 'rcs' ]
     
   #//-------------------------------------------------------//
   
@@ -204,6 +222,7 @@ class GccArchiver(GccLinkerBase):
     obj_files = node.builder_data
     
     cmd = list(self.cmd)
+    cmd.append( str(self.target) )
     cmd += obj_files
     
     cwd = self.target.dirname()
@@ -213,22 +232,6 @@ class GccArchiver(GccLinkerBase):
     node.setFileTargets( self.target )
     
     return out
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildStrArgs( self, node, brief ):
-    
-    sources = node.builder_data
-    
-    if brief:
-      name    = aql.FilePath(self.cmd[0]).name()
-      sources = [ aql.FilePath(source).filename() for source in sources ]
-      target  = self.target.filename()
-    else:
-      name    = ' '.join( self.cmd[:-1] )
-      target  = self.target
-    
-    return name, sources, target
 
 #//===========================================================================//
 
@@ -267,8 +270,6 @@ class GccLinker(GccLinkerBase):
     cmd += itertools.chain( *itertools.product( ['-L'], options.libpath.get() ) )
     cmd += itertools.chain( *itertools.product( ['-l'], options.libs.get() ) )
     
-    cmd += [ '-o', str(target) ]
-    
     return cmd
   
   #//-------------------------------------------------------//
@@ -281,6 +282,8 @@ class GccLinker(GccLinkerBase):
     
     cmd[2:2] = obj_files
     
+    cmd += [ '-o', str(self.target) ]
+    
     cwd = self.target.dirname()
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
@@ -289,26 +292,12 @@ class GccLinker(GccLinkerBase):
     
     return out
   
+  #//-------------------------------------------------------//
+  
   def   getTargetValues( self, node ):
     value_type = self.fileValueType()
     target = value_type( name = self.target, signature = None )
     return target
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildStrArgs( self, node, brief ):
-    
-    sources = node.builder_data
-    
-    if brief:
-      name    = aql.FilePath(self.cmd[0]).name()
-      sources = [ aql.FilePath(source).filename() for source in sources ]
-      target  = self.target.filename()
-    else:
-      name    = ' '.join( self.cmd[:-2] )
-      target  = self.target
-    
-    return name, sources, target
   
   #//-------------------------------------------------------//
 

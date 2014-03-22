@@ -58,7 +58,6 @@ class CopyBuilder (FileBuilder):
   SIGNATURE_ATTRS = ('ext', 'iext')
   
   def   __init__(self, options, ext, iext ):
-    self.built_src_count = 0
     self.ext = ext
     self.iext = iext
   
@@ -68,7 +67,7 @@ class CopyBuilder (FileBuilder):
     target_values = []
     itarget_values = []
     
-    idep = self.makeValue( b'' )
+    idep = SimpleValue( b'1234' )
     
     for src in node.getSources():
       new_name = src + '.' + self.ext
@@ -86,8 +85,6 @@ class CopyBuilder (FileBuilder):
   
   def   buildBatch( self, node ):
     
-    self.built_src_count = 0
-    
     idep = SimpleValue( b'1234' )
     
     for src_value in node.getSourceValues():
@@ -100,7 +97,6 @@ class CopyBuilder (FileBuilder):
       shutil.copy( src, new_iname )
       
       node.setSourceFileTargets( src_value, new_name, new_iname, idep )
-      self.built_src_count += 1
 
 #//===========================================================================//
 
@@ -282,6 +278,28 @@ class TestNodes( AqlTestCase ):
   
   #//=======================================================//
   
+  def   _rebuildBatchNode(self, vfile, src_files, built_count ):
+    options = builtinOptions()
+    
+    builder = CopyBuilder( options, "tmp", "i" )
+    
+    node = BatchNode( builder, src_files )
+    dep = SimpleValue( "11", name = "dep1" )
+    node.depends( dep )
+    
+    node.initiate()
+    
+    if built_count == 0:
+      self.assertTrue( node.isActual( vfile ) )
+    else:
+      self.assertFalse( node.isActual( vfile ) )
+      node.build()
+      node.save( vfile )
+      self.assertEqual( len(node.batch_source_values), built_count )
+      self.assertTrue( node.isActual( vfile ) )
+  
+  #//=======================================================//
+  
   def test_node_batch(self):
     
     with Tempdir() as tmp_dir:
@@ -289,53 +307,19 @@ class TestNodes( AqlTestCase ):
       with ValuesFile( vfile_name ) as vfile:
         src_files = self.generateSourceFiles( str(tmp_dir), 5, 100 )
         
-        options = builtinOptions()
-        
-        builder = CopyBuilder( options, "tmp", "i" )
-        
-        node = BatchNode( builder, src_files )
-        dep = SimpleValue( "11", name = "dep1" )
-        node.depends( dep )
-        
-        node.initiate()
-        
-        self.assertFalse( node.isActual( vfile ) )
-        node.build()
-        node.save( vfile )
-        self.assertTrue( node.isActual( vfile ) )
-        self.assertEqual( node.builder.built_src_count, len(src_files) )
-        
-        #//-------------------------------------------------------//
-        
-        # node = BatchNode( builder, src_files )
-        # node.depends( dep )
-        # 
-        # node.initiate()
-        # 
-        # self.assertTrue( node.isActual( vfile ) )
-        # 
-        # node = BatchNode( builder, src_files[:-2] )
-        # node.depends( dep )
-        # 
-        # node.initiate()
-        # 
-        # self.assertTrue( node.isActual( vfile ) )
+        self._rebuildBatchNode( vfile, src_files, len(src_files) )
+        self._rebuildBatchNode( vfile, src_files, 0 )
+        self._rebuildBatchNode( vfile, src_files[:-2], 0 )
+        self._rebuildBatchNode( vfile, src_files[0:1], 0 )
         
         #//-------------------------------------------------------//
         
         writeBinFile( src_files[1], b"src_file1" )
-        node.builder.makeFileValue( src_files[1] )
+        writeBinFile( src_files[2], b"src_file1" )
+        FileChecksumValue( src_files[1] )   # clear cached value
+        FileChecksumValue( src_files[2] )   # clear cached value
         
-        node = BatchNode( builder, src_files )
-        node.depends( dep )
-        node.initiate()
-        
-        self.assertFalse( node.isActual( vfile ) )
-        node.build()
-        node.save( vfile )
-        self.assertTrue( node.isActual( vfile ) )
-        self.assertEqual( node.builder.built_src_count, 1 )
-
+        self._rebuildBatchNode( vfile, src_files, 2 )
 
 #//===========================================================================//
 

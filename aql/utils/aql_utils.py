@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -51,7 +51,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, toSequence, AqlException
+from aql.util_types import uStr, toSequence, isSequence, AqlException
 
 #//===========================================================================//
 
@@ -721,18 +721,13 @@ def   flattenList( seq ):
     
     value = out_list[i]
     
-    if not isinstance( value, str ):
-      try:
-        iter(value)
-      except TypeError:
-        pass
+    if isSequence( value ):
+      if value:
+        out_list[i: i + 1] = value
       else:
-        if value:
-          out_list[i: i + 1] = value
-        else:
-          del out_list[i]
-        
-        continue
+        del out_list[i]
+      
+      continue
     
     i += 1
   

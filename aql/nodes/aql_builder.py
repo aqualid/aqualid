@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -272,6 +272,16 @@ class Builder (object):
     name = self.__class__.__name__
     sources = node.getSources()
     targets = node.getTargets()
+    
+    return name, sources, targets
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildBatchStrArgs( self, node, brief ):
+    
+    name = self.__class__.__name__
+    sources = node.getBatchSources()
+    targets = node.getBatchTargets()
     
     return name, sources, targets
   

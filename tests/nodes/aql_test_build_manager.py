@@ -10,7 +10,7 @@ from aql.utils import fileChecksum, Tempfile, Tempdir, \
 
 from aql.values import SimpleValue, FileChecksumValue
 from aql.options import builtinOptions
-from aql.nodes import Node, Builder, BuildSingle, BuildManager, ErrorNodeDependencyCyclic
+from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildSingle, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 
@@ -39,7 +39,7 @@ class CopyValueBuilder (Builder):
 
 #//===========================================================================//
 
-class ChecksumBuilder (Builder):
+class ChecksumBuilder (FileBuilder):
   
   NAME_ATTRS = ('replace_ext',)
   SIGNATURE_ATTRS = ('offset', 'length')
@@ -52,52 +52,71 @@ class ChecksumBuilder (Builder):
   
   #//-------------------------------------------------------//
   
+  def   _buildSrc( self, src ):
+    chcksum = fileChecksum( src, self.offset, self.length, 'sha512' )
+    if self.replace_ext:
+      chcksum_filename = os.path.splitext(src)[0] + '.chksum'
+    else:
+      chcksum_filename = src + '.chksum'
+    
+    chcksum_filename = self.getBuildPath( chcksum_filename )
+    
+    with open( chcksum_filename, 'wb' ) as f:
+      f.write( chcksum.digest() )
+    
+    return chcksum_filename
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, node ):
     target_values = []
     
     for src in node.getSources():
-      
-      chcksum = fileChecksum( src, self.offset, self.length, 'sha512' )
-      if self.replace_ext:
-        chcksum_filename = os.path.splitext(src)[0] + '.chksum'
-      else:
-        chcksum_filename = src + '.chksum'
-      
-      chcksum_filename = self.getBuildPath( chcksum_filename )
-      
-      with open( chcksum_filename, 'wb' ) as f:
-        f.write( chcksum.digest() )
-      
-      target_values.append( chcksum_filename )
+      target_values.append( self._buildSrc( src ) )
     
     node.setFileTargets( target_values )
   
   #//-------------------------------------------------------//
   
+  def   buildBatch( self, node ):
+    for src_value in node.getSourceValues():
+      target = self._buildSrc( src_value.get() )
+      node.setSourceFileTargets( src_value, target )
+    
+  #//-------------------------------------------------------//
+  
   def   getBuildStrArgs( self, node, brief = True ):
     
     name = self.__class__.__name__
+    sources = node.getSources()
+    targets = node.getTargets()
+
+    if not brief:
+      sources = tuple( map( os.path.basename, sources ) )
+      targets = tuple( map( os.path.basename, targets ) )
     
-    if brief:
-      sources = tuple( os.path.basename( value ) for value in node.getSources() )
-      targets = tuple( os.path.basename( value ) for value in node.getTargets() )
-    else:
-      sources = tuple( value.name for value in node.getSourceValues() )
-      targets = tuple( value.name for value in node.getTargetValues() )
+    return name, sources, targets
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildBatchStrArgs( self, node, brief = True ):
+    
+    name = self.__class__.__name__
+    sources = node.getBatchSources()
+    targets = node.getBatchTargets()
+    
+    if not brief:
+      sources = tuple( map( os.path.basename, sources ) )
+      targets = tuple( map( os.path.basename, targets ) )
     
     return name, sources, targets
 
 #//===========================================================================//
 
-def   _addNodesToBM( builder, src_files ):
+def   _addNodesToBM( builder, src_files, Node = Node ):
   bm = BuildManager()
   try:
-    
-    src_values = []
-    for s in src_files:
-      src_values.append( FileChecksumValue( s ) )
-    
-    checksums_node = Node( builder, src_values )
+    checksums_node = Node( builder, src_files )
     checksums_node2 = Node( builder, checksums_node )
     
     bm.add( checksums_node ); bm.selfTest()
@@ -125,9 +144,9 @@ def   _build( bm ):
 
 #//===========================================================================//
 
-def   _buildChecksums( builder, src_files ):
+def   _buildChecksums( builder, src_files, Node = Node ):
   
-  bm = _addNodesToBM( builder, src_files )
+  bm = _addNodesToBM( builder, src_files, Node )
   _build( bm )
 
 #//===========================================================================//
@@ -382,6 +401,34 @@ class TestBuildManager( AqlTestCase ):
       self.assertEqual( self.building_nodes, self.finished_nodes )
       
       bm = _addNodesToBM( builder, src_files )
+      try:
+        self.actual_nodes = self.outdated_nodes = 0
+        bm.status( brief = False ); bm.selfTest()
+        
+        self.assertEqual( self.outdated_nodes, 0)
+        self.assertEqual( self.actual_nodes, 2 )
+        
+      finally:
+        bm.close()
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_batch(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      src_files = self.generateSourceFiles( tmp_dir, 3, 201 )
+      
+      builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
+      
+      self.building_nodes = self.finished_nodes = 0
+      _buildChecksums( builder, src_files, Node = BatchNode )
+      self.assertEqual( self.building_nodes, 2 )
+      self.assertEqual( self.building_nodes, self.finished_nodes )
+      
+      bm = _addNodesToBM( builder, src_files, Node = BatchNode )
       try:
         self.actual_nodes = self.outdated_nodes = 0
         bm.status( brief = False ); bm.selfTest()

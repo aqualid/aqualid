@@ -1,5 +1,5 @@
 
-# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -53,8 +53,8 @@ class   ErrorNodeNotInitialized( AqlException ):
 
 class   ErrorNodeUnknownSource( AqlException ):
   def   __init__( self, src_value ):
-    msg = "Unknown source value: %s" % (src_value, type(src_value))
-    super(ErrorNodeNotInitialized, self).__init__( msg )
+    msg = "Unknown source value: %s (%s)" % (src_value, type(src_value))
+    super(ErrorNodeUnknownSource, self).__init__( msg )
 
 #//===========================================================================//
 
@@ -92,6 +92,39 @@ def   _actualValues( values ):
       return False
       
   return True
+
+#//===========================================================================//
+
+def   _getBuildStr( args, brief ):
+    
+    args = toSequence(args)
+    
+    args    = iter(args)
+    name    = next(args, "Unknown node" )
+    sources = next(args, None )
+    targets = next(args, None )
+    
+    build_str  = str(name)
+    sources = _joinArgs( sources, brief )
+    targets = _joinArgs( targets, brief )
+    
+    if sources:
+      build_str += ": " + sources
+    if targets:
+      build_str += " => " + targets
+    
+    return build_str
+  
+#//===========================================================================//
+  
+def   _getClearStr( args, brief = True ):
+  
+  args    = iter(args)
+  next(args, None ) # name
+  next(args, None ) # sources
+  targets = next(args, None )
+  
+  return _joinArgs( targets, brief )
 
 #//===========================================================================//
 
@@ -286,7 +319,7 @@ class Node (object):
       return dep_values
     
     for node in dep_nodes:
-      dep_values += toSequence( node.getTargetValues() )
+      dep_values += node.getTargetValues()
     
     dep_nodes.clear()
     dep_values.sort( key = lambda v: v.name )
@@ -439,6 +472,10 @@ class Node (object):
   def   build(self):
     self.targets = None
     output = self.builder.build( self )
+    
+    if self.targets is None:
+      raise ErrorNoTargets( self )
+    
     return output
   
   #//=======================================================//
@@ -526,6 +563,11 @@ class Node (object):
   
   #//=======================================================//
   
+  def   setNoTargets( self ):
+    self.setTargets( targets = None )
+  
+  #//=======================================================//
+  
   def   get(self):
     return self.getTargets()
   
@@ -564,37 +606,14 @@ class Node (object):
   #//=======================================================//
   
   def   getBuildStr( self, brief = True ):
-    
     args = self.builder.getBuildStrArgs( self, brief = brief )
-    
-    args    = iter(args)
-    name    = next(args, self.builder.__class__.__name__ )
-    sources = next(args, None )
-    targets = next(args, None )
-    
-    build_str  = str(name)
-    sources = _joinArgs( sources, brief )
-    targets = _joinArgs( targets, brief )
-    
-    if sources:
-      build_str += ": " + sources
-    if targets:
-      build_str += " => " + targets
-    
-    return build_str
+    return _getBuildStr( args, brief )
   
   #//=======================================================//
   
   def   getClearStr( self, brief = True ):
-    
     args = self.builder.getBuildStrArgs( self, brief = brief )
-    
-    args    = iter(args)
-    next(args, None ) # name
-    next(args, None ) # sources
-    targets = next(args, None )
-    
-    return _joinArgs( targets, brief )
+    return _getClearStr( args, brief )
 
 #//===========================================================================//
 
@@ -604,7 +623,7 @@ class BatchNode (Node):
   __slots__ = \
     (
       'node_values',
-      'changed_source_values',
+      'batch_source_values',
     )
   
   #//=======================================================//
@@ -613,7 +632,7 @@ class BatchNode (Node):
     super(BatchNode,self).__init__( builder, sources, cwd )
     
     self.node_values = None
-    self.changed_source_values = None
+    self.batch_source_values = None
   
   #//=======================================================//
   
@@ -654,27 +673,31 @@ class BatchNode (Node):
     self.signature = sign_hash.digest()
     
     return sign_hash
-    
   
   #//=======================================================//
+  
   def   _setSourceValues(self):
     super(BatchNode,self)._setSourceValues()
-    self.changed_source_values = self.source_values
+    self.batch_source_values = self.source_values
   
   #//=======================================================//
   
-  def   getSourceValues(self):
-    if self.changed_source_values is None:
+  def   getBatchSources(self):
+    return tuple( src.get() for src in self.getBatchSourceValues() )
+  
+  #//=======================================================//
+  
+  def   getBatchSourceValues(self):
+    if self.batch_source_values is None:
       raise ErrorNodeNotInitialized( self )
     
-    return self.changed_source_values
-  
+    return self.batch_source_values
   
   #//=======================================================//
   
   def   save( self, vfile ):
     
-    for src_value in self.changed_source_values:
+    for src_value in self.batch_source_values:
       node_value, ideps = self.node_values[ src_value ]
       if __debug__:
         if node_value.targets is None:
@@ -691,7 +714,8 @@ class BatchNode (Node):
     itargets = []
     node_values = []
     
-    for node_value, ideps in self.node_values.values():
+    for src_value in self.source_values:
+      node_value, ideps = self.node_values[ src_value ]
       
       node_value = vfile.findValue( node_value )
       
@@ -716,7 +740,27 @@ class BatchNode (Node):
   
   def   build(self):
     output = self.builder.buildBatch( self )
+    self.__populateTargets()
+    
     return output
+  
+  #//=======================================================//
+  
+  def   __populateTargets( self ):
+    targets   = []
+    itargets  = []
+    
+    for src_value in self.source_values:
+      node_value, ideps = self.node_values[ src_value ]
+      node_targets = node_value.targets
+      if node_targets is None:
+        raise ErrorNoTargets( self )
+      
+      targets += node_targets
+      itargets += node_value.itargets
+    
+    self.targets = tuple(targets)
+    self.itargets = tuple(itargets)
   
   #//=======================================================//
   
@@ -728,18 +772,25 @@ class BatchNode (Node):
       return False
     
     changed_sources = []
+    targets = []
+    itargets = []
     
-    for src_value, node_value in self.node_values.items():
-      node_value, ideps = node_value
-      
+    for src_value in self.source_values:
+      node_value, ideps = self.node_values[ src_value ]
+    
       if not node_value.actual( vfile ):
         changed_sources.append( src_value )
+      else:
+        targets   += node_value.targets
+        itargets  += node_value.itargets
     
-    self.changed_source_values = changed_sources
+    if changed_sources:
+      self.batch_source_values = changed_sources
+      return False
     
-    is_actual = not changed_sources
-    
-    return is_actual
+    self.targets  = targets
+    self.itargets = itargets
+    return True
   
   #//=======================================================//
   
@@ -771,41 +822,28 @@ class BatchNode (Node):
     
   #//=======================================================//
   
+  def   setNoTargets( self ):
+    for src_value in self.batch_source_values:
+      node_value, node_ideps = self.node_values[ src_value ]
+      node_value.targets = tuple()
+      node_value.itargets = tuple()
+  
+  #//=======================================================//
+  
   def   setSourceFileTargets( self, src_value, targets, itargets = None, ideps = None ):
     self.setSourceTargets( src_value, targets = targets, itargets = itargets, ideps = ideps,
                      valuesMaker = self.builder.makeFileValues )
   
   #//=======================================================//
   
-  def   __populateTargets(self):
+  def   getBatchTargets(self):
     targets = []
-    itargets = []
     
-    for src_value in self.source_values:
+    for src_value in self.batch_source_values:
       node_value, ideps = self.node_values[ src_value ]
-      targets += toSequence( node_value.targets )
-      itargets += toSequence( node_value.itargets )
-    
-    self.targets = tuple(targets)
-    self.itargets = tuple(itargets)
-  
-  #//=======================================================//
-  
-  def   getTargetValues(self):
-    targets = self.targets
-    if targets is None:
-      self.__populateTargets()
-      return self.targets
-    
-    return targets
-  
-  #//=======================================================//
-  
-  def   getSideEffectValues(self):
-    targets = self.itargets
-    if targets is None:
-      self.__populateTargets()
-      return self.itargets
+      node_targets = node_value.targets
+      if node_targets:
+        targets += ( target.get() for target in node_targets )
     
     return targets
   
@@ -815,4 +853,16 @@ class BatchNode (Node):
     super( BatchNode, self).shrink()
     
     self.node_values = None
-    self.changed_source_values = None
+    self.batch_source_values = None
+
+  #//=======================================================//
+  
+  def   getBuildStr( self, brief = True ):
+    args = self.builder.getBuildBatchStrArgs( self, brief = brief )
+    return _getBuildStr( args, brief )
+  
+  #//=======================================================//
+  
+  def   getClearStr( self, brief = True ):
+    args = self.builder.getBuildBatchStrArgs( self, brief = brief )
+    return _getClearStr( args, brief )

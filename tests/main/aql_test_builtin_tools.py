@@ -32,6 +32,7 @@ class TestBuiltinTools( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   setUp( self ):
+    super(TestBuiltinTools,self).setUp()
     # disableDefaultHandlers()
     
     self.building_started = 0

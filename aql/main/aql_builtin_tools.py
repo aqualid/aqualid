@@ -49,7 +49,7 @@ class ExecuteCommand (Builder):
     cmd = node.getSources()
     out = self.execCmd( cmd )
     
-    node.setTargets( None )
+    node.setNoTargets()
     
     return out
   
@@ -79,7 +79,7 @@ class InstallBuilder (FileBuilder):
       if os.path.isfile( source ):
         shutil.copy( source, target )
     
-    node.setTargets( None )
+    node.setNoTargets()
   
   #//-------------------------------------------------------//
   

@@ -12,11 +12,10 @@ from aql.options import builtinOptions
 
 from aql.main import Project, ProjectConfig
 
-from rsync import RSyncPullBuilder
+import rsync
 
 #//===========================================================================//
 
-@skip
 class TestToolRsync( AqlTestCase ):
   
   def test_rsync_push(self):
@@ -30,13 +29,16 @@ class TestToolRsync( AqlTestCase ):
           prj = Project( cfg.options, cfg.targets )
           
           prj.tools.rsync.Push( src_files, target = target_dir )
+          
           prj.Build()
           
           prj.tools.rsync.Push( src_files, target = target_dir )
+          
           prj.Build()
   
   #//=======================================================//
     
+  @skip
   def test_rsync_get(self):
     
     with Tempdir() as tmp_dir:
@@ -69,6 +71,7 @@ class TestToolRsync( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
+  @skip
   def test_rsync_put(self):
     
     with Tempdir() as tmp_dir:

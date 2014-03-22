@@ -33,6 +33,7 @@ class TestProject( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   setUp( self ):
+    super(TestProject,self).setUp()
     disableDefaultHandlers()
     
     self.building_started = 0
@@ -48,6 +49,8 @@ class TestProject( AqlTestCase ):
     removeUserHandler( self.eventNodeBuildingFinished )
 
     enableDefaultHandlers()
+    
+    super(TestProject,self).tearDown()
   
   #//-------------------------------------------------------//
   

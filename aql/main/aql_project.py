@@ -231,7 +231,9 @@ class BuilderWrapper( object ):
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
+    
     options, dep_nodes, sources, args_kw, options_kw = self.__getOptionsAndArgs( kw )
+    
     sources += args
     sources = flattenList( sources )
     

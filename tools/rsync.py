@@ -141,8 +141,8 @@ class   RSyncPushBuilder( aql.Builder ):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    sources = sorted( map( _normLocalPath, node.getSources() ) )
+  def   buildBatch( self, node ):
+    sources = sorted( map( _normLocalPath, node.getBatchSources() ) )
     
     sources_dir = aql.commonDirName( sources )
     if not sources_dir:
@@ -152,7 +152,7 @@ class   RSyncPushBuilder( aql.Builder ):
     sources = [ src[sources_dir_len:] for src in sources ]
     
     if self.normLocalPath is not _normLocalPath: 
-      sources = map( self.normLocalPath, node.getSources() )
+      sources = map( self.normLocalPath, sources )
       sources_dir = self.normLocalPath( sources_dir )
     
     cmd = list( self.cmd )
@@ -173,19 +173,20 @@ class   RSyncPushBuilder( aql.Builder ):
       if tmp_r: os.close( tmp_r )
       if tmp_w: os.close( tmp_w )
     
-    node.setTargets( None )
+    node.setNoTargets()
     
     return out
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
-    sources = sorted( map( _normLocalPath, node.getSources() ) )
+  def   getBuildBatchStrArgs( self, node, brief ):
+    
+    sources = sorted( map( self.normLocalPath, node.getBatchSources() ) )
     target = self.remote_path
     
     if brief:
-      name    = aql.FilePath(self.cmd[0]).name()
-      sources  = tuple( map( os.path.basename, sources) )
+      name    = os.path.splitext( os.path.basename(self.cmd[0]) )[0]
+      sources = tuple( map( os.path.basename, sources ) )
     else:
       name    = ' '.join( self.cmd )
     
@@ -330,4 +331,4 @@ class ToolRsync( aql.Tool ):
     return RSyncPullBuilder( options, target )
   
   def   Push( self, options, target ):
-    return RSyncPushBuilder( options, target )
+    return aql.BuildBatch( RSyncPushBuilder( options, target ) )
