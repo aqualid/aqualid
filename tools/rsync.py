@@ -95,7 +95,7 @@ env.RsyncPut( prog, local_path = '', remote_path = '/work/cp/bin/' )
 
 """
 
-class   RSyncPushBuilder( aql.Builder ):
+class   RSyncPushBuilder( aql.FileBuilder ):
   # rsync -avzub --exclude-from=files.flt --delete-excluded -e "ssh -i dev.key" c4dev@dev:/work/cp/bp2_int/components .
   
   NAME_ATTRS = ('remote_path',)
@@ -113,7 +113,7 @@ class   RSyncPushBuilder( aql.Builder ):
     else:
       remote_path = normLocalPath( remote_path )
           
-    self.cmd = (options.rsync.get(), '-avzubsX')
+    self.cmd = self.__getCmd( options, exclude )
     self.normLocalPath = normLocalPath 
     
     self.rsync = options.rsync.get()
@@ -126,11 +126,12 @@ class   RSyncPushBuilder( aql.Builder ):
   
   @staticmethod
   def   __getCmd( options, excludes ):
-    cmd = [options.rsync.get(), '-avzubsX']
+    cmd = [ options.rsync.get() ]
+    
+    cmd += options.rsync_flags.get()
     
     if excludes:
       cmd += itertools.chain( *itertools.product( ['--exclude'], aql.toSequence( excludes ) ) )
-      cmd.append('--delete-excluded')
     
     rsync_key_file = options.rsync_key_file.get()
     
@@ -320,6 +321,10 @@ class ToolRsync( aql.Tool ):
     options.rsync_host = aql.StrOptionType( description = "Rsync remote host." )
     options.rsync_login = aql.StrOptionType( description = "Rsync user's SSH login on the remote host." )
     options.rsync_key_file = aql.PathOptionType( description = "Rsync user's SSH key file for the remote host." )
+    
+    options.rsync_flags = aql.ListOptionType( description = "rsync tool flags", separators = None )
+    
+    options.rsync_flags = ['-a', '-v', '-z', '-s' ]
     
     options.setGroup( "rsync" )
     

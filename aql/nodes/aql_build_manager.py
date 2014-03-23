@@ -23,7 +23,6 @@ __all__ = (
 )
 
 import threading
-import traceback
 
 from aql.util_types import toSequence, AqlException
 from aql.utils import eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
@@ -34,8 +33,6 @@ from aql.values import ValuesFile
 @eventStatus
 def   eventNodeStatusOutdated( node, progress, brief ):
   msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( brief ))
-  # if __debug__:
-  #   msg = '%s: %s' % (node.getName(), msg)
   logInfo( msg )
 
 #//===========================================================================//
@@ -44,9 +41,6 @@ def   eventNodeStatusOutdated( node, progress, brief ):
 def   eventNodeStatusActual( node, progress, brief ):
   
   msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( brief ))
-  # if __debug__:
-  #   msg = '%s: %s' % (node.getName(), msg)
-
   logInfo( msg )
 
 #//===========================================================================//
@@ -94,6 +88,7 @@ def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   
   msg = node.getBuildStr( brief )
   if not brief and builder_output:
+    msg += '\n'
     msg += builder_output
   
   msg = "(%s) %s" % (progress, msg)
@@ -409,6 +404,11 @@ class  _VFiles( object ):
   def   __init__( self ):
     self.handles = {}
     self.names = {}
+  
+  #//-------------------------------------------------------//
+  
+  def   __iter__(self):
+    raise TypeError()
   
   #//-------------------------------------------------------//
   

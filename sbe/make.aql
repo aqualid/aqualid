@@ -33,5 +33,3 @@ for src in src_files:
     Alias( 'run_' + test_name, test )           # 'run_<test case name>' - to run only certain test case
     Alias( ['run', 'test'], test )              # 'run' - to run all test cases
 
-# As you can see, there is no platform specific code here.
-# And this is true, this build script can be used to build and run a code on any platform (Windows, Linux & etc)

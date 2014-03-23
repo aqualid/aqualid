@@ -275,6 +275,11 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   __iter__(self):
+    raise TypeError()
+  
+  #//-------------------------------------------------------//
+  
   def   __getitem__( self, key ):
     if self.key is not NotImplemented:
       raise KeyError( key )
@@ -410,6 +415,11 @@ class ConditionGeneratorHelper( object ):
     
     condition = self.__makeCmpCondition( self.condition, cmp_method, self.name, *args )
     return ConditionGenerator( self.options, condition )
+  
+  #//-------------------------------------------------------//
+  
+  def   __iter__(self):
+    raise TypeError()
   
   #//-------------------------------------------------------//
   

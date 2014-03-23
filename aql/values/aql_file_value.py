@@ -22,6 +22,7 @@ __all__ = (
 )
 
 import os
+import errno
 
 from .aql_value import ValueBase
 from .aql_value_pickler import pickleable
@@ -87,8 +88,14 @@ def   _getFileChecksum( path, use_cache = False, _cache = {} ):
   
   try:
     signature = fileSignature( path )
-  except (OSError, IOError):
-    return None
+  except (OSError, IOError) as err:
+    if err.errno != errno.EISDIR:
+      return None
+    
+    try:
+      signature = fileTimeSignature( path )
+    except (OSError, IOError):
+      return None
   
   _cache[ path ] = signature
   return signature
