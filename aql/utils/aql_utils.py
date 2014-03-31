@@ -24,7 +24,7 @@ __all__ = (
   'findFiles', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
-  'flattenList', 'commonDirName', 'splitDrive',
+  'flattenList', 'simplifyValue', 'commonDirName', 'splitDrive',
   'Chrono', 'Chdir',
 )
 
@@ -51,7 +51,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, toSequence, isSequence, AqlException
+from aql.util_types import uStr, UniqueList, toSequence, isSequence, AqlException
 
 #//===========================================================================//
 
@@ -732,6 +732,47 @@ def   flattenList( seq ):
     i += 1
   
   return out_list
+
+#//===========================================================================//
+
+_SIMPLE_TYPES = (uStr,int,float,complex,bool,bytes,bytearray )
+
+def  simplifyValue( value, simple_types = _SIMPLE_TYPES ):
+  
+  if value is None:
+    return None
+  
+  value_type = type(value)
+  
+  if value_type in simple_types:
+    return value
+  
+  for simple_type in simple_types:
+    if isinstance( value, simple_type ):
+      return simple_type(value)
+  
+  if isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
+    result = []
+    
+    for v in value:
+      result.append( simplifyValue( v ) )
+          
+    return result
+  
+  if isinstance( value, dict ):
+    result = {}
+    
+    for key,v in value.items():
+      result[ key ] = simplifyValue( v )
+    
+    return result
+  
+  try:
+    return simplifyValue( value.get() )
+  except Exception:
+    pass
+  
+  return value
 
 #//===========================================================================//
 

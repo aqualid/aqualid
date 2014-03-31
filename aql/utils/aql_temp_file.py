@@ -34,6 +34,9 @@ class Tempfile (object):
     self.__handle = tempfile.NamedTemporaryFile( mode = mode, suffix = suffix, prefix = prefix, dir = dir, delete = False )
     self.name = self.__handle.name
   
+  def   get(self):
+    return self.name
+  
   def   __str__(self):
     return self.name
   
@@ -102,6 +105,9 @@ class Tempdir( object ):
         os.makedirs( name )
       
       self.path = name
+  
+  def   get(self):
+    return self.path
   
   def   __str__(self):
     return self.path

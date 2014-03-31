@@ -518,14 +518,19 @@ class   DictOptionType (OptionType):
       if range_help is None:
         range_help = value_type.range_help
     
-    self.value_types = {}
-    
     dict_type = ValueDictType( Dict, key_type, value_type )
     
     if separators:
       dict_type = SplitDictType( dict_type, separators )
     
     super(DictOptionType,self).__init__( dict_type, description, group, range_help )
+  
+  #//-------------------------------------------------------//
+  
+  def   setValueType( self, key, value_type ):
+    if isinstance( value_type, OptionType ):
+      value_type = value_type.value_type
+    self.value_type.setValueType( key, value_type )
   
   #//-------------------------------------------------------//
   

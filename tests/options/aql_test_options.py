@@ -409,10 +409,17 @@ class TestOptions( AqlTestCase ):
     
     options.defines = DictOptionType( key_type = str, value_type = str )
     options.env = DictOptionType( key_type = UpperCaseString )
-    path = ListOptionType( value_type = FilePath, separators = os.pathsep )()
-    options.env['PATH'] = path
+    options.env['PATH'] = ListOptionType( value_type = FilePath, separators = os.pathsep )
+    options.env['PATH'] = []
+    options.env['Include'] = list
+    
     options.env['HOME'] = FilePath()
     options.env['Path'] = '/work/bin'
+    options.env['Include'] = '/work/bin'
+    
+    self.assertEqual( options.env['path'].get(), '/work/bin' )
+    self.assertEqual( options.env['Include'].get(), '/work/bin' )
+    
     options.env['Path'] += '/usr/bin'
     options.env['path'] += ['/usr/local/bin', '/home/user/bin']
     options.env['Home'] = '/home/user'
@@ -427,7 +434,7 @@ class TestOptions( AqlTestCase ):
     path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin', '/home/user', '/mingw/bin/g++' ] ))
     
     value = options.env
-    self.assertEqual( value['path'], path )
+    self.assertEqual( value['path'].get(), path )
     
     self.assertEqual( options.defines['OPTS'], '' )
     options.debug_on = True

@@ -19,6 +19,8 @@
 
 __all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
 
+from .aql_list_types import List
+
 #//===========================================================================//
 
 class DictItem( tuple ):
@@ -39,7 +41,7 @@ class   Dict (dict):
       return tuple()
     
     if isinstance( items, DictItem ):
-      return ( items, )
+      return (items,)
     
     try:
       items = items.items
@@ -118,6 +120,7 @@ def   SplitDictType( dict_type, separators ):
     
     @staticmethod
     def   __toItems( items_str, sep = separator, other_seps = other_separators ):
+      
       if not isinstance( items_str, str ):
         return items_str
       
@@ -154,7 +157,9 @@ def   SplitDictType( dict_type, separators ):
     #//-------------------------------------------------------//
     
     def update(self, other = None, **kwargs):
+      
       other = self.__toItems( other )
+      
       super(SplitDict,self).update( other )
       
       items = self.__toItems( kwargs )
@@ -187,24 +192,41 @@ def   SplitDictType( dict_type, separators ):
 
 #//===========================================================================//
 
-def   ValueDictType( dict_type, key_type, value_type = None ):
-  
-  value_types = {}
-  
-  def   _toValue( key, value, val_types = value_types, val_type = value_type ):
-    try:
-      if val_type is None:
-        val_type = val_types[ key ]
-      if val_type is type(value):
-        return value
-      return val_type( value )
-    except KeyError:
-      pass
-    
-    val_types[ key ] = type(value)
-    return value
+def   ValueDictType( dict_type, key_type, default_value_type = None ):
   
   class   _ValueDict (dict_type):
+    
+    __VALUE_TYPES = {}
+    
+    #//-------------------------------------------------------//
+    
+    @staticmethod
+    def   _toValue( key, value, val_types = __VALUE_TYPES, val_type = default_value_type ):
+      try:
+        if val_type is None:
+          val_type = val_types[ key ]
+        if isinstance(value, val_type):
+          return value
+        value = val_type( value )
+      except KeyError:
+        pass
+      
+      _ValueDict.setValueType( key, type(value) )
+      return value
+    
+    #//-------------------------------------------------------//
+    
+    @staticmethod
+    def   setValueType( key, value_type, value_types = __VALUE_TYPES, default_type = default_value_type ):
+      if default_type is None:
+        
+        if value_type is list:
+          value_type = List
+        
+        if value_type is dict:
+          value_type = Dict
+        
+        value_types[ key ] = value_type
     
     #//-------------------------------------------------------//
     
@@ -218,7 +240,7 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
       try:
         for key, value in Dict.toItems( items ):
           key = key_type( key )
-          value = _toValue( key, value )
+          value = _ValueDict._toValue( key, value )
           items_tmp.append( (key, value) )
         
         return items_tmp
@@ -234,7 +256,7 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
       elif isinstance( items, DictItem ):
         key, value = items
         key = key_type( key )
-        value = _toValue( key, value )
+        value = _ValueDict._toValue( key, value )
         return DictItem( key, value )
       
       return _ValueDict( items )
@@ -255,7 +277,7 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
     
     def   __setitem__( self, key, value ):
       key = key_type( key )
-      return super(_ValueDict,self).__setitem__( key, _toValue( key, value ) )
+      return super(_ValueDict,self).__setitem__( key, _ValueDict._toValue( key, value ) )
     
     def   __delitem__( self, key ):
       return super(_ValueDict,self).__delitem__( key_type(key) )
@@ -267,14 +289,16 @@ def   ValueDictType( dict_type, key_type, value_type = None ):
     
     def setdefault(self, key, default ):
       key = key_type(key)
-      default = _toValue( key, default )
+      default = _ValueDict._toValue( key, default )
       
       return super(_ValueDict,self).setdefault( key, default )
     
     #//-------------------------------------------------------//
     
     def update(self, other = None, **kwargs):
+      
       other = self.__toItems( other )
+      
       super(_ValueDict,self).update( other )
       
       items = self.__toItems( kwargs )

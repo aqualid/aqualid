@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 The developers of Aqualid project - http://aqualid.googlecode.com
+# Copyright (c) 2011-2014 The developers of Aqualid project - http://aqualid.googlecode.com
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -25,10 +25,11 @@ __all__ = (
 import operator
 import weakref
 
-from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
+from aql.util_types import toSequence, List, Dict, DictItem
+from aql.utils import simplifyValue
 
-from .aql_option_types import OptionType, autoOptionType
-from .aql_option_value import OptionValue, InplaceOperation, ConditionalValue, Condition,\
+from .aql_option_types import OptionType, DictOptionType, autoOptionType
+from .aql_option_value import OptionValue, Operation, InplaceOperation, ConditionalValue, Condition,\
                               SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation
 
 #//===========================================================================//
@@ -98,10 +99,11 @@ def   _storeOpValue( options, value ):
     key = NotImplemented
   
   if isinstance( value, OptionValueProxy ):
-    if value.options is options:
+    value_options = value.options
+    if value_options is options or value_options._isParent( options ):
       value = _OpValueRef( value )
     else:
-      value.options.addChild( options )
+      value_options._addChild( options )
       value = _OpValueExRef( value )
   
   if key is not NotImplemented:
@@ -111,7 +113,7 @@ def   _storeOpValue( options, value ):
 
 #//===========================================================================//
 
-def   _loadValue( options, context, value ):
+def   _loadOpValue( options, context, value ):
   if isinstance( value, DictItem ):
     key, value = value
   else:
@@ -123,48 +125,16 @@ def   _loadValue( options, context, value ):
   elif isinstance( value, _OpValueExRef ):
     value = value.get()
   
-  # other = _evaluateValue( other ) # TODO: remove this conversion when added type casts to Values and Node  
+  value = simplifyValue( value )
   
   if key is not NotImplemented:
     value = DictItem( key, value )
   
   return value
 
-
 #//===========================================================================//
 
-# _SIMPLE_TYPES = (str,int,float,complex,bool,bytes,bytearray)
-# 
-# def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
-#   
-#   if isinstance( value, simple_types ):
-#     return value
-#   
-#   if isinstance( value, (list, UniqueList) ):
-#     for i,v in enumerate(value):
-#       value[i] = _evaluateValue( v )
-#     
-#     return value
-#   
-#   if isinstance( value, tuple ):
-#     result = []
-#     
-#     for v in value:
-#       result.append( _evaluateValue( v ) )
-#     
-#     return result
-#   
-#   try:
-#     value = value.get()
-#     return value
-#   except Exception:
-#     pass
-#   
-#   return value
-
-#//===========================================================================//
-
-def   _evalValue( value ):
+def   _evalCmpValue( value ):
   if isinstance( value, DictItem ):
     key, value = value
   else:
@@ -173,7 +143,7 @@ def   _evalValue( value ):
   if isinstance( value, OptionValueProxy ):
     value = value.get()
   
-  # other = _evaluateValue( other ) # TODO: remove this conversion when added type casts to Values and Node  
+  value = simplifyValue( value )  
   
   if key is not NotImplemented:
     value = DictItem( key, value )
@@ -267,6 +237,13 @@ class OptionValueProxy (object):
     if self.key is not NotImplemented:
       raise KeyError( key )
     
+    option_type = self.option_value.option_type
+    
+    if isinstance( option_type, DictOptionType ):
+      if isinstance( value, OptionType ) or (type(value) is type):
+        option_type.setValueType( key, value )
+        return
+    
     value = DictItem( key, value )
     
     self.child_ref = None
@@ -316,13 +293,13 @@ class OptionValueProxy (object):
   def   gt( self, context, other ):   return self.cmp( context, operator.gt, other )
   def   ge( self, context, other ):   return self.cmp( context, operator.ge, other )
   
-  def   __eq__( self, other ):        return self.eq( None,   _evalValue( other ) )
-  def   __ne__( self, other ):        return self.ne( None,   _evalValue( other ) )
-  def   __lt__( self, other ):        return self.lt( None,   _evalValue( other ) )
-  def   __le__( self, other ):        return self.le( None,   _evalValue( other ) )
-  def   __gt__( self, other ):        return self.gt( None,   _evalValue( other ) )
-  def   __ge__( self, other ):        return self.ge( None,   _evalValue( other ) )
-  def   __contains__( self, other ):  return self.has( None,  _evalValue( other ) )
+  def   __eq__( self, other ):        return self.eq( None,   _evalCmpValue( other ) )
+  def   __ne__( self, other ):        return self.ne( None,   _evalCmpValue( other ) )
+  def   __lt__( self, other ):        return self.lt( None,   _evalCmpValue( other ) )
+  def   __le__( self, other ):        return self.le( None,   _evalCmpValue( other ) )
+  def   __gt__( self, other ):        return self.gt( None,   _evalCmpValue( other ) )
+  def   __ge__( self, other ):        return self.ge( None,   _evalCmpValue( other ) )
+  def   __contains__( self, other ):  return self.has( None,  _evalCmpValue( other ) )
   
   #//-------------------------------------------------------//
   
@@ -509,7 +486,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   addChild(self, child ):
+  def   _addChild(self, child ):
     
     children = self.__dict__['__children']
     
@@ -521,6 +498,23 @@ class Options (object):
       raise ErrorOptionsCyclicallyDependent()
     
     children.append( weakref.ref( child ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   _isParent( self, other ):
+    
+    if other is None:
+      return False
+    
+    parent = self.__dict__['__parent']
+    
+    while parent is not None:
+      if parent is other:
+        return True
+      
+      parent = parent.__dict__['__parent']
+    
+    return False
   
   #//-------------------------------------------------------//
   
@@ -626,6 +620,11 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   __setitem__( self, name, value ):
+    self.__set_value( name, value )
+  
+  #//-------------------------------------------------------//
+  
   def   _get_value( self, name, raise_ex ):
     try:
       return self.__dict__['__opt_values'][ name ]
@@ -640,6 +639,11 @@ class Options (object):
         raise AttributeError( "Options '%s' instance has no option '%s'" % (type(self), name) )
       
       return None
+  
+  #//-------------------------------------------------------//
+  
+  def   __getitem__( self, name ):
+    return self.__getattr__( name )
   
   #//-------------------------------------------------------//
   
@@ -903,8 +907,28 @@ class Options (object):
     try:
       value = cache[ option_value ]
     except KeyError:
-      value = option_value.get( self, context, _loadValue )
+      value = option_value.get( self, context, _loadOpValue )
       cache[ option_value ] = value
+    
+    return value
+  
+  #//-------------------------------------------------------//
+  
+  def   _storeValue( self, value ):
+    if isinstance( value, Operation ):
+      value.convert( self, _storeOpValue )
+    else:
+      value = _storeOpValue( self, value )
+    
+    return value
+  
+  #//-------------------------------------------------------//
+  
+  def   _loadValue( self, value ):
+    if isinstance( value, Operation ):
+      return value( self, {}, _loadOpValue )
+    else:
+      value = _loadOpValue( self, {}, value )
     
     return value
   

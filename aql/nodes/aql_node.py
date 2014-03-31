@@ -202,19 +202,20 @@ class   NodeValue (ValueBase):
   
   def   actual( self, vfile ):
     if not self.signature:
+      # if __debug__:
+      #   print( "No signature.")
       return False
     
     other = vfile.findValue( self )
     
     if other is None:
+      # if __debug__:
+      #   print( "Previous value '%s' has not been found." % (self.name,))
       return False
-    
-    # if __debug__:
-    #   print( "self.signature: %s, other.signature: %s" % (self.signature, other.signature))
     
     if self.signature != other.signature:
       # if __debug__:
-      #   print( "Sources signature is changed: %s - %s" % (self.signature, node_value.signature) )
+      #   print( "Sources signature is changed: %s - %s" % (self.signature, other.signature) )
       return False
     
     targets   = other.targets
@@ -223,7 +224,7 @@ class   NodeValue (ValueBase):
     
     if not (_actualDeps( vfile, idep_keys ) and _actualValues( targets )):
       # if __debug__:
-      #   print( "targets/ideps are not actual: %s" % (self.getName(),))
+      #   print( "targets/ideps are not actual: %s" % (self.name,))
       return False
     
     self.targets = targets
@@ -704,6 +705,9 @@ class BatchNode (Node):
           raise ErrorNoTargets( self )
       
       node_value.idep_keys = vfile.addValues( ideps )
+      
+      # if __debug__:
+      #   print("save node value: %s" % (node_value.name))
       
       vfile.addValue( node_value )
   

@@ -43,7 +43,7 @@ def   _setOperator( options, context, dest_value, value ):
   return value
 
 def   _updateOperator( options, context, dest_value, value ):
-  if isinstance( dest_value, (UniqueList, List) ):
+  if isinstance( dest_value, (UniqueList, list) ):
     dest_value += value
     return dest_value
   elif isinstance( dest_value, Dict ):

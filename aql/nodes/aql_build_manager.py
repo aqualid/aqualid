@@ -22,6 +22,7 @@ __all__ = (
   'ErrorNodeDependencyCyclic', 'ErrorNodeDependencyUnknown',
 )
 
+import os.path
 import threading
 
 from aql.util_types import toSequence, AqlException
@@ -419,7 +420,7 @@ class  _VFiles( object ):
     try:
       vfilename = self.names[ builder_name ]
     except KeyError:
-      vfilename = builder.getBuildPath( '.aql.db' )
+      vfilename = os.path.join( builder.getBuildDir(), '.aql.db' )
       self.names[ builder_name ] = vfilename
     
     try:

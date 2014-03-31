@@ -24,11 +24,9 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, FilePath, UniqueList, uStr
-from aql.utils import simpleObjectSignature, executeCommand, eventDebug, Chdir
-from aql.values import ValueBase, DirValue, FileChecksumValue, FileTimestampValue, SimpleValue
-
-from .aql_node import Node
+from aql.util_types import toSequence, FilePath
+from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, Chdir
+from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
 #//===========================================================================//
 
@@ -54,69 +52,40 @@ def   _makeBuildPath( path_dir, _path_cache = set() ):
 
 #//===========================================================================//
 
-_SIMPLE_TYPES = (uStr,int,float,complex,bool,bytes,bytearray)
-
-def  _evaluateValue( value, simple_types = _SIMPLE_TYPES ):
-  
-  value_type = type( value)
-  
-  if value_type in simple_types:
-    return value
-  
-  for simple_type in simple_types:
-    if isinstance( value, simple_type ):
-      return simple_type(value)
-  
-  if isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
-    result = []
-    
-    for v in value:
-      result.append( _evaluateValue( v ) )
-          
-    return result
-  
-  if isinstance( value, dict ):
-    result = {}
-    
-    for key,v in value.items():
-      result[ key ] = _evaluateValue( v )
-    
-    return result
-  
-  if isinstance( value, ValueBase ):
-    return _evaluateValue( value.get() )
-  
-  if isinstance( value, Node ):
-    return _evaluateValue( value.get() )
-  
-  return value
-
-#//===========================================================================//
-
 class BuilderInitiator( object ):
   
-  __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw', 'options_kw', 'cwd' )
+  __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw', 'cwd' )
   
   def   __init__( self, builder, options, args, kw ):
     
     self.is_initiated   = False
     self.builder        = builder
     self.options        = options
-    self.args           = args
-    self.kw             = kw
-    self.options_kw     = None
+    self.args           = self.__storeArgs( args )
+    self.kw             = self.__storeKw( kw )
     self.cwd            = os.path.abspath( os.getcwd() )
   
   #//=======================================================//
   
-  def   setOptionsKw(self, options_kw ):
-    self.options_kw = options_kw
+  def   __storeArgs( self, args ):
+    return tuple( map( self.options._storeValue, args ) )
   
   #//=======================================================//
   
-  @staticmethod
-  def   __evalKW( kw, _evalValue = _evaluateValue ):
-    return { name: _evalValue( value ) for name, value in kw.items() }
+  def   __loadArgs( self ):
+    return tuple( map( self.options._loadValue, self.args ) )
+  
+  #//=======================================================//
+  
+  def   __storeKw( self, kw ):
+    storeValue = self.options._storeValue
+    return { name: storeValue( value ) for name, value in kw.items() }
+  
+  #//=======================================================//
+  
+  def   __loadKw( self ):
+    loadValue = self.options._loadValue
+    return { name: loadValue( value ) for name, value in self.kw.items() }
   
   #//=======================================================//
   
@@ -128,16 +97,11 @@ class BuilderInitiator( object ):
     builder = self.builder
     
     with Chdir( self.cwd ):
-      kw = self.__evalKW( self.kw )
-      args = map( _evaluateValue, self.args )
+      
+      kw = self.__loadKw()
+      args = self.__loadArgs()
       
       options = self.options
-      
-      options_kw = self.options_kw
-      if options_kw:
-        options = options.override()
-        options_kw = self.__evalKW( options_kw )
-        options.update( options_kw )
       
       builder._initAttrs( options )
       
@@ -178,6 +142,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   _initAttrs(self, options ):
+    self.build_dir = options.build_dir.get()
     self.build_path = options.build_path.get()
     self.relative_build_paths = options.relative_build_paths.get()
     self.file_signature_type = options.file_signature.get()
@@ -198,7 +163,7 @@ class Builder (object):
     if self.NAME_ATTRS:
       for attr_name in self.NAME_ATTRS:
         value = getattr( self, attr_name )
-        value = _evaluateValue( value )
+        value = simplifyValue( value )
         name.append( value )
             
     self.name = simpleObjectSignature( name )
@@ -211,7 +176,7 @@ class Builder (object):
     if self.SIGNATURE_ATTRS:
       for attr_name in self.SIGNATURE_ATTRS:
         value = getattr( self, attr_name )
-        value = _evaluateValue( value )
+        value = simplifyValue( value )
         sign.append( value )
     
     self.signature = simpleObjectSignature( sign )
@@ -284,6 +249,13 @@ class Builder (object):
     targets = node.getBatchTargets()
     
     return name, sources, targets
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildDir( self ):
+    _makeBuildPath( self.build_dir )
+    
+    return self.build_dir
   
   #//-------------------------------------------------------//
   

@@ -334,6 +334,30 @@ class   List (list):
   
   #//-------------------------------------------------------//
   
+  @staticmethod
+  def   __toList( values ):
+    if isinstance( values, List ):
+      return values
+    
+    return List( values )
+  
+  #//-------------------------------------------------------//
+  
+  def   __eq__( self, other ):
+    return super(List,self).__eq__( self.__toList( other ) )
+  def   __ne__( self, other ):
+    return super(List,self).__ne__( self.__toList( other ) )
+  def   __lt__( self, other ):
+    return super(List,self).__lt__( self.__toList( other ) )
+  def   __le__( self, other ):
+    return super(List,self).__le__( self.__toList( other ) )
+  def   __gt__( self, other ):
+    return super(List,self).__gt__( self.__toList( other ) )
+  def   __ge__( self, other ):
+    return super(List,self).__ge__( self.__toList( other ) )
+  
+  #//-------------------------------------------------------//
+  
   def   append_front( self, value ):
     self.insert( 0, value )
   

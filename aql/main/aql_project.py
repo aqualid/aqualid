@@ -203,17 +203,19 @@ class BuilderWrapper( object ):
   
   def   __getOptionsAndArgs( self, kw ):
     args_kw = {}
-    options_kw = {}
     sources = []
     dep_nodes = []
     
-    options = self.options
+    options = kw.pop("options", None )
+    if options is not None:
+      if not isinstance( options, Options ):
+        raise ErrorProjectBuilderMethodInvalidOptions( options )
+    else:
+      options = self.options
+    
+    options = options.override()
     
     for name, value in kw.items():
-      if name == "options":
-        if not isinstance( value, Options ):
-          raise ErrorProjectBuilderMethodInvalidOptions( value )
-        options = value
       if name in ['sources', 'source']:
         sources += toSequence( value )
       else:
@@ -224,21 +226,20 @@ class BuilderWrapper( object ):
         if name in self.arg_names:
           args_kw[ name ] = value
         else:
-          options_kw[ name ] = value
+          options[ name ] = value
     
-    return options, dep_nodes, sources, args_kw, options_kw
+    return options, dep_nodes, sources, args_kw
   
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
     
-    options, dep_nodes, sources, args_kw, options_kw = self.__getOptionsAndArgs( kw )
+    options, dep_nodes, sources, args_kw = self.__getOptionsAndArgs( kw )
     
     sources += args
     sources = flattenList( sources )
     
     builder = self.method( options, **args_kw )
-    builder.setOptionsKw( options_kw )
     
     if isinstance( builder, BuildBatch ):
       node = BatchNode( builder, sources )
@@ -329,7 +330,7 @@ class ProjectTools( object ):
     options = self.project.options
     
     tool_method = getattr( BuiltinTool( options ), name, None )
-    if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType ) ):
+    if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType) ):
       return BuilderWrapper( tool_method, self.project, options )
     
     return self.__addTool( name, options )
