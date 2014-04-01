@@ -308,11 +308,10 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options2.opt2, 3 )
     
     options2.opt2 = options.opt1
-    self.assertEqual( options2.opt2, 5 )
+    self.assertEqual( options2.opt2, 3 )
     
-    options.opt1 = 2
-    self.assertEqual( options2.opt1, 3 )
-    self.assertEqual( options2.opt2, 2 )
+    options2.opt1 = 1
+    self.assertEqual( options2.opt2, 1 )
     
   #//-------------------------------------------------------//
   

@@ -92,7 +92,6 @@ class   _OpValueExRef( tuple ):
 #//===========================================================================//
 
 def   _storeOpValue( options, value ):
-  
   if isinstance( value, DictItem ):
     key, value = value
   else:
@@ -100,7 +99,8 @@ def   _storeOpValue( options, value ):
   
   if isinstance( value, OptionValueProxy ):
     value_options = value.options
-    if value_options is options or value_options._isParent( options ):
+    
+    if (options is value_options) or options._isParent( value_options ):
       value = _OpValueRef( value )
     else:
       value_options._addChild( options )
