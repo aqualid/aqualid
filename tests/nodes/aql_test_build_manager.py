@@ -5,7 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import fileChecksum, Tempfile, Tempdir, \
+from aql.utils import fileChecksum, Tempdir, \
   disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
 
 from aql.values import SimpleValue, FileChecksumValue
@@ -28,13 +28,11 @@ class CopyValueBuilder (Builder):
     
     node.setTargets( target_values )
   
-  def   getBuildStrArgs( self, node, brief = True ):
-    
-    name = self.__class__.__name__
-    sources = tuple( value.name for value in node.getSourceValues() )
-    targets = tuple( value.name for value in node.getTargetValues() )
-    
-    return name, sources, targets
+  def   getTraceTargets( self, node, brief, batch ):
+    return tuple( value.name for value in node.getTargetValues() )
+  
+  def   getTraceSources( self, node, brief, batch ):
+    return tuple( value.name for value in node.getSourceValues() )
 
 
 #//===========================================================================//
@@ -79,37 +77,9 @@ class ChecksumBuilder (FileBuilder):
   #//-------------------------------------------------------//
   
   def   buildBatch( self, node ):
-    for src_value in node.getSourceValues():
+    for src_value in node.getBatchSourceValues():
       target = self._buildSrc( src_value.get() )
       node.setSourceFileTargets( src_value, target )
-    
-  #//-------------------------------------------------------//
-  
-  def   getBuildStrArgs( self, node, brief = True ):
-    
-    name = self.__class__.__name__
-    sources = node.getSources()
-    targets = node.getTargets()
-
-    if not brief:
-      sources = tuple( map( os.path.basename, sources ) )
-      targets = tuple( map( os.path.basename, targets ) )
-    
-    return name, sources, targets
-  
-  #//-------------------------------------------------------//
-  
-  def   getBuildBatchStrArgs( self, node, brief = True ):
-    
-    name = self.__class__.__name__
-    sources = node.getBatchSources()
-    targets = node.getBatchTargets()
-    
-    if not brief:
-      sources = tuple( map( os.path.basename, sources ) )
-      targets = tuple( map( os.path.basename, targets ) )
-    
-    return name, sources, targets
 
 #//===========================================================================//
 

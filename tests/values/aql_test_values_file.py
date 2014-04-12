@@ -14,7 +14,7 @@ class TestValuesFile( AqlTestCase ):
   
   def test_values_file(self):
     with Tempfile() as tmp:
-      with ValuesFile( tmp.name ) as vfile:
+      with ValuesFile( tmp ) as vfile:
         vfile.selfTest()
         
         value1 = SimpleValue( "http://aql.org/download" )
@@ -59,7 +59,7 @@ class TestValuesFile( AqlTestCase ):
 
   def test_value_file_2(self):
     with Tempfile() as tmp:
-      vfile = ValuesFile( tmp.name )
+      vfile = ValuesFile( tmp )
       try:
         vfile.selfTest()
         
@@ -90,7 +90,7 @@ class TestValuesFile( AqlTestCase ):
         dep_keys_4 = vfile.getKeys( dep_values_4 )
         
         vfile.close()
-        vfile.open( tmp.name ); vfile.selfTest()
+        vfile.open( tmp ); vfile.selfTest()
         
         self.assertSequenceEqual( vfile.findValues( all_values ), all_values )
         vfile.selfTest()
@@ -119,7 +119,7 @@ class TestValuesFile( AqlTestCase ):
 
   def test_value_file_same_name(self):
     with Tempfile() as tmp:
-      vfile = ValuesFile( tmp.name )
+      vfile = ValuesFile( tmp )
       try:
         vfile.selfTest()
         
@@ -136,7 +136,7 @@ class TestValuesFile( AqlTestCase ):
         self.assertEqual( value2, values[1] )
         
         vfile.close()
-        vfile.open( tmp.name ); vfile.selfTest()
+        vfile.open( tmp ); vfile.selfTest()
       finally:
         vfile.close()
 
@@ -152,12 +152,12 @@ class TestValuesFile( AqlTestCase ):
     with Tempfile() as tmp:
       timer = Chrono()
       with timer:
-        with ValuesFile( tmp.name ) as vf:
+        with ValuesFile( tmp ) as vf:
           vf.addValues( values )
       print("save values time: %s" % timer )
       
       with timer:
-        with ValuesFile( tmp.name ) as vf:
+        with ValuesFile( tmp ) as vf:
           pass
       print("read values time: %s" % timer )
 

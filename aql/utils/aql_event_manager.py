@@ -59,7 +59,7 @@ class   ErrorEventHandlerAlreadyDefined ( AqlException ):
 
 class   ErrorEventHandlerUnknownEvent ( AqlException ):
   def   __init__( self, event ):
-    msg = "Unknown event: '%s'" % str(event)
+    msg = "Unknown event: '%s'" % (event,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//

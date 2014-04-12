@@ -54,7 +54,7 @@ class   FilePath (FilePathBase):
     if path is None:
         path = ''
     
-    path = str(path)
+    path = FilePathBase(path)
     
     if path:
       path = os.path.normpath( path )

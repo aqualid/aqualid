@@ -150,7 +150,7 @@ class   DataFileChunk (object):
   def   __str__(self):
     s = []
     for v in self.__slots__:
-      s.append( v + ": " + str(getattr( self, v )) ) 
+      s.append( "%s: %s" % (v, getattr( self, v )) ) 
     
     return ", ".join( s )
 
@@ -238,7 +238,7 @@ class DataFileHeader( object ):
   def   __str__(self):
     s = []
     for v in self.__slots__:
-      s.append( v + ": " + str(getattr( self, v )) ) 
+      s.append( "%s: %s" % (v, getattr( self, v )) ) 
     
     return ", ".join( s )
 

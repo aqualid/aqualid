@@ -81,7 +81,7 @@ targets="test1 test2 test3"
       
       config = CLIConfig( usage, cli_options, ["-j", "0", "-v", "foo", "bar", "bv=release", "jobs=10"] )
       options = {}
-      config.readConfig( f.name, { 'options': options } )
+      config.readConfig( f, { 'options': options } )
       
       self.assertRaises( AttributeError, getattr, config, 'options' )
       self.assertEqual( config.abc, 123 )
@@ -92,7 +92,7 @@ targets="test1 test2 test3"
       
       config = CLIConfig( usage, cli_options, ["-j", "0", "-v", "bv=release", "jobs=10"] )
       options = {}
-      config.readConfig( f.name, { 'options': options } )
+      config.readConfig( f, { 'options': options } )
       
       self.assertEqual( config.targets, ["test1", "test2", "test3", "test3" ] )
       

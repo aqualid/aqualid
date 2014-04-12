@@ -20,7 +20,7 @@ __all__ = (
   'ValueBase', 'SignatureValue', 'SimpleValue', 'NullValue',
 )
 
-from aql.util_types import AqlException
+from aql.util_types import castStr, AqlException
 from aql.utils import simpleObjectSignature
 from .aql_value_pickler import pickleable
 
@@ -115,7 +115,7 @@ class   ValueBase (object):
   #//-------------------------------------------------------//
 
   def   __str__(self):
-    return str(self.name)
+    return castStr(self.name)
   
   #//-------------------------------------------------------//
   

@@ -25,9 +25,9 @@ import os
 import binascii
 
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir
-from aql.util_types import toSequence, AqlException
+from aql.util_types import toSequence, toString, isString, FilePath, AqlException
 
-from aql.values import ValueBase, pickleable
+from aql.values import ValueBase, FileValueBase, pickleable
 
 #//===========================================================================//
 
@@ -35,15 +35,20 @@ class   ErrorNodeDependencyInvalid( AqlException ):
   def   __init__( self, dep ):
     msg = "Invalid node dependency: %s" % (dep,)
     super(ErrorNodeDependencyInvalid, self).__init__( msg )
-
+    
 class   ErrorNoTargets( AqlException ):
   def   __init__( self, node ):
-    msg = "Node targets are not built or set yet: %s" % (node.getBuildStr( brief = False ))
+    msg = "Node targets are not built or set yet: %s" % (node.getBuildStr( brief = False ),)
     super(ErrorNoTargets, self).__init__( msg )
+
+class   ErrorUnactualValue( AqlException ):
+  def   __init__( self, value ):
+    msg = "Target value is not actual: %s (%s)" % (value.name, type(value))
+    super(ErrorUnactualValue, self).__init__( msg )
 
 class   ErrorNoImplicitDeps( AqlException ):
   def   __init__( self, node ):
-    msg = "Node implicit dependencies are not built or set yet: %s" % (node.getBuildStr( brief = False ))
+    msg = "Node implicit dependencies are not built or set yet: %s" % (node.getBuildStr( brief = False ),)
     super(ErrorNoImplicitDeps, self).__init__( msg )
 
 class   ErrorNodeNotInitialized( AqlException ):
@@ -59,25 +64,26 @@ class   ErrorNodeUnknownSource( AqlException ):
 #//===========================================================================//
 
 def   _actualDeps( vfile, dep_keys ):
-  values = vfile.getValues( dep_keys )
-  
-  if values is None:
-    # if __debug__:
-    #   print( "ideps are None")
-    return False
-  
-  for key, value in zip(dep_keys, values):
-    if not value:
+  if dep_keys:
+    values = vfile.getValues( dep_keys )
+    
+    if values is None:
       # if __debug__:
-      #   print( "idep '%s' is false" % (value,))
+      #   print( "ideps are None")
       return False
     
-    actual_value = value.getActual()
-    if value != actual_value:
-      # if __debug__:
-      #   print( "idep '%s' changed to '%s'" % (value, actual_value))
-      vfile.replaceValue( key, actual_value )
-      return False
+    for key, value in zip(dep_keys, values):
+      if not value:
+        # if __debug__:
+        #   print( "idep '%s' is false" % (value,))
+        return False
+      
+      actual_value = value.getActual()
+      if value != actual_value:
+        # if __debug__:
+        #   print( "idep '%s' changed to '%s'" % (value, actual_value))
+        vfile.replaceValue( key, actual_value )
+        return False
   
   return True
 
@@ -95,41 +101,50 @@ def   _actualValues( values ):
 
 #//===========================================================================//
 
-def   _getBuildStr( args, brief ):
-    
-    args = toSequence(args)
-    
-    args    = iter(args)
-    name    = next(args, "Unknown node" )
-    sources = next(args, None )
-    targets = next(args, None )
-    
-    build_str  = str(name)
-    sources = _joinArgs( sources, brief )
-    targets = _joinArgs( targets, brief )
-    
-    if sources:
-      build_str += ": " + sources
-    if targets:
-      build_str += " => " + targets
-    
-    return build_str
-  
-#//===========================================================================//
-  
-def   _getClearStr( args, brief = True ):
-  
-  args    = iter(args)
-  next(args, None ) # name
-  next(args, None ) # sources
-  targets = next(args, None )
-  
-  return _joinArgs( targets, brief )
+def   _ensureActualValues( values ):
+  for value in values:
+    if not value.isActual():
+      raise ErrorUnactualValue( value )
 
 #//===========================================================================//
 
-def   _joinArgs( args, brief ):
-  args = [ str(arg) for arg in toSequence(args) ]
+def   _getTraceArg( value, brief ):
+  if isinstance( value, FileValueBase ):
+    value = value.get()
+    if brief:
+      value = os.path.basename( value )
+  
+  elif isinstance( value, FilePath ):
+    if brief:
+      value = os.path.basename( value )
+  
+  elif isString( value ):
+    value = value.strip()
+    
+    npos = value.find('\n')
+    if npos != -1:
+      value = value[:npos]
+    
+    max_len = 64 if brief else 256
+    src_len = len(value)
+    if src_len > max_len:
+      value = "%s..." % value[:max_len]
+  
+  else:
+    value = None
+  
+  return value
+
+#//===========================================================================//
+
+def   _joinArgs( values, brief ):
+  
+  args = []
+  
+  for arg in toSequence(values):
+    arg = _getTraceArg(arg, brief )
+    if arg:
+      args.append( arg )
   
   if not brief or (len(args) < 3):
     return ' '.join( args )
@@ -154,6 +169,38 @@ def   _joinArgs( args, brief ):
   
   return ' '.join( args_str )
 
+#//===========================================================================//
+
+def   _getBuildStr( args, brief ):
+    
+    args = iter(args)
+    
+    name    = next(args, None)
+    sources = next(args, None)
+    targets = next(args, None)
+    
+    name    = _joinArgs( name,    brief )
+    sources = _joinArgs( sources, brief )
+    targets = _joinArgs( targets, brief )
+    
+    build_str  = name
+    if sources:
+      build_str += ": " + sources
+    if targets:
+      build_str += " => " + targets
+    
+    return build_str
+  
+#//===========================================================================//
+  
+def   _getClearStr( args, brief = True ):
+  
+  args    = iter(args)
+  next(args, None ) # name
+  next(args, None ) # sources
+  targets = next(args, None )
+  
+  return _joinArgs( targets, brief )
 
 #//===========================================================================//
 
@@ -222,9 +269,14 @@ class   NodeValue (ValueBase):
     itargets  = other.itargets
     idep_keys = other.idep_keys
     
-    if not (_actualDeps( vfile, idep_keys ) and _actualValues( targets )):
+    if not _actualDeps( vfile, idep_keys ):
       # if __debug__:
-      #   print( "targets/ideps are not actual: %s" % (self.name,))
+      #   print( "ideps are not actual: %s" % (self.name,))
+      return False
+    
+    if not _actualValues( targets ):
+      # if __debug__:
+      #   print( "targets are not actual: %s" % (self.name,))
       return False
     
     self.targets = targets
@@ -556,6 +608,10 @@ class Node (object):
     self.itargets = valuesMaker( itargets,  use_cache = False )
     self.ideps    = valuesMaker( ideps,     use_cache = True )
     
+    if __debug__:
+      _ensureActualValues( self.targets )
+      _ensureActualValues( self.ideps )
+    
   #//=======================================================//
   
   def   setFileTargets( self, targets, itargets = None, ideps = None ):
@@ -581,8 +637,10 @@ class Node (object):
   
   def   getTargetValues(self):
     targets = self.targets
-    if targets is None:
-      return tuple()
+    
+    if __debug__:
+      if targets is None:
+        raise ErrorNoTargets( self )
     
     return targets 
   
@@ -590,8 +648,9 @@ class Node (object):
   
   def   getSideEffectValues(self):
     targets = self.itargets
-    if targets is None:
-      return tuple()
+    if __debug__:
+      if targets is None:
+        raise ErrorNoTargets( self )
     
     return targets
   
@@ -607,13 +666,13 @@ class Node (object):
   #//=======================================================//
   
   def   getBuildStr( self, brief = True ):
-    args = self.builder.getBuildStrArgs( self, brief = brief )
+    args = self.builder.getBuildStrArgs( self, brief = brief, batch = False )
     return _getBuildStr( args, brief )
   
   #//=======================================================//
   
   def   getClearStr( self, brief = True ):
-    args = self.builder.getBuildStrArgs( self, brief = brief )
+    args = self.builder.getBuildStrArgs( self, brief = brief, batch = False )
     return _getClearStr( args, brief )
 
 #//===========================================================================//
@@ -822,6 +881,10 @@ class BatchNode (Node):
     node_value.itargets = valuesMaker( itargets,  use_cache = False )
     ideps               = valuesMaker( ideps,     use_cache = True )
     
+    if __debug__:
+      _ensureActualValues( node_value.targets )
+      _ensureActualValues( ideps )
+    
     node_ideps[:] = ideps
     
   #//=======================================================//
@@ -840,14 +903,14 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   getBatchTargets(self):
+  def   getBatchTargetValues(self):
     targets = []
     
     for src_value in self.batch_source_values:
       node_value, ideps = self.node_values[ src_value ]
       node_targets = node_value.targets
       if node_targets:
-        targets += ( target.get() for target in node_targets )
+        targets += node_targets
     
     return targets
   
@@ -862,11 +925,11 @@ class BatchNode (Node):
   #//=======================================================//
   
   def   getBuildStr( self, brief = True ):
-    args = self.builder.getBuildBatchStrArgs( self, brief = brief )
+    args = self.builder.getBuildStrArgs( self, brief = brief, batch = True )
     return _getBuildStr( args, brief )
   
   #//=======================================================//
   
   def   getClearStr( self, brief = True ):
-    args = self.builder.getBuildBatchStrArgs( self, brief = brief )
+    args = self.builder.getBuildStrArgs( self, brief = brief, batch = True )
     return _getClearStr( args, brief )

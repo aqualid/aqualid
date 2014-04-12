@@ -25,7 +25,7 @@ __all__ = (
   'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues', 
 )
 
-from aql.util_types import AqlException, toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, \
+from aql.util_types import String, AqlException, toString, toSequence, IgnoreCaseString, Version, FilePath, UniqueList, List, \
                           SplitListType, ValueListType, Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
@@ -53,7 +53,7 @@ class   ErrorOptionTypeUnableConvertValue( TypeError ):
 
 class   ErrorOptionTypeNoEnumValues( TypeError ):
   def   __init__( self, option_type ):
-    msg = "Enum option type '%s' doesn't have any values: '%s'" % str(option_type)
+    msg = "Enum option type '%s' doesn't have any values." % (option_type,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -121,7 +121,7 @@ class   OptionType (object):
     """
     Converts a value to options' value string
     """
-    return str( value )
+    return toString( value )
   
   #//-------------------------------------------------------//
   
@@ -139,7 +139,7 @@ class   OptionType (object):
 
 class   StrOptionType (OptionType):
   def     __init__( self, ignore_case = False, description = None, group = None, range_help = None ):
-    value_type = IgnoreCaseString if ignore_case else str
+    value_type = IgnoreCaseString if ignore_case else String
     super(StrOptionType, self).__init__( value_type, description, group, range_help )
 
 #//===========================================================================//
@@ -334,9 +334,9 @@ class   EnumOptionType (OptionType):
     help_str = []
     
     for value, aliases in values.items():
-      s = str(value)
+      s = toString(value)
       if aliases:
-        s += ' (or ' + ', '.join( map( str, aliases ) ) + ')'
+        s += ' (or ' + ', '.join( map( toString, aliases ) ) + ')'
       
       help_str.append( s )
     

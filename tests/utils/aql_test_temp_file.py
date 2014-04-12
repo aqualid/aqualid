@@ -17,10 +17,8 @@ class TestTempFile( AqlTestCase ):
       
       temp_file.write( '1234567890\n1234567890'.encode() )
       temp_file.flush()
-      
-      temp_file_name = temp_file.name
     
-    self.assertFalse( os.path.isfile(temp_file_name) )
+    self.assertFalse( os.path.isfile(temp_file) )
     
   #//=======================================================//
   
@@ -34,9 +32,7 @@ class TestTempFile( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
       
-      temp_file_name = temp_file.name
-      
-      with open(temp_file_name, "r") as temp_file_rh:
+      with open(temp_file, "r") as temp_file_rh:
         test_string_read = temp_file_rh.read()
         self.assertEqual( test_string,test_string_read )
   
@@ -44,12 +40,12 @@ class TestTempFile( AqlTestCase ):
   
   def test_temp_dir(self):
     with Tempdir() as tmp_dir:
-      tmp_dir = Tempdir( dir = tmp_dir.path )
+      tmp_dir = Tempdir( dir = tmp_dir )
       
       for i in range(10):
-        Tempfile( dir = tmp_dir.path, suffix = '.tmp' ).close()
+        Tempfile( dir = tmp_dir, suffix = '.tmp' ).close()
       
-    self.assertFalse( os.path.exists(tmp_dir.path) )
+    self.assertFalse( os.path.exists(tmp_dir) )
   
   #//=======================================================//
   
@@ -58,10 +54,10 @@ class TestTempFile( AqlTestCase ):
       
       temp_file.remove()
       
-      with openFile( temp_file.name, write = True, binary = True ) as f:
+      with openFile( temp_file, write = True, binary = True ) as f:
         f.write( b'1234567890' )
     
-    self.assertFalse( os.path.isfile(temp_file.name) )
+    self.assertFalse( os.path.isfile(temp_file) )
 
 #//===========================================================================//
 

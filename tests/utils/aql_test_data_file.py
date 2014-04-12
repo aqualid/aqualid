@@ -48,7 +48,7 @@ class TestDataFile( AqlTestCase ):
       data_list = generateDataList( 50, 50, 7, 57 )
       data_hash = {}
       
-      df = DataFile( tmp.name )
+      df = DataFile( tmp )
       try:
         df.selfTest()
         
@@ -64,7 +64,7 @@ class TestDataFile( AqlTestCase ):
         
         df.selfTest(); df.close(); df.selfTest()
         
-        df = DataFile( tmp.name ); df.selfTest()
+        df = DataFile( tmp ); df.selfTest()
         
         self.assertEqual( len(data_hash), len( df ) )
         self.assertEqual( data_hash, dict( df ) )
@@ -109,15 +109,15 @@ class TestDataFile( AqlTestCase ):
         df.close()
 
   #//-------------------------------------------------------//
+  @skip
   def   test_data_file_update(self):
-    return
     
     with Tempfile() as tmp:
       
       data_list = generateDataList( 10, 10, 7, 57 )
       data_hash = {}
       
-      df = DataFile( tmp.name )
+      df = DataFile( tmp )
       try:
         df.selfTest()
         
@@ -212,7 +212,7 @@ class TestDataFile( AqlTestCase ):
       data_list = generateDataList( 50, 50, 7, 57 )
       data_keys = []
       
-      df = DataFile( tmp.name )
+      df = DataFile( tmp )
       try:
         for data in data_list:
           key = df.append( data ); df.selfTest()
@@ -231,7 +231,7 @@ class TestDataFile( AqlTestCase ):
         self.assertEqual( set(data_keys) , set( dict(df).keys() ) )
         
         df.close()
-        df = DataFile( tmp.name )
+        df = DataFile( tmp )
         
         for key, data in zip( data_keys, data_list ):
           self.assertEqual( data , df[key] )
@@ -254,14 +254,13 @@ class TestDataFile( AqlTestCase ):
   
   @skip
   def   test_data_file_speed(self):
-    return
     
     with Tempfile() as tmp:
       
       data_list = generateDataList( 100000, 100000, 128, 1024 )
       data_hash = {}
       
-      df = DataFile( tmp.name )
+      df = DataFile( tmp )
       try:
         
         key = None
@@ -269,7 +268,7 @@ class TestDataFile( AqlTestCase ):
           key = df.append( data )
           data_hash[ key ] = data
         
-        df2 = DataFile( tmp.name )
+        df2 = DataFile( tmp )
         df2.update()
         
         def update( df, df2 ):

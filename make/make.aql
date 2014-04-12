@@ -43,12 +43,8 @@ if __name__ == '__main__':
 
 class AqlPreprocess (aql.FileBuilder):
   
-  def   getBuildStrArgs( self, node, brief = True ):
-    name = self.__class__.__name__
-    sources = node.getSources()
-    if brief:
-      sources = tuple( map( os.path.basename, sources ) )
-    return name, sources
+  def   getTraceTargets( self, node, brief, batch ):
+    return None
   
   #//-------------------------------------------------------//
   
@@ -114,20 +110,6 @@ class AqlLink (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief = True ):
-    name = self.__class__.__name__
-    
-    sources = [ source.name for source in node.getSourceValues() ]
-    target  = self.target
-    
-    if brief:
-      sources = tuple( map( os.path.basename, sources ) )
-      target  = os.path.basename( self.target )
-    
-    return name, sources, target
-  
-  #//-------------------------------------------------------//
-  
   def   getTargetValues( self, node ):
     value_type = self.fileValueType()
     target = value_type( name = self.target, signature = None )
@@ -156,10 +138,6 @@ class AqlLink (aql.Builder):
   def   _getDep2Files( file2deps, mod2files ):
     
     dep2files = {}
-    
-    ordered_files = []
-    ordered_files_set = set()
-    
     tmp_file2deps = {}
     
     for file, mods in file2deps.items():
@@ -168,7 +146,6 @@ class AqlLink (aql.Builder):
         tmp_file2deps.setdefault( file, set() ).update( files )
         for f in files:
           dep2files.setdefault( f, set() ).add( file )
-    
     
     return dep2files, tmp_file2deps
   
@@ -197,7 +174,6 @@ class AqlLink (aql.Builder):
   
   def   build( self, node ):
     
-    dep2files = {}
     file2deps = {}
     files_content = {}
     modules = set()
@@ -244,23 +220,12 @@ class AqlInstall (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief = True ):
-    name = self.__class__.__name__
-    
-    sources = node.getSources()
-    if brief:
-      sources = tuple( map( os.path.basename, sources ) )
-    
-    return name, sources
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, node ):
     
     import distutils.core
     distutils.core.setup( **self.kw )
     
-    node.setFileTargets( None )
+    node.setNoTargets()
 
 #//===========================================================================//
 

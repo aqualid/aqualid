@@ -24,9 +24,9 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, FilePath
+from aql.util_types import isString, toSequence, FilePath
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, Chdir
-from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
+from aql.values import ValueBase, FileValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
 #//===========================================================================//
 
@@ -49,6 +49,11 @@ def   _makeBuildPath( path_dir, _path_cache = set() ):
           raise
     
     _path_cache.add( path_dir )
+
+#//===========================================================================//
+
+def   _fileSinature2Type( file_signature_type ):
+  return FileTimestampValue if file_signature_type == 'timestamp' else FileChecksumValue
 
 #//===========================================================================//
 
@@ -145,7 +150,7 @@ class Builder (object):
     self.build_dir = options.build_dir.get()
     self.build_path = options.build_path.get()
     self.relative_build_paths = options.relative_build_paths.get()
-    self.file_signature_type = options.file_signature.get()
+    self.file_value_type = _fileSinature2Type( options.file_signature.get() )
     self.env = options.env.get().dump()
   
   #//-------------------------------------------------------//
@@ -158,7 +163,7 @@ class Builder (object):
   def setName( self ):
     
     cls = self.__class__
-    name = [ cls.__module__, cls.__name__, str(self.build_path), bool(self.relative_build_paths) ]
+    name = [ cls.__module__, cls.__name__, simplifyValue( self.build_path ), bool(self.relative_build_paths) ]
     
     if self.NAME_ATTRS:
       for attr_name in self.NAME_ATTRS:
@@ -232,21 +237,39 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
-    
-    name = self.__class__.__name__
-    sources = node.getSources()
-    targets = node.getTargets()
-    
-    return name, sources, targets
+  def   getTraceName(self, brief ):
+    return self.__class__.__name__
   
   #//-------------------------------------------------------//
   
-  def   getBuildBatchStrArgs( self, node, brief ):
+  def   getTraceSources( self, node, brief, batch ):
+    values = node.getBatchSourceValues() if batch else node.getSourceValues()
+    return values
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceTargets( self, node, brief, batch ):
+    values = node.getBatchTargetValues() if batch else node.getTargetValues()
+    return values
+  
+  #//-------------------------------------------------------//
+  
+  def   getBuildStrArgs( self, node, brief, batch ):
     
-    name = self.__class__.__name__
-    sources = node.getBatchSources()
-    targets = node.getBatchTargets()
+    try:
+      name = self.getTraceName( brief )
+    except Exception:
+      name = ''
+    
+    try:
+      sources = self.getTraceSources( node, brief, batch )
+    except Exception:
+      sources = None
+
+    try:
+      targets = self.getTraceTargets( node, brief, batch )
+    except Exception:
+      targets = None
     
     return name, sources, targets
   
@@ -279,7 +302,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   fileValueType( self ):
-    return FileTimestampValue if self.file_signature_type == 'timestamp' else FileChecksumValue 
+    return self.file_value_type 
   
   #//-------------------------------------------------------//
   
@@ -329,8 +352,6 @@ class Builder (object):
     
     if cwd is None:
       cwd = self.getBuildPath()
-    
-    cmd = tuple( str(c) for c in toSequence(cmd) )
     
     result = executeCommand( cmd, cwd = cwd, env = env, file_flag = file_flag, stdin = stdin )
     if result.failed():

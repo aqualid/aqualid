@@ -38,7 +38,7 @@ class GeneralFileLock (object):
   __slots__ = ('lockfilename', 'filename', 'retries', 'interval')
   
   def   __init__( self, filename, interval = 0.25, timeout = 5 * 60 ):
-    filename = os.path.normcase( os.path.abspath( str(filename) ) )
+    filename = os.path.normcase( os.path.abspath( filename ) )
     self.filename = filename
     self.lockfilename = filename + '.lock'
     self.interval = interval
@@ -103,7 +103,7 @@ try:
     __slots__ = ('fd','filename')
   
     def   __init__( self, filename ):
-      filename = os.path.normcase( os.path.abspath( str(filename) ) )
+      filename = os.path.normcase( os.path.abspath( filename ) )
       self.filename = filename
       self.fd = os.open( filename, os.O_RDWR | os.O_CREAT )
     
@@ -164,7 +164,7 @@ except ImportError:
     
       def   __init__( self, filename ):
         
-        filename = os.path.normcase( os.path.abspath( str(filename) ) )
+        filename = os.path.normcase( os.path.abspath( filename ) )
         
         self.filename = filename
         lockfilename = filename  + ".lock"

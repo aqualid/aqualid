@@ -66,7 +66,7 @@ def   eventInitialNodes( total_nodes ):
 def   eventFailedNode( node, error ):
   
   msg = node.getBuildStr( brief = False )
-  msg += '\n\n' + str(error)
+  msg += '\n\n%s' % (error,)
   
   logError( msg )
 
@@ -121,7 +121,7 @@ def   eventNodeRemoved( node, progress, brief ):
 
 class   ErrorNodeDependencyCyclic( AqlException ):
   def   __init__( self, node ):
-    msg = "Node has a cyclic dependency: %s" % str(node)
+    msg = "Node has a cyclic dependency: %s" % (node,)
     super(ErrorNodeDependencyCyclic, self).__init__( msg )
 
 #//===========================================================================//
@@ -142,14 +142,14 @@ class   ErrorNodeDependencyUnknown(AqlException):
 
 class   InternalErrorRemoveNonTailNode( AqlException ):
   def   __init__( self, node ):
-    msg = "Removing non-tail node: %s" % str(node)
+    msg = "Removing non-tail node: %s" % (node,)
     super(InternalErrorRemoveNonTailNode, self).__init__( msg )
 
 #//===========================================================================//
 
 class   InternalErrorRemoveUnknownTailNode(AqlException):
   def   __init__( self, node ):
-    msg = "Remove unknown tail node: : %s" % str(node)
+    msg = "Remove unknown tail node: : %s" % (node,)
     super(InternalErrorRemoveUnknownTailNode, self).__init__( msg )
 
 #//===========================================================================//
@@ -371,16 +371,16 @@ class _NodesTree (object):
       
       for node in self.dep2nodes:
         if node not in self.node2deps:
-          raise AssertionError("Missed node: %s" % str(node) )
+          raise AssertionError("Missed node: %s" % (node,) )
         
         node_deps = self.node2deps[node]
         
         if not node_deps:
           if node not in self.tail_nodes:
-            raise AssertionError("Missed tail node: %s"  % str(node) )
+            raise AssertionError("Missed tail node: %s"  % (node,) )
         else:
           if node in self.tail_nodes:
-            raise AssertionError("Invalid tail node: %s"  % str(node) )
+            raise AssertionError("Invalid tail node: %s"  % (node,) )
         
         all_dep_nodes |= node_deps
         
@@ -459,7 +459,7 @@ def   _buildNode( node, brief ):
   
   out = node.build()
   
-  if out and isinstance(out, str):
+  if out:
     try:
       out = out.strip()
     except Exception:

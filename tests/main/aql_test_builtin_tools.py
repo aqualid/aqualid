@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import AqlTestCase, runLocalTests
 
 from aql.utils import Tempdir, whereProgram, \
-    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers, Tempfile
+    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
 from aql.util_types import FilePath
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
@@ -101,7 +101,7 @@ class TestBuiltinTools( AqlTestCase ):
         # tmp_install_dir = Tempdir()
         # tmp_dir = Tempdir()
         
-        build_dir = os.path.join( str(tmp_dir), 'output' )
+        build_dir = os.path.join( tmp_dir, 'output' )
         
         options = builtinOptions()
   

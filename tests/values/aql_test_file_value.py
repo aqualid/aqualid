@@ -18,8 +18,8 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
 
-      temp_file_value1 = FileChecksumValue( temp_file.name )
-      temp_file_value2 = FileChecksumValue( temp_file.name )
+      temp_file_value1 = FileChecksumValue( temp_file )
+      temp_file_value2 = FileChecksumValue( temp_file )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
       self.assertTrue( temp_file_value1.isActual() )
@@ -29,11 +29,11 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( reversed_test_string.encode() )
       temp_file.flush()
       
-      FileChecksumValue( temp_file_value1.name )
+      FileChecksumValue( temp_file_value1 )
       
       self.assertFalse( temp_file_value1.isActual() )
       
-      temp_file_value2 = FileChecksumValue( temp_file_value1.name )
+      temp_file_value2 = FileChecksumValue( temp_file_value1 )
       self.assertEqual( temp_file_value1.name, temp_file_value2.name )
       self.assertNotEqual( temp_file_value1, temp_file_value2 )
 
@@ -49,13 +49,11 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
       
-      temp_file_name = temp_file.name
-      
-      temp_file_value = FileChecksumValue( temp_file_name )
+      temp_file_value = FileChecksumValue( temp_file )
     
     self._testSaveLoad( temp_file_value )
     
-    file_value = FileChecksumValue( temp_file_name )
+    file_value = FileChecksumValue( temp_file )
     self.assertEqual( temp_file_value.name, file_value.name )
     self.assertNotEqual( temp_file_value, file_value )
     self.assertFalse( file_value )
@@ -69,8 +67,8 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
       
-      temp_file_value1 = FileTimestampValue( temp_file.name )
-      temp_file_value2 = FileTimestampValue( temp_file.name )
+      temp_file_value1 = FileTimestampValue( temp_file )
+      temp_file_value2 = FileTimestampValue( temp_file )
       
       self.assertEqual( temp_file_value1, temp_file_value2 )
       
@@ -96,13 +94,11 @@ class TestFileValue( AqlTestCase ):
       temp_file.write( test_string.encode() )
       temp_file.flush()
       
-      temp_file_name = temp_file.name
-      
-      temp_file_value = FileTimestampValue( temp_file_name )
+      temp_file_value = FileTimestampValue( temp_file )
       
     self._testSaveLoad( temp_file_value )
     
-    file_value = FileTimestampValue( temp_file_name )
+    file_value = FileTimestampValue( temp_file )
     self.assertEqual( temp_file_value.name, file_value.name )
     self.assertNotEqual( temp_file_value, file_value )
     self.assertFalse( file_value )

@@ -95,12 +95,12 @@ class AqlTestCase( TestCaseBase ):
   
   @staticmethod
   def   generateFile( tmp_dir, start, stop ):
-    tmp = Tempfile( dir = str(tmp_dir) )
+    tmp = Tempfile( dir = tmp_dir )
     tmp.write( bytearray( map( lambda v: v % 256, range( start, stop ) ) ) )
     
     tmp.close()
     
-    return tmp.name
+    return tmp
   
   #//===========================================================================//
   

@@ -41,7 +41,7 @@ class   ErrorOptionsCyclicallyDependent( TypeError ):
 
 class   ErrorOptionsMergeNonOptions( TypeError ):
   def   __init__( self, value ):
-    msg = "Type '%s' can't be merged with Options." % str(type(value))
+    msg = "Type '%s' can't be merged with Options." % (type(value),)
     super(type(self), self).__init__( msg )
 
 class   ErrorOptionsMergeDifferentOptions( TypeError ):

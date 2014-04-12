@@ -41,35 +41,35 @@ from .aql_builtin_tools import BuiltinTool
 
 class   ErrorProjectInvalidMethod( AqlException ):
   def   __init__( self, method ):
-    msg = "Invalid project method: '%s'" % str(method)
+    msg = "Invalid project method: '%s'" % (method,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
 class   ErrorProjectUnknownTarget( AqlException ):
   def   __init__( self, target ):
-    msg = "Unknown build target: '%s'" % str(target)
+    msg = "Unknown build target: '%s'" % (target,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
 class   ErrorProjectBuilderMethodWithKW( AqlException ):
   def   __init__( self, method ):
-    msg = "Keyword arguments are not allowed in builder method: '%s'" % str(method)
+    msg = "Keyword arguments are not allowed in builder method: '%s'" % (method,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
 class   ErrorProjectBuilderMethodUnbound( AqlException ):
   def   __init__( self, method ):
-    msg = "Unbound builder method: '%s'" % str(method)
+    msg = "Unbound builder method: '%s'" % (method,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
 class   ErrorProjectBuilderMethodFewArguments( AqlException ):
   def   __init__( self, method ):
-    msg = "Too few arguments in builder method: '%s'" % str(method)
+    msg = "Too few arguments in builder method: '%s'" % (method,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -411,7 +411,7 @@ class Project( object ):
       self.script_locals = self.__getSciptLocals()
       return self.script_locals
     
-    raise AttributeError("No attribute '%s'" % str(attr) )
+    raise AttributeError("No attribute '%s'" % (attr,) )
     
   #//-------------------------------------------------------//
   

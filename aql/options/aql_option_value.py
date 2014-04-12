@@ -31,7 +31,7 @@ from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
 
 class   ErrorOptionValueMergeNonOptionValue( TypeError ):
   def   __init__( self, value ):
-    msg = "Unable to merge option value with non option value: '%s'" % str(type(value))
+    msg = "Unable to merge option value with non option value: '%s'" % (type(value),)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//

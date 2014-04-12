@@ -19,8 +19,9 @@ class TestValuePickler( AqlTestCase ):
   def test_value_pickler(self):
     
     with Tempfile() as tmp:
+      tmp_name = str(tmp)
       vpick = ValuePickler()
-      value = FileChecksumValue( tmp.name )
+      value = FileChecksumValue( tmp )
       
       vl = vpick.dumps( value )
       vl = vpick.dumps( value )
@@ -31,19 +32,19 @@ class TestValuePickler( AqlTestCase ):
       v = vpick.loads( vl )
       self.assertEqual( value, v )
       
-      value = FileTimestampValue( tmp.name )
+      value = FileTimestampValue( tmp )
       v = vpick.loads( vpick.dumps( value ) )
       self.assertEqual( value, v )
     
-    value = SimpleValue( '123-345', name = tmp.name )
+    value = SimpleValue( '123-345', name = tmp_name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = SimpleValue( '123-345', name = tmp.name )
+    value = SimpleValue( '123-345', name = tmp_name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = SimpleValue( name = tmp.name )
+    value = SimpleValue( name = tmp_name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value.name, v.name )
     self.assertFalse( v )
@@ -51,7 +52,6 @@ class TestValuePickler( AqlTestCase ):
     #value = Value( "1221", 12345 )
     #v = vpick.loads( vpick.dumps( value ) )
     #self.assertEqual( value, v )
-    
 
   #//===========================================================================//
 
@@ -61,7 +61,7 @@ class TestValuePickler( AqlTestCase ):
     with Tempfile() as tmp:
       
       vpick = ValuePickler()
-      value = FileChecksumValue( tmp.name )
+      value = FileChecksumValue( tmp )
       
       t = lambda pload = vpick.loads, pdump = vpick.dumps, value = value: pload( pdump( value ) )
       t = timeit.timeit( t, number = 10000 )

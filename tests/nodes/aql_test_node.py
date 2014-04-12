@@ -114,7 +114,7 @@ class TestNodes( AqlTestCase ):
     
     with Tempfile() as tmp:
       
-      vfile = ValuesFile( tmp.name )
+      vfile = ValuesFile( tmp )
       try:
         value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
         value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
@@ -191,12 +191,12 @@ class TestNodes( AqlTestCase ):
       
       with Tempfile() as tmp:
         
-        vfile = ValuesFile( tmp.name )
+        vfile = ValuesFile( tmp )
         try:
           with Tempfile( suffix = '.1' ) as tmp1:
             with Tempfile( suffix = '.2' ) as tmp2:
-              value1 = FileChecksumValue( tmp1.name )
-              value2 = FileChecksumValue( tmp2.name )
+              value1 = FileChecksumValue( tmp1 )
+              value2 = FileChecksumValue( tmp2 )
               
               options = builtinOptions()
               
@@ -211,11 +211,11 @@ class TestNodes( AqlTestCase ):
               
               tmp1.write(b'123')
               tmp1.flush()
-              value1 = FileChecksumValue( tmp1.name )
+              value1 = FileChecksumValue( tmp1 )
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
               with Tempfile( suffix = '.3' ) as tmp3:
-                value3 = FileChecksumValue( tmp3.name )
+                value3 = FileChecksumValue( tmp3 )
                 
                 node3 = self._rebuildNode( vfile, builder, [value3], [], tmp_files )
                 
@@ -303,9 +303,9 @@ class TestNodes( AqlTestCase ):
   def test_node_batch(self):
     
     with Tempdir() as tmp_dir:
-      vfile_name = Tempfile( dir = str(tmp_dir) )
+      vfile_name = Tempfile( dir = tmp_dir )
       with ValuesFile( vfile_name ) as vfile:
-        src_files = self.generateSourceFiles( str(tmp_dir), 5, 100 )
+        src_files = self.generateSourceFiles( tmp_dir, 5, 100 )
         
         self._rebuildBatchNode( vfile, src_files, len(src_files) )
         self._rebuildBatchNode( vfile, src_files, 0 )
@@ -372,9 +372,9 @@ def   _generateFiles( tmp_files, number, size ):
   files = []
   for i in range( 0, number ):
     t = Tempfile()
-    tmp_files.append( t.name )
+    tmp_files.append( t )
     t.write( content )
-    files.append( t.name )
+    files.append( t )
   
   return files
 
@@ -401,7 +401,7 @@ class TestNodesSpeed ( AqlTestCase ):
       
       with Tempfile() as tmp:
         
-        vfile = ValuesFile( tmp.name )
+        vfile = ValuesFile( tmp )
         try:
           builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
           

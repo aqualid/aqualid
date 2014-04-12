@@ -18,10 +18,11 @@
 #
 
 __all__ = (
-  'AqlException','uStr', 'toUnicode', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
+  'AqlException','uStr', 'toUnicode', 'isString', 'toString', 'castStr', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
 )
 
 import re
+import sys
 import operator
 
 #//===========================================================================//
@@ -33,20 +34,63 @@ class  AqlException (Exception):
 
 try:
   uStr = unicode
+  
+  def   isString( value, uStr = uStr, str = str, isinstance = isinstance ):
+    return isinstance( value, (uStr, str))
+  
+  def   toString( value, uStr = uStr, str = str, isinstance = isinstance ):
+    if isinstance( value, (uStr, str)):
+      return value
+    return str( value )
+  
+  def castStr( obj, encoding = None, uStr = uStr, 
+              _try_encodings = frozenset([ 'utf-8',
+                                           sys.getdefaultencoding().lower(),
+                                           sys.stdout.encoding.lower(),
+                                           sys.getfilesystemencoding().lower() ]) ):
+    if isinstance( obj, uStr ):
+      if encoding:
+        return obj.encode( encoding )
+      else:
+        for encoding in _try_encodings:
+          try:
+            return obj.encode( encoding )
+          except UnicodeEncodeError:
+            pass
+    
+    return str( obj )
+
+  def toUnicode( obj, encoding = None,
+                _try_encodings = frozenset([ 'utf-8',
+                                             sys.getdefaultencoding().lower(),
+                                             sys.stdout.encoding.lower(),
+                                             sys.getfilesystemencoding().lower() ]) ):
+    if isinstance( obj, (bytearray, bytes) ):
+      if encoding:
+        return uStr( obj, encoding )
+      else:
+        for encoding in _try_encodings:
+          try:
+            return uStr( obj, encoding )
+          except UnicodeDecodeError:
+            pass
+    
+    return uStr( obj )
+
+
+
 except NameError:
   uStr = str
-
-#//===========================================================================//
-
-def toUnicode( obj, encoding = 'utf-8' ):
-  if isinstance( obj, (bytearray, bytes) ):
-    obj = uStr( obj, encoding )
+  toString = str
+  castStr = str
+  toUnicode = str
   
-  return obj
+  def   isString( value, str = str, isinstance = isinstance ):
+    return isinstance( value, str)
 
 #//===========================================================================//
 
-class   String (uStr):
+class   String (str):
 
   def     __new__( cls, value = None ):
     
@@ -61,20 +105,18 @@ class   String (uStr):
 #//===========================================================================//
 #//===========================================================================//
 
-class   IgnoreCaseString (uStr):
+class   IgnoreCaseString (str):
 
   def     __new__(cls, value = None ):
     
     if type(value) is cls:
-        return value
+      return value
     
     if value is None:
-        value = ''
-    else:
-        value = str(value)
-    
+      value = ''
+        
     self = super(IgnoreCaseString, cls).__new__(cls, value)
-    self.__value = value.lower()
+    self.__value = self.lower()
     
     return self
   
@@ -105,7 +147,7 @@ class   IgnoreCaseString (uStr):
 #//===========================================================================//
 #//===========================================================================//
 
-class   LowerCaseString (str):
+class   LowerCaseString (uStr):
 
   def     __new__(cls, value = None ):
     
@@ -122,7 +164,7 @@ class   LowerCaseString (str):
 #//===========================================================================//
 #//===========================================================================//
 
-class   UpperCaseString (str):
+class   UpperCaseString (uStr):
 
   def     __new__(cls, value = None ):
     

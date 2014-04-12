@@ -51,14 +51,30 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, UniqueList, toSequence, isSequence, AqlException
+from aql.util_types import uStr, isString, UniqueList, toSequence, isSequence, AqlException
 
 #//===========================================================================//
 
 #noinspection PyUnusedLocal
 class   ErrorProgramNotFound( AqlException ):
   def   __init__( self, program, env ):
-    msg = "Program '%s' has not been found" % str(program)
+    msg = "Program '%s' has not been found" % (program,)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+#noinspection PyUnusedLocal
+class   ErrorInvalidExecCommand( AqlException ):
+  def   __init__( self, arg ):
+    msg = "Invalid type of command argument: %s(%s)" % (arg,type(arg))
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+#noinspection PyUnusedLocal
+class   ErrorFileName( AqlException ):
+  def   __init__( self, filename ):
+    msg = "Invalid file name: %s(%s)" % (filename,type(filename))
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -93,6 +109,9 @@ else:
 
 def   openFile( filename, read = True, write = False, binary = False, sync = False ):
   
+  if not isString( filename ):
+    raise ErrorFileName( filename )
+  
   flags = _O_NOINHERIT
   mode = 'r'
   
@@ -114,17 +133,15 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
   if binary:
     mode += 'b'
     flags |= _O_BINARY
-    
-  fd = os.open( str(filename), flags )
+  
+  fd = os.open( filename, flags )
   try:
     if sync:
       #noinspection PyTypeChecker
-      f = io.open( fd, mode, 0 )
+      return io.open( fd, mode, 0 )
     else:
       #noinspection PyTypeChecker
-      f = io.open( fd, mode )
-    
-    return f
+      return io.open( fd, mode )
   except:
     os.close( fd )
     raise
@@ -194,6 +211,7 @@ def   dumpSimpleObject( obj ):
     try:
       data = marshal.dumps( obj )
     except ValueError:
+      print("obj: %s" % (tuple(map(type, obj)),))
       raise ErrorUnmarshallableObject( obj )
   
   return data
@@ -253,7 +271,7 @@ def   fileSignature( filename ):
 #//===========================================================================//
 
 def   fileTimeSignature( filename ):
-  stat = os.stat( str(filename) )
+  stat = os.stat( filename )
   return struct.pack( ">d", stat.st_mtime )
 
 #//===========================================================================//
@@ -388,9 +406,9 @@ def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes =
   paths = toSequence(paths)
   ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
   
-  prefixes = tuple( map( str, toSequence(prefixes) ) )
-  suffixes = tuple( map( str, toSequence(suffixes) ) )
-  ignore_dir_prefixes = tuple( map( str, toSequence(ignore_dir_prefixes) ) )
+  prefixes = toSequence(prefixes)
+  suffixes = toSequence(suffixes)
+  ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
   
   prefixes = tuple( map( os.path.normcase, prefixes ) )
   suffixes = tuple( map( os.path.normcase, suffixes ) )
@@ -439,15 +457,15 @@ def _decodeData( data ):
   if not data:
     return str()
   
-  try:
-    codec = sys.stdout.encoding
-  except AttributeError:
-    codec = None
-  
-  if not codec:
-    codec = 'utf-8'
-  
-  if not isinstance(data, str):
+  if not isinstance(data, uStr):
+    try:
+      codec = sys.stdout.encoding
+    except AttributeError:
+      codec = None
+    
+    if not codec:
+      codec = 'utf-8'
+
     data = data.decode( codec )
   
   data = data.replace('\r\n', '\n')
@@ -465,7 +483,7 @@ class   ExecCommandResult( AqlException ):
     msg = ' '.join( toSequence(cmd) )
     
     if exception:
-      msg += '\n' + str(exception)
+      msg += '\n%s' % (exception,)
     
     else:    
       if not out:
@@ -478,7 +496,7 @@ class   ExecCommandResult( AqlException ):
         msg += '\n' + out
       
       if returncode:
-        msg += '\n' + "Exit status: %s" % (returncode,)
+        msg += "\nExit status: %s" % (returncode,)
     
     self.exception = exception
     self.returncode = returncode
@@ -502,12 +520,16 @@ except AttributeError:
 
 #//===========================================================================//
 
-def executeCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH, stdin = None ):
+def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None, max_cmd_length = _MAX_CMD_LENGTH ):
   
   cmd_file = None
-  if isinstance(cmd, str):
+  if isString(cmd):
     cmd = [ cmd ]
-
+  
+  for v in toSequence( cmd ):
+    if not isString( v ):
+      raise ErrorInvalidExecCommand( v )
+  
   if file_flag:
     cmd_length = sum( map(len, cmd ) ) + len(cmd) - 1
     
@@ -522,8 +544,6 @@ def executeCommand( cmd, cwd = None, env = None, file_flag = None, max_cmd_lengt
       cmd = [cmd[0], file_flag + cmd_file.name]
   
   try:
-    cmd = map(str, cmd)
-    
     try:
       # if __debug__:
       #   print("Execute command: %s" % (cmd, ) )
@@ -735,7 +755,7 @@ def   flattenList( seq ):
 
 #//===========================================================================//
 
-_SIMPLE_TYPES = (uStr,int,float,complex,bool,bytes,bytearray )
+_SIMPLE_TYPES = frozenset( ( uStr,int,float,complex,bool,bytes,bytearray ) )
 
 def  simplifyValue( value, simple_types = _SIMPLE_TYPES ):
   

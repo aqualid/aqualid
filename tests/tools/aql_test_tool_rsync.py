@@ -16,13 +16,20 @@ import rsync
 
 #//===========================================================================//
 
+def   _build( prj ):
+  if not prj.Build():
+    prj.build_manager.printFails()
+    assert False, "Build failed"
+
+#//===========================================================================//
+
 class TestToolRsync( AqlTestCase ):
   
   def test_rsync_push(self):
     with Tempdir() as tmp_dir:
       with Tempdir() as src_dir:
         with Tempdir() as target_dir:
-          src_files = self.generateCppFiles( src_dir.path, "src_test", 10 )
+          src_files = self.generateCppFiles( src_dir, "src_test", 10 )
           
           cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
           
@@ -30,11 +37,32 @@ class TestToolRsync( AqlTestCase ):
           
           prj.tools.rsync.Push( src_files, target = target_dir )
           
-          prj.Build()
+          _build( prj )
           
+          # prj.tools.rsync.Push( src_files, target = target_dir, host = 'localhost')
           prj.tools.rsync.Push( src_files, target = target_dir )
           
-          prj.Build()
+          _build( prj )
+  
+  #//=======================================================//
+  
+  def test_rsync_pull(self):
+    with Tempdir() as tmp_dir:
+      with Tempdir() as src_dir:
+        with Tempdir() as target_dir:
+          src_files = self.generateCppFiles( src_dir, "src_test", 1 )
+          
+          cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
+          
+          prj = Project( cfg.options, cfg.targets )
+          
+          prj.tools.rsync.Pull( src_files, target = target_dir )
+          
+          _build( prj )
+          
+          prj.tools.rsync.Pull( src_files, target = target_dir )
+          
+          _build( prj )
   
   #//=======================================================//
     
@@ -51,7 +79,7 @@ class TestToolRsync( AqlTestCase ):
       
       rsync = RSyncGetBuilder( options, local_path = 'D:\\test1_local\\', remote_path = 'D:\\test1\\' )
       
-      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' ).name
+      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' )
       
       bm = BuildManager( vfilename, 4, True )
       vfile = ValuesFile( vfilename )
@@ -84,7 +112,7 @@ class TestToolRsync( AqlTestCase ):
       
       rsync = RSyncPutBuilder( options, local_path = 'D:\\test1_local\\', remote_path = 'D:\\test1\\', exclude = [".svn", "test_*"] )
       
-      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' ).name
+      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' )
       
       bm = BuildManager( vfilename, 4, True )
       vfile = ValuesFile( vfilename )

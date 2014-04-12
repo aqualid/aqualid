@@ -19,6 +19,7 @@
 
 __all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
 
+from .aql_simple_types import toString, isString
 from .aql_list_types import List
 
 #//===========================================================================//
@@ -92,7 +93,7 @@ class   Dict (dict):
   #//-------------------------------------------------------//
   
   def   dump( self ):
-    return { str(key): str(value) for key, value in self.items() }
+    return { toString(key): toString(value) for key, value in self.items() }
   
   #//-------------------------------------------------------//
   
@@ -121,7 +122,7 @@ def   SplitDictType( dict_type, separators ):
     @staticmethod
     def   __toItems( items_str, sep = separator, other_seps = other_separators ):
       
-      if not isinstance( items_str, str ):
+      if not isString( items_str ):
         return items_str
       
       for s in other_seps:
@@ -184,7 +185,7 @@ def   SplitDictType( dict_type, separators ):
     #//-------------------------------------------------------//
     
     def   __str__( self ):
-      return separator.join( sorted( str(key) + '=' + str(value) for key, value in self.items() ) )
+      return separator.join( sorted( "%s=%s" % (key,value) for key, value in self.items() ) )
   
   #//=======================================================//
   

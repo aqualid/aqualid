@@ -91,7 +91,7 @@ class _TaskExecutor( threading.Thread ):
           fail = TaskResult( task_id = task_id, result = None, error = err )
           finished_tasks.put( fail )
         else:
-          logWarning( "Task failed with error: %s" % str(err) )
+          logWarning( "Task failed with error: %s" % (err,) )
         
         self.fail_handler( err )
       

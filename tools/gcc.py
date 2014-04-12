@@ -126,20 +126,14 @@ class GccCompiler (aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
-    
-    sources = node.getSources()
-    targets = node.getTargets()
-    
+  def   getTraceName( self, brief ):
     if brief:
       name = self.cmd[0]
-      name    = os.path.splitext( os.path.basename( name ) )[0]
-      sources = tuple( map( os.path.basename, sources ) )
-      targets = tuple( map( os.path.basename, targets ) )
+      name = os.path.splitext( os.path.basename( name ) )[0]
     else:
-      name    = ' '.join( self.cmd )
+      name = ' '.join( self.cmd )
     
-    return name, sources, targets
+    return name
   
 #//===========================================================================//
 
@@ -186,19 +180,19 @@ class GccLinkerBase(aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
-    
-    sources = tuple( src.get() for src in node.builder_data )
-    
+  def   getTraceSources( self, node, brief, batch ):
+    return node.builder_data
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName( self, brief ):
     if brief:
-      name    = os.path.splitext( os.path.basename(self.cmd[0]) )[0]
-      sources = tuple( map( os.path.basename, sources ) )
-      target  = os.path.basename( self.target )
+      name = self.cmd[0]
+      name = os.path.splitext( os.path.basename( name ) )[0]
     else:
-      name    = ' '.join( self.cmd )
-      target  = self.target
+      name = ' '.join( self.cmd )
     
-    return name, sources, target
+    return name
 
 #//===========================================================================//
 
@@ -213,16 +207,16 @@ class GccArchiver(GccLinkerBase):
     self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
     self.language = language
 
-    self.cmd = [ str(options.lib.get()), 'rcs' ]
+    self.cmd = [ options.lib.get(), 'rcs' ]
     
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     
-    obj_files = node.builder_data
+    obj_files = tuple( src.get() for src in node.builder_data )
     
     cmd = list(self.cmd)
-    cmd.append( str(self.target) )
+    cmd.append( self.target )
     cmd += obj_files
     
     cwd = self.target.dirname()
@@ -257,9 +251,9 @@ class GccLinker(GccLinkerBase):
   def   __getCmd( options, target, language, shared ):
     
     if language == 'c++':
-      cmd = [ str(options.cxx.get()) ]
+      cmd = [ options.cxx.get() ]
     else:
-      cmd = [ str(options.cc.get()) ]
+      cmd = [ options.cc.get() ]
     
     cmd += [ '-pipe' ]
     
@@ -276,7 +270,7 @@ class GccLinker(GccLinkerBase):
   
   def   build( self, node ):
     
-    obj_files = node.builder_data
+    obj_files = tuple( src.get() for src in node.builder_data )
     
     cmd = list(self.cmd)
     
@@ -470,17 +464,13 @@ class ToolGccCommon( aql.Tool ):
   
   #//-------------------------------------------------------//
   
-  def   Compile( self, options ):
-    return aql.BuildSingle( GccCompiler( options, self.language, shared = False ) )
-  
-  def   CompileShared( self, options ):
-    return aql.BuildSingle( GccCompiler( options, self.language, shared = True ) )
-  
-  def   CompileBatch( self, options ):
-    return aql.BuildBatch( GccCompiler( options, self.language, shared = False ) )
-  
-  def   CompileSharedBatch( self, options ):
-    return aql.BuildBatch( GccCompiler( options, self.language, shared = True ) )
+  def   Compile( self, options, shared = False, batch = False ):
+    builder = GccCompiler( options, self.language, shared = shared )
+    
+    if batch:
+      return aql.BuildBatch( builder )
+    
+    return aql.BuildSingle( builder )
   
   def   LinkLibrary( self, options, target ):
     return GccArchiver( options, target, self.language )

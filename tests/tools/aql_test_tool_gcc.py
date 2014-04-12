@@ -114,7 +114,7 @@ class TestToolGcc( AqlTestCase ):
       
       cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
       
-      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' ).name
+      vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' )
       
       vfile = ValuesFile( vfilename )
       
@@ -147,6 +147,13 @@ class TestToolGcc( AqlTestCase ):
         self._verifyActual( obj, vfile )
       finally:
         vfile.close()
+  
+  #//-------------------------------------------------------//
+  
+  def   _build( self, bm ):
+    is_ok = bm.build( jobs = 4, keep_going = False )
+    bm.printFails()
+    self.assertTrue( is_ok )
   
   #//-------------------------------------------------------//
   
@@ -183,7 +190,7 @@ class TestToolGcc( AqlTestCase ):
         
         self.built_nodes = 0
         
-        bm.build( jobs = 4, keep_going = False )
+        self._build( bm )
         
         self.assertEqual( self.built_nodes, num_src_files )
         
@@ -199,7 +206,7 @@ class TestToolGcc( AqlTestCase ):
         bm.add( obj )
         
         self.built_nodes = 0
-        bm.build( jobs = 4, keep_going = False )
+        self._build( bm )
         
         self.assertEqual( self.built_nodes, 1 )
         
@@ -244,7 +251,7 @@ class TestToolGcc( AqlTestCase ):
         bm.add( lib )
         
         self.built_nodes = 0
-        bm.build( jobs = 1, keep_going = False)
+        self._build( bm )
         self.assertEqual( self.built_nodes, num_src_files + 1 )
         
         bm.close()
@@ -261,7 +268,7 @@ class TestToolGcc( AqlTestCase ):
         bm.add( lib )
         
         self.built_nodes = 0
-        bm.build( jobs = 4, keep_going = False)
+        self._build( bm )
         self.assertEqual( self.built_nodes, 1 )
         
       finally:
@@ -310,7 +317,7 @@ class TestToolGcc( AqlTestCase ):
         bm.add( foo_prog )
         
         self.built_nodes = 0
-        bm.build( jobs = 1, keep_going = False)
+        self._build( bm )
         self.assertEqual( self.built_nodes, num_src_files + 3 )
         
         bm.close()
@@ -332,7 +339,7 @@ class TestToolGcc( AqlTestCase ):
         bm.add( foo_prog )
         
         self.built_nodes = 0
-        bm.build( jobs = 1, keep_going = False)
+        self._build( bm )
         self.assertEqual( self.built_nodes, 1 )
         
       finally:

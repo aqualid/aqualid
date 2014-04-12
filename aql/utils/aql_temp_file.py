@@ -26,22 +26,14 @@ import tempfile
 import errno
 import shutil
 
-class Tempfile (object):
+class Tempfile (str):
   
-  __slots__ = ('__handle', 'name')
-  
-  def   __init__(self, prefix = 'tmp', suffix = '', dir = None, mode = 'w+b'):
-    self.__handle = tempfile.NamedTemporaryFile( mode = mode, suffix = suffix, prefix = prefix, dir = dir, delete = False )
-    self.name = self.__handle.name
-  
-  def   get(self):
-    return self.name
-  
-  def   __str__(self):
-    return self.name
-  
-  def   __len__(self):
-    return len(self.name)
+  def     __new__( cls, prefix = 'tmp', suffix = '', dir = None, mode = 'w+b' ):
+    handle = tempfile.NamedTemporaryFile( mode = mode, suffix = suffix, prefix = prefix, dir = dir, delete = False )
+    
+    self = super(Tempfile, cls).__new__(cls, handle.name)
+    self.__handle = handle
+    return self
   
   def   __enter__(self):
     return self
@@ -75,7 +67,7 @@ class Tempfile (object):
   def remove( self ):
     self.close()
     try:
-      os.remove( self.name )
+      os.remove( self )
     except OSError as ex:
       if ex.errno != errno.ENOENT:
         raise
@@ -84,33 +76,26 @@ class Tempfile (object):
 
 #//===========================================================================//
 
-class Tempdir( object ):
-  __slots__ = ('path',)
+class Tempdir( str ):
   
-  def   __init__( self, prefix = 'tmp', suffix = '', dir = None, name = None ):
+  def     __new__( cls, prefix = 'tmp', suffix = '', dir = None, name = None ):
     
     if dir is not None:
       if not os.path.isdir( dir ):
         os.makedirs( dir )
     
     if name is None:
-      self.path = tempfile.mkdtemp( prefix = prefix, suffix = suffix, dir = dir )
+      path = tempfile.mkdtemp( prefix = prefix, suffix = suffix, dir = dir )
     else:
       if dir is not None:
         name = os.path.join( dir, name )
       
-      name = os.path.abspath( name )
+      path = os.path.abspath( name )
       
-      if not os.path.isdir( name ):
-        os.makedirs( name )
-      
-      self.path = name
-  
-  def   get(self):
-    return self.path
-  
-  def   __str__(self):
-    return self.path
+      if not os.path.isdir( path ):
+        os.makedirs( path )
+    
+    return super(Tempdir, cls).__new__(cls, path)
   
   def   __enter__(self):
     return self
@@ -120,4 +105,4 @@ class Tempdir( object ):
     self.remove()
   
   def remove( self ):
-    shutil.rmtree( self.path, ignore_errors = False )
+    shutil.rmtree( self, ignore_errors = False )

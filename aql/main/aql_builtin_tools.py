@@ -55,9 +55,9 @@ class ExecuteCommand (Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
-    cmd = ' '.join( node.getSources() )
-    return cmd
+  def   getBuildStrArgs( self, node, brief, batch ):
+    cmd = node.getSourceValues()
+    return (cmd,)
 
 #//===========================================================================//
 
@@ -83,15 +83,8 @@ class InstallBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief = True ):
-    name = self.__class__.__name__
-    sources = node.getSources()
-    target = self.target
-    
-    if brief:
-      sources = tuple( map( os.path.basename, sources ) )
-    
-    return name, sources, target
+  def   getTraceTargets( self, node, brief, batch ):
+    return self.target
 
 #//===========================================================================//
 

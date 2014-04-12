@@ -43,7 +43,7 @@ def   _normFileName( name ):
   if not name:
     raise ErrorFileValueNoName()
   
-  return os.path.normcase( os.path.abspath( str(name) ) )
+  return os.path.normcase( os.path.abspath( name ) )
 
 
 #//===========================================================================//
@@ -127,13 +127,18 @@ class FileChecksumValue( FileValueBase ):
   
   def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
     
+    if isinstance(name, FileValueBase):
+      name = name.name
+    else:
+      if isinstance(name, ValueBase):
+        name = name.get()
+    
     name = _normFileName( name )
       
     if signature is NotImplemented:
       signature = _getFileChecksum( name, use_cache = use_cache )
     
-    self = super(FileChecksumValue, cls).__new__( cls, name, signature )
-    return self
+    return super(FileChecksumValue, cls).__new__( cls, name, signature )
   
   #//-------------------------------------------------------//
   
@@ -160,8 +165,13 @@ class FileTimestampValue( FileValueBase ):
   IS_SIZE_FIXED = True
   
   def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
-    
-    name = _normFileName( name )
+    if isinstance(name, FileValueBase):
+      name = name.name
+    else:
+      if isinstance(name, ValueBase):
+        name = name.get()
+      
+      name = _normFileName( name )
     
     if signature is NotImplemented:
       signature = _getFileTimestamp( name, use_cache = use_cache )

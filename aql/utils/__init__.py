@@ -21,7 +21,6 @@ from .aql_data_file import *
 from .aql_event_manager import *
 from .aql_lock_file import *
 from .aql_logging import *
-from .aql_rsync import *
 from .aql_task_manager import *
 from .aql_temp_file import *
 from .aql_utils import *

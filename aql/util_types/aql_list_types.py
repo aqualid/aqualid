@@ -19,7 +19,7 @@
 
 __all__ = ( 'toSequence', 'isSequence', 'UniqueList', 'List', 'ValueListType', 'SplitListType' )
 
-from .aql_simple_types import uStr
+from .aql_simple_types import uStr, isString, castStr
 
 #//===========================================================================//
 
@@ -390,7 +390,7 @@ def   SplitListType( list_type, separators ):
     #noinspection PyShadowingNames
     @staticmethod
     def   __toSequence( values, separator = separator, other_separators = other_separators ):
-      if not isinstance( values, str ):
+      if not isString( values ):
         return values
       
       for sep in other_separators:
@@ -450,7 +450,7 @@ def   SplitListType( list_type, separators ):
     #//-------------------------------------------------------//
     
     def   __str__( self ):
-      return separator.join( map( str, iter(self) ) )
+      return separator.join( map( castStr, iter(self) ) )
   
   #//=======================================================//
   

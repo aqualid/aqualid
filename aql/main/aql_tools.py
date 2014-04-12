@@ -51,17 +51,17 @@ def   eventToolsToolFailed( tool_class, err ):
 
 class   ErrorToolInvalid( AqlException ):
   def   __init__( self, tool_class ):
-    msg = "Invalid tool type: '%s'" % str(tool_class)
+    msg = "Invalid tool type: '%s'" % (tool_class,)
     super(type(self), self).__init__( msg )
 
 class   ErrorToolInvalidSetupMethod( AqlException ):
   def   __init__( self, method ):
-    msg = "Invalid tool setup method: '%s'" % str(method)
+    msg = "Invalid tool setup method: '%s'" % (method,)
     super(type(self), self).__init__( msg )
 
 class   ErrorToolNotFound( AqlException ):
   def   __init__( self, tool_name ):
-    msg = "Tool '%s' has not been found" % str(tool_name)
+    msg = "Tool '%s' has not been found" % (tool_name,)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
