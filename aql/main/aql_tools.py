@@ -207,7 +207,7 @@ class ToolsManager( Singleton ):
       try:
         setup_options = tool_options.override()
         
-        env = tool_options.env.get().copy( value_type = str )
+        env = tool_options.env.get().dump()
         
         tool_info.tool_class.setup( setup_options, env )
         

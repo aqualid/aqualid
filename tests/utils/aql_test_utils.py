@@ -1,8 +1,5 @@
 import sys
 import os.path
-import timeit
-import hashlib
-import shutil
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -150,20 +147,20 @@ class TestUtils( AqlTestCase ):
               'abc/cores2',
             ]
     
-    self.assertEqual( commonDirName( paths), "abc/" )
+    self.assertEqual( commonDirName( paths), "abc" + os.path.sep )
     
     paths = [ 'abc/cores1',
               'abc/cores2',
             ]
     
-    self.assertEqual( commonDirName( paths), "abc/" )
+    self.assertEqual( commonDirName( paths), "abc" + os.path.sep )
     
     paths = [ 'abc/efg/cores1',
               'abc/efg/cores/abc',
               'abc/efg/cores2',
             ]
     
-    self.assertEqual( commonDirName( paths ), "abc/efg/" )
+    self.assertEqual( commonDirName( paths ), "abc%sefg%s" % (os.path.sep,os.path.sep) )
     
     paths = [ 'abc/efg/cores1',
               'efg/efg/cores/abc',
@@ -177,7 +174,7 @@ class TestUtils( AqlTestCase ):
               '/abc/efg/cores2',
             ]
     
-    self.assertEqual( commonDirName( paths ), "/" )
+    self.assertEqual( commonDirName( paths ), os.path.sep )
   
 #//===========================================================================//
 

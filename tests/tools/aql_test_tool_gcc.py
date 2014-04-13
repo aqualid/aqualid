@@ -106,7 +106,9 @@ class TestToolGcc( AqlTestCase ):
 
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
-      
+      env = options.env.get().dump()
+      ToolGccCommon.setup( options, env )
+
       if not options.cxx:
         options.cxx = whereProgram( "g++" )
 
@@ -115,7 +117,8 @@ class TestToolGcc( AqlTestCase ):
       cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' )
-      
+      vfilename.close()
+
       vfile = ValuesFile( vfilename )
       
       try:
@@ -173,6 +176,8 @@ class TestToolGcc( AqlTestCase ):
 
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
+      env = options.env.get().dump()
+      ToolGccCommon.setup( options, env )
 
       if not options.cxx:
         options.cxx = whereProgram( "g++" )
@@ -231,7 +236,9 @@ class TestToolGcc( AqlTestCase ):
       
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
-      
+      env = options.env.get().dump()
+      ToolGccCommon.setup( options, env )
+
       if not options.cxx:
         options.cxx = whereProgram( "g++" )
       
@@ -294,7 +301,9 @@ class TestToolGcc( AqlTestCase ):
       
       options = builtinOptions()
       options.merge( ToolGccCommon.options() )
-      
+      env = options.env.get().dump()
+      ToolGccCommon.setup( options, env )
+
       if not options.cxx:
         options.cxx = whereProgram( "g++" )
       

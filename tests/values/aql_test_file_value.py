@@ -74,9 +74,9 @@ class TestFileValue( AqlTestCase ):
       
       time.sleep(2)
       temp_file.seek( 0 )
-      temp_file.write( test_string.encode() )
-      temp_file.flush()
-      
+      temp_file.write( b"0987654321" )
+      temp_file.close()
+
       FileTimestampValue( temp_file_value1.name )
       self.assertFalse( temp_file_value1.isActual() )
       

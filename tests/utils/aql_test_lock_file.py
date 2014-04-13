@@ -50,7 +50,7 @@ class TestFileLock( AqlTestCase ):
       
       event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file, event, LockType) )
+      p = mp.Process( target = writeProcess, args = (str(temp_file), event, LockType) )
       p.start()
       
       event.wait()
@@ -124,7 +124,7 @@ class TestFileLock( AqlTestCase ):
       
       event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file, event, FileLock) )
+      p = mp.Process( target = writeProcess, args = (str(temp_file), event, FileLock) )
       p.start()
       
       event.wait()
@@ -154,7 +154,7 @@ class TestFileLock( AqlTestCase ):
       
       event = mp.Event()
       
-      p = mp.Process( target = readProcess, args = (temp_file, event, FileLock) )
+      p = mp.Process( target = readProcess, args = (str(temp_file), event, FileLock) )
       p.start()
       
       event.wait()
@@ -181,7 +181,7 @@ class TestFileLock( AqlTestCase ):
       
       event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file, event, lock_type ) )
+      p = mp.Process( target = writeProcess, args = (str(temp_file), event, lock_type ) )
       p.start()
       
       event.wait()
@@ -218,7 +218,7 @@ class TestFileLock( AqlTestCase ):
       
       event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file, event, FileLock ) )
+      p = mp.Process( target = writeProcess, args = (str(temp_file), event, FileLock ) )
       p.start()
       
       event.wait()
@@ -238,7 +238,7 @@ class TestFileLock( AqlTestCase ):
       
       event = mp.Event()
       
-      p = mp.Process( target = writeProcess, args = (temp_file, event, GeneralFileLock ) )
+      p = mp.Process( target = writeProcess, args = (str(temp_file), event, GeneralFileLock ) )
       p.start()
       
       event.wait()

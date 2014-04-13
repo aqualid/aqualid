@@ -147,7 +147,7 @@ class   IgnoreCaseString (str):
 #//===========================================================================//
 #//===========================================================================//
 
-class   LowerCaseString (uStr):
+class   LowerCaseString (str):
 
   def     __new__(cls, value = None ):
     
@@ -164,7 +164,7 @@ class   LowerCaseString (uStr):
 #//===========================================================================//
 #//===========================================================================//
 
-class   UpperCaseString (uStr):
+class   UpperCaseString (str):
 
   def     __new__(cls, value = None ):
     

@@ -304,6 +304,7 @@ class TestNodes( AqlTestCase ):
     
     with Tempdir() as tmp_dir:
       vfile_name = Tempfile( dir = tmp_dir )
+      vfile_name.close()
       with ValuesFile( vfile_name ) as vfile:
         src_files = self.generateSourceFiles( tmp_dir, 5, 100 )
         

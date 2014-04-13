@@ -51,6 +51,15 @@ class TestBuiltinTools( AqlTestCase ):
   
   #//-------------------------------------------------------//
 
+  def   _build(self, bm, **kw ):
+    is_ok = bm.build( **kw )
+    if not is_ok:
+      bm.printFails()
+
+    self.assertTrue( is_ok )
+
+  #//-------------------------------------------------------//
+
   def test_exec(self):
     
     with Tempdir() as tmp_dir:
@@ -72,7 +81,7 @@ class TestBuiltinTools( AqlTestCase ):
 
         bm.add( result )
         
-        bm.build( jobs = 1, keep_going = False )
+        self._build( bm, jobs = 1, keep_going = False )
         
         self.assertEqual( self.building_started, 1 )
         self.assertEqual( self.building_started, self.building_finished )
@@ -85,7 +94,7 @@ class TestBuiltinTools( AqlTestCase ):
         bm.add( result )
         
         self.building_started = 0
-        bm.build( jobs = 1, keep_going = False )
+        self._build( bm, jobs = 1, keep_going = False )
         
         self.assertEqual( self.building_started, 0 )
         
@@ -120,7 +129,7 @@ class TestBuiltinTools( AqlTestCase ):
   
           bm.add( result )
           
-          bm.build( jobs = 1, keep_going = False, brief = False)
+          self._build( bm, jobs = 1, keep_going = False, brief = False )
           
           self.assertEqual( self.building_started, 1 )
           self.assertEqual( self.building_started, self.building_finished )
@@ -133,7 +142,7 @@ class TestBuiltinTools( AqlTestCase ):
           bm.add( result )
           
           self.building_started = 0
-          bm.build( jobs = 1, keep_going = False )
+          self._build( bm, jobs = 1, keep_going = False )
           
           self.assertEqual( self.building_started, 0 )
           

@@ -25,7 +25,7 @@ import os
 import binascii
 
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir
-from aql.util_types import toSequence, toString, isString, FilePath, AqlException
+from aql.util_types import toSequence, isString, FilePath, AqlException
 
 from aql.values import ValueBase, FileValueBase, pickleable
 

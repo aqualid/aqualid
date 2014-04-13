@@ -35,7 +35,6 @@ import sys
 import time
 import types
 import errno
-import struct
 import marshal
 import hashlib
 import inspect
@@ -107,7 +106,7 @@ else:
 
 #//---------------------------------------------------------------------------//
 
-def   openFile( filename, read = True, write = False, binary = False, sync = False ):
+def   openFile( filename, read = True, write = False, binary = False, sync = False, encoding = None ):
   
   if not isString( filename ):
     raise ErrorFileName( filename )
@@ -138,18 +137,18 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
   try:
     if sync:
       #noinspection PyTypeChecker
-      return io.open( fd, mode, 0 )
+      return io.open( fd, mode, 0, encoding = encoding )
     else:
       #noinspection PyTypeChecker
-      return io.open( fd, mode )
+      return io.open( fd, mode, encoding = encoding )
   except:
     os.close( fd )
     raise
 
 #//===========================================================================//
 
-def readTextFile( filename ):
-  with openFile( filename ) as f:
+def readTextFile( filename, encoding = None ):
+  with openFile( filename, encoding = encoding ) as f:
     return f.read()
 
 def readBinFile( filename ):
@@ -161,8 +160,8 @@ def writeTextFile( filename, buf ):
     f.truncate()
     f.write( buf )
 
-def writeBinFile( filename, buf ):
-  with openFile( filename, write = True, binary = True ) as f:
+def writeBinFile( filename, buf, encoding = None ):
+  with openFile( filename, write = True, binary = True, encoding = encoding ) as f:
     f.truncate()
     f.write( buf )
 
@@ -211,7 +210,6 @@ def   dumpSimpleObject( obj ):
     try:
       data = marshal.dumps( obj )
     except ValueError:
-      print("obj: %s" % (tuple(map(type, obj)),))
       raise ErrorUnmarshallableObject( obj )
   
   return data
@@ -265,14 +263,14 @@ def   fileSignature( filename ):
     while chunk:
       chunk = read( chunk_size )
       checksum_update( chunk )
-  
+
   return checksum.digest()
 
 #//===========================================================================//
 
 def   fileTimeSignature( filename ):
   stat = os.stat( filename )
-  return struct.pack( ">d", stat.st_mtime )
+  return simpleObjectSignature( (stat.st_size, stat.st_mtime) )
 
 #//===========================================================================//
 
@@ -796,6 +794,24 @@ def  simplifyValue( value, simple_types = _SIMPLE_TYPES ):
 
 #//===========================================================================//
 
+def  normLocalPath( path ):
+
+  if not path:
+    return '.'
+
+  path_sep = os.path.sep
+
+  if path[-1] in (path_sep, os.path.altsep):
+    last_sep = path_sep
+  else:
+    last_sep = ''
+
+  path = os.path.normcase( os.path.normpath( path ) )
+
+  return path + last_sep
+
+#//===========================================================================//
+
 try:
   _splitunc = os.path.splitunc
 except AttributeError:
@@ -815,7 +831,7 @@ def   commonDirName( paths ):
   if not paths:
     return ''
   
-  paths = sorted(paths)
+  paths = sorted( map( normLocalPath, paths) )
   
   min_drive, min_path = splitDrive( paths[0] )
   max_drive, max_path = splitDrive( paths[-1] )

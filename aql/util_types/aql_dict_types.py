@@ -19,7 +19,7 @@
 
 __all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
 
-from .aql_simple_types import toString, isString
+from .aql_simple_types import castStr, isString
 from .aql_list_types import List
 
 #//===========================================================================//
@@ -93,7 +93,7 @@ class   Dict (dict):
   #//-------------------------------------------------------//
   
   def   dump( self ):
-    return { toString(key): toString(value) for key, value in self.items() }
+    return { castStr(key): castStr(value) for key, value in self.items() }
   
   #//-------------------------------------------------------//
   
