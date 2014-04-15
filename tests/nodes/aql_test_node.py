@@ -295,7 +295,7 @@ class TestNodes( AqlTestCase ):
       self.assertFalse( node.isActual( vfile ) )
       node.build()
       node.save( vfile )
-      self.assertEqual( len(node.batch_source_values), built_count )
+      self.assertEqual( len(node.getSourceValues()), built_count )
       self.assertTrue( node.isActual( vfile ) )
   
   #//=======================================================//

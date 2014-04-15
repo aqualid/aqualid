@@ -242,19 +242,17 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getTraceSources( self, node, brief, batch ):
-    values = node.getBatchSourceValues() if batch else node.getSourceValues()
-    return values
-  
+  def   getTraceSources( self, node, brief ):
+    return node.getSourceValues()
+
   #//-------------------------------------------------------//
   
-  def   getTraceTargets( self, node, brief, batch ):
-    values = node.getBatchTargetValues() if batch else node.getTargetValues()
-    return values
-  
+  def   getTraceTargets( self, node, brief ):
+    return node.getTargetValues()
+
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief, batch ):
+  def   getBuildStrArgs( self, node, brief ):
     
     try:
       name = self.getTraceName( brief )
@@ -262,12 +260,12 @@ class Builder (object):
       name = ''
     
     try:
-      sources = self.getTraceSources( node, brief, batch )
+      sources = self.getTraceSources( node, brief )
     except Exception:
       sources = None
 
     try:
-      targets = self.getTraceTargets( node, brief, batch )
+      targets = self.getTraceTargets( node, brief )
     except Exception:
       targets = None
     
@@ -397,14 +395,16 @@ class BuildSingle(object):
   #//-------------------------------------------------------//
   
   def   prebuild( self, node ):
-    
-    sources = node.getSourceValues()
-    if len(sources) > 1:
-      return node.split( self.builder )
-    
-    node.builder = self.builder
+
+    builder = self.builder
+    nodes = node.split( builder )
+
+    if len(nodes) > 1:
+      return nodes
+
+    node.builder = builder
     return None
-  
+
   #//-------------------------------------------------------//
   
   def   prebuildFinished( self, node, pre_nodes ):

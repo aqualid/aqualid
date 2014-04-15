@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
 class AqlPreprocess (aql.FileBuilder):
   
-  def   getTraceTargets( self, node, brief, batch ):
+  def   getTraceTargets( self, node, brief ):
     return None
   
   #//-------------------------------------------------------//

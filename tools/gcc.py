@@ -180,7 +180,7 @@ class GccLinkerBase(aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceSources( self, node, brief, batch ):
+  def   getTraceSources( self, node, brief ):
     return node.builder_data
   
   #//-------------------------------------------------------//
@@ -466,10 +466,8 @@ class ToolGccCommon( aql.Tool ):
   
   def   Compile( self, options, shared = False, batch = False ):
     builder = GccCompiler( options, self.language, shared = shared )
-    
     if batch:
       return aql.BuildBatch( builder )
-    
     return aql.BuildSingle( builder )
   
   def   LinkLibrary( self, options, target ):
@@ -481,17 +479,14 @@ class ToolGccCommon( aql.Tool ):
   def   LinkProgram( self, options, target ):
     return GccLinker( options, target, self.language, shared = False )
 
-
 #//===========================================================================//
 
-#noinspection PyMethodMayBeStatic
 @aql.tool('c++', 'g++', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   language = "c++"
 
 #//===========================================================================//
 
-#noinspection PyMethodMayBeStatic
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   language = "c"

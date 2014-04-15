@@ -196,7 +196,7 @@ class   RSyncPushBuilder( aql.FileBuilder ):
   
   def   _getSources(self, node ):
     
-    sources = list( map(_normLocalPath, node.getBatchSources()) )
+    sources = list( map(_normLocalPath, node.getSources()) )
     
     source_base = self.source_base
     if source_base:
@@ -224,7 +224,7 @@ class   RSyncPushBuilder( aql.FileBuilder ):
     
     value_type = aql.SimpleValue if host else self.fileValueType()
     
-    for src_value, src in zip( node.getBatchSourceValues(), sources ):
+    for src_value, src in zip( node.getSourceValues(), sources ):
       
       if not source_base:
         src = os.path.basename( src )

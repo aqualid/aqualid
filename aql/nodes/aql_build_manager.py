@@ -95,7 +95,7 @@ def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   msg = "(%s) %s" % (progress, msg)
   
   # if __debug__:
-  #   msg = '%s: %s' % (node.getName(), msg)
+  #   msg = '%s: %s' % (node, msg)
   
   logInfo( msg )
 
@@ -113,7 +113,7 @@ def   eventNodeRemoved( node, progress, brief ):
   msg = node.getBuildStr( brief )
   if msg:
     # if __debug__:
-    #   msg = '%s: %s' % (node.getName(), msg)
+    #   msg = '%s: %s' % (node, msg)
 
     logInfo( "(%s) Removed: %s" % (progress, msg) )
 
@@ -565,7 +565,7 @@ class _NodesBuilder (object):
         build_manager.completedNode( node, task.result )
       else:
         build_manager.failedNode( node, error )
-    
+
     return bool(finished_tasks)
   
   #//-------------------------------------------------------//

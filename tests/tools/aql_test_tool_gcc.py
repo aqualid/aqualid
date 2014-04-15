@@ -153,8 +153,12 @@ class TestToolGcc( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  def   _build( self, bm ):
-    is_ok = bm.build( jobs = 4, keep_going = False )
+  def   _build( self, bm, **kw ):
+
+    kw.setdefault('jobs', 4 )
+    kw.setdefault('keep_going', False )
+
+    is_ok = bm.build( **kw )
     bm.printFails()
     self.assertTrue( is_ok )
   
@@ -179,9 +183,6 @@ class TestToolGcc( AqlTestCase ):
       env = options.env.get().dump()
       ToolGccCommon.setup( options, env )
 
-      if not options.cxx:
-        options.cxx = whereProgram( "g++" )
-
       options.build_dir = build_dir
       
       cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
@@ -195,7 +196,7 @@ class TestToolGcc( AqlTestCase ):
         
         self.built_nodes = 0
         
-        self._build( bm )
+        self._build( bm, jobs = 4 )
         
         self.assertEqual( self.built_nodes, num_src_files )
         

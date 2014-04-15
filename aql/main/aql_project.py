@@ -240,14 +240,14 @@ class BuilderWrapper( object ):
     sources = flattenList( sources )
     
     builder = self.method( options, **args_kw )
-    
+
     if isinstance( builder, BuildBatch ):
       node = BatchNode( builder, sources )
     else:
       node = Node( builder, sources )
-    
+
     node.depends( dep_nodes )
-    
+
     self.project.AddNodes( node )
     
     return node
@@ -482,27 +482,28 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Depends( self, node, dependencies ):
-    node.depends( dependencies )
-    self.build_manager.depends( node, node.dep_nodes )
+  def   Depends( self, nodes, dependencies ):
+    for node in toSequence( nodes ):
+      node.depends( dependencies )
+      self.build_manager.depends( node, node.dep_nodes )
   
   #//-------------------------------------------------------//
   
-  def   Alias( self, alias, node ):
-    for alias, node in itertools.product( toSequence( alias ), toSequence( node ) ):
+  def   Alias( self, alias, nodes ):
+    for alias, node in itertools.product( toSequence( alias ), toSequence( nodes ) ):
       self.aliases.setdefault( alias, []).append( node )
     
   #//-------------------------------------------------------//
   
-  def   Default( self, node ):
-    for node in toSequence( node ):
+  def   Default( self, nodes ):
+    for node in toSequence( nodes ):
       self.defaults.append( node )
   
   #//-------------------------------------------------------//
   
-  def   AlwaysBuild( self, node ):
+  def   AlwaysBuild( self, nodes ):
     null_value = NullValue()
-    for node in toSequence( node ):
+    for node in toSequence( nodes ):
       node.depends( null_value )
   
   #//=======================================================//

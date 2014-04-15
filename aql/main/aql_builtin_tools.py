@@ -55,7 +55,7 @@ class ExecuteCommand (Builder):
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief, batch ):
+  def   getBuildStrArgs( self, node, brief ):
     cmd = node.getSourceValues()
     return (cmd,)
 
@@ -83,7 +83,7 @@ class InstallBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceTargets( self, node, brief, batch ):
+  def   getTraceTargets( self, node, brief ):
     return self.target
 
 #//===========================================================================//

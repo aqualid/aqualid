@@ -264,12 +264,14 @@ def   fileSignature( filename ):
       chunk = read( chunk_size )
       checksum_update( chunk )
 
+  # print("fileSignature: %s: %s" % (filename, checksum.hexdigest()) )
   return checksum.digest()
 
 #//===========================================================================//
 
 def   fileTimeSignature( filename ):
   stat = os.stat( filename )
+  # print("fileTimeSignature: %s: %s" % (filename, (stat.st_size, stat.st_mtime)) )
   return simpleObjectSignature( (stat.st_size, stat.st_mtime) )
 
 #//===========================================================================//

@@ -28,10 +28,10 @@ class CopyValueBuilder (Builder):
     
     node.setTargets( target_values )
   
-  def   getTraceTargets( self, node, brief, batch ):
+  def   getTraceTargets( self, node, brief ):
     return tuple( value.name for value in node.getTargetValues() )
   
-  def   getTraceSources( self, node, brief, batch ):
+  def   getTraceSources( self, node, brief ):
     return tuple( value.name for value in node.getSourceValues() )
 
 
@@ -77,7 +77,7 @@ class ChecksumBuilder (FileBuilder):
   #//-------------------------------------------------------//
   
   def   buildBatch( self, node ):
-    for src_value in node.getBatchSourceValues():
+    for src_value in node.getSourceValues():
       target = self._buildSrc( src_value.get() )
       node.setSourceFileTargets( src_value, target )
 
