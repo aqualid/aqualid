@@ -126,7 +126,7 @@ class FileChecksumValue( FileValueBase ):
   IS_SIZE_FIXED = True
   
   def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
-    
+
     if isinstance(name, FileValueBase):
       name = name.name
     else:
@@ -135,13 +135,27 @@ class FileChecksumValue( FileValueBase ):
     
     name = _normFileName( name )
       
+    self = super(FileChecksumValue, cls).__new__( cls, name, signature )
+
     if signature is NotImplemented:
-      signature = _getFileChecksum( name, use_cache = use_cache )
-    
-    return super(FileChecksumValue, cls).__new__( cls, name, signature )
+      if use_cache:
+        del self.signature
+      else:
+        self.signature = _getFileChecksum( name )
+
+    return self
   
   #//-------------------------------------------------------//
-  
+
+  def   __getattr__(self, attr):
+    if attr == 'signature':
+      self.signature = signature = _getFileChecksum( self.name, use_cache = True )
+      return signature
+
+    raise AttributeError("Unknown attribute: '%s'" % (attr,))
+
+  #//-------------------------------------------------------//
+
   def   getActual(self):
     name = self.name
     signature = _getFileChecksum( name, use_cache = True )
@@ -173,14 +187,27 @@ class FileTimestampValue( FileValueBase ):
       
       name = _normFileName( name )
     
-    if signature is NotImplemented:
-      signature = _getFileTimestamp( name, use_cache = use_cache )
-    
     self = super(FileTimestampValue, cls).__new__( cls, name, signature )
+
+    if signature is NotImplemented:
+      if use_cache:
+        del self.signature
+      else:
+        self.signature = _getFileTimestamp( name )
+
     return self
   
   #//-------------------------------------------------------//
-  
+
+  def   __getattr__(self, attr):
+    if attr == 'signature':
+      self.signature = signature = _getFileTimestamp( self.name, use_cache = True )
+      return signature
+
+    raise AttributeError("Unknown attribute: '%s'" % (attr,))
+
+  #//-------------------------------------------------------//
+
   def   getActual(self):
     name = self.name
     signature = _getFileTimestamp( name, use_cache = True )

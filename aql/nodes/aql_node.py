@@ -549,7 +549,7 @@ class Node (object):
   def   prebuild( self ):
     self.initiate()
     return self.builder.prebuild( self )
-  
+
   #//=======================================================//
   
   def   prebuildFinished(self, prebuild_nodes ):
@@ -558,14 +558,17 @@ class Node (object):
   #//=======================================================//
   
   def   save( self, vfile ):
-    
+    if __debug__:
+      _ensureActualValues( self.targets )
+      _ensureActualValues( self.ideps )
+
     idep_keys = vfile.addValues( self.ideps )
     
     node_value = NodeValue( name = self.name, signature = self.signature,
                             targets = self.targets, itargets = self.itargets, idep_keys = idep_keys )
     
     vfile.addValue( node_value )
-  
+
   #//=======================================================//
   
   def   clear( self, vfile ):
@@ -608,18 +611,14 @@ class Node (object):
   #//=======================================================//
   
   def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
-    
+
     if valuesMaker is None:
       valuesMaker = self.builder.makeValues
     
     self.targets  = valuesMaker( targets,   use_cache = False )
     self.itargets = valuesMaker( itargets,  use_cache = False )
     self.ideps    = valuesMaker( ideps,     use_cache = True )
-    
-    if __debug__:
-      _ensureActualValues( self.targets )
-      _ensureActualValues( self.ideps )
-    
+
   #//=======================================================//
   
   def   setFileTargets( self, targets, itargets = None, ideps = None ):
@@ -755,10 +754,14 @@ class BatchNode (Node):
     
     for src_value in self.changed_source_values:
       node_value, ideps = self.node_values[ src_value ]
+
       if __debug__:
         if node_value.targets is None:
           raise ErrorNoTargets( self )
-      
+
+        _ensureActualValues( node_value.targets )
+        _ensureActualValues( ideps )
+
       node_value.idep_keys = vfile.addValues( ideps )
       
       # if __debug__:
@@ -871,10 +874,6 @@ class BatchNode (Node):
     node_value.targets  = valuesMaker( targets,   use_cache = False )
     node_value.itargets = valuesMaker( itargets,  use_cache = False )
     ideps               = valuesMaker( ideps,     use_cache = True )
-    
-    if __debug__:
-      _ensureActualValues( node_value.targets )
-      _ensureActualValues( ideps )
     
     node_ideps[:] = ideps
     
