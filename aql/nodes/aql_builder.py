@@ -329,18 +329,8 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   makeFileValues( self, values, use_cache = False ):
-    
-    file_type = self.fileValueType()
-    file_values = []
-    
-    for value in toSequence(values):
-      if not isinstance(value, ValueBase):
-        value = file_type( name = value, use_cache = use_cache )
-      
-      file_values.append( value )
-    
-    return tuple( file_values )
-  
+    return tuple( self.makeFileValue( value, use_cache = use_cache ) for value in toSequence(values) )
+
   #//-------------------------------------------------------//
   
   def   execCmd(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):

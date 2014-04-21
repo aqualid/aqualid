@@ -203,7 +203,7 @@ def   _env_options():
   
   options = Options()
   options.env = DictOptionType( key_type = UpperCaseString )
-  options.env['PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )()
+  options.env['PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
   options.env['TEMP'] = PathOptionType()()
   options.env['TMP'] = PathOptionType()()
   options.env['HOME'] = PathOptionType()()

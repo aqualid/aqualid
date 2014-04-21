@@ -118,25 +118,28 @@ def   _getTraceArg( value, brief ):
     value = value.get()
     if brief:
       value = os.path.basename( value )
-  
-  elif isinstance( value, FilePath ):
-    if brief:
-      value = os.path.basename( value )
-  
-  elif isString( value ):
-    value = value.strip()
-    
-    npos = value.find('\n')
-    if npos != -1:
-      value = value[:npos]
-    
-    max_len = 64 if brief else 256
-    src_len = len(value)
-    if src_len > max_len:
-      value = "%s..." % value[:max_len]
-  
   else:
-    value = None
+    if isinstance( value, ValueBase ):
+      value = value.get()
+
+    if isinstance( value, FilePath ):
+      if brief:
+        value = os.path.basename( value )
+
+    elif isString( value ):
+      value = value.strip()
+
+      npos = value.find('\n')
+      if npos != -1:
+        value = value[:npos]
+
+      max_len = 64 if brief else 256
+      src_len = len(value)
+      if src_len > max_len:
+        value = "%s..." % value[:max_len]
+
+    else:
+      value = None
   
   return value
 

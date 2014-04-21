@@ -17,7 +17,7 @@ import rsync
 #//===========================================================================//
 
 def   _build( prj ):
-  if not prj.Build():
+  if not prj.Build( verbose = True ):
     prj.build_manager.printFails()
     assert False, "Build failed"
 
@@ -25,11 +25,11 @@ def   _build( prj ):
 
 class TestToolRsync( AqlTestCase ):
   
-  def test_rsync_push(self):
+  def test_rsync_push_local(self):
     with Tempdir() as tmp_dir:
       with Tempdir() as src_dir:
         with Tempdir() as target_dir:
-          src_files = self.generateCppFiles( src_dir, "src_test", 10 )
+          src_files = self.generateCppFiles( src_dir, "src_test", 3 )
           
           cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
           
@@ -39,18 +39,36 @@ class TestToolRsync( AqlTestCase ):
           
           _build( prj )
           
-          # prj.tools.rsync.Push( src_files, target = target_dir, host = 'localhost')
           prj.tools.rsync.Push( src_files, target = target_dir )
           
           _build( prj )
   
   #//=======================================================//
-  
+
+  def test_rsync_push_remote(self):
+    with Tempdir() as tmp_dir:
+      with Tempdir() as src_dir:
+        src_files = self.generateCppFiles( src_dir, "src_test", 3 )
+
+        cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
+
+        prj = Project( cfg.options, cfg.targets )
+
+        remote_files = prj.tools.rsync.Push( src_files, target = 'test_rsync_push',
+                                             host = 'nas', key_file = r'C:\cygwin\home\me\rsync.key',
+                                             exclude="*.h" )
+        remote_files.options.rsync_flags += ['--chmod=u+rw,g+r,o+r']
+        remote_files.options.rsync_flags += ['--delete-excluded']
+        _build( prj )
+
+
+  #//=======================================================//
+
   def test_rsync_pull(self):
     with Tempdir() as tmp_dir:
       with Tempdir() as src_dir:
         with Tempdir() as target_dir:
-          src_files = self.generateCppFiles( src_dir, "src_test", 1 )
+          src_files = self.generateCppFiles( src_dir, "src_test", 3 )
           
           cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
           

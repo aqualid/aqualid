@@ -75,39 +75,29 @@ def  _normRemotePath( path ):
 #//===========================================================================//
 
 def   _splitRemotePath( remote_path ):
-  # [USER@]HOST:DEST
-  remote_path = remote_path.strip()
-  user_pos = remote_path.find('@')
-  if user_pos == -1:
+  if os.path.isabs( remote_path ):
+    host = ''
     user = ''
   else:
-    user = remote_path[:user_pos]
-    remote_path = remote_path[user_pos + 1:]
-  
-  host_pos = remote_path.find(':')
-  if host_pos == -1:
-    host = ''
-  else:
-    host = remote_path[:host_pos]
-    remote_path = remote_path[host_pos + 1:]
-      
-  if host:
-    remote_path = _normRemotePath( remote_path )
-  else:
-    remote_path = _normLocalPath( remote_path )
-  
+    # [USER@]HOST:DEST
+    remote_path = remote_path.strip()
+    user_pos = remote_path.find('@')
+    if user_pos == -1:
+      user = ''
+    else:
+      user = remote_path[:user_pos]
+      remote_path = remote_path[user_pos + 1:]
+
+    host_pos = remote_path.find(':')
+    if host_pos == -1:
+      host = ''
+    else:
+      host = remote_path[:host_pos]
+      remote_path = remote_path[host_pos + 1:]
+
+  remote_path = _normRemotePath( remote_path )
+
   return user, host, remote_path
-
-#//===========================================================================//
-
-def   _joinRemotePath( user, host, remote_path ):
-  if host:
-    if user:
-      return "%s@%s:%s" % (user, host, remote_path)
-    
-    return "%s:%s" % (host, remote_path)
-  
-  return remote_path
 
 #//===========================================================================//
 
@@ -115,13 +105,13 @@ class RemotePath( object ):
   
   __slots__ = ('path', 'host', 'user')
   
-  def   __init__(self, user, host, remote_path ):
+  def   __init__(self, remote_path, user = None, host = None ):
     
     u, h, remote_path = _splitRemotePath( remote_path )
-    if u:
+    if not user:
       user = u
     
-    if h:
+    if not host:
       host = h
     
     self.path = remote_path
@@ -139,9 +129,37 @@ class RemotePath( object ):
     return self.get()
   
   #//-------------------------------------------------------//
-  
-  def   get(self):
-    return _joinRemotePath( self.user, self.host, self.path )
+
+  def   join( self, other ):
+    if self.host:
+      path = self.path + '/' + _normRemotePath( other )
+    else:
+      path = os.path.join( self.path, _normLocalPath( other ) )
+
+    return RemotePath( path, self.user, self.host )
+
+  #//-------------------------------------------------------//
+
+  def   basename(self):
+    if self.host:
+      last_slash_pos = self.path.rfind('/')
+      return self.path[ last_slash_pos + 1: ]
+    else:
+      return os.path.basename( self.path )
+
+  #//-------------------------------------------------------//
+
+  def   get( self, cygwin_path = False ):
+    if self.host:
+      if self.user:
+        return "%s@%s:%s" % (self.user, self.host, self.path)
+
+      return "%s:%s" % (self.host, self.path)
+    else:
+      if cygwin_path:
+        return _toCygwinPath( self.path )
+
+      return self.path
 
 #//===========================================================================//
 
@@ -163,19 +181,18 @@ class   RSyncPushBuilder( aql.FileBuilder ):
   def   __init__( self, options, remote_path, source_base = None, host = None, login = None, key_file = None, exclude = None ):
     
     self.rsync_cygwin = (sys.platform != 'cygwin') and options.rsync_cygwin.get()
-    
+
     self.source_base = _normLocalPath( source_base ) if source_base else None
-    self.remote_path = RemotePath( login, host, remote_path )
+    self.remote_path = RemotePath( remote_path, login, host )
     
-    self.cmd = self.__getCmd( options, self.remote_path, key_file, exclude )
+    self.cmd = self.__getCmd( options, key_file, exclude )
     self.rsync = options.rsync.get()
     
     self.file_value_type = aql.FileTimestampValue
     
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __getCmd( options, remote_path, key_file, excludes ):
+  def   __getCmd( self, options, key_file, excludes ):
     cmd = [ options.rsync.get() ]
     
     cmd += options.rsync_flags.get()
@@ -183,9 +200,11 @@ class   RSyncPushBuilder( aql.FileBuilder ):
     if excludes:
       cmd += itertools.chain( *itertools.product( ['--exclude'], aql.toSequence( excludes ) ) )
     
-    if remote_path.isRemote():
+    if self.remote_path.isRemote():
       ssh_flags = options.rsync_ssh_flags.get()
       if key_file:
+        if self.rsync_cygwin:
+          key_file = _toCygwinPath( key_file )
         ssh_flags += [ '-i', key_file ]
       
       cmd += [ '-e', 'ssh %s' % ' '.join( ssh_flags ) ]
@@ -216,23 +235,18 @@ class   RSyncPushBuilder( aql.FileBuilder ):
   def   _setTargets( self, node, sources ):
     
     remote_path = self.remote_path
-    host = remote_path.host
-    user = remote_path.user
-    remote_path = remote_path.path
-    
     source_base = self.source_base
     
-    value_type = aql.SimpleValue if host else self.fileValueType()
+    value_type = aql.SimpleValue if remote_path.isRemote() else self.fileValueType()
     
     for src_value, src in zip( node.getSourceValues(), sources ):
       
       if not source_base:
         src = os.path.basename( src )
-      
-      path = remote_path + '/' + src
-      target_path = _joinRemotePath( user, host, path )
-      
-      target_value = value_type( target_path )
+
+      target_path = remote_path.join( src )
+
+      target_value = value_type( target_path.get() )
       node.setSourceTargets( src_value, target_value )
   
   #//-------------------------------------------------------//
@@ -262,8 +276,10 @@ class   RSyncPushBuilder( aql.FileBuilder ):
         cmd += [ "--files-from=-", source_base ]
       else:
         cmd += sorted_sources
-      
-      cmd.append( self.remote_path.get() )
+
+      remote_path = self.remote_path.get( self.rsync_cygwin )
+
+      cmd.append( remote_path )
       
       out = self.execCmd( cmd, stdin = tmp_r )
     
@@ -297,20 +313,29 @@ class   RSyncPullBuilder( aql.Builder ):
   def   __init__( self, options, target, host = None, login = None, key_file = None, exclude = None ):
     
     self.rsync_cygwin = (sys.platform != 'cygwin') and options.rsync_cygwin.get()
-    
+
     self.target_path = _normLocalPath( target )
     self.host = host
     self.login = login
     
-    self.cmd = self.__getCmd( options, self.target_path, key_file, exclude )
+    self.cmd = self.__getCmd( options, key_file, exclude )
     self.rsync = options.rsync.get()
     
     self.file_value_type = aql.FileTimestampValue
     
   #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __getCmd( options, host, key_file, excludes ):
+
+  def   makeValue(self, value, use_cache = False ):
+    if aql.isString( value ):
+      remote_path = RemotePath( value, self.login, self.host )
+      if not remote_path.isRemote():
+        return self.makeFileValue( value )
+
+    return super( self, RSyncPullBuilder ).makeValue( value )
+
+  #//-------------------------------------------------------//
+
+  def   __getCmd( self, options, key_file, excludes ):
     cmd = [ options.rsync.get() ]
     
     cmd += options.rsync_flags.get()
@@ -318,9 +343,11 @@ class   RSyncPullBuilder( aql.Builder ):
     if excludes:
       cmd += itertools.chain( *itertools.product( ['--exclude'], aql.toSequence( excludes ) ) )
     
-    if host:
+    if self.host:
       ssh_flags = options.rsync_ssh_flags.get()
       if key_file:
+        if self.rsync_cygwin:
+          key_file = _toCygwinPath( key_file )
         ssh_flags += [ '-i', key_file ]
       
       cmd += [ '-e', 'ssh %s' % ' '.join( ssh_flags ) ]
@@ -337,23 +364,18 @@ class   RSyncPullBuilder( aql.Builder ):
     
     host = self.host
     login = self.login
-    
+
+    cygwin_path = self.rsync_cygwin
+
     for src in node.getSources():
-      src_login,src_host,remote_path = _splitRemotePath( src )
-      if not login:
-        login = src_login
-      if not host:
-        host = src_host
-      
-      local_path = os.path.basename( _normLocalPath( remote_path ) )
-      path = target_path + '/' + local_path
+      remote_path = RemotePath( src, login, host )
+
+      path = os.path.join( target_path, remote_path.basename() )
       targets.append( path )
-      
-      sources.append( remote_path )
+      sources.append( remote_path.get( cygwin_path ) )
           
     sources.sort()
-    sources = tuple( _joinRemotePath( login, host, src ) for src in sources )
-    
+
     return sources, targets
   
   #//-------------------------------------------------------//
