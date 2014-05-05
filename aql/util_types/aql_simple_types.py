@@ -91,7 +91,6 @@ except NameError:
 #//===========================================================================//
 
 class   String (str):
-
   def     __new__( cls, value = None ):
     
     if type(value) is cls:
@@ -105,44 +104,20 @@ class   String (str):
 #//===========================================================================//
 #//===========================================================================//
 
-class   IgnoreCaseString (str):
-
-  def     __new__(cls, value = None ):
-    
-    if type(value) is cls:
-      return value
-    
-    if value is None:
-      value = ''
-        
-    self = super(IgnoreCaseString, cls).__new__(cls, value)
-    self.__value = self.lower()
-    
-    return self
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __convert(other ):
-    return other if isinstance( other, IgnoreCaseString ) else IgnoreCaseString( other )
-  
-  #//-------------------------------------------------------//
+class   IgnoreCaseString (String):
   
   def   __hash__(self):
-    return hash(self.__value)
+    return hash(self.lower())
   
-  def   __eq__( self, other):
-    return self.__value == self.__convert( other ).__value
-  def   __ne__( self, other):
-    return self.__value != self.__convert( other ).__value
-  def   __lt__( self, other):
-    return self.__value <  self.__convert( other ).__value
-  def   __le__( self, other):
-    return self.__value <= self.__convert( other ).__value
-  def   __gt__( self, other):
-    return self.__value >  self.__convert( other ).__value
-  def   __ge__( self, other):
-    return self.__value >= self.__convert( other ).__value
+  def   _cmp(self, other, op ):
+    return op( self.lower(), str(other).lower())
+  
+  def   __eq__( self, other ):  return self._cmp( other, operator.eq )
+  def   __ne__( self, other ):  return self._cmp( other, operator.ne )
+  def   __lt__( self, other ):  return self._cmp( other, operator.lt )
+  def   __le__( self, other ):  return self._cmp( other, operator.le )
+  def   __gt__( self, other ):  return self._cmp( other, operator.gt )
+  def   __ge__( self, other ):  return self._cmp( other, operator.ge )
 
 #//===========================================================================//
 #//===========================================================================//

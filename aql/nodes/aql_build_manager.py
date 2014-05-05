@@ -66,7 +66,7 @@ def   eventInitialNodes( total_nodes ):
 def   eventFailedNode( node, error ):
   
   msg = node.getBuildStr( brief = False )
-  msg += '\n\n%s' % (error,)
+  msg += '\n\n%s\n' % (error,)
   
   logError( msg )
 
@@ -90,7 +90,9 @@ def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   msg = node.getBuildStr( brief )
   if not brief and builder_output:
     msg += '\n'
-    msg += builder_output
+    if builder_output:
+      msg += builder_output
+      msg += '\n'
   
   msg = "(%s) %s" % (progress, msg)
   
@@ -818,7 +820,7 @@ class BuildManager (object):
     
     with _NodesBuilder( self, jobs, keep_going ) as nodes_builder:
       
-      eventInitialNodes( len(nodes_tree) )
+      # eventInitialNodes( len(nodes_tree) )
       
       while True:
         tails = self.getTailNodes()

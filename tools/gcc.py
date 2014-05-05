@@ -14,7 +14,7 @@ def   _isCCppSourceFile( source_file ):
 
 #//===========================================================================//
 
-def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
+def   _readDeps( dep_file, exclude_dirs, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
   
   deps = aql.readTextFile( dep_file )
   
@@ -33,14 +33,14 @@ def   _readDeps( dep_file, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
     tmp_dep_files = filter( None, _space_splitter_re.split( line ) )
     tmp_dep_files = [dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files ]
     
-    dep_files += tmp_dep_files
+    dep_files += map( os.path.abspath, tmp_dep_files )
   
-  return dep_files[1:]  # skip the source file
-
-#//===========================================================================//
-
-def   _addPrefix( prefix, values ):
-  return map( lambda v, prefix = prefix: prefix + v, values )
+  dep_files = iter(dep_files)
+  next( dep_files ) # skip the source file
+  
+  dep_files = tuple( dep_file for dep_file in dep_files if not dep_file.startswith( exclude_dirs ) )
+  
+  return dep_files
 
 #//===========================================================================//
 
@@ -58,17 +58,16 @@ class GccCompiler (aql.FileBuilder):
     self.prefix = options.prefix.get()
     self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
     
-    self.cmd = self.__getCmd( options, language, shared )
+    self.setCmd( options, language, shared )
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   __getCmd( options, language, shared ):
+  def   setCmd( self, options, language, shared ):
     
     if language == 'c++':
-      cmd = [ str(options.cxx.get()) ]
+      cmd = [ options.cxx.get() ]
     else:
-      cmd = [ str(options.cc.get()) ]
+      cmd = [ options.cc.get() ]
     
     cmd += ['-c', '-pipe', '-MMD', '-x', language ]
     if language == 'c++':
@@ -79,23 +78,15 @@ class GccCompiler (aql.FileBuilder):
     if shared:
       cmd += ['-fPIC']
     
-    cmd += options.ccflags.get()
+    ext_cpppath = tuple( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in options.ext_cpppath.get() )
+    
     cmd += itertools.chain( *itertools.product( ['-D'], options.cppdefines.get() ) )
     cmd += itertools.chain( *itertools.product( ['-I'], options.cpppath.get() ) )
-    cmd += itertools.chain( *itertools.product( ['-I'], options.ext_cpppath.get() ) )
+    cmd += itertools.chain( *itertools.product( ['-I'], ext_cpppath ) )
     
-    return cmd
-  
-  #//-------------------------------------------------------//
-  
-  def   getTargetValues( self, node ):
+    self.ext_cpppath = ext_cpppath
     
-    obj_file = self._getObj( node )[0]
-    
-    value_type = self.fileValueType()
-    target = value_type( name = obj_file, signature = None )
-    
-    return target
+    self.cmd = cmd
   
   #//-------------------------------------------------------//
   
@@ -120,7 +111,7 @@ class GccCompiler (aql.FileBuilder):
       
       out = self.execCmd( cmd, cwd, file_flag = '@' )
       
-      node.setFileTargets( obj_file, ideps = _readDeps( dep_file ) )
+      node.setFileTargets( obj_file, ideps = _readDeps( dep_file, self.ext_cpppath ) )
       
       return out
   
@@ -145,10 +136,10 @@ class GccLinkerBase(aql.FileBuilder):
 
   #//-------------------------------------------------------//
   
-  def   prebuild( self, node ):
+  def   _prebuild( self, node, shared ):
     obj_files = []
     
-    compiler = GccCompiler( node.options, self.language, shared = False )
+    compiler = GccCompiler( node.options, self.language, shared = shared )
     src_nodes = []
     for src_file in node.getSourceValues():
       if _isCCppSourceFile( src_file.name ):
@@ -167,7 +158,7 @@ class GccLinkerBase(aql.FileBuilder):
     
     obj_files = node.builder_data
     for pre_node in pre_nodes:
-      obj_files.extend( pre_node.getTargets() )
+      obj_files += pre_node.getTargetValues()
     
     return False
   
@@ -207,10 +198,16 @@ class GccArchiver(GccLinkerBase):
     self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
     self.language = language
 
-    self.cmd = [ options.lib.get(), 'rcs' ]
-    
+    self.cmd = [ options.lib.get() ]
+    self.cmd += options.libflags.get()
+
   #//-------------------------------------------------------//
-  
+
+  def   prebuild( self, node ):
+    return self._prebuild( node, shared = False )
+
+  #//-------------------------------------------------------//
+
   def   build( self, node ):
     
     obj_files = tuple( src.get() for src in node.builder_data )
@@ -244,6 +241,7 @@ class GccLinker(GccLinkerBase):
     
     self.cmd = self.__getCmd( options, self.target, language, shared )
     self.language = language
+    self.shared = shared
     
   #//-------------------------------------------------------//
   
@@ -265,7 +263,12 @@ class GccLinker(GccLinkerBase):
     cmd += itertools.chain( *itertools.product( ['-l'], options.libs.get() ) )
     
     return cmd
-  
+
+  #//-------------------------------------------------------//
+
+  def   prebuild( self, node ):
+    return self._prebuild( node, shared = self.shared )
+
   #//-------------------------------------------------------//
   
   def   build( self, node ):
@@ -276,7 +279,7 @@ class GccLinker(GccLinkerBase):
     
     cmd[2:2] = obj_files
     
-    cmd += [ '-o', str(self.target) ]
+    cmd += [ '-o', self.target ]
     
     cwd = self.target.dirname()
     
@@ -285,13 +288,6 @@ class GccLinker(GccLinkerBase):
     node.setFileTargets( self.target )
     
     return out
-  
-  #//-------------------------------------------------------//
-  
-  def   getTargetValues( self, node ):
-    value_type = self.fileValueType()
-    target = value_type( name = self.target, signature = None )
-    return target
   
   #//-------------------------------------------------------//
 
@@ -345,24 +341,16 @@ def   _getGccSpecs( gcc ):
   match = version_re.search( out )
   version = str(aql.Version( match.group(1).strip() if match else '' ))
   
-  if target == 'mingw32':
-    target_arch = 'x86-32'
-    target_os = 'windows'
+  target_list = target.split('-', 2)
   
+  target_os = target_list[-1]
+  if len(target_list) > 1:
+    target_arch = target_list[0]
   else:
-    target_list = target.split('-')
-    
-    target_list_len = len( target_list )
-    
-    if target_list_len == 2:
-      target_arch = target_list[0]
-      target_os = target_list[1]
-    elif target_list_len > 2:
-      target_arch = target_list[0]
-      target_os = target_list[2]
-    else:
-      target_arch = ''
-      target_os = ''
+    target_arch = 'native'
+  
+  if target_os.find('mingw32') != -1:
+    target_os = 'windows'
   
   specs = {
     'cc_name':      'gcc',
@@ -377,21 +365,12 @@ def   _getGccSpecs( gcc ):
 
 class ToolGccCommon( aql.Tool ):
   
+  
   @staticmethod
   def   setup( options, env ):
     
     gcc_prefix = options.gcc_prefix.get()
     gcc_suffix = options.gcc_suffix.get()
-    
-    """
-    cfg_keys = ( gcc_prefix, gcc_suffix )
-    cfg_deps = ( str(options.env['PATH']), )
-    
-    specs = self.LoadValues( project, cfg_keys, cfg_deps )
-    if cfg is None:
-      info = _getGccInfo( env, gcc_prefix, gcc_suffix )
-      self.SaveValues( project, cfg_keys, cfg_deps, specs )
-    """
     
     gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
     specs = _getGccSpecs( gcc )
@@ -401,6 +380,8 @@ class ToolGccCommon( aql.Tool ):
     options.cc = gcc
     options.cxx = gxx
     options.lib = ar
+    
+    options.If().cc_name.isTrue().build_dir_name  += '_' + options.cc_name + '_' + options.cc_ver
   
   #//-------------------------------------------------------//
   
@@ -424,7 +405,9 @@ class ToolGccCommon( aql.Tool ):
     options.shlibprefix   = 'lib'
     options.shlibsuffix   = '.so'
     if_windows.progsuffix = '.exe'
-    
+
+    options.libflags = ['-rcs']
+
     if_windows.target_subsystem.eq('console').linkflags += '-Wl,--subsystem,console'
     if_windows.target_subsystem.eq('windows').linkflags += '-Wl,--subsystem,windows'
     

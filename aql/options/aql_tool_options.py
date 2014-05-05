@@ -32,8 +32,8 @@ def   _commonCCppCompilerOptions( options ):
   
   options.objsuffix = StrOptionType( description = "Object file suffix." )
   options.shobjsuffix = StrOptionType( description = "Shared object file suffix." )
-  options.cc_name = StrOptionType( ignore_case = True, description = "C/C++ compiler name" )
-  options.cc_ver = VersionOptionType( description = "C/C++ compiler version" )
+  options.cc_name = StrOptionType( ignore_case = True, is_tool_key = True, description = "C/C++ compiler name" )
+  options.cc_ver = VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
   
   options.ccflags = ListOptionType( description = "Common C/C++ compiler options", separators = None )
   options.occflags = ListOptionType( description = "Common C/C++ compiler optimization options", separators = None )

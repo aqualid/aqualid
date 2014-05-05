@@ -84,30 +84,36 @@ def   _build_options():
 def   _target_options():
   options = Options()
   
-  options.target_os = EnumOptionType( values = ['native', 'windows', 'linux', 'cygwin', 'darwin', 'java', 'sunos', 'hpux'],
+  options.target_os = EnumOptionType( values = ['native', ('windows', 'win32', 'win64'), ('linux', 'linux-gnu'),
+                                                'cygwin', 'darwin', 'java', 'sunos', 'hpux', 'elf'],
                                       default = 'native',
+                                      is_tool_key = True,
                                       description = "The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'." )
   
   options.target_arch = EnumOptionType( values = [ 'native',
                                                    ('x86-32', 'x86_32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
-                                                   ('x86-64','x86_64', 'amd64'),
-                                                   'arm' ],
+                                                   ('x86-64','x86_64', 'amd64', 'x64'),
+                                                   'arm',
+                                                   'alpha',
+                                                   'mips' ],
                                         default = 'native',
+                                        is_tool_key = True,
                                         description = "The target machine type, e.g. 'i386'" )
   
-  options.target_subsystem = EnumOptionType( values = [ 'console', 'windows' ],
+  options.target_subsystem = EnumOptionType(  values = [ 'console', 'windows' ],
                                               default = 'console',
                                               description = "The target subsystem." )
   
-  options.target_platform = StrOptionType( ignore_case = True,
-                                           description = "The target system's distribution, e.g. 'win32', 'Linux'" )
+  options.target_platform = StrOptionType(  ignore_case = True,
+                                            description = "The target system's distribution, e.g. 'win32', 'Linux'" )
   
-  options.target_os_release = StrOptionType( ignore_case = 1,
+  options.target_os_release = StrOptionType(  ignore_case = True,
                                               description = "The target system's release, e.g. '2.2.0' or 'XP'" )
   
   options.target_os_version = VersionOptionType( description = "The target system's release version, e.g. '2.2.0' or '5.1.2600'" )
   
-  options.target_cpu = StrOptionType( ignore_case = 1,
+  options.target_cpu = StrOptionType( ignore_case = True,
+                                      is_tool_key = True,
                                       description = "The target real processor name, e.g. 'amdk6'." )
   
   options.target_cpu_flags = ListOptionType( value_type = IgnoreCaseString,
@@ -155,8 +161,7 @@ def   _code_gen_options():
   options.profile = BoolOptionType( description = 'Enable compiler profiling' )
   
   options.keep_asm = BoolOptionType( description = 'Keep generated assemblers files' )
-  
-  
+
   options.runtime_link = EnumOptionType( values = ['default', 'static', ('shared', 'dynamic') ],
                                          default = 'default',
                                          description = 'Linkage type of runtime library' )
@@ -165,8 +170,10 @@ def   _code_gen_options():
   
   options.runtime_debug = BoolOptionType( description = 'Use debug version of runtime library' )
   options.rt_debug = options.runtime_debug
-  
-  
+
+  options.rtti = BoolOptionType( description = 'Enable Run Time Type Information', default = True )
+  options.exceptions = BoolOptionType( description = 'Allow to throw exceptions', default = True )
+
   options.runtime_thread = EnumOptionType( values = ['default', 'single', 'multi' ],
                                            default = 'default',
                                            description = 'Threading mode of runtime library' )
@@ -181,12 +188,13 @@ def     _diagnostic_options():
   
   options = Options()
   
-  options.warning_level = RangeOptionType( 0, 4, description = 'Warning level' )
+  options.warning_level = RangeOptionType( 0, 4, description = 'Warning level', default = 4 )
   options.warn_level = options.warning_level
   
   options.warning_as_error = BoolOptionType( description = 'Treat warnings as errors' )
   options.werror = options.warning_as_error
-  
+  options.warnings_as_errors = options.warning_as_error
+
   options.lint = EnumOptionType( values = [('off', 0), ('on', 1), ('global',2)],
                                  default = 'off',
                                  description = 'Lint source code.' )
@@ -204,10 +212,13 @@ def   _env_options():
   options = Options()
   options.env = DictOptionType( key_type = UpperCaseString )
   options.env['PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
-  options.env['TEMP'] = PathOptionType()()
-  options.env['TMP'] = PathOptionType()()
-  options.env['HOME'] = PathOptionType()()
-  options.env['HOMEPATH'] = PathOptionType()()
+  options.env['TEMP'] = PathOptionType()
+  options.env['TMP'] = PathOptionType()
+  options.env['HOME'] = PathOptionType()
+  options.env['HOMEPATH'] = PathOptionType()
+  options.env['INCLUDE'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
+  options.env['LIB'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
+  options.env['LIBPATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
   
   options.env = os.environ.copy()
   
@@ -220,15 +231,17 @@ def   _init_defaults( options ):
     #//-------------------------------------------------------//
     # build_dir_name set to <target OS>_<target arch>_<build variant>
     
-    options.If().target_os.ne('native').build_dir_name    += options.target_os + '_'
-    options.If().target_arch.ne('native').build_dir_name  += options.target_arch + '_'
+    if_ = options.If()
+    
+    if_.target_os.ne('native').build_dir_name    += options.target_os + '_'
+    if_.target_arch.ne('native').build_dir_name  += options.target_arch + '_'
     options.build_dir_name += options.build_variant
     
     options.build_path = SimpleOperation( os.path.join, options.build_dir, options.build_dir_name )
     
     #//-------------------------------------------------------//
     
-    bv = options.If().build_variant
+    bv = if_.build_variant
     
     debug_build_variant = bv.eq('debug')
     debug_build_variant.optimization        = 'off'

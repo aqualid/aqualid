@@ -6,7 +6,8 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, executeCommand, ErrorProgramNotFound, findFiles, flattenList, commonDirName
+                      whereProgram, executeCommand, ErrorProgramNotFound, findFiles, flattenList, commonDirName, \
+                      excludeFilesFromDirs
 
 class TestUtils( AqlTestCase ):
 
@@ -176,6 +177,36 @@ class TestUtils( AqlTestCase ):
     
     self.assertEqual( commonDirName( paths ), os.path.sep )
   
+  #//===========================================================================//
+  
+  def   test_exclude_files( self ):
+    
+    dirs = 'abc/test0'
+    files = [ 'abc/file0.hpp',
+              'abc/test0/file0.hpp' ]
+    
+    result = [ 'abc/file0.hpp' ]
+    
+    result = [ os.path.normcase( os.path.abspath( file )) for file in result ]
+    
+    self.assertEqual( excludeFilesFromDirs( files, dirs ), result )
+    
+    dirs = ['abc/test0', 'efd', 'ttt/eee']
+    files = [
+              'abc/test0/file0.hpp',
+              'abc/file0.hpp',
+              'efd/file1.hpp',
+              'dfs/file1.hpp',
+              'ttt/file1.hpp',
+              'ttt/eee/file1.hpp',
+            ]
+    
+    result = [ 'abc/file0.hpp', 'dfs/file1.hpp', 'ttt/file1.hpp' ]
+    
+    result = [ os.path.normcase( os.path.abspath( file )) for file in result ]
+    
+    self.assertEqual( excludeFilesFromDirs( files, dirs ), result )
+    
 #//===========================================================================//
 
 if __name__ == "__main__":

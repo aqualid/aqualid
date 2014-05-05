@@ -70,16 +70,13 @@ def   autoOptionType( value ):
     
     return ListOptionType( value_type = value_type )
   
-  #//-------------------------------------------------------//
-  
   if isinstance( value, dict ):
     return DictOptionType()
   
   if isinstance( value, bool ):
     return BoolOptionType()
   
-  return OptionType( value_type = type(value) )
-
+  return OptionType( value_type = type(value), is_auto = True )
 
 #//===========================================================================//
 
@@ -87,21 +84,30 @@ class   OptionType (object):
 
   __slots__ = (
     'value_type',
+    'default',
     'description',
     'group',
     'range_help',
+    'is_auto',
+    'is_tool_key',
   )
   
   #//-------------------------------------------------------//
   
-  def     __init__( self, value_type = str, description = None, group = None, range_help = None ):
+  def     __init__( self, value_type = str, description = None, group = None, range_help = None, default = NotImplemented,
+                    is_auto = False, is_tool_key = False ):
     
     self.value_type = value_type
-    
+    self.is_auto = is_auto
+    self.is_tool_key = is_tool_key
     self.description = description
     self.group = group
     self.range_help = range_help
-  
+    if default is NotImplemented:
+      self.default = NotImplemented
+    else:
+      self.default = value_type( default )
+
   #//-------------------------------------------------------//
   
   def   __call__( self, value = NotImplemented ):
@@ -111,7 +117,9 @@ class   OptionType (object):
     
     try:
       if value is NotImplemented:
-        return self.value_type()
+        if self.default is NotImplemented:
+          return self.value_type()
+        return self.default
       
       return self.value_type( value )
     except (TypeError, ValueError):
@@ -138,23 +146,23 @@ class   OptionType (object):
 #//===========================================================================//
 
 class   StrOptionType (OptionType):
-  def     __init__( self, ignore_case = False, description = None, group = None, range_help = None ):
+  def     __init__( self, ignore_case = False, description = None, group = None, range_help = None, is_tool_key = False ):
     value_type = IgnoreCaseString if ignore_case else String
-    super(StrOptionType, self).__init__( value_type, description, group, range_help )
+    super(StrOptionType, self).__init__( value_type, description, group, range_help, is_tool_key = is_tool_key )
 
 #//===========================================================================//
 #//===========================================================================//
 
 class   VersionOptionType (OptionType):
-  def     __init__( self, description = None, group = None, range_help = None ):
-    super(VersionOptionType, self).__init__( Version, description, group, range_help )
+  def     __init__( self, description = None, group = None, range_help = None, is_tool_key = False ):
+    super(VersionOptionType, self).__init__( Version, description, group, range_help, is_tool_key = is_tool_key )
 
 #//===========================================================================//
 #//===========================================================================//
 
 class   PathOptionType (OptionType):
-  def     __init__( self, description = None, group = None, range_help = None ):
-    super(PathOptionType, self).__init__( FilePath, description, group, range_help )
+  def     __init__( self, description = None, group = None, range_help = None, is_tool_key = False ):
+    super(PathOptionType, self).__init__( FilePath, description, group, range_help, is_tool_key = is_tool_key  )
 
 #//===========================================================================//
 #//===========================================================================//
@@ -167,7 +175,6 @@ class   BoolOptionType (OptionType):
     'true_values',
     'false_values',
     'aliases',
-    'default',
   )
   
   #//-------------------------------------------------------//
@@ -177,10 +184,10 @@ class   BoolOptionType (OptionType):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None, default = False ):
+  def   __init__( self, description = None, group = None, style = None, true_values = None, false_values = None, default = False, is_tool_key = False ):
     
     #noinspection PyTypeChecker
-    super(BoolOptionType,self).__init__( bool, description, group )
+    super(BoolOptionType,self).__init__( bool, description, group, default = default, is_tool_key = is_tool_key )
     
     if style is None:
       style = ('True', 'False')
@@ -200,8 +207,7 @@ class   BoolOptionType (OptionType):
     self.true_value, self.false_value = style
     self.true_values  = set()
     self.false_values = set()
-    self.default = default
-    
+
     self.addValues( true_values, false_values )
     self.addValues( self.true_value, self.false_value )
   
@@ -220,7 +226,7 @@ class   BoolOptionType (OptionType):
       return True
     
     if value_str in self.false_values:
-      return  False
+      return False
     
     return True if value else False
   
@@ -251,21 +257,17 @@ class   EnumOptionType (OptionType):
   
   __slots__ = (
     '__values',
-    '__default',
   )
   
-  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString, default = NotImplemented ):
+  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString, default = NotImplemented, is_tool_key = False ):
     
-    super(EnumOptionType,self).__init__( value_type, description, group )
+    super(EnumOptionType,self).__init__( value_type, description, group, default = default, is_tool_key = is_tool_key )
     
     self.__values = {}
     
     if default is not NotImplemented:
       self.addValues( default )
-      self.__default = value_type( default )
-    else:
-      self.__default = NotImplemented
-    
+
     self.addValues( values )
   
   #//-------------------------------------------------------//
@@ -303,7 +305,7 @@ class   EnumOptionType (OptionType):
     
     try:
       if value is NotImplemented:
-        value = self.__default
+        value = self.default
         if value is not NotImplemented:
           return value
         
@@ -365,12 +367,14 @@ class   RangeOptionType (OptionType):
     'auto_correct',
   )
 
-  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, auto_correct = True ):
+  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, auto_correct = True, default = NotImplemented, is_tool_key = False ):
     
     #noinspection PyTypeChecker
-    super(RangeOptionType,self).__init__( value_type, description, group )
+    super(RangeOptionType,self).__init__( value_type, description, group, default = default, is_tool_key = is_tool_key )
     
     self.setRange( min_value, max_value, auto_correct )
+    if default is not NotImplemented:
+      self.default = self( default )
   
   #//-------------------------------------------------------//
   
@@ -405,8 +409,10 @@ class   RangeOptionType (OptionType):
       min_value = self.min_value
       
       if value is NotImplemented:
-        return min_value
-      
+        if self.default is NotImplemented:
+          return min_value
+        value = self.default
+
       value = self.value_type( value )
       
       if value < min_value:
@@ -447,7 +453,7 @@ class   ListOptionType (OptionType):
   
   #//=======================================================//
   
-  def   __init__( self, value_type = str, unique = False, separators = ', ', description = None, group = None, range_help = None ):
+  def   __init__( self, value_type = str, unique = False, separators = ', ', description = None, group = None, range_help = None, is_tool_key = False ):
     
     if isinstance(value_type, OptionType):
       if description is None:
@@ -471,7 +477,7 @@ class   ListOptionType (OptionType):
     if separators:
       list_type = SplitListType( list_type, separators )
     
-    super(ListOptionType,self).__init__( list_type, description, group, range_help )
+    super(ListOptionType,self).__init__( list_type, description, group, range_help, is_tool_key = is_tool_key )
     self.item_type = value_type
   
   #//-------------------------------------------------------//
@@ -504,7 +510,7 @@ class   DictOptionType (OptionType):
   
   #//=======================================================//
   
-  def   __init__( self, key_type = str, value_type = None, separators = ', ', description = None, group = None, range_help = None ):
+  def   __init__( self, key_type = str, value_type = None, separators = ', ', description = None, group = None, range_help = None, is_tool_key = False ):
     
     if isinstance(value_type, OptionType):
       if description is None:
@@ -523,7 +529,7 @@ class   DictOptionType (OptionType):
     if separators:
       dict_type = SplitDictType( dict_type, separators )
     
-    super(DictOptionType,self).__init__( dict_type, description, group, range_help )
+    super(DictOptionType,self).__init__( dict_type, description, group, range_help, is_tool_key = is_tool_key )
   
   #//-------------------------------------------------------//
   

@@ -45,6 +45,7 @@ class TestToolRsync( AqlTestCase ):
   
   #//=======================================================//
 
+  @skip
   def test_rsync_push_remote(self):
     with Tempdir() as tmp_dir:
       with Tempdir() as src_dir:
@@ -54,13 +55,12 @@ class TestToolRsync( AqlTestCase ):
 
         prj = Project( cfg.options, cfg.targets )
 
-        remote_files = prj.tools.rsync.Push( src_files, target = 'test_rsync_push',
+        remote_files = prj.tools.rsync.Push( src_dir + '/', target = 'test_rsync_push/',
                                              host = 'nas', key_file = r'C:\cygwin\home\me\rsync.key',
                                              exclude="*.h" )
-        remote_files.options.rsync_flags += ['--chmod=u+rw,g+r,o+r']
+        remote_files.options.rsync_flags += ['--chmod=u+xrw,g+xr,o+xr']
         remote_files.options.rsync_flags += ['--delete-excluded']
         _build( prj )
-
 
   #//=======================================================//
 
@@ -81,86 +81,6 @@ class TestToolRsync( AqlTestCase ):
           prj.tools.rsync.Pull( src_files, target = target_dir )
           
           _build( prj )
-  
-  #//=======================================================//
-    
-  @skip
-  def test_rsync_get(self):
-    
-    with Tempdir() as tmp_dir:
-      
-      options = builtinOptions()
-      options.update( rsyncOptions() )
-      
-      options.env['PATH'] += r"C:\cygwin\bin"
-      options.rsync_cygwin = True
-      
-      rsync = RSyncGetBuilder( options, local_path = 'D:\\test1_local\\', remote_path = 'D:\\test1\\' )
-      
-      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' )
-      
-      bm = BuildManager( vfilename, 4, True )
-      vfile = ValuesFile( vfilename )
-      try:
-        rsync_files = Node( rsync, [] )
-        self.assertFalse( rsync_files.isActual( vfile ) )
-        
-        bm.add( rsync_files )
-        bm.build()
-        
-        rsync_files = Node( rsync, [] )
-        self.assertTrue( rsync_files.isActual( vfile ) )
-      
-      finally:
-        vfile.close()
-        bm.close()
-  
-  #//-------------------------------------------------------//
-  
-  @skip
-  def test_rsync_put(self):
-    
-    with Tempdir() as tmp_dir:
-      
-      options = builtinOptions()
-      options.update( rsyncOptions() )
-      
-      options.env['PATH'] += r"C:\cygwin\bin"
-      options.rsync_cygwin = True
-      
-      rsync = RSyncPutBuilder( options, local_path = 'D:\\test1_local\\', remote_path = 'D:\\test1\\', exclude = [".svn", "test_*"] )
-      
-      vfilename = Tempfile( dir = str(tmp_dir), suffix = '.aql.values' )
-      
-      bm = BuildManager( vfilename, 4, True )
-      vfile = ValuesFile( vfilename )
-      try:
-        rsync_files = Node( rsync, [] )
-        self.assertFalse( rsync_files.isActual( vfile ) )
-        
-        bm.add( rsync_files )
-        bm.build()
-        
-        rsync_files = Node( rsync, [] )
-        self.assertTrue( rsync_files.isActual( vfile ) )
-        
-        sync_files  = [ r'd:\test1_local\sbe\sbe\list\list.hpp',
-                        r'd:\test1_local\sbe\sbe\path_finder\path_finder.hpp',
-                      ]
-        
-        rsync_files = Node( rsync, sync_files )
-        self.assertFalse( rsync_files.isActual( vfile ) )
-        bm.add( rsync_files )
-        bm.build()
-        
-        rsync_files = Node( rsync, sync_files )
-        self.assertTrue( rsync_files.isActual( vfile ) )
-        bm.add( rsync_files )
-        bm.build()
-      
-      finally:
-        vfile.close()
-        bm.close()
 
 #//===========================================================================//
 

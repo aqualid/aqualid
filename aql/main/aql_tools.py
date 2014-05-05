@@ -46,6 +46,10 @@ def   eventToolsUnableLoadModule( module, err ):
 def   eventToolsToolFailed( tool_class, err ):
   logWarning( "Tool init failed: %s - %s" % (tool_class, err))
 
+#//===========================================================================//
+
+def   _toolSetupStub( options ):
+  pass
 
 #//===========================================================================//
 
@@ -172,10 +176,13 @@ class ToolsManager( Singleton ):
         tool_info.tool_class = tool_class
         self.tool_info[ tool_class ] = tool_info
         
-        tool_info.setup_methods = set()
+        setup_methods = set()
+        tool_info.setup_methods = setup_methods
         
         for name in self.tool_names.get( tool_class, [] ):
-          tool_info.setup_methods.update( self.all_setup_methods.get( name, [] ) )
+          setup_methods.update( self.all_setup_methods.get( name, [] ) )
+        else:
+          setup_methods.add( _toolSetupStub )
       
       tools_info.append( tool_info )
     
@@ -196,42 +203,32 @@ class ToolsManager( Singleton ):
       for setup in tool_info.setup_methods:
         setup_options = tool_options.override()
 
-        #noinspection PyBroadException
         try:
           setup( setup_options )
-        except Exception:
+          
+          env = setup_options.env.get().dump()
+          
+          tool_info.tool_class.setup( setup_options, env )
+          
+          options_kw = dict( setup_options.items( with_parent = False ) )
+          
+          if tool_options.checkToolKeys( **options_kw ):
+            raise NotImplementedError()
+          
+          tool_options.update( options_kw )
+          
+          tool_obj = tool_info.tool_class( tool_options )
+          
+        except Exception as err:
+            eventToolsToolFailed( tool_info.tool_class, err )
+            raise
+        except NotImplementedError:
           setup_options.clear()
+          tool_options.clear()
         else:
           setup_options.join()
-      
-      try:
-        setup_options = tool_options.override()
-        
-        env = tool_options.env.get().dump()
-        
-        tool_info.tool_class.setup( setup_options, env )
-        
-        options_kw = dict( setup_options.items( with_parent = False ) )
-        
-        if tool_options.conflictsWith( **options_kw ):
-          raise NotImplementedError()
-        
-        tool_options.update( options_kw )
-        
-        tool_obj = tool_info.tool_class( tool_options )
-        
-      except Exception as err:
-        if not isinstance( err, NotImplementedError ):
-          eventToolsToolFailed( tool_info.tool_class, err )
-          raise
-        setup_options.clear()
-        tool_options.clear()
-      else:
-        setup_options.join()
-        
-        tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
-        
-        return tool_obj, tool_names, tool_options
+          tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
+          return tool_obj, tool_names, tool_options
     
     raise ErrorToolNotFound( tool_name )
   

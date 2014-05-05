@@ -297,6 +297,9 @@ class OptionValue (object):
   def   isSet( self ):
     return bool(self.conditional_values)
   
+  def   isToolKey( self ):
+    return bool(self.conditional_values)
+  
   #//-------------------------------------------------------//
   
   def   setDefault( self, conditional_value ):
@@ -321,7 +324,9 @@ class OptionValue (object):
     if not isinstance( other, OptionValue ):
       raise ErrorOptionValueMergeNonOptionValue( other )
     
-    self.option_type = other.option_type
+    other_option_type = other.option_type
+    if not other_option_type.is_auto:
+      self.option_type = other.option_type
     
     diff_index = 0
     for conditional_value1, conditional_value2 in zip( self.conditional_values, other.conditional_values ):

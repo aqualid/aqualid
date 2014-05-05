@@ -28,7 +28,7 @@ from .aql_value import ValueBase
 from .aql_value_pickler import pickleable
 
 from aql.util_types import AqlException
-from aql.utils import fileSignature, fileTimeSignature
+from aql.utils import fileSignature, fileTimeSignature, absFilePath
 
 #//===========================================================================//
 
@@ -36,15 +36,6 @@ class   ErrorFileValueNoName( AqlException ):
   def   __init__( self ):
     msg = "Filename is not specified"
     super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
-def   _normFileName( name ):
-  if not name:
-    raise ErrorFileValueNoName()
-  
-  return os.path.normcase( os.path.abspath( name ) )
-
 
 #//===========================================================================//
 
@@ -133,7 +124,10 @@ class FileChecksumValue( FileValueBase ):
       if isinstance(name, ValueBase):
         name = name.get()
     
-    name = _normFileName( name )
+    if not name:
+      raise ErrorFileValueNoName()
+
+    name = absFilePath( name )
       
     self = super(FileChecksumValue, cls).__new__( cls, name, signature )
 
@@ -185,7 +179,10 @@ class FileTimestampValue( FileValueBase ):
       if isinstance(name, ValueBase):
         name = name.get()
       
-      name = _normFileName( name )
+      if not name:
+        raise ErrorFileValueNoName()
+      
+      name = absFilePath( name )
     
     self = super(FileTimestampValue, cls).__new__( cls, name, signature )
 

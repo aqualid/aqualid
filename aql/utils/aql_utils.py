@@ -21,10 +21,10 @@ __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
   'newHash', 'dumpSimpleObject', 'simpleObjectSignature', 'objectSignature', 'dataSignature',
   'fileSignature', 'fileTimeSignature', 'fileChecksum',
-  'findFiles', 'loadModule',
+  'findFiles', 'absFilePath', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
-  'flattenList', 'simplifyValue', 'commonDirName', 'splitDrive',
+  'flattenList', 'simplifyValue', 'commonDirName', 'excludeFilesFromDirs', 'splitDrive',
   'Chrono', 'Chdir',
 )
 
@@ -169,23 +169,15 @@ def writeBinFile( filename, buf, encoding = None ):
 
 def   execFile( filename, file_locals ):
   
-  module_name = os.path.basename( filename )
-  module_dir = os.path.dirname( filename )
-  
-  module = imp.new_module( module_name )
-  if file_locals:
-    file_locals.update( module.__dict__ )
-  else:
-    file_locals = module.__dict__
-  
+  if not file_locals:
+    file_locals = {}
+
   source = readTextFile( filename )
   code = compile( source, filename, 'exec' )
   file_locals_orig = file_locals.copy()
   
-  sys.path.insert(0, module_dir)
   exec( code, file_locals )
-  sys.path.remove(module_dir)
-  
+
   result = {}
   for key,value in file_locals.items():
     if key.startswith('_') or isinstance( value, types.ModuleType ):
@@ -399,6 +391,32 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 #//===========================================================================//
 
+def   absFilePath( file_path ):
+  if not file_path:
+    file_path = '.'
+
+  if file_path[-1] in (os.path.sep, os.path.altsep):
+    last_sep = os.path.sep
+  else:
+    last_sep = ''
+
+  return os.path.normcase( os.path.abspath( file_path ) ) + last_sep
+
+#//===========================================================================//
+
+def   excludeFilesFromDirs( files, dirs ):
+  result = []
+  folders = tuple( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in toSequence( dirs ) )
+  
+  for file in toSequence( files ):
+    file = os.path.normcase( os.path.abspath( file ) )
+    if not file.startswith( folders ):
+      result.append( file )
+  
+  return result
+
+#//===========================================================================//
+
 def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes = ('__', '.') ):
   
   found_files = []
@@ -485,13 +503,13 @@ class   ExecCommandResult( AqlException ):
     if exception:
       msg += '\n%s' % (exception,)
     
-    else:    
+    else:
       if not out:
         out = str()
       
       if err:
         out += '\n' + err
-  
+      
       if out:
         msg += '\n' + out
       
@@ -717,17 +735,17 @@ def   loadModule( module_file, update_sys_path = True ):
   # pathname = module_file
   # description = ('','r',imp.PY_SOURCE)
   
-  with openFile( module_file ) as fp:
-    m = imp.load_module( module_name, fp, pathname, description )
-    if update_sys_path:
-      sys_path = sys.path
-      try:
-        sys_path.remove( module_dir )
-      except ValueError:
-        pass
-      sys_path.insert( 0, module_dir )
-    
-    return m
+  # with openFile( module_file ) as fp:
+  m = imp.load_module( module_name, fp, pathname, description )
+  if update_sys_path:
+    sys_path = sys.path
+    try:
+      sys_path.remove( module_dir )
+    except ValueError:
+      pass
+    sys_path.insert( 0, module_dir )
+
+  return m
 
 #//===========================================================================//
 

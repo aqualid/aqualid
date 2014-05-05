@@ -24,6 +24,7 @@ __all__ = (
 
 import operator
 import weakref
+import itertools
 
 from aql.util_types import toSequence, List, Dict, DictItem
 from aql.utils import simplifyValue
@@ -553,13 +554,14 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   conflictsWith( self, **kw ):
+  def   checkToolKeys( self, **kw ):
     for name, value in kw.items():
       opt_value = self._get_value( name, raise_ex = False )
       if opt_value is not None:
-        opt_value = OptionValueProxy( opt_value, name, self )
-        if opt_value.isSet() and (opt_value != value):
-          return True
+        if opt_value.isSet() and opt_value.isToolKey():
+          opt_value = OptionValueProxy( opt_value, name, self )
+          if opt_value != value:
+            return True
     
     return False
   
