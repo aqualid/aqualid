@@ -24,9 +24,8 @@ __all__ = (
 
 import operator
 import weakref
-import itertools
 
-from aql.util_types import toSequence, List, Dict, DictItem
+from aql.util_types import toSequence, isSequence, UniqueList, List, Dict, DictItem
 from aql.utils import simplifyValue
 
 from .aql_option_types import OptionType, DictOptionType, autoOptionType
@@ -107,6 +106,12 @@ def   _storeOpValue( options, value ):
       value_options._addChild( options )
       value = _OpValueExRef( value )
   
+  elif isinstance( value, dict ):
+    value = { k: _storeOpValue( options, v ) for k, v in value.items() }
+  
+  elif isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
+    value = [ _storeOpValue( options, v ) for v in value ]
+  
   if key is not NotImplemented:
     value = DictItem( key, value )
   
@@ -125,6 +130,12 @@ def   _loadOpValue( options, context, value ):
       
   elif isinstance( value, _OpValueExRef ):
     value = value.get()
+  
+  elif isinstance( value, dict ):
+    value = { k: _loadOpValue( options, context, v ) for k, v in value.items() }
+  
+  elif isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
+    value = [ _loadOpValue( options, context, v ) for v in value ]
   
   value = simplifyValue( value )
   

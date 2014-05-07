@@ -216,9 +216,6 @@ def   _env_options():
   options.env['TMP'] = PathOptionType()
   options.env['HOME'] = PathOptionType()
   options.env['HOMEPATH'] = PathOptionType()
-  options.env['INCLUDE'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
-  options.env['LIB'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
-  options.env['LIBPATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
   
   options.env = os.environ.copy()
   

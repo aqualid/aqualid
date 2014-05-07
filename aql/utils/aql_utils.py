@@ -774,8 +774,9 @@ def   flattenList( seq ):
 #//===========================================================================//
 
 _SIMPLE_TYPES = frozenset( ( uStr,int,float,complex,bool,bytes,bytearray ) )
+_SIMPLE_SEQUENCES = (list, tuple, UniqueList, set, frozenset)
 
-def  simplifyValue( value, simple_types = _SIMPLE_TYPES ):
+def  simplifyValue( value, simple_types = _SIMPLE_TYPES, simple_lists = _SIMPLE_SEQUENCES ):
   
   if value is None:
     return None
@@ -789,21 +790,11 @@ def  simplifyValue( value, simple_types = _SIMPLE_TYPES ):
     if isinstance( value, simple_type ):
       return simple_type(value)
   
-  if isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
-    result = []
-    
-    for v in value:
-      result.append( simplifyValue( v ) )
-          
-    return result
+  if isinstance( value, simple_lists ):
+    return [ simplifyValue( v ) for v in value ]
   
   if isinstance( value, dict ):
-    result = {}
-    
-    for key,v in value.items():
-      result[ key ] = simplifyValue( v )
-    
-    return result
+    return { key: simplifyValue( v ) for key,v in value.items() }
   
   try:
     return simplifyValue( value.get() )

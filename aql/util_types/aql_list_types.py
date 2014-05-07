@@ -243,6 +243,20 @@ class   UniqueList (object):
   
   #//-------------------------------------------------------//
   
+  def   __add__( self, values ):
+    other = UniqueList( self )
+    other.__addValues( values )
+    return other
+  
+  #//-------------------------------------------------------//
+  
+  def   __radd__( self, values ):
+    other = UniqueList( values )
+    other.__addValues( self )
+    return other
+  
+  #//-------------------------------------------------------//
+  
   def   __isub__(self, values ):
     self.__removeValues( values )
     return self
@@ -318,7 +332,24 @@ class   List (list):
   #//-------------------------------------------------------//
   
   def   __iadd__( self, values ):
-    return super(List,self).__iadd__( toSequence(values) )
+    super(List,self).__iadd__( toSequence(values) )
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   __add__( self, values ):
+    other = List( self )
+    other += List( self )
+    
+    return other
+  
+  #//-------------------------------------------------------//
+  
+  def   __radd__( self, values ):
+    other = List(values)
+    other += self
+    
+    return other
   
   #//-------------------------------------------------------//
   

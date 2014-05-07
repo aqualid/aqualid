@@ -219,12 +219,12 @@ class ToolsManager( Singleton ):
           
           tool_obj = tool_info.tool_class( tool_options )
           
-        except Exception as err:
-            eventToolsToolFailed( tool_info.tool_class, err )
-            raise
         except NotImplementedError:
           setup_options.clear()
           tool_options.clear()
+        except Exception as err:
+            eventToolsToolFailed( tool_info.tool_class, err )
+            raise
         else:
           setup_options.join()
           tool_names = self.tool_names.get( tool_info.tool_class, tuple() )

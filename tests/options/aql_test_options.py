@@ -578,7 +578,27 @@ class TestOptions( AqlTestCase ):
     
     options.level = 10 - (options.min_level - 2)
     self.assertEqual( options.level, 7 )
+  
+  #//=======================================================//
+  
+  def   test_options_add_list(self):
     
+    options = Options()
+    options.ccflags = ListOptionType( separators = None )
+    options.occflags = ListOptionType( separators = None )
+    options.cc      = PathOptionType()
+    options.cc_cmd  = ListOptionType( separators = None )
+    
+    options.cc_cmd = [ options.cc ] + options.ccflags + options.occflags
+    
+    options.cc = 'gcc'
+    options.ccflags = '-c'
+    options.occflags = '-O2'
+    
+    self.assertEqual( options.cc_cmd.get(), ['gcc', '-c', '-O2'] )
+    
+    
+
     
 
 

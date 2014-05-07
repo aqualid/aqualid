@@ -14,9 +14,15 @@ def   _isCCppSourceFile( source_file ):
 #//===========================================================================//
 
 def   _addPrefix( prefix, values ):
+  prefix = prefix.lstrip()
+  
+  if not prefix:
+    return values
+  
   if prefix[-1] == ' ':
-    prefix = prefix.strip()
+    prefix = prefix.rstrip()
     return tuple( itertools.chain( *itertools.product( (prefix,), values ) ) )
+  
   return tuple( "%s%s" % (prefix, value ) for value in values ) 
 
 #//===========================================================================//
@@ -26,13 +32,12 @@ def   _absFilePaths( file_paths ):
 
 #//===========================================================================//
 
-def   _commonCCppCompilerOptions( options ):
+def   _compilerOptions( options ):
   
   options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
   options.shobjsuffix = aql.StrOptionType( description = "Shared object file suffix." )
   
-  options.cc_name = aql.StrOptionType( ignore_case = True, is_tool_key = True, description = "C/C++ compiler name" )
-  options.cc_ver = aql.VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
+  options.shobjsuffix = options.objsuffix
   
   options.ccflags = aql.ListOptionType( description = "Common C/C++ compiler flags", separators = None )
   options.occflags = aql.ListOptionType( description = "Common C/C++ compiler optimization flags", separators = None )
@@ -41,7 +46,7 @@ def   _commonCCppCompilerOptions( options ):
   options.defines = options.cppdefines
   options.cppdefines_flag = aql.StrOptionType( description = "Flag for C/C++ preprocessor defines." )
   options.cppdefines_flags = aql.ListOptionType( separators = None )
-  options.cppdefines_flags += aql.SimpleOperation( _addPrefix, options.cpppath_flag, options.ext_cpppath )
+  options.cppdefines_flags += aql.SimpleOperation( _addPrefix, options.cppdefines_flag, options.cppdefines )
   
   options.cpppath = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
   options.include = options.cpppath
@@ -49,83 +54,61 @@ def   _commonCCppCompilerOptions( options ):
   options.cpppath_flags = aql.ListOptionType( separators = None )
   options.cpppath_flags = aql.SimpleOperation( _addPrefix, options.cpppath_flag, aql.SimpleOperation( _absFilePaths, options.cpppath ) )
   
-  options.ext_cpppath = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
-  options.ext_include = options.ext_cpppath
+  options.ext_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
+  options.ext_include   = options.ext_cpppath
   options.cpppath_flags += aql.SimpleOperation( _addPrefix, options.cpppath_flag, aql.SimpleOperation( _absFilePaths, options.ext_cpppath ) )
+  options.ext_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
+  options.sys_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), description = "C/C++ preprocessor path to standard headers", separators = None )
   
-#//===========================================================================//
-
-def   _cxxCompilerOptions( options ):
+  options.cc      = aql.PathOptionType( description = "C/C++ compiler program" )
+  options.cc_name = aql.StrOptionType( ignore_case = True, is_tool_key = True, description = "C/C++ compiler name" )
+  options.cc_ver  = aql.VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
+  options.cc_cmd  = aql.ListOptionType( description = "C/C++ compiler full command", separators = None )
   
-  options.cxx = aql.PathOptionType( description = "C++ compiler program" )
-  options.cxx_cmd = aql.ListOptionType( description = "C++ compiler full command", separators = None )
-  options.cxxflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
-  options.ocxxflags = aql.ListOptionType( description = "C++ compiler optimization flags", separators = None )
-  
-  options.cxxflags += options.ccflags
-  options.cxxflags += options.occflags
-  options.cxxflags += options.ocxxflags
-  options.cxxflags += options.cppdefines_flags
-  options.cxxflags += options.cpppath_flags
-  
-  options.cxx_cmd = options.cxx + options.cxxflags + options.ocxxflags + \
-                    options.ccflags + options.ocflags + \
-                    options.cppdefines_flags + options.cpppath_flags
-  
-#//===========================================================================//
-
-def   _cCompilerOptions( options ):
-  
-  options.cc = aql.PathOptionType( description = "C compiler program" )
-  options.cflags = aql.ListOptionType( description = "C compiler flags", separators = None )
-  options.ocflags = aql.ListOptionType( description = "C compiler optimization flags", separators = None )
-  options.cc_cmd = aql.ListOptionType( description = "C compiler full command", separators = None )
-  
-  options.cc_cmd  = options.cc + options.cflags + options.ocflags + \
-                    options.ccflags + options.ocflags + \
-                    options.cppdefines_flags + options.cpppath_flags
+  options.cc_cmd = [ options.cc ] + options.ccflags + options.occflags + options.cppdefines_flags + options.cpppath_flags
   
 #//===========================================================================//
 
 def   _linkerOptions( options ):
   
-  options.libprefix = aql.StrOptionType( description = "Static library prefix." )
-  options.libsuffix = aql.StrOptionType( description = "Static library suffix." )
+  options.libprefix = aql.StrOptionType( description = "Static library archiver prefix." )
+  options.libsuffix = aql.StrOptionType( description = "Static library archiver suffix." )
+  options.libflags  = aql.ListOptionType( description = "Static library archiver flags", separators = None )
+  options.olibflags = aql.ListOptionType( description = "Static library archiver optimization flags", separators = None )
+  options.lib       = aql.PathOptionType( description = "Static library archiver program" )
+  options.lib_cmd   = aql.ListOptionType( description = "Static library archiver full command", separators = None )
+  options.lib_cmd   = options.lib + options.libflags + options.olibflags
+  
   options.shlibprefix = aql.StrOptionType( description = "Shared library prefix." )
   options.shlibsuffix = aql.StrOptionType( description = "Shared library suffix." )
-  options.progsuffix = aql.StrOptionType( description = "Program suffix." )
-  
-  options.link  = aql.PathOptionType( description = "Program or dynamic library linker" )
-  options.lib   = aql.PathOptionType( description = "Static library archiver program" )
-  
-  options.linkflags   = aql.ListOptionType( description = "Program linker flags", separators = None )
-  options.libflags    = aql.ListOptionType( description = "Static library flags", separators = None )
-  options.shlinkflags = aql.ListOptionType( description = "Shared library flags", separators = None )
-  
-  options.olinkflags    = aql.ListOptionType( description = "Program linker optimization flags", separators = None )
-  options.olibflags     = aql.ListOptionType( description = "Static library optimization flags", separators = None )
-  options.oshlinkflags  = aql.ListOptionType( description = "Shared library optimization flags", separators = None )
-  
-  options.linkflags   += options.olinkflags
-  options.libflags    += options.olibflags
-  options.shlibflags  += options.oshlibflags
   
   options.libpath = aql.ListOptionType( value_type = aql.PathOptionType, unique = True,
                                         description = "Paths to external libraries", separators = None )
+  options.libpath_flag  = aql.StrOptionType( description = "Flag for library paths." )
+  options.libpath_flags = aql.ListOptionType( separators = None )
+  options.libpath_flags = aql.SimpleOperation( _addPrefix, options.libpath_flag, aql.SimpleOperation( _absFilePaths, options.libpath ) )
   
   options.libs  = aql.ListOptionType( value_type = aql.PathOptionType, unique = True,
                                       description = "Linking external libraries", separators = None )
+  options.libs_flag  = aql.StrOptionType( description = "Flag for libraries." )
+  options.libs_flags = aql.ListOptionType( separators = None )
+  options.libs_flags = aql.SimpleOperation( _addPrefix, options.libpath_flag, options.libs )
   
-  options.shobjsuffix = options.objsuffix
+  options.progsuffix = aql.StrOptionType( description = "Program suffix." )
+  options.linkflags  = aql.ListOptionType( description = "Linker flags", separators = None )
+  options.olinkflags = aql.ListOptionType( description = "Linker optimization flags", separators = None )
+  options.link       = aql.PathOptionType( description = "Linker program" )
+  options.link_cmd   = aql.ListOptionType( description = "Linker full command", separators = None )
+  options.link_cmd   = options.link + options.linkflags + options.olinkflags + options.libpath_flags + options.libs_flags
 
 #//===========================================================================//
 
-def   _optionsCCpp():
+def   _getCppOptions():
   options = aql.Options()
-  _commonCCppCompilerOptions( options )
-  _cxxCompilerOptions( options )
-  _cCompilerOptions( options )
+  _compilerOptions( options )
   _linkerOptions( options )
+  
+  return options
 
 #//===========================================================================//
 
@@ -138,36 +121,23 @@ class CppCommonCompiler (aql.FileBuilder):
   #//-------------------------------------------------------//
   
   #noinspection PyUnusedLocal
-  def   __init__(self, options, language, shared, env_cpppaths = tuple() ):
+  def   __init__(self, options, shared ):
     
     self.prefix = options.prefix.get()
     self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
     
     ext_cpppath = list( options.ext_cpppath.get() )
-    for env_cpppath in env_cpppaths:
-      ext_cpppath += options.env[ env_cpppath ].get()
+    ext_cpppath += options.sys_cpppath.get()
     
     self.ext_cpppath = tuple( set( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in ext_cpppath ) )
     
-    if language == 'c++':
-      self.cmd = list( options.cxx_cmd.get() )
-    else:
-      self.cmd = list( options.cc_cmd.get() )
+    self.cmd = list( options.cc_cmd.get() )
   
   #//-------------------------------------------------------//
   
   def   getTargets( self, sources ):
     return tuple( self.getBuildPath( src ).change( prefix = self.prefix ) + self.suffix for src in sources ) 
   
-  #//-------------------------------------------------------//
-  
-  def   getObj( self, node ):
-    source = node.getSources()[0]
-    obj_file = self.getBuildPath( source )
-    obj_file = obj_file.change( prefix = self.prefix ) + self.suffix
-    
-    return obj_file, source
-
   #//-------------------------------------------------------//
   
   def   build( self, node ):
@@ -191,17 +161,6 @@ class CppCommonLinkerBase(aql.FileBuilder):
   
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
-  
-  def   __init__( self, options, target, language, shared ):
-    
-    self.target = target
-    self.language = language
-    self.shared = shared
-    
-    self.setCmd( options, language, shared )
-    
-  def   setCmd( self, options, language, shared ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
   def   makeCompiler( self, options ):
@@ -270,28 +229,23 @@ class CppCommonLinkerBase(aql.FileBuilder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class CppCommonArchiver(CppCommonLinkerBase):
+class CppCommonArchiver( CppCommonLinkerBase ):
   
-  def   __init__( self, options, target, language ):
+  def   __init__( self, options, target ):
     
     prefix = options.libprefix.get() + options.prefix.get()
     suffix = options.libsuffix.get()
     
-    target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
-    super(CppCommonArchiver, self).__init__( options, target, language, shared = False )
+    self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
+    self.cmd = options.lib_cmd.get()
+    self.shared = False
     
-  #//-------------------------------------------------------//
-  
-  def   setCmd( self, options, language, shared ):
-    self.cmd = [ options.lib.get() ]
-    self.cmd += options.libflags.get()
-  
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
 class CppCommonLinker( CppCommonLinkerBase ):
   
-  def   __init__( self, options, target, language, shared ):
+  def   __init__( self, options, target, shared ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
       suffix = options.shlibsuffix.get()
@@ -299,11 +253,9 @@ class CppCommonLinker( CppCommonLinkerBase ):
       prefix = options.prefix.get()
       suffix = options.progsuffix.get()
     
-    target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
-    
-    super(CppCommonLinker, self).__init__( options, target, language, shared )
-  
-  #//-------------------------------------------------------//
+    self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
+    self.cmd = options.link_cmd.get()
+    self.shared = shared
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION
@@ -319,7 +271,7 @@ class ToolCppCommon( aql.Tool ):
   
   @staticmethod
   def   options():
-    options = _optionsCCpp()
+    options = _getCppOptions()
     options.setGroup( "C/C++ compiler" )
     
     return options
@@ -327,16 +279,13 @@ class ToolCppCommon( aql.Tool ):
   #//-------------------------------------------------------//
   
   def   makeCompiler( self, options, shared ):
-    #~ return GccCompiler( options, self.language, shared = shared )
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   makeArchiver( self, options, target ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-    #~ return GccArchiver( options, target, self.language )
   
   def   makeLinker( self, options, target, shared ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-    #~ return GccLinker( options, target, self.language, shared = shared )
   
   #//-------------------------------------------------------//
   

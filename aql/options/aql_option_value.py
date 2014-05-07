@@ -174,7 +174,9 @@ class   Operation( object ):
     self.args = args
     self.kw = kw
   
-  def   convert(self, options, converter ):
+  #//-------------------------------------------------------//
+  
+  def   convert( self, options, converter ):
     self.args, self.kw = _convertArgs( self.args, self.kw, options, converter )
   
   #//-------------------------------------------------------//

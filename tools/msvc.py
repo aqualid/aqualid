@@ -1,10 +1,9 @@
 import os
 import re
-import itertools
 
 import aql
 
-from .cpp_common import ToolCppCommon, CppCommonCompiler, CppCommonArchiver, CppCommonLinker 
+from cpp_common import ToolCppCommon, CppCommonCompiler, CppCommonArchiver, CppCommonLinker 
 
 #//===========================================================================//
 #// BUILDERS IMPLEMENTATION
@@ -55,11 +54,6 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
 #noinspection PyAttributeOutsideInit
 class MsvcCompiler (CppCommonCompiler):
   
-  def   __init__(self, options, language, shared ):
-    super( MsvcCompiler, self).__init__( options, language, shared, ['INCLUDE'] )
-  
-  #//-------------------------------------------------------//
-  
   def   build( self, node ):
     
     sources = node.getSources()
@@ -87,11 +81,8 @@ class MsvcCompiler (CppCommonCompiler):
 #noinspection PyAttributeOutsideInit
 class MsvcArchiver(CppCommonArchiver):
   
-  #//-------------------------------------------------------//
-  
-  def setCmd(self, options, language, shared ):
-    self.cmd = [ options.lib.get(), '/nologo' ]
-    self.cmd += options.libflags.get()
+  def   makeCompiler( self, options ):
+    return MsvcCompiler( options, shared = False )
   
   #//-------------------------------------------------------//
   
@@ -114,36 +105,10 @@ class MsvcArchiver(CppCommonArchiver):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class MsvcLinker(MsvcLinkerBase):
+class MsvcLinker(CppCommonLinker):
   
-  def   __init__( self, options, target, language, shared ):
-    if shared:
-      prefix = options.shlibprefix.get() + options.prefix.get()
-      suffix = options.shlibsuffix.get()
-    else:
-      prefix = options.prefix.get()
-      suffix = options.progsuffix.get()
-    
-    self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
-    
-    self.cmd = self.__getCmd( options, self.target, language, shared )
-    self.language = language
-    
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   __getCmd( options, target, language, shared ):
-    
-    cmd = [ options.link.get(), '/nologo' ]
-
-    if shared:
-      cmd += [ '/dll' ]
-    
-    cmd += options.linkflags.get()
-    cmd += ('/LIBPATH:%s' % path for path in options.libpath.get() )
-    cmd += options.libs.get()
-    
-    return cmd
+  def   makeCompiler( self, options ):
+    return MsvcCompiler( options, self.shared )
   
   #//-------------------------------------------------------//
   
@@ -153,9 +118,11 @@ class MsvcLinker(MsvcLinkerBase):
     
     cmd = list(self.cmd)
     
-    cmd[2:2] = obj_files
+    if self.shared:
+      cmd += [ '/dll' ]
     
     cmd += [ '/OUT:%s' % self.target ]
+    cmd += obj_files
     
     cwd = self.target.dirname()
     
@@ -220,19 +187,15 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.update( specs )
     
     options.cc = cl
-    options.cxx = cl
     options.link = link
     options.lib = lib
-    
-    options.If().cc_name.isTrue().build_dir_name += '_' + options.cc_name + '_' + options.cc_ver
-    
-  #//-------------------------------------------------------//
   
-  @staticmethod
-  def   options():
-    options = super( ToolMsvcCommon ).options()
+  def   __init__(self, options ):
+    super(ToolMsvcCommon,self).__init__( options )
     
-    if_ = options.If()
+    options.env['INCLUDE']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+    options.env['LIB']      = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+    options.env['LIBPATH']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
     
     options.objsuffix     = '.obj'
     options.libprefix     = ''
@@ -242,12 +205,27 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.progsuffix    = '.exe'
     
     options.cpppath_flag    = '/I '
+    options.libpath_flag    = '/LIBPATH:'
     options.cppdefines_flag = '/D'
     
-    options.ccflags += ['/nologo', '/c', '/showIncludes']
-    options.cxxflags += ['/TP']
-    options.cflags += ['/TC']
+    options.ccflags   = ['/nologo', '/c', '/showIncludes']
+    options.libflags  = ['/nologo']
+    options.linkflags = ['/nologo', '/INCREMENTAL:NO' ]
     
+    options.sys_cpppath = options.env['INCLUDE']
+    
+    if_ = options.If()
+    
+    if self.language == 'c':
+      options.ccflags += '/TC'
+    else:
+      options.ccflags += '/TP'
+      if_.rtti.isTrue().ccflags  += '/GR'
+      if_.rtti.isFalse().ccflags += '/GR-'
+  
+      if_.exceptions.isTrue().ccflags  += '/EHsc'
+      if_.exceptions.isFalse().ccflags += ['/EHs-', '/EHc-']
+          
     if_.target_subsystem.eq('console').linkflags += '/SUBSYSTEM:CONSOLE'
     if_.target_subsystem.eq('windows').linkflags += '/SUBSYSTEM:WINDOWS'
     
@@ -277,12 +255,6 @@ class ToolMsvcCommon( ToolCppCommon ):
     if_.inlining.eq('on'  ).occflags += '/Ob1'
     if_.inlining.eq('full').occflags += '/Ob2'
 
-    if_.rtti.isTrue().cxxflags  += '/GR'
-    if_.rtti.isFalse().cxxflags += '/GR-'
-
-    if_.exceptions.isTrue().cxxflags  += '/EHsc'
-    if_.exceptions.isFalse().cxxflags += '/EHs- /EHc-'
-    
     if_warning_level = if_.warning_level
     
     if_warning_level.eq(0).ccflags += '/w'
@@ -293,21 +265,17 @@ class ToolMsvcCommon( ToolCppCommon ):
 
     if_.warnings_as_errors.isTrue().ccflags += '/WX'
     if_.warnings_as_errors.isTrue().linkflags += '/WX'
-    
-    if_.linkflags += '/INCREMENTAL:NO'
-    
-    return options
   
   #//-------------------------------------------------------//
   
   def   makeCompiler( self, options, shared ):
-    return MsvcCompiler( options, self.language )
+    return MsvcCompiler( options, shared = False )
   
   def   makeArchiver( self, options, target ):
-    return MsvcArchiver( options, target, self.language )
+    return MsvcArchiver( options, target )
   
   def   makeLinker( self, options, target, shared ):
-    return MsvcLinker( options, target, self.language, shared = shared )
+    return MsvcLinker( options, target, shared = shared )
 
 #//===========================================================================//
 
