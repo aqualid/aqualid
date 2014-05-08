@@ -131,13 +131,16 @@ def   _loadOpValue( options, context, value ):
     
   elif isinstance( value, _OpValueExRef ):
     value = value.get()
-    value = simplifyValue( value.get() )
-      
+    value = simplifyValue( value )
+  
   elif isinstance( value, dict ):
     value = { k: _loadOpValue( options, context, v ) for k, v in value.items() }
   
   elif isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
     value = [ _loadOpValue( options, context, v ) for v in value ]
+  
+  else:
+    value = simplifyValue( value )
   
   if key is not NotImplemented:
     value = DictItem( key, value )

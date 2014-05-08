@@ -88,7 +88,7 @@ class MsvcArchiver(CppCommonArchiver):
   
   def   build( self, node ):
     
-    obj_files = tuple( src.get() for src in self.getSources( node ) )
+    obj_files = self.getSources( node )
     
     cmd = list(self.cmd)
     cmd.append( "/OUT:%s" % self.target )
@@ -108,13 +108,13 @@ class MsvcArchiver(CppCommonArchiver):
 class MsvcLinker(CppCommonLinker):
   
   def   makeCompiler( self, options ):
-    return MsvcCompiler( options, self.shared )
+    return MsvcCompiler( options, shared = False )
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     
-    obj_files = tuple( src.get() for src in node.builder_data )
+    obj_files = self.getSources( node )
     
     cmd = list(self.cmd)
     
@@ -199,7 +199,7 @@ class ToolMsvcCommon( ToolCppCommon ):
     
     options.objsuffix     = '.obj'
     options.libprefix     = ''
-    options.libsuffix     = '.a'
+    options.libsuffix     = '.lib'
     options.shlibprefix   = ''
     options.shlibsuffix   = '.dll'
     options.progsuffix    = '.exe'

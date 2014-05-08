@@ -77,7 +77,7 @@ def   _linkerOptions( options ):
   options.olibflags = aql.ListOptionType( description = "Static library archiver optimization flags", separators = None )
   options.lib       = aql.PathOptionType( description = "Static library archiver program" )
   options.lib_cmd   = aql.ListOptionType( description = "Static library archiver full command", separators = None )
-  options.lib_cmd   = options.lib + options.libflags + options.olibflags
+  options.lib_cmd   = [ options.lib ] + options.libflags + options.olibflags
   
   options.shlibprefix = aql.StrOptionType( description = "Shared library prefix." )
   options.shlibsuffix = aql.StrOptionType( description = "Shared library suffix." )
@@ -99,7 +99,7 @@ def   _linkerOptions( options ):
   options.olinkflags = aql.ListOptionType( description = "Linker optimization flags", separators = None )
   options.link       = aql.PathOptionType( description = "Linker program" )
   options.link_cmd   = aql.ListOptionType( description = "Linker full command", separators = None )
-  options.link_cmd   = options.link + options.linkflags + options.olinkflags + options.libpath_flags + options.libs_flags
+  options.link_cmd   = [ options.link ] + options.linkflags + options.olinkflags + options.libpath_flags + options.libs_flags
 
 #//===========================================================================//
 
@@ -165,7 +165,7 @@ class CppCommonLinkerBase(aql.FileBuilder):
   #//-------------------------------------------------------//
   def   makeCompiler( self, options ):
     """
-    It should return a builder of compiler of C/C++ files
+    It should return a builder of C/C++ compiler
     """
     return None
   
@@ -296,6 +296,9 @@ class ToolCppCommon( aql.Tool ):
     return aql.BuildSingle( builder )
   
   def   LinkLibrary( self, options, target ):
+    return self.makeArchiver( options, target )
+  
+  def   LinkStaticLibrary( self, options, target ):
     return self.makeArchiver( options, target )
   
   def   LinkSharedLibrary( self, options, target ):
