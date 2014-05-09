@@ -14,7 +14,7 @@ import msvc
 #//===========================================================================//
 
 def   _build( prj ):
-  if not prj.Build( verbose = True, jobs = 1):
+  if not prj.Build( verbose = True, jobs = 4 ):
     prj.build_manager.printFails()
     assert False, "Build failed"
 
@@ -145,12 +145,14 @@ class TestToolMsvc( AqlTestCase ):
       cpp = prj.tools.cpp
       
       cpp.LinkSharedLibrary( src_files, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, target = 'foo' )
       _build( prj )
-      self.assertEqual( self.built_nodes, num_src_files + 1)
+      self.assertEqual( self.built_nodes, num_src_files + 3 )
       
       self.built_nodes = 0
       cpp.LinkSharedLibrary( src_files, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, target = 'foo' )
       _build( prj )
       self.assertEqual( self.built_nodes, 0 )
       
@@ -161,6 +163,7 @@ class TestToolMsvc( AqlTestCase ):
       
       self.built_nodes = 0
       cpp.LinkSharedLibrary( src_files, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, target = 'foo' )
       _build( prj )
       self.assertEqual( self.built_nodes, 1 )
       

@@ -63,10 +63,15 @@ class MsvcCompiler (CppCommonCompiler):
     cwd = os.path.dirname( obj_file )
     
     cmd = list(self.cmd)
-    cmd += ['/Fo%s' % obj_file ]
+    cmd += [ '/c', '/showIncludes', '/Fo%s' % obj_file ]
     cmd += sources
     
-    out = self.execCmd( cmd, cwd, file_flag = '@' )
+    try:
+      out = self.execCmd( cmd, cwd, file_flag = '@' )
+    except aql.ExecCommandResult as ex:
+      outs = _parseOutput( sources, ex.out, self.ext_cpppath )
+      out = '\n'.join( out[2] for out in outs )
+      raise aql.ExecCommandResult( cmd, returncode = ex.returncode, out = out )
     
     outs = _parseOutput( sources, out, self.ext_cpppath )
     
@@ -119,16 +124,24 @@ class MsvcLinker(CppCommonLinker):
     cmd = list(self.cmd)
     
     if self.shared:
-      cmd += [ '/dll' ]
+      cmd.append( '/dll' )
     
-    cmd += [ '/OUT:%s' % self.target ]
+    target = self.target
+    itargets = []
+    
+    if '/DEBUG' in cmd:
+      pdb = target + '.pdb'
+      cmd.append( "/PDB:%s" % (pdb,) )
+      itargets.append( pdb )
+      
+    cmd += [ '/OUT:%s' % target ]
     cmd += obj_files
     
-    cwd = self.target.dirname()
+    cwd = target.dirname()
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.setFileTargets( self.target )
+    node.setFileTargets( target, itargets )
     
     return out
   
@@ -208,7 +221,7 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.libpath_flag    = '/LIBPATH:'
     options.cppdefines_flag = '/D'
     
-    options.ccflags   = ['/nologo', '/c', '/showIncludes']
+    options.ccflags   = ['/nologo']
     options.libflags  = ['/nologo']
     options.linkflags = ['/nologo', '/INCREMENTAL:NO' ]
     

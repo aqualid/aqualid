@@ -22,7 +22,6 @@ __all__ = (
 )
 
 import os
-import binascii
 
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir
 from aql.util_types import toSequence, isString, FilePath, AqlException
@@ -364,6 +363,11 @@ class Node (object):
     raise AttributeError( "Node has not attribute '%s'" % (attr,) )
 
   #//=======================================================//
+  
+  def   getNames(self):
+    return (self.name,)
+  
+  #//=======================================================//
 
   def   depends( self, dependencies ):
     
@@ -684,6 +688,11 @@ class BatchNode (Node):
       'node_values',
       'changed_source_values',
     )
+  
+  #//=======================================================//
+  
+  def   getNames(self):
+    return tuple(value.name for value in self.node_values)
   
   #//=======================================================//
   

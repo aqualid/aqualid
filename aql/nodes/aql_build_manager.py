@@ -539,7 +539,14 @@ class _NodesBuilder (object):
         build_manager.actualNode( node )
         changed = True
       else:
+        conflict_nodes = build_manager.getConflictingNodes( node )
+        if conflict_nodes:
+          build_manager.rebuildNode( node, conflict_nodes )
+          continue
+        
         addTask( node, _buildNode, node, brief )
+        build_manager.addBuildingNode( node )
+        
         added_tasks += 1
         
         if added_tasks == tasks_check_period:
@@ -551,6 +558,7 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   _getFinishedNodes( self, block = True ):
+    # print("tasks: %s, finished_tasks: %s" % (self.task_manager.unfinished_tasks, self.task_manager.finished_tasks.qsize()))
     finished_tasks = self.task_manager.finishedTasks( block = block )
     
     vfiles = self.vfiles
@@ -660,7 +668,7 @@ class BuildManager (object):
   def   __reset(self, brief =  True ):
     
     self._built_targets = {}
-    self._waiting_nodes = set()
+    self._waiting_nodes = {}
     self._failed_nodes = {}
     
     self.brief = brief
@@ -691,13 +699,9 @@ class BuildManager (object):
   
   def   getTailNodes(self):
     
-    wait_nodes = self._waiting_nodes
-    
     tails = self._nodes.tails()
-    tails -= wait_nodes
+    tails.difference_update( self._waiting_nodes.values() )
     tails.difference_update( self._failed_nodes )
-    
-    wait_nodes.update( tails )
     
     return tails
   
@@ -708,10 +712,21 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   actualNode( self, node ):
+    # self._checkAlreadyBuilt( node )
+    self._nodes.removeTail( node )
+    self.actual += 1
+    
+    eventNodeBuildingActual( node, self.getProgressStr(), self.brief )
+    
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
   def   completedNode( self, node, builder_output ):
     self._checkAlreadyBuilt( node )
     self._nodes.removeTail( node )
-    self._waiting_nodes.remove( node )
+    self._removeWaitingNode( node )
     self.completed += 1
     
     eventNodeBuildingFinished( node, builder_output, self.getProgressStr(), self.brief )
@@ -720,9 +735,48 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   failedNode( self, node, error ):
+    self._removeWaitingNode( node )
+    self._failed_nodes[ node ] = error
+    
+    eventNodeBuildingFailed( node, self.brief )
+  
+  #//-------------------------------------------------------//
+  
+  def   rebuildNode( self, node, pre_nodes ):
+    self.depends( node, pre_nodes )
+  
+  #//-------------------------------------------------------//
+  
+  def   getConflictingNodes( self, node ):
+    conflicting_nodes = []
+    get_building_node = self._waiting_nodes.get
+    
+    for name in node.getNames():
+      building_node = get_building_node( name, None )
+      if building_node:
+        conflicting_nodes.append( building_node )
+    
+    return conflicting_nodes
+  
+  #//-------------------------------------------------------//
+  
+  def   addBuildingNode(self, node ):
+    wait_nodes = self._waiting_nodes
+    for name in node.getNames():
+      wait_nodes[ name ] = node
+  
+  #//-------------------------------------------------------//
+  
+  def   _removeWaitingNode(self, node ):
+    wait_nodes = self._waiting_nodes
+    for name in node.getNames():
+      del wait_nodes[ name ]
+  
+  #//-------------------------------------------------------//
+  
   def   removedNode( self, node, silent = False ):
     self._nodes.removeTail( node )
-    self._waiting_nodes.remove( node )
     self.completed += 1
     
     if not silent:
@@ -732,22 +786,9 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   actualNode( self, node ):
-    self._checkAlreadyBuilt( node )
-    self._nodes.removeTail( node )
-    self._waiting_nodes.remove( node )
-    self.actual += 1
-    
-    eventNodeBuildingActual( node, self.getProgressStr(), self.brief )
-    
-    node.shrink()
-  
-  #//-------------------------------------------------------//
-  
   def   actualNodeStatus( self, node ):
     self._nodes.removeTail( node )
     self.actual += 1
-    self._waiting_nodes.remove( node )
     
     eventNodeStatusActual( node, self.getProgressStr(), self.brief )
     
@@ -756,25 +797,10 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   outdatedNodeStatus( self, node ):
-    self._waiting_nodes.remove( node )
     self._failed_nodes[ node ] = None
     
     eventNodeStatusOutdated( node, self.getProgressStr(), self.brief )
     node.shrink()
-  
-  #//-------------------------------------------------------//
-  
-  def   failedNode( self, node, error ):
-    self._waiting_nodes.remove( node )
-    self._failed_nodes[ node ] = error
-    
-    eventNodeBuildingFailed( node, self.brief )
-  
-  #//-------------------------------------------------------//
-  
-  def   rebuildNode( self, node, pre_nodes ):
-    self.depends( node, pre_nodes )
-    self._waiting_nodes.remove( node )
   
   #//-------------------------------------------------------//
   
@@ -849,7 +875,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   printBuildState(self):
-    logInfo("Wating nodes: %s" % len(self._waiting_nodes) )
+    logInfo("Waiting nodes: %s" % len(self._waiting_nodes) )
     logInfo("Failed nodes: %s" % len(self._failed_nodes) )
     logInfo("Completed nodes: %s" % self.completed )
     logInfo("Actual nodes: %s" % self.actual )
