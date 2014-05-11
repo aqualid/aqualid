@@ -125,6 +125,7 @@ class CppCommonCompiler (aql.FileBuilder):
     
     self.prefix = options.prefix.get()
     self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
+    self.shared = shared
     
     ext_cpppath = list( options.ext_cpppath.get() )
     ext_cpppath += options.sys_cpppath.get()
@@ -269,8 +270,8 @@ class ToolCppCommon( aql.Tool ):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   options():
+  @classmethod
+  def   options( cls ):
     options = _getCppOptions()
     options.setGroup( "C/C++ compiler" )
     

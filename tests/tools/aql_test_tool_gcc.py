@@ -13,7 +13,7 @@ from aql.values import FileChecksumValue, ValuesFile
 from aql.nodes import Node, BuildManager, BuildSingle
 from aql.options import builtinOptions
 
-from gcc import GccCompiler, GccArchiver, GccLinker, ToolGccCommon
+from gcc import GccCompiler, GccArchiver, GccLinker, ToolGxx, ToolGcc
 
 #//===========================================================================//
 
@@ -105,16 +105,14 @@ class TestToolGcc( AqlTestCase ):
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
 
       options = builtinOptions()
-      options.merge( ToolGccCommon.options() )
+      options.merge( ToolGxx.options() )
       env = options.env.get().dump()
-      ToolGccCommon.setup( options, env )
-
-      if not options.cxx:
-        options.cxx = whereProgram( "g++" )
+      ToolGxx.setup( options, env )
 
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
+      gcc = ToolGxx( options )
+      cpp_compiler = gcc.Compile( options )
       
       vfilename = Tempfile( dir = root_dir, suffix = '.aql.values' )
       vfilename.close()
@@ -155,7 +153,7 @@ class TestToolGcc( AqlTestCase ):
   
   def   _build( self, bm, **kw ):
 
-    kw.setdefault('jobs', 4 )
+    kw.setdefault('jobs', 1 )
     kw.setdefault('keep_going', False )
 
     is_ok = bm.build( **kw )
@@ -179,13 +177,14 @@ class TestToolGcc( AqlTestCase ):
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
 
       options = builtinOptions()
-      options.merge( ToolGccCommon.options() )
+      options.merge( ToolGxx.options() )
       env = options.env.get().dump()
-      ToolGccCommon.setup( options, env )
+      ToolGxx.setup( options, env )
 
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
+      gcc = ToolGxx( options )
+      cpp_compiler = gcc.Compile( options )
       
       bm = BuildManager()
       try:
@@ -236,20 +235,15 @@ class TestToolGcc( AqlTestCase ):
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
       
       options = builtinOptions()
-      options.merge( ToolGccCommon.options() )
+      options.merge( ToolGxx.options() )
       env = options.env.get().dump()
-      ToolGccCommon.setup( options, env )
-
-      if not options.cxx:
-        options.cxx = whereProgram( "g++" )
-      
-      if not options.lib:
-        options.lib = whereProgram( "ar" )
+      ToolGxx.setup( options, env )
       
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
-      archiver = GccArchiver( options, target = 'foo', language = 'c++')
+      gcc = ToolGxx( options )
+      cpp_compiler = gcc.Compile( options )
+      archiver = gcc.LinkLibrary( options, target = 'foo' )
       
       bm = BuildManager()
       try:
@@ -301,21 +295,16 @@ class TestToolGcc( AqlTestCase ):
       main_src_file = self.generateMainCppFile( src_dir, 'main')
       
       options = builtinOptions()
-      options.merge( ToolGccCommon.options() )
+      options.merge( ToolGxx.options() )
       env = options.env.get().dump()
-      ToolGccCommon.setup( options, env )
+      ToolGxx.setup( options, env )
 
-      if not options.cxx:
-        options.cxx = whereProgram( "g++" )
-      
-      if not options.lib:
-        options.lib = whereProgram( "ar" )
-      
       options.build_dir = build_dir
       
-      cpp_compiler = BuildSingle( GccCompiler( options, 'c++', shared = False ) )
-      archiver = GccArchiver( options, target = 'foo', language = 'c++' )
-      linker = GccLinker( options, target = 'main_foo', language = 'c++', shared = False )
+      gcc = ToolGxx( options )
+      cpp_compiler = gcc.Compile( options )
+      archiver = gcc.LinkLibrary( options, target = 'foo' )
+      linker = gcc.LinkProgram( options, target = 'foo' )
       
       bm = BuildManager()
       try:
@@ -354,50 +343,6 @@ class TestToolGcc( AqlTestCase ):
         
       finally:
         bm.close()
-  
-#//===========================================================================//
-
-@skip
-class TestToolGccSpeed( AqlTestCase ):
-
-  def test_gcc_compiler_speed(self):
-    
-    root_dir = FilePath("D:\\build_bench")
-    build_dir = root_dir.join('build')
-    
-    #//-------------------------------------------------------//
-    
-    options = builtinOptions()
-    options.merge( ToolGccCommon.options() )
-    
-    options.cxx = "C:\\MinGW32\\bin\\g++.exe"
-    
-    options.build_dir_prefix = build_dir
-    
-    options.file_signature = 'md5'
-    cpp_compiler = BuildSingle( GccCompiler( options, 'c++' ) )
-  
-    #//-------------------------------------------------------//
-    
-    vfilename = root_dir.join( '.aql.values' )
-    
-    bm = BuildManager( vfilename, 4, True )
-    
-    options.cpppath += root_dir
-    
-    for i in range(200):
-      src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
-      obj = Node( cpp_compiler, src_files )
-      bm.add( obj )
-    
-    #~ for i in range(200):
-      #~ src_files = [root_dir + '/lib_%d/class_%d.cpp' % (i, j) for j in range(20)]
-      #~ for src_file in src_files:
-        #~ obj = Node( cpp_compiler, [ FileValue( src_file, FileContentType ) ] )
-        #~ bm.addNodes( obj )
-    
-    bm.build()
-    
 
 #//===========================================================================//
 

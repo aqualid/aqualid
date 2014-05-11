@@ -21,4 +21,3 @@ from .aql_option_types import *
 from .aql_option_value import *
 from .aql_options import *
 from .aql_builtin_options import *
-from .aql_tool_options import *

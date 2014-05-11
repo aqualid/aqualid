@@ -17,12 +17,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager')
+__all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager', 'ErrorToolNotFound' )
 
 import os
 
 from aql.util_types import toSequence, Singleton, AqlException
-from aql.utils import logWarning, loadModule, findFiles, eventWarning
+from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProgramNotFound
 
 #noinspection PyStatementEffect
 """
@@ -219,7 +219,7 @@ class ToolsManager( Singleton ):
           
           tool_obj = tool_info.tool_class( tool_options )
           
-        except NotImplementedError:
+        except (NotImplementedError, ErrorProgramNotFound):
           setup_options.clear()
           tool_options.clear()
         except Exception as err:
@@ -264,10 +264,10 @@ class Tool( object ):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   setup( options, env ):
+  @classmethod
+  def   setup( cls, options, env ):
     pass
   
-  @staticmethod
-  def   options():
+  @classmethod
+  def   options( cls ):
     return None

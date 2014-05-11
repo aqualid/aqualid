@@ -416,8 +416,8 @@ class   RSyncPullBuilder( aql.Builder ):
 @aql.tool('rsync')
 class ToolRsync( aql.Tool ):
   
-  @staticmethod
-  def   setup( options, env ):
+  @classmethod
+  def   setup( cls, options, env ):
     
     rsync = aql.whereProgram( 'rsync', env )
     
@@ -427,24 +427,29 @@ class ToolRsync( aql.Tool ):
   
   #//-------------------------------------------------------//
   
-  @staticmethod
-  def   options():
-    
+  @classmethod
+  def   options( cls ):
     options = aql.Options()
     
-    options.rsync = aql.PathOptionType( description = "File path to rsync program." )
-    options.rsync_cygwin = aql.BoolOptionType( description = "Is rsync uses cygwin paths." )
+    options.rsync         = aql.PathOptionType( description = "File path to rsync program." )
+    options.rsync_cygwin  = aql.BoolOptionType( description = "Is rsync uses cygwin paths." )
     
     options.rsync_flags = aql.ListOptionType( description = "rsync tool flags", separators = None )
     options.rsync_ssh_flags = aql.ListOptionType( description = "rsync tool SSH flags", separators = None )
+    
+    return options
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, options ):
+    super(ToolRsync, self).__init__(options)
     
     options.rsync_flags = ['-a', '-v', '-z' ]
     options.rsync_ssh_flags = ['-o', 'StrictHostKeyChecking=no', '-o', 'BatchMode=yes' ]
     
     options.setGroup( "rsync" )
-    
-    return options
-    
+
+  
   #//-------------------------------------------------------//
   
   def   Pull( self, options, target, host = None, login = None, key_file = None, exclude = None ):

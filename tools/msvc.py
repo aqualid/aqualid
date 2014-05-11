@@ -46,7 +46,7 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
   
   current_output = '\n'.join( current_output )
   results.append( ( current_file, current_deps, current_output ) )
-
+  
   return results
 
 #//===========================================================================//
@@ -292,7 +292,7 @@ class ToolMsvcCommon( ToolCppCommon ):
 
 #//===========================================================================//
 
-@aql.tool('c++', 'msvcpp', 'cpp', 'cxx')
+@aql.tool('c++', 'msvcpp','msvc++', 'cpp', 'cxx')
 class ToolMsvcpp( ToolMsvcCommon ):
   language = "c++"
 

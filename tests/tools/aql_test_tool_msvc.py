@@ -7,7 +7,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.values import FileChecksumValue
 from aql.utils import Tempdir, removeUserHandler, addUserHandler, enableDefaultHandlers
-from aql.main import Project, ProjectConfig
+from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
 import msvc
 
@@ -64,7 +64,11 @@ class TestToolMsvc( AqlTestCase ):
       
       prj = Project( cfg.options, cfg.targets )
       
-      cpp = prj.tools.cpp
+      try:
+        cpp = prj.tools['msvc++']
+      except  ErrorToolNotFound:
+        print("WARNING: MSVC tool has not been found. Skip the test.")
+        return
       
       cpp.Compile( src_files )
       _build( prj )
@@ -103,7 +107,11 @@ class TestToolMsvc( AqlTestCase ):
       
       prj = Project( cfg.options, cfg.targets )
       
-      cpp = prj.tools.cpp
+      try:
+        cpp = prj.tools['msvc++']
+      except  ErrorToolNotFound:
+        print("WARNING: MSVC tool has not been found. Skip the test.")
+        return
       
       cpp.LinkLibrary( src_files, target = 'foo' )
       _build( prj )
@@ -142,7 +150,11 @@ class TestToolMsvc( AqlTestCase ):
       
       prj = Project( cfg.options, cfg.targets )
       
-      cpp = prj.tools.cpp
+      try:
+        cpp = prj.tools['msvc++']
+      except  ErrorToolNotFound:
+        print("WARNING: MSVC tool has not been found. Skip the test.")
+        return
       
       cpp.LinkSharedLibrary( src_files, target = 'foo' )
       cpp.LinkSharedLibrary( src_files, target = 'foo' )

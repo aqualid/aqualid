@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempdir
-from aql.main import Project, ProjectConfig
+from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
 import rsync
 
@@ -31,11 +31,17 @@ class TestToolRsync( AqlTestCase ):
           
           prj = Project( cfg.options, cfg.targets )
           
-          prj.tools.rsync.Push( src_files, target = target_dir )
+          try:
+            rsync = prj.tools.rsync
+          except  ErrorToolNotFound:
+            print("WARNING: Rsync tool has not been found. Skip the test.")
+            return
+          
+          rsync.Push( src_files, target = target_dir )
           
           _build( prj )
           
-          prj.tools.rsync.Push( src_files, target = target_dir )
+          rsync.Push( src_files, target = target_dir )
           
           _build( prj )
   
@@ -70,11 +76,17 @@ class TestToolRsync( AqlTestCase ):
           
           prj = Project( cfg.options, cfg.targets )
           
-          prj.tools.rsync.Pull( src_files, target = target_dir )
+          try:
+            rsync = prj.tools.rsync
+          except  ErrorToolNotFound:
+            print("WARNING: Rsync tool has not been found. Skip the test.")
+            return
+          
+          rsync.Pull( src_files, target = target_dir )
           
           _build( prj )
           
-          prj.tools.rsync.Pull( src_files, target = target_dir )
+          rsync.Pull( src_files, target = target_dir )
           
           _build( prj )
 
