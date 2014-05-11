@@ -221,24 +221,25 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.libpath_flag    = '/LIBPATH:'
     options.cppdefines_flag = '/D'
     
-    options.ccflags   = ['/nologo']
-    options.libflags  = ['/nologo']
-    options.linkflags = ['/nologo', '/INCREMENTAL:NO' ]
+    options.ccflags   += ['/nologo']
+    options.libflags  += ['/nologo']
+    options.linkflags += ['/nologo', '/INCREMENTAL:NO']
     
     options.sys_cpppath = options.env['INCLUDE']
     
     if_ = options.If()
     
-    if self.language == 'c':
-      options.ccflags += '/TC'
-    else:
-      options.ccflags += '/TP'
-      if_.rtti.isTrue().ccflags  += '/GR'
-      if_.rtti.isFalse().ccflags += '/GR-'
-  
-      if_.exceptions.isTrue().ccflags  += '/EHsc'
-      if_.exceptions.isFalse().ccflags += ['/EHs-', '/EHc-']
-          
+    options.language = self.language
+    
+    options.cflags    += '/TC'
+    options.cxxflags  += '/TP'
+    
+    if_.rtti.isTrue().cxxflags  += '/GR'
+    if_.rtti.isFalse().cxxflags += '/GR-'
+
+    if_.exceptions.isTrue().cxxflags  += '/EHsc'
+    if_.exceptions.isFalse().cxxflags += ['/EHs-', '/EHc-']
+    
     if_.target_subsystem.eq('console').linkflags += '/SUBSYSTEM:CONSOLE'
     if_.target_subsystem.eq('windows').linkflags += '/SUBSYSTEM:WINDOWS'
     

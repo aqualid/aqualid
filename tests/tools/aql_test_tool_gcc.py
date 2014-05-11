@@ -155,6 +155,7 @@ class TestToolGcc( AqlTestCase ):
 
     kw.setdefault('jobs', 1 )
     kw.setdefault('keep_going', False )
+    kw.setdefault('brief', False )
 
     is_ok = bm.build( **kw )
     bm.printFails()

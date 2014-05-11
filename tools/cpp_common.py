@@ -34,11 +34,16 @@ def   _absFilePaths( file_paths ):
 
 def   _compilerOptions( options ):
   
+  options.language = aql.EnumOptionType( values = [('c++', 'cpp'), 'c'], default = 'c++', description = 'Current language' )
+  options.lang = options.language
+  
   options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
   options.shobjsuffix = aql.StrOptionType( description = "Shared object file suffix." )
   
   options.shobjsuffix = options.objsuffix
   
+  options.cxxflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
+  options.cflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
   options.ccflags = aql.ListOptionType( description = "Common C/C++ compiler flags", separators = None )
   options.occflags = aql.ListOptionType( description = "Common C/C++ compiler optimization flags", separators = None )
   
@@ -65,7 +70,10 @@ def   _compilerOptions( options ):
   options.cc_ver  = aql.VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
   options.cc_cmd  = aql.ListOptionType( description = "C/C++ compiler full command", separators = None )
   
-  options.cc_cmd = [ options.cc ] + options.ccflags + options.occflags + options.cppdefines_flags + options.cpppath_flags
+  options.cc_cmd = options.cc
+  options.If().language.eq('c++').cc_cmd += options.cxxflags
+  options.If().language.eq('c').cc_cmd += options.cflags
+  options.cc_cmd += options.ccflags + options.occflags + options.cppdefines_flags + options.cpppath_flags
   
 #//===========================================================================//
 
@@ -137,7 +145,7 @@ class CppCommonCompiler (aql.FileBuilder):
   #//-------------------------------------------------------//
   
   def   getTargets( self, sources ):
-    return tuple( self.getBuildPath( src ).change( prefix = self.prefix ) + self.suffix for src in sources ) 
+    return tuple( self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix ) for src in sources ) 
   
   #//-------------------------------------------------------//
   
@@ -154,7 +162,7 @@ class CppCommonCompiler (aql.FileBuilder):
       name = ' '.join( self.cmd )
     
     return name
-  
+
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
@@ -266,6 +274,7 @@ class ToolCppCommon( aql.Tool ):
   
   def   __init__( self, options ):
     super( ToolCppCommon, self).__init__( options )
+    
     options.If().cc_name.isTrue().build_dir_name  += '_' + options.cc_name + '_' + options.cc_ver
   
   #//-------------------------------------------------------//

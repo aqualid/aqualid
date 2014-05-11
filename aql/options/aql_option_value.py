@@ -326,20 +326,23 @@ class OptionValue (object):
     if not isinstance( other, OptionValue ):
       raise ErrorOptionValueMergeNonOptionValue( other )
     
-    other_option_type = other.option_type
-    if not other_option_type.is_auto:
-      self.option_type = other.option_type
+    values = self.conditional_values
+    other_values = other.conditional_values
     
     diff_index = 0
-    for conditional_value1, conditional_value2 in zip( self.conditional_values, other.conditional_values ):
-      if conditional_value1 is not conditional_value2:
+    for value1, value2 in zip( values, other_values ):
+      if value1 is not value2:
         break
       
       diff_index += 1
     
-    self.default_conditional_value = other.default_conditional_value
-    
-    self.conditional_values += other.conditional_values[ diff_index: ]
+    if self.option_type.is_auto and not other.option_type.is_auto:
+      self.option_type = other.option_type
+      self.default_conditional_value = other.default_conditional_value
+      self.conditional_values = other_values[:]
+      self.conditional_values += values[diff_index:]
+    else:
+      self.conditional_values += other_values[ diff_index: ]
     
   #//-------------------------------------------------------//
   

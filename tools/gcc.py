@@ -204,12 +204,12 @@ class ToolGccCommon( ToolCppCommon ):
     
     options.update( specs )
     
-    if cls.language == 'c++':
-      options.cc = gxx
-      options.link = gxx
-    else:
+    if cls.language == 'c':
       options.cc = gcc
       options.link = gcc
+    else:
+      options.cc = gxx
+      options.link = gxx
     
     options.lib = ar
   
@@ -232,10 +232,10 @@ class ToolGccCommon( ToolCppCommon ):
     super(ToolGccCommon,self).__init__( options )
     
     options.env['CPATH']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
-    if self.language == 'c++':
-      options.env['CPLUS_INCLUDE_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
-    else:
+    if self.language == 'c':
       options.env['C_INCLUDE_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+    else:
+      options.env['CPLUS_INCLUDE_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
     
     options.env['LIBRARY_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
     
@@ -254,16 +254,17 @@ class ToolGccCommon( ToolCppCommon ):
     options.libpath_flag    = '-L '
     options.cppdefines_flag = '-D '
     
-    options.ccflags   = ['-pipe', '-x', self.language ]
-    options.libflags  = ['-rcs']
-    options.linkflags = ['-pipe']
+    options.ccflags   += ['-pipe', '-x', self.language ]
+    options.libflags  += ['-rcs']
+    options.linkflags += ['-pipe']
     
-    if self.language == 'c++':
-      if_.rtti.isTrue().ccflags   += '-frtti'
-      if_.rtti.isFalse().ccflags  += '-fno-rtti'
-      
-      if_.exceptions.isTrue().ccflags   += '-fexceptions'
-      if_.exceptions.isFalse().ccflags  += '-fno-exceptions'
+    options.language = self.language
+    
+    if_.rtti.isTrue().cxxflags   += '-frtti'
+    if_.rtti.isFalse().cxxflags  += '-fno-rtti'
+    
+    if_.exceptions.isTrue().cxxflags   += '-fexceptions'
+    if_.exceptions.isFalse().cxxflags  += '-fno-exceptions'
     
     if_windows.target_subsystem.eq('console').linkflags += '-Wl,--subsystem,console'
     if_windows.target_subsystem.eq('windows').linkflags += '-Wl,--subsystem,windows'
@@ -277,7 +278,7 @@ class ToolGccCommon( ToolCppCommon ):
     if_.target_os.eq('windows').runtime_thread.eq('multi').ccflags += '-mthreads'
     if_.target_os.ne('windows').runtime_thread.eq('multi').ccflags += '-pthreads'
     
-    if_.optimization.eq('speed').occflags += '-O3'
+    if_.optimization.eq('speed').occflags += '-Ofast'
     if_.optimization.eq('size').occflags  += '-Os'
     if_.optimization.eq('off').occflags   += '-O0'
     
