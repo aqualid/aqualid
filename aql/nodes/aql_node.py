@@ -450,18 +450,42 @@ class Node (object):
   
   #//=======================================================//
   
+  def   _getNameHash( self ):
+    return newHash( dumpSimpleObject( self.builder.name ) )
+  
+  #//=======================================================//
+  
+  def   _getSignatureHash( self ):
+    
+    sign  = [ self.builder.signature ]
+    
+    for value in self.getDepValues():
+      if value:
+        sign.append( value.name )
+        sign.append( value.signature )
+      else:
+        return None
+    
+    sign_hash = newHash( dumpSimpleObject( sign ) )
+
+    return sign_hash
+  
+  #//=======================================================//
+  
   def   _setName( self ):
     
     targets = self.builder.getTargetValues( self )
     if targets:
       self.targets = tuple( toSequence( targets ) )
       names = sorted( value.valueId() for value in targets )
+      name = simpleObjectSignature( names )
     else:
-      sources = sorted( self.getSourceValues(), key = lambda v: v.name )
-      names = [ self.builder.name ]
-      names += [ value.name for value in sources ]
+      name_hash = self._getNameHash()
+      source_names = sorted( value.name for value in self.getSourceValues() )
+      for source_name in source_names:
+        name_hash.update( dumpSimpleObject( source_name ) )
+      name = name_hash.digest()
     
-    name = simpleObjectSignature( names )
     self.name = name
     return name
 
@@ -469,19 +493,14 @@ class Node (object):
   
   def   _setSignature( self ):
     
-    sign  = [ self.builder.signature ]
+    sign_hash = self._getSignatureHash()
     
-    for value in self.getSourceValues():
-      if value:
-        sign.append( value.signature )
-      else:
-        sign = None
-        break
-    
-    sign = self._addDepsSignature( sign )
-    
-    if sign is not None:
-      sign = simpleObjectSignature( sign )
+    if sign_hash is None:
+      sign = None
+    else:
+      for value in self.getSourceValues():
+        sign_hash.update( dumpSimpleObject( value.signature ) )
+      sign = sign_hash.digest()
     
     self.signature = sign
     return sign
@@ -712,9 +731,7 @@ class BatchNode (Node):
 
   def   _setNodeValues( self ):
 
-    name = self.builder.name
-
-    name_hash = newHash( dumpSimpleObject( name ) )
+    name_hash = self._getNameHash()
     sign_hash = self._getSignatureHash()
     
     node_values = {}
@@ -733,21 +750,6 @@ class BatchNode (Node):
     self.node_values = node_values
     return node_values
       
-  #//=======================================================//
-  
-  def   _getSignatureHash( self ):
-    
-    sign  = [ self.builder.signature ]
-    
-    sign = self._addDepsSignature( sign )
-    
-    if sign is None:
-      return None
-    
-    sign_hash = newHash( dumpSimpleObject( sign ) )
-
-    return sign_hash
-  
   #//=======================================================//
   
   def   _setSourceValues(self):

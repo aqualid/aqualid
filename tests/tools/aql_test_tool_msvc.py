@@ -91,6 +91,57 @@ class TestToolMsvc( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
+  def   test_msvc_compiler_batch(self):
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'output')
+      src_dir = os.path.join( tmp_dir, 'src')
+      
+      os.makedirs( src_dir )
+      
+      num_src_files = 16
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      try:
+        cpp = prj.tools['msvc++']
+      except  ErrorToolNotFound:
+        print("WARNING: MSVC tool has not been found. Skip the test.")
+        return
+      # cpp.Compile( src_files, batch = False )
+      
+      for i in range( num_src_files/4 ):
+        first = i * 4
+        last = first + 4
+        ss = src_files[first:last]
+        cpp.Compile( ss, batch = True )
+      
+      cpp.Compile( src_files, batch = False )
+      
+      _build( prj )
+      self.assertEqual( self.built_nodes, 4 )
+      
+      self.built_nodes = 0
+      cpp.Compile( src_files, batch = False )
+      _build( prj )
+      self.assertEqual( self.built_nodes, 0 )
+      
+      with open( hdr_files[0], 'a' ) as f:
+        f.write("// end of file")
+      
+      FileChecksumValue( hdr_files[0], use_cache = False )
+      
+      self.built_nodes = 0
+      cpp.Compile( src_files, batch = False )
+      _build( prj )
+      self.assertEqual( self.built_nodes, 1 )
+  
+  #//-------------------------------------------------------//
+  
   def   test_msvc_archiver(self):
     with Tempdir() as tmp_dir:
       

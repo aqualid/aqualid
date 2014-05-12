@@ -6,6 +6,13 @@ import aql
 from cpp_common import ToolCppCommon, CppCommonCompiler, CppCommonArchiver, CppCommonLinker 
 
 #//===========================================================================//
+
+class   ErrorDifferentSourceDirs( Exception ):
+  def   __init__( self, src_dir1, src_dir2 ):
+    msg = "Can't build batch sources from different dirs: %s, %s" % (src_dir1, src_dir2)
+    super(ErrorDifferentSourceDirs, self).__init__( msg )
+
+#//===========================================================================//
 #// BUILDERS IMPLEMENTATION
 #//===========================================================================//
 
@@ -20,18 +27,16 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
   next_name = next( names, None )
 
   current_file = None
-  current_output = []
+  filtered_output = []
   current_deps = []
 
   for line in output.split('\n'):
     if line == next_name:
       if current_file is not None:
-        current_output = '\n'.join( current_output )
-        results.append( ( current_file, current_deps, current_output ) )
+        results.append( current_deps )
       
       current_file = next( sources, None )
       current_deps = []
-      current_output = []
 
       next_name = next( names, None )
 
@@ -42,12 +47,12 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
         current_deps.append( dep_file )
     
     else:
-      current_output.append( line )
+      filtered_output.append( line )
   
-  current_output = '\n'.join( current_output )
-  results.append( ( current_file, current_deps, current_output ) )
+  output = '\n'.join( filtered_output )
+  results.append( current_deps )
   
-  return results
+  return results, output
 
 #//===========================================================================//
 
@@ -69,15 +74,57 @@ class MsvcCompiler (CppCommonCompiler):
     try:
       out = self.execCmd( cmd, cwd, file_flag = '@' )
     except aql.ExecCommandResult as ex:
-      outs = _parseOutput( sources, ex.out, self.ext_cpppath )
-      out = '\n'.join( out[2] for out in outs )
+      deps, out = _parseOutput( sources, ex.out, self.ext_cpppath )
       raise aql.ExecCommandResult( cmd, returncode = ex.returncode, out = out )
     
-    outs = _parseOutput( sources, out, self.ext_cpppath )
+    deps, out = _parseOutput( sources, out, self.ext_cpppath )
     
-    source, deps, out = outs[0]
+    node.setFileTargets( obj_file, ideps = deps[0] )
     
-    node.setFileTargets( obj_file, ideps = deps )
+    return out
+  
+  #//-------------------------------------------------------//
+  def   getTargets( self, sources ):
+    obj_files = []
+    cwd = None
+    for src in sources:
+      obj_file = self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
+      obj_cwd = obj_file.dirname()
+      if cwd is None:
+        cwd = obj_cwd
+      elif cwd != obj_cwd:
+        raise ErrorDifferentSourceDirs( cwd, obj_cwd )
+      
+      obj_files.append( obj_file )
+    
+    return obj_files 
+  
+  #//-------------------------------------------------------//
+  
+  def   buildBatch( self, node ):
+    
+    source_values = node.getSourceValues()
+    
+    sources = tuple( src.get() for src in source_values )
+    
+    obj_files = self.getTargets( sources )
+    
+    cwd = obj_files[0].dirname()
+    
+    cmd = list(self.cmd)
+    cmd += [ '/c', '/showIncludes' ]
+    cmd += sources
+    
+    try:
+      out = self.execCmd( cmd, cwd, file_flag = '@' )
+    except aql.ExecCommandResult as ex:
+      deps, out = _parseOutput( sources, ex.out, self.ext_cpppath )
+      raise aql.ExecCommandResult( cmd, returncode = ex.returncode, out = out )
+    
+    deps, out = _parseOutput( sources, out, self.ext_cpppath )
+    
+    for src_value, obj_file, deps in zip( source_values, obj_files, deps ):
+      node.setSourceTargets( src_value, obj_file, ideps = deps )
 
     return out
   
