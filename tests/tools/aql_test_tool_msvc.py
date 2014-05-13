@@ -99,7 +99,10 @@ class TestToolMsvc( AqlTestCase ):
       
       os.makedirs( src_dir )
       
-      num_src_files = 16
+      
+      num_groups = 4
+      group_size = 4
+      num_src_files = num_groups * group_size
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
       
@@ -114,9 +117,9 @@ class TestToolMsvc( AqlTestCase ):
         return
       # cpp.Compile( src_files, batch = False )
       
-      for i in range( num_src_files/4 ):
-        first = i * 4
-        last = first + 4
+      for i in range( num_groups ):
+        first = i * group_size
+        last = first + group_size
         ss = src_files[first:last]
         cpp.Compile( ss, batch = True )
       

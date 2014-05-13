@@ -711,7 +711,7 @@ class BatchNode (Node):
   #//=======================================================//
   
   def   getNames(self):
-    return tuple(value.name for value in self.node_values)
+    return tuple(value.name for value, ideps in self.node_values.values())
   
   #//=======================================================//
   
