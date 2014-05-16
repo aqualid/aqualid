@@ -30,6 +30,7 @@ __all__ = (
 
 import io
 import os
+import re
 import imp
 import sys
 import time
@@ -38,6 +39,7 @@ import errno
 import marshal
 import hashlib
 import inspect
+import fnmatch
 import tempfile
 import itertools
 import traceback
@@ -417,46 +419,44 @@ def   excludeFilesFromDirs( files, dirs ):
 
 #//===========================================================================//
 
-def  findFiles( paths = ".", suffixes = "", prefixes = "", ignore_dir_prefixes = ('__', '.') ):
+def   matchFileName( file_name, patterns ):
+  for pattern in patterns:
+    if pattern( file_name ) is not None:
+      return True
+  
+  return False
+
+#//===========================================================================//
+def   _masksToMatch( masks ):
+  if isString( masks ):
+    masks = masks.split('|')
+  
+  re_list = []
+  for mask in toSequence( masks ):
+    re_list.append( "(%s)" % fnmatch.translate( os.path.normcase( mask ).strip() ) )
+  
+  re_str = '|'.join(re_list)
+  
+  return re.compile(re_str).match
+
+#//===========================================================================//
+
+def  findFiles( paths = ".", mask = ("*", ), exclude_subdir_mask = ('__*', '.*') ):
   
   found_files = []
   
   paths = toSequence(paths)
-  ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
   
-  prefixes = toSequence(prefixes)
-  suffixes = toSequence(suffixes)
-  ignore_dir_prefixes = toSequence(ignore_dir_prefixes)
-  
-  prefixes = tuple( map( os.path.normcase, prefixes ) )
-  suffixes = tuple( map( os.path.normcase, suffixes ) )
-  ignore_dir_prefixes = tuple( map( os.path.normcase, ignore_dir_prefixes ) )
-  
-  if not prefixes: prefixes = ("", )
-  if not suffixes: suffixes = ("", )
+  match_mask = _masksToMatch( mask )
+  match_exclude_subdir_mask = _masksToMatch( exclude_subdir_mask )
   
   for path in paths:
-    for root, dirs, files in os.walk( path ):
-      for file_name in files:
-        file_name = os.path.normcase( file_name )
-        for prefix, suffix in itertools.product( prefixes, suffixes ):
-          if file_name.startswith( prefix ) and file_name.endswith( suffix ):
-            found_files.append( os.path.abspath( os.path.join(root, file_name) ) )
-      
-      tmp_dirs = []
-      
-      for d in dirs:
-        ignore = False
-        for dir_prefix in ignore_dir_prefixes:
-          if d.startswith( dir_prefix ):
-            ignore = True
-            break
-        if not ignore:
-          tmp_dirs.append( d )
-      
-      dirs[:] = tmp_dirs
+    for root, folders, files in os.walk( path ):
+      found_files +=  ( os.path.abspath( os.path.join(root, file_name) ) for file_name in files if match_mask( file_name ) )
+      folders[:]  =   ( folder for folder in folders if not match_exclude_subdir_mask( folder ) )
   
-  return sorted(found_files)
+  found_files.sort()
+  return found_files
 
 #//===========================================================================//
 

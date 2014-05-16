@@ -247,7 +247,7 @@ src_dir = os.path.abspath('../aql')
 SetBuildDir('output')
 options.build_dir_name = ''
 
-src_files = FindFiles( src_dir, suffixes = '.py' )
+src_files = FindFiles( src_dir, '*.py' )
 
 aql_tool = AddTool( AqlBuildTool )
 

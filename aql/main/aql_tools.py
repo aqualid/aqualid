@@ -147,7 +147,7 @@ class ToolsManager( Singleton ):
     paths = set( map( lambda path: os.path.normcase( os.path.abspath( path ) ), toSequence( paths ) ) )
     paths -= self.loaded_paths
     
-    module_files = findFiles( paths, suffixes = ".py" )
+    module_files = findFiles( paths, mask = "*.py" )
     
     for module_file in module_files:
       try:

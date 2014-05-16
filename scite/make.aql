@@ -1,14 +1,34 @@
 
 import os
 
-src_dir = os.path.abspath('../../sbe')
-tests_dir = os.path.join( src_dir, 'tests')
-
 SetBuildDir('output')
+
+ReadOptions('make.cfg')
+root_src_dir = options.root_src_dir.get()
+scintilla_dir = os.path.join( root_src_dir, 'scintilla')
 
 cpp = Tool('c++', tools_path = '../tools' )
 
-cpp.options.include = src_dir
+gcc_options = cpp.options.If.cc_name.eq('gcc')
+windows_options = cpp.options.If().target_os.eq('windows')
+unix_options = cpp.options.If().target_os.ne('windows')
+
+cpp.options.rtti = False
+cpp.options.cxxstd = 'c++11'
+
+gcc_options.linkflags = ['-static', '-Wl,--enable-runtime-pseudo-reloc-v2', '-Wl,--add-stdcall-alias']
+
+include_dirs = ['src', 'include', 'lexlib']
+src_dirs = ['src','lexlib', 'lexers']
+
+src_dirs = [os.path.join( scintilla_dir, inc ) for inc in src_dirs ]
+
+cpp.options.cpppath += [os.path.join( scintilla_dir, inc ) for inc in include_dirs ]
+
+windows_options.cpppath += 'win32'
+unix_options.cpppath += 'gtk'
+
+windows_options.libs = ['kernel32', 'user32', 'imm32', 'ole32', 'uuid']
 
 src_files = FindFiles( tests_dir, '*.cpp' )
 

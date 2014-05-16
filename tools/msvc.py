@@ -264,9 +264,11 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.shlibsuffix   = '.dll'
     options.progsuffix    = '.exe'
     
-    options.cpppath_flag    = '/I '
-    options.libpath_flag    = '/LIBPATH:'
-    options.cppdefines_flag = '/D'
+    options.cpppath_prefix    = '/I '
+    options.libpath_prefix    = '/LIBPATH:'
+    options.cppdefines_prefix = '/D'
+    options.libs_prefix = ''
+    options.libs_suffix = '.lib'
     
     options.ccflags   += ['/nologo']
     options.libflags  += ['/nologo']

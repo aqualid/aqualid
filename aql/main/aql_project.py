@@ -455,13 +455,16 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   ReadOptions( self, options_file ):
+  def   ReadOptions( self, options_file, options = None ):
     
-    script_locals = { 'options': self.options }
+    if options is None:
+      options = self.options
+    
+    script_locals = { 'options': options }
     
     script_locals = self._execScript( options_file, script_locals )
     
-    self.options.update( script_locals )
+    options.update( script_locals )
   
   #//-------------------------------------------------------//
   

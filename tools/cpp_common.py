@@ -27,6 +27,25 @@ def   _addPrefix( prefix, values ):
 
 #//===========================================================================//
 
+def   _addIxes( prefix, suffix, values ):
+  prefix = prefix.lstrip()
+  suffix = suffix.strip()
+  
+  sep_prefix = prefix and (prefix[-1] == ' ')
+  result = []
+  
+  for value in values:
+    value = "%s%s" % (value, suffix)
+    if prefix:
+      if sep_prefix:
+        result += [ prefix, value ]
+      else:
+        result.append( "%s%s" % (prefix, value) )
+  
+  return result 
+
+#//===========================================================================//
+
 def   _absFilePaths( file_paths ):
   return tuple( os.path.normcase( os.path.abspath( path ) ) for path in file_paths )
 
@@ -49,19 +68,19 @@ def   _compilerOptions( options ):
   
   options.cppdefines = aql.ListOptionType( unique = True, description = "C/C++ preprocessor defines", separators = None )
   options.defines = options.cppdefines
-  options.cppdefines_flag = aql.StrOptionType( description = "Flag for C/C++ preprocessor defines." )
+  options.cppdefines_prefix = aql.StrOptionType( description = "Flag for C/C++ preprocessor defines." )
   options.cppdefines_flags = aql.ListOptionType( separators = None )
-  options.cppdefines_flags += aql.SimpleOperation( _addPrefix, options.cppdefines_flag, options.cppdefines )
+  options.cppdefines_flags += aql.SimpleOperation( _addPrefix, options.cppdefines_prefix, options.cppdefines )
   
   options.cpppath = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
   options.include = options.cpppath
-  options.cpppath_flag  = aql.StrOptionType( description = "Flag for C/C++ preprocessor paths." )
+  options.cpppath_prefix  = aql.StrOptionType( description = "Flag for C/C++ preprocessor paths." )
   options.cpppath_flags = aql.ListOptionType( separators = None )
-  options.cpppath_flags = aql.SimpleOperation( _addPrefix, options.cpppath_flag, aql.SimpleOperation( _absFilePaths, options.cpppath ) )
+  options.cpppath_flags = aql.SimpleOperation( _addPrefix, options.cpppath_prefix, aql.SimpleOperation( _absFilePaths, options.cpppath ) )
   
   options.ext_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
   options.ext_include   = options.ext_cpppath
-  options.cpppath_flags += aql.SimpleOperation( _addPrefix, options.cpppath_flag, aql.SimpleOperation( _absFilePaths, options.ext_cpppath ) )
+  options.cpppath_flags += aql.SimpleOperation( _addPrefix, options.cpppath_prefix, aql.SimpleOperation( _absFilePaths, options.ext_cpppath ) )
   options.ext_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
   options.sys_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), description = "C/C++ preprocessor path to standard headers", separators = None )
   
@@ -74,6 +93,9 @@ def   _compilerOptions( options ):
   options.If().language.eq('c++').cc_cmd += options.cxxflags
   options.If().language.eq('c').cc_cmd += options.cflags
   options.cc_cmd += options.ccflags + options.occflags + options.cppdefines_flags + options.cpppath_flags
+  
+  options.cxxstd = aql.EnumOptionType( values = ['default', ('c++98', 'c++03'), ('c++11', 'c++0x'), ('c++14','c++1y') ], default = 'default',
+                                       description = 'C++ language standard.' )
   
 #//===========================================================================//
 
@@ -92,15 +114,16 @@ def   _linkerOptions( options ):
   
   options.libpath = aql.ListOptionType( value_type = aql.PathOptionType, unique = True,
                                         description = "Paths to external libraries", separators = None )
-  options.libpath_flag  = aql.StrOptionType( description = "Flag for library paths." )
+  options.libpath_prefix  = aql.StrOptionType( description = "Flag for library paths." )
   options.libpath_flags = aql.ListOptionType( separators = None )
-  options.libpath_flags = aql.SimpleOperation( _addPrefix, options.libpath_flag, aql.SimpleOperation( _absFilePaths, options.libpath ) )
+  options.libpath_flags = aql.SimpleOperation( _addPrefix, options.libpath_prefix, aql.SimpleOperation( _absFilePaths, options.libpath ) )
   
   options.libs  = aql.ListOptionType( value_type = aql.PathOptionType, unique = True,
                                       description = "Linking external libraries", separators = None )
-  options.libs_flag  = aql.StrOptionType( description = "Flag for libraries." )
+  options.libs_prefix  = aql.StrOptionType( description = "Prefix flag for libraries." )
+  options.libs_suffix  = aql.StrOptionType( description = "Suffix flag for libraries." )
   options.libs_flags = aql.ListOptionType( separators = None )
-  options.libs_flags = aql.SimpleOperation( _addPrefix, options.libpath_flag, options.libs )
+  options.libs_flags = aql.SimpleOperation( _addIxes, options.libs_prefix, options.libs_suffix, options.libs )
   
   options.progsuffix = aql.StrOptionType( description = "Program suffix." )
   options.linkflags  = aql.ListOptionType( description = "Linker flags", separators = None )

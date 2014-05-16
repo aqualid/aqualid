@@ -119,12 +119,16 @@ class TestUtils( AqlTestCase ):
   
   #//===========================================================================//
   
-  @skip
   def   test_find_files( self ):
-    files = findFiles( r"../..", suffixes = ".py" )
-    #~ files = findFiles( r"C:\work\src\aql\aql\main", prefixes = "aql_test_", suffixes = [".py", ".pyc"] )
-    import pprint
-    pprint.pprint( files )
+    path = os.path.join( os.path.dirname( __file__ ), '..', '..') 
+    
+    files = findFiles( path, mask = ['*.pythonics', "*.tdt", "*.py", "*.pyc" ] )
+    self.assertIn( os.path.abspath(__file__), files )
+    
+    files2 = findFiles( path, mask = '|*.pythonics|*.tdt||*.py|*.pyc' )
+    self.assertEqual( files2, files )
+    # import pprint
+    # pprint.pprint( files )
   
   #//===========================================================================//
   

@@ -250,9 +250,12 @@ class ToolGccCommon( ToolCppCommon ):
     options.shlibsuffix   = '.so'
     if_windows.progsuffix = '.exe'
     
-    options.cpppath_flag    = '-I '
-    options.libpath_flag    = '-L '
-    options.cppdefines_flag = '-D '
+    options.cpppath_prefix    = '-I '
+    options.libpath_prefix    = '-L '
+    options.cppdefines_prefix = '-D '
+    options.libs_prefix = '-l'
+    options.libs_suffix = ''
+
     
     options.ccflags   += ['-pipe', '-x', self.language ]
     options.libflags  += ['-rcs']
@@ -291,6 +294,10 @@ class ToolGccCommon( ToolCppCommon ):
     if_profiling_true = if_.profile.isTrue()
     if_profiling_true.ccflags += '-pg'
     if_profiling_true.linkflags += '-pg'
+    
+    options.If().cxxstd.eq('c++98').cxxflags += '-std=c++98'
+    options.If().cxxstd.eq('c++11').cxxflags += '-std=c++11'
+    options.If().cxxstd.eq('c++14').cxxflags += '-std=c++1y'
     
   #//-------------------------------------------------------//
   

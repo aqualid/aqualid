@@ -71,7 +71,7 @@ def   _build_options():
   
   #//-------------------------------------------------------//
   
-  options.tools_path    = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search path" )
+  options.tools_path = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search path" )
   
   #//-------------------------------------------------------//
   
@@ -85,7 +85,7 @@ def   _target_options():
   options = Options()
   
   options.target_os = EnumOptionType( values = ['native', ('windows', 'win32', 'win64'), ('linux', 'linux-gnu'),
-                                                'cygwin', 'darwin', 'java', 'sunos', 'hpux', 'elf'],
+                                                'cygwin', ('OS-X', 'osx', 'darwin' ), 'java', 'sunos', 'hpux', 'elf'],
                                       default = 'native',
                                       is_tool_key = True,
                                       description = "The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'." )
