@@ -7,12 +7,6 @@ import aql
 #// BUILDERS IMPLEMENTATION
 #//===========================================================================//
 
-def   _isCCppSourceFile( source_file ):
-  ext = os.path.splitext( str(source_file) )[1]
-  return ext in ( ".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c" )
-
-#//===========================================================================//
-
 def   _addPrefix( prefix, values ):
   prefix = prefix.lstrip()
   
@@ -51,20 +45,7 @@ def   _absFilePaths( file_paths ):
 
 #//===========================================================================//
 
-def   _compilerOptions( options ):
-  
-  options.language = aql.EnumOptionType( values = [('c++', 'cpp'), 'c'], default = 'c++', description = 'Current language' )
-  options.lang = options.language
-  
-  options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
-  options.shobjsuffix = aql.StrOptionType( description = "Shared object file suffix." )
-  
-  options.shobjsuffix = options.objsuffix
-  
-  options.cxxflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
-  options.cflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
-  options.ccflags = aql.ListOptionType( description = "Common C/C++ compiler flags", separators = None )
-  options.occflags = aql.ListOptionType( description = "Common C/C++ compiler optimization flags", separators = None )
+def   _preprocessorOptions( options ):
   
   options.cppdefines = aql.ListOptionType( unique = True, description = "C/C++ preprocessor defines", separators = None )
   options.defines = options.cppdefines
@@ -83,9 +64,26 @@ def   _compilerOptions( options ):
   options.cpppath_flags += aql.SimpleOperation( _addPrefix, options.cpppath_prefix, aql.SimpleOperation( _absFilePaths, options.ext_cpppath ) )
   options.ext_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
   options.sys_cpppath   = aql.ListOptionType( value_type = aql.PathOptionType(), description = "C/C++ preprocessor path to standard headers", separators = None )
+
+#//===========================================================================//
+
+def   _compilerOptions( options ):
+  
+  options.language = aql.EnumOptionType( values = [('c++', 'cpp'), 'c'], default = 'c++', description = 'Current language' )
+  options.lang = options.language
+  
+  options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
+  options.shobjsuffix = aql.StrOptionType( description = "Shared object file suffix." )
+  
+  options.shobjsuffix = options.objsuffix
+  
+  options.cxxflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
+  options.cflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
+  options.ccflags = aql.ListOptionType( description = "Common C/C++ compiler flags", separators = None )
+  options.occflags = aql.ListOptionType( description = "Common C/C++ compiler optimization flags", separators = None )
   
   options.cc      = aql.PathOptionType( description = "C/C++ compiler program" )
-  options.cc_name = aql.StrOptionType( ignore_case = True, is_tool_key = True, description = "C/C++ compiler name" )
+  options.cc_name = aql.StrOptionType( is_tool_key = True, ignore_case = True, description = "C/C++ compiler name" )
   options.cc_ver  = aql.VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
   options.cc_cmd  = aql.ListOptionType( description = "C/C++ compiler full command", separators = None )
   
@@ -97,6 +95,17 @@ def   _compilerOptions( options ):
   options.cxxstd = aql.EnumOptionType( values = ['default', ('c++98', 'c++03'), ('c++11', 'c++0x'), ('c++14','c++1y') ], default = 'default',
                                        description = 'C++ language standard.' )
   
+#//===========================================================================//
+
+def   _resourceCompilerOptions( options ):
+  options.rc = aql.PathOptionType( description = "C/C++ resource compiler program" )
+  options.ressuffix = aql.StrOptionType( description = "Compiled resource file suffix." )
+  
+  options.rcflags = aql.ListOptionType( description = "C/C++ resource compiler flags", separators = None )
+  options.rc_cmd = aql.ListOptionType( description = "C/C++ resource resource compiler full command", separators = None )
+  
+  options.rc_cmd = [ options.rc ] + options.rcflags + options.cppdefines_flags + options.cpppath_flags
+
 #//===========================================================================//
 
 def   _linkerOptions( options ):
@@ -136,15 +145,26 @@ def   _linkerOptions( options ):
 
 def   _getCppOptions():
   options = aql.Options()
+  _preprocessorOptions( options )
   _compilerOptions( options )
+  _resourceCompilerOptions( options )
   _linkerOptions( options )
   
   return options
 
 #//===========================================================================//
 
+def   _getResOptions():
+  options = aql.Options()
+  _preprocessorOptions( options )
+  _resourceCompilerOptions( options )
+  
+  return options
+
+#//===========================================================================//
+
 #noinspection PyAttributeOutsideInit
-class CppCommonCompiler (aql.FileBuilder):
+class CommonCppCompiler (aql.FileBuilder):
   
   NAME_ATTRS = ( 'prefix', 'suffix' )
   SIGNATURE_ATTRS = ('cmd', )
@@ -189,17 +209,88 @@ class CppCommonCompiler (aql.FileBuilder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class CppCommonLinkerBase(aql.FileBuilder):
+class CommonResCompiler (aql.FileBuilder):
+  
+  NAME_ATTRS = ( 'prefix', 'suffix' )
+  SIGNATURE_ATTRS = ('cmd', )
+  
+  #//-------------------------------------------------------//
+  
+  #noinspection PyUnusedLocal
+  def   __init__(self, options ):
+    
+    self.prefix = options.prefix.get()
+    self.suffix = options.ressuffix.get()
+    
+    # ext_cpppath = list( options.ext_cpppath.get() )
+    # ext_cpppath += options.sys_cpppath.get()
+    # 
+    # self.ext_cpppath = tuple( set( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in ext_cpppath ) )
+    
+    self.cmd = options.rc_cmd.get()
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName( self, brief ):
+    if brief:
+      name = self.cmd[0]
+      name = os.path.splitext( os.path.basename( name ) )[0]
+    else:
+      name = ' '.join( self.cmd )
+    
+    return name
+
+#//===========================================================================//
+
+#noinspection PyAttributeOutsideInit
+class CommonCppLinkerBase( aql.FileBuilder):
   
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
   
+  def   getCppExts( self, _cpp_ext = (".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c") ):
+    return _cpp_ext
+  
   #//-------------------------------------------------------//
+  
+  def   getResExts( self ):
+    return ('.rc',)
+  
+  #//-------------------------------------------------------//
+  
   def   makeCompiler( self, options ):
     """
     It should return a builder of C/C++ compiler
     """
-    return None
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   makeResCompiler( self, options ):
+    """
+    It should return a builder of C/C++ resource compiler
+    """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   addSourceBuilders( self, builders, exts, builder ):
+    if builder:
+      for ext in exts:
+        builders[ ext ] = builder
+  
+  #//-------------------------------------------------------//
+  
+  def   getSourceBuilders( self, node ):
+    builders = {}
+    
+    compiler = self.makeCompiler( node.options )
+    self.addSourceBuilders( builders, self.getCppExts(), compiler )
+    
+    rc_compiler = self.makeResCompiler( node.options )
+    self.addSourceBuilders( builders, self.getResExts(), rc_compiler )
+    
+    return builders
   
   #//-------------------------------------------------------//
   
@@ -207,14 +298,16 @@ class CppCommonLinkerBase(aql.FileBuilder):
     obj_files = []
     src_nodes = []
     
-    compiler = self.makeCompiler( node.options )
-    if compiler:
-      for src_file in node.getSourceValues():
-        if _isCCppSourceFile( src_file.name ):
-          src_node = aql.Node( compiler, src_file, node.cwd )
-          src_nodes.append( src_node )
-        else:
-          obj_files.append( src_file )
+    builders = self.getSourceBuilders( node )
+    
+    for src_file in node.getSourceValues():
+      ext = os.path.splitext( src_file.name )[1]
+      builder = builders.get( ext, None )
+      if builder:
+        src_node = aql.Node( builder, src_file, node.cwd )
+        src_nodes.append( src_node )
+      else:
+        obj_files.append( src_file )
     
     node.builder_data = obj_files
     
@@ -261,7 +354,7 @@ class CppCommonLinkerBase(aql.FileBuilder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class CppCommonArchiver( CppCommonLinkerBase ):
+class CommonCppArchiver( CommonCppLinkerBase ):
   
   def   __init__( self, options, target ):
     
@@ -275,7 +368,7 @@ class CppCommonArchiver( CppCommonLinkerBase ):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class CppCommonLinker( CppCommonLinkerBase ):
+class CommonCppLinker( CommonCppLinkerBase ):
   
   def   __init__( self, options, target, shared ):
     if shared:
@@ -293,10 +386,10 @@ class CppCommonLinker( CppCommonLinkerBase ):
 #// TOOL IMPLEMENTATION
 #//===========================================================================//
 
-class ToolCppCommon( aql.Tool ):
+class ToolCommonCpp( aql.Tool ):
   
   def   __init__( self, options ):
-    super( ToolCppCommon, self).__init__( options )
+    super( ToolCommonCpp, self).__init__( options )
     
     options.If().cc_name.isTrue().build_dir_name  += '_' + options.cc_name + '_' + options.cc_ver
   
@@ -309,9 +402,10 @@ class ToolCppCommon( aql.Tool ):
     
     return options
   
-  #//-------------------------------------------------------//
-  
   def   makeCompiler( self, options, shared ):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  def   makeResCompiler( self, options ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   makeArchiver( self, options, target ):
@@ -328,6 +422,10 @@ class ToolCppCommon( aql.Tool ):
       return aql.BuildBatch( builder )
     return aql.BuildSingle( builder )
   
+  def   CompileResource( self, options ):
+    builder = self.makeResCompiler( options )
+    return aql.BuildSingle( builder )
+  
   def   LinkLibrary( self, options, target ):
     return self.makeArchiver( options, target )
   
@@ -339,3 +437,28 @@ class ToolCppCommon( aql.Tool ):
   
   def   LinkProgram( self, options, target ):
     return self.makeLinker( options, target, shared = False )
+
+#//===========================================================================//
+
+class ToolCommonRes( aql.Tool ):
+  
+  @classmethod
+  def   options( cls ):
+    options = _getResOptions()
+    options.setGroup( "C/C++ resource compiler" )
+    
+    return options
+  
+  #//-------------------------------------------------------//
+  
+  def   makeResCompiler( self, options ):
+    """
+    It should return a builder of C/C++ resource compiler
+    """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   Compile( self, options ):
+    builder = self.makeResCompiler( options )
+    return aql.BuildSingle( builder )

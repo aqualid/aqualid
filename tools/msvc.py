@@ -3,7 +3,8 @@ import re
 
 import aql
 
-from cpp_common import ToolCppCommon, CppCommonCompiler, CppCommonArchiver, CppCommonLinker 
+from cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
+                        ToolCommonRes, CommonResCompiler
 
 #//===========================================================================//
 
@@ -57,7 +58,13 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class MsvcCompiler (CppCommonCompiler):
+class MsvcCompiler (CommonCppCompiler):
+  
+  def   __init__(self, options ):
+    super(MsvcCompiler, self).__init__( options, shared = False )
+    self.cmd += [ '/nologo', '/c', '/showIncludes' ]
+  
+  #//-------------------------------------------------------//
   
   def   build( self, node ):
     
@@ -68,7 +75,7 @@ class MsvcCompiler (CppCommonCompiler):
     cwd = os.path.dirname( obj_file )
     
     cmd = list(self.cmd)
-    cmd += [ '/c', '/showIncludes', '/Fo%s' % obj_file ]
+    cmd += [ '/Fo%s' % obj_file ]
     cmd += sources
     
     try:
@@ -112,7 +119,6 @@ class MsvcCompiler (CppCommonCompiler):
     cwd = obj_files[0].dirname()
     
     cmd = list(self.cmd)
-    cmd += [ '/c', '/showIncludes' ]
     cmd += sources
     
     try:
@@ -127,23 +133,45 @@ class MsvcCompiler (CppCommonCompiler):
       node.setSourceTargets( src_value, obj_file, ideps = deps )
 
     return out
-  
+
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
-class MsvcArchiver(CppCommonArchiver):
+class MsvcResCompiler (CommonResCompiler):
+  
+  def   build( self, node ):
+    
+    src = node.getSources()[0]
+    
+    res_file = self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
+    cwd = os.path.dirname( res_file )
+    
+    cmd = list(self.cmd)
+    cmd += [ '/nologo', '/Fo%s' % res_file, src ]
+    
+    out = self.execCmd( cmd, cwd, file_flag = '@' )
+    
+    # deps = _parseRes( src )
+    
+    node.setFileTargets( res_file )
+    
+    return out
+
+#//===========================================================================//
+
+class   MsvcArchiver (CommonCppArchiver):
   
   def   makeCompiler( self, options ):
-    return MsvcCompiler( options, shared = False )
+    return MsvcCompiler( options )
   
-  #//-------------------------------------------------------//
+  def   makeResCompiler( self, options ):
+    return MsvcResCompiler( options )
   
   def   build( self, node ):
     
     obj_files = self.getSources( node )
     
     cmd = list(self.cmd)
-    cmd.append( "/OUT:%s" % self.target )
+    cmd += [ '/nologo', "/OUT:%s" % self.target ]
     cmd += obj_files
     
     cwd = self.target.dirname()
@@ -157,10 +185,13 @@ class MsvcArchiver(CppCommonArchiver):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class MsvcLinker(CppCommonLinker):
+class MsvcLinker (CommonCppLinker):
   
   def   makeCompiler( self, options ):
-    return MsvcCompiler( options, shared = False )
+    return MsvcCompiler( options )
+  
+  def   makeResCompiler( self, options ):
+    return MsvcResCompiler( options )
   
   #//-------------------------------------------------------//
   
@@ -181,7 +212,7 @@ class MsvcLinker(CppCommonLinker):
       cmd.append( "/PDB:%s" % (pdb,) )
       itargets.append( pdb )
       
-    cmd += [ '/OUT:%s' % target ]
+    cmd += [ '/nologo', '/OUT:%s' % target ]
     cmd += obj_files
     
     cwd = target.dirname()
@@ -196,15 +227,6 @@ class MsvcLinker(CppCommonLinker):
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION
-#//===========================================================================//
-
-def   _findMsvc( env ):
-  cl = aql.whereProgram( 'cl', env )
-  link = aql.whereProgram( 'link', env )
-  lib = aql.whereProgram( 'lib', env )
-
-  return cl, link, lib
-
 #//===========================================================================//
 
 def _getMsvcSpecs( cl ):
@@ -236,12 +258,14 @@ def _getMsvcSpecs( cl ):
 
 #//===========================================================================//
 
-class ToolMsvcCommon( ToolCppCommon ):
+class ToolMsvcCommon( ToolCommonCpp ):
   
-  @staticmethod
-  def   setup( options, env ):
+  @classmethod
+  def   setup( cls, options, env ):
     
-    cl, link, lib = _findMsvc( env )
+    cl = aql.whereProgram( 'cl', env )
+    link, lib, rc = aql.findOptionalPrograms( ['link', 'lib', 'rc' ], env )
+    
     specs = _getMsvcSpecs( cl )
     
     options.update( specs )
@@ -249,6 +273,9 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.cc = cl
     options.link = link
     options.lib = lib
+    options.rc = rc
+  
+  #//-------------------------------------------------------//
   
   def   __init__(self, options ):
     super(ToolMsvcCommon,self).__init__( options )
@@ -258,6 +285,7 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.env['LIBPATH']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
     
     options.objsuffix     = '.obj'
+    options.ressuffix     = '.res'
     options.libprefix     = ''
     options.libsuffix     = '.lib'
     options.shlibprefix   = ''
@@ -270,9 +298,7 @@ class ToolMsvcCommon( ToolCppCommon ):
     options.libs_prefix = ''
     options.libs_suffix = '.lib'
     
-    options.ccflags   += ['/nologo']
-    options.libflags  += ['/nologo']
-    options.linkflags += ['/nologo', '/INCREMENTAL:NO']
+    options.linkflags += ['/INCREMENTAL:NO']
     
     options.sys_cpppath = options.env['INCLUDE']
     
@@ -332,7 +358,10 @@ class ToolMsvcCommon( ToolCppCommon ):
   #//-------------------------------------------------------//
   
   def   makeCompiler( self, options, shared ):
-    return MsvcCompiler( options, shared = False )
+    return MsvcCompiler( options )
+  
+  def   makeResCompiler( self, options ):
+    return MsvcResCompiler( options )
   
   def   makeArchiver( self, options, target ):
     return MsvcArchiver( options, target )
@@ -343,7 +372,7 @@ class ToolMsvcCommon( ToolCppCommon ):
 #//===========================================================================//
 
 @aql.tool('c++', 'msvcpp','msvc++', 'cpp', 'cxx')
-class ToolMsvcpp( ToolMsvcCommon ):
+class ToolMsVCpp( ToolMsvcCommon ):
   language = "c++"
 
 #//===========================================================================//
@@ -351,3 +380,22 @@ class ToolMsvcpp( ToolMsvcCommon ):
 @aql.tool('c', 'msvc', 'cc')
 class ToolMsvc( ToolMsvcCommon ):
   language = "c"
+
+#//===========================================================================//
+
+@aql.tool('rc', 'msrc')
+class ToolMsrc( ToolCommonRes ):
+  
+  @classmethod
+  def   setup( cls, options, env ):
+    
+    rc = aql.whereProgram( 'rc', env )
+    options.target_os = 'windows'
+    options.rc = rc
+  
+  def   __init__(self, options ):
+    super(ToolMsrc,self).__init__( options )
+    options.ressuffix   = '.res'
+  
+  def   makeResCompiler( self, options ):
+    return MsvcResCompiler( options )

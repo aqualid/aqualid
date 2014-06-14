@@ -168,13 +168,13 @@ class ProjectConfig( object ):
 #//===========================================================================//
 
 class BuilderWrapper( object ):
-  __slots__ = ( 'project', 'options', 'method', 'arg_names')
+  __slots__ = ( 'project', 'options', 'method', 'arg_names' )
   
-  def   __init__( self, method, project, options):
-    self.arg_names = self.__checkBuilderMethod( method )
-    self.method = method
-    self.project = project
-    self.options = options
+  def   __init__( self, method, project, options ):
+    self.arg_names  = self.__checkBuilderMethod( method )
+    self.method     = method
+    self.project    = project
+    self.options    = options
 
   #//-------------------------------------------------------//
   
@@ -240,7 +240,7 @@ class BuilderWrapper( object ):
     sources = flattenList( sources )
     
     builder = self.method( options, **args_kw )
-
+    
     if isinstance( builder, BuildBatch ):
       node = BatchNode( builder, sources )
     else:
@@ -329,7 +329,8 @@ class ProjectTools( object ):
     
     options = self.project.options
     
-    tool_method = getattr( BuiltinTool( options ), name, None )
+    tool = BuiltinTool( options )
+    tool_method = getattr( tool, name, None )
     if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType) ):
       return BuilderWrapper( tool_method, self.project, options )
     
@@ -360,7 +361,12 @@ class ProjectTools( object ):
     
     tools = [ self.__addTool( tool_name, options ) for tool_name in tool_names ]
     
-    return tools[0] if len(tools) == 1 else tools
+    return tools
+  
+  #//-------------------------------------------------------//
+  
+  def   Tool( self, tool_name, **kw ):
+    return self.Tools( tool_name, **kw )[0]
   
   #//-------------------------------------------------------//
   
@@ -420,7 +426,7 @@ class Project( object ):
     script_locals = {
       'options'   : self.options,
       'tools'     : self.tools,
-      'Tool'      : self.tools.Tools,
+      'Tool'      : self.tools.Tool,
       'Tools'     : self.tools.Tools,
       'AddTool'   : self.tools.AddTool,
       'FindFiles' : findFiles

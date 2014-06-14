@@ -6,7 +6,8 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, executeCommand, ErrorProgramNotFound, findFiles, flattenList, commonDirName, \
+                      whereProgram, findOptionalProgram, findOptionalPrograms, \
+                      executeCommand, ErrorProgramNotFound, findFiles, flattenList, commonDirName, \
                       excludeFilesFromDirs
 
 class TestUtils( AqlTestCase ):
@@ -114,8 +115,18 @@ class TestUtils( AqlTestCase ):
   #//===========================================================================//
   
   def   test_find_prog( self ):
-    self.assertTrue( whereProgram, 'route' )
+    self.assertTrue( whereProgram( 'route' ) )
     self.assertRaises( ErrorProgramNotFound, whereProgram, 'route', env = {} )
+    
+    self.assertTrue( findOptionalProgram( 'route' ) )
+    
+    prog = findOptionalProgram( 'route', env = {} )
+    self.assertEqual( prog.get(), 'route' )
+    
+    self.assertEqual( len(findOptionalPrograms( ['route'] )), 1 )
+    
+    progs = findOptionalPrograms( ['route'], env = {} )
+    self.assertEqual( progs[0].get(), 'route' )
   
   #//===========================================================================//
   

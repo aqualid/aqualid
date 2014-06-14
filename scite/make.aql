@@ -1,55 +1,54 @@
-
 import os
 
 SetBuildDir('output')
 
-ReadOptions('make.cfg')
-root_src_dir = options.root_src_dir.get()
-scintilla_dir = os.path.join( root_src_dir, 'scintilla')
-
 cpp = Tool('c++', tools_path = '../tools' )
 
-gcc_options = cpp.options.If.cc_name.eq('gcc')
-windows_options = cpp.options.If().target_os.eq('windows')
-unix_options = cpp.options.If().target_os.ne('windows')
+cpp_options = cpp.options
 
-cpp.options.rtti = False
-cpp.options.cxxstd = 'c++11'
+ReadOptions( 'make.cfg', cpp_options )
 
-gcc_options.linkflags = ['-static', '-Wl,--enable-runtime-pseudo-reloc-v2', '-Wl,--add-stdcall-alias']
 
-include_dirs = ['src', 'include', 'lexlib']
-src_dirs = ['src','lexlib', 'lexers']
+is_windows_build = bool( cpp_options.target_os == 'windows')
+is_unix_build = not is_windows_build
 
-src_dirs = [os.path.join( scintilla_dir, inc ) for inc in src_dirs ]
+scintilla_dir = os.path.join( cpp_options.root_src_dir.get(), 'scintilla')
+src_dir = os.path.join( scintilla_dir, 'src')
+lexers_dir = os.path.join( scintilla_dir, 'lexers')
+lexlib_dir = os.path.join( scintilla_dir, 'lexlib')
 
-cpp.options.cpppath += [os.path.join( scintilla_dir, inc ) for inc in include_dirs ]
+lexlib_sources  = FindFiles( lexers_dir, '*.cxx' )
+lexslib_sources = FindFiles( lexlib_dir, '*.cxx' )
 
-windows_options.cpppath += 'win32'
-unix_options.cpppath += 'gtk'
+base_sources  = FindFiles( src_dir, '*.cxx',
+                           exclude_mask = ["Catalogue.cxx","ExternalLexer.cxx", "ScintillaBase.cxx"] )
 
-windows_options.libs = ['kernel32', 'user32', 'imm32', 'ole32', 'uuid']
+base_sources += ( os.path.join(lexlib_dir, src ) for src in [ 'CharacterCategory.cxx', 'CharacterSet.cxx', 'PropSetSimple.cxx'] )
+if is_windows_build:
+  base_sources += [ os.path.join(scintilla_dir, 'win32', "PlatWin.cxx") ]
+elif is_unix_build:
+  base_sources += [ os.path.join(scintilla_dir, 'gtk', "PlatGtk.cxx") ]
 
-src_files = FindFiles( tests_dir, '*.cpp' )
+lib_sources = base_sources
 
-for src in src_files:
-    
-    test_name = os.path.splitext( os.path.split(src)[1] )[0]
-    
-    test_app = cpp.LinkProgram( src, target = test_name )
-    
-    # Create some useful aliases
-    Alias( 'build_' + test_name, test_app )     # 'build_<test case name>' - to build only certain test case
-    Alias( 'build', test_app )                  # 'build' - to build all test cases
-    Default( test_app )                         # mark it as default target
-    
-    # Execute the test case program
-    test = tools.ExecuteCommand( test_app )
-    
-    # Mark it as 'AlwaysBuild' which is mean that we should rerun the test case even if its program was not changed after the last run.
-    AlwaysBuild( test )
-    
-    # Create some useful aliases for test case execution
-    Alias( 'run_' + test_name, test )           # 'run_<test case name>' - to run only certain test case
-    Alias( ['run', 'test'], test )              # 'run' - to run all test cases
+include_dirs = ['include', 'lexers', 'src']
 
+if is_windows_build == 'windows':
+  include_dirs += ['win32']
+  lib_sources += ( os.path.join(scintilla_dir, 'win32', src) for src in ["ScintillaWin.cxx", "Scintilla.def"] )
+elif is_unix_build:
+  include_dirs += ['gtk']
+
+cpp_options.cpppath += [ os.path.join( scintilla_dir, inc ) for inc in include_dirs ]
+
+lib_objs = cpp.CompileShared( lib_sources )
+
+
+if is_windows_build:
+  rc_obj = cpp.CompileResource( os.path.join(scintilla_dir, 'win32', "ScintRes.rc") )
+  
+  lib_objs = [ lib_objs, rc_obj ]
+
+scintilla_dll = cpp.LinkSharedLibrary( lib_objs, target = 'Scintilla' )
+Alias( 'lib', scintilla_dll )
+Default( scintilla_dll )

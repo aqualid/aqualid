@@ -299,8 +299,10 @@ class OptionValue (object):
   def   isSet( self ):
     return bool(self.conditional_values)
   
+  #//-------------------------------------------------------//
+  
   def   isToolKey( self ):
-    return bool(self.conditional_values)
+    return self.option_type.is_tool_key
   
   #//-------------------------------------------------------//
   

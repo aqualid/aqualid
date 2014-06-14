@@ -568,14 +568,23 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   checkToolKeys( self, **kw ):
-    for name, value in kw.items():
-      opt_value = self._get_value( name, raise_ex = False )
-      if opt_value is not None:
-        if opt_value.isSet() and opt_value.isToolKey():
-          opt_value = OptionValueProxy( opt_value, name, self )
-          if opt_value != value:
-            return True
+  def   hasChangedKeyOptions(self):
+    
+    parent = self.__dict__['__parent']
+    
+    for name, opt_value in self.__dict__['__opt_values'].items():
+      if not opt_value.isToolKey() or not opt_value.isSet():
+        continue
+      
+      parent_opt_value = parent._get_value( name, raise_ex = False )
+      if parent_opt_value is None:
+        continue
+      
+      if parent_opt_value.isSet():
+        value = self.evaluate( opt_value, None )
+        parent_value = parent.evaluate( parent_opt_value, None )
+        if value != parent_value:
+          return True
     
     return False
   
@@ -911,7 +920,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   evaluate( self, option_value, context  ):
+  def   evaluate( self, option_value, context ):
     try:
       if context is not None:
         return context[ option_value ]

@@ -597,6 +597,41 @@ class TestOptions( AqlTestCase ):
     
     self.assertEqual( options.cc_cmd.get(), ['gcc', '-c', '-O2'] )
     
+  #//=======================================================//
+  
+  def   test_options_tool_keys(self):
+    
+    options = Options()
+    options.cc_name   = StrOptionType( is_tool_key = True )
+    options.cc_ver    = StrOptionType( is_tool_key = True )
+    options.ccflags   = ListOptionType( separators = None )
+    options.cc        = PathOptionType()
+    
+    options.cc = 'gcc'
+    options.ccflags = '-c'
+    
+    child = options.override()
+    child.cc = 'g++'
+    child.ccflags = '-O3'
+    
+    self.assertFalse( child.hasChangedKeyOptions() )
+    
+    child.cc_name = 'icc'
+    self.assertFalse( child.hasChangedKeyOptions() )
+    
+    options.cc_name = 'gcc'
+    self.assertTrue( child.hasChangedKeyOptions() )
+    
+    child.cc_name = 'gcc'
+    self.assertFalse( child.hasChangedKeyOptions() )
+    
+    child.cc_ver = '4.9'
+    self.assertFalse( child.hasChangedKeyOptions() )
+    
+    options.cc_ver = '4.8'
+    self.assertTrue( child.hasChangedKeyOptions() )
+
+    
     
 
     

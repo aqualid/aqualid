@@ -59,6 +59,7 @@ class TestToolMsvc( AqlTestCase ):
       num_src_files = 5
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
       
@@ -71,11 +72,13 @@ class TestToolMsvc( AqlTestCase ):
         return
       
       cpp.Compile( src_files )
+      cpp.CompileResource( res_file )
       _build( prj )
-      self.assertEqual( self.built_nodes, num_src_files )
+      self.assertEqual( self.built_nodes, num_src_files + 1 )
       
       self.built_nodes = 0
       cpp.Compile( src_files )
+      cpp.CompileResource( res_file )
       _build( prj )
       self.assertEqual( self.built_nodes, 0 )
       
@@ -156,6 +159,7 @@ class TestToolMsvc( AqlTestCase ):
       num_src_files = 5
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
       
@@ -167,12 +171,12 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.LinkLibrary( src_files, target = 'foo' )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
       _build( prj )
-      self.assertEqual( self.built_nodes, num_src_files + 1)
+      self.assertEqual( self.built_nodes, num_src_files + 2)
       
       self.built_nodes = 0
-      cpp.LinkLibrary( src_files, target = 'foo' )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
       _build( prj )
       self.assertEqual( self.built_nodes, 0 )
       
@@ -182,7 +186,7 @@ class TestToolMsvc( AqlTestCase ):
       FileChecksumValue( hdr_files[0], use_cache = False )
       
       self.built_nodes = 0
-      cpp.LinkLibrary( src_files, target = 'foo' )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
       _build( prj )
       self.assertEqual( self.built_nodes, 1 )
   #//-------------------------------------------------------//
@@ -198,6 +202,7 @@ class TestToolMsvc( AqlTestCase ):
       num_src_files = 5
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
       main_src_file = self.generateMainCppFile( src_dir, 'main')
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
@@ -210,15 +215,15 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.LinkSharedLibrary( src_files, target = 'foo' )
-      cpp.LinkSharedLibrary( src_files, target = 'foo' )
-      cpp.LinkProgram( src_files, main_src_file, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       _build( prj )
-      self.assertEqual( self.built_nodes, num_src_files + 3 )
+      self.assertEqual( self.built_nodes, num_src_files + 4 )
       
       self.built_nodes = 0
-      cpp.LinkSharedLibrary( src_files, target = 'foo' )
-      cpp.LinkProgram( src_files, main_src_file, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       _build( prj )
       self.assertEqual( self.built_nodes, 0 )
       
@@ -228,8 +233,8 @@ class TestToolMsvc( AqlTestCase ):
       FileChecksumValue( hdr_files[0], use_cache = False )
       
       self.built_nodes = 0
-      cpp.LinkSharedLibrary( src_files, target = 'foo' )
-      cpp.LinkProgram( src_files, main_src_file, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       _build( prj )
       self.assertEqual( self.built_nodes, 1 )
       

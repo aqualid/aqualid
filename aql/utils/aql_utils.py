@@ -23,7 +23,8 @@ __all__ = (
   'fileSignature', 'fileTimeSignature', 'fileChecksum',
   'findFiles', 'absFilePath', 'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'cpuCount', 'memoryUsage',
+  'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
+  'cpuCount', 'memoryUsage',
   'flattenList', 'simplifyValue', 'commonDirName', 'excludeFilesFromDirs', 'splitDrive',
   'Chrono', 'Chdir',
 )
@@ -58,7 +59,7 @@ from aql.util_types import uStr, isString, UniqueList, toSequence, isSequence, A
 
 #noinspection PyUnusedLocal
 class   ErrorProgramNotFound( AqlException ):
-  def   __init__( self, program, env ):
+  def   __init__( self, program ):
     msg = "Program '%s' has not been found" % (program,)
     super(type(self), self).__init__( msg )
 
@@ -72,10 +73,15 @@ class   ErrorInvalidExecCommand( AqlException ):
 
 #//===========================================================================//
 
-#noinspection PyUnusedLocal
 class   ErrorFileName( AqlException ):
   def   __init__( self, filename ):
     msg = "Invalid file name: %s(%s)" % (filename,type(filename))
+    super(type(self), self).__init__( msg )
+#//===========================================================================//
+
+class   ErrorProgramName( AqlException ):
+  def   __init__( self, prog ):
+    msg = "Invalid program name: %s(%s)" % (prog,type(prog))
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -419,15 +425,10 @@ def   excludeFilesFromDirs( files, dirs ):
 
 #//===========================================================================//
 
-def   matchFileName( file_name, patterns ):
-  for pattern in patterns:
-    if pattern( file_name ) is not None:
-      return True
+def   _masksToMatch( masks, _null_match = lambda name: False ):
+  if not masks:
+    return _null_match
   
-  return False
-
-#//===========================================================================//
-def   _masksToMatch( masks ):
   if isString( masks ):
     masks = masks.split('|')
   
@@ -441,18 +442,19 @@ def   _masksToMatch( masks ):
 
 #//===========================================================================//
 
-def  findFiles( paths = ".", mask = ("*", ), exclude_subdir_mask = ('__*', '.*') ):
+def  findFiles( paths = ".", mask = ("*", ), exclude_mask = tuple(), exclude_subdir_mask = ('__*', '.*') ):
   
   found_files = []
   
   paths = toSequence(paths)
   
   match_mask = _masksToMatch( mask )
+  match_exclude_mask = _masksToMatch( exclude_mask )
   match_exclude_subdir_mask = _masksToMatch( exclude_subdir_mask )
   
   for path in paths:
     for root, folders, files in os.walk( path ):
-      found_files +=  ( os.path.abspath( os.path.join(root, file_name) ) for file_name in files if match_mask( file_name ) )
+      found_files +=  ( os.path.abspath( os.path.join(root, file_name) ) for file_name in files if not match_exclude_mask(file_name) and match_mask( file_name ) )
       folders[:]  =   ( folder for folder in folders if not match_exclude_subdir_mask( folder ) )
   
   found_files.sort()
@@ -584,45 +586,120 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
 
 #//===========================================================================//
 
-def   whereProgram( prog, env = None ):
+def   _getEnvPath( env = None ):
   
   if env is None:
     env = os.environ
-    paths = env.get('PATH', '')
-    path_exts = env.get('PATHEXT', '' )
+  
+  paths = env.get('PATH', '')
+  if isString( paths ):
+    paths = paths.split( os.pathsep )
+  
+  return paths
+
+#//===========================================================================//
+
+def   _getEnvPathExt( env = None ):
+  
+  if env is None:
+    path_exts = os.environ.get('PATHEXT', '')
   else:
-    paths = env.get('PATH', '')
     path_exts = env.get('PATHEXT', None )
-    if not path_exts:
+    if path_exts is None:
       path_exts = os.environ.get('PATHEXT', '')
+      
+  if not path_exts and IS_WINDOWS:
+    return ('.exe','.cmd','.bat','.com')
   
-  paths = paths.split( os.pathsep )
-  
-  #//-------------------------------------------------------//
-  
-  if path_exts:
+  if isString( path_exts ):
     path_exts = path_exts.split( os.pathsep )
-    if '' not in path_exts:
-      if IS_WINDOWS:
-        path_exts.append('')
-      else:
-        path_exts.insert(0,'')
-  else:
-    if IS_WINDOWS:
-      path_exts = ('.exe','.cmd','.bat','.com', '')
-    else:
-      path_exts = ('','.sh','.py','.pl')
   
-  #//-------------------------------------------------------//
+  return path_exts
+
+#//===========================================================================//
+
+def   _findProgram( prog, paths = None, path_exts = None ):
   
-  prog = tuple( toSequence( prog ) )
+  if not path_exts or (os.path.splitext(prog)[1] in path_exts):
+    path_exts = tuple('',)
   
-  for path in itertools.product( prog, path_exts, paths ):
-    prog_path = os.path.normcase( os.path.expanduser( os.path.join( path[2], path[0] + path[1] ) ) )
-    if os.path.isfile( prog_path ):
-      return prog_path
+  for path in paths:
+    prog_path = os.path.expanduser( os.path.join( path, prog ) )
+    for ext in path_exts:
+      if os.access( prog_path + ext, os.X_OK ):
+        return os.path.normcase( prog_path + ext )
   
-  raise ErrorProgramNotFound( prog, env )
+  return None
+
+#//===========================================================================//
+
+def   whereProgram( prog, env = None ):
+  
+  paths = _getEnvPath( env )
+  path_exts = _getEnvPathExt( env )
+  
+  prog = _findProgram( prog, paths, path_exts )
+  if prog is None:
+    raise ErrorProgramNotFound( prog )
+  
+  return prog
+
+#//===========================================================================//
+
+class ProgramFinder( object ):
+  __slots__ = (
+    'prog',
+    'paths',
+    'exts',
+    'result',
+  )
+  
+  def   __init__(self, prog, paths, exts ):
+    if not isString(prog):
+      raise ErrorProgramName( prog )
+    
+    self.prog   = prog
+    self.paths  = paths
+    self.exts   = exts
+    self.result = None
+  
+  def   __nonzero__(self):
+    return bool(self.get())
+  
+  def   __bool__(self):
+    return bool(self.get())
+  
+  def   __call__(self):
+    return self.get()
+  
+  def   __str__(self):
+    return self.get()
+  
+  def   get(self):
+    progpath = self.result
+    if progpath:
+      return progpath
+    
+    prog_full_path = _findProgram( self.prog, self.paths, self.exts )
+    if prog_full_path is None:
+      prog_full_path = self.prog
+    
+    self.result = prog_full_path
+    return prog_full_path
+  
+#//=======================================================//
+
+def   findOptionalProgram( prog, env = None ):
+  paths = _getEnvPath( env )
+  path_exts = _getEnvPathExt( env )
+  return ProgramFinder( prog, paths, path_exts )
+
+#//===========================================================================//
+
+def   findOptionalPrograms( progs, env = None ):
+  paths = _getEnvPath( env )
+  path_exts = _getEnvPathExt( env )
+  return tuple( ProgramFinder( prog, paths, path_exts ) for prog in progs )
 
 #//===========================================================================//
 

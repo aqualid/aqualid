@@ -4,7 +4,8 @@ import itertools
 
 import aql
 
-from cpp_common import ToolCppCommon, CppCommonCompiler, CppCommonArchiver, CppCommonLinker
+from cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
+                        ToolCommonRes, CommonResCompiler
 
 #//===========================================================================//
 #// BUILDERS IMPLEMENTATION
@@ -41,7 +42,7 @@ def   _readDeps( dep_file, exclude_dirs, _space_splitter_re = re.compile(r'(?<!\
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class GccCompiler (CppCommonCompiler):
+class GccCompiler (CommonCppCompiler):
   
   def   build( self, node ):
     
@@ -68,13 +69,37 @@ class GccCompiler (CppCommonCompiler):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
-class GccArchiver(CppCommonArchiver):
+class GccResCompiler (CommonResCompiler):
+  
+  def   build( self, node ):
+    
+    src = node.getSources()[0]
+    
+    res_file = self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
+    cwd = os.path.dirname( res_file )
+    
+    cmd = list(self.cmd)
+    cmd += [ '-o', res_file, '-i', src ]
+    
+    out = self.execCmd( cmd, cwd, file_flag = '@' )
+    
+    # deps = _parseRes( src )
+    
+    node.setFileTargets( res_file )
+    
+    return out
+
+#//===========================================================================//
+
+class GccArchiver (CommonCppArchiver):
   
   def   makeCompiler( self, options ):
     return GccCompiler( options, shared = False )
   
-  #//=======================================================//
+  def   makeResCompiler( self, options ):
+    return GccResCompiler( options )
+  
+  #//-------------------------------------------------------//
   
   def   build( self, node ):
     
@@ -92,11 +117,13 @@ class GccArchiver(CppCommonArchiver):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
-class GccLinker(CppCommonLinker):
+class GccLinker( CommonCppLinker ):
   
   def   makeCompiler( self, options ):
-    return GccCompiler( options, shared = False )
+    return GccCompiler( options, shared = self.shared )
+  
+  def   makeResCompiler( self, options ):
+    return GccResCompiler( options )
   
   #//-------------------------------------------------------//
   
@@ -191,7 +218,7 @@ def   _getGccSpecs( gcc ):
 
 #//===========================================================================//
 
-class ToolGccCommon( ToolCppCommon ):
+class ToolGccCommon( ToolCommonCpp ):
   
   @classmethod
   def   setup( cls, options, env ):
@@ -212,6 +239,8 @@ class ToolGccCommon( ToolCppCommon ):
       options.link = gxx
     
     options.lib = ar
+    
+    options.rc = aql.findOptionalProgram( 'windres', env )
   
   #//-------------------------------------------------------//
   
@@ -243,6 +272,7 @@ class ToolGccCommon( ToolCppCommon ):
     if_windows = if_.target_os.eq('windows')
     
     options.objsuffix     = '.o'
+    options.ressuffix     = options.objsuffix
     options.shobjsuffix   = '.os'
     options.libprefix     = 'lib'
     options.libsuffix     = '.a'
@@ -256,7 +286,6 @@ class ToolGccCommon( ToolCppCommon ):
     options.libs_prefix = '-l'
     options.libs_suffix = ''
 
-    
     options.ccflags   += ['-pipe', '-x', self.language ]
     options.libflags  += ['-rcs']
     options.linkflags += ['-pipe']
@@ -298,11 +327,14 @@ class ToolGccCommon( ToolCppCommon ):
     options.If().cxxstd.eq('c++98').cxxflags += '-std=c++98'
     options.If().cxxstd.eq('c++11').cxxflags += '-std=c++11'
     options.If().cxxstd.eq('c++14').cxxflags += '-std=c++1y'
-    
+  
   #//-------------------------------------------------------//
   
   def   makeCompiler( self, options, shared ):
     return GccCompiler( options, shared = shared )
+  
+  def   makeResCompiler( self, options ):
+    return GccResCompiler( options )
   
   def   makeArchiver( self, options, target ):
     return GccArchiver( options, target )
@@ -321,3 +353,22 @@ class ToolGxx( ToolGccCommon ):
 @aql.tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   language = "c"
+
+#//===========================================================================//
+
+@aql.tool('rc', 'msrc')
+class ToolWindRes( ToolCommonRes ):
+  
+  @classmethod
+  def   setup( cls, options, env ):
+    
+    rc = aql.whereProgram( 'windres', env )
+    options.target_os = 'windows'
+    options.rc = rc
+  
+  def   __init__(self, options ):
+    super(ToolWindRes,self).__init__( options )
+    options.ressuffix = '.o'
+      
+  def   makeResCompiler( self, options ):
+    return GccResCompiler( options )

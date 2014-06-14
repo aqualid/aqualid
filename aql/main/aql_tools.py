@@ -22,7 +22,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager', 'ErrorToolNotFound' )
 import os
 
 from aql.util_types import toSequence, Singleton, AqlException
-from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProgramNotFound
+from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProgramNotFound, whereProgram
 
 #noinspection PyStatementEffect
 """
@@ -206,27 +206,27 @@ class ToolsManager( Singleton ):
         try:
           setup( setup_options )
           
-          env = setup_options.env.get().dump()
+          env = setup_options.env.get()
           
           tool_info.tool_class.setup( setup_options, env )
           
-          options_kw = dict( setup_options.items( with_parent = False ) )
-          
-          if tool_options.checkToolKeys( **options_kw ):
+          if setup_options.hasChangedKeyOptions():
             raise NotImplementedError()
           
-          tool_options.update( options_kw )
+          setup_options.join()
           
           tool_obj = tool_info.tool_class( tool_options )
           
         except (NotImplementedError, ErrorProgramNotFound):
           setup_options.clear()
           tool_options.clear()
+        
         except Exception as err:
+            setup_options.clear()
+            tool_options.clear()
             eventToolsToolFailed( tool_info.tool_class, err )
             raise
         else:
-          setup_options.join()
           tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
           return tool_obj, tool_names, tool_options
     
@@ -267,6 +267,8 @@ class Tool( object ):
   @classmethod
   def   setup( cls, options, env ):
     pass
+  
+  #//-------------------------------------------------------//
   
   @classmethod
   def   options( cls ):

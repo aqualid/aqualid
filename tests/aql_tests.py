@@ -37,6 +37,39 @@ extern void  %s();
 #endif
 """
 
+RES_FILE_TEMPLATE = """
+
+#define VERSION_TEST "0.1"
+#define VERSION_WORDS 0, 1
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION	    VERSION_WORDS
+PRODUCTVERSION	VERSION_WORDS
+FILEFLAGSMASK	  0x3fL
+FILEFLAGS 0
+
+BEGIN
+	BLOCK	"VarFileInfo"
+	BEGIN
+		VALUE	"Translation",	0x409,	1200
+	END
+	BLOCK	"StringFileInfo"
+	BEGIN
+		BLOCK "040904b0"
+		BEGIN
+			VALUE	"CompanyName",	"Test\\0"
+			VALUE	"FileDescription",	"Test\\0"
+			VALUE	"FileVersion",	VERSION_TEST "\\0"
+			VALUE	"InternalName",	"Test\\0"
+			VALUE	"LegalCopyright",	"Copyright 2014 by Test\\0"
+			VALUE	"OriginalFilename",	"Test\\0"
+			VALUE	"ProductName",	"Test\\0"
+			VALUE	"ProductVersion",	VERSION_TEST "\\0"
+		END
+	END
+END
+"""
+
 #//===========================================================================//
 
 class AqlTestCase( TestCaseBase ):
@@ -78,6 +111,18 @@ class AqlTestCase( TestCaseBase ):
       f.write( hdr_content )
     
     return src_file, hdr_file
+  
+  #//===========================================================================//
+  
+  def   generateResFile( self, dirname, name ):
+    src_content = RES_FILE_TEMPLATE
+    
+    src_file = os.path.join( dirname, name + '.rc' )
+    
+    with open( src_file, 'w' ) as f:
+      f.write( src_content )
+    
+    return src_file
 
   #//===========================================================================//
 
