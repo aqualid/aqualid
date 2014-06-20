@@ -131,11 +131,15 @@ class GccLinker( CommonCppLinker ):
     
     cmd = list(self.cmd)
     
-    cmd[2:2] = self.getSources( node )
+    obj_files = self.getSources( node )
+    if self.shared and self.def_file:
+      obj_files.append( self.def_file ) 
+    
+    cmd[2:2] = obj_files
     
     if self.shared:
       cmd += [ '-shared' ]
-    
+          
     cmd += [ '-o', self.target ]
     
     cwd = self.target.dirname()
@@ -339,8 +343,8 @@ class ToolGccCommon( ToolCommonCpp ):
   def   makeArchiver( self, options, target ):
     return GccArchiver( options, target )
   
-  def   makeLinker( self, options, target, shared ):
-    return GccLinker( options, target, shared = shared )
+  def   makeLinker( self, options, target, shared, def_file ):
+    return GccLinker( options, target, shared = shared, def_file = def_file )
 
 #//===========================================================================//
 

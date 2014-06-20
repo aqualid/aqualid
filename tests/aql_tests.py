@@ -39,34 +39,33 @@ extern void  %s();
 
 RES_FILE_TEMPLATE = """
 
-#define VERSION_TEST "0.1"
-#define VERSION_WORDS 0, 1
+#define VERSION_TEST "0.0.0.1"
+#define VERSION_WORDS 0,0,0,1
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION	    VERSION_WORDS
-PRODUCTVERSION	VERSION_WORDS
-FILEFLAGSMASK	  0x3fL
+FILEVERSION     VERSION_WORDS
+PRODUCTVERSION  VERSION_WORDS
+FILEFLAGSMASK   0x3fL
 FILEFLAGS 0
-
 BEGIN
-	BLOCK	"VarFileInfo"
-	BEGIN
-		VALUE	"Translation",	0x409,	1200
-	END
-	BLOCK	"StringFileInfo"
-	BEGIN
-		BLOCK "040904b0"
-		BEGIN
-			VALUE	"CompanyName",	"Test\\0"
-			VALUE	"FileDescription",	"Test\\0"
-			VALUE	"FileVersion",	VERSION_TEST "\\0"
-			VALUE	"InternalName",	"Test\\0"
-			VALUE	"LegalCopyright",	"Copyright 2014 by Test\\0"
-			VALUE	"OriginalFilename",	"Test\\0"
-			VALUE	"ProductName",	"Test\\0"
-			VALUE	"ProductVersion",	VERSION_TEST "\\0"
-		END
-	END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation",0x409,1200
+  END
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "CompanyName",  "Test\\0"
+      VALUE "FileDescription",  "Test\\0"
+      VALUE "FileVersion",  VERSION_TEST "\\0"
+      VALUE "InternalName", "Test\\0"
+      VALUE "LegalCopyright", "Copyright 2014 by Test\\0"
+      VALUE "OriginalFilename", "Test\\0"
+      VALUE "ProductName",  "Test\\0"
+      VALUE "ProductVersion", VERSION_TEST "\\0"
+    END
+  END
 END
 """
 

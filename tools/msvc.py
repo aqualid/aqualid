@@ -203,6 +203,8 @@ class MsvcLinker (CommonCppLinker):
     
     if self.shared:
       cmd.append( '/dll' )
+      if self.def_file:
+        cmd.append( '/DEF:%s' % self.def_file )
     
     target = self.target
     itargets = []
@@ -213,6 +215,7 @@ class MsvcLinker (CommonCppLinker):
       itargets.append( pdb )
       
     cmd += [ '/nologo', '/OUT:%s' % target ]
+    
     cmd += obj_files
     
     cwd = target.dirname()
@@ -366,8 +369,8 @@ class ToolMsvcCommon( ToolCommonCpp ):
   def   makeArchiver( self, options, target ):
     return MsvcArchiver( options, target )
   
-  def   makeLinker( self, options, target, shared ):
-    return MsvcLinker( options, target, shared = shared )
+  def   makeLinker( self, options, target, shared, def_file ):
+    return MsvcLinker( options, target, shared = shared, def_file = def_file )
 
 #//===========================================================================//
 

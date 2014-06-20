@@ -10,11 +10,31 @@ from aql.values import SimpleValue
 from aql.nodes import Node, Builder
 from aql.utils import Tempfile, Tempdir,\
   removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
-from aql.main import Project, ProjectConfig, \
+from aql.main import Project, ProjectConfig, Tool, \
                      ErrorProjectBuilderMethodWithKW, \
                      ErrorProjectBuilderMethodFewArguments, \
                      ErrorProjectBuilderMethodUnbound, \
                      ErrorProjectInvalidMethod
+
+#//===========================================================================//
+
+class TestNullBuilder (Builder):
+  
+  def   __init__(self, options, v1, v2, v3 ):
+    self.v1 = v1
+    self.v2 = v2
+    self.v3 = v3
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    node.setNoTargets()
+
+#//===========================================================================//
+
+class TestTool( Tool ):
+  def   Noop( self, options, v1, v2, v3 ):
+    return TestNullBuilder( options, v1, v2, v3 )
 
 #//===========================================================================//
 
@@ -172,6 +192,61 @@ options.build_variant = "final"
       prj.Build()
       
       self.assertEqual( self.building_finished, 2 )
+  
+  #//=======================================================// 
+  
+  def   test_prj_implicit_value_args( self ):
+    
+    with Tempdir() as tmp_dir:
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      tool = prj.tools.AddTool( TestTool )
+      
+      tool.Noop( v1 = "a", v2 = "b", v3 = "c" )
+      prj.Build()
+      
+      self.assertEqual( self.building_finished, 1 )
+      
+      #//-------------------------------------------------------//
+      
+      self.building_finished = 0
+      
+      tool.Noop( v1 = "aa", v2 = "bb", v3 = "cc" )
+      prj.Build()
+      self.assertEqual( self.building_finished, 0 )
+      
+      #//-------------------------------------------------------//
+      
+      self.building_finished = 0
+      
+      v1 = SimpleValue("a", name = "value1")
+      
+      tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
+      prj.Build()
+      self.assertEqual( self.building_finished, 1 )
+      
+      #//-------------------------------------------------------//
+      
+      self.building_finished = 0
+      
+      v1 = SimpleValue("ab", name = "value1")
+      
+      tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
+      prj.Build()
+      self.assertEqual( self.building_finished, 1 )
+      
+      #//-------------------------------------------------------//
+      
+      self.building_finished = 0
+      
+      v1 = SimpleValue("ab", name = "value1")
+      
+      tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
+      prj.Build()
+      self.assertEqual( self.building_finished, 0 )
 
 #//===========================================================================//
 

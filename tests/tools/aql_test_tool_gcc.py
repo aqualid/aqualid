@@ -176,7 +176,8 @@ class TestToolGcc( AqlTestCase ):
       num_src_files = 5
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
-
+      res_file = self.generateResFile( src_dir, 'foo' )
+      
       options = builtinOptions()
       options.merge( ToolGxx.options() )
       env = options.env.get().dump()
@@ -186,19 +187,22 @@ class TestToolGcc( AqlTestCase ):
       
       gcc = ToolGxx( options )
       cpp_compiler = gcc.Compile( options )
+      res_compiler = gcc.CompileResource( options )
       
       bm = BuildManager()
       try:
         
         obj = Node( cpp_compiler, src_files )
-
+        res = Node( res_compiler, res_file )
+        
         bm.add( obj )
+        bm.add( res )
         
         self.built_nodes = 0
         
         self._build( bm, jobs = 4 )
         
-        self.assertEqual( self.built_nodes, num_src_files )
+        self.assertEqual( self.built_nodes, num_src_files + 1 )
         
         bm.close()
         
@@ -209,7 +213,9 @@ class TestToolGcc( AqlTestCase ):
         
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
+        res = Node( res_compiler, res_file )
         bm.add( obj )
+        bm.add( res )
         
         self.built_nodes = 0
         self._build( bm )

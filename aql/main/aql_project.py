@@ -30,7 +30,7 @@ import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
 from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, AqlException
-from aql.values import NullValue
+from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node, BatchNode, BuildBatch
 
@@ -204,7 +204,7 @@ class BuilderWrapper( object ):
   def   __getOptionsAndArgs( self, kw ):
     args_kw = {}
     sources = []
-    dep_nodes = []
+    deps = []
     
     options = kw.pop("options", None )
     if options is not None:
@@ -220,21 +220,21 @@ class BuilderWrapper( object ):
         sources += toSequence( value )
       else:
         for v in toSequence( value ):
-          if isinstance( v, Node):
-            dep_nodes.append( v )
+          if isinstance( v, (Node, ValueBase) ):
+            deps.append( v )
         
         if name in self.arg_names:
           args_kw[ name ] = value
         else:
           options[ name ] = value
     
-    return options, dep_nodes, sources, args_kw
+    return options, deps, sources, args_kw
   
   #//-------------------------------------------------------//
   
   def   __call__( self, *args, **kw ):
     
-    options, dep_nodes, sources, args_kw = self.__getOptionsAndArgs( kw )
+    options, deps, sources, args_kw = self.__getOptionsAndArgs( kw )
     
     sources += args
     sources = flattenList( sources )
@@ -246,7 +246,7 @@ class BuilderWrapper( object ):
     else:
       node = Node( builder, sources )
 
-    node.depends( dep_nodes )
+    node.depends( deps )
 
     self.project.AddNodes( node )
     
@@ -441,6 +441,20 @@ class Project( object ):
         script_locals.setdefault( name, member )
     
     return script_locals
+  
+  #//-------------------------------------------------------//
+  
+  def   FileValue(self, filepath, options = None ):
+    if options is None:
+      options = self.options
+    file_type = FileTimestampValue if options.file_signature == 'timestamp' else FileChecksumValue
+    
+    return file_type( filepath )
+  
+  #//-------------------------------------------------------//
+  
+  def   DirValue( self, filepath ):
+    return DirValue( filepath )
   
   #//-------------------------------------------------------//
   

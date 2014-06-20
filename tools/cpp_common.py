@@ -35,7 +35,9 @@ def   _addIxes( prefix, suffix, values ):
         result += [ prefix, value ]
       else:
         result.append( "%s%s" % (prefix, value) )
-  
+    else:
+      result.append( value )
+    
   return result 
 
 #//===========================================================================//
@@ -121,13 +123,13 @@ def   _linkerOptions( options ):
   options.shlibprefix = aql.StrOptionType( description = "Shared library prefix." )
   options.shlibsuffix = aql.StrOptionType( description = "Shared library suffix." )
   
-  options.libpath = aql.ListOptionType( value_type = aql.PathOptionType, unique = True,
+  options.libpath = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True,
                                         description = "Paths to external libraries", separators = None )
   options.libpath_prefix  = aql.StrOptionType( description = "Flag for library paths." )
   options.libpath_flags = aql.ListOptionType( separators = None )
   options.libpath_flags = aql.SimpleOperation( _addPrefix, options.libpath_prefix, aql.SimpleOperation( _absFilePaths, options.libpath ) )
   
-  options.libs  = aql.ListOptionType( value_type = aql.PathOptionType, unique = True,
+  options.libs  = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True,
                                       description = "Linking external libraries", separators = None )
   options.libs_prefix  = aql.StrOptionType( description = "Prefix flag for libraries." )
   options.libs_suffix  = aql.StrOptionType( description = "Suffix flag for libraries." )
@@ -326,7 +328,7 @@ class CommonCppLinkerBase( aql.FileBuilder):
   #//-------------------------------------------------------//
   
   def   getSources( self, node ):
-    return tuple( src.get() for src in node.builder_data )
+    return list( src.get() for src in node.builder_data )
   
   #//-------------------------------------------------------//
   
@@ -370,7 +372,7 @@ class CommonCppArchiver( CommonCppLinkerBase ):
 #noinspection PyAttributeOutsideInit
 class CommonCppLinker( CommonCppLinkerBase ):
   
-  def   __init__( self, options, target, shared ):
+  def   __init__( self, options, target, shared, def_file ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
       suffix = options.shlibsuffix.get()
@@ -381,6 +383,7 @@ class CommonCppLinker( CommonCppLinkerBase ):
     self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
     self.cmd = options.link_cmd.get()
     self.shared = shared
+    self.def_file = def_file
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION
@@ -411,7 +414,7 @@ class ToolCommonCpp( aql.Tool ):
   def   makeArchiver( self, options, target ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
-  def   makeLinker( self, options, target, shared ):
+  def   makeLinker( self, options, target, shared, def_file ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
@@ -432,11 +435,11 @@ class ToolCommonCpp( aql.Tool ):
   def   LinkStaticLibrary( self, options, target ):
     return self.makeArchiver( options, target )
   
-  def   LinkSharedLibrary( self, options, target ):
-    return self.makeLinker( options, target, shared = True )
+  def   LinkSharedLibrary( self, options, target, def_file = None ):
+    return self.makeLinker( options, target, shared = True, def_file = def_file )
   
   def   LinkProgram( self, options, target ):
-    return self.makeLinker( options, target, shared = False )
+    return self.makeLinker( options, target, shared = False, def_file = None )
 
 #//===========================================================================//
 

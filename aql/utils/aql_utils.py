@@ -453,9 +453,13 @@ def  findFiles( paths = ".", mask = ("*", ), exclude_mask = tuple(), exclude_sub
   match_exclude_subdir_mask = _masksToMatch( exclude_subdir_mask )
   
   for path in paths:
-    for root, folders, files in os.walk( path ):
-      found_files +=  ( os.path.abspath( os.path.join(root, file_name) ) for file_name in files if not match_exclude_mask(file_name) and match_mask( file_name ) )
-      folders[:]  =   ( folder for folder in folders if not match_exclude_subdir_mask( folder ) )
+    for root, folders, files in os.walk( os.path.abspath( path ) ):
+      for file_name in files:
+        file_name_nocase = os.path.normcase( file_name )
+        if (not match_exclude_mask(file_name_nocase)) and match_mask( file_name_nocase ):
+          found_files.append( os.path.join(root, file_name) )
+      
+      folders[:] = ( folder for folder in folders if not match_exclude_subdir_mask( folder ) )
   
   found_files.sort()
   return found_files

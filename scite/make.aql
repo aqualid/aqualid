@@ -2,53 +2,62 @@ import os
 
 SetBuildDir('output')
 
-cpp = Tool('c++', tools_path = '../tools' )
+cpp = Tool('c++', tools_path = '../tools')
 
 cpp_options = cpp.options
 
 ReadOptions( 'make.cfg', cpp_options )
 
-
 is_windows_build = bool( cpp_options.target_os == 'windows')
 is_unix_build = not is_windows_build
 
 scintilla_dir = os.path.join( cpp_options.root_src_dir.get(), 'scintilla')
-src_dir = os.path.join( scintilla_dir, 'src')
-lexers_dir = os.path.join( scintilla_dir, 'lexers')
-lexlib_dir = os.path.join( scintilla_dir, 'lexlib')
+
+src_dir     = os.path.join( scintilla_dir, 'src'    )
+lexers_dir  = os.path.join( scintilla_dir, 'lexers' )
+lexlib_dir  = os.path.join( scintilla_dir, 'lexlib' )
+include_dir = os.path.join( scintilla_dir, 'include')
+win32_dir   = os.path.join( scintilla_dir, 'win32'  )
+gtk_dir     = os.path.join( scintilla_dir, 'gtk'    )
 
 lexlib_sources  = FindFiles( lexers_dir, '*.cxx' )
 lexslib_sources = FindFiles( lexlib_dir, '*.cxx' )
 
+#//-------------------------------------------------------//
+
 base_sources  = FindFiles( src_dir, '*.cxx',
-                           exclude_mask = ["Catalogue.cxx","ExternalLexer.cxx", "ScintillaBase.cxx"] )
+                           exclude_mask = ["Catalogue.cxx", "ExternalLexer.cxx", "ScintillaBase.cxx"] )
 
 base_sources += ( os.path.join(lexlib_dir, src ) for src in [ 'CharacterCategory.cxx', 'CharacterSet.cxx', 'PropSetSimple.cxx'] )
 if is_windows_build:
-  base_sources += [ os.path.join(scintilla_dir, 'win32', "PlatWin.cxx") ]
+  base_sources += [ os.path.join(win32_dir, "PlatWin.cxx") ]
 elif is_unix_build:
-  base_sources += [ os.path.join(scintilla_dir, 'gtk', "PlatGtk.cxx") ]
+  base_sources += [ os.path.join(gtk_dir, "PlatGtk.cxx") ]
 
-lib_sources = base_sources
+#//-------------------------------------------------------//
 
-include_dirs = ['include', 'lexers', 'src']
+dll_sources = base_sources
+dll_libs = []
 
-if is_windows_build == 'windows':
-  include_dirs += ['win32']
-  lib_sources += ( os.path.join(scintilla_dir, 'win32', src) for src in ["ScintillaWin.cxx", "Scintilla.def"] )
-elif is_unix_build:
-  include_dirs += ['gtk']
-
-cpp_options.cpppath += [ os.path.join( scintilla_dir, inc ) for inc in include_dirs ]
-
-lib_objs = cpp.CompileShared( lib_sources )
-
+include_dirs = [ src_dir, include_dir, lexlib_dir ]
 
 if is_windows_build:
-  rc_obj = cpp.CompileResource( os.path.join(scintilla_dir, 'win32', "ScintRes.rc") )
+  include_dirs  += [win32_dir]
+  dll_sources   += [ os.path.join(win32_dir, "ScintillaWin.cxx" )] 
+  dll_sources   += [ os.path.join( src_dir, "ScintillaBase.cxx") ]
+  def_file      = FileValue( os.path.join( win32_dir, "Scintilla.def" ) )
+  dll_libs = ['kernel32', 'user32', 'gdi32', 'imm32', 'ole32']
   
-  lib_objs = [ lib_objs, rc_obj ]
+elif is_unix_build:
+  include_dirs += [gtk_dir]
+  def_file = None
 
-scintilla_dll = cpp.LinkSharedLibrary( lib_objs, target = 'Scintilla' )
+cpp_options.cpppath += include_dirs
+
+scintilla_dll = cpp.LinkSharedLibrary( dll_sources,
+                                       target = 'Scintilla',
+                                       def_file = def_file,
+                                       libs = dll_libs )
+
 Alias( 'lib', scintilla_dll )
 Default( scintilla_dll )
