@@ -6,9 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      whereProgram, findOptionalProgram, findOptionalPrograms, \
-                      executeCommand, ErrorProgramNotFound, findFiles, flattenList, commonDirName, \
-                      excludeFilesFromDirs
+                      executeCommand, flattenList
 
 class TestUtils( AqlTestCase ):
 
@@ -114,35 +112,6 @@ class TestUtils( AqlTestCase ):
   
   #//===========================================================================//
   
-  def   test_find_prog( self ):
-    self.assertTrue( whereProgram( 'route' ) )
-    self.assertRaises( ErrorProgramNotFound, whereProgram, 'route', env = {} )
-    
-    self.assertTrue( findOptionalProgram( 'route' ) )
-    
-    prog = findOptionalProgram( 'route', env = {} )
-    self.assertEqual( prog.get(), 'route' )
-    
-    self.assertEqual( len(findOptionalPrograms( ['route'] )), 1 )
-    
-    progs = findOptionalPrograms( ['route'], env = {} )
-    self.assertEqual( progs[0].get(), 'route' )
-  
-  #//===========================================================================//
-  
-  def   test_find_files( self ):
-    path = os.path.join( os.path.dirname( __file__ ), '..', '..') 
-    
-    files = findFiles( path, mask = ['*.pythonics', "*.tdt", "*.py", "*.pyc" ] )
-    self.assertIn( os.path.abspath(__file__), files )
-    
-    files2 = findFiles( path, mask = '|*.pythonics|*.tdt||*.py|*.pyc' )
-    self.assertEqual( files2, files )
-    # import pprint
-    # pprint.pprint( files )
-  
-  #//===========================================================================//
-  
   def   test_flatten( self ):
     
     l = []
@@ -154,74 +123,7 @@ class TestUtils( AqlTestCase ):
     self.assertEqual( flattenList( l ), l_flat )
     self.assertEqual( flattenList( [] ), [] )
     self.assertEqual( flattenList( [([1,3,4], [2,3])] ), [1,3,4,2,3] )
-  
-  #//===========================================================================//
-  
-  def   test_common_dirname( self ):
-    
-    paths = [ 'abc/cores',
-              'abc/cores2',
-            ]
-    
-    self.assertEqual( commonDirName( paths), "abc" + os.path.sep )
-    
-    paths = [ 'abc/cores1',
-              'abc/cores2',
-            ]
-    
-    self.assertEqual( commonDirName( paths), "abc" + os.path.sep )
-    
-    paths = [ 'abc/efg/cores1',
-              'abc/efg/cores/abc',
-              'abc/efg/cores2',
-            ]
-    
-    self.assertEqual( commonDirName( paths ), "abc%sefg%s" % (os.path.sep,os.path.sep) )
-    
-    paths = [ 'abc/efg/cores1',
-              'efg/efg/cores/abc',
-              'abc/efg/cores2',
-            ]
-    
-    self.assertEqual( commonDirName( paths ), "" )
-    
-    paths = [ '/abc/efg/cores1',
-              '/efg/efg/cores/abc',
-              '/abc/efg/cores2',
-            ]
-    
-    self.assertEqual( commonDirName( paths ), os.path.sep )
-  
-  #//===========================================================================//
-  
-  def   test_exclude_files( self ):
-    
-    dirs = 'abc/test0'
-    files = [ 'abc/file0.hpp',
-              'abc/test0/file0.hpp' ]
-    
-    result = [ 'abc/file0.hpp' ]
-    
-    result = [ os.path.normcase( os.path.abspath( file )) for file in result ]
-    
-    self.assertEqual( excludeFilesFromDirs( files, dirs ), result )
-    
-    dirs = ['abc/test0', 'efd', 'ttt/eee']
-    files = [
-              'abc/test0/file0.hpp',
-              'abc/file0.hpp',
-              'efd/file1.hpp',
-              'dfs/file1.hpp',
-              'ttt/file1.hpp',
-              'ttt/eee/file1.hpp',
-            ]
-    
-    result = [ 'abc/file0.hpp', 'dfs/file1.hpp', 'ttt/file1.hpp' ]
-    
-    result = [ os.path.normcase( os.path.abspath( file )) for file in result ]
-    
-    self.assertEqual( excludeFilesFromDirs( files, dirs ), result )
-    
+      
 #//===========================================================================//
 
 if __name__ == "__main__":

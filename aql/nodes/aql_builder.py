@@ -24,9 +24,9 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import isString, toSequence, FilePath
-from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, Chdir
-from aql.values import ValueBase, FileValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
+from aql.util_types import toSequence, FilePath
+from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, Chdir, relativeJoin, relativeJoinList
+from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
 #//===========================================================================//
 
@@ -49,6 +49,39 @@ def   _makeBuildPath( path_dir, _path_cache = set() ):
           raise
     
     _path_cache.add( path_dir )
+
+#//===========================================================================//
+
+def   _makeBuildPaths( dirnames ):
+  for dirname in dirnames:
+    _makeBuildPath( dirname )
+
+#//===========================================================================//
+
+def   _splitFileName( file_path, ext = None, prefix = None ):
+  if isinstance( file_path, ValueBase ):
+    file_path = file_path.get()
+  
+  dirname, filename = os.path.split( file_path )
+  
+  name, path_ext = os.path.splitext( filename )
+  if ext is None: ext = path_ext
+  if prefix: name = prefix + name
+  filename = name + ext
+  
+  return dirname, filename
+
+#//===========================================================================//
+
+def   _splitFileNames( file_paths, ext = None, prefix = None ):
+  dirnames = []
+  filenames = []
+  for file_path in file_paths:
+    dirname, filename = _splitFileName( file_path, ext, prefix )
+    dirnames.append( dirname )
+    filenames.append( filename )
+  
+  return dirnames, filenames
 
 #//===========================================================================//
 
@@ -248,7 +281,7 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   getTraceTargets( self, node, brief ):
-    return node.getTargetValues()
+    return node.getBuildTargetValues()
 
   #//-------------------------------------------------------//
   
@@ -280,22 +313,45 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getBuildPath( self, src_path = None ):
+  def   getBuildPath( self ):
+    _makeBuildPath( self.build_path )
+    return self.build_path
+  
+  #//-------------------------------------------------------//
+  
+  def   getFileBuildPath( self, file_path, ext = None, prefix = None ):
     build_path = self.build_path
     
-    if not src_path:
-      filename = ''
+    dirname, filename = _splitFileName( file_path, ext, prefix )
     
-    else:
-      src_path = FilePath( src_path )
-      filename = src_path.filename()
-      
-      if self.relative_build_paths:
-        build_path = build_path.joinFromCommon( src_path.dirname() )
-      
+    if self.relative_build_paths:
+      build_path = relativeJoin( build_path, dirname )
+    
     _makeBuildPath( build_path )
     
-    return build_path.join( filename )
+    build_path = os.path.join( build_path, filename )
+    
+    return FilePath( build_path )
+  
+  #//-------------------------------------------------------//
+  
+  def   getFileBuildPaths( self, file_paths, ext = None, prefix = None ):
+    build_path = self.build_path
+    
+    dirnames, filenames = _splitFileNames( file_paths, ext, prefix )
+    
+    if self.relative_build_paths:
+      dirnames = relativeJoinList( build_path, dirnames )
+      _makeBuildPaths( dirnames )
+     
+      build_paths = [ FilePath( os.path.join( dirname, filename ) ) for dirname, filename in zip( dirnames, filenames ) ]
+    
+    else:
+      _makeBuildPath( build_path )
+      
+      build_paths = [ FilePath( os.path.join( build_path, filename ) ) for filename in filenames ]
+    
+    return build_paths
   
   #//-------------------------------------------------------//
   
@@ -385,7 +441,9 @@ class BuildSingle(object):
   #//-------------------------------------------------------//
   
   def   prebuild( self, node ):
-
+    
+    node.getDepValues()
+    
     builder = self.builder
     nodes = node.split( builder )
 
@@ -403,7 +461,7 @@ class BuildSingle(object):
     for pre_node in pre_nodes:
       targets += pre_node.getTargetValues()
     
-    node.setTargets( targets )
+    node.targets = targets
     
     return True
 

@@ -29,7 +29,7 @@ from .aql_options import Options
 from .aql_option_value import SimpleOperation
 
 from .aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, \
-                              PathOptionType, StrOptionType, VersionOptionType
+                              PathOptionType, StrOptionType, VersionOptionType, OptionType
 
 #//===========================================================================//
 
@@ -72,6 +72,9 @@ def   _build_options():
   #//-------------------------------------------------------//
   
   options.tools_path = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search path" )
+  
+  options.batch_groups = OptionType( value_type = int, default = 1, description = "Preferred number of batching groups." )
+  options.batch_size = OptionType( value_type = int, default = -1, description = "Preferred size of a batching group." )
   
   #//-------------------------------------------------------//
   

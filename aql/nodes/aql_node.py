@@ -43,7 +43,7 @@ class   ErrorNoTargets( AqlException ):
 class   ErrorNoSrcTargets( AqlException ):
   def   __init__( self, node, src_value ):
     msg = "Source '%s' targets are not built or set yet: %s" % (src_value.get(), node.getBuildStr( brief = False ),)
-    super(ErrorNoTargets, self).__init__( msg )
+    super(ErrorNoSrcTargets, self).__init__( msg )
 
 class   ErrorUnactualValue( AqlException ):
   def   __init__( self, value ):
@@ -346,6 +346,31 @@ class Node (object):
     # self.ideps = None
   
   #//=======================================================//
+  
+  def   copy( self, sources, builder = None ):
+    other = object.__new__( self.__class__ )
+    
+    other.builder       = builder if builder else self.builder
+    other.options       = self.options
+    other.builder_data  = None
+    other.cwd           = self.cwd
+    other.sources       = sources
+    other.dep_nodes     = self.dep_nodes
+    other.dep_values    = self.dep_values
+    
+    return other
+  #//=======================================================//
+  
+  def   split( self, builder ):
+    sources = self.sources
+    if sources is None:
+      sources = self.getSourceValues()
+
+    nodes = [ self.copy( (src_value,), builder ) for src_value in sources ]
+    
+    return nodes
+  
+  #//=======================================================//
 
   def   __getattr__(self, attr):
     if attr == 'name':
@@ -410,44 +435,9 @@ class Node (object):
   
   #//=======================================================//
   
-  def   split( self, builder ):
-    nodes = []
-    
-    cwd = self.cwd
-    
-    dep_values = self.getDepValues()
-
-    sources = self.sources
-    if sources is None:
-      sources = self.getSourceValues()
-
-    for src_value in sources:
-      node = Node( builder, src_value, cwd )
-      node.dep_values = dep_values
-      nodes.append( node )
-    
-    return nodes
-  
-  #//=======================================================//
-  
   def   initiate(self):
     self.builder = self.builder.initiate()
 
-  #//=======================================================//
-  
-  def   _addDepsSignature( self, sign ):
-    if sign is not None:
-      deps = self.getDepValues()
-      
-      for value in deps:
-        if value:
-          sign.append( value.name )
-          sign.append( value.signature )
-        else:
-          return None
-    
-    return sign
-  
   #//=======================================================//
   
   def   _getNameHash( self ):
@@ -573,7 +563,6 @@ class Node (object):
   #//=======================================================//
   
   def   prebuild( self ):
-    self.initiate()
     return self.builder.prebuild( self )
 
   #//=======================================================//
@@ -670,7 +659,12 @@ class Node (object):
   
   def   getTargetValues(self):
     return self.targets
-
+  
+  #//=======================================================//
+  
+  def   getBuildTargetValues(self):
+    return self.targets
+  
   #//=======================================================//
 
   def   getSideEffectValues(self):
@@ -907,7 +901,7 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   getTargetValues(self):
+  def   getBuildTargetValues(self):
     targets = []
     
     for src_value in self.changed_source_values:

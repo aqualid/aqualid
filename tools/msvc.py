@@ -4,14 +4,7 @@ import re
 import aql
 
 from cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
-                        ToolCommonRes, CommonResCompiler
-
-#//===========================================================================//
-
-class   ErrorDifferentSourceDirs( Exception ):
-  def   __init__( self, src_dir1, src_dir2 ):
-    msg = "Can't build batch sources from different dirs: %s, %s" % (src_dir1, src_dir2)
-    super(ErrorDifferentSourceDirs, self).__init__( msg )
+                       ToolCommonRes, CommonResCompiler
 
 #//===========================================================================//
 #// BUILDERS IMPLEMENTATION
@@ -70,9 +63,8 @@ class MsvcCompiler (CommonCppCompiler):
     
     sources = node.getSources()
     
-    obj_files = self.getTargets( sources )
-    obj_file = obj_files[0]
-    cwd = os.path.dirname( obj_file )
+    obj_file = self.getFileBuildPath( sources[0], prefix = self.prefix, ext = self.suffix )
+    cwd = obj_file.dirname()
     
     cmd = list(self.cmd)
     cmd += [ '/Fo%s' % obj_file ]
@@ -91,30 +83,20 @@ class MsvcCompiler (CommonCppCompiler):
     return out
   
   #//-------------------------------------------------------//
-  def   getTargets( self, sources ):
-    obj_files = []
-    cwd = None
-    for src in sources:
-      obj_file = self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
-      obj_cwd = obj_file.dirname()
-      if cwd is None:
-        cwd = obj_cwd
-      elif cwd != obj_cwd:
-        raise ErrorDifferentSourceDirs( cwd, obj_cwd )
-      
-      obj_files.append( obj_file )
-    
-    return obj_files 
-  
-  #//-------------------------------------------------------//
   
   def   buildBatch( self, node ):
+    
+    if self.suffix != '.obj':
+      raise ErrorBatchBuildCustomSuffix( node, self.suffix )
+    
+    if self.prefix:
+      raise ErrorBatchBuildWithPrefix( node, self.prefix )
     
     source_values = node.getSourceValues()
     
     sources = tuple( src.get() for src in source_values )
     
-    obj_files = self.getTargets( sources )
+    obj_files = self.getFileBuildPaths( sources, ext = self.suffix )
     
     cwd = obj_files[0].dirname()
     
@@ -142,8 +124,8 @@ class MsvcResCompiler (CommonResCompiler):
     
     src = node.getSources()[0]
     
-    res_file = self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
-    cwd = os.path.dirname( res_file )
+    res_file = self.getFileBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
+    cwd = res_file.dirname()
     
     cmd = list(self.cmd)
     cmd += [ '/nologo', '/Fo%s' % res_file, src ]
@@ -366,11 +348,11 @@ class ToolMsvcCommon( ToolCommonCpp ):
   def   makeResCompiler( self, options ):
     return MsvcResCompiler( options )
   
-  def   makeArchiver( self, options, target ):
-    return MsvcArchiver( options, target )
+  def   makeArchiver( self, options, target, batch ):
+    return MsvcArchiver( options, target, batch )
   
-  def   makeLinker( self, options, target, shared, def_file ):
-    return MsvcLinker( options, target, shared = shared, def_file = def_file )
+  def   makeLinker( self, options, target, shared, def_file, batch ):
+    return MsvcLinker( options, target, shared = shared, def_file = def_file, batch = batch )
 
 #//===========================================================================//
 

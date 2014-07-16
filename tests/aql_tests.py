@@ -7,7 +7,7 @@ sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __
 
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
 from aql.utils  import Tempfile
-from aql.util_types import FilePaths
+from aql.util_types import FilePath
 
 #//===========================================================================//
 
@@ -126,12 +126,12 @@ class AqlTestCase( TestCaseBase ):
   #//===========================================================================//
 
   def   generateCppFiles( self, dirname, name, count ):
-    src_files = FilePaths()
-    hdr_files = FilePaths()
+    src_files = []
+    hdr_files = []
     for i in range( count ):
       src_file, hdr_file = self.generateCppFile( dirname, name + str(i) )
-      src_files.append( src_file )
-      hdr_files.append( hdr_file )
+      src_files.append( FilePath( src_file ) )
+      hdr_files.append( FilePath( hdr_file ) )
     
     return src_files, hdr_files
   

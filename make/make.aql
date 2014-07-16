@@ -106,7 +106,7 @@ class AqlLink (aql.Builder):
   
   def   __init__(self, options, target ):
     prefix = options.prefix.get()
-    self.target = self.getBuildPath( target ).change( prefix = prefix )
+    self.target = self.getFileBuildPath( target, prefix = prefix )
   
   #//-------------------------------------------------------//
   

@@ -189,12 +189,56 @@ class CommonCppCompiler (aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargets( self, sources ):
-    return tuple( self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix ) for src in sources ) 
+  def   prebuild( self, node ):
+    
+    if node.builder_data:
+      return None
+    
+    src_files = node.getSourceValues()
+    if len(src_files) < 2:
+      return None
+    
+    node.getDepValues()
+    
+    num_groups = node.options.batch_groups.get()
+    group_size = node.options.batch_size.get()
+    
+    obj_files = self.getFileBuildPaths( src_files, ext = self.suffix )
+    obj_files, indexes_groups = aql.groupPathsByDir( obj_files, num_groups, group_size )
+    
+    if len(indexes_groups) < 2:
+      return None
+    
+    pre_nodes = []
+    for indexes in indexes_groups:
+      node_srcs = [ src_files[ i ] for i in indexes ]
+      pre_node = node.copy( node_srcs )
+      pre_node.builder_data = True
+      
+      pre_nodes.append( pre_node )
+    
+    return pre_nodes
+
+  #//-------------------------------------------------------//
+  
+  def   prebuildFinished( self, node, pre_nodes ):
+    
+    targets = []
+    for pre_node in pre_nodes:
+      targets += pre_node.getTargetValues()
+    
+    node.targets = targets
+    
+    return True
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildBatch( self, node ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
@@ -245,7 +289,7 @@ class CommonResCompiler (aql.FileBuilder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class CommonCppLinkerBase( aql.FileBuilder):
+class CommonCppLinkerBase( aql.FileBuilder ):
   
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
@@ -287,6 +331,9 @@ class CommonCppLinkerBase( aql.FileBuilder):
     builders = {}
     
     compiler = self.makeCompiler( node.options )
+    if self.batch:
+      compiler = aql.BuildBatch( compiler )
+    
     self.addSourceBuilders( builders, self.getCppExts(), compiler )
     
     rc_compiler = self.makeResCompiler( node.options )
@@ -302,14 +349,24 @@ class CommonCppLinkerBase( aql.FileBuilder):
     
     builders = self.getSourceBuilders( node )
     
+    batch_sources = {}
+    
+    cwd = node.cwd 
+    
     for src_file in node.getSourceValues():
-      ext = os.path.splitext( src_file.name )[1]
+      ext = os.path.splitext( src_file.get() )[1]
       builder = builders.get( ext, None )
       if builder:
-        src_node = aql.Node( builder, src_file, node.cwd )
-        src_nodes.append( src_node )
+        if isinstance( builder, aql.BuildBatch ):
+          batch_sources.setdefault( builder, [] ).append( src_file )
+        else:
+          src_node = aql.Node( builder, src_file, cwd )
+          src_nodes.append( src_node )
       else:
         obj_files.append( src_file )
+    
+    for builder, sources in batch_sources.items():
+      src_nodes.append( aql.BatchNode( builder, sources, cwd ) )
     
     node.builder_data = obj_files
     
@@ -358,21 +415,22 @@ class CommonCppLinkerBase( aql.FileBuilder):
 #noinspection PyAttributeOutsideInit
 class CommonCppArchiver( CommonCppLinkerBase ):
   
-  def   __init__( self, options, target ):
+  def   __init__( self, options, target, batch ):
     
     prefix = options.libprefix.get() + options.prefix.get()
     suffix = options.libsuffix.get()
     
-    self.target = self.getBuildPath( target ).change( prefix = prefix ) + suffix
+    self.target = self.getFileBuildPath( target, prefix = prefix, ext = suffix )
     self.cmd = options.lib_cmd.get()
     self.shared = False
+    self.batch = batch
     
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
 class CommonCppLinker( CommonCppLinkerBase ):
   
-  def   __init__( self, options, target, shared, def_file ):
+  def   __init__( self, options, target, shared, def_file, batch ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
       suffix = options.shlibsuffix.get()
@@ -380,10 +438,12 @@ class CommonCppLinker( CommonCppLinkerBase ):
       prefix = options.prefix.get()
       suffix = options.progsuffix.get()
     
-    self.target = self.getBuildPath( target ).change( prefix = prefix, ext = suffix )
+    self.target = self.getFileBuildPath( target, prefix = prefix, ext = suffix )
     self.cmd = options.link_cmd.get()
     self.shared = shared
     self.def_file = def_file
+    self.batch = batch
+
 
 #//===========================================================================//
 #// TOOL IMPLEMENTATION
@@ -405,16 +465,16 @@ class ToolCommonCpp( aql.Tool ):
     
     return options
   
-  def   makeCompiler( self, options, shared ):
+  def   makeCompiler( self, options, shared, batch ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   makeResCompiler( self, options ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
-  def   makeArchiver( self, options, target ):
+  def   makeArchiver( self, options, target, batch ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
-  def   makeLinker( self, options, target, shared, def_file ):
+  def   makeLinker( self, options, target, shared, def_file, batch ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//
@@ -429,17 +489,16 @@ class ToolCommonCpp( aql.Tool ):
     builder = self.makeResCompiler( options )
     return aql.BuildSingle( builder )
   
-  def   LinkLibrary( self, options, target ):
-    return self.makeArchiver( options, target )
+  def   LinkStaticLibrary( self, options, target, batch = False ):
+    return self.makeArchiver( options, target, batch = batch )
   
-  def   LinkStaticLibrary( self, options, target ):
-    return self.makeArchiver( options, target )
+  LinkLibrary = LinkStaticLibrary
   
-  def   LinkSharedLibrary( self, options, target, def_file = None ):
-    return self.makeLinker( options, target, shared = True, def_file = def_file )
+  def   LinkSharedLibrary( self, options, target, def_file = None, batch = False ):
+    return self.makeLinker( options, target, shared = True, def_file = def_file, batch = batch )
   
-  def   LinkProgram( self, options, target ):
-    return self.makeLinker( options, target, shared = False, def_file = None )
+  def   LinkProgram( self, options, target, batch = False ):
+    return self.makeLinker( options, target, shared = False, def_file = None, batch = batch )
 
 #//===========================================================================//
 

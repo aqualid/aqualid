@@ -29,6 +29,8 @@ from aql.util_types import toSequence, AqlException
 from aql.utils import eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
+from .aql_node import BatchNode
+
 #//===========================================================================//
 
 @eventStatus
@@ -517,14 +519,23 @@ class _NodesBuilder (object):
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
+      actual = None
+      
       if pre_nodes:
-        actual = node.prebuildFinished( pre_nodes )
-        if actual:
+        if node.prebuildFinished( pre_nodes ):
           build_manager.actualNode( node )
           changed = True
           continue
-      
       else:
+        
+        node.initiate()
+        
+        if isinstance( node, BatchNode ):
+          # Check for changed sources of BatchNode, this is needed for correct working of prebuild
+          if not build_always:
+            vfile = vfiles[ node.builder ]
+            actual = node.isActual( vfile )
+                    
         pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
@@ -533,9 +544,11 @@ class _NodesBuilder (object):
           changed = True
           continue
       
-      vfile = vfiles[ node.builder ]
+      if (not build_always) and (actual is None):
+        vfile = vfiles[ node.builder ]
+        actual = node.isActual( vfile )
       
-      if (not build_always) and node.isActual( vfile ):
+      if actual:
         build_manager.actualNode( node )
         changed = True
       else:
@@ -595,6 +608,7 @@ class _NodesBuilder (object):
           continue
         
       else:
+        node.initiate()
         pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes
@@ -622,6 +636,8 @@ class _NodesBuilder (object):
           continue
       
       else:
+        node.initiate()
+        
         pre_nodes = node.prebuild()
         if pre_nodes:
           self.prebuild_nodes[ node ] = pre_nodes

@@ -57,7 +57,7 @@ class ChecksumBuilder (FileBuilder):
     else:
       chcksum_filename = src + '.chksum'
     
-    chcksum_filename = self.getBuildPath( chcksum_filename )
+    chcksum_filename = self.getFileBuildPath( chcksum_filename )
     
     with open( chcksum_filename, 'wb' ) as f:
       f.write( chcksum.digest() )

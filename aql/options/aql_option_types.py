@@ -97,6 +97,9 @@ class   OptionType (object):
   def     __init__( self, value_type = str, description = None, group = None, range_help = None, default = NotImplemented,
                     is_auto = False, is_tool_key = False ):
     
+    if issubclass( value_type, OptionType ):
+      value_type = value_type()
+    
     self.value_type = value_type
     self.is_auto = is_auto
     self.is_tool_key = is_tool_key

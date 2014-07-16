@@ -29,7 +29,7 @@ import types
 import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
-from aql.util_types import FilePath, FilePaths, SplitListType, toSequence, AqlException
+from aql.util_types import FilePath, ValueListType, UniqueList, SplitListType, toSequence, AqlException
 from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue
 from aql.options import builtinOptions, Options
 from aql.nodes import BuildManager, Node, BatchNode, BuildBatch
@@ -94,7 +94,7 @@ class ProjectConfig( object ):
     
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
-    Paths = SplitListType( FilePaths, ', ' )
+    Paths = SplitListType( ValueListType( UniqueList, FilePath ), ', ' )
     
     CLI_OPTIONS = (
       
@@ -566,6 +566,8 @@ class Project( object ):
     
     elif jobs > 32:
       jobs = 32
+    
+    self.options.batch_groups = jobs
     
     build_nodes = self._getBuildNodes()
     

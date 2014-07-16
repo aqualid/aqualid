@@ -12,7 +12,7 @@ from aql.options import BoolOptionType, EnumOptionType, RangeOptionType, ListOpt
                         builtinOptions, \
                         Options, iAddValue, \
                         ErrorOptionsCyclicallyDependent, \
-                        ErrorOptionsMergeNonOptions
+                        ErrorOptionsMergeNonOptions, ErrorOptionsNoIteration
 
 #//===========================================================================//
 
@@ -343,7 +343,7 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.opt, 2 )
     self.assertIn( 'opt', options )
     self.assertNotIn( 'debug_on', options )
-    self.assertEqual( sorted(options), sorted(['opt','warn_level']) )
+    self.assertRaises( ErrorOptionsNoIteration, iter, options )
     
   #//-------------------------------------------------------//
   
@@ -475,6 +475,9 @@ class TestOptions( AqlTestCase ):
     child_options2 = options2.override()
     
     child_options2.option21 = child_options2.opt21
+    
+    self.assertIs( child_options2.option21.option_value, child_options2.opt21.option_value )
+    
     child_options2.opt22 = 3
     child_options2.opt23 = 7
     
@@ -496,6 +499,34 @@ class TestOptions( AqlTestCase ):
     self.assertIs( child_options2.option21.option_value, child_options2.option_21.option_value )
     self.assertIs( child_options2.option21.option_value, child_options2.opt21.option_value )
     self.assertIsNot( child_options2.opt21.option_value, options2.opt21.option_value )
+  
+  #//=======================================================//
+  
+  def   test_options_join_2(self):
+    
+    options = Options()
+    options.arg1 = 1
+    options.arg2 = 2
+    
+    options2 = options.override()
+    options2.arg3 = 3
+    options2.arg4 = 4
+    
+    options3 = options2.override()
+    options3.arg5 = 5
+    options3.arg7 = 7
+    
+    options3.join()
+    
+    self.assertIs( options.arg1.option_value, options2.arg1.option_value )
+    self.assertIs( options.arg2.option_value, options2.arg2.option_value )
+    self.assertEqual( options2.arg5, 5 )
+    self.assertEqual( options2.arg7, 7 )
+    
+    options2.arg1 = 11
+    self.assertIsNot( options.arg1.option_value, options2.arg1.option_value )
+    self.assertIs( options.arg2.option_value, options2.arg2.option_value )
+    
   
   #//=======================================================//
   

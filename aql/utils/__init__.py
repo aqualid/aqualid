@@ -24,4 +24,5 @@ from .aql_logging import *
 from .aql_task_manager import *
 from .aql_temp_file import *
 from .aql_utils import *
+from .aql_path_utils import *
 from .aql_cli_config import *

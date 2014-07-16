@@ -48,8 +48,7 @@ class GccCompiler (CommonCppCompiler):
     
     sources = node.getSources()
     
-    obj_files = self.getTargets( sources )
-    obj_file = obj_files[0]
+    obj_file = self.getFileBuildPath( sources[0], prefix = self.prefix, ext = self.suffix )
     cwd = obj_file.dirname()
     
     with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
@@ -75,8 +74,8 @@ class GccResCompiler (CommonResCompiler):
     
     src = node.getSources()[0]
     
-    res_file = self.getBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
-    cwd = os.path.dirname( res_file )
+    res_file = self.getFileBuildPath( src, prefix = self.prefix, ext = self.suffix )
+    cwd = res_file.dirname()
     
     cmd = list(self.cmd)
     cmd += [ '-o', res_file, '-i', src ]
@@ -340,11 +339,11 @@ class ToolGccCommon( ToolCommonCpp ):
   def   makeResCompiler( self, options ):
     return GccResCompiler( options )
   
-  def   makeArchiver( self, options, target ):
-    return GccArchiver( options, target )
+  def   makeArchiver( self, options, target, batch ):
+    return GccArchiver( options, target, batch )
   
-  def   makeLinker( self, options, target, shared, def_file ):
-    return GccLinker( options, target, shared = shared, def_file = def_file )
+  def   makeLinker( self, options, target, shared, def_file, batch ):
+    return GccLinker( options, target, shared = shared, def_file = def_file, batch = batch )
 
 #//===========================================================================//
 

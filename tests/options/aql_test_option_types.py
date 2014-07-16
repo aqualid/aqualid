@@ -246,7 +246,7 @@ class TestOptionTypes( AqlTestCase ):
     opt1 = OptionType( value_type = FilePath, description = 'Option 1', group = "group1" )
     
     self.assertEqual( opt1( 'abc' ), 'abc' )
-    self.assertEqual( opt1( '../abc/../123' ), '../123' )
+    # self.assertEqual( opt1( '../abc/../123' ), '../123' )
     self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
     
     self.assertEqual( opt1.rangeHelp(), ["Value of type 'FilePath'"])
@@ -257,7 +257,7 @@ class TestOptionTypes( AqlTestCase ):
     opt1 = ListOptionType( value_type = FilePath, description = 'Option 1', group = "group1" )
     
     self.assertEqual( opt1( 'abc' ), 'abc' )
-    self.assertEqual( opt1( '../abc/../123' ), '../123' )
+    # self.assertEqual( opt1( '../abc/../123' ), '../123' )
     self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
     self.assertEqual( opt1( [1,2,3,4] ), [1,2,3,4] )
     self.assertEqual( opt1(), [] )
@@ -313,13 +313,13 @@ class TestOptionTypes( AqlTestCase ):
     env = DictOptionType( key_type = UpperCaseString )()
     env['PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )()
     env['HOME'] = PathOptionType()()
-    env['Path'] = '/work/bin'
-    env['Path'] += '/usr/bin'
-    env['path'] += '/usr/local/bin'
-    env['Home'] = '/home/user'
+    env['Path'] = os.path.normpath( '/work/bin' )
+    env['Path'] += os.path.normpath( '/usr/bin' )
+    env['path'] += os.path.normpath( '/usr/local/bin' )
+    env['Home'] = os.path.normpath( '/home/user' )
     
-    self.assertEqual( str(env['PATH']), os.pathsep.join( map(os.path.normpath, ['/work/bin', '/usr/bin', '/usr/local/bin'] )) )
     self.assertEqual( env['HOME'], os.path.normpath('/home/user') )
+    self.assertEqual( str(env['PATH']), os.pathsep.join( map(os.path.normpath, ['/work/bin', '/usr/bin', '/usr/local/bin'] )) )
 
 
 #//===========================================================================//

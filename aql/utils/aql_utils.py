@@ -21,17 +21,16 @@ __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
   'newHash', 'dumpSimpleObject', 'simpleObjectSignature', 'objectSignature', 'dataSignature',
   'fileSignature', 'fileTimeSignature', 'fileChecksum',
-  'findFiles', 'absFilePath', 'loadModule',
+  'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'executeCommand', 'ExecCommandResult', 'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
+  'executeCommand', 'ExecCommandResult', 
   'cpuCount', 'memoryUsage',
-  'flattenList', 'simplifyValue', 'commonDirName', 'excludeFilesFromDirs', 'splitDrive',
-  'Chrono', 'Chdir',
+  'flattenList', 'simplifyValue',
+  'Chrono',
 )
 
 import io
 import os
-import re
 import imp
 import sys
 import time
@@ -40,9 +39,7 @@ import errno
 import marshal
 import hashlib
 import inspect
-import fnmatch
 import tempfile
-import itertools
 import traceback
 import threading
 import subprocess
@@ -54,14 +51,6 @@ except ImportError:
   import pickle
 
 from aql.util_types import uStr, isString, UniqueList, toSequence, isSequence, AqlException
-
-#//===========================================================================//
-
-#noinspection PyUnusedLocal
-class   ErrorProgramNotFound( AqlException ):
-  def   __init__( self, program ):
-    msg = "Program '%s' has not been found" % (program,)
-    super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
@@ -79,21 +68,10 @@ class   ErrorFileName( AqlException ):
     super(type(self), self).__init__( msg )
 #//===========================================================================//
 
-class   ErrorProgramName( AqlException ):
-  def   __init__( self, prog ):
-    msg = "Invalid program name: %s(%s)" % (prog,type(prog))
-    super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
 class   ErrorUnmarshallableObject( AqlException ):
   def   __init__( self, obj ):
     msg = "Unmarshallable object: '%s'" % (obj, )
     super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
-IS_WINDOWS = (os.name == 'nt')
 
 #//===========================================================================//
 
@@ -399,73 +377,6 @@ def   checkFunctionArgs( function, args, kw, getargspec = _getargspec):
 
 #//===========================================================================//
 
-def   absFilePath( file_path ):
-  if not file_path:
-    file_path = '.'
-
-  if file_path[-1] in (os.path.sep, os.path.altsep):
-    last_sep = os.path.sep
-  else:
-    last_sep = ''
-
-  return os.path.normcase( os.path.abspath( file_path ) ) + last_sep
-
-#//===========================================================================//
-
-def   excludeFilesFromDirs( files, dirs ):
-  result = []
-  folders = tuple( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in toSequence( dirs ) )
-  
-  for file in toSequence( files ):
-    file = os.path.normcase( os.path.abspath( file ) )
-    if not file.startswith( folders ):
-      result.append( file )
-  
-  return result
-
-#//===========================================================================//
-
-def   _masksToMatch( masks, _null_match = lambda name: False ):
-  if not masks:
-    return _null_match
-  
-  if isString( masks ):
-    masks = masks.split('|')
-  
-  re_list = []
-  for mask in toSequence( masks ):
-    re_list.append( "(%s)" % fnmatch.translate( os.path.normcase( mask ).strip() ) )
-  
-  re_str = '|'.join(re_list)
-  
-  return re.compile(re_str).match
-
-#//===========================================================================//
-
-def  findFiles( paths = ".", mask = ("*", ), exclude_mask = tuple(), exclude_subdir_mask = ('__*', '.*') ):
-  
-  found_files = []
-  
-  paths = toSequence(paths)
-  
-  match_mask = _masksToMatch( mask )
-  match_exclude_mask = _masksToMatch( exclude_mask )
-  match_exclude_subdir_mask = _masksToMatch( exclude_subdir_mask )
-  
-  for path in paths:
-    for root, folders, files in os.walk( os.path.abspath( path ) ):
-      for file_name in files:
-        file_name_nocase = os.path.normcase( file_name )
-        if (not match_exclude_mask(file_name_nocase)) and match_mask( file_name_nocase ):
-          found_files.append( os.path.join(root, file_name) )
-      
-      folders[:] = ( folder for folder in folders if not match_exclude_subdir_mask( folder ) )
-  
-  found_files.sort()
-  return found_files
-
-#//===========================================================================//
-
 def   removeFiles( files ):
   
   for f in toSequence( files ):
@@ -587,123 +498,6 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
     if cmd_file is not None:
       cmd_file.close()
       removeFiles( cmd_file.name )
-
-#//===========================================================================//
-
-def   _getEnvPath( env = None ):
-  
-  if env is None:
-    env = os.environ
-  
-  paths = env.get('PATH', '')
-  if isString( paths ):
-    paths = paths.split( os.pathsep )
-  
-  return paths
-
-#//===========================================================================//
-
-def   _getEnvPathExt( env = None ):
-  
-  if env is None:
-    path_exts = os.environ.get('PATHEXT', '')
-  else:
-    path_exts = env.get('PATHEXT', None )
-    if path_exts is None:
-      path_exts = os.environ.get('PATHEXT', '')
-      
-  if not path_exts and IS_WINDOWS:
-    return ('.exe','.cmd','.bat','.com')
-  
-  if isString( path_exts ):
-    path_exts = path_exts.split( os.pathsep )
-  
-  return path_exts
-
-#//===========================================================================//
-
-def   _findProgram( prog, paths = None, path_exts = None ):
-  
-  if not path_exts or (os.path.splitext(prog)[1] in path_exts):
-    path_exts = tuple('',)
-  
-  for path in paths:
-    prog_path = os.path.expanduser( os.path.join( path, prog ) )
-    for ext in path_exts:
-      if os.access( prog_path + ext, os.X_OK ):
-        return os.path.normcase( prog_path + ext )
-  
-  return None
-
-#//===========================================================================//
-
-def   whereProgram( prog, env = None ):
-  
-  paths = _getEnvPath( env )
-  path_exts = _getEnvPathExt( env )
-  
-  prog = _findProgram( prog, paths, path_exts )
-  if prog is None:
-    raise ErrorProgramNotFound( prog )
-  
-  return prog
-
-#//===========================================================================//
-
-class ProgramFinder( object ):
-  __slots__ = (
-    'prog',
-    'paths',
-    'exts',
-    'result',
-  )
-  
-  def   __init__(self, prog, paths, exts ):
-    if not isString(prog):
-      raise ErrorProgramName( prog )
-    
-    self.prog   = prog
-    self.paths  = paths
-    self.exts   = exts
-    self.result = None
-  
-  def   __nonzero__(self):
-    return bool(self.get())
-  
-  def   __bool__(self):
-    return bool(self.get())
-  
-  def   __call__(self):
-    return self.get()
-  
-  def   __str__(self):
-    return self.get()
-  
-  def   get(self):
-    progpath = self.result
-    if progpath:
-      return progpath
-    
-    prog_full_path = _findProgram( self.prog, self.paths, self.exts )
-    if prog_full_path is None:
-      prog_full_path = self.prog
-    
-    self.result = prog_full_path
-    return prog_full_path
-  
-#//=======================================================//
-
-def   findOptionalProgram( prog, env = None ):
-  paths = _getEnvPath( env )
-  path_exts = _getEnvPathExt( env )
-  return ProgramFinder( prog, paths, path_exts )
-
-#//===========================================================================//
-
-def   findOptionalPrograms( progs, env = None ):
-  paths = _getEnvPath( env )
-  path_exts = _getEnvPathExt( env )
-  return tuple( ProgramFinder( prog, paths, path_exts ) for prog in progs )
 
 #//===========================================================================//
 
@@ -886,70 +680,6 @@ def  simplifyValue( value, simple_types = _SIMPLE_TYPES, simple_lists = _SIMPLE_
 
 #//===========================================================================//
 
-def  normLocalPath( path ):
-
-  if not path:
-    return '.'
-
-  path_sep = os.path.sep
-
-  if path[-1] in (path_sep, os.path.altsep):
-    last_sep = path_sep
-  else:
-    last_sep = ''
-
-  path = os.path.normcase( os.path.normpath( path ) )
-
-  return path + last_sep
-
-#//===========================================================================//
-
-try:
-  _splitunc = os.path.splitunc
-except AttributeError:
-  def _splitunc( path ):
-    return str(), path
-
-def   splitDrive( path ):
-  drive, path = os.path.splitdrive( path )
-  if not drive:
-    drive, path = _splitunc( path )
-  
-  return drive, path
-
-#//===========================================================================//
-
-def   commonDirName( paths ):
-  if not paths:
-    return ''
-  
-  paths = sorted( map( normLocalPath, paths) )
-  
-  min_drive, min_path = splitDrive( paths[0] )
-  max_drive, max_path = splitDrive( paths[-1] )
-  
-  if min_drive != max_drive:
-    return ''
-  
-  prefix = ''
-  
-  for i, c in enumerate(min_path):
-    t = max_path[i]
-    if c != t:
-      if i > 0:
-        prefix = os.path.dirname( min_path[:i] )
-        if min_path[i-1] != os.path.sep:
-          prefix += os.path.sep
-      
-      return min_drive + prefix 
-  
-  if min_path[-1] not in ( os.path.sep, os.path.altsep ):
-    min_path = os.path.dirname( min_path ) + os.path.sep
-  
-  return min_drive + min_path
-
-#//===========================================================================//
-
 class   Chrono (object):
   __slots__ = ('elapsed', )
   
@@ -984,20 +714,3 @@ class   Chrono (object):
     if milisecs:  result.append("%s ms" % milisecs)
     
     return ' '.join( result )
-#//===========================================================================//
-
-class   Chdir (object):
-  __slots__ = ('previous_path', )
-  
-  def   __init__(self, path = None ):
-    self.previous_path = os.getcwd()
-    
-    if path:
-      os.chdir( path )
-  
-  def   __enter__(self):
-    return self
-  
-  def   __exit__(self, exc_type, exc_val, exc_tb):
-    os.chdir( self.previous_path )
-    return False

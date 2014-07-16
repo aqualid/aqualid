@@ -217,7 +217,7 @@ class ToolsManager( Singleton ):
           
           tool_obj = tool_info.tool_class( tool_options )
           
-        except (NotImplementedError, ErrorProgramNotFound):
+        except (NotImplementedError, ErrorProgramNotFound) as err:
           setup_options.clear()
           tool_options.clear()
         
