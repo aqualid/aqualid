@@ -194,25 +194,14 @@ class CommonCppCompiler (aql.FileBuilder):
     if node.builder_data:
       return None
     
-    src_files = node.getSourceValues()
-    if len(src_files) < 2:
+    src_groups = self.groupSourcesByBuildDir( node )
+    if len(src_groups) < 2:
       return None
     
-    node.getDepValues()
-    
-    num_groups = node.options.batch_groups.get()
-    group_size = node.options.batch_size.get()
-    
-    obj_files = self.getFileBuildPaths( src_files, ext = self.suffix )
-    obj_files, indexes_groups = aql.groupPathsByDir( obj_files, num_groups, group_size )
-    
-    if len(indexes_groups) < 2:
-      return None
-    
+    node.updateDepValues()
     pre_nodes = []
-    for indexes in indexes_groups:
-      node_srcs = [ src_files[ i ] for i in indexes ]
-      pre_node = node.copy( node_srcs )
+    for src_group in src_groups:
+      pre_node = node.copy( src_group )
       pre_node.builder_data = True
       
       pre_nodes.append( pre_node )
@@ -351,7 +340,7 @@ class CommonCppLinkerBase( aql.FileBuilder ):
     
     batch_sources = {}
     
-    cwd = node.cwd 
+    cwd = node.cwd
     
     for src_file in node.getSourceValues():
       ext = os.path.splitext( src_file.get() )[1]

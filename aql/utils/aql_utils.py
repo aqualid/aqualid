@@ -26,7 +26,7 @@ __all__ = (
   'executeCommand', 'ExecCommandResult', 
   'cpuCount', 'memoryUsage',
   'flattenList', 'simplifyValue',
-  'Chrono',
+  'Chrono', 'ItemsGroups', 'groupItems'
 )
 
 import io
@@ -714,3 +714,77 @@ class   Chrono (object):
     if milisecs:  result.append("%s ms" % milisecs)
     
     return ' '.join( result )
+
+#//===========================================================================//
+
+class   ItemsGroups( object ):
+  __slots__ = (
+    'wish_groups',
+    'max_group_size',
+    'group_size',
+    'tail_size',
+    'groups',
+  )
+  
+  def   __init__(self, size, wish_groups, max_group_size ):
+    wish_groups = max( 1, wish_groups )
+    
+    group_size = size // wish_groups
+    
+    if max_group_size < 0:
+      max_group_size = size
+    elif max_group_size == 0:
+      max_group_size = group_size + 1
+    
+    group_size = max( 1, group_size )
+    
+    self.wish_groups = wish_groups
+    self.group_size = min( max_group_size, group_size )
+    self.max_group_size = max_group_size
+    self.tail_size = size
+    self.groups = [[]]
+  
+  #//-------------------------------------------------------//
+  
+  def   addGroup( self ):
+    
+    groups = self.groups
+    if not groups[0]:
+      return
+    
+    group_size = max( 1, self.tail_size // max(1, self.wish_groups - len(self.groups) ) )
+    self.group_size = min( self.max_group_size, group_size )
+    
+    group_files = []
+    self.groups.append( group_files )
+    return group_files
+  
+  #//-------------------------------------------------------//
+  
+  def   add(self, item ):
+    group_files = self.groups[-1]
+    if len(group_files) >= self.group_size:
+      group_files = self.addGroup()
+    
+    group_files.append( item )
+    self.tail_size -= 1
+  
+  #//-------------------------------------------------------//
+  
+  def   get(self):
+    groups = self.groups
+    if not groups[-1]:
+      del groups[-1]
+    
+    return groups
+
+#//===========================================================================//
+
+def   groupItems( items, wish_groups = 1, max_group_size = -1 ):
+  
+  groups = ItemsGroups( len(items), wish_groups, max_group_size )
+  for item in items:
+    groups.add( item )
+  
+  return groups.get()
+

@@ -20,7 +20,7 @@
 __all__ = (
   'findFiles', 'absFilePath', 'changePath',
   'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
-  'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir', 'groupPathsByUniqueName',
+  'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir',
   'Chdir',
 )
 
@@ -28,8 +28,9 @@ import os
 import re
 import fnmatch
 
-
 from aql.util_types import isString, toSequence, AqlException
+
+from .aql_utils import ItemsGroups
 
 #//===========================================================================//
 
@@ -344,93 +345,35 @@ def   changePath( path, dirname = None, name = None, ext = None, prefix = None )
 
 #//===========================================================================//
 
-def   groupPathsByDir( file_paths, wish_groups = 1, max_group_size = -1 ):
+def   groupPathsByDir( file_paths, wish_groups = 1, max_group_size = -1, pathGetter = None ):
   
-  wish_groups = max( 1, wish_groups )
-  groups = []
-  index_groups = []
+  groups = ItemsGroups( len(file_paths), wish_groups, max_group_size )
   
-  if max_group_size == -1:
-    max_group_size = len(file_paths)
-  else:
-    max_group_size = max(1,max_group_size)
+  if pathGetter is None:
+    pathGetter = lambda path: path
   
   files = []
-  for i, file_path in enumerate(file_paths):
-    dir_path, file_name = os.path.split( file_path )
+  for file_path in file_paths:
+    path = pathGetter( file_path )
+    
+    dir_path, file_name = os.path.split( path )
     dir_path = os.path.normcase( dir_path )
-    files.append( (i, dir_path, file_name ) )
+    
+    files.append( (dir_path, file_path) )
   
-  files.sort( key = lambda v:v[1] )
+  files.sort( key = lambda v:v[0] )
   
   last_dir = None
-  group_files = []
-  group_indexes = []
-  tail_size = len(files)
   
-  group_size = max( 1, tail_size // wish_groups )
-  group_size = min( max_group_size, group_size )
-  
-  for index, dir_path, file_name in files:
+  for dir_path, file_path in files:
     
-    if (last_dir != dir_path) or (len(group_files) >= group_size):
+    if last_dir != dir_path:
       last_dir = dir_path
-      
-      if group_files:
-        groups.append( group_files )
-        index_groups.append( group_indexes )
-        group_files = []
-        group_indexes = []
-      
-        group_size = max( 1, tail_size // max(1, wish_groups - len(groups) ) )
-        group_size = min( max_group_size, group_size )
+      groups.addGroup()
     
-    tail_size -= 1
-    file_path = os.path.join( dir_path, file_name )
-    group_files.append( file_path )
-    group_indexes.append( index )
+    groups.add( file_path )
   
-  if group_files:
-    groups.append( group_files )
-    index_groups.append( group_indexes )
-  
-  return groups, index_groups
-
-#//===========================================================================//
-
-def   groupPathsByUniqueName( self, wish_groups = 1, max_group_size = -1 ):
-  files = self
-  wish_groups = max( 1, wish_groups )
-  groups = []
-  
-  if max_group_size == -1:
-    max_group_size = len(files)
-  else:
-    max_group_size = max(1,max_group_size)
-  
-  while files:
-    group_names = set()
-    group_files = []
-    rest_files = []
-    
-    group_size = max(1, len(files) // max(1, wish_groups - len(groups) ) )
-    group_size = min( max_group_size, group_size )
-
-    #noinspection PyTypeChecker
-    for filepath in files:
-      filename = os.path.splitext( os.path.basename( filepath ) )[0]
-      
-      if (len(group_files) >= group_size) or (filename in group_names):
-        rest_files.append( filepath )
-      else:
-        group_names.add( filename )
-        group_files.append( filepath )
-    
-    groups.append( group_files )
-    
-    files = rest_files
-  
-  return groups
+  return groups.get()
 
 #//===========================================================================//
 

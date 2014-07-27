@@ -11,24 +11,23 @@ ReadOptions( 'make.cfg', cpp_options )
 is_windows_build = bool( cpp_options.target_os == 'windows')
 is_unix_build = not is_windows_build
 
-scintilla_dir = os.path.join( cpp_options.root_src_dir.get(), 'scintilla')
+scintilla_dir = cpp_options.root_src_dir.get() +'/scintilla'
 
-src_dir     = os.path.join( scintilla_dir, 'src'    )
-lexers_dir  = os.path.join( scintilla_dir, 'lexers' )
-lexlib_dir  = os.path.join( scintilla_dir, 'lexlib' )
-include_dir = os.path.join( scintilla_dir, 'include')
-win32_dir   = os.path.join( scintilla_dir, 'win32'  )
-gtk_dir     = os.path.join( scintilla_dir, 'gtk'    )
+src_dir     = scintilla_dir + '/src'
+lexers_dir  = scintilla_dir + '/lexers'
+lexlib_dir  = scintilla_dir + '/lexlib'
+include_dir = scintilla_dir + '/include'
+win32_dir   = scintilla_dir + '/win32'
+gtk_dir     = scintilla_dir + '/gtk'
 
 lexlib_sources  = FindFiles( lexers_dir, '*.cxx' )
-lexslib_sources = FindFiles( lexlib_dir, '*.cxx' )
+lexslib_sources = FindFiles( lexlib_dir, '*.cxx', exclude_mask = "LexerNoExceptions.cxx" )
 
 #//-------------------------------------------------------//
 
 base_sources  = FindFiles( src_dir, '*.cxx',
                            exclude_mask = ["Catalogue.cxx", "ExternalLexer.cxx", "ScintillaBase.cxx"] )
 
-base_sources += ( os.path.join(lexlib_dir, src ) for src in [ 'CharacterCategory.cxx', 'CharacterSet.cxx', 'PropSetSimple.cxx'] )
 if is_windows_build:
   base_sources += [ os.path.join(win32_dir, "PlatWin.cxx") ]
 elif is_unix_build:
@@ -36,7 +35,9 @@ elif is_unix_build:
 
 #//-------------------------------------------------------//
 
-dll_sources = base_sources
+dll_sources = list( base_sources )
+dll_sources += ( os.path.join( lexlib_dir, src ) for src in [ 'CharacterCategory.cxx', 'CharacterSet.cxx', 'PropSetSimple.cxx'] )
+
 dll_libs = []
 
 include_dirs = [ src_dir, include_dir, lexlib_dir ]
@@ -54,10 +55,37 @@ elif is_unix_build:
 
 cpp_options.cpppath += include_dirs
 
+
 scintilla_dll = cpp.LinkSharedLibrary( dll_sources,
                                        target = 'Scintilla',
                                        def_file = def_file,
-                                       libs = dll_libs )
+                                       libs = dll_libs,
+                                       batch = True,
+                                       batch_size = 5 )
 
 Alias( 'lib', scintilla_dll )
 Default( scintilla_dll )
+
+#//-------------------------------------------------------//
+
+lex_dll_sources = list(base_sources)
+lex_dll_sources += lexlib_sources
+lex_dll_sources += lexslib_sources
+lex_dll_sources += ( os.path.join( src_dir, src ) for src in ["Catalogue.cxx", "ExternalLexer.cxx"] )
+
+lex_dll_other_sources = [ src_dir + "/ScintillaBase.cxx" ]
+if is_windows_build:
+  lex_dll_other_sources += [ win32_dir + "/ScintillaWin.cxx" ]
+
+lexers_dll_other_objs = cpp.Compile( lex_dll_other_sources, cppdefines = 'SCI_LEXER', prefix = "lex_" )
+
+lexers_dll = cpp.LinkSharedLibrary( lex_dll_sources, lexers_dll_other_objs,
+                                    target = 'SciLexer',
+                                    def_file = def_file,
+                                    libs = dll_libs,
+                                    batch = True,
+                                    batch_size = 5 )
+
+Alias( 'lexlib', lexers_dll )
+Default( lexers_dll )
+Default( lexers_dll_other_objs )

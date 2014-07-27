@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      executeCommand, flattenList
+                      executeCommand, flattenList, groupItems
 
 class TestUtils( AqlTestCase ):
 
@@ -123,6 +123,34 @@ class TestUtils( AqlTestCase ):
     self.assertEqual( flattenList( l ), l_flat )
     self.assertEqual( flattenList( [] ), [] )
     self.assertEqual( flattenList( [([1,3,4], [2,3])] ), [1,3,4,2,3] )
+  
+  #//=======================================================//
+  
+  def   test_groups( self ):
+    items = list(range(10))
+    groups = groupItems( items, wish_groups = 2, max_group_size = -1 )
+    self.assertEqual( groups, [[0,1,2,3,4],[5,6,7,8,9]])
+    
+    groups = groupItems( items, wish_groups = 3, max_group_size = 0 )
+    self.assertEqual( groups, [[0,1,2],[3,4,5],[6,7,8,9]])
+    
+    groups = groupItems( items, wish_groups = 3, max_group_size = 3 )
+    self.assertEqual( groups, [[0,1,2],[3,4,5],[6,7,8],[9]])
+    
+    groups = groupItems( items, wish_groups = 4, max_group_size = -1 )
+    self.assertEqual( groups, [[0,1],[2,3],[4,5,6],[7,8,9]] )
+    
+    groups = groupItems( items, wish_groups = 4, max_group_size = 1 )
+    self.assertEqual( groups, [[0],[1],[2],[3],[4],[5],[6],[7],[8],[9]] )
+    
+    groups = groupItems( items, wish_groups = 1, max_group_size = 0 )
+    self.assertEqual( groups, [[0,1,2,3,4,5,6,7,8,9]] )
+    
+    groups = groupItems( items, wish_groups = 1, max_group_size = -1 )
+    self.assertEqual( groups, [[0,1,2,3,4,5,6,7,8,9]] )
+    
+    groups = groupItems( items, wish_groups = 1, max_group_size = 2 )
+    self.assertEqual( groups, [[0,1],[2,3],[4,5],[6,7],[8,9]] )
       
 #//===========================================================================//
 

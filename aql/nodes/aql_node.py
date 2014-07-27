@@ -291,7 +291,6 @@ class   NodeValue (ValueBase):
     
     return True
 
-  
   #//-------------------------------------------------------//
 
 #//===========================================================================//
@@ -362,10 +361,7 @@ class Node (object):
   #//=======================================================//
   
   def   split( self, builder ):
-    sources = self.sources
-    if sources is None:
-      sources = self.getSourceValues()
-
+    sources = self.getSourceValues()
     nodes = [ self.copy( (src_value,), builder ) for src_value in sources ]
     
     return nodes
@@ -418,25 +414,31 @@ class Node (object):
   
   #//=======================================================//
   
-  def   getDepValues(self):
+  def   updateDepValues(self):
     dep_nodes = self.dep_nodes
-    dep_values = self.dep_values
     
     if not dep_nodes:
-      return dep_values
+      return
+    
+    dep_values = self.dep_values
     
     for node in dep_nodes:
       dep_values += node.targets
     
     dep_nodes.clear()
     dep_values.sort( key = lambda v: v.name )
-    
-    return dep_values
+  
+  #//=======================================================//
+  
+  def   getDepValues(self):
+    self.updateDepValues()
+    return self.dep_values
   
   #//=======================================================//
   
   def   initiate(self):
-    self.builder = self.builder.initiate()
+    with Chdir(self.cwd):
+      self.builder = self.builder.initiate()
 
   #//=======================================================//
   
@@ -613,10 +615,10 @@ class Node (object):
     
   #//=======================================================//
   
-  def   isActual( self, vfile ):
+  def   isActual( self, vfile, built_node_names = None ):
     node_value = NodeValue( name = self.name, signature = self.signature )
     
-    if not node_value.actual( vfile ):
+    if not node_value.actual( vfile ) or ((built_node_names is not None) and (node_value.name not in built_node_names)):
       return False
     
     self.targets  = node_value.targets
@@ -834,7 +836,7 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   isActual( self, vfile ):
+  def   isActual( self, vfile, built_node_names = None ):
     
     changed_sources = []
     targets = []
@@ -842,8 +844,8 @@ class BatchNode (Node):
     
     for src_value in self.source_values:
       node_value, ideps = self.node_values[ src_value ]
-    
-      if not node_value.actual( vfile ):
+      
+      if not node_value.actual( vfile ) or ((built_node_names is not None) and (node_value.name not in built_node_names)):
         changed_sources.append( src_value )
       else:
         targets   += node_value.targets

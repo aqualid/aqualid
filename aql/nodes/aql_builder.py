@@ -25,7 +25,7 @@ import os
 import errno
 
 from aql.util_types import toSequence, FilePath
-from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, Chdir, relativeJoin, relativeJoinList
+from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
 from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
 #//===========================================================================//
@@ -92,7 +92,7 @@ def   _fileSinature2Type( file_signature_type ):
 
 class BuilderInitiator( object ):
   
-  __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw', 'cwd' )
+  __slots__ = ( 'is_initiated', 'builder', 'options', 'args', 'kw' )
   
   def   __init__( self, builder, options, args, kw ):
     
@@ -101,7 +101,6 @@ class BuilderInitiator( object ):
     self.options        = options
     self.args           = self.__storeArgs( args )
     self.kw             = self.__storeKw( kw )
-    self.cwd            = os.path.abspath( os.getcwd() )
   
   #//=======================================================//
   
@@ -134,22 +133,20 @@ class BuilderInitiator( object ):
     
     builder = self.builder
     
-    with Chdir( self.cwd ):
-      
-      kw = self.__loadKw()
-      args = self.__loadArgs()
-      
-      options = self.options
-      
-      builder._initAttrs( options )
-      
-      builder.__init__( options, *args, **kw )
-      
-      if not hasattr( builder, 'name' ):
-        builder.setName()
-      
-      if not hasattr( builder, 'signature' ):
-        builder.setSignature()
+    kw = self.__loadKw()
+    args = self.__loadArgs()
+    
+    options = self.options
+    
+    builder._initAttrs( options )
+    
+    builder.__init__( options, *args, **kw )
+    
+    if not hasattr( builder, 'name' ):
+      builder.setName()
+    
+    if not hasattr( builder, 'signature' ):
+      builder.setSignature()
     
     self.is_initiated = True
     
@@ -355,6 +352,21 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   groupSourcesByBuildDir( self, node ):
+    src_files = node.getSourceValues()
+    
+    num_groups = node.options.batch_groups.get()
+    group_size = node.options.batch_size.get()
+    
+    if self.relative_build_paths:
+      groups = groupPathsByDir( src_files, num_groups, group_size, pathGetter = lambda value: value.get() )
+    else:
+      groups = groupItems( src_files, num_groups, group_size )
+    
+    return groups
+  
+  #//-------------------------------------------------------//
+  
   def   fileValueType( self ):
     return self.file_value_type 
   
@@ -442,7 +454,7 @@ class BuildSingle(object):
   
   def   prebuild( self, node ):
     
-    node.getDepValues()
+    node.updateDepValues()
     
     builder = self.builder
     nodes = node.split( builder )

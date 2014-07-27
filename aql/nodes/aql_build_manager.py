@@ -504,7 +504,7 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, nodes, brief, build_always = False ):
+  def   build( self, nodes, brief ):
     
     build_manager = self.build_manager
     
@@ -532,9 +532,8 @@ class _NodesBuilder (object):
         
         if isinstance( node, BatchNode ):
           # Check for changed sources of BatchNode, this is needed for correct working of prebuild
-          if not build_always:
-            vfile = vfiles[ node.builder ]
-            actual = node.isActual( vfile )
+          vfile = vfiles[ node.builder ]
+          actual = build_manager.isActualNode( node, vfile )
                     
         pre_nodes = node.prebuild()
         if pre_nodes:
@@ -544,9 +543,9 @@ class _NodesBuilder (object):
           changed = True
           continue
       
-      if (not build_always) and (actual is None):
+      if actual is None:
         vfile = vfiles[ node.builder ]
-        actual = node.isActual( vfile )
+        actual = build_manager.isActualNode( node, vfile )
       
       if actual:
         build_manager.actualNode( node )
@@ -668,6 +667,7 @@ class BuildManager (object):
     '_built_targets',
     '_waiting_nodes',
     '_failed_nodes',
+    '_built_node_names',
     'brief',
     'completed',
     'actual',
@@ -681,11 +681,12 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   __reset(self, brief =  True ):
+  def   __reset(self, brief = True, build_always = False ):
     
     self._built_targets = {}
     self._waiting_nodes = {}
     self._failed_nodes = {}
+    self._built_node_names = set() if build_always else None
     
     self.brief = brief
     self.completed = 0
@@ -729,7 +730,6 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   actualNode( self, node ):
-    # self._checkAlreadyBuilt( node )
     self._nodes.removeTail( node )
     self.actual += 1
     
@@ -739,10 +739,24 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   isActualNode( self, node, vfile ):
+    return node.isActual( vfile, self._built_node_names )
+  
+  #//-------------------------------------------------------//
+  
+  def   _addToBuiltNodeNames(self, node ):
+    built_names = self._built_node_names
+    if built_names is not None:
+      built_names.update( node.getNames() );
+  
+  #//-------------------------------------------------------//
+  
   def   completedNode( self, node, builder_output ):
     self._checkAlreadyBuilt( node )
     self._nodes.removeTail( node )
     self._removeWaitingNode( node )
+    self._addToBuiltNodeNames( node )
+    
     self.completed += 1
     
     eventNodeBuildingFinished( node, builder_output, self.getProgressStr(), self.brief )
@@ -854,7 +868,7 @@ class BuildManager (object):
   
   def   build( self, jobs, keep_going, nodes = None, brief = True, build_always = False ):
     
-    self.__reset( brief )
+    self.__reset( brief, build_always )
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -870,7 +884,7 @@ class BuildManager (object):
         if not (tails or self.isWaiting()):
           break
         
-        changed = nodes_builder.build( tails, brief, build_always )
+        changed = nodes_builder.build( tails, brief )
         
         if not changed:
           break

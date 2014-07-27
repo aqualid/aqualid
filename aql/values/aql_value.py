@@ -115,7 +115,7 @@ class   ValueBase (object):
   #//-------------------------------------------------------//
 
   def   __str__(self):
-    return castStr(self.name)
+    return castStr(self.get())
   
   #//-------------------------------------------------------//
   
