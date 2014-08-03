@@ -567,7 +567,8 @@ class Project( object ):
     elif jobs > 32:
       jobs = 32
     
-    self.options.batch_groups = jobs
+    if not self.options.batch_groups.isSet():
+      self.options.batch_groups = jobs
     
     build_nodes = self._getBuildNodes()
     

@@ -519,7 +519,7 @@ class _NodesBuilder (object):
       
       pre_nodes = self.prebuild_nodes.pop( node, None )
       
-      actual = None
+      # actual = None
       
       if pre_nodes:
         if node.prebuildFinished( pre_nodes ):
@@ -530,10 +530,10 @@ class _NodesBuilder (object):
         
         node.initiate()
         
-        if isinstance( node, BatchNode ):
-          # Check for changed sources of BatchNode, this is needed for correct working of prebuild
-          vfile = vfiles[ node.builder ]
-          actual = build_manager.isActualNode( node, vfile )
+        # if isinstance( node, BatchNode ):
+        #   # Check for changed sources of BatchNode, this is needed for correct working of prebuild
+        #   vfile = vfiles[ node.builder ]
+        #   actual = build_manager.isActualNode( node, vfile )
                     
         pre_nodes = node.prebuild()
         if pre_nodes:
@@ -543,9 +543,8 @@ class _NodesBuilder (object):
           changed = True
           continue
       
-      if actual is None:
-        vfile = vfiles[ node.builder ]
-        actual = build_manager.isActualNode( node, vfile )
+      vfile = vfiles[ node.builder ]
+      actual = build_manager.isActualNode( node, vfile )
       
       if actual:
         build_manager.actualNode( node )

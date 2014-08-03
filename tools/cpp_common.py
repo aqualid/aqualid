@@ -355,7 +355,8 @@ class CommonCppLinkerBase( aql.FileBuilder ):
         obj_files.append( src_file )
     
     for builder, sources in batch_sources.items():
-      src_nodes.append( aql.BatchNode( builder, sources, cwd ) )
+      src_node = aql.BatchNode( builder, sources, cwd )
+      src_nodes.append( src_node )
     
     node.builder_data = obj_files
     

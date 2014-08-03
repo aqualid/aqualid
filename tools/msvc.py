@@ -318,10 +318,10 @@ class ToolMsvcCommon( ToolCommonCpp ):
     # if_.cc_ver.ge(7).cc_ver.lt(8).ccflags += '/Zc:forScope /Zc:wchar_t'
 
     if_.optimization.eq('speed').occflags += '/Ox'
-    if_.optimization.eq('speed').olinkflags += '/OPT:REF /OPT:ICF'
+    if_.optimization.eq('speed').olinkflags += ['/OPT:REF','/OPT:ICF']
 
     if_.optimization.eq('size').occflags += '/Os'
-    if_.optimization.eq('size').olinkflags += '/OPT:REF /OPT:ICF'
+    if_.optimization.eq('size').olinkflags += ['/OPT:REF','/OPT:ICF']
 
     if_.optimization.eq('off').occflags += '/Od'
 
@@ -339,6 +339,9 @@ class ToolMsvcCommon( ToolCommonCpp ):
 
     if_.warnings_as_errors.isTrue().ccflags += '/WX'
     if_.warnings_as_errors.isTrue().linkflags += '/WX'
+    
+    if_.whole_optimization.isTrue().ccflags += '/GL'
+    if_.whole_optimization.isTrue().linkflags += '/LTCG'
   
   #//-------------------------------------------------------//
   
