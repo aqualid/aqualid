@@ -172,6 +172,8 @@ class Builder (object):
   def   __new__(cls, options, *args, **kw):
     
     self = super(Builder, cls).__new__(cls)
+    self.makeValue = self.makeSimpleValue
+    
     return BuilderInitiator( self, options, args, kw )
   
   #//-------------------------------------------------------//
@@ -372,7 +374,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeValue(self, value, use_cache = False ):
+  def   makeSimpleValue(self, value, use_cache = False ):
     if isinstance( value, ValueBase):
       return value
     
@@ -389,16 +391,6 @@ class Builder (object):
     
     return self.fileValueType()( name = value, use_cache = use_cache )
   
-  #//-------------------------------------------------------//
-  
-  def   makeValues( self, values, use_cache = False ):
-    return tuple( self.makeValue( value, use_cache = use_cache ) for value in toSequence(values) )
-  
-  #//-------------------------------------------------------//
-  
-  def   makeFileValues( self, values, use_cache = False ):
-    return tuple( self.makeFileValue( value, use_cache = use_cache ) for value in toSequence(values) )
-
   #//-------------------------------------------------------//
   
   def   execCmd(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):
@@ -422,8 +414,7 @@ class Builder (object):
 class FileBuilder (Builder):
   def   _initAttrs( self, options ):
     super(FileBuilder,self)._initAttrs( options )
-    self.makeValue  = self.makeFileValue
-    self.makeValues = self.makeFileValues
+    self.makeValue = self.makeFileValue
 
 #//===========================================================================//  
 

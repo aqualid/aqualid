@@ -26,7 +26,13 @@ include_dir = scintilla_dir + '/include'
 win32_dir   = scintilla_dir + '/win32'
 gtk_dir     = scintilla_dir + '/gtk'
 
-lexslib_sources = FindFiles( lexlib_dir, '*.cxx', exclude_mask = "LexerNoExceptions.cxx" )
+#//-------------------------------------------------------//
+
+if is_windows_build:
+  use_direct2d = cpp.CheckHeaders( "d2d1.h", "dwrite.h" )
+  Alias( 'check', use_direct2d )
+else:
+  use_direct2d = False
 
 #//-------------------------------------------------------//
 
@@ -69,11 +75,14 @@ cpp_options.cpppath += include_dirs
 
 scintilla_dll = cpp.LinkSharedLibrary( scintilla_sources,
                                        target = 'Scintilla',
-                                       def_file = def_file )
+                                       def_file = def_file,
+                                       use_direct2d = use_direct2d )
 Alias( 'scintilla', scintilla_dll )
 Default( scintilla_dll )
 
 #//-------------------------------------------------------//
+
+lexslib_sources = FindFiles( lexlib_dir, '*.cxx', exclude_mask = "LexerNoExceptions.cxx" )
 
 lex_dll_sources = list(base_sources)
 lex_dll_sources += lexslib_sources
@@ -83,11 +92,12 @@ lex_dll_other_sources = [ src_dir + "/ScintillaBase.cxx" ]
 if is_windows_build:
   lex_dll_other_sources += [ win32_dir + "/ScintillaWin.cxx" ]
 
-lexers_dll_other_objs = cpp.Compile( lex_dll_other_sources, cppdefines = 'SCI_LEXER', prefix = "lex_" )
+lexers_dll_other_objs = cpp.Compile( lex_dll_other_sources, cppdefines = 'SCI_LEXER', prefix = "lex_", use_direct2d = use_direct2d )
 
 scilexer_dll = cpp.LinkSharedLibrary( lex_dll_sources, lexers_dll_other_objs, lexers_lib,
-                                    target = 'SciLexer',
-                                    def_file = def_file )
+                                      target = 'SciLexer',
+                                      def_file = def_file,
+                                      use_direct2d = use_direct2d )
 
 Alias( ['scilexer', 'SciLexer'], scilexer_dll )
 Default( scilexer_dll )

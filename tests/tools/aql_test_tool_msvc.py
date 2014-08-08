@@ -143,7 +143,7 @@ class TestToolMsvc( AqlTestCase ):
       _touchFiles( hdr_files[:group_size] )
       
       cpp.Compile( src_files, batch = True )
-      self._build( prj, min(num_groups, group_size) )
+      self._build( prj, 1 )
   
   #//-------------------------------------------------------//
   

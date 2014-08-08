@@ -257,11 +257,6 @@ class CommonResCompiler (aql.FileBuilder):
     self.prefix = options.prefix.get()
     self.suffix = options.ressuffix.get()
     
-    # ext_cpppath = list( options.ext_cpppath.get() )
-    # ext_cpppath += options.sys_cpppath.get()
-    # 
-    # self.ext_cpppath = tuple( set( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in ext_cpppath ) )
-    
     self.cmd = options.rc_cmd.get()
   
   #//-------------------------------------------------------//
@@ -465,6 +460,11 @@ class ToolCommonCpp( aql.Tool ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   makeLinker( self, options, target, shared, def_file, batch ):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   CheckHeaders(self, options ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   #//-------------------------------------------------------//

@@ -50,7 +50,6 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
 class MsvcCompiler (CommonCppCompiler):
   
   def   __init__(self, options ):
@@ -138,6 +137,55 @@ class MsvcResCompiler (CommonResCompiler):
     
     return out
 
+#//===========================================================================//
+
+class MsvcHeaderChecker (MsvcCompiler):
+  
+  def   __init__(self, options ):
+    super(MsvcHeaderChecker, self).__init__( options )
+    
+    self.makeValue = self.makeSimpleValue
+  
+  #//-------------------------------------------------------//
+  
+  def   prebuild( self, node ):
+    return None
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    
+    headers = node.getSources()
+    
+    build_dir = self.getBuildDir()
+    
+    has_headers = False
+    
+    with aql.Tempfile( suffix = '.cpp', dir = build_dir ) as cpp_file:
+      cpp_file.close()
+      
+      cpp_content = '\n'.join( "#include <%s>" % (header,) for header in headers )
+      aql.writeTextFile( cpp_file, cpp_content )
+      
+      with aql.Tempfile( suffix = self.suffix, dir = build_dir ) as obj_file:
+        obj_file.close()
+        
+        cmd = list(self.cmd)
+        cmd += [ '/Fo%s' % obj_file, cpp_file ]
+        
+        try:
+          out = self.execCmd( cmd, build_dir, file_flag = '@' )
+        except aql.ExecCommandResult as ex:
+          out = ex.out
+        else:
+          has_headers = True
+    
+    deps, out = _parseOutput( [cpp_file], out, self.ext_cpppath )
+    
+    node.setTargets( has_headers )
+    
+    return out
+  
 #//===========================================================================//
 
 class   MsvcArchiver (CommonCppArchiver):
@@ -356,7 +404,10 @@ class ToolMsvcCommon( ToolCommonCpp ):
   
   def   makeLinker( self, options, target, shared, def_file, batch ):
     return MsvcLinker( options, target, shared = shared, def_file = def_file, batch = batch )
-
+  
+  def   CheckHeaders( self, options ):
+    return MsvcHeaderChecker( options )
+  
 #//===========================================================================//
 
 @aql.tool('c++', 'msvcpp','msvc++', 'cpp', 'cxx')

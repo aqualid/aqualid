@@ -24,7 +24,7 @@ __all__ = (
 import os
 
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir
-from aql.util_types import toSequence, isString, FilePath, AqlException
+from aql.util_types import toSequence, isString, toString, FilePath, AqlException
 
 from aql.values import ValueBase, FileValueBase, pickleable
 
@@ -102,6 +102,11 @@ def   _actualValues( values ):
       return False
       
   return True
+
+#//===========================================================================//
+
+def   _makeValues( value_maker, values, use_cache ):
+  return tuple( value_maker( value, use_cache = use_cache ) for value in toSequence(values) )
 
 #//===========================================================================//
 
@@ -426,7 +431,7 @@ class Node (object):
       dep_values += node.targets
     
     dep_nodes.clear()
-    dep_values.sort( key = lambda v: v.name )
+    dep_values.sort( key = lambda v: toString( v.name ) )
   
   #//=======================================================//
   
@@ -627,20 +632,20 @@ class Node (object):
     
   #//=======================================================//
   
-  def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
+  def   setTargets( self, targets, itargets = None, ideps = None, value_maker = None ):
 
-    if valuesMaker is None:
-      valuesMaker = self.builder.makeValues
+    if value_maker is None:
+      value_maker = self.builder.makeValue
     
-    self.targets  = valuesMaker( targets,   use_cache = False )
-    self.itargets = valuesMaker( itargets,  use_cache = False )
-    self.ideps    = valuesMaker( ideps,     use_cache = True )
+    self.targets  = _makeValues( value_maker, targets,   use_cache = False )
+    self.itargets = _makeValues( value_maker, itargets,  use_cache = False )
+    self.ideps    = _makeValues( value_maker, ideps,     use_cache = True )
 
   #//=======================================================//
   
   def   setFileTargets( self, targets, itargets = None, ideps = None ):
     self.setTargets( targets = targets, itargets = itargets, ideps = ideps,
-                     valuesMaker = self.builder.makeFileValues )
+                     value_maker = self.builder.makeFileValue )
   
   #//=======================================================//
   
@@ -861,7 +866,7 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   setTargets( self, targets, itargets = None, ideps = None, valuesMaker = None ):
+  def   setTargets( self, targets, itargets = None, ideps = None, value_maker = None ):
     raise Exception( "setTargets() is not allowed for batch build." )
   
   #//=======================================================//
@@ -871,19 +876,19 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   setSourceTargets( self, src_value, targets, itargets = None, ideps = None, valuesMaker = None ):
+  def   setSourceTargets( self, src_value, targets, itargets = None, ideps = None, value_maker = None ):
     
-    if valuesMaker is None:
-      valuesMaker = self.builder.makeValues
+    if value_maker is None:
+      value_maker = self.builder.makeValue
     
     try:
       node_value, node_ideps = self.node_values[ src_value ]
     except KeyError:
       raise ErrorNodeUnknownSource( src_value )
     
-    node_value.targets  = valuesMaker( targets,   use_cache = False )
-    node_value.itargets = valuesMaker( itargets,  use_cache = False )
-    ideps               = valuesMaker( ideps,     use_cache = True )
+    node_value.targets  = _makeValues( value_maker, targets,  use_cache = False )
+    node_value.itargets = _makeValues( value_maker, itargets, use_cache = False )
+    ideps               = _makeValues( value_maker, ideps,    use_cache = True )
     
     node_ideps[:] = ideps
     
@@ -899,7 +904,7 @@ class BatchNode (Node):
   
   def   setSourceFileTargets( self, src_value, targets, itargets = None, ideps = None ):
     self.setSourceTargets( src_value, targets = targets, itargets = itargets, ideps = ideps,
-                     valuesMaker = self.builder.makeFileValues )
+                     value_maker = self.builder.makeFileValue )
   
   #//=======================================================//
   
