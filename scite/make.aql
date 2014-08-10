@@ -30,7 +30,6 @@ gtk_dir     = scintilla_dir + '/gtk'
 
 if is_windows_build:
   use_direct2d = cpp.CheckHeaders( "d2d1.h", "dwrite.h" )
-  Alias( 'check', use_direct2d )
 else:
   use_direct2d = False
 
@@ -38,12 +37,14 @@ else:
 
 base_sources  = FindFiles( src_dir, '*.cxx',
                            exclude_mask = ["Catalogue.cxx", "ExternalLexer.cxx", "ScintillaBase.cxx"] )
-
 if is_windows_build:
   base_sources += [ os.path.join(win32_dir, "PlatWin.cxx") ]
   base_sources += [ os.path.join(win32_dir, "ScintRes.rc") ]
+  def_file = FileValue( os.path.join( win32_dir, "Scintilla.def" ) )
+  
 elif is_unix_build:
   base_sources += [ os.path.join(gtk_dir, "PlatGtk.cxx") ]
+  def_file = None
 
 #//-------------------------------------------------------//
 
@@ -65,7 +66,6 @@ if is_windows_build:
   include_dirs  += [win32_dir]
   scintilla_sources   += [ os.path.join(win32_dir, "ScintillaWin.cxx" )]
   scintilla_sources   += [ os.path.join( src_dir, "ScintillaBase.cxx") ]
-  def_file = FileValue( os.path.join( win32_dir, "Scintilla.def" ) )
   
 elif is_unix_build:
   include_dirs += [gtk_dir]
@@ -82,19 +82,18 @@ Default( scintilla_dll )
 
 #//-------------------------------------------------------//
 
-lexslib_sources = FindFiles( lexlib_dir, '*.cxx', exclude_mask = "LexerNoExceptions.cxx" )
+lex_dll_sources = FindFiles( lexlib_dir, '*.cxx', exclude_mask = "LexerNoExceptions.cxx" )
 
-lex_dll_sources = list(base_sources)
-lex_dll_sources += lexslib_sources
+lex_dll_sources += base_sources
 lex_dll_sources += ( os.path.join( src_dir, src ) for src in ["Catalogue.cxx", "ExternalLexer.cxx"] )
 
-lex_dll_other_sources = [ src_dir + "/ScintillaBase.cxx" ]
+lex_dll_special_sources = [ src_dir + "/ScintillaBase.cxx" ]
 if is_windows_build:
-  lex_dll_other_sources += [ win32_dir + "/ScintillaWin.cxx" ]
+  lex_dll_special_sources += [ win32_dir + "/ScintillaWin.cxx" ]
 
-lexers_dll_other_objs = cpp.Compile( lex_dll_other_sources, cppdefines = 'SCI_LEXER', prefix = "lex_", use_direct2d = use_direct2d )
+lex_dll_special_objs = cpp.Compile( lex_dll_special_sources, cppdefines = 'SCI_LEXER', prefix = "lex_", use_direct2d = use_direct2d )
 
-scilexer_dll = cpp.LinkSharedLibrary( lex_dll_sources, lexers_dll_other_objs, lexers_lib,
+scilexer_dll = cpp.LinkSharedLibrary( lex_dll_sources, lex_dll_special_objs, lexers_lib,
                                       target = 'SciLexer',
                                       def_file = def_file,
                                       use_direct2d = use_direct2d )

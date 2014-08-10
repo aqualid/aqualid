@@ -281,6 +281,8 @@ class ToolGccCommon( ToolCommonCpp ):
     options.libsuffix     = '.a'
     options.shlibprefix   = 'lib'
     options.shlibsuffix   = '.so'
+    if_windows.shlibprefix = ''
+    if_windows.shlibsuffix = '.dll'
     if_windows.progsuffix = '.exe'
     
     options.cpppath_prefix    = '-I '
@@ -327,9 +329,15 @@ class ToolGccCommon( ToolCommonCpp ):
     if_profiling_true.ccflags += '-pg'
     if_profiling_true.linkflags += '-pg'
     
-    options.If().cxxstd.eq('c++98').cxxflags += '-std=c++98'
-    options.If().cxxstd.eq('c++11').cxxflags += '-std=c++11'
-    options.If().cxxstd.eq('c++14').cxxflags += '-std=c++1y'
+    if_cxxstd = options.If().cxxstd
+    
+    if_cxx11 = if_cxxstd.eq('c++11')
+    if_cxx14 = if_cxxstd.eq('c++14')
+    
+    if_cxxstd.eq('c++98').cxxflags  += '-std=c++98'
+    if_cxx11.cc_ver.ge("4.7").cxxflags += '-std=c++11'
+    if_cxx11.cc_ver.ge("4.3").cc_ver.le("4.6").cxxflags += '-std=c++0x'
+    if_cxx14.cc_ver.ge("4.8").cxxflags += '-std=c++1y'
   
   #//-------------------------------------------------------//
   

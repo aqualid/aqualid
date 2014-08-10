@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'findFiles', 'absFilePath', 'changePath',
+  'findFiles', 'findFileInPaths', 'absFilePath', 'changePath',
   'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
   'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir',
   'Chdir',
@@ -120,6 +120,17 @@ def  findFiles( paths = ".", mask = ("*", ), exclude_mask = tuple(), exclude_sub
 
 #//===========================================================================//
 
+def   findFileInPaths( paths, filename ):
+  
+  for path in paths:
+    file_path = os.path.join( path, filename )
+    if os.access( file_path, os.R_OK ):
+      return os.path.normpath( file_path )
+  
+  return None
+
+#//===========================================================================//
+
 def   _getEnvPath( env = None ):
   
   if env is None:
@@ -152,7 +163,7 @@ def   _getEnvPathExt( env = None ):
 
 #//===========================================================================//
 
-def   _findProgram( prog, paths = None, path_exts = None ):
+def   _findProgram( prog, paths, path_exts = None ):
   
   if not path_exts or (os.path.splitext(prog)[1] in path_exts):
     path_exts = tuple('',)
@@ -160,8 +171,9 @@ def   _findProgram( prog, paths = None, path_exts = None ):
   for path in paths:
     prog_path = os.path.expanduser( os.path.join( path, prog ) )
     for ext in path_exts:
-      if os.access( prog_path + ext, os.X_OK ):
-        return os.path.normcase( prog_path + ext )
+      p = prog_path + ext
+      if os.access( p, os.X_OK ):
+        return os.path.normcase( p )
   
   return None
 

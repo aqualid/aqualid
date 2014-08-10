@@ -165,6 +165,36 @@ def   _getResOptions():
 
 #//===========================================================================//
 
+class HeaderChecker (aql.Builder):
+
+  SIGNATURE_ATTRS = ('cpppath', )
+  
+  def   __init__(self, options ):
+    
+    cpppath = list(options.cpppath.get())
+    cpppath += list(options.ext_cpppath.get())
+    cpppath += list(options.sys_cpppath.get())
+    
+    self.cpppath = cpppath
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    
+    has_headers = True
+    
+    cpppath = self.cpppath
+    
+    for header in node.getSources():
+      found = aql.findFileInPaths( cpppath, header )
+      if not found:
+        has_headers = False
+        break
+    
+    node.setTargets( has_headers )
+  
+#//===========================================================================//
+
 #noinspection PyAttributeOutsideInit
 class CommonCppCompiler (aql.FileBuilder):
   
@@ -465,7 +495,7 @@ class ToolCommonCpp( aql.Tool ):
   #//-------------------------------------------------------//
   
   def   CheckHeaders(self, options ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+    return HeaderChecker( options )
   
   #//-------------------------------------------------------//
   
