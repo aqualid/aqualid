@@ -4,6 +4,28 @@ import itertools
 import aql
 
 #//===========================================================================//
+
+class   ErrorBatchBuildCustomExt( aql.AqlException ):
+  def   __init__( self, node, ext ):
+    msg = "Custom extension '%s' is not supported for batch building of node: %s" % (ext, node.getBuildStr( brief = False ))
+    super(ErrorBatchBuildCustomSuffix, self).__init__(msg)
+
+#//===========================================================================//
+
+class   ErrorBatchBuildWithPrefix( aql.AqlException ):
+  def   __init__( self, node, prefix ):
+    msg = "Filename prefix '%s' is not supported for batch building of node: %s" % (prefix, node.getBuildStr( brief = False ))
+    super(ErrorBatchBuildWithPrefix, self).__init__(msg)
+
+#//===========================================================================//
+
+class   ErrorBatchBuildCustomSuffix( aql.AqlException ):
+  def   __init__( self, node, suffix ):
+    msg = "Filename suffix '%s' is not supported for batch building of node: %s" % (suffix, node.getBuildStr( brief = False ))
+    super(ErrorBatchBuildCustomSuffix, self).__init__(msg)
+
+
+#//===========================================================================//
 #// BUILDERS IMPLEMENTATION
 #//===========================================================================//
 
@@ -198,7 +220,7 @@ class HeaderChecker (aql.Builder):
 #noinspection PyAttributeOutsideInit
 class CommonCppCompiler (aql.FileBuilder):
   
-  NAME_ATTRS = ( 'prefix', 'suffix' )
+  NAME_ATTRS = ( 'prefix', 'suffix', 'ext' )
   SIGNATURE_ATTRS = ('cmd', )
   
   #//-------------------------------------------------------//
@@ -207,7 +229,8 @@ class CommonCppCompiler (aql.FileBuilder):
   def   __init__(self, options, shared ):
     
     self.prefix = options.prefix.get()
-    self.suffix = options.shobjsuffix.get() if shared else options.objsuffix.get()
+    self.suffix = options.suffix.get()
+    self.ext = options.shobjsuffix.get() if shared else options.objsuffix.get()
     self.shared = shared
     
     ext_cpppath = list( options.ext_cpppath.get() )
@@ -219,36 +242,40 @@ class CommonCppCompiler (aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, node ):
+  def   getObjPath( self, file_path ):
+    return self.getFileBuildPath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
+  
+  #//-------------------------------------------------------//
+  
+  def   getDefaultObjExt(self):
+    """
+    Returns a default extension of output object files.
+    """
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   checkBatchSplit( self, node ):
     
-    if node.builder_data:
-      return None
+    default_ext = self.getDefaultObjExt()
     
-    src_groups = self.groupSourcesByBuildDir( node )
-    if len(src_groups) < 2:
-      return None
+    if self.ext != default_ext:
+      raise ErrorBatchBuildCustomExt( node, self.ext )
     
-    node.updateDepValues()
-    pre_nodes = []
-    for src_group in src_groups:
-      pre_node = node.copy( src_group )
-      pre_node.builder_data = True
-      
-      pre_nodes.append( pre_node )
+    if self.prefix:
+      raise ErrorBatchBuildWithPrefix( node, self.prefix )
     
-    return pre_nodes
+    if self.suffix:
+      raise ErrorBatchBuildCustomSuffix( node, self.suffix )
 
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, node, pre_nodes ):
+  def   split( self, node ):
+    if node.isBatch():
+      self.checkBatchSplit( node )
+      return self.splitBatchByBuildDir( node )
     
-    targets = []
-    for pre_node in pre_nodes:
-      targets += pre_node.getTargetValues()
-    
-    node.targets = targets
-    
-    return True
+    return self.splitSingle( node )
   
   #//-------------------------------------------------------//
   
@@ -276,7 +303,7 @@ class CommonCppCompiler (aql.FileBuilder):
 #noinspection PyAttributeOutsideInit
 class CommonResCompiler (aql.FileBuilder):
   
-  NAME_ATTRS = ( 'prefix', 'suffix' )
+  NAME_ATTRS = ( 'prefix', 'suffix', 'ext' )
   SIGNATURE_ATTRS = ('cmd', )
   
   #//-------------------------------------------------------//
@@ -285,9 +312,20 @@ class CommonResCompiler (aql.FileBuilder):
   def   __init__(self, options ):
     
     self.prefix = options.prefix.get()
-    self.suffix = options.ressuffix.get()
+    self.suffix = options.suffix.get()
+    self.ext = options.ressuffix.get()
     
     self.cmd = options.rc_cmd.get()
+  
+  #//-------------------------------------------------------//
+  
+  def   split( self, node ):
+    return self.splitSingle( node )
+  
+  #//-------------------------------------------------------//
+  
+  def   getObjPath( self, file_path ):
+    return self.getFileBuildPath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
   
   #//-------------------------------------------------------//
   
@@ -346,7 +384,7 @@ class CommonCppLinkerBase( aql.FileBuilder ):
     
     compiler = self.makeCompiler( node.options )
     if self.batch:
-      compiler = aql.BuildBatch( compiler )
+      compiler.setBatch()
     
     self.addSourceBuilders( builders, self.getCppExts(), compiler )
     
@@ -357,13 +395,13 @@ class CommonCppLinkerBase( aql.FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, node ):
-    obj_files = []
-    src_nodes = []
+  def   replace( self, node ):
+    new_sources = []
     
     builders = self.getSourceBuilders( node )
     
-    batch_sources = {}
+    batch_builder = None
+    batch_sources = []
     
     cwd = node.cwd
     
@@ -371,36 +409,30 @@ class CommonCppLinkerBase( aql.FileBuilder ):
       ext = os.path.splitext( src_file.get() )[1]
       builder = builders.get( ext, None )
       if builder:
-        if isinstance( builder, aql.BuildBatch ):
-          batch_sources.setdefault( builder, [] ).append( src_file )
+        if batch_builder is builder:
+          batch_sources.append( src_file )
         else:
-          src_node = aql.Node( builder, src_file, cwd )
-          src_nodes.append( src_node )
+          if batch_sources:
+            src_node = aql.BatchNode( batch_builder, batch_sources, cwd )
+            new_sources.append( src_node )
+          
+            batch_builder = None
+            batch_sources = []
+        
+          if builder.isBatch():
+            batch_builder = builder
+            batch_sources.append( src_file )
+          else:
+            src_node = aql.Node( builder, src_file, cwd )
+            new_sources.append( src_node )
       else:
-        obj_files.append( src_file )
+        new_sources.append( src_file )
+
+    if batch_sources:
+      src_node = aql.BatchNode( batch_builder, batch_sources, cwd )
+      new_sources.append( src_node )
     
-    for builder, sources in batch_sources.items():
-      src_node = aql.BatchNode( builder, sources, cwd )
-      src_nodes.append( src_node )
-    
-    node.builder_data = obj_files
-    
-    return src_nodes
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuildFinished( self, node, pre_nodes ):
-    
-    obj_files = node.builder_data
-    for pre_node in pre_nodes:
-      obj_files += pre_node.getTargetValues()
-    
-    return False
-  
-  #//-------------------------------------------------------//
-  
-  def   getSources( self, node ):
-    return list( src.get() for src in node.builder_data )
+    return new_sources
   
   #//-------------------------------------------------------//
   
@@ -408,11 +440,6 @@ class CommonCppLinkerBase( aql.FileBuilder ):
     value_type = self.fileValueType()
     target = value_type( name = self.target, signature = None )
     return target
-  
-  #//-------------------------------------------------------//
-  
-  def   getTraceSources( self, node, brief ):
-    return node.builder_data
   
   #//-------------------------------------------------------//
   
@@ -433,9 +460,10 @@ class CommonCppArchiver( CommonCppLinkerBase ):
   def   __init__( self, options, target, batch ):
     
     prefix = options.libprefix.get() + options.prefix.get()
-    suffix = options.libsuffix.get()
+    suffix = options.suffix.get()
+    ext = options.libsuffix.get()
     
-    self.target = self.getFileBuildPath( target, prefix = prefix, ext = suffix )
+    self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
     self.cmd = options.lib_cmd.get()
     self.shared = False
     self.batch = batch
@@ -448,12 +476,14 @@ class CommonCppLinker( CommonCppLinkerBase ):
   def   __init__( self, options, target, shared, def_file, batch ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
-      suffix = options.shlibsuffix.get()
+      ext = options.shlibsuffix.get()
     else:
       prefix = options.prefix.get()
-      suffix = options.progsuffix.get()
+      ext = options.progsuffix.get()
     
-    self.target = self.getFileBuildPath( target, prefix = prefix, ext = suffix )
+    suffix = options.suffix.get()
+    
+    self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
     self.cmd = options.link_cmd.get()
     self.shared = shared
     self.def_file = def_file
@@ -502,12 +532,12 @@ class ToolCommonCpp( aql.Tool ):
   def   Compile( self, options, shared = False, batch = False ):
     builder = self.makeCompiler( options, shared = shared )
     if batch:
-      return aql.BuildBatch( builder )
-    return aql.BuildSingle( builder )
+      builder.setBatch()
+    
+    return builder
   
   def   CompileResource( self, options ):
-    builder = self.makeResCompiler( options )
-    return aql.BuildSingle( builder )
+    return self.makeResCompiler( options )
   
   def   LinkStaticLibrary( self, options, target, batch = False ):
     return self.makeArchiver( options, target, batch = batch )
@@ -542,5 +572,4 @@ class ToolCommonRes( aql.Tool ):
   #//-------------------------------------------------------//
   
   def   Compile( self, options ):
-    builder = self.makeResCompiler( options )
-    return aql.BuildSingle( builder )
+    return self.makeResCompiler( options )

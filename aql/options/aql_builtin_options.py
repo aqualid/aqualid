@@ -96,7 +96,7 @@ def   _target_options():
   options.target_arch = EnumOptionType( values = [ 'native',
                                                    ('x86-32', 'x86_32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
                                                    ('x86-64','x86_64', 'amd64', 'x64'),
-                                                   'arm',
+                                                   'arm', 'arm64',
                                                    'alpha',
                                                    'mips' ],
                                         default = 'native',

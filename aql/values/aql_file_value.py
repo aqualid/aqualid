@@ -41,11 +41,6 @@ class   ErrorFileValueNoName( AqlException ):
 
 class   FileValueBase (ValueBase):
   
-  def   __new__( cls, name, signature = None ):
-    return super(FileValueBase, cls).__new__( cls, name, signature )
-  
-  #//-------------------------------------------------------//
-
   def   get(self):
     return self.name
 

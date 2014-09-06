@@ -29,21 +29,18 @@ from aql.util_types import toSequence, AqlException
 from aql.utils import eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
-from .aql_node import BatchNode
-
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeStatusOutdated( node, progress, brief ):
-  msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( brief ))
+def   eventNodeActual( node, progress, brief ):
+  msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( brief ))
   logInfo( msg )
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeStatusActual( node, progress, brief ):
-  
-  msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( brief ))
+def   eventNodeOutdated( node, progress, brief ):
+  msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( brief ))
   logInfo( msg )
 
 #//===========================================================================//
@@ -76,12 +73,6 @@ def   eventFailedNode( node, error ):
 
 @eventStatus
 def   eventNodeBuilding( node, brief ):
-  pass
-
-#//===========================================================================//
-
-@eventStatus
-def   eventNodeBuildingActual( node, progress, brief ):
   pass
 
 #//===========================================================================//
@@ -241,7 +232,8 @@ class _NodesTree (object):
     try:
       current_node_deps = node2deps[ node ]
       
-      new_deps = set(deps) - current_node_deps
+      deps = { dep for dep in deps if not dep.isBuilt() }
+      new_deps = deps - current_node_deps
       
       if not new_deps:
         return
@@ -473,6 +465,29 @@ def   _buildNode( node, brief ):
 
 #//===========================================================================//
 
+class   _NodeState( object ):
+  __slots__ = \
+  (
+    'initialized',
+    'check_depends',
+    'check_sources',
+    'check_split',
+    'split_nodes',
+  )
+  
+  def   __init__(self ):
+    self.initialized = False
+    self.check_depends = True
+    self.check_sources = True
+    self.check_split = True
+    self.split_nodes = None
+  
+  def   __str__(self):
+    return "initialized :%s, check_depends: %s, check_sources: %s, check_split: %s, split_nodes: %s" %\
+      (self.initialized, self.check_depends, self.check_sources, self.check_split, self.split_nodes )
+  
+#//===========================================================================//
+
 # noinspection PyAttributeOutsideInit
 class _NodesBuilder (object):
   
@@ -504,6 +519,68 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
+  def   _prebuild( self, node ):
+    
+    try:
+      state = self.prebuild_nodes[ node ]
+    except KeyError:
+      state = _NodeState()
+      self.prebuild_nodes[ node ] = state
+    
+    if not state.initialized:
+      node.initiate()
+      state.initialized = True
+    
+    if state.check_depends:
+      state.check_depends = False
+      dep_nodes = node.buildDepends()
+      if dep_nodes:
+        self.build_manager.rebuildNode( node, dep_nodes )
+        return True
+     
+    if state.check_sources:
+      state.check_sources = False
+      node_sources = node.getSourceNodes()
+      if node.buildReplace():
+        new_node_sources = set(node.getSourceNodes())
+        new_node_sources.difference_update( node_sources )
+        if new_node_sources:
+          self.build_manager.rebuildNode( node, new_node_sources )
+          return True
+    
+    if state.check_split:
+      state.check_split = False
+      
+      # if isinstance( node, BatchNode ):
+      #   # Check for changed sources of BatchNode
+      #   vfile = vfiles[ node.builder ]
+      #   actual = build_manager.isActualNode( node, vfile )
+      
+      split_nodes = node.buildSplit()
+      if split_nodes:
+        state.split_nodes = split_nodes
+        for split_node in split_nodes:
+          split_state = self.prebuild_nodes.setdefault( split_node ,_NodeState() )
+          split_state.check_split = False
+        
+        self.build_manager.rebuildNode( node, split_nodes )
+        return True
+    
+    elif state.split_nodes is not None:
+      targets = []
+      for split_node in state.split_nodes:
+        targets += split_node.getTargetValues()
+      
+      node.targets = targets
+      
+      self.build_manager.actualNode( node )
+      return True
+    
+    del self.prebuild_nodes[ node ]
+    return False
+    
+  #//-------------------------------------------------------//
+  
   def   build( self, nodes, brief ):
     
     build_manager = self.build_manager
@@ -517,31 +594,9 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      pre_nodes = self.prebuild_nodes.pop( node, None )
-      
-      # actual = None
-      
-      if pre_nodes:
-        if node.prebuildFinished( pre_nodes ):
-          build_manager.actualNode( node )
-          changed = True
-          continue
-      else:
-        
-        node.initiate()
-        
-        # if isinstance( node, BatchNode ):
-        #   # Check for changed sources of BatchNode, this is needed for correct working of prebuild
-        #   vfile = vfiles[ node.builder ]
-        #   actual = build_manager.isActualNode( node, vfile )
-                    
-        pre_nodes = node.prebuild()
-        if pre_nodes:
-          self.prebuild_nodes[ node ] = pre_nodes
-          
-          build_manager.rebuildNode( node, pre_nodes )
-          changed = True
-          continue
+      if self._prebuild( node ):
+        changed = True
+        continue
       
       vfile = vfiles[ node.builder ]
       actual = build_manager.isActualNode( node, vfile )
@@ -598,21 +653,8 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      pre_nodes = self.prebuild_nodes.pop( node, None )
-      if pre_nodes:
-        actual = node.prebuildFinished( pre_nodes )
-        if actual:
-          build_manager.removedNode( node, silent = True )
-          continue
-        
-      else:
-        node.initiate()
-        pre_nodes = node.prebuild()
-        if pre_nodes:
-          self.prebuild_nodes[ node ] = pre_nodes
-          
-          build_manager.rebuildNode( node, pre_nodes )
-          continue
+      if self._prebuild( node ):
+        continue
       
       vfile = vfiles[ node.builder ]
       node.clear( vfile )
@@ -626,22 +668,9 @@ class _NodesBuilder (object):
     build_manager = self.build_manager
     
     for node in nodes:
-      pre_nodes = self.prebuild_nodes.pop( node, None )
-      if pre_nodes:
-        actual = node.prebuildFinished( pre_nodes )
-        if actual:
-          build_manager.actualNodeStatus( node )
-          continue
       
-      else:
-        node.initiate()
-        
-        pre_nodes = node.prebuild()
-        if pre_nodes:
-          self.prebuild_nodes[ node ] = pre_nodes
-          
-          build_manager.rebuildNode( node, pre_nodes )
-          continue
+      if self._prebuild( node ):
+        continue
       
       vfile = vfiles[ node.builder ]
       if node.isActual( vfile ):
@@ -732,8 +761,20 @@ class BuildManager (object):
     self._nodes.removeTail( node )
     self.actual += 1
     
-    eventNodeBuildingActual( node, self.getProgressStr(), self.brief )
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
+  def   actualNodeStatus( self, node ):
+    eventNodeActual( node, self.getProgressStr(), self.brief )
+    self.actualNode( node )
+  
+  #//-------------------------------------------------------//
+  
+  def   outdatedNodeStatus( self, node ):
+    self._failed_nodes[ node ] = None
     
+    eventNodeOutdated( node, self.getProgressStr(), self.brief )
     node.shrink()
   
   #//-------------------------------------------------------//
@@ -811,24 +852,6 @@ class BuildManager (object):
     if not silent:
       eventNodeRemoved( node, self.getProgressStr(), self.brief )
     
-    node.shrink()
-  
-  #//-------------------------------------------------------//
-  
-  def   actualNodeStatus( self, node ):
-    self._nodes.removeTail( node )
-    self.actual += 1
-    
-    eventNodeStatusActual( node, self.getProgressStr(), self.brief )
-    
-    node.shrink()
-  
-  #//-------------------------------------------------------//
-  
-  def   outdatedNodeStatus( self, node ):
-    self._failed_nodes[ node ] = None
-    
-    eventNodeStatusOutdated( node, self.getProgressStr(), self.brief )
     node.shrink()
   
   #//-------------------------------------------------------//

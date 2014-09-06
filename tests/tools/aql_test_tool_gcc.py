@@ -10,8 +10,9 @@ from aql.utils import Tempfile, Tempdir, whereProgram, \
 
 from aql.util_types import FilePath
 from aql.values import FileChecksumValue, ValuesFile
-from aql.nodes import Node, BuildManager, BuildSingle
+from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
+from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
 from gcc import GccCompiler, GccArchiver, GccLinker, ToolGxx, ToolGcc
 
@@ -48,7 +49,7 @@ class TestToolGcc( AqlTestCase ):
   def   _buildObj(self, obj, vfile ):
     obj.initiate()
     
-    pre_nodes = obj.prebuild()
+    pre_nodes = obj.buildSplit()
     self.assertTrue( pre_nodes )
 
     for node in pre_nodes:
@@ -57,12 +58,6 @@ class TestToolGcc( AqlTestCase ):
         node.build()
         node.save( vfile )
     
-    if pre_nodes:
-      actual = obj.prebuildFinished( pre_nodes )
-      self.assertTrue( actual )
-    else:
-      self._verifyActual( obj, vfile )
-  
   #//-------------------------------------------------------//
   
   def   _verifyActual(self, obj, vfile, num_of_unactuals = 0 ):
@@ -70,7 +65,7 @@ class TestToolGcc( AqlTestCase ):
     
     actual = True
     
-    pre_nodes = obj.prebuild()
+    pre_nodes = obj.buildSplit()
     
     for node in pre_nodes:
       node.initiate()
@@ -79,12 +74,9 @@ class TestToolGcc( AqlTestCase ):
         actual = False
     
     if actual:
-      if pre_nodes:
-        actual = obj.prebuildFinished( pre_nodes )
-      else:
+      if not pre_nodes:
         actual = obj.isActual( vfile )
-      
-      self.assertTrue( actual )
+        self.assertTrue( actual )
     
     self.assertEqual( num_of_unactuals, 0 )
     
@@ -350,6 +342,53 @@ class TestToolGcc( AqlTestCase ):
         
       finally:
         bm.close()
+
+  #//-------------------------------------------------------//
+  
+  def   test_gcc_archiver(self):
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'output')
+      src_dir = os.path.join( tmp_dir, 'src')
+      
+      os.makedirs( src_dir )
+      
+      num_groups = 4
+      group_size = 8
+      num_src_files = num_groups * group_size
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      try:
+        cpp = prj.tools['g++']
+      except  ErrorToolNotFound:
+        print("WARNING: GCC tool has not been found. Skip the test.")
+        return
+      
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
+      
+      self.buildPrj( prj, num_src_files + 2, verbose = False )
+      
+      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
+      self.buildPrj( prj, 0, verbose = False )
+      
+      self.touchCppFile( hdr_files[0] )
+      
+      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
+      self.buildPrj( prj, 1 )
+      
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
+      self.buildPrj( prj, 0 )
+      
+      self.touchCppFiles( hdr_files )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
+      self.buildPrj( prj, num_src_files )
+
 
 #//===========================================================================//
 

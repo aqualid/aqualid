@@ -285,13 +285,11 @@ class OptionValue (object):
   
   __slots__ = (
     'option_type',
-    'default_conditional_value',
     'conditional_values',
   )
   
-  def   __init__( self, option_type, default_conditional_value = None, conditional_values = None ):
+  def   __init__( self, option_type, conditional_values = None ):
     self.option_type = option_type
-    self.default_conditional_value = default_conditional_value
     self.conditional_values = list( toSequence(conditional_values) )
   
   #//-------------------------------------------------------//
@@ -303,11 +301,6 @@ class OptionValue (object):
   
   def   isToolKey( self ):
     return self.option_type.is_tool_key
-  
-  #//-------------------------------------------------------//
-  
-  def   setDefault( self, conditional_value ):
-    self.default_conditional_value = conditional_value
   
   #//-------------------------------------------------------//
   
@@ -340,7 +333,6 @@ class OptionValue (object):
     
     if self.option_type.is_auto and not other.option_type.is_auto:
       self.option_type = other.option_type
-      self.default_conditional_value = other.default_conditional_value
       self.conditional_values = other_values[:]
       self.conditional_values += values[diff_index:]
     else:
@@ -354,7 +346,7 @@ class OptionValue (object):
   #//-------------------------------------------------------//
   
   def   copy( self ):
-    return OptionValue( self.option_type, self.default_conditional_value, self.conditional_values )
+    return OptionValue( self.option_type, self.conditional_values )
   
   #//-------------------------------------------------------//
   
@@ -377,11 +369,6 @@ class OptionValue (object):
     
     value = value_type()
     context[ self ] = value
-    
-    if (not self.conditional_values) and (self.default_conditional_value is not None):
-        value = self.default_conditional_value.evaluate( value, value_type, options, context, evaluator )
-        context[ self ] = value
-        return value
     
     for conditional_value in self.conditional_values:
       value = conditional_value.evaluate( value, value_type, options, context, evaluator )

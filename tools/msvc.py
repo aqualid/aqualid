@@ -62,7 +62,7 @@ class MsvcCompiler (CommonCppCompiler):
     
     sources = node.getSources()
     
-    obj_file = self.getFileBuildPath( sources[0], prefix = self.prefix, ext = self.suffix )
+    obj_file = self.getObjPath( sources[0] )
     cwd = obj_file.dirname()
     
     cmd = list(self.cmd)
@@ -83,19 +83,18 @@ class MsvcCompiler (CommonCppCompiler):
   
   #//-------------------------------------------------------//
   
+  def   getDefaultObjExt(self):
+    return '.obj'
+  
+  #//-------------------------------------------------------//
+  
   def   buildBatch( self, node ):
-    
-    if self.suffix != '.obj':
-      raise ErrorBatchBuildCustomSuffix( node, self.suffix )
-    
-    if self.prefix:
-      raise ErrorBatchBuildWithPrefix( node, self.prefix )
     
     source_values = node.getSourceValues()
     
     sources = tuple( src.get() for src in source_values )
     
-    obj_files = self.getFileBuildPaths( sources, ext = self.suffix )
+    obj_files = self.getFileBuildPaths( sources, ext = self.ext )
     
     cwd = obj_files[0].dirname()
     
@@ -123,7 +122,7 @@ class MsvcResCompiler (CommonResCompiler):
     
     src = node.getSources()[0]
     
-    res_file = self.getFileBuildPath( src ).change( prefix = self.prefix, ext = self.suffix )
+    res_file = self.getObjPath( src )
     cwd = res_file.dirname()
     
     cmd = list(self.cmd)
@@ -149,7 +148,7 @@ class   MsvcArchiver (CommonCppArchiver):
   
   def   build( self, node ):
     
-    obj_files = self.getSources( node )
+    obj_files = node.getSources()
     
     cmd = list(self.cmd)
     cmd += [ '/nologo', "/OUT:%s" % self.target ]
@@ -178,7 +177,7 @@ class MsvcLinker (CommonCppLinker):
   
   def   build( self, node ):
     
-    obj_files = self.getSources( node )
+    obj_files = node.getSources()
     
     cmd = list(self.cmd)
     
@@ -301,6 +300,16 @@ class ToolMsvcCommon( ToolCommonCpp ):
     
     if_.target_subsystem.eq('console').linkflags += '/SUBSYSTEM:CONSOLE'
     if_.target_subsystem.eq('windows').linkflags += '/SUBSYSTEM:WINDOWS'
+    
+    if_.target_arch.eq( 'x86-32').libflags += '/MACHINE:X86'
+    if_.target_arch.eq( 'x86-64').libflags += '/MACHINE:X64'
+    if_.target_arch.eq( 'arm'   ).libflags += '/MACHINE:ARM'
+    if_.target_arch.eq( 'arm64' ).libflags += '/MACHINE:ARM64'
+    
+    if_.target_arch.eq( 'x86-32').linkflags += '/MACHINE:X86'
+    if_.target_arch.eq( 'x86-64').linkflags += '/MACHINE:X64'
+    if_.target_arch.eq( 'arm'   ).linkflags += '/MACHINE:ARM'
+    if_.target_arch.eq( 'arm64' ).linkflags += '/MACHINE:ARM64'
     
     if_.debug_symbols.isTrue().ccflags += '/Z7'
     if_.debug_symbols.isTrue().linkflags += '/DEBUG'

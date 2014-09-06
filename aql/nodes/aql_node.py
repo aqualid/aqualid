@@ -197,9 +197,9 @@ def   _getBuildStr( args, brief ):
     
     build_str  = name
     if sources:
-      build_str += ": " + sources
+      build_str += " << " + sources
     if targets:
-      build_str += " => " + targets
+      build_str += " >> " + targets
     
     return build_str
   
@@ -338,16 +338,13 @@ class Node (object):
       self.cwd = cwd
     
     self.sources = toSequence( sources )
-    # self.source_values = None
     self.dep_nodes = set()
     self.dep_values = []
-
-    # self.name = None
-    # self.signature = None
-    
-    # self.targets = None
-    # self.itargets = None
-    # self.ideps = None
+  
+  #//=======================================================//
+  
+  def   isBatch(self):
+    return False
   
   #//=======================================================//
   
@@ -358,18 +355,11 @@ class Node (object):
     other.options       = self.options
     other.builder_data  = None
     other.cwd           = self.cwd
-    other.sources       = sources
+    other.sources       = toSequence( sources )
     other.dep_nodes     = self.dep_nodes
     other.dep_values    = self.dep_values
     
     return other
-  #//=======================================================//
-  
-  def   split( self, builder ):
-    sources = self.getSourceValues()
-    nodes = [ self.copy( (src_value,), builder ) for src_value in sources ]
-    
-    return nodes
   
   #//=======================================================//
 
@@ -473,7 +463,7 @@ class Node (object):
     
     targets = self.builder.getTargetValues( self )
     if targets:
-      self.targets = tuple( toSequence( targets ) )
+      self.targets = toSequence( targets )
       names = sorted( value.valueId() for value in targets )
       name = simpleObjectSignature( names )
     else:
@@ -523,7 +513,6 @@ class Node (object):
           values.append( value )
 
     values = tuple(values)
-    self.sources = None
     self.source_values = values
     return values
   
@@ -559,6 +548,11 @@ class Node (object):
   
   #//=======================================================//
   
+  def   isBuilt(self):
+    return self.builder is None
+  
+  #//=======================================================//
+  
   def   build(self):
     output = self.builder.build( self )
 
@@ -569,13 +563,27 @@ class Node (object):
   
   #//=======================================================//
   
-  def   prebuild( self ):
-    return self.builder.prebuild( self )
-
+  def   buildDepends( self ):
+    return self.builder.depends( self )
+  
   #//=======================================================//
   
-  def   prebuildFinished(self, prebuild_nodes ):
-    return self.builder.prebuildFinished( self, prebuild_nodes )
+  def   buildReplace( self ):
+    
+    sources = self.builder.replace( self )
+    if sources is None:
+      return False
+    
+    self.sources = sources
+    del self.source_values
+    
+    return True
+  
+  #//=======================================================//
+  
+  def   buildSplit( self ):
+    self.updateDepValues()
+    return self.builder.split( self )
   
   #//=======================================================//
   
@@ -708,6 +716,11 @@ class BatchNode (Node):
       'node_values',
       'changed_source_values',
     )
+  
+  #//=======================================================//
+  
+  def   isBatch(self):
+    return True
   
   #//=======================================================//
   

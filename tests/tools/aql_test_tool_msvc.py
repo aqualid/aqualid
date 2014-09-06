@@ -13,34 +13,7 @@ import msvc
 
 #//===========================================================================//
 
-def   _build( prj, verbose = True, jobs = 4 ):
-  if not prj.Build( verbose = verbose, jobs = jobs ):
-    prj.build_manager.printFails()
-    assert False, "Build failed"
-
-#//===========================================================================//
-
-def   _touchFile( cpp_file ):
-  with open( cpp_file, 'a' ) as f:
-    f.write("// end of file")
-  
-  FileChecksumValue( cpp_file, use_cache = False )
-  FileTimestampValue( cpp_file, use_cache = False )
-
-def   _touchFiles( cpp_files ):
-  for cpp_file in cpp_files:
-    _touchFile( cpp_file )
-
-#//===========================================================================//
-
 class TestToolMsvc( AqlTestCase ):
-  
-  def   _build( self, prj, num_built_nodes, verbose = True, jobs = 4 ):
-    self.built_nodes = 0
-    _build( prj, verbose = verbose, jobs = jobs )
-    self.assertEqual( self.built_nodes, num_built_nodes )
-  
-  #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
   def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
@@ -92,17 +65,17 @@ class TestToolMsvc( AqlTestCase ):
       cpp.Compile( src_files )
       cpp.CompileResource( res_file )
       
-      self._build( prj, num_src_files + 1 )
+      self.buildPrj( prj, num_src_files + 1 )
       
       cpp.Compile( src_files )
       cpp.CompileResource( res_file )
       
-      self._build( prj, 0 )
+      self.buildPrj( prj, 0 )
       
-      _touchFile( hdr_files[0] )
+      self.touchCppFile( hdr_files[0] )
       
       cpp.Compile( src_files )
-      self._build( prj, 1 )
+      self.buildPrj( prj, 1 )
   
   #//-------------------------------------------------------//
   
@@ -131,19 +104,19 @@ class TestToolMsvc( AqlTestCase ):
         return
       
       cpp.Compile( src_files, batch = True )
-      self._build( prj, num_groups, jobs = num_groups )
+      self.buildPrj( prj, num_groups, jobs = num_groups )
       
       cpp.Compile( src_files, batch = False )
-      self._build( prj, 0 )
+      self.buildPrj( prj, 0 )
       
-      _touchFile( hdr_files[0] )
+      self.touchCppFile( hdr_files[0] )
       cpp.Compile( src_files, batch = False )
-      self._build( prj, 1 )
+      self.buildPrj( prj, 1 )
       
-      _touchFiles( hdr_files[:group_size] )
+      self.touchCppFiles( hdr_files[:group_size] )
       
       cpp.Compile( src_files, batch = True )
-      self._build( prj, 1 )
+      self.buildPrj( prj, 1 )
   
   #//-------------------------------------------------------//
   
@@ -172,24 +145,24 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True )
       
-      self._build( prj, num_src_files + 2 )
-      
-      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
-      self._build( prj, 0 )
-      
-      _touchFile( hdr_files[0] )
+      self.buildPrj( prj, num_groups + 2 )
       
       cpp.LinkLibrary( src_files, res_file, target = 'foo' )
-      self._build( prj, 1 )
+      self.buildPrj( prj, 0 )
+      
+      self.touchCppFile( hdr_files[0] )
+      
+      cpp.LinkLibrary( src_files, res_file, target = 'foo' )
+      self.buildPrj( prj, 2 )
       
       cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True )
-      self._build( prj, 0 )
+      self.buildPrj( prj, 0 )
       
-      _touchFiles( hdr_files )
+      self.touchCppFiles( hdr_files )
       cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True )
-      self._build( prj, num_groups )
+      self.buildPrj( prj, num_groups + 1)
       
       
   #//-------------------------------------------------------//
@@ -224,22 +197,22 @@ class TestToolMsvc( AqlTestCase ):
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       
-      self._build( prj, num_src_files + 4 )
+      self.buildPrj( prj, num_src_files + 4, verbose = False )
       
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      self._build( prj, 0 )
+      self.buildPrj( prj, 0 )
       
-      _touchFile( hdr_files[0] )
+      self.touchCppFile( hdr_files[0] )
       
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      self._build( prj, 1 )
+      self.buildPrj( prj, 3, verbose = False )
       
-      _touchFiles( hdr_files )
+      self.touchCppFiles( hdr_files )
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = True )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = True )
-      self._build( prj, num_groups )
+      self.buildPrj( prj, num_groups + 2 )
       
 #//===========================================================================//
 

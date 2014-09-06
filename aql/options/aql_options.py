@@ -245,7 +245,7 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
-  def   set( self, value, as_default = False ):
+  def   set( self, value ):
     self.child_ref = None
     
     if self.key is not NotImplemented:

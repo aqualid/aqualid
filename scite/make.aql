@@ -64,8 +64,8 @@ include_dirs = [ src_dir, include_dir, lexlib_dir ]
 
 if is_windows_build:
   include_dirs  += [win32_dir]
-  scintilla_sources   += [ os.path.join(win32_dir, "ScintillaWin.cxx" )]
-  scintilla_sources   += [ os.path.join( src_dir, "ScintillaBase.cxx") ]
+  scintilla_sources += [ os.path.join(win32_dir, "ScintillaWin.cxx" )]
+  scintilla_sources += [ os.path.join( src_dir, "ScintillaBase.cxx") ]
   
 elif is_unix_build:
   include_dirs += [gtk_dir]

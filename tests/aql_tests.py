@@ -8,6 +8,7 @@ sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
 from aql.utils  import Tempfile
 from aql.util_types import FilePath
+from aql.values import FileChecksumValue, FileTimestampValue
 
 #//===========================================================================//
 
@@ -73,6 +74,17 @@ END
 
 class AqlTestCase( TestCaseBase ):
   
+  def   buildPrj( self, prj, num_built_nodes, verbose = True, jobs = 4 ):
+    self.built_nodes = 0
+
+    if not prj.Build( verbose = verbose, jobs = jobs ):
+      prj.build_manager.printFails()
+      assert False, "Build failed"
+
+    self.assertEqual( self.built_nodes, num_built_nodes )
+  
+  #//===========================================================================//
+  
   def _testSaveLoad( self, value ):
     data = pickle.dumps( ( value, ), protocol = pickle.HIGHEST_PROTOCOL )
     
@@ -135,6 +147,23 @@ class AqlTestCase( TestCaseBase ):
     
     return src_files, hdr_files
   
+  #//===========================================================================//
+  
+  @staticmethod
+  def   touchCppFile( cpp_file ):
+    with open( cpp_file, 'a' ) as f:
+      f.write("\n// end of file\n")
+    
+    FileChecksumValue( cpp_file, use_cache = False )
+    FileTimestampValue( cpp_file, use_cache = False )
+  
+  #//===========================================================================//
+  
+  @staticmethod
+  def   touchCppFiles( cpp_files ):
+    for cpp_file in cpp_files:
+      AqlTestCase.touchCppFile( cpp_file )
+
   #//===========================================================================//
   
   @staticmethod

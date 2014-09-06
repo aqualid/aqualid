@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Builder', 'FileBuilder', 'BuildSingle', 'BuildBatch',
+  'Builder', 'FileBuilder'
 )
 
 import os
@@ -58,7 +58,7 @@ def   _makeBuildPaths( dirnames ):
 
 #//===========================================================================//
 
-def   _splitFileName( file_path, ext = None, prefix = None ):
+def   _splitFileName( file_path, ext = None, prefix = None, suffix = None ):
   if isinstance( file_path, ValueBase ):
     file_path = file_path.get()
   
@@ -67,17 +67,18 @@ def   _splitFileName( file_path, ext = None, prefix = None ):
   name, path_ext = os.path.splitext( filename )
   if ext is None: ext = path_ext
   if prefix: name = prefix + name
+  if suffix: name += suffix
   filename = name + ext
   
   return dirname, filename
 
 #//===========================================================================//
 
-def   _splitFileNames( file_paths, ext = None, prefix = None ):
+def   _splitFileNames( file_paths, ext = None, prefix = None, suffix = None ):
   dirnames = []
   filenames = []
   for file_path in file_paths:
-    dirname, filename = _splitFileName( file_path, ext, prefix )
+    dirname, filename = _splitFileName( file_path, ext, prefix, suffix )
     dirnames.append( dirname )
     filenames.append( filename )
   
@@ -151,7 +152,17 @@ class BuilderInitiator( object ):
     self.is_initiated = True
     
     return builder
-
+  
+  #//=======================================================//
+  
+  def   isBatch(self):
+    return self.builder.isBatch()
+  
+  #//=======================================================//
+  
+  def   setBatch(self):
+    self.builder.setBatch()
+  
 #//===========================================================================//
 
 # noinspection PyAttributeOutsideInit
@@ -173,17 +184,28 @@ class Builder (object):
     
     self = super(Builder, cls).__new__(cls)
     self.makeValue = self.makeSimpleValue
+    self.is_batch = False
     
     return BuilderInitiator( self, options, args, kw )
   
   #//-------------------------------------------------------//
   
-  def   _initAttrs(self, options ):
+  def   _initAttrs( self, options ):
     self.build_dir = options.build_dir.get()
     self.build_path = options.build_path.get()
     self.relative_build_paths = options.relative_build_paths.get()
     self.file_value_type = _fileSinature2Type( options.file_signature.get() )
     self.env = options.env.get().dump()
+  
+  #//-------------------------------------------------------//
+  
+  def   isBatch(self):
+    return self.is_batch
+  
+  #//-------------------------------------------------------//
+  
+  def   setBatch(self):
+    self.is_batch = True
   
   #//-------------------------------------------------------//
   
@@ -225,21 +247,52 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   prebuild( self, node ):
+  def   depends( self, node ):
     """
-    Could be used to dynamically generate nodes which need to be built before the node
+    Could be used to dynamically generate dependency nodes 
+    Returns list of dependency nodes or None
+    """
+    return None
+  
+  #//-------------------------------------------------------//
+  
+  def   replace( self, node ):
+    """
+    Could be used to dynamically replace sources
+    Returns list of nodes/values or None (if sources are not changed)
+    """
+    return None
+  
+  #//-------------------------------------------------------//
+  
+  def   split( self, node ):
+    """
+    Could be used to dynamically split building sources to several nodes
     Returns list of nodes or None
     """
     return None
   
   #//-------------------------------------------------------//
   
-  def   prebuildFinished( self, node, prebuild_nodes ):
+  def   splitSingle( self, node ):
     """
-    Called when all nodes returned by the prebuild() method have been built
-    Returns True if node should not be built
+    Splits each source to separate nodes 
+    Returns list of nodes or None
     """
-    return False
+    source_values = node.getSourceValues()
+    if len(source_values) < 2:
+      return None
+    
+    return tuple( node.copy( src_value )  for src_value in source_values )
+  
+  #//-------------------------------------------------------//
+  
+  def   splitBatchByBuildDir( self, node ):
+    src_groups = self.groupSourcesByBuildDir( node )
+    if len(src_groups) < 2:
+      return None
+    
+    return tuple( node.copy( src_group )  for src_group in src_groups )
   
   #//-------------------------------------------------------//
   
@@ -318,10 +371,10 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getFileBuildPath( self, file_path, ext = None, prefix = None ):
+  def   getFileBuildPath( self, file_path, ext = None, prefix = None, suffix = None ):
     build_path = self.build_path
     
-    dirname, filename = _splitFileName( file_path, ext, prefix )
+    dirname, filename = _splitFileName( file_path, ext, prefix, suffix )
     
     if self.relative_build_paths:
       build_path = relativeJoin( build_path, dirname )
@@ -334,10 +387,10 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getFileBuildPaths( self, file_paths, ext = None, prefix = None ):
+  def   getFileBuildPaths( self, file_paths, ext = None, prefix = None, suffix = None ):
     build_path = self.build_path
     
-    dirnames, filenames = _splitFileNames( file_paths, ext, prefix )
+    dirnames, filenames = _splitFileNames( file_paths, ext, prefix, suffix )
     
     if self.relative_build_paths:
       dirnames = relativeJoinList( build_path, dirnames )
@@ -415,76 +468,3 @@ class FileBuilder (Builder):
   def   _initAttrs( self, options ):
     super(FileBuilder,self)._initAttrs( options )
     self.makeValue = self.makeFileValue
-
-#//===========================================================================//  
-
-class BuildSingle(object):
-  
-  def   __init__(self, builder ):
-    self.builder = builder
-  
-  #//-------------------------------------------------------//
-  
-  def   initiate( self ):
-    self.builder = self.builder.initiate()
-    return self
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__(self, attr ):
-    value = getattr(self.builder, attr )
-    setattr( self, attr, value )
-    return value
-  
-  #//-------------------------------------------------------//
-  
-  def   clear( self, node ):
-    pass
-  
-  #//-------------------------------------------------------//
-  
-  def   prebuild( self, node ):
-    
-    node.updateDepValues()
-    
-    builder = self.builder
-    nodes = node.split( builder )
-
-    if len(nodes) > 1:
-      return nodes
-
-    node.builder = builder
-    return None
-
-  #//-------------------------------------------------------//
-  
-  def   prebuildFinished( self, node, pre_nodes ):
-    
-    targets = []
-    for pre_node in pre_nodes:
-      targets += pre_node.getTargetValues()
-    
-    node.targets = targets
-    
-    return True
-
-#//===========================================================================//  
-
-class BuildBatch(object):
-  
-  def   __init__(self, builder ):
-    self.builder = builder
-  
-  #//-------------------------------------------------------//
-  
-  def   initiate( self ):
-    builder = self.builder
-    self.builder = builder = builder.initiate()
-    return builder
-  
-  #//-------------------------------------------------------//
-  
-  def   __getattr__(self, attr ):
-    value = getattr(self.builder, attr )
-    setattr( self, attr, value )
-    return value

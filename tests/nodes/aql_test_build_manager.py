@@ -10,7 +10,7 @@ from aql.utils import fileChecksum, Tempdir, \
 
 from aql.values import SimpleValue, FileChecksumValue
 from aql.options import builtinOptions
-from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildSingle, BuildManager, ErrorNodeDependencyCyclic
+from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildManager, ErrorNodeDependencyCyclic
 
 #//===========================================================================//
 
@@ -83,6 +83,12 @@ class ChecksumBuilder (FileBuilder):
 
 #//===========================================================================//
 
+class ChecksumSingleBuilder (ChecksumBuilder):
+  
+  split = ChecksumBuilder.splitSingle
+
+#//===========================================================================//
+
 def   _addNodesToBM( builder, src_files, Node = Node ):
   bm = BuildManager()
   try:
@@ -133,12 +139,12 @@ class TestBuildManager( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  def   eventNodeStatusActual( self, node, progress, brief ):
+  def   eventNodeActual( self, node, progress, brief ):
     self.actual_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeStatusOutdated( self, node, progress, brief ):
+  def   eventNodeOutdated( self, node, progress, brief ):
     self.outdated_nodes += 1
   
   #//-------------------------------------------------------//
@@ -160,10 +166,10 @@ class TestBuildManager( AqlTestCase ):
     addUserHandler( self.eventNodeBuildingFinished )
     
     self.actual_nodes = 0
-    addUserHandler( self.eventNodeStatusActual )
+    addUserHandler( self.eventNodeActual )
     
     self.outdated_nodes = 0
-    addUserHandler( self.eventNodeStatusOutdated )
+    addUserHandler( self.eventNodeOutdated )
     
     self.removed_nodes = 0
     addUserHandler( self.eventNodeRemoved )
@@ -173,8 +179,8 @@ class TestBuildManager( AqlTestCase ):
   def   tearDown( self ):
     removeUserHandler( [  self.eventNodeBuilding,
                           self.eventNodeBuildingFinished,
-                          self.eventNodeStatusOutdated,
-                          self.eventNodeStatusActual,
+                          self.eventNodeOutdated,
+                          self.eventNodeActual,
                           self.eventNodeRemoved,
                       ] )
 
@@ -417,14 +423,15 @@ class TestBuildManager( AqlTestCase ):
       options = builtinOptions()
       options.build_dir = tmp_dir
       
-      src_files = self.generateSourceFiles( tmp_dir, 3, 201 )
+      num_src_files = 3
+      src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
       
       bm = BuildManager()
       
       self.building_nodes = self.finished_nodes = 0
       self.actual_nodes = self.outdated_nodes = 0
       
-      builder = BuildSingle( ChecksumBuilder( options, 0, 256 ) )
+      builder = ChecksumSingleBuilder( options, 0, 256 )
       
       src_values = []
       for s in src_files:
@@ -435,21 +442,21 @@ class TestBuildManager( AqlTestCase ):
       bm.add( node )
       _build( bm )
       
-      self.assertEqual( self.building_nodes, 3 )
+      self.assertEqual( self.building_nodes, num_src_files )
       
       #//-------------------------------------------------------//
       
       self.actual_nodes = self.outdated_nodes = 0
       
       bm = BuildManager()
-      builder = BuildSingle( ChecksumBuilder( options, 0, 256 ) )
+      builder = ChecksumSingleBuilder( options, 0, 256 )
       
       node = Node( builder, src_values )
       bm.add( node ); bm.selfTest()
       bm.status( brief = False ); bm.selfTest()
       
       self.assertEqual( self.outdated_nodes, 0 )
-      self.assertEqual( self.actual_nodes, 4 )
+      self.assertEqual( self.actual_nodes, num_src_files )
   
   #//-------------------------------------------------------//
   
