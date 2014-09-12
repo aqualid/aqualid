@@ -176,7 +176,7 @@ class TestToolMsvc( AqlTestCase ):
       os.makedirs( src_dir )
       
       num_groups = 4
-      group_size = 8
+      group_size = 2
       num_src_files = num_groups * group_size
       
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
@@ -210,9 +210,9 @@ class TestToolMsvc( AqlTestCase ):
       self.buildPrj( prj, 3, verbose = False )
       
       self.touchCppFiles( hdr_files )
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = True )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = True )
-      self.buildPrj( prj, num_groups + 2 )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = True, batch_groups = num_groups )
+      self.buildPrj( prj, num_groups + 2, jobs = 1 )
       
 #//===========================================================================//
 

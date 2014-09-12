@@ -292,7 +292,7 @@ class Builder (object):
     if len(src_groups) < 2:
       return None
     
-    return tuple( node.copy( src_group )  for src_group in src_groups )
+    return tuple( node.copy( src_group ) for src_group in src_groups )
   
   #//-------------------------------------------------------//
   

@@ -43,11 +43,14 @@ try:
       return value
     return str( value )
   
-  def castStr( obj, encoding = None, uStr = uStr, 
-              _try_encodings = frozenset([ 'utf-8',
-                                           sys.getdefaultencoding().lower(),
-                                           sys.stdout.encoding.lower(),
-                                           sys.getfilesystemencoding().lower() ]) ):
+  _try_encodings = frozenset(enc.lower() for enc in filter( None, [
+                              'utf-8',
+                              sys.getdefaultencoding(),
+                              sys.stdout.encoding,
+                              sys.getfilesystemencoding()
+                            ]))
+  
+  def castStr( obj, encoding = None, uStr = uStr, _try_encodings = _try_encodings ):
     if isinstance( obj, uStr ):
       if encoding:
         return obj.encode( encoding )
@@ -60,11 +63,7 @@ try:
     
     return str( obj )
 
-  def toUnicode( obj, encoding = None,
-                _try_encodings = frozenset([ 'utf-8',
-                                             sys.getdefaultencoding().lower(),
-                                             sys.stdout.encoding.lower(),
-                                             sys.getfilesystemencoding().lower() ]) ):
+  def toUnicode( obj, encoding = None, _try_encodings = _try_encodings ):
     if isinstance( obj, (bytearray, bytes) ):
       if encoding:
         return uStr( obj, encoding )

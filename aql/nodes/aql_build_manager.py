@@ -470,7 +470,7 @@ class   _NodeState( object ):
   (
     'initialized',
     'check_depends',
-    'check_sources',
+    'check_replace',
     'check_split',
     'split_nodes',
   )
@@ -478,13 +478,13 @@ class   _NodeState( object ):
   def   __init__(self ):
     self.initialized = False
     self.check_depends = True
-    self.check_sources = True
+    self.check_replace = True
     self.check_split = True
     self.split_nodes = None
   
   def   __str__(self):
-    return "initialized :%s, check_depends: %s, check_sources: %s, check_split: %s, split_nodes: %s" %\
-      (self.initialized, self.check_depends, self.check_sources, self.check_split, self.split_nodes )
+    return "initialized :%s, check_depends: %s, check_replace: %s, check_split: %s, split_nodes: %s" %\
+      (self.initialized, self.check_depends, self.check_replace, self.check_split, self.split_nodes )
   
 #//===========================================================================//
 
@@ -496,14 +496,14 @@ class _NodesBuilder (object):
     'vfiles',
     'build_manager',
     'task_manager',
-    'prebuild_nodes',
+    'node_states',
   )
   
   #//-------------------------------------------------------//
   
   def   __init__( self, build_manager, jobs, keep_going ):
     self.vfiles         = _VFiles()
-    self.prebuild_nodes = {}
+    self.node_states = {}
     self.build_manager  = build_manager
     self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going )
   
@@ -519,34 +519,50 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   _prebuild( self, node ):
-    
+  def   _getNodeState( self, node ):
     try:
-      state = self.prebuild_nodes[ node ]
+      state = self.node_states[ node ]
     except KeyError:
       state = _NodeState()
-      self.prebuild_nodes[ node ] = state
+      self.node_states[ node ] = state
     
-    if not state.initialized:
-      node.initiate()
-      state.initialized = True
+    return state
+  
+  #//-------------------------------------------------------//
+  
+  def   _removeNodeState( self, node ):
+    try:
+      del self.node_states[ node ]
+    except KeyError:
+      pass
+  
+  #//-------------------------------------------------------//
+  
+  def   _checkPrebuildDepends(self, node ):
+    dep_nodes = node.buildDepends()
+    if dep_nodes:
+      self.build_manager.rebuildNode( node, dep_nodes )
+      return True
     
-    if state.check_depends:
-      state.check_depends = False
-      dep_nodes = node.buildDepends()
-      if dep_nodes:
-        self.build_manager.rebuildNode( node, dep_nodes )
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  def _checkPrebuildReplace( self, node ):
+    
+    node_sources = node.getSourceNodes()
+    if node.buildReplace():
+      new_node_sources = set(node.getSourceNodes())
+      new_node_sources.difference_update( node_sources )
+      if new_node_sources:
+        self.build_manager.rebuildNode( node, new_node_sources )
         return True
-     
-    if state.check_sources:
-      state.check_sources = False
-      node_sources = node.getSourceNodes()
-      if node.buildReplace():
-        new_node_sources = set(node.getSourceNodes())
-        new_node_sources.difference_update( node_sources )
-        if new_node_sources:
-          self.build_manager.rebuildNode( node, new_node_sources )
-          return True
+    
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  def   _checkPrebuildSplit( self, node, state ):
     
     if state.check_split:
       state.check_split = False
@@ -560,12 +576,15 @@ class _NodesBuilder (object):
       if split_nodes:
         state.split_nodes = split_nodes
         for split_node in split_nodes:
-          split_state = self.prebuild_nodes.setdefault( split_node ,_NodeState() )
+          split_state = self._getNodeState( split_node )
           split_state.check_split = False
+          split_state.check_depends = False
+          split_state.check_replace = False
+          split_state.initialized = split_node.builder is node.builder
         
         self.build_manager.rebuildNode( node, split_nodes )
         return True
-    
+  
     elif state.split_nodes is not None:
       targets = []
       for split_node in state.split_nodes:
@@ -573,11 +592,33 @@ class _NodesBuilder (object):
       
       node.targets = targets
       
+      self._removeNodeState( node )
       self.build_manager.actualNode( node )
       return True
     
-    del self.prebuild_nodes[ node ]
     return False
+  
+  #//-------------------------------------------------------//
+  
+  def   _prebuild( self, node ):
+    
+    state = self._getNodeState( node )
+    
+    if not state.initialized:
+      node.initiate()
+      state.initialized = True
+    
+    if state.check_depends:
+      state.check_depends = False
+      if self._checkPrebuildDepends( node ):
+        return True
+    
+    if state.check_replace:
+      state.check_replace = False
+      if self._checkPrebuildReplace( node ):
+        return True
+    
+    return self._checkPrebuildSplit( node, state )
     
   #//-------------------------------------------------------//
   
@@ -602,6 +643,7 @@ class _NodesBuilder (object):
       actual = build_manager.isActualNode( node, vfile )
       
       if actual:
+        self._removeNodeState( node )
         build_manager.actualNode( node )
         changed = True
       else:
@@ -634,6 +676,8 @@ class _NodesBuilder (object):
     for task in finished_tasks:
       node = task.task_id
       error = task.error
+      
+      self._removeNodeState( node )
       
       if error is None:
         vfile = vfiles[ node.builder ]
@@ -681,9 +725,11 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   close( self ):
-    self.task_manager.stop()
-    self._getFinishedNodes( block = False )
-    self.vfiles.close()
+    try:
+      self.task_manager.stop()
+      self._getFinishedNodes( block = False )
+    finally:
+      self.vfiles.close()
 
 #//===========================================================================//
 
@@ -819,13 +865,13 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   getConflictingNodes( self, node ):
-    conflicting_nodes = []
+    conflicting_nodes = set()
     get_building_node = self._waiting_nodes.get
     
     for name in node.getNames():
       building_node = get_building_node( name, None )
-      if building_node:
-        conflicting_nodes.append( building_node )
+      if building_node is not None:
+        conflicting_nodes.add( building_node )
     
     return conflicting_nodes
   

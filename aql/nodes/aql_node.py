@@ -35,7 +35,7 @@ class   ErrorNodeDependencyInvalid( AqlException ):
     msg = "Invalid node dependency: %s" % (dep,)
     super(ErrorNodeDependencyInvalid, self).__init__( msg )
     
-class   ErrorNoTargets( AqlException ):
+class   ErrorNoTargets( AttributeError ):
   def   __init__( self, node ):
     msg = "Node targets are not built or set yet: %s" % (node.getBuildStr( brief = False ),)
     super(ErrorNoTargets, self).__init__( msg )
@@ -574,7 +574,7 @@ class Node (object):
     if sources is None:
       return False
     
-    self.sources = sources
+    self.sources = toSequence( sources )
     del self.source_values
     
     return True
@@ -705,7 +705,33 @@ class Node (object):
   def   getClearStr( self, brief = True ):
     args = self.builder.getBuildStrArgs( self, brief = brief )
     return _getClearStr( args, brief )
-
+  
+  #//=======================================================//
+  
+  def   printSources(self):
+    result = []
+    for src in self.sources:
+      if isinstance(src, ValueBase):
+        result.append( src.get() )
+      elif isinstance( src, Node ):
+        targets = getattr(src, 'targets', None)
+        if targets is not None:
+          result += ( target.get() for target in targets )
+        else:
+          result.append( src ) 
+      else:
+        result.append( src )
+    
+    sources_str = ', '.join( result )
+    
+    print("node '%s' sources: %s" % (self, sources_str))
+  
+  #//=======================================================//
+  
+  def   printTargets(self):
+    targets = [ t.get() for t in getattr(self, 'targets', []) ]
+    print("node '%s' targets: %s" % (self, targets))
+  
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit

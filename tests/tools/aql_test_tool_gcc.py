@@ -388,7 +388,56 @@ class TestToolGcc( AqlTestCase ):
       self.touchCppFiles( hdr_files )
       cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
       self.buildPrj( prj, num_src_files )
-
+  
+  #//-------------------------------------------------------//
+  
+  def   test_gcc_linker(self):
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'output')
+      src_dir = os.path.join( tmp_dir, 'src')
+      
+      os.makedirs( src_dir )
+      
+      num_groups = 4
+      group_size = 8
+      num_src_files = num_groups * group_size
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
+      main_src_file = self.generateMainCppFile( src_dir, 'main')
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      try:
+        cpp = prj.tools['c++']
+      except  ErrorToolNotFound:
+        print("WARNING: GCC tool has not been found. Skip the test.")
+        return
+      
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
+      
+      self.buildPrj( prj, num_src_files * 2 + 4, verbose = False )
+      
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
+      self.buildPrj( prj, 0 )
+      
+      self.touchCppFile( hdr_files[0] )
+      
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
+      self.buildPrj( prj, 2, verbose = False )
+      
+      self.touchCppFiles( hdr_files )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = False )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = False )
+      self.buildPrj( prj, num_src_files * 2, verbose = False )
+      
 
 #//===========================================================================//
 

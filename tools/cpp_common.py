@@ -273,9 +273,12 @@ class CommonCppCompiler (aql.FileBuilder):
   def   split( self, node ):
     if node.isBatch():
       self.checkBatchSplit( node )
-      return self.splitBatchByBuildDir( node )
+      split_nodes = self.splitBatchByBuildDir( node )
     
-    return self.splitSingle( node )
+    else:
+      split_nodes = self.splitSingle( node )
+    
+    return split_nodes
   
   #//-------------------------------------------------------//
   
@@ -400,36 +403,37 @@ class CommonCppLinkerBase( aql.FileBuilder ):
     
     builders = self.getSourceBuilders( node )
     
-    batch_builder = None
-    batch_sources = []
+    current_builder = None
+    current_sources = []
     
     cwd = node.cwd
     
     for src_file in node.getSourceValues():
       ext = os.path.splitext( src_file.get() )[1]
       builder = builders.get( ext, None )
-      if builder:
-        if batch_builder is builder:
-          batch_sources.append( src_file )
+      if not builder:
+        new_sources.append( src_file )
+      else:
+        if current_builder is builder:
+          current_sources.append( src_file )
         else:
-          if batch_sources:
-            src_node = aql.BatchNode( batch_builder, batch_sources, cwd )
+          if current_sources:
+            if current_builder.isBatch():
+              src_node = aql.BatchNode( current_builder, current_sources, cwd )
+            else:
+              src_node = aql.Node( current_builder, current_sources, cwd )
+              
             new_sources.append( src_node )
           
-            batch_builder = None
-            batch_sources = []
-        
-          if builder.isBatch():
-            batch_builder = builder
-            batch_sources.append( src_file )
-          else:
-            src_node = aql.Node( builder, src_file, cwd )
-            new_sources.append( src_node )
-      else:
-        new_sources.append( src_file )
+          current_builder = builder
+          current_sources = [ src_file ]
 
-    if batch_sources:
-      src_node = aql.BatchNode( batch_builder, batch_sources, cwd )
+    if current_sources:
+      if current_builder.isBatch():
+        src_node = aql.BatchNode( current_builder, current_sources, cwd )
+      else:
+        src_node = aql.Node( current_builder, current_sources, cwd )
+      
       new_sources.append( src_node )
     
     return new_sources
