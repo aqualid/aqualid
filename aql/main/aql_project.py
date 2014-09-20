@@ -32,7 +32,7 @@ from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenLi
 from aql.util_types import FilePath, ValueListType, UniqueList, SplitListType, toSequence, AqlException
 from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue
 from aql.options import builtinOptions, Options
-from aql.nodes import BuildManager, Node, BatchNode
+from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 
 from .aql_tools import ToolsManager
 from .aql_builtin_tools import BuiltinTool
@@ -220,9 +220,9 @@ class BuilderWrapper( object ):
         sources += toSequence( value )
       else:
         for v in toSequence( value ):
-          if isinstance( v, (Node, ValueBase) ):
+          if isinstance( v, (Node, NodeTargetsFilter, ValueBase) ):
             deps.append( v )
-        
+                  
         if name in self.arg_names:
           args_kw[ name ] = value
         else:

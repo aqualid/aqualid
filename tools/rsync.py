@@ -247,7 +247,7 @@ class   RSyncPushBuilder( aql.FileBuilder ):
       target_path = remote_path.join( src )
 
       target_value = value_type( target_path.get() )
-      node.setSourceTargets( src_value, target_value )
+      node.addSourceTargets( src_value, target_value )
   
   #//-------------------------------------------------------//
   
@@ -396,7 +396,9 @@ class   RSyncPullBuilder( aql.Builder ):
       
     out = self.execCmd( cmd )
     
-    node.setFileTargets( targets )
+    targets = self.makeFileValues( targets )
+    
+    node.addTargets( targets )
     
     return out
   

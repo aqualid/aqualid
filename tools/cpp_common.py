@@ -213,7 +213,7 @@ class HeaderChecker (aql.Builder):
         has_headers = False
         break
     
-    node.setTargets( has_headers )
+    node.addTargets( has_headers )
   
 #//===========================================================================//
 
@@ -477,7 +477,7 @@ class CommonCppArchiver( CommonCppLinkerBase ):
 #noinspection PyAttributeOutsideInit
 class CommonCppLinker( CommonCppLinkerBase ):
   
-  def   __init__( self, options, target, shared, def_file, batch ):
+  def   __init__( self, options, target, shared, batch ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
       ext = options.shlibsuffix.get()
@@ -490,7 +490,6 @@ class CommonCppLinker( CommonCppLinkerBase ):
     self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
     self.cmd = options.link_cmd.get()
     self.shared = shared
-    self.def_file = def_file
     self.batch = batch
 
 
@@ -504,6 +503,7 @@ class ToolCommonCpp( aql.Tool ):
     super( ToolCommonCpp, self).__init__( options )
     
     options.If().cc_name.isTrue().build_dir_name  += '_' + options.cc_name + '_' + options.cc_ver
+    self.LinkLibrary = self.LinkStaticLibrary
   
   #//-------------------------------------------------------//
   
@@ -514,45 +514,23 @@ class ToolCommonCpp( aql.Tool ):
     
     return options
   
-  def   makeCompiler( self, options, shared, batch ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  def   makeResCompiler( self, options ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  def   makeArchiver( self, options, target, batch ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  def   makeLinker( self, options, target, shared, def_file, batch ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  #//-------------------------------------------------------//
-  
   def   CheckHeaders(self, options ):
     return HeaderChecker( options )
   
-  #//-------------------------------------------------------//
-  
   def   Compile( self, options, shared = False, batch = False ):
-    builder = self.makeCompiler( options, shared = shared )
-    if batch:
-      builder.setBatch()
-    
-    return builder
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   CompileResource( self, options ):
-    return self.makeResCompiler( options )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   LinkStaticLibrary( self, options, target, batch = False ):
-    return self.makeArchiver( options, target, batch = batch )
-  
-  LinkLibrary = LinkStaticLibrary
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   LinkSharedLibrary( self, options, target, def_file = None, batch = False ):
-    return self.makeLinker( options, target, shared = True, def_file = def_file, batch = batch )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   LinkProgram( self, options, target, batch = False ):
-    return self.makeLinker( options, target, shared = False, def_file = None, batch = batch )
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
 
 #//===========================================================================//
 
@@ -567,13 +545,9 @@ class ToolCommonRes( aql.Tool ):
   
   #//-------------------------------------------------------//
   
-  def   makeResCompiler( self, options ):
+  def   Compile( self, options ):
     """
     It should return a builder of C/C++ resource compiler
     """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  #//-------------------------------------------------------//
-  
-  def   Compile( self, options ):
-    return self.makeResCompiler( options )
+

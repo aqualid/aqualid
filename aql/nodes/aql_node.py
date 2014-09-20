@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Node', 'BatchNode',
+  'Node', 'BatchNode', 'NodeTargetsFilter',
 )
 
 import os
@@ -102,11 +102,6 @@ def   _actualValues( values ):
       return False
       
   return True
-
-#//===========================================================================//
-
-def   _makeValues( value_maker, values, use_cache ):
-  return tuple( value_maker( value, use_cache = use_cache ) for value in toSequence(values) )
 
 #//===========================================================================//
 
@@ -229,7 +224,7 @@ class   NodeValue (ValueBase):
   
   def   __new__( cls, name, signature = None, targets = None, itargets = None, idep_keys = None ):
     
-    self = super(NodeValue,cls).__new__(cls, name, signature )
+    self = super(NodeValue,cls).__new__(cls, name, signature)
     
     self.targets    = targets
     self.itargets   = itargets
@@ -249,7 +244,7 @@ class   NodeValue (ValueBase):
   
   #//-------------------------------------------------------//
   
-  def     __getnewargs__(self):
+  def   __getnewargs__(self):
     return self.name, self.signature, self.targets, self.itargets, self.idep_keys
   
   #//-------------------------------------------------------//
@@ -296,7 +291,22 @@ class   NodeValue (ValueBase):
     
     return True
 
-  #//-------------------------------------------------------//
+#//===========================================================================//
+
+class NodeTargetsFilter( object ):
+  __slots__ = \
+    (
+      'node',
+      'tags',
+    )
+  
+  def   __init__(self, node, tags ):
+    self.node = node
+    self.tags = frozenset( toSequence( tags ) )
+  
+  def   get(self):
+    tags = self.tags
+    return tuple( value for value in self.node.getTargetValues() if value.tags and (value.tags & tags) )
 
 #//===========================================================================//
 
@@ -319,9 +329,9 @@ class Node (object):
     'dep_nodes',
     'dep_values',
     
-    'targets',
-    'itargets',
-    'ideps',
+    'target_values',
+    'itarget_values',
+    'idep_values',
   )
   
   #//-------------------------------------------------------//
@@ -337,7 +347,7 @@ class Node (object):
     else:
       self.cwd = cwd
     
-    self.sources = toSequence( sources )
+    self.sources = tuple(toSequence( sources ))
     self.dep_nodes = set()
     self.dep_values = []
   
@@ -355,7 +365,7 @@ class Node (object):
     other.options       = self.options
     other.builder_data  = None
     other.cwd           = self.cwd
-    other.sources       = toSequence( sources )
+    other.sources       = tuple( toSequence( sources ) )
     other.dep_nodes     = self.dep_nodes
     other.dep_values    = self.dep_values
     
@@ -373,7 +383,7 @@ class Node (object):
     if attr == 'source_values':
       return self._setSourceValues()
 
-    if attr in ['targets', 'itargets', 'ideps' ]:
+    if attr in ['target_values', 'itarget_values', 'idep_values' ]:
       raise ErrorNoTargets( self )
 
     raise AttributeError( "Node has not attribute '%s'" % (attr,) )
@@ -393,6 +403,9 @@ class Node (object):
     for value in toSequence( dependencies ):
       if isinstance( value, Node ):
         dep_nodes.add( value )
+      
+      elif isinstance( value, NodeTargetsFilter ):
+        dep_nodes.add( value.node )
       
       elif isinstance( value, ValueBase ):
         dep_values.append( value )
@@ -418,7 +431,7 @@ class Node (object):
     dep_values = self.dep_values
     
     for node in dep_nodes:
-      dep_values += node.targets
+      dep_values += node.target_values
     
     dep_nodes.clear()
     dep_values.sort( key = lambda v: toString( v.name ) )
@@ -463,7 +476,7 @@ class Node (object):
     
     targets = self.builder.getTargetValues( self )
     if targets:
-      self.targets = toSequence( targets )
+      self.target_values = tuple( toSequence( targets ) )
       names = sorted( value.valueId() for value in targets )
       name = simpleObjectSignature( names )
     else:
@@ -503,7 +516,10 @@ class Node (object):
       for src in self.sources:
         
         if isinstance( src, Node ):
-          values += src.targets
+          values += src.target_values
+        
+        elif isinstance( src, NodeTargetsFilter ):
+          values += src.get()
         
         elif isinstance( src, ValueBase ):
           values.append( src )
@@ -529,7 +545,16 @@ class Node (object):
   #//=======================================================//
   
   def   getSourceNodes(self):
-    return tuple( node for node in self.sources if isinstance(node,Node) )
+    nodes = []
+    
+    for src in self.sources:
+      if isinstance(src, Node):
+        nodes.append( src )
+      
+      elif isinstance(src, NodeTargetsFilter):
+        nodes.append( src.node )
+        
+    return nodes
   
   #//=======================================================//
   
@@ -554,9 +579,13 @@ class Node (object):
   #//=======================================================//
   
   def   build(self):
+    self.target_values = None
+    self.itarget_values = []
+    self.idep_values = []
+    
     output = self.builder.build( self )
 
-    if getattr(self, 'targets', None) is None:
+    if self.target_values is None:
       raise ErrorNoTargets( self )
     
     return output
@@ -574,7 +603,7 @@ class Node (object):
     if sources is None:
       return False
     
-    self.sources = toSequence( sources )
+    self.sources = tuple( toSequence( sources ) )
     del self.source_values
     
     return True
@@ -589,13 +618,13 @@ class Node (object):
   
   def   save( self, vfile ):
     if __debug__:
-      _ensureActualValues( self.targets )
-      _ensureActualValues( self.ideps )
+      _ensureActualValues( self.target_values )
+      _ensureActualValues( self.idep_values )
 
-    idep_keys = vfile.addValues( self.ideps )
+    idep_keys = vfile.addValues( self.idep_values )
     
     node_value = NodeValue( name = self.name, signature = self.signature,
-                            targets = self.targets, itargets = self.itargets, idep_keys = idep_keys )
+                            targets = self.target_values, itargets = self.itarget_values, idep_keys = idep_keys )
     
     vfile.addValue( node_value )
 
@@ -613,11 +642,11 @@ class Node (object):
       itargets = node_value.itargets
       
       if targets is not None:
-        self.targets  = targets
-        self.itargets = itargets
+        self.target_values  = targets
+        self.itarget_values = itargets
       else:
-        self.targets  = tuple()
-        self.itargets = tuple()
+        self.target_values  = tuple()
+        self.itarget_values = tuple()
 
     vfile.removeValues( [ node_value ] )
     
@@ -634,31 +663,31 @@ class Node (object):
     if not node_value.actual( vfile ) or ((built_node_names is not None) and (node_value.name not in built_node_names)):
       return False
     
-    self.targets  = node_value.targets
-    self.itargets = node_value.itargets
+    self.target_values  = node_value.targets
+    self.itarget_values = node_value.itargets
     return True
     
   #//=======================================================//
   
-  def   setTargets( self, targets, itargets = None, ideps = None, value_maker = None ):
-
-    if value_maker is None:
-      value_maker = self.builder.makeValue
-    
-    self.targets  = _makeValues( value_maker, targets,   use_cache = False )
-    self.itargets = _makeValues( value_maker, itargets,  use_cache = False )
-    self.ideps    = _makeValues( value_maker, ideps,     use_cache = True )
-
-  #//=======================================================//
-  
-  def   setFileTargets( self, targets, itargets = None, ideps = None ):
-    self.setTargets( targets = targets, itargets = itargets, ideps = ideps,
-                     value_maker = self.builder.makeFileValue )
-  
-  #//=======================================================//
-  
   def   setNoTargets( self ):
-    self.setTargets( targets = None )
+    self.target_values = []
+  
+  #//=======================================================//
+  
+  def   addTargets( self, targets, side_effects = None, implicit_deps = None, tags = None ):
+    value_maker = self.builder.makeValue
+    
+    if self.target_values is None:
+      self.target_values = []
+    
+    self.target_values.extend(  value_maker( value, tags = tags )     for value in toSequence(targets) )
+    self.itarget_values.extend( value_maker( value )                  for value in toSequence(side_effects) )
+    self.idep_values.extend(    value_maker( value, use_cache = True) for value in toSequence(implicit_deps) )
+
+  #//=======================================================//
+  
+  def   at(self, tags ):
+    return NodeTargetsFilter( self, tags )
   
   #//=======================================================//
   
@@ -673,17 +702,17 @@ class Node (object):
   #//=======================================================//
   
   def   getTargetValues(self):
-    return self.targets
+    return self.target_values
   
   #//=======================================================//
   
   def   getBuildTargetValues(self):
-    return self.targets
+    return self.target_values
   
   #//=======================================================//
 
   def   getSideEffectValues(self):
-    return self.itargets
+    return self.itarget_values
   
   #//=======================================================//
   
@@ -713,12 +742,25 @@ class Node (object):
     for src in self.sources:
       if isinstance(src, ValueBase):
         result.append( src.get() )
+      
       elif isinstance( src, Node ):
-        targets = getattr(src, 'targets', None)
+        targets = getattr(src, 'target_values', None)
         if targets is not None:
           result += ( target.get() for target in targets )
         else:
           result.append( src ) 
+      
+      elif isinstance( src, NodeTargetsFilter ):
+        try:
+          targets = src.get()
+        except AttributeError:
+          continue
+        
+        if targets is not None:
+          result += ( target.get() for target in targets )
+        else:
+          result.append( src ) 
+      
       else:
         result.append( src )
     
@@ -729,7 +771,7 @@ class Node (object):
   #//=======================================================//
   
   def   printTargets(self):
-    targets = [ t.get() for t in getattr(self, 'targets', []) ]
+    targets = [ t.get() for t in getattr(self, 'target_values', []) ]
     print("node '%s' targets: %s" % (self, targets))
   
 #//===========================================================================//
@@ -808,12 +850,14 @@ class BatchNode (Node):
     
     for src_value in self.changed_source_values:
       node_value, ideps = self.node_values[ src_value ]
-
+      
+      targets = node_value.targets
+      
+      if targets is None:
+        continue
+      
       if __debug__:
-        if node_value.targets is None:
-          raise ErrorNoTargets( self )
-
-        _ensureActualValues( node_value.targets )
+        _ensureActualValues( targets )
         _ensureActualValues( ideps )
 
       node_value.idep_keys = vfile.addValues( ideps )
@@ -842,8 +886,8 @@ class BatchNode (Node):
           targets   += node_value.targets
           itargets  += node_value.itargets
               
-    self.targets  = targets
-    self.itargets = itargets
+    self.target_values  = targets
+    self.itarget_values = itargets
     
     vfile.removeValues( node_values )
     
@@ -875,8 +919,8 @@ class BatchNode (Node):
       targets += node_targets
       itargets += node_value.itargets
     
-    self.targets = tuple(targets)
-    self.itargets = tuple(itargets)
+    self.target_values = targets
+    self.itarget_values = itargets
   
   #//=======================================================//
   
@@ -891,7 +935,8 @@ class BatchNode (Node):
       
       if not node_value.actual( vfile ) or ((built_node_names is not None) and (node_value.name not in built_node_names)):
         changed_sources.append( src_value )
-      else:
+      
+      elif not changed_sources:
         targets   += node_value.targets
         itargets  += node_value.itargets
     
@@ -899,51 +944,42 @@ class BatchNode (Node):
       self.changed_source_values = changed_sources
       return False
     
-    self.targets  = targets
-    self.itargets = itargets
+    self.target_values  = targets
+    self.itarget_values = itargets
     return True
   
   #//=======================================================//
   
-  def   setTargets( self, targets, itargets = None, ideps = None, value_maker = None ):
-    raise Exception( "setTargets() is not allowed for batch build." )
+  def   addTargets( self, targets, itargets = None, ideps = None, tags = None ):
+    raise Exception( "addTargets() is not allowed for batch build. addSourceTargets() must be used instead." )
   
   #//=======================================================//
   
-  def   split( self, builder ):
-    raise Exception( "split() is not allowed for batch build." )
-  
-  #//=======================================================//
-  
-  def   setSourceTargets( self, src_value, targets, itargets = None, ideps = None, value_maker = None ):
-    
-    if value_maker is None:
-      value_maker = self.builder.makeValue
+  def   addSourceTargets( self, src_value, targets, side_effects = None, implicit_deps = None, tags = None ):
     
     try:
       node_value, node_ideps = self.node_values[ src_value ]
     except KeyError:
       raise ErrorNodeUnknownSource( src_value )
+
+    value_maker = self.builder.makeValue
     
-    node_value.targets  = _makeValues( value_maker, targets,  use_cache = False )
-    node_value.itargets = _makeValues( value_maker, itargets, use_cache = False )
-    ideps               = _makeValues( value_maker, ideps,    use_cache = True )
+    node_targets = node_value.targets
+    node_itargets = node_value.itargets
     
-    node_ideps[:] = ideps
+    if node_targets is None: node_value.targets = node_targets = []
+    if node_itargets is None: node_value.itargets = node_itargets = []
     
+    node_targets.extend(  value_maker( value, tags = tags)        for value in toSequence( targets ) )
+    node_itargets.extend( value_maker( value )                    for value in toSequence( side_effects ) )
+    node_ideps.extend(    value_maker( value, use_cache = True )  for value in toSequence( implicit_deps ) )
+      
   #//=======================================================//
   
   def   setNoTargets( self ):
     for src_value in self.changed_source_values:
       node_value, node_ideps = self.node_values[ src_value ]
-      node_value.targets = tuple()
-      node_value.itargets = tuple()
-  
-  #//=======================================================//
-  
-  def   setSourceFileTargets( self, src_value, targets, itargets = None, ideps = None ):
-    self.setSourceTargets( src_value, targets = targets, itargets = itargets, ideps = ideps,
-                     value_maker = self.builder.makeFileValue )
+      node_value.targets = []
   
   #//=======================================================//
   

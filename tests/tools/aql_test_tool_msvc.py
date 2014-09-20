@@ -168,7 +168,8 @@ class TestToolMsvc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   test_msvc_linker(self):
-    with Tempdir() as tmp_dir:
+    # with Tempdir() as tmp_dir:
+      tmp_dir = Tempdir()
       
       build_dir = os.path.join( tmp_dir, 'output')
       src_dir = os.path.join( tmp_dir, 'src')
@@ -197,7 +198,7 @@ class TestToolMsvc( AqlTestCase ):
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       
-      self.buildPrj( prj, num_src_files + 4, verbose = False )
+      self.buildPrj( prj, num_src_files + 4, verbose = True )
       
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
@@ -205,11 +206,12 @@ class TestToolMsvc( AqlTestCase ):
       
       self.touchCppFile( hdr_files[0] )
       
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      shlib = cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       self.buildPrj( prj, 3, verbose = False )
       
       self.touchCppFiles( hdr_files )
+      
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = True, batch_groups = num_groups )
       self.buildPrj( prj, num_groups + 2, jobs = 1 )

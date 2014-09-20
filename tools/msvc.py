@@ -77,7 +77,7 @@ class MsvcCompiler (CommonCppCompiler):
     
     deps, out = _parseOutput( sources, out, self.ext_cpppath )
     
-    node.setFileTargets( obj_file, ideps = deps[0] )
+    node.addTargets( obj_file, implicit_deps = deps[0] )
     
     return out
   
@@ -110,7 +110,7 @@ class MsvcCompiler (CommonCppCompiler):
     deps, out = _parseOutput( sources, out, self.ext_cpppath )
     
     for src_value, obj_file, deps in zip( source_values, obj_files, deps ):
-      node.setSourceTargets( src_value, obj_file, ideps = deps )
+      node.addSourceTargets( src_value, obj_file, implicit_deps = deps )
 
     return out
 
@@ -132,19 +132,22 @@ class MsvcResCompiler (CommonResCompiler):
     
     # deps = _parseRes( src )
     
-    node.setFileTargets( res_file )
+    node.addTargets( res_file )
     
     return out
   
 #//===========================================================================//
 
-class   MsvcArchiver (CommonCppArchiver):
-  
+class MsvcCompilerMaker (object):
   def   makeCompiler( self, options ):
     return MsvcCompiler( options )
   
   def   makeResCompiler( self, options ):
     return MsvcResCompiler( options )
+
+#//===========================================================================//
+
+class   MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
   
   def   build( self, node ):
     
@@ -158,20 +161,22 @@ class   MsvcArchiver (CommonCppArchiver):
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.setFileTargets( self.target )
+    node.addTargets( self.target )
     
     return out
 
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class MsvcLinker (CommonCppLinker):
+class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
   
-  def   makeCompiler( self, options ):
-    return MsvcCompiler( options )
-  
-  def   makeResCompiler( self, options ):
-    return MsvcResCompiler( options )
+  def   __init__( self, options, target, shared, def_file, batch ):
+    super(MsvcLinker, self).__init__( options, target, shared, batch )
+    
+    self.libsuffix = options.libsuffix.get()
+    
+    if shared:
+      self.def_file = def_file
   
   #//-------------------------------------------------------//
   
@@ -180,13 +185,16 @@ class MsvcLinker (CommonCppLinker):
     obj_files = node.getSources()
     
     cmd = list(self.cmd)
+    target = self.target
     
     if self.shared:
       cmd.append( '/dll' )
       if self.def_file:
         cmd.append( '/DEF:%s' % self.def_file )
+      
+      import_lib = os.path.splitext( target )[0] + self.libsuffix
+      cmd.append( '/IMPLIB:%s' % import_lib )
     
-    target = self.target
     itargets = []
     
     if '/DEBUG' in cmd:
@@ -202,7 +210,17 @@ class MsvcLinker (CommonCppLinker):
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.setFileTargets( target, itargets )
+    #//-------------------------------------------------------//
+    #//  SET TARGETS
+    
+    if not self.shared:
+      tags = None
+    else:
+      tags = 'shlib'
+      if os.path.exists( import_lib ):
+        node.addTargets( import_lib, tags = 'implib' )
+    
+    node.addTargets( target, tags = tags, side_effects = itargets )
     
     return out
   
@@ -353,17 +371,20 @@ class ToolMsvcCommon( ToolCommonCpp ):
   
   #//-------------------------------------------------------//
   
-  def   makeCompiler( self, options, shared ):
-    return MsvcCompiler( options )
+  def   Compile( self, options, shared = False, batch = False ):
+    return MsvcCompiler( options ).setBatch( batch )
   
-  def   makeResCompiler( self, options ):
+  def   CompileResource( self, options ):
     return MsvcResCompiler( options )
   
-  def   makeArchiver( self, options, target, batch ):
+  def   LinkStaticLibrary( self, options, target, batch = False ):
     return MsvcArchiver( options, target, batch )
   
-  def   makeLinker( self, options, target, shared, def_file, batch ):
-    return MsvcLinker( options, target, shared = shared, def_file = def_file, batch = batch )
+  def   LinkSharedLibrary( self, options, target, def_file = None, batch = False ):
+    return MsvcLinker( options, target, shared = True, def_file = def_file, batch = batch )
+  
+  def   LinkProgram( self, options, target, batch = False ):
+    return MsvcLinker( options, target, shared = False, def_file = None, batch = batch )
   
 #//===========================================================================//
 
@@ -393,5 +414,5 @@ class ToolMsrc( ToolCommonRes ):
     super(ToolMsrc,self).__init__( options )
     options.ressuffix   = '.res'
   
-  def   makeResCompiler( self, options ):
+  def   Compile( self, options ):
     return MsvcResCompiler( options )

@@ -126,7 +126,8 @@ class ToolsManager( Singleton ):
       raise ErrorToolInvalid( tool_class )
     
     if names:
-      self.tool_names.setdefault( tool_class, set() ).update( toSequence( names ) )
+      names = tuple( toSequence( names ) )
+      self.tool_names.setdefault( tool_class, set() ).update( names )
       self.__addToMap( self.tool_classes, names, tool_class )
   
   #//-------------------------------------------------------//
@@ -144,7 +145,8 @@ class ToolsManager( Singleton ):
     if not paths:
       return
     
-    paths = set( map( lambda path: os.path.normcase( os.path.abspath( path ) ), toSequence( paths ) ) )
+    paths = tuple( toSequence( paths ) )
+    paths = set( map( lambda path: os.path.normcase( os.path.abspath( path ) ), paths ) )
     paths -= self.loaded_paths
     
     module_files = findFiles( paths, mask = "*.py" )

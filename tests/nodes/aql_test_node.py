@@ -49,7 +49,7 @@ class ChecksumBuilder (Builder):
       target_values.append( chcksum.digest() )
       itarget_values.append( chcksum_sha512.digest() )
     
-    node.setTargets( target_values, itarget_values )
+    node.addTargets( target_values, itarget_values )
 
 #//===========================================================================//
 
@@ -79,7 +79,7 @@ class CopyBuilder (FileBuilder):
       target_values.append( new_name )
       itarget_values.append( new_iname )
     
-    node.setFileTargets( target_values, itarget_values, idep )
+    node.addTargets( target_values, itarget_values, idep )
   
   #//-------------------------------------------------------//
   
@@ -96,7 +96,7 @@ class CopyBuilder (FileBuilder):
       shutil.copy( src, new_name )
       shutil.copy( src, new_iname )
       
-      node.setSourceFileTargets( src_value, new_name, new_iname, idep )
+      node.addSourceTargets( src_value, new_name, new_iname, idep )
 
 #//===========================================================================//
 
@@ -352,7 +352,7 @@ class TestSpeedBuilder (Builder):
       target_values.append( _FileValueType( new_name ) )
       idep_values.append( _FileValueType( idep_name ) )
     
-    node.setTargets( target_values, itarget_values, idep_values )
+    node.addTargets( target_values, itarget_values, idep_values )
   
   #//-------------------------------------------------------//
   

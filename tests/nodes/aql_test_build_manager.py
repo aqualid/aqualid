@@ -26,7 +26,7 @@ class CopyValueBuilder (Builder):
       copy_value = SimpleValue( source_value.get(), name = source_value.name + '_copy' )
       target_values.append( copy_value )
     
-    node.setTargets( target_values )
+    node.addTargets( target_values )
   
   def   getTraceTargets( self, node, brief ):
     return tuple( value.name for value in node.getTargetValues() )
@@ -72,14 +72,14 @@ class ChecksumBuilder (FileBuilder):
     for src in node.getSources():
       target_values.append( self._buildSrc( src ) )
     
-    node.setFileTargets( target_values )
+    node.addTargets( target_values )
   
   #//-------------------------------------------------------//
   
   def   buildBatch( self, node ):
     for src_value in node.getSourceValues():
       target = self._buildSrc( src_value.get() )
-      node.setSourceFileTargets( src_value, target )
+      node.addSourceTargets( src_value, target )
 
 #//===========================================================================//
 

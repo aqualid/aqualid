@@ -16,6 +16,7 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
+from aql.util_types.aql_list_types import toSequence
 
 __all__ = (
   'Builder', 'FileBuilder'
@@ -24,7 +25,7 @@ __all__ = (
 import os
 import errno
 
-from aql.util_types import toSequence, FilePath
+from aql.util_types import FilePath
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
 from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
 
@@ -160,8 +161,9 @@ class BuilderInitiator( object ):
   
   #//=======================================================//
   
-  def   setBatch(self):
-    self.builder.setBatch()
+  def   setBatch(self, batch = True):
+    self.builder.setBatch( batch )
+    return self
   
 #//===========================================================================//
 
@@ -184,7 +186,7 @@ class Builder (object):
     
     self = super(Builder, cls).__new__(cls)
     self.makeValue = self.makeSimpleValue
-    self.is_batch = False
+    self.__is_batch = False
     
     return BuilderInitiator( self, options, args, kw )
   
@@ -200,12 +202,13 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   isBatch(self):
-    return self.is_batch
+    return self.__is_batch
   
   #//-------------------------------------------------------//
   
-  def   setBatch(self):
-    self.is_batch = True
+  def   setBatch(self, batch = True):
+    self.__is_batch = bool(batch)
+    return self
   
   #//-------------------------------------------------------//
   
@@ -427,22 +430,28 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeSimpleValue(self, value, use_cache = False ):
+  def   makeSimpleValue(self, value, tags = None, use_cache = False ):
     if isinstance( value, ValueBase):
       return value
     
     if isinstance( value, FilePath ):
-      return self.fileValueType()( name = value, use_cache = use_cache )
+      return self.fileValueType()( name = value, tags = tags, use_cache = use_cache )
     
     return SimpleValue( value )
   
   #//-------------------------------------------------------//
   
-  def   makeFileValue( self, value, use_cache = False ):
+  def   makeFileValue( self, value, tags = None, use_cache = False ):
     if isinstance( value, ValueBase):
       return value
     
-    return self.fileValueType()( name = value, use_cache = use_cache )
+    return self.fileValueType()( name = value, tags = tags, use_cache = use_cache )
+  
+  #//-------------------------------------------------------//
+  
+  def   makeFileValues( self, values, tags = None, use_cache = False ):
+    make_value = self.makeFileValue
+    return [ make_value( value, tags = tags, use_cache = use_cache ) for value in toSequence( values ) ]
   
   #//-------------------------------------------------------//
   

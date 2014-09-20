@@ -563,6 +563,7 @@ def   runSuite( suite ):
   
   except KeyboardInterrupt:
     print("\nInterrupted by user")
+    raise
 
 #//===========================================================================//
 

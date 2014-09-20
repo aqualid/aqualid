@@ -47,7 +47,11 @@ class   FileValueBase (ValueBase):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    return self.name, self.signature
+    tags = self.tags
+    if not tags:
+      tags = None 
+    
+    return self.name, self.signature, tags
   
   #//-------------------------------------------------------//
   
@@ -111,7 +115,7 @@ class FileChecksumValue( FileValueBase ):
   
   IS_SIZE_FIXED = True
   
-  def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
+  def   __new__( cls, name, signature = NotImplemented, tags = None, use_cache = False ):
 
     if isinstance(name, FileValueBase):
       name = name.name
@@ -124,7 +128,7 @@ class FileChecksumValue( FileValueBase ):
 
     name = absFilePath( name )
       
-    self = super(FileChecksumValue, cls).__new__( cls, name, signature )
+    self = super(FileChecksumValue, cls).__new__( cls, name, signature, tags = tags )
 
     if signature is NotImplemented:
       if use_cache:
@@ -148,7 +152,7 @@ class FileChecksumValue( FileValueBase ):
   def   getActual(self):
     name = self.name
     signature = _getFileChecksum( name, use_cache = True )
-    return super(FileChecksumValue, self).__new__( self.__class__, name, signature )
+    return super(FileChecksumValue, self).__new__( self.__class__, name, signature, self.tags )
   
   #//-------------------------------------------------------//
   
@@ -167,7 +171,7 @@ class FileTimestampValue( FileValueBase ):
   
   IS_SIZE_FIXED = True
   
-  def   __new__( cls, name, signature = NotImplemented, use_cache = False ):
+  def   __new__( cls, name, signature = NotImplemented, tags = None, use_cache = False ):
     if isinstance(name, FileValueBase):
       name = name.name
     else:
@@ -179,7 +183,7 @@ class FileTimestampValue( FileValueBase ):
       
       name = absFilePath( name )
     
-    self = super(FileTimestampValue, cls).__new__( cls, name, signature )
+    self = super(FileTimestampValue, cls).__new__( cls, name, signature, tags = tags )
 
     if signature is NotImplemented:
       if use_cache:
@@ -203,7 +207,7 @@ class FileTimestampValue( FileValueBase ):
   def   getActual(self):
     name = self.name
     signature = _getFileTimestamp( name, use_cache = True )
-    return super(FileTimestampValue, self).__new__( self.__class__, name, signature )
+    return super(FileTimestampValue, self).__new__( self.__class__, name, signature, self.tags )
   
   #//-------------------------------------------------------//
   

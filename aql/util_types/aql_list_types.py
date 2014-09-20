@@ -24,11 +24,12 @@ from .aql_simple_types import uStr, isString, castStr
 #//===========================================================================//
 
 #noinspection PyShadowingBuiltins,PyRedundantParentheses
-def   toSequence( value, tuple = tuple, isinstance = isinstance, uStr = uStr, bytes = bytes, bytearray = bytearray ):
+def   toSequence( value, iter = iter, tuple = tuple, isinstance = isinstance, uStr = uStr, bytes = bytes, bytearray = bytearray ):
   
   try:
     if not isinstance( value, (uStr, bytes, bytearray) ):
-      return tuple( value )
+      iter( value )
+      return value
   except TypeError:
     pass
   

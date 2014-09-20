@@ -567,10 +567,10 @@ class _NodesBuilder (object):
     if state.check_split:
       state.check_split = False
       
-      # if isinstance( node, BatchNode ):
+      # if node.isBatch():
       #   # Check for changed sources of BatchNode
-      #   vfile = vfiles[ node.builder ]
-      #   actual = build_manager.isActualNode( node, vfile )
+      #   vfile = self.vfiles[ node.builder ]
+      #   actual = self.build_manager.isActualNode( node, vfile )
       
       split_nodes = node.buildSplit()
       if split_nodes:
@@ -590,7 +590,7 @@ class _NodesBuilder (object):
       for split_node in state.split_nodes:
         targets += split_node.getTargetValues()
       
-      node.targets = targets
+      node.target_values = targets
       
       self._removeNodeState( node )
       self.build_manager.actualNode( node )
@@ -679,11 +679,15 @@ class _NodesBuilder (object):
       
       self._removeNodeState( node )
       
+      vfile = vfiles[ node.builder ]
+      
       if error is None:
-        vfile = vfiles[ node.builder ]
         node.save( vfile )
         build_manager.completedNode( node, task.result )
       else:
+        if node.isBatch():
+          node.save( vfile )
+        
         build_manager.failedNode( node, error )
 
     return bool(finished_tasks)

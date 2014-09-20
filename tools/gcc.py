@@ -62,7 +62,7 @@ class GccCompiler (CommonCppCompiler):
       
       out = self.execCmd( cmd, cwd, file_flag = '@' )
       
-      node.setFileTargets( obj_file, ideps = _readDeps( dep_file, self.ext_cpppath ) )
+      node.addTargets( obj_file, implicit_deps = _readDeps( dep_file, self.ext_cpppath ) )
       
       return out
 
@@ -84,21 +84,22 @@ class GccResCompiler (CommonResCompiler):
     
     # deps = _parseRes( src )
     
-    node.setFileTargets( res_file )
+    node.addTargets( res_file )
     
     return out
 
 #//===========================================================================//
 
-class GccArchiver (CommonCppArchiver):
-  
+class GccCompilerMaker (object):
   def   makeCompiler( self, options ):
-    return GccCompiler( options, shared = False )
+    return GccCompiler( options, shared = self.shared )
   
   def   makeResCompiler( self, options ):
     return GccResCompiler( options )
-  
-  #//-------------------------------------------------------//
+
+#//===========================================================================//
+
+class GccArchiver (GccCompilerMaker, CommonCppArchiver ):
   
   def   build( self, node ):
     
@@ -110,29 +111,19 @@ class GccArchiver (CommonCppArchiver):
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.setFileTargets( self.target )
+    node.addTargets( self.target )
     
     return out
 
 #//===========================================================================//
 
-class GccLinker( CommonCppLinker ):
-  
-  def   makeCompiler( self, options ):
-    return GccCompiler( options, shared = self.shared )
-  
-  def   makeResCompiler( self, options ):
-    return GccResCompiler( options )
-  
-  #//-------------------------------------------------------//
+class GccLinker( GccCompilerMaker, CommonCppLinker ):
   
   def   build( self, node ):
     
     cmd = list(self.cmd)
     
     obj_files = node.getSources()
-    if self.shared and self.def_file:
-      obj_files.append( self.def_file ) 
     
     cmd[2:2] = obj_files
     
@@ -145,7 +136,7 @@ class GccLinker( CommonCppLinker ):
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.setFileTargets( self.target )
+    node.addTargets( self.target )
     
     return out
 
@@ -341,17 +332,20 @@ class ToolGccCommon( ToolCommonCpp ):
   
   #//-------------------------------------------------------//
   
-  def   makeCompiler( self, options, shared ):
-    return GccCompiler( options, shared = shared )
+  def   Compile( self, options, shared = False, batch = False ):
+    return GccCompiler( options, shared = shared ).setBatch( batch )
   
-  def   makeResCompiler( self, options ):
+  def   CompileResource( self, options ):
     return GccResCompiler( options )
   
-  def   makeArchiver( self, options, target, batch ):
+  def   LinkStaticLibrary( self, options, target, batch = False ):
     return GccArchiver( options, target, batch )
   
-  def   makeLinker( self, options, target, shared, def_file, batch ):
-    return GccLinker( options, target, shared = shared, def_file = def_file, batch = batch )
+  def   LinkSharedLibrary( self, options, target, def_file = None, batch = False ):
+    return GccLinker( options, target, shared = True, batch = batch )
+  
+  def   LinkProgram( self, options, target, batch = False ):
+    return GccLinker( options, target, shared = False, batch = batch )
 
 #//===========================================================================//
 
@@ -381,5 +375,5 @@ class ToolWindRes( ToolCommonRes ):
     super(ToolWindRes,self).__init__( options )
     options.ressuffix = '.o'
       
-  def   makeResCompiler( self, options ):
+  def   Compile( self, options ):
     return GccResCompiler( options )

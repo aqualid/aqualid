@@ -98,7 +98,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     target = aql.SimpleValue( name = src_file, data = (std_imports, aql_imports, content) )
     
-    node.setTargets( target )
+    node.addTargets( target )
 
 #//===========================================================================//
 
@@ -209,7 +209,9 @@ class AqlLink (aql.Builder):
     
     aql.writeTextFile( self.target, content )
     
-    node.setFileTargets( self.target )
+    target = self.makeFileValue( self.target  )
+    
+    node.addTargets( target )
 
 #//===========================================================================//
 

@@ -20,7 +20,7 @@ __all__ = (
   'ValueBase', 'SignatureValue', 'SimpleValue', 'NullValue',
 )
 
-from aql.util_types import castStr, AqlException
+from aql.util_types import toSequence, castStr, AqlException
 from aql.utils import simpleObjectSignature
 from .aql_value_pickler import pickleable
 
@@ -49,11 +49,11 @@ class   ValueBase (object):
   
   IS_SIZE_FIXED = False
   
-  __slots__ = ( 'name', 'signature' )
+  __slots__ = ( 'name', 'signature', 'tags' )
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name, signature ):
+  def   __new__( cls, name, signature, tags = None ):
     
     if not name:
       raise ErrorValueNameEmpty()
@@ -61,6 +61,8 @@ class   ValueBase (object):
     self = super(ValueBase,cls).__new__(cls)
     self.name = name
     self.signature = signature
+    self.tags = frozenset( toSequence(tags) ) if tags else None
+    
     return self
   
   #//-------------------------------------------------------//
@@ -138,7 +140,7 @@ class   SimpleValue ( ValueBase ):
   
   __slots__ = ('data', )
   
-  def   __new__(cls, data = None, name = None, signature = None ):
+  def   __new__(cls, data = None, name = None, signature = None, tags = None ):
     
     if data is None:
       signature = None
@@ -149,7 +151,7 @@ class   SimpleValue ( ValueBase ):
     if not name:
       name = signature
     
-    self = super(SimpleValue, cls).__new__( cls, name, signature )
+    self = super(SimpleValue, cls).__new__( cls, name, signature, tags )
     self.data = data
     
     return self
@@ -162,7 +164,11 @@ class   SimpleValue ( ValueBase ):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    return self.data, self.name, self.signature
+    tags = self.tags
+    if not tags:
+      tags = None
+    
+    return self.data, self.name, self.signature, tags
   
   #//-------------------------------------------------------//
   
