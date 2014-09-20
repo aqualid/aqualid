@@ -129,6 +129,9 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
     
     if self.shared:
       cmd += [ '-shared' ]
+      tags = ('shlib','implib')
+    else:
+      tags = None
           
     cmd += [ '-o', self.target ]
     
@@ -136,7 +139,7 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.addTargets( self.target )
+    node.addTargets( self.target, tags = tags )
     
     return out
 

@@ -50,19 +50,21 @@ class ChecksumBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   _buildSrc( self, src ):
-    chcksum = fileChecksum( src, self.offset, self.length, 'sha512' )
+  def   _buildSrc( self, src, alg ):
+    chcksum = fileChecksum( src, self.offset, self.length, alg )
     if self.replace_ext:
-      chcksum_filename = os.path.splitext(src)[0] + '.chksum'
+      chcksum_filename = os.path.splitext(src)[0]
     else:
-      chcksum_filename = src + '.chksum'
+      chcksum_filename = src
+    
+    chcksum_filename += '.%s.chksum' % alg
     
     chcksum_filename = self.getFileBuildPath( chcksum_filename )
     
     with open( chcksum_filename, 'wb' ) as f:
       f.write( chcksum.digest() )
     
-    return chcksum_filename
+    return self.makeFileValue( chcksum_filename, tags = alg )
   
   #//-------------------------------------------------------//
   
@@ -70,7 +72,8 @@ class ChecksumBuilder (FileBuilder):
     target_values = []
     
     for src in node.getSources():
-      target_values.append( self._buildSrc( src ) )
+      target_values.append( self._buildSrc( src, 'md5' ) )
+      target_values.append( self._buildSrc( src, 'sha512' ) )
     
     node.addTargets( target_values )
   
@@ -78,8 +81,10 @@ class ChecksumBuilder (FileBuilder):
   
   def   buildBatch( self, node ):
     for src_value in node.getSourceValues():
-      target = self._buildSrc( src_value.get() )
-      node.addSourceTargets( src_value, target )
+      targets = [ self._buildSrc( src_value.get(), 'md5' ),
+                  self._buildSrc( src_value.get(), 'sha512' ) ]
+      
+      node.addSourceTargets( src_value, targets )
 
 #//===========================================================================//
 
@@ -458,6 +463,96 @@ class TestBuildManager( AqlTestCase ):
       self.assertEqual( self.outdated_nodes, 0 )
       self.assertEqual( self.actual_nodes, num_src_files )
   
+  #//-------------------------------------------------------//
+  
+  def test_bm_tags(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      num_src_files = 3
+      src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
+      
+      builder = ChecksumSingleBuilder( options, 0, 256 )
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      node = Node( builder, src_files )
+      
+      node_md5 = Node( builder, node.at('md5') )
+      
+      bm.add( node_md5 )
+      
+      _build( bm )
+      
+      self.assertEqual( self.finished_nodes, num_src_files * 2 )
+      
+      #//-------------------------------------------------------//
+      
+      self.touchCppFile( src_files[0] )
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      node = Node( builder, src_files )
+      
+      node_md5 = Node( builder, node.at('md5') )
+      
+      bm.add( node_md5 )
+      
+      _build( bm )
+      
+      self.assertEqual( self.finished_nodes, 2 )
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_tags_batch(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      num_src_files = 3
+      src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
+      
+      builder = ChecksumBuilder( options, 0, 256 )
+      single_builder = ChecksumSingleBuilder( options, 0, 256 )
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      node = BatchNode( builder, src_files )
+      
+      node_md5 = Node( single_builder, node.at('md5') )
+      
+      bm.add( node_md5 )
+      
+      _build( bm )
+      
+      self.assertEqual( self.finished_nodes, num_src_files + 1 )
+      
+      #//-------------------------------------------------------//
+      
+      self.touchCppFile( src_files[0] )
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      node = BatchNode( builder, src_files )
+      
+      node_md5 = Node( single_builder, node.at('md5') )
+      
+      bm.add( node_md5 )
+      
+      _build( bm )
+      
+      self.assertEqual( self.finished_nodes, 2 )
+
   #//-------------------------------------------------------//
   
   @skip

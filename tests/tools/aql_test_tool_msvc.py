@@ -168,8 +168,7 @@ class TestToolMsvc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   def   test_msvc_linker(self):
-    # with Tempdir() as tmp_dir:
-      tmp_dir = Tempdir()
+    with Tempdir() as tmp_dir:
       
       build_dir = os.path.join( tmp_dir, 'output')
       src_dir = os.path.join( tmp_dir, 'src')
