@@ -108,7 +108,7 @@ class TestUtils( AqlTestCase ):
   
   def   test_exec_command( self ):
     result = executeCommand("route")
-    self.assertTrue( result.out or result.err )
+    self.assertTrue( result.output )
   
   #//===========================================================================//
   

@@ -457,6 +457,16 @@ class Builder (object):
   
   def   execCmd(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):
     
+    result = self.execCmdResult( cmd, cwd = cwd, env = env, file_flag = file_flag, stdin = stdin )
+    if result.failed():
+      raise result
+    
+    return result.output
+  
+  #//-------------------------------------------------------//
+  
+  def   execCmdResult(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):
+    
     if env is None:
       env = self.env
     
@@ -464,12 +474,10 @@ class Builder (object):
       cwd = self.getBuildPath()
     
     result = executeCommand( cmd, cwd = cwd, env = env, file_flag = file_flag, stdin = stdin )
-    if result.failed():
-      raise result
     
     eventExecCmd( cmd, cwd, env )
     
-    return result.out
+    return result
 
 #//===========================================================================//
 

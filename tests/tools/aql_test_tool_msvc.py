@@ -5,8 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.values import FileChecksumValue, FileTimestampValue
-from aql.utils import Tempdir, removeUserHandler, addUserHandler, enableDefaultHandlers
+from aql.utils import Tempdir, Tempfile, removeUserHandler, addUserHandler, enableDefaultHandlers
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
 import msvc
@@ -116,6 +115,47 @@ class TestToolMsvc( AqlTestCase ):
       self.touchCppFiles( hdr_files[:group_size] )
       
       cpp.Compile( src_files, batch = True )
+      self.buildPrj( prj, 1 )
+  
+  #//-------------------------------------------------------//
+  
+  def   test_msvc_compiler_batch_error(self):
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'output')
+      src_dir = os.path.join( tmp_dir, 'src')
+      
+      os.makedirs( src_dir )
+      
+      num_src_files = 5
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      
+      src_file_orig = Tempfile( dir = tmp_dir )
+      src_file_orig.close()
+      
+      self.copyFile( src_files[0], src_file_orig )
+      
+      self.addErrorToCppFile( src_files[0] )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      try:
+        cpp = prj.tools['msvc++']
+      except  ErrorToolNotFound:
+        print("WARNING: MSVC tool has not been found. Skip the test.")
+        return
+      
+      cpp.Compile( src_files, batch = True, batch_groups = 1 )
+      
+      self.buildPrj( prj, 0, num_failed_nodes = 1 )
+      
+      self.copyFile( src_file_orig, src_files[0] )
+      
+      cpp.Compile( src_files )
+      
       self.buildPrj( prj, 1 )
   
   #//-------------------------------------------------------//

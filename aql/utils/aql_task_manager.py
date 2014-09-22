@@ -21,11 +21,13 @@ __all__ = (
   'TaskManager', 'TaskResult'
 )
 
+import sys
 import threading
 import collections
 import traceback
 
 from .aql_logging import logWarning
+from .aql_utils import ExecCommandResult
 
 try:
   import queue
@@ -84,9 +86,17 @@ class _TaskExecutor( threading.Thread ):
       except _ExitException:
         break
       
-      except (Exception, BaseException) as err:
-        err = traceback.format_exc()
+      except (Exception, BaseException) as ex:
         
+        err = ''.join( traceback.format_exception_only( type(ex), ex ) )
+        
+        if not isinstance( ex, ExecCommandResult ):
+          tb = getattr( ex, '__traceback__', None )
+          if tb:
+            err += ''.join( traceback.format_tb( tb ) )
+          else:
+            err = traceback.format_exc()
+                      
         if task_id is not None:
           fail = TaskResult( task_id = task_id, result = None, error = err )
           finished_tasks.put( fail )

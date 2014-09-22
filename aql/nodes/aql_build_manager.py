@@ -970,6 +970,11 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   failsCount(self):
+    return len( self._failed_nodes )
+  
+  #//-------------------------------------------------------//
+  
   def   printFails(self ):
     for node, error in self._failed_nodes.items():
       eventFailedNode( node, error )

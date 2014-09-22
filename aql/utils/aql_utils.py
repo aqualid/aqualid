@@ -410,43 +410,70 @@ def _decodeData( data ):
 
 #//===========================================================================//
 
-class   ExecCommandResult( AqlException ):
-  __slots__ = ('returncode', 'out', 'exception')
-  
-  def   __init__( self, cmd, exception = None, returncode = None, out = None, err = None ):
+class   ExecCommandException( AqlException ):
+  __slots__ = ('exception',)
+
+  def   __init__( self, cmd, exception ):
     
     msg = ' '.join( toSequence(cmd) )
-    
-    if exception:
-      msg += '\n%s' % (exception,)
-    
-    else:
-      if not out:
-        out = str()
-      
-      if err:
-        out += '\n' + err
-      
-      if out:
-        msg += '\n' + out
-      
-      if returncode:
-        msg += "\nExit status: %s" % (returncode,)
+    msg += '\n%s' % (exception,)
     
     self.exception = exception
-    self.returncode = returncode
-    self.out = out
     
     super(type(self), self).__init__( msg )
   
   def   failed( self ):
-    return (self.returncode != 0) or self.exception
+    return True
   
   def   __bool__( self ):
     return self.failed()
   
   def   __nonzero__( self ):
     return self.failed()
+
+  
+class   ExecCommandResult( AqlException ):
+  __slots__ = ('cmd', 'status', 'output' )
+  
+  def   __init__( self, cmd, status = None, stdout = None, stderr = None ):
+    
+    self.cmd = tuple(toSequence(cmd))
+    self.status = status
+    
+    if not stdout:
+      stdout = str()
+    
+    if stderr:
+      stdout += '\n' + stderr
+    
+    self.output = stdout
+    
+    super(type(self), self).__init__()
+  
+  #//-------------------------------------------------------//
+  
+  def   __str__(self):
+    msg = ' '.join( self.cmd )
+    
+    if self.output:
+      msg += '\n' + self.output
+    
+    if self.status:
+      msg += "\nExit status: %s" % (self.status,)
+    
+    return msg
+  
+  #//-------------------------------------------------------//
+  
+  def   failed( self ):
+    return self.status != 0
+  
+  def   __bool__( self ):
+    return self.failed()
+  
+  def   __nonzero__( self ):
+    return self.failed()
+
 
 try:
   _MAX_CMD_LENGTH = os.sysconf('SC_ARG_MAX')
@@ -479,6 +506,8 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
       cmd = [cmd[0], file_flag + cmd_file.name]
   
   try:
+    
+    exception = None
     try:
       # if __debug__:
       #   print("Execute command: %s" % (cmd, ) )
@@ -487,12 +516,15 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
       (stdoutdata, stderrdata) = p.communicate()
       returncode = p.returncode
     except Exception as ex:
-      raise ExecCommandResult( cmd, exception = ex )
+      exception = ex
+    
+    if exception:
+      raise ExecCommandException( cmd, exception = exception )
     
     stdoutdata = _decodeData( stdoutdata )
     stderrdata = _decodeData( stderrdata )
     
-    return ExecCommandResult( cmd, returncode = returncode, out = stdoutdata, err = stderrdata )
+    return ExecCommandResult( cmd, status = returncode, stdout = stdoutdata, stderr = stderrdata )
     
   finally:
     if cmd_file is not None:

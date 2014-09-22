@@ -10,10 +10,14 @@ from cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, Comm
 #// BUILDERS IMPLEMENTATION
 #//===========================================================================//
 
-def   _parseOutput( source_paths, output, exclude_dirs ):
+#(3) : fatal error C1189:
+#(3) : fatal error C1189: #error :  TEST ERROR
+def   _parseOutput( source_paths, output, exclude_dirs,
+                    _err_re = re.compile( r".+\s+:\s+(fatal\s)?error\s+[0-9A-Z]+:") ):
 
   include_prefix = "Note: including file:"
-  results = []
+  sources_deps = []
+  sources_errors = []
 
   names = iter(map( os.path.basename, source_paths ))
   sources = iter( source_paths )
@@ -23,15 +27,18 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
   current_file = None
   filtered_output = []
   current_deps = []
+  current_file_failed = False
 
   for line in output.split('\n'):
     if line == next_name:
       if current_file is not None:
-        results.append( current_deps )
+        sources_deps.append( current_deps )
+        sources_errors.append( current_file_failed )
       
       current_file = next( sources, None )
       current_deps = []
-
+      current_file_failed = False
+      
       next_name = next( names, None )
 
     elif line.startswith( include_prefix ):
@@ -41,12 +48,16 @@ def   _parseOutput( source_paths, output, exclude_dirs ):
         current_deps.append( dep_file )
     
     else:
+      if _err_re.match( line ):
+        current_file_failed = True
+      
       filtered_output.append( line )
   
   output = '\n'.join( filtered_output )
-  results.append( current_deps )
+  sources_deps.append( current_deps )
+  sources_errors.append( current_file_failed )
   
-  return results, output
+  return sources_deps, sources_errors, output
 
 #//===========================================================================//
 
@@ -69,13 +80,13 @@ class MsvcCompiler (CommonCppCompiler):
     cmd += [ '/Fo%s' % obj_file ]
     cmd += sources
     
-    try:
-      out = self.execCmd( cmd, cwd, file_flag = '@' )
-    except aql.ExecCommandResult as ex:
-      deps, out = _parseOutput( sources, ex.out, self.ext_cpppath )
-      raise aql.ExecCommandResult( cmd, returncode = ex.returncode, out = out )
+    result = self.execCmdResult( cmd, cwd, file_flag = '@' )
     
-    deps, out = _parseOutput( sources, out, self.ext_cpppath )
+    deps, errors, out = _parseOutput( sources, result.output, self.ext_cpppath )
+    
+    if result.failed():
+      result.output = out
+      raise result
     
     node.addTargets( obj_file, implicit_deps = deps[0] )
     
@@ -88,11 +99,22 @@ class MsvcCompiler (CommonCppCompiler):
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
-    
+  def   _setTargets( self, node, sources, obj_files, output ):
     source_values = node.getSourceValues()
     
-    sources = tuple( src.get() for src in source_values )
+    deps, errors, out = _parseOutput( sources, output, self.ext_cpppath )
+    
+    for src_value, obj_file, deps, error in zip( source_values, obj_files, deps, errors ):
+      if not error:
+        node.addSourceTargets( src_value, obj_file, implicit_deps = deps )
+    
+    return out
+  
+  #//-------------------------------------------------------//
+  
+  def   buildBatch( self, node ):
+    
+    sources = node.getSources()
     
     obj_files = self.getFileBuildPaths( sources, ext = self.ext )
     
@@ -101,17 +123,14 @@ class MsvcCompiler (CommonCppCompiler):
     cmd = list(self.cmd)
     cmd += sources
     
-    try:
-      out = self.execCmd( cmd, cwd, file_flag = '@' )
-    except aql.ExecCommandResult as ex:
-      deps, out = _parseOutput( sources, ex.out, self.ext_cpppath )
-      raise aql.ExecCommandResult( cmd, returncode = ex.returncode, out = out )
+    result = self.execCmdResult( cmd, cwd, file_flag = '@' )
     
-    deps, out = _parseOutput( sources, out, self.ext_cpppath )
+    out = self._setTargets( node, sources, obj_files, result.output )
     
-    for src_value, obj_file, deps in zip( source_values, obj_files, deps ):
-      node.addSourceTargets( src_value, obj_file, implicit_deps = deps )
-
+    if result.failed():
+      result.output = out
+      raise result
+    
     return out
 
 #//===========================================================================//
@@ -236,7 +255,7 @@ def _getMsvcSpecs( cl ):
 
   specs_re = re.compile( r'Compiler Version (?P<version>[0-9.]+) for (?P<machine>[a-zA-Z0-9_-]+)', re.MULTILINE )
 
-  out = result.out
+  out = result.output
   
   match = specs_re.search( out )
   if match:

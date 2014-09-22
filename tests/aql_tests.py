@@ -1,6 +1,7 @@
 import sys
 import os.path
 import pickle
+import shutil
 
 _search_paths = [ '.', 'tests_utils', 'tools' ]
 sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', p) ), _search_paths )
@@ -74,18 +75,21 @@ END
 
 class AqlTestCase( TestCaseBase ):
   
-  def   buildPrj( self, prj, num_built_nodes, verbose = True, jobs = 4 ):
+  def   buildPrj( self, prj, num_built_nodes, num_failed_nodes = 0, verbose = True, jobs = 4 ):
     self.built_nodes = 0
 
-    if not prj.Build( verbose = verbose, jobs = jobs ):
-      prj.build_manager.printFails()
-      assert False, "Build failed"
-
-    self.assertEqual( self.built_nodes, num_built_nodes )
+    ok = prj.Build( verbose = verbose, jobs = jobs )
+    if not ok:
+      if num_failed_nodes == 0:
+        prj.build_manager.printFails()
+        assert False, "Build failed"
+    
+    self.assertEqual( prj.build_manager.failsCount(), num_failed_nodes )
+    self.assertEqual( self.built_nodes,               num_built_nodes )
   
   #//===========================================================================//
   
-  def _testSaveLoad( self, value ):
+  def   _testSaveLoad( self, value ):
     data = pickle.dumps( ( value, ), protocol = pickle.HIGHEST_PROTOCOL )
     
     loaded_values = pickle.loads( data )
@@ -151,8 +155,18 @@ class AqlTestCase( TestCaseBase ):
   
   @staticmethod
   def   touchCppFile( cpp_file ):
+    AqlTestCase.updateCppFile( cpp_file, "\n// touch file\n" )
+  
+  @staticmethod
+  def   addErrorToCppFile( cpp_file ):
+    AqlTestCase.updateCppFile( cpp_file, "\n#error TEST ERROR\n" )
+  
+  #//===========================================================================//
+  
+  @staticmethod
+  def   updateCppFile( cpp_file, new_line ):
     with open( cpp_file, 'a' ) as f:
-      f.write("\n// end of file\n")
+      f.write( new_line )
     
     FileChecksumValue( cpp_file, use_cache = False )
     FileTimestampValue( cpp_file, use_cache = False )
@@ -184,6 +198,12 @@ class AqlTestCase( TestCaseBase ):
         os.remove( f )
       except (OSError, IOError):
         pass
+  
+  #//===========================================================================//
+  
+  @staticmethod
+  def   copyFile( src_file, dst_file ):
+    shutil.copy( src_file, dst_file )
   
   #//===========================================================================//
   
