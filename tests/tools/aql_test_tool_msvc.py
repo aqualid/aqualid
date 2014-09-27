@@ -114,8 +114,8 @@ class TestToolMsvc( AqlTestCase ):
       
       self.touchCppFiles( hdr_files[:group_size] )
       
-      cpp.Compile( src_files, batch = True )
-      self.buildPrj( prj, 1 )
+      cpp.Compile( src_files, batch = True, batch_groups = num_groups)
+      self.buildPrj( prj, num_groups )
   
   #//-------------------------------------------------------//
   

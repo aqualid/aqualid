@@ -34,6 +34,11 @@ class   ErrorNodeDependencyInvalid( AqlException ):
   def   __init__( self, dep ):
     msg = "Invalid node dependency: %s" % (dep,)
     super(ErrorNodeDependencyInvalid, self).__init__( msg )
+
+class   ErrorNodeSplitUnknownSource( AqlException ):
+  def   __init__( self, node, value ):
+    msg = "Node '%s' can't be split to unknown source value: %s" % (node.getBuildStr( brief = False ), value )
+    super(ErrorNodeSplitUnknownSource, self).__init__( msg )
     
 class   ErrorNoTargets( AttributeError ):
   def   __init__( self, node ):
@@ -358,16 +363,34 @@ class Node (object):
   
   #//=======================================================//
   
-  def   copy( self, sources, builder = None ):
+  def   _split( self, src_values ):
+    
     other = object.__new__( self.__class__ )
     
-    other.builder       = builder if builder else self.builder
-    other.options       = self.options
-    other.builder_data  = None
-    other.cwd           = self.cwd
-    other.sources       = tuple( toSequence( sources ) )
-    other.dep_nodes     = self.dep_nodes
-    other.dep_values    = self.dep_values
+    other.builder         = self.builder
+    other.options         = self.options
+    other.builder_data    = None
+    other.cwd             = self.cwd
+    other.sources         = tuple()
+    other.source_values   = src_values
+    other.dep_nodes       = self.dep_nodes
+    other.dep_values      = self.dep_values
+    
+    return other
+  
+  #//=======================================================//
+  
+  def   split( self, src_values ):
+    
+    src_values = tuple( toSequence( src_values ) )
+    
+    other = self._split( src_values )
+    
+    if __debug__:
+      self_source_values = set(self.source_values)
+      for src_value in src_values:
+        if src_value not in self_source_values:
+          raise ErrorNodeSplitUnknownSource( self, src_value )
     
     return other
   
@@ -527,7 +550,8 @@ class Node (object):
         else:
           value = makeValue( src, use_cache = True )
           values.append( value )
-
+    
+    self.sources = tuple()
     values = tuple(values)
     self.source_values = values
     return values
@@ -739,7 +763,11 @@ class Node (object):
   
   def   printSources(self):
     result = []
-    for src in self.sources:
+    sources = self.sources
+    if not sources:
+      sources = self.source_values
+    
+    for src in sources:
       if isinstance(src, ValueBase):
         result.append( src.get() )
       
@@ -809,6 +837,26 @@ class BatchNode (Node):
 
     return super(BatchNode,self).__getattr__( attr )
 
+  #//=======================================================//
+  
+  def   split( self, src_values ):
+    src_values = tuple( toSequence( src_values ) )
+    
+    other = self._split( src_values )
+    
+    other.changed_source_values = src_values
+    other_node_values = {}
+    other.node_values = other_node_values
+    
+    node_values = self.node_values
+    for src_value in src_values:
+      try:
+        other_node_values[ src_value ] = node_values[ src_value ]
+      except KeyError:
+        raise ErrorNodeSplitUnknownSource( self, src_value )
+    
+    return other
+  
   #//=======================================================//
 
   def   _setNodeValues( self ):
@@ -900,13 +948,13 @@ class BatchNode (Node):
   
   def   build(self):
     output = self.builder.buildBatch( self )
-    self.__populateTargets()
+    self._populateTargets()
     
     return output
   
   #//=======================================================//
   
-  def   __populateTargets( self ):
+  def   _populateTargets( self ):
     targets   = []
     itargets  = []
     

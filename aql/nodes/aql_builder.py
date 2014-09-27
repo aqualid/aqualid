@@ -286,7 +286,7 @@ class Builder (object):
     if len(source_values) < 2:
       return None
     
-    return tuple( node.copy( src_value )  for src_value in source_values )
+    return tuple( node.split( src_value ) for src_value in source_values )
   
   #//-------------------------------------------------------//
   
@@ -295,7 +295,7 @@ class Builder (object):
     if len(src_groups) < 2:
       return None
     
-    return tuple( node.copy( src_group ) for src_group in src_groups )
+    return tuple( node.split( src_group ) for src_group in src_groups )
   
   #//-------------------------------------------------------//
   

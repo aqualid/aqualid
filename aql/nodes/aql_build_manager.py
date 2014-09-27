@@ -54,10 +54,7 @@ def   eventBuildTargetTwice( value, node1, brief ):
 
 @eventStatus
 def   eventInitialNodes( total_nodes ):
-  if total_nodes == 1:
-    logInfo("Processing 1 node" )
-  else:
-    logInfo("Processing %s nodes" % total_nodes )
+  logInfo( "Processing nodes..." )
 
 #//===========================================================================//
 
@@ -472,6 +469,7 @@ class   _NodeState( object ):
     'check_depends',
     'check_replace',
     'check_split',
+    'check_actual',
     'split_nodes',
   )
   
@@ -480,11 +478,12 @@ class   _NodeState( object ):
     self.check_depends = True
     self.check_replace = True
     self.check_split = True
+    self.check_actual = True
     self.split_nodes = None
   
   def   __str__(self):
-    return "initialized :%s, check_depends: %s, check_replace: %s, check_split: %s, split_nodes: %s" %\
-      (self.initialized, self.check_depends, self.check_replace, self.check_split, self.split_nodes )
+    return "initialized :%s, check_depends: %s, check_replace: %s, check_split: %s, check_actual: %s, split_nodes: %s" %\
+      (self.initialized, self.check_depends, self.check_replace, self.check_split, self.check_actual, self.split_nodes )
   
 #//===========================================================================//
 
@@ -550,10 +549,8 @@ class _NodesBuilder (object):
   
   def _checkPrebuildReplace( self, node ):
     
-    node_sources = node.getSourceNodes()
     if node.buildReplace():
-      new_node_sources = set(node.getSourceNodes())
-      new_node_sources.difference_update( node_sources )
+      new_node_sources = node.getSourceNodes()
       if new_node_sources:
         self.build_manager.rebuildNode( node, new_node_sources )
         return True
@@ -564,13 +561,24 @@ class _NodesBuilder (object):
   
   def   _checkPrebuildSplit( self, node, state ):
     
+    build_manager = self.build_manager
+    
     if state.check_split:
       state.check_split = False
       
-      # if node.isBatch():
-      #   # Check for changed sources of BatchNode
-      #   vfile = self.vfiles[ node.builder ]
-      #   actual = self.build_manager.isActualNode( node, vfile )
+      check_actual = True
+      
+      if node.isBatch() and state.check_actual:
+        # Check for changed sources of BatchNode
+        vfile = self.vfiles[ node.builder ]
+        actual = build_manager.isActualNode( node, vfile )
+        
+        if actual:
+          self._removeNodeState( node )
+          build_manager.actualNode( node )
+          return True
+        
+        check_actual = False
       
       split_nodes = node.buildSplit()
       if split_nodes:
@@ -580,29 +588,32 @@ class _NodesBuilder (object):
           split_state.check_split = False
           split_state.check_depends = False
           split_state.check_replace = False
+          split_state.check_replace = check_actual
           split_state.initialized = split_node.builder is node.builder
         
         self.build_manager.rebuildNode( node, split_nodes )
         return True
   
     elif state.split_nodes is not None:
-      targets = []
-      for split_node in state.split_nodes:
-        targets += split_node.getTargetValues()
-      
-      node.target_values = targets
-      
+      if node.isBatch():
+        node._populateTargets()
+      else:
+        targets = []
+        for split_node in state.split_nodes:
+          targets += split_node.getTargetValues()
+        
+        node.target_values = targets
+        
       self._removeNodeState( node )
       self.build_manager.actualNode( node )
+      
       return True
     
     return False
   
   #//-------------------------------------------------------//
   
-  def   _prebuild( self, node ):
-    
-    state = self._getNodeState( node )
+  def   _prebuild( self, node, state ):
     
     if not state.initialized:
       node.initiate()
@@ -635,31 +646,35 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      if self._prebuild( node ):
+      node_state = self._getNodeState( node )
+      
+      if self._prebuild( node, node_state ):
         changed = True
         continue
       
-      vfile = vfiles[ node.builder ]
-      actual = build_manager.isActualNode( node, vfile )
+      if node_state.check_actual:
+        vfile = vfiles[ node.builder ]
+        actual = build_manager.isActualNode( node, vfile )
       
-      if actual:
-        self._removeNodeState( node )
-        build_manager.actualNode( node )
-        changed = True
-      else:
-        conflict_nodes = build_manager.getConflictingNodes( node )
-        if conflict_nodes:
-          build_manager.rebuildNode( node, conflict_nodes )
+        if actual:
+          self._removeNodeState( node )
+          build_manager.actualNode( node )
+          changed = True
           continue
-        
-        addTask( node, _buildNode, node, brief )
-        build_manager.addBuildingNode( node )
-        
-        added_tasks += 1
-        
-        if added_tasks == tasks_check_period:
-          changed = self._getFinishedNodes( block = False ) or changed
-          added_tasks = 0
+          
+      conflict_nodes = build_manager.getConflictingNodes( node )
+      if conflict_nodes:
+        build_manager.rebuildNode( node, conflict_nodes )
+        continue
+      
+      addTask( node, _buildNode, node, brief )
+      build_manager.addBuildingNode( node )
+      
+      added_tasks += 1
+      
+      if added_tasks == tasks_check_period:
+        changed = self._getFinishedNodes( block = False ) or changed
+        added_tasks = 0
     
     return self._getFinishedNodes( block = not changed ) or changed
   
@@ -701,7 +716,11 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      if self._prebuild( node ):
+      node_state = self._getNodeState( node )
+      
+      node_state.check_actual = False
+      
+      if self._prebuild( node, node_state ):
         continue
       
       vfile = vfiles[ node.builder ]
@@ -717,7 +736,10 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      if self._prebuild( node ):
+      node_state = self._getNodeState( node )
+      node_state.check_actual = False
+      
+      if self._prebuild( node, node_state ):
         continue
       
       vfile = vfiles[ node.builder ]
@@ -948,7 +970,7 @@ class BuildManager (object):
     
     with _NodesBuilder( self, jobs, keep_going ) as nodes_builder:
       
-      # eventInitialNodes( len(nodes_tree) )
+      eventInitialNodes( len(nodes_tree) )
       
       while True:
         tails = self.getTailNodes()
