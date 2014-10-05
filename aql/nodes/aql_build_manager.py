@@ -647,7 +647,7 @@ class _NodesBuilder (object):
       if node_state.check_actual:
         vfile = vfiles[ node.builder ]
         actual = build_manager.isActualNode( node, vfile )
-      
+        
         if actual:
           self._removeNodeState( node )
           build_manager.actualNode( node )

@@ -85,7 +85,7 @@ class   ErrorProjectBuilderMethodInvalidOptions( AqlException ):
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options',
-               'verbose', 'jobs', 'keep_going',
+               'verbose', 'no_output', 'jobs', 'keep_going',
                'build_always', 'clean', 'status',
                'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
   )
@@ -115,11 +115,11 @@ class ProjectConfig( object ):
       CLIOption( "-k", "--keep-going",        "keep_going",       bool,       False,        "Keep going when some targets can't be built." ),
       CLIOption( "-j", "--jobs",              "jobs",             int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-v", "--verbose",           "verbose",          bool,       False,        "Verbose mode." ),
-      CLIOption( "-s", "--no-output",         "no_output",        bool,       False,        "Silent mode." ),
+      CLIOption( "-s", "--no-output",         "no_output",        bool,       False,        "Don't print output streams of builder's commands." ),
       CLIOption( None, "--debug-memory",      "debug_memory",     bool,       False,        "Display memory usage." ),
       CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file." ),
-      CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reason why targets are being rebuilt" ),
-      CLIOption( None, "--debug-backtrace",   "debug_backtrace",  bool,       False,        "Show call stack back traces of errors." ),
+      CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reasons why targets are being rebuilt" ),
+      CLIOption( None, "--debug-backtrace",   "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -152,6 +152,7 @@ class ProjectConfig( object ):
     self.makefile         = cli_config.makefile
     self.targets          = cli_config.targets
     self.verbose          = cli_config.verbose
+    self.no_output        = cli_config.no_output
     self.keep_going       = cli_config.keep_going
     self.build_always     = cli_config.build_always
     self.clean            = cli_config.clean

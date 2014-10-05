@@ -124,14 +124,17 @@ def   _main( prj_cfg ):
       
       with elapsed:
         if prj_cfg.status:
-          success = prj.Status()
+          success = prj.Status( explain = prj_cfg.debug_explain )
           prj.build_manager.printStatusState()
           
         elif prj_cfg.clean:
           prj.Clean()
           success = True
         else:
-          success = prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, build_always = prj_cfg.build_always )
+          success = prj.Build( jobs         = prj_cfg.jobs,
+                               keep_going   = prj_cfg.keep_going,
+                               build_always = prj_cfg.build_always,
+                               explain      = prj_cfg.debug_explain )
           if not success:
             prj.build_manager.printFails()
       

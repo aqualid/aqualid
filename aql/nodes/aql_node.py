@@ -123,7 +123,7 @@ class NodeStaleReason (object):
   def   setNew( self, NEW = NEW ):
     self._set( NEW )
       
-  def   setSigChanged( self, SIGNATURE_CHANGED = SIGNATURE_CHANGED ):
+  def   setSignatureChanged( self, SIGNATURE_CHANGED = SIGNATURE_CHANGED ):
     self._set( SIGNATURE_CHANGED )
   
   def   setImplicitDepChanged( self, value = None, IMPLICIT_DEP_CHANGED = IMPLICIT_DEP_CHANGED ):

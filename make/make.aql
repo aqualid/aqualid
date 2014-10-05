@@ -43,6 +43,8 @@ if __name__ == '__main__':
 
 class AqlPreprocess (aql.FileBuilder):
   
+  split = aql.FileBuilder.splitSingle
+  
   def   getTraceTargets( self, node, brief ):
     return None
   
@@ -234,7 +236,7 @@ class AqlInstall (aql.Builder):
 class AqlBuildTool( aql.Tool ):
   
   def   Preprocess( self, options ):
-    return aql.BuildSingle( AqlPreprocess( options ) )
+    return AqlPreprocess( options )
   
   def   Link( self, options, target ):
     return AqlLink( options, target )
