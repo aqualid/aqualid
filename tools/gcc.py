@@ -54,8 +54,6 @@ class GccCompiler (CommonCppCompiler):
     with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
       
       cmd = list(self.cmd)
-      if self.shared:
-        cmd += ['-fPIC']
       
       cmd += ['-c', '-o', obj_file, '-MMD', '-MF', dep_file]
       cmd += sources
@@ -92,7 +90,7 @@ class GccResCompiler (CommonResCompiler):
 
 class GccCompilerMaker (object):
   def   makeCompiler( self, options ):
-    return GccCompiler( options, shared = self.shared )
+    return GccCompiler( options )
   
   def   makeResCompiler( self, options ):
     return GccResCompiler( options )
@@ -270,7 +268,6 @@ class ToolGccCommon( ToolCommonCpp ):
     
     options.objsuffix     = '.o'
     options.ressuffix     = options.objsuffix
-    options.shobjsuffix   = '.os'
     options.libprefix     = 'lib'
     options.libsuffix     = '.a'
     options.shlibprefix   = 'lib'
@@ -323,7 +320,7 @@ class ToolGccCommon( ToolCommonCpp ):
     if_profiling_true.ccflags += '-pg'
     if_profiling_true.linkflags += '-pg'
     
-    if_cxxstd = options.If().cxxstd
+    if_cxxstd = if_.cxxstd
     
     if_cxx11 = if_cxxstd.eq('c++11')
     if_cxx14 = if_cxxstd.eq('c++14')
@@ -332,11 +329,13 @@ class ToolGccCommon( ToolCommonCpp ):
     if_cxx11.cc_ver.ge("4.7").cxxflags += '-std=c++11'
     if_cxx11.cc_ver.ge("4.3").cc_ver.le("4.6").cxxflags += '-std=c++0x'
     if_cxx14.cc_ver.ge("4.8").cxxflags += '-std=c++1y'
+    
+    if_.pic.isTrue().target_os.notIn(['windows', 'cygwin'] ).ccflags += '-fPIC'
   
   #//-------------------------------------------------------//
   
-  def   Compile( self, options, shared = False, batch = False ):
-    return GccCompiler( options, shared = shared ).setBatch( batch )
+  def   Compile( self, options, batch = False ):
+    return GccCompiler( options ).setBatch( batch )
   
   def   CompileResource( self, options ):
     return GccResCompiler( options )
@@ -344,7 +343,7 @@ class ToolGccCommon( ToolCommonCpp ):
   def   LinkStaticLibrary( self, options, target, batch = False ):
     return GccArchiver( options, target, batch )
   
-  def   LinkSharedLibrary( self, options, target, def_file = None, batch = False ):
+  def   LinkSharedLibrary( self, options, target, batch = False ):
     return GccLinker( options, target, shared = True, batch = batch )
   
   def   LinkProgram( self, options, target, batch = False ):

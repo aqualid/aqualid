@@ -41,13 +41,13 @@ class TestTool( Tool ):
 class TestProject( AqlTestCase ):
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuilding( self, node, brief ):
+  def   eventNodeBuilding( self, settings, node ):
     self.building_started += 1
   
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
+  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//

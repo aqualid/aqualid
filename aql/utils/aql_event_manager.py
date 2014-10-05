@@ -20,7 +20,7 @@
 __all__ = (
   'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
   'eventWarning',  'eventStatus',  'eventDebug', 'eventError',
-  'eventHandler', 'disableEvents', 'enableEvents',
+  'eventHandler', 'disableEvents', 'enableEvents', 'EventSettings', 'setEventSettings',
   'disableDefaultHandlers', 'enableDefaultHandlers', 'addUserHandler', 'removeUserHandler',
   'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
 )
@@ -34,12 +34,11 @@ from .aql_utils import equalFunctionArgs
 
 #//===========================================================================//
 
-EVENT_ERROR = 0
-EVENT_WARNING = 1
-EVENT_STATUS = 2
-EVENT_DEBUG = 3
-
-EVENT_ALL = ( EVENT_DEBUG, EVENT_STATUS, EVENT_WARNING, EVENT_ERROR )
+EVENT_ERROR, \
+EVENT_WARNING, \
+EVENT_STATUS, \
+EVENT_DEBUG, \
+  = EVENT_ALL = tuple(range(4))
 
 #//===========================================================================//
 
@@ -64,6 +63,18 @@ class   ErrorEventHandlerUnknownEvent ( AqlException ):
 
 #//===========================================================================//
 
+class EventSettings( object ):
+  __slots__ = (
+    'brief',
+    'with_output'
+  )
+  
+  def   __init__(self, brief = True, with_output = True ):
+    self.brief = brief
+    self.with_output = with_output
+
+#//===========================================================================//
+
 class EventManager( Singleton ):
   
   _instance = []
@@ -74,15 +85,17 @@ class EventManager( Singleton ):
     'user_handlers',
     'ignored_events',
     'disable_defaults',
+    'settings',
   )
   
   #//-------------------------------------------------------//
 
-  def   __init__(self ):
+  def   __init__( self ):
     self.default_handlers = {}
     self.user_handlers = {}
     self.ignored_events = set()
     self.disable_defaults = False
+    self.settings = EventSettings()
   
   #//-------------------------------------------------------//
   
@@ -137,6 +150,7 @@ class EventManager( Singleton ):
     
     user_handlers = self.user_handlers.get( event, [] )
     
+    args = ( self.settings,) + args
     for handler in itertools.chain( user_handlers, default_handlers ):
       handler( *args, **kw )
   
@@ -172,6 +186,11 @@ class EventManager( Singleton ):
   def   enableDefaultHandlers( self, enable ):
     self.disable_defaults = not enable
   
+  #//-------------------------------------------------------//
+  
+  def   setSettings(self, settings ):
+    self.settings = settings
+    
 #//===========================================================================//
 
 def   _eventImpl( handler, importance_level, event = None ):
@@ -207,6 +226,11 @@ def   eventHandler( event = None ):
     return handler
   
   return _eventHandlerImpl
+
+#//===========================================================================//
+
+def   setEventSettings( settings ):
+  EventManager.instance().setSettings( settings )
 
 #//===========================================================================//
 

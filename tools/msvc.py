@@ -64,7 +64,7 @@ def   _parseOutput( source_paths, output, exclude_dirs,
 class MsvcCompiler (CommonCppCompiler):
   
   def   __init__(self, options ):
-    super(MsvcCompiler, self).__init__( options, shared = False )
+    super(MsvcCompiler, self).__init__( options )
     self.cmd += [ '/nologo', '/c', '/showIncludes' ]
   
   #//-------------------------------------------------------//
@@ -390,7 +390,7 @@ class ToolMsvcCommon( ToolCommonCpp ):
   
   #//-------------------------------------------------------//
   
-  def   Compile( self, options, shared = False, batch = False ):
+  def   Compile( self, options, batch = False ):
     return MsvcCompiler( options ).setBatch( batch )
   
   def   CompileResource( self, options ):

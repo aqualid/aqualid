@@ -85,8 +85,10 @@ class   ErrorProjectBuilderMethodInvalidOptions( AqlException ):
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options',
-               'verbose', 'log_level', 'jobs', 'keep_going',
-               'build_always', 'profile', 'memory', 'clean', 'status' )
+               'verbose', 'jobs', 'keep_going',
+               'build_always', 'clean', 'status',
+               'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
+  )
   
   #//-------------------------------------------------------//
   
@@ -95,27 +97,29 @@ class ProjectConfig( object ):
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
     Paths = SplitListType( ValueListType( UniqueList, FilePath ), ', ' )
+    Strings = SplitListType( ValueListType( UniqueList, str ), ', ' )
     
     CLI_OPTIONS = (
       
-      CLIOption( "-C", "--directory",       "directory",      FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
-      CLIOption( "-f", "--makefile",        "makefile",       FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
-      CLIOption( "-l", "--list-options",    "list_options",   bool,       False,        "List all available options and exit." ),
-      CLIOption( "-c", "--config",          "config",         FilePath,   None,         "The configuration file used to read CLI arguments." ),
-      CLIOption( "-B", "--always",          "build_always",   bool,       False,        "Unconditionally build all targets." ),
-      CLIOption( "-R", "--clean",           "clean",          bool,       False,        "Cleans targets." ),
-      CLIOption( "-n", "--status",          "status",         bool,       False,        "Print status of targets." ),
-      CLIOption( "-u", "--up",              "search_up",      bool,       False,        "Search up directory tree for a make file." ),
-      
-      CLIOption( "-b", "--build-directory", "build_dir",      FilePath,   'output',     "Build output path.", 'FILE PATH'),
-      CLIOption( "-I", "--tools-path",      "tools_path",     Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
-      CLIOption( "-k", "--keep-going",      "keep_going",     bool,       False,        "Keep going when some targets can't be built." ),
-      CLIOption( "-j", "--jobs",            "jobs",           int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-v", "--verbose",         "verbose",        bool,       False,        "Verbose mode." ),
-      CLIOption( "-s", "--silent",          "silent",         bool,       False,        "Silent mode." ),
-      CLIOption( "-d", "--debug",           "debug",          bool,       False,        "Debug logs." ),
-      CLIOption( "-m", "--memory",          "memory",         bool,       False,        "Display memory usage." ),
-      CLIOption( "-p", "--profile",         "profile",        FilePath,   None,         "Run under profiler and save the results in the specified file." ),
+      CLIOption( "-C", "--directory",         "directory",        FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
+      CLIOption( "-f", "--makefile",          "makefile",         FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
+      CLIOption( "-l", "--list-options",      "list_options",     bool,       False,        "List all available options and exit." ),
+      CLIOption( "-c", "--config",            "config",           FilePath,   None,         "The configuration file used to read CLI arguments." ),
+      CLIOption( "-B", "--always",            "build_always",     bool,       False,        "Unconditionally build all targets." ),
+      CLIOption( "-R", "--clean",             "clean",            bool,       False,        "Cleans targets." ),
+      CLIOption( "-n", "--status",            "status",           bool,       False,        "Print status of targets." ),
+      CLIOption( "-u", "--up",                "search_up",        bool,       False,        "Search up directory tree for a make file." ),
+                                                                  
+      CLIOption( "-b", "--build-directory",   "build_dir",        FilePath,   'output',     "Build output path.", 'FILE PATH'),
+      CLIOption( "-I", "--tools-path",        "tools_path",       Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
+      CLIOption( "-k", "--keep-going",        "keep_going",       bool,       False,        "Keep going when some targets can't be built." ),
+      CLIOption( "-j", "--jobs",              "jobs",             int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-v", "--verbose",           "verbose",          bool,       False,        "Verbose mode." ),
+      CLIOption( "-s", "--no-output",         "no_output",        bool,       False,        "Silent mode." ),
+      CLIOption( None, "--debug-memory",      "debug_memory",     bool,       False,        "Display memory usage." ),
+      CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file." ),
+      CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reason why targets are being rebuilt" ),
+      CLIOption( None, "--debug-backtrace",   "debug_backtrace",  bool,       False,        "Show call stack back traces of errors." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -143,27 +147,20 @@ class ProjectConfig( object ):
     
     #//-------------------------------------------------------//
     
-    log_level = 1
-    if cli_config.debug:
-      log_level = 2
-    if cli_config.silent:
-      log_level = 0
-    
-    #//-------------------------------------------------------//
-    
-    self.options      = options
-    self.directory    = cli_config.directory.abspath()
-    self.makefile     = cli_config.makefile
-    self.targets      = cli_config.targets
-    self.verbose      = cli_config.verbose
-    self.keep_going   = cli_config.keep_going
-    self.build_always = cli_config.build_always
-    self.clean        = cli_config.clean
-    self.status       = cli_config.status
-    self.jobs         = cli_config.jobs
-    self.profile      = cli_config.profile
-    self.memory       = cli_config.memory
-    self.log_level    = log_level
+    self.options          = options
+    self.directory        = cli_config.directory.abspath()
+    self.makefile         = cli_config.makefile
+    self.targets          = cli_config.targets
+    self.verbose          = cli_config.verbose
+    self.keep_going       = cli_config.keep_going
+    self.build_always     = cli_config.build_always
+    self.clean            = cli_config.clean
+    self.status           = cli_config.status
+    self.jobs             = cli_config.jobs
+    self.debug_profile    = cli_config.debug_profile
+    self.debug_memory     = cli_config.debug_memory
+    self.debug_explain    = cli_config.debug_explain
+    self.debug_backtrace  = cli_config.debug_backtrace
 
 #//===========================================================================//
 
@@ -550,9 +547,7 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   Build( self, jobs = None, keep_going = False, verbose = False, build_always = False ):
-    brief = not verbose
-    
+  def   Build( self, jobs = None, keep_going = False, build_always = False, explain = False ):
     if not jobs:
       jobs = 0
     else:
@@ -573,24 +568,22 @@ class Project( object ):
     build_nodes = self._getBuildNodes()
     
     is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes,
-                                      brief = brief, build_always = build_always )
+                                      build_always = build_always, explain = explain )
     return is_ok
   
   #//=======================================================//
   
-  def Clean(self, verbose = False ):
-    brief = not verbose
+  def Clean( self ):
     build_nodes = self._getBuildNodes()
     
-    self.build_manager.clear( nodes = build_nodes, brief = brief )
+    self.build_manager.clear( nodes = build_nodes )
   
   #//=======================================================//
   
-  def Status(self, verbose = False ):
-    brief = not verbose
+  def Status( self, explain = False ):
     build_nodes = self._getBuildNodes()
     
-    is_actual = self.build_manager.status( nodes = build_nodes, brief = brief )
+    is_actual = self.build_manager.status( nodes = build_nodes, explain = explain )
     return is_actual
   
   #//=======================================================//

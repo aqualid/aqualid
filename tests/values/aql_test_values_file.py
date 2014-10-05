@@ -33,37 +33,35 @@ class TestValuesFile( AqlTestCase ):
         
         #//-------------------------------------------------------//
         
-        vfile.addValues( values ); vfile.selfTest()
-        value_keys = vfile.getKeys( values )
+        value_keys = vfile.addValues( values ); vfile.selfTest()
         s_values = vfile.findValues( values ); vfile.selfTest()
-        dep_values = vfile.getValues( value_keys ); vfile.selfTest()
+        dep_values = vfile.getValuesByKeys( value_keys ); vfile.selfTest()
         
         self.assertSequenceEqual( s_values, dep_values )
         
         #//-------------------------------------------------------//
         
-        vfile.addValue( value1 ); vfile.selfTest()
-        value_keys = vfile.getKeys( [value1] )
+        value1_key = vfile.addValue( value1 ); vfile.selfTest()
         
-        s_dep_value = vfile.getValues( value_keys )[0]; vfile.selfTest()
+        s_dep_value = vfile.getValueByKey( value1_key ); vfile.selfTest()
         self.assertEqual( value1, s_dep_value )
         
         value1 = SimpleValue( "abc", name = value1.name )
         
         vfile.addValue( value1 ); vfile.selfTest()
         
-        s_dep_value = vfile.getValues( value_keys ); vfile.selfTest()
-        self.assertIsNone( s_dep_value )
+        s_dep_value = vfile.getValuesByKeys( value_keys ); vfile.selfTest()
+        self.assertIsNone( s_dep_value[0] )
 
   #//===========================================================================//
 
-  def test_value_file_2(self):
+  def test_values_file_2(self):
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp )
       try:
         vfile.selfTest()
         
-        self.assertSequenceEqual( vfile.getValues( [] ), [] )
+        self.assertSequenceEqual( vfile.findValues( [] ), [] )
         
         value1 = SimpleValue( "http://aql.org/download",  name = "target_url1" )
         value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
@@ -81,13 +79,19 @@ class TestValuesFile( AqlTestCase ):
         
         all_values = dep_values_4
         
-        vfile.addValues( all_values ); vfile.selfTest()
+        all_keys = vfile.addValues( all_values ); vfile.selfTest()
         self.assertSequenceEqual( vfile.findValues( all_values ), all_values )
         
-        dep_keys_1 = vfile.getKeys( dep_values_1 )
-        dep_keys_2 = vfile.getKeys( dep_values_2 )
-        dep_keys_3 = vfile.getKeys( dep_values_3 )
-        dep_keys_4 = vfile.getKeys( dep_values_4 )
+        dep_keys_1 = vfile.addValues( dep_values_1 ); vfile.selfTest()
+        dep_keys_2 = vfile.addValues( dep_values_2 ); vfile.selfTest()
+        dep_keys_3 = vfile.addValues( dep_values_3 ); vfile.selfTest()
+        dep_keys_4 = vfile.addValues( dep_values_4 ); vfile.selfTest()
+        
+        self.assertSequenceEqual( dep_keys_1, dep_keys_2[:-1] )
+        self.assertSequenceEqual( dep_keys_2, dep_keys_3[:-1] )
+        self.assertSequenceEqual( dep_keys_3, dep_keys_4[:-1] )
+        
+        self.assertSequenceEqual( all_keys, dep_keys_4 )
         
         vfile.close()
         vfile.open( tmp ); vfile.selfTest()
@@ -95,21 +99,19 @@ class TestValuesFile( AqlTestCase ):
         self.assertSequenceEqual( vfile.findValues( all_values ), all_values )
         vfile.selfTest()
         
-        self.assertSequenceEqual( vfile.getValues( dep_keys_1 ), dep_values_1 )
-        self.assertSequenceEqual( vfile.getValues( dep_keys_2 ), dep_values_2 )
-        self.assertSequenceEqual( vfile.getValues( dep_keys_3 ), dep_values_3 )
-        self.assertSequenceEqual( vfile.getValues( dep_keys_4 ), dep_values_4 )
+        self.assertSequenceEqual( vfile.getValuesByKeys( dep_keys_1 ), dep_values_1 )
+        self.assertSequenceEqual( vfile.getValuesByKeys( dep_keys_2 ), dep_values_2 )
+        self.assertSequenceEqual( vfile.getValuesByKeys( dep_keys_3 ), dep_values_3 )
+        self.assertSequenceEqual( vfile.getValuesByKeys( dep_keys_4 ), dep_values_4 )
         
         value4 = SimpleValue( "http://aql.org/download3/0", name = value4.name )
         
         vfile.addValue( value4 ); vfile.selfTest()
         
-        self.assertSequenceEqual( vfile.getValues( dep_keys_1 ), dep_values_1 )
-        self.assertIsNone( vfile.getValues( dep_keys_2 ) )
-        self.assertIsNone( vfile.getValues( dep_keys_3 ) )
-        self.assertIsNone( vfile.getValues( dep_keys_4 ) )
-        
-        self.assertSequenceEqual( vfile.getValues( [] ), [] )
+        self.assertSequenceEqual( vfile.getValuesByKeys( dep_keys_1 ), dep_values_1 )
+        self.assertIsNone( vfile.getValueByKey( dep_keys_2[-1] ) )
+        self.assertIsNone( vfile.getValuesByKeys( dep_keys_3 )[ len(dep_keys_2) - 1] )
+        self.assertIsNone( vfile.getValuesByKeys( dep_keys_4 )[ len(dep_keys_2) - 1] )
         
       finally:
         vfile.close()
@@ -117,7 +119,7 @@ class TestValuesFile( AqlTestCase ):
 
   #//===========================================================================//
 
-  def test_value_file_same_name(self):
+  def test_values_file_same_name(self):
     with Tempfile() as tmp:
       vfile = ValuesFile( tmp )
       try:

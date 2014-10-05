@@ -23,7 +23,7 @@ import os
 import cProfile
 
 from aql.util_types import AqlException
-from aql.utils import eventStatus, eventError, Chrono, Chdir, memoryUsage, \
+from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, \
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
 
@@ -32,32 +32,32 @@ AQL_VERSION = "0.1"
 #//===========================================================================//
 
 @eventStatus
-def   eventReadingScripts():
+def   eventReadingScripts( settings ):
   logInfo("Reading scripts..." )
 
 @eventStatus
-def   eventReadingScriptsDone( elapsed ):
+def   eventReadingScriptsDone( settings, elapsed ):
   logInfo("Reading scripts finished (%s)" % elapsed)
 
 @eventError
-def   eventAqlError( error ):
+def   eventAqlError( settings, error ):
   logError( error )
 
 #//===========================================================================//
 
 @eventStatus
-def   eventBuilding():
+def   eventBuilding( settings ):
   logInfo("Building targets...")
 
 @eventStatus
-def   eventBuildingDone( success, elapsed ):
+def   eventBuildingDone( settings, success, elapsed ):
   status = "finished" if success else "failed"
   logInfo("Building targets %s (%s)" % (status, elapsed))
 
 #//===========================================================================//
 
 @eventStatus
-def   eventBuildSummary( elapsed ):
+def   eventBuildSummary( settings, elapsed ):
   logInfo("Total time: %s" % elapsed)
 
 #//===========================================================================//
@@ -103,7 +103,8 @@ def   _printMemoryStatus():
 def   _main( prj_cfg ):
   with Chrono() as total_elapsed:
     
-    _setLogLevel( prj_cfg.log_level )
+    ev_settings = EventSettings( brief = not prj_cfg.verbose, with_output = not prj_cfg.no_output )
+    setEventSettings( ev_settings )
     
     with Chdir( prj_cfg.directory ):
       makefile = prj_cfg.makefile
@@ -123,19 +124,18 @@ def   _main( prj_cfg ):
       
       with elapsed:
         if prj_cfg.status:
-          success = prj.Status( verbose = prj_cfg.verbose )
+          success = prj.Status()
           prj.build_manager.printStatusState()
           
         elif prj_cfg.clean:
-          prj.Clean( verbose = prj_cfg.verbose )
+          prj.Clean()
           success = True
         else:
-          success = prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going,
-                               verbose = prj_cfg.verbose, build_always = prj_cfg.build_always )
+          success = prj.Build( jobs = prj_cfg.jobs, keep_going = prj_cfg.keep_going, build_always = prj_cfg.build_always )
           if not success:
             prj.build_manager.printFails()
       
-      if prj_cfg.memory:
+      if prj_cfg.debug_memory:
         _printMemoryStatus()
       
       eventBuildingDone( success, elapsed )
@@ -153,16 +153,16 @@ def   main():
   try:
     prj_cfg = ProjectConfig()
     
-    profile = prj_cfg.profile
+    debug_profile = prj_cfg.debug_profile
     
-    if not profile:
+    if not debug_profile:
       status = _main( prj_cfg )
     else:
       profiler = cProfile.Profile()
       
       status = profiler.runcall( _main, prj_cfg )
       
-      profiler.dump_stats( profile )
+      profiler.dump_stats( debug_profile )
     
     return status
   except AqlException as ex:

@@ -13,7 +13,7 @@ import rsync
 #//===========================================================================//
 
 def   _build( prj ):
-  if not prj.Build( verbose = True ):
+  if not prj.Build():
     prj.build_manager.printFails()
     assert False, "Build failed"
 

@@ -68,7 +68,7 @@ class   ValueBase (object):
   #//-------------------------------------------------------//
   
   def   valueId(self):
-    return self.name, type(self)
+    return self.name, repr(type(self))
   
   #//-------------------------------------------------------//
   
@@ -121,11 +121,8 @@ class   ValueBase (object):
   
   #//-------------------------------------------------------//
   
-  def   __bool__( self ):
-    return bool(self.signature)
-  
-  def   __nonzero__( self ):
-    return self.__bool__()
+  def   isNull( self ):
+    return self.signature is None
   
   #//-------------------------------------------------------//
   

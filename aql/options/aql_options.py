@@ -382,6 +382,11 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   notIn( self, context, others ):
+    return not self.oneOf( context, others )
+  
+  #//-------------------------------------------------------//
+  
   def   optionType( self ):
     self.child_ref = None
     return self.option_value.option_type
@@ -453,6 +458,7 @@ class ConditionGeneratorHelper( object ):
   def   hasAny( self, values ): return self.cmp( 'hasAny',  values )
   def   hasAll( self, values ): return self.cmp( 'hasAll',  values )
   def   oneOf( self, values ):  return self.cmp( 'oneOf',   values )
+  def   notIn( self, values ):  return self.cmp( 'notIn',   values )
   def   isTrue( self ):         return self.cmp( 'isTrue' )
   def   isFalse( self ):        return self.cmp( 'isFalse' )
   

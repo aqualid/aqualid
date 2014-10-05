@@ -23,7 +23,7 @@ __all__ = (
 
 import os
 
-from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir
+from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir, eventStatus, logDebug, logInfo
 from aql.util_types import toSequence, isString, toString, FilePath, AqlException
 
 from aql.values import ValueBase, FileValueBase, pickleable
@@ -72,38 +72,146 @@ class   ErrorNodeUnknownSource( AqlException ):
 
 #//===========================================================================//
 
-def   _actualDeps( vfile, dep_keys ):
+@eventStatus
+def   eventNodeStaleReason( brief, reason ):
+  msg = reason.getDescription( brief )
+  logDebug( msg )
+
+#//===========================================================================//
+
+class NodeStaleReason (object):
+  __slots__ = (
+      'code',
+      'value',
+      'builder',
+      'sources',
+      'targets',
+  )
+  
+  ACTUAL, \
+  NO_SIGNATURE, \
+  NEW, \
+  SIGNATURE_CHANGED, \
+  IMPLICIT_DEP_CHANGED, \
+  NO_TARGETS, \
+  TARGET_CHANGED, \
+  FORCE_REBUILD, \
+    = range(8)
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, builder, sources, targets ):
+    self.builder = builder
+    self.sources = sources
+    self.targets = targets
+    self.code = self.ACTUAL
+    self.value = None
+  
+  #//-------------------------------------------------------//
+  
+  def   _set(self, code, value = None ):
+    self.code = code
+    self.value = value
+    
+    eventNodeStaleReason( self )
+  
+  #//-------------------------------------------------------//
+  
+  def   setNoSignature( self, NO_SIGNATURE = NO_SIGNATURE ):
+    self._set( NO_SIGNATURE )
+  
+  def   setNew( self, NEW = NEW ):
+    self._set( NEW )
+      
+  def   setSigChanged( self, SIGNATURE_CHANGED = SIGNATURE_CHANGED ):
+    self._set( SIGNATURE_CHANGED )
+  
+  def   setImplicitDepChanged( self, value = None, IMPLICIT_DEP_CHANGED = IMPLICIT_DEP_CHANGED ):
+    self._set( IMPLICIT_DEP_CHANGED, value )
+  
+  def   setNoTargets( self, NO_TARGETS = NO_TARGETS):
+    self._set( NO_TARGETS )
+  
+  def   setTargetChanged( self, value, TARGET_CHANGED = TARGET_CHANGED ):
+    self._set( TARGET_CHANGED, value )
+  
+  def   setForceRebuild( self, FORCE_REBUILD = FORCE_REBUILD ):
+    self._set( FORCE_REBUILD )
+  
+  #//-------------------------------------------------------//
+  
+  def   getNodeName( self, brief ):
+    name = self.builder.getTraceName( brief )
+    return _getBuildStr( [ name, self.sources, self.targets ], brief )
+  
+  #//-------------------------------------------------------//
+  
+  def   getDescription( self, brief = True ):
+    
+    node_name = self.getNodeName( brief )
+    code = self.code
+    
+    if code == NodeStaleReason.NO_SIGNATURE:
+      msg = "Node`s signature can't be calculated, rebuilding the node: %s" % node_name
+    
+    elif code == NodeStaleReason.SIGNATURE_CHANGED:
+      msg = "Node`s signature has been changed (it depends from sources, builder parameters and dependencies), rebuilding the node: %s" % node_name
+    
+    elif code == NodeStaleReason.NEW:
+      msg = "Node's previous state has not been found, building the new node: %s" % node_name
+    
+    elif code == NodeStaleReason.IMPLICIT_DEP_CHANGED:
+      dep = "'%s'" % self.value if self.value else ""
+      msg = "Node's implicit dependency %s has changed, rebuilding the node: %s" % (dep, node_name)
+    
+    elif code == NodeStaleReason.NO_TARGETS:
+      msg = "Node's targets were not previously stored, rebuilding the node: %s" % (node_name,)
+    
+    elif code == NodeStaleReason.TARGET_CHANGED:
+      msg = "Node's target '%s' has changed, rebuilding the node: %s" % (self.value, node_name)
+    
+    elif code == NodeStaleReason.FORCE_REBUILD:
+      msg = "Node is up to date but force rebuild was requested, rebuilding the node: %s" % (node_name,)
+    
+    else:
+      msg = "Node's state is outdated, rebuilding the node: %s" % node_name
+    
+    return msg
+      
+#//===========================================================================//
+
+def   _checkDeps( vfile, dep_keys, reason ):
   if dep_keys:
-    values = vfile.getValues( dep_keys )
     
-    if values is None:
-      # if __debug__:
-      #   print( "ideps are None")
-      return False
-    
-    for key, value in zip(dep_keys, values):
-      if not value:
-        # if __debug__:
-        #   print( "idep '%s' is false" % (value,))
+    for key in dep_keys:
+      value = vfile.getValueByKey( key )
+      
+      if value is None:
+        if reason is not None:
+          reason.setImplicitDepChanged()
         return False
       
       actual_value = value.getActual()
       if value != actual_value:
-        # if __debug__:
-        #   print( "idep '%s' changed to '%s'" % (value, actual_value))
         vfile.replaceValue( key, actual_value )
+        if reason is not None:
+          reason.setImplicitDepChanged( value )
         return False
-  
+        
   return True
 
 #//===========================================================================//
 
-def   _actualValues( values ):
+def   _checkTargets( values, reason ):
   if values is None:
+    if reason is not None:
+      reason.setNoTargets()
     return False
   
   for value in values:
     if not value.isActual():
+      if reason is not None:
+        reason.setTargetChanged( value )
       return False
       
   return True
@@ -259,43 +367,45 @@ class   NodeValue (ValueBase):
   
   #//-------------------------------------------------------//
   
-  def   actual( self, vfile ):
+  def   checkActual( self, vfile, built_node_names, reason ):
     if not self.signature:
-      # if __debug__:
-      #   print( "No signature.")
+      if reason is not None:
+        reason.setNoSignature()
       return False
     
     other = vfile.findValue( self )
     
     if other is None:
-      # if __debug__:
-      #   print( "Previous value '%s' has not been found." % (self.name,))
+      if reason is not None:
+        reason.setNew()
       return False
     
     if self.signature != other.signature:
-      # if __debug__:
-      #   print( "Sources signature is changed: %s - %s" % (self.signature, other.signature) )
+      if reason is not None:
+        reason.setSignatureChanged()
       return False
     
     targets   = other.targets
     itargets  = other.itargets
     idep_keys = other.idep_keys
     
-    if not _actualDeps( vfile, idep_keys ):
-      # if __debug__:
-      #   print( "ideps are not actual: %s" % (self.name,))
+    if not _checkDeps( vfile, idep_keys, reason ):
       return False
     
-    if not _actualValues( targets ):
-      # if __debug__:
-      #   print( "targets are not actual: %s" % (self.name,))
+    if not _checkTargets( targets, reason ):
+      return False
+    
+    if (built_node_names is not None) and (self.name not in built_node_names):
+      if reason is not None:
+        reason.setForceRebuild()
+      
       return False
     
     self.targets = targets
     self.itargets = itargets
     
     return True
-
+  
 #//===========================================================================//
 
 class NodeTargetsFilter( object ):
@@ -355,6 +465,8 @@ class Node (object):
     self.sources = tuple(toSequence( sources ))
     self.dep_nodes = set()
     self.dep_values = []
+    
+    self.target_values = None
   
   #//=======================================================//
   
@@ -375,6 +487,7 @@ class Node (object):
     other.source_values   = src_values
     other.dep_nodes       = self.dep_nodes
     other.dep_values      = self.dep_values
+    other.target_values   = None
     
     return other
   
@@ -406,7 +519,7 @@ class Node (object):
     if attr == 'source_values':
       return self._setSourceValues()
 
-    if attr in ['target_values', 'itarget_values', 'idep_values' ]:
+    if attr in [ 'itarget_values', 'idep_values' ]:
       raise ErrorNoTargets( self )
 
     raise AttributeError( "Node has not attribute '%s'" % (attr,) )
@@ -483,11 +596,11 @@ class Node (object):
     sign  = [ self.builder.signature ]
     
     for value in self.getDepValues():
-      if value:
-        sign.append( value.name )
-        sign.append( value.signature )
-      else:
+      if value.isNull():
         return None
+      
+      sign.append( value.name )
+      sign.append( value.signature )
     
     sign_hash = newHash( dumpSimpleObject( sign ) )
 
@@ -497,9 +610,9 @@ class Node (object):
   
   def   _setName( self ):
     
-    targets = self.builder.getTargetValues( self )
+    targets = tuple( toSequence( self.builder.getTargetValues( self ) ) )
     if targets:
-      self.target_values = tuple( toSequence( targets ) )
+      self.target_values = targets
       names = sorted( value.valueId() for value in targets )
       name = simpleObjectSignature( names )
     else:
@@ -661,7 +774,7 @@ class Node (object):
     node_value = NodeValue( name = self.name )
     
     node_value = vfile.findValue( node_value )
-    if node_value:
+    if node_value is not None:
       targets = node_value.targets
       itargets = node_value.itargets
       
@@ -681,14 +794,18 @@ class Node (object):
     
   #//=======================================================//
   
-  def   isActual( self, vfile, built_node_names = None ):
+  def   checkActual( self, vfile, built_node_names = None, explain = False ):
+    
     node_value = NodeValue( name = self.name, signature = self.signature )
     
-    if not node_value.actual( vfile ) or ((built_node_names is not None) and (node_value.name not in built_node_names)):
-      return False
+    reason = NodeStaleReason( self.builder, self.source_values, self.target_values ) if explain else None
     
+    if not node_value.checkActual( vfile, built_node_names, reason ):
+      return False
+      
     self.target_values  = node_value.targets
     self.itarget_values = node_value.itargets
+    
     return True
     
   #//=======================================================//
@@ -726,12 +843,16 @@ class Node (object):
   #//=======================================================//
   
   def   getTargetValues(self):
-    return self.target_values
+    target_values = self.target_values
+    if target_values is None:
+      raise ErrorNoTargets( self )
+    
+    return target_values
   
   #//=======================================================//
   
   def   getBuildTargetValues(self):
-    return self.target_values
+    return self.getTargetValues()
   
   #//=======================================================//
 
@@ -752,12 +873,6 @@ class Node (object):
   def   getBuildStr( self, brief = True ):
     args = self.builder.getBuildStrArgs( self, brief = brief )
     return _getBuildStr( args, brief )
-  
-  #//=======================================================//
-  
-  def   getClearStr( self, brief = True ):
-    args = self.builder.getBuildStrArgs( self, brief = brief )
-    return _getClearStr( args, brief )
   
   #//=======================================================//
   
@@ -792,15 +907,15 @@ class Node (object):
       else:
         result.append( src )
     
-    sources_str = ', '.join( result )
+    sources_str = ', '.join( map( str, result ) )
     
-    print("node '%s' sources: %s" % (self, sources_str))
+    logInfo("node '%s' sources: %s" % (self, sources_str))
   
   #//=======================================================//
   
   def   printTargets(self):
     targets = [ t.get() for t in getattr(self, 'target_values', []) ]
-    print("node '%s' targets: %s" % (self, targets))
+    logInfo("node '%s' targets: %s" % (self, targets))
   
 #//===========================================================================//
 
@@ -910,9 +1025,6 @@ class BatchNode (Node):
 
       node_value.idep_keys = vfile.addValues( ideps )
       
-      # if __debug__:
-      #   print("save node value: %s" % (node_value.name))
-      
       vfile.addValue( node_value )
   
   #//=======================================================//
@@ -927,7 +1039,7 @@ class BatchNode (Node):
       
       node_value = vfile.findValue( node_value )
       
-      if node_value:
+      if node_value is not None:
         node_values.append( node_value )
         
         if node_value.targets is not None:
@@ -972,7 +1084,7 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   isActual( self, vfile, built_node_names = None ):
+  def   checkActual( self, vfile, built_node_names = None, explain = False ):
     
     changed_sources = []
     targets = []
@@ -981,7 +1093,9 @@ class BatchNode (Node):
     for src_value in self.source_values:
       node_value, ideps = self.node_values[ src_value ]
       
-      if not node_value.actual( vfile ) or ((built_node_names is not None) and (node_value.name not in built_node_names)):
+      reason = NodeStaleReason( self.builder, (src_value,), node_value.targets ) if explain else None
+      
+      if not node_value.checkActual( vfile, built_node_names, reason ):
         changed_sources.append( src_value )
       
       elif not changed_sources:
@@ -1050,14 +1164,4 @@ class BatchNode (Node):
     self.node_values = None
     self.changed_source_values = None
 
-  #//=======================================================//
   
-  def   getBuildStr( self, brief = True ):
-    args = self.builder.getBuildStrArgs( self, brief = brief )
-    return _getBuildStr( args, brief )
-  
-  #//=======================================================//
-  
-  def   getClearStr( self, brief = True ):
-    args = self.builder.getBuildStrArgs( self, brief = brief )
-    return _getClearStr( args, brief )

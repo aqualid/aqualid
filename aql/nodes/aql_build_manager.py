@@ -26,42 +26,36 @@ import os.path
 import threading
 
 from aql.util_types import toSequence, AqlException
-from aql.utils import eventStatus, eventWarning, logInfo, logError, logWarning, TaskManager
+from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeActual( node, progress, brief ):
-  msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( brief ))
+def   eventNodeActual( settings, node, progress ):
+  msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( settings.brief ))
   logInfo( msg )
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeOutdated( node, progress, brief ):
-  msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( brief ))
+def   eventNodeOutdated( settings, node, progress ):
+  msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( settings.brief ))
   logInfo( msg )
 
 #//===========================================================================//
 
 @eventWarning
-def   eventBuildTargetTwice( value, node1, brief ):
+def   eventBuildTargetTwice( settings, value, node1 ):
   logWarning("Target '%s' is built twice. The last time built by: '%s' " %
-             ( value.name, node1.getBuildStr( brief )) )
+             ( value.name, node1.getBuildStr( settings.brief )) )
 
 #//===========================================================================//
 
-@eventStatus
-def   eventInitialNodes( total_nodes ):
-  logInfo( "Processing nodes..." )
-
-#//===========================================================================//
-
-@eventStatus
-def   eventFailedNode( node, error ):
+@eventError
+def   eventFailedNode( settings, node, error ):
   
-  msg = node.getBuildStr( brief = False )
+  msg = node.getBuildStr( settings )
   msg += '\n\n%s\n' % (error,)
   
   logError( msg )
@@ -69,16 +63,16 @@ def   eventFailedNode( node, error ):
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeBuilding( node, brief ):
+def   eventNodeBuilding( settings, node ):
   pass
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
+def   eventNodeBuildingFinished( settings, node, builder_output, progress ):
   
-  msg = node.getBuildStr( brief )
-  if not brief and builder_output:
+  msg = node.getBuildStr( settings.brief )
+  if settings.with_output and builder_output:
     msg += '\n'
     if builder_output:
       msg += builder_output
@@ -86,27 +80,20 @@ def   eventNodeBuildingFinished( node, builder_output, progress, brief ):
   
   msg = "(%s) %s" % (progress, msg)
   
-  # if __debug__:
-  #   msg = '%s: %s' % (node, msg)
-  
   logInfo( msg )
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeBuildingFailed( node, error ):
+def   eventNodeBuildingFailed( settings, node, error ):
   pass
 
 #//===========================================================================//
 
 @eventStatus
-def   eventNodeRemoved( node, progress, brief ):
-  # msg = node.getClearStr( brief )
-  msg = node.getBuildStr( brief )
+def   eventNodeRemoved( settings, node, progress ):
+  msg = node.getBuildStr( settings.brief )
   if msg:
-    # if __debug__:
-    #   msg = '%s: %s' % (node, msg)
-
     logInfo( "(%s) Removed: %s" % (progress, msg) )
 
 #//===========================================================================//
@@ -446,9 +433,9 @@ class  _VFiles( object ):
 
 #//===========================================================================//
 
-def   _buildNode( node, brief ):
+def   _buildNode( node ):
   
-  eventNodeBuilding( node, brief )
+  eventNodeBuilding( node )
   
   out = node.build()
   
@@ -633,7 +620,7 @@ class _NodesBuilder (object):
     
   #//-------------------------------------------------------//
   
-  def   build( self, nodes, brief ):
+  def   build( self, nodes ):
     
     build_manager = self.build_manager
     
@@ -651,6 +638,11 @@ class _NodesBuilder (object):
       if self._prebuild( node, node_state ):
         changed = True
         continue
+              
+      conflict_nodes = build_manager.getConflictingNodes( node )
+      if conflict_nodes:
+        build_manager.rebuildNode( node, conflict_nodes )
+        continue
       
       if node_state.check_actual:
         vfile = vfiles[ node.builder ]
@@ -662,12 +654,7 @@ class _NodesBuilder (object):
           changed = True
           continue
           
-      conflict_nodes = build_manager.getConflictingNodes( node )
-      if conflict_nodes:
-        build_manager.rebuildNode( node, conflict_nodes )
-        continue
-      
-      addTask( node, _buildNode, node, brief )
+      addTask( node, _buildNode, node )
       build_manager.addBuildingNode( node )
       
       added_tasks += 1
@@ -743,7 +730,7 @@ class _NodesBuilder (object):
         continue
       
       vfile = vfiles[ node.builder ]
-      if node.isActual( vfile ):
+      if build_manager.isActualNode( node, vfile ):
         build_manager.actualNodeStatus( node )
       else:
         build_manager.outdatedNodeStatus( node )
@@ -768,9 +755,9 @@ class BuildManager (object):
     '_waiting_nodes',
     '_failed_nodes',
     '_built_node_names',
-    'brief',
     'completed',
     'actual',
+    'explain',
   )
   
   #//-------------------------------------------------------//
@@ -781,16 +768,16 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   __reset(self, brief = True, build_always = False ):
+  def   __reset(self, build_always = False, explain = False ):
     
     self._built_targets = {}
     self._waiting_nodes = {}
     self._failed_nodes = {}
     self._built_node_names = set() if build_always else None
     
-    self.brief = brief
     self.completed = 0
     self.actual = 0
+    self.explain = explain
   
   #//-------------------------------------------------------//
   
@@ -838,7 +825,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   actualNodeStatus( self, node ):
-    eventNodeActual( node, self.getProgressStr(), self.brief )
+    eventNodeActual( node, self.getProgressStr() )
     self.actualNode( node )
   
   #//-------------------------------------------------------//
@@ -846,13 +833,13 @@ class BuildManager (object):
   def   outdatedNodeStatus( self, node ):
     self._failed_nodes[ node ] = None
     
-    eventNodeOutdated( node, self.getProgressStr(), self.brief )
+    eventNodeOutdated( node, self.getProgressStr() )
     node.shrink()
   
   #//-------------------------------------------------------//
   
   def   isActualNode( self, node, vfile ):
-    return node.isActual( vfile, self._built_node_names )
+    return node.checkActual( vfile, self._built_node_names, self.explain )
   
   #//-------------------------------------------------------//
   
@@ -871,7 +858,7 @@ class BuildManager (object):
     
     self.completed += 1
     
-    eventNodeBuildingFinished( node, builder_output, self.getProgressStr(), self.brief )
+    eventNodeBuildingFinished( node, builder_output, self.getProgressStr() )
     
     node.shrink()
   
@@ -881,7 +868,7 @@ class BuildManager (object):
     self._removeWaitingNode( node )
     self._failed_nodes[ node ] = error
     
-    eventNodeBuildingFailed( node, self.brief )
+    eventNodeBuildingFailed( node, error )
   
   #//-------------------------------------------------------//
   
@@ -917,12 +904,11 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   removedNode( self, node, silent = False ):
+  def   removedNode( self, node ):
     self._nodes.removeTail( node )
     self.completed += 1
     
-    if not silent:
-      eventNodeRemoved( node, self.getProgressStr(), self.brief )
+    eventNodeRemoved( node, self.getProgressStr() )
     
     node.shrink()
   
@@ -956,13 +942,13 @@ class BuildManager (object):
       other_value_sign = built_targets.setdefault( value.valueId(), value_sign )
       
       if other_value_sign != value_sign:
-        eventBuildTargetTwice( value, node, brief = self.brief )
+        eventBuildTargetTwice( value, node )
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, nodes = None, brief = True, build_always = False ):
+  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False ):
     
-    self.__reset( brief, build_always )
+    self.__reset( build_always = build_always, explain = explain )
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -970,15 +956,13 @@ class BuildManager (object):
     
     with _NodesBuilder( self, jobs, keep_going ) as nodes_builder:
       
-      eventInitialNodes( len(nodes_tree) )
-      
       while True:
         tails = self.getTailNodes()
         
         if not (tails or self.isWaiting()):
           break
         
-        changed = nodes_builder.build( tails, brief )
+        changed = nodes_builder.build( tails )
         
         if not changed:
           break
@@ -1017,9 +1001,9 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, nodes = None, brief = True ):
+  def   clear( self, nodes = None ):
     
-    self.__reset( brief )
+    self.__reset()
     
     nodes_tree = self._nodes
     if nodes is not None:
@@ -1037,9 +1021,9 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   status( self, nodes = None, brief = True ):
+  def   status( self, nodes = None, explain = False ):
     
-    self.__reset( brief )
+    self.__reset( explain = explain )
     
     nodes_tree = self._nodes
     if nodes is not None:

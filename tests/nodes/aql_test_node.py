@@ -126,27 +126,27 @@ class TestNodes( AqlTestCase ):
         node = Node( builder, [value1, value2, value3] )
         node.initiate()
         
-        self.assertFalse( node.isActual( vfile ) )
+        self.assertFalse( node.checkActual( vfile ) )
         node.build()
         node.save( vfile )
-        self.assertTrue( node.isActual( vfile ) )
+        self.assertTrue( node.checkActual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
         node.initiate()
         
-        self.assertTrue( node.isActual( vfile ) )
+        self.assertTrue( node.checkActual( vfile ) )
         node.build()
         node.save( vfile )
-        self.assertTrue( node.isActual( vfile ) )
+        self.assertTrue( node.checkActual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
         node.depends( NullValue() )
         node.initiate()
         
-        self.assertFalse( node.isActual( vfile ) )
+        self.assertFalse( node.checkActual( vfile ) )
         node.build()
         node.save( vfile )
-        self.assertFalse( node.isActual( vfile ) )
+        self.assertFalse( node.checkActual( vfile ) )
       
       finally:
         vfile.close()
@@ -159,20 +159,20 @@ class TestNodes( AqlTestCase ):
     
     node.initiate()
     
-    self.assertFalse( node.isActual( vfile ) )
+    self.assertFalse( node.checkActual( vfile ) )
     node.build()
     node.save( vfile )
-    self.assertTrue( node.isActual( vfile ) )
+    self.assertTrue( node.checkActual( vfile ) )
     
     node = Node( builder, values )
     node.depends( deps )
     
     node.initiate()
     
-    self.assertTrue( node.isActual( vfile ) )
+    self.assertTrue( node.checkActual( vfile ) )
     node.build()
     node.save( vfile )
-    self.assertTrue( node.isActual( vfile ) )
+    self.assertTrue( node.checkActual( vfile ) )
     
     for tmp_file in node.getTargetValues():
       tmp_files.append( tmp_file.name )
@@ -265,7 +265,7 @@ class TestNodes( AqlTestCase ):
                 node.depends( [node3] )
                 node.initiate()
                 
-                self.assertTrue( node.isActual( vfile ) )
+                self.assertTrue( node.checkActual( vfile ) )
                 # node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
         finally:
           vfile.close()
@@ -290,13 +290,13 @@ class TestNodes( AqlTestCase ):
     node.initiate()
     
     if built_count == 0:
-      self.assertTrue( node.isActual( vfile ) )
+      self.assertTrue( node.checkActual( vfile ) )
     else:
-      self.assertFalse( node.isActual( vfile ) )
+      self.assertFalse( node.checkActual( vfile ) )
       node.build()
       node.save( vfile )
       self.assertEqual( len(node.getSourceValues()), built_count )
-      self.assertTrue( node.isActual( vfile ) )
+      self.assertTrue( node.checkActual( vfile ) )
   
   #//=======================================================//
   
@@ -365,7 +365,7 @@ def   _testNoBuildSpeed( vfile, builder, source_values ):
   for source in source_values:
     node = Node( builder, _FileValueType( source ) )
     node.initiate()
-    if not node.isActual( vfile ):
+    if not node.checkActual( vfile ):
       raise AssertionError( "node is not actual" )
 
 def   _generateFiles( tmp_files, number, size ):
@@ -409,7 +409,7 @@ class TestNodesSpeed ( AqlTestCase ):
           for source in source_files:
             node = Node( builder, _FileValueType( source ) )
             node.initiate()
-            self.assertFalse( node.isActual( vfile ) )
+            self.assertFalse( node.checkActual( vfile ) )
             builder.build( node )
             builder.save( vfile, node )
             for tmp_file in node.target_values:

@@ -20,13 +20,13 @@ class TestBuiltinTools( AqlTestCase ):
   #//-------------------------------------------------------//
 
   # noinspection PyUnusedLocal
-  def   eventNodeBuilding( self, node, brief ):
+  def   eventNodeBuilding( self, settings, node ):
     self.building_started += 1
   
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
+  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.building_finished += 1
   
   #//-------------------------------------------------------//
@@ -129,7 +129,7 @@ class TestBuiltinTools( AqlTestCase ):
   
           bm.add( result )
           
-          self._build( bm, jobs = 1, keep_going = False, brief = False )
+          self._build( bm, jobs = 1, keep_going = False )
           
           self.assertEqual( self.building_started, 1 )
           self.assertEqual( self.building_started, self.building_finished )

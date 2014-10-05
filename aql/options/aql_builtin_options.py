@@ -45,8 +45,8 @@ def   _build_options():
   
   build_variant = EnumOptionType( values =  [
                                               ('debug', 'dbg', 'd' ),
-                                              ('release_speed', 'release', 'rel', 'rs'),
-                                              ('release_size', 'rz', 'rel_size'),
+                                              ('release_speed', 'release', 'rel', 'rs', 'speed'),
+                                              ('release_size', 'rz', 'rel_size', 'size'),
                                               ('final', 'f'),
                                             ],
                                   default = 'debug',

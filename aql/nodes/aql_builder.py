@@ -32,7 +32,7 @@ from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleV
 #//===========================================================================//
 
 @eventDebug
-def   eventExecCmd( cmd, cwd, env ):
+def   eventExecCmd( settings, cmd, cwd, env ):
   # from aql.utils import logDebug
   # cmd = ' '.join( cmd )
   # logDebug("EXEC: %s" % (cmd, ) )

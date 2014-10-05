@@ -23,19 +23,19 @@ class TestEventManager( AqlTestCase ):
   def test_event_manager(self):
     
     @eventWarning
-    def   testEvent1( status ):
+    def   testEvent1( settings, status ):
       status.append( "default-event1" )
     
     @eventHandler('testEvent1')
-    def   testUserEvent1( status ):
+    def   testUserEvent1( settings, status ):
       status.append( "user-event1" )
     
     @eventStatus
-    def   testEvent2( status ):
+    def   testEvent2( settings, status ):
       status.append( "default-event2" )
     
     @eventHandler('testEvent2')
-    def   testUserEvent2( status ):
+    def   testUserEvent2( settings, status ):
       status.append( "user-event2" )
     
     status = []
@@ -70,16 +70,16 @@ class TestEventManager( AqlTestCase ):
     
     em = EventManager()
     
-    def   testEvent1( status ):
+    def   testEvent1( settings, status ):
       status.append( "default-event1" )
     
-    def   testUserEvent1( status ):
+    def   testUserEvent1( settings, status ):
       status.append( "user-event1" )
     
-    def   testEvent2( status ):
+    def   testEvent2( settings, status ):
       status.append( "default-event2" )
     
-    def   testUserEvent2( msg, status ):
+    def   testUserEvent2( settings, msg, status ):
       status.append( "user-event2" )
     
     em.addDefaultHandler( testEvent1, EVENT_WARNING )

@@ -23,7 +23,7 @@ class TestToolGcc( AqlTestCase ):
   #//-------------------------------------------------------//
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
+  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.built_nodes += 1
   
   #//-------------------------------------------------------//
@@ -54,7 +54,7 @@ class TestToolGcc( AqlTestCase ):
 
     for node in pre_nodes:
       node.initiate()
-      if not node.isActual( vfile ):
+      if not node.checkActual( vfile ):
         node.build()
         node.save( vfile )
     
@@ -69,13 +69,13 @@ class TestToolGcc( AqlTestCase ):
     
     for node in pre_nodes:
       node.initiate()
-      if not node.isActual( vfile ):
+      if not node.checkActual( vfile ):
         num_of_unactuals -= 1
         actual = False
     
     if actual:
       if not pre_nodes:
-        actual = obj.isActual( vfile )
+        actual = obj.checkActual( vfile )
         self.assertTrue( actual )
     
     self.assertEqual( num_of_unactuals, 0 )
@@ -147,7 +147,6 @@ class TestToolGcc( AqlTestCase ):
 
     kw.setdefault('jobs', 1 )
     kw.setdefault('keep_going', False )
-    kw.setdefault('brief', False )
 
     is_ok = bm.build( **kw )
     bm.printFails()
@@ -372,10 +371,10 @@ class TestToolGcc( AqlTestCase ):
       
       cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
       
-      self.buildPrj( prj, num_src_files + 2, verbose = False )
+      self.buildPrj( prj, num_src_files + 2 )
       
       cpp.LinkLibrary( src_files, res_file, target = 'foo' )
-      self.buildPrj( prj, 0, verbose = False )
+      self.buildPrj( prj, 0 )
       
       self.touchCppFile( hdr_files[0] )
       
@@ -421,7 +420,7 @@ class TestToolGcc( AqlTestCase ):
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       
-      self.buildPrj( prj, num_src_files * 2 + 4, verbose = False )
+      self.buildPrj( prj, num_src_files + 4 )
       
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
@@ -431,12 +430,59 @@ class TestToolGcc( AqlTestCase ):
       
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      self.buildPrj( prj, 2, verbose = False )
+      self.buildPrj( prj, 1 )
       
       self.touchCppFiles( hdr_files )
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = False )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = False )
-      self.buildPrj( prj, num_src_files * 2, verbose = False )
+      self.buildPrj( prj, num_src_files )
+      
+  #//-------------------------------------------------------//
+  
+  @skip
+  def   test_gcc_linker_twin_nodes(self):
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'output')
+      src_dir = os.path.join( tmp_dir, 'src')
+      
+      os.makedirs( src_dir )
+      
+      num_src_files = 2
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
+      
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg.options, cfg.targets )
+      
+      try:
+        cpp = prj.tools['c++']
+      except  ErrorToolNotFound:
+        print("WARNING: GCC tool has not been found. Skip the test.")
+        return
+      
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
+      
+      self.buildPrj( prj, num_src_files * 2 + 4 )
+      
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
+      self.buildPrj( prj, 0 )
+      
+      self.touchCppFile( hdr_files[0] )
+      
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
+      self.buildPrj( prj, 2 )
+      
+      self.touchCppFiles( hdr_files )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = False )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = False )
+      self.buildPrj( prj, num_src_files * 2 )
       
 
 #//===========================================================================//

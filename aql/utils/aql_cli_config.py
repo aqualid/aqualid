@@ -43,7 +43,12 @@ class   CLIOption( object ):
   #//-------------------------------------------------------//
   
   def   addToParser( self, parser ):
-    args = (self.cli_name, self.cli_long_name)
+    args = []
+    if self.cli_name is not None:
+      args.append( self.cli_name )
+    
+    if self.cli_long_name is not None:
+      args.append( self.cli_long_name )
     
     if self.value_type is bool:
       action = 'store_false' if self.default else 'store_true'

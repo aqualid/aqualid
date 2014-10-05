@@ -134,27 +134,27 @@ def   _buildChecksums( builder, src_files, Node = Node ):
 
 class TestBuildManager( AqlTestCase ):
   
-  def   eventNodeBuilding( self, node, brief ):
+  def   eventNodeBuilding( self, settings, node ):
     self.building_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
+  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.finished_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeActual( self, node, progress, brief ):
+  def   eventNodeActual( self, settings, node, progress ):
     self.actual_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeOutdated( self, node, progress, brief ):
+  def   eventNodeOutdated( self, settings, node, progress ):
     self.outdated_nodes += 1
   
   #//-------------------------------------------------------//
   
-  def   eventNodeRemoved( self, node, progress, brief ):
+  def   eventNodeRemoved( self, settings, node, progress ):
     self.removed_nodes += 1
   
   #//-------------------------------------------------------//
@@ -384,7 +384,7 @@ class TestBuildManager( AqlTestCase ):
       bm = _addNodesToBM( builder, src_files )
       try:
         self.actual_nodes = self.outdated_nodes = 0
-        bm.status( brief = False ); bm.selfTest()
+        bm.status(); bm.selfTest()
         
         self.assertEqual( self.outdated_nodes, 0)
         self.assertEqual( self.actual_nodes, 2 )
@@ -412,7 +412,7 @@ class TestBuildManager( AqlTestCase ):
       bm = _addNodesToBM( builder, src_files, Node = BatchNode )
       try:
         self.actual_nodes = self.outdated_nodes = 0
-        bm.status( brief = False ); bm.selfTest()
+        bm.status(); bm.selfTest()
         
         self.assertEqual( self.outdated_nodes, 0)
         self.assertEqual( self.actual_nodes, 2 )
@@ -458,7 +458,7 @@ class TestBuildManager( AqlTestCase ):
       
       node = Node( builder, src_values )
       bm.add( node ); bm.selfTest()
-      bm.status( brief = False ); bm.selfTest()
+      bm.status(); bm.selfTest()
       
       self.assertEqual( self.outdated_nodes, 0 )
       self.assertEqual( self.actual_nodes, num_src_files )

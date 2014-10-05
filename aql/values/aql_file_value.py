@@ -55,11 +55,6 @@ class   FileValueBase (ValueBase):
   
   #//-------------------------------------------------------//
   
-  def   __bool__( self ):
-    return bool(self.signature)
-  
-  #//-------------------------------------------------------//
-  
   def   remove( self ):
     try:
       os.remove( self.name )

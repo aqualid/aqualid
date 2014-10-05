@@ -41,8 +41,6 @@ class TestFileValue( AqlTestCase ):
 
   def test_file_value_save_load(self):
     
-    temp_file_name = None
-    
     with Tempfile() as temp_file:
       test_string = '1234567890'
       
@@ -51,12 +49,12 @@ class TestFileValue( AqlTestCase ):
       
       temp_file_value = FileChecksumValue( temp_file )
     
-    self._testSaveLoad( temp_file_value )
+      self._testSaveLoad( temp_file_value )
     
     file_value = FileChecksumValue( temp_file )
     self.assertEqual( temp_file_value.name, file_value.name )
     self.assertNotEqual( temp_file_value, file_value )
-    self.assertFalse( file_value )
+    self.assertFalse( file_value.isActual() )
 
   #//=======================================================//
 
@@ -96,12 +94,12 @@ class TestFileValue( AqlTestCase ):
       
       temp_file_value = FileTimestampValue( temp_file )
       
-    self._testSaveLoad( temp_file_value )
+      self._testSaveLoad( temp_file_value )
     
     file_value = FileTimestampValue( temp_file )
     self.assertEqual( temp_file_value.name, file_value.name )
     self.assertNotEqual( temp_file_value, file_value )
-    self.assertFalse( file_value )
+    self.assertFalse( file_value.isActual() )
 
   #//=======================================================//
 

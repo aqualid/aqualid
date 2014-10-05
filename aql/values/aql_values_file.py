@@ -49,7 +49,7 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   __getValueByKey(self, key ):
+  def   getValueByKey(self, key ):
     return self.key2value.get(key, None )
   
   #//---------------------------------------------------------------------------//
@@ -140,7 +140,7 @@ class ValuesFile (object):
     if key is None:
       return None
     
-    return self.__getValueByKey( key )
+    return self.getValueByKey( key )
   
   #//---------------------------------------------------------------------------//
   
@@ -158,7 +158,7 @@ class ValuesFile (object):
       self.__addValueToCache( key, value_id, value )
     
     else:
-      val = self.__getValueByKey( key )
+      val = self.getValueByKey( key )
       
       if value != val:
         data = self.pickler.dumps( value )
@@ -206,33 +206,8 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   getKeys( self, values ):
-    keys = []
-    
-    for value in values:
-      key = self.__getKeyByValueId( value.valueId() )
-      
-      if key is None:
-        raise ErrorValuesFileUnknownValue( value )
-      
-      keys.append( key )
-    
-    return keys
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   getValues( self, keys ):
-    values = []
-    
-    for key in keys:
-      value = self.__getValueByKey( key )
-      
-      if value is None:
-        return None
-      
-      values.append( value )
-    
-    return values
+  def   getValuesByKeys( self, keys ):
+    return [ self.getValueByKey( key ) for key in keys ]
   
   #//---------------------------------------------------------------------------//
   

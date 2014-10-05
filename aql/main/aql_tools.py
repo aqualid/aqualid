@@ -37,13 +37,13 @@ from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProg
 #//===========================================================================//
 
 @eventWarning
-def   eventToolsUnableLoadModule( module, err ):
+def   eventToolsUnableLoadModule( settings, module, err ):
   logWarning( "Unable to load module: %s, error: %s" % (module, err) )
 
 #//===========================================================================//
 
 @eventWarning
-def   eventToolsToolFailed( tool_class, err ):
+def   eventToolsToolFailed( settings, tool_class, err ):
   logWarning( "Tool init failed: %s - %s" % (tool_class, err))
 
 #//===========================================================================//

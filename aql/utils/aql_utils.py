@@ -509,9 +509,6 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
     
     exception = None
     try:
-      # if __debug__:
-      #   print("Execute command: %s" % (cmd, ) )
-      
       p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
       (stdoutdata, stderrdata) = p.communicate()
       returncode = p.returncode

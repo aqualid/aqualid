@@ -8,7 +8,7 @@ import aql
 class   ErrorBatchBuildCustomExt( aql.AqlException ):
   def   __init__( self, node, ext ):
     msg = "Custom extension '%s' is not supported for batch building of node: %s" % (ext, node.getBuildStr( brief = False ))
-    super(ErrorBatchBuildCustomSuffix, self).__init__(msg)
+    super(ErrorBatchBuildCustomExt, self).__init__(msg)
 
 #//===========================================================================//
 
@@ -96,10 +96,9 @@ def   _compilerOptions( options ):
   options.language = aql.EnumOptionType( values = [('c++', 'cpp'), 'c'], default = 'c++', description = 'Current language' )
   options.lang = options.language
   
-  options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
-  options.shobjsuffix = aql.StrOptionType( description = "Shared object file suffix." )
+  options.pic = aql.BoolOptionType( description = "Generate position-independent code.", default = True )
   
-  options.shobjsuffix = options.objsuffix
+  options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
   
   options.cxxflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
   options.cflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
@@ -226,12 +225,11 @@ class CommonCppCompiler (aql.FileBuilder):
   #//-------------------------------------------------------//
   
   #noinspection PyUnusedLocal
-  def   __init__(self, options, shared ):
+  def   __init__(self, options ):
     
     self.prefix = options.prefix.get()
     self.suffix = options.suffix.get()
-    self.ext = options.shobjsuffix.get() if shared else options.objsuffix.get()
-    self.shared = shared
+    self.ext = options.objsuffix.get()
     
     ext_cpppath = list( options.ext_cpppath.get() )
     ext_cpppath += options.sys_cpppath.get()
@@ -399,6 +397,19 @@ class CommonCppLinkerBase( aql.FileBuilder ):
   #//-------------------------------------------------------//
   
   def   replace( self, node ):
+    
+    def _addSources():
+      if current_builder is None:
+        new_sources.extend( current_sources )
+        return
+        
+      if current_builder.isBatch():
+        src_node = aql.BatchNode( current_builder, current_sources, cwd )
+      else:
+        src_node = aql.Node( current_builder, current_sources, cwd )
+        
+      new_sources.append( src_node )
+    
     new_sources = []
     
     builders = self.getSourceBuilders( node )
@@ -409,32 +420,21 @@ class CommonCppLinkerBase( aql.FileBuilder ):
     cwd = node.cwd
     
     for src_file in node.getSourceValues():
+      
       ext = os.path.splitext( src_file.get() )[1]
       builder = builders.get( ext, None )
-      if not builder:
-        new_sources.append( src_file )
+      
+      if current_builder is builder:
+        current_sources.append( src_file )
       else:
-        if current_builder is builder:
-          current_sources.append( src_file )
-        else:
-          if current_sources:
-            if current_builder.isBatch():
-              src_node = aql.BatchNode( current_builder, current_sources, cwd )
-            else:
-              src_node = aql.Node( current_builder, current_sources, cwd )
-              
-            new_sources.append( src_node )
+        if current_sources:
+          _addSources()
           
-          current_builder = builder
-          current_sources = [ src_file ]
+        current_builder = builder
+        current_sources = [ src_file ]
 
     if current_sources:
-      if current_builder.isBatch():
-        src_node = aql.BatchNode( current_builder, current_sources, cwd )
-      else:
-        src_node = aql.Node( current_builder, current_sources, cwd )
-      
-      new_sources.append( src_node )
+      _addSources()
     
     return new_sources
   
@@ -517,7 +517,7 @@ class ToolCommonCpp( aql.Tool ):
   def   CheckHeaders(self, options ):
     return HeaderChecker( options )
   
-  def   Compile( self, options, shared = False, batch = False ):
+  def   Compile( self, options, batch = False ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   CompileResource( self, options ):

@@ -35,11 +35,13 @@ else:
 
 #//-------------------------------------------------------//
 
-base_sources  = FindFiles( src_dir, '*.cxx',
-                           exclude_mask = ["Catalogue.cxx", "ExternalLexer.cxx", "ScintillaBase.cxx"] )
+base_sources = FindFiles( src_dir, '*.cxx',
+                          exclude_mask = ["Catalogue.cxx", "ExternalLexer.cxx", "ScintillaBase.cxx"] )
+rc_sources = []
+
 if is_windows_build:
   base_sources += [ os.path.join(win32_dir, "PlatWin.cxx") ]
-  base_sources += [ os.path.join(win32_dir, "ScintRes.rc") ]
+  rc_sources = [ os.path.join(win32_dir, "ScintRes.rc") ]
   def_file = FileValue( os.path.join( win32_dir, "Scintilla.def" ) )
   
 elif is_unix_build:
@@ -50,7 +52,7 @@ elif is_unix_build:
 
 lexers_sources  = FindFiles( lexers_dir, '*.cxx' )
 
-lexers_lib = cpp.LinkStaticLibrary( lexers_sources, target = 'Lexers' )
+lexers_lib = cpp.LinkStaticLibrary( lexers_sources, target = 'Lexers', batch = cpp_options.is_batch_build.get() )
 
 Alias( 'lexers', lexers_lib )
 Default( lexers_lib )
@@ -73,10 +75,11 @@ elif is_unix_build:
 
 cpp_options.cpppath += include_dirs
 
-scintilla_dll = cpp.LinkSharedLibrary( scintilla_sources,
+scintilla_dll = cpp.LinkSharedLibrary( scintilla_sources, rc_sources,
                                        target = 'Scintilla',
                                        def_file = def_file,
-                                       use_direct2d = use_direct2d )
+                                       use_direct2d = use_direct2d,
+                                       batch = cpp_options.is_batch_build.get() )
 Alias( 'scintilla', scintilla_dll )
 Default( scintilla_dll )
 
@@ -90,13 +93,19 @@ lex_dll_sources += ( os.path.join( src_dir, src ) for src in ["Catalogue.cxx", "
 lex_dll_special_sources = [ src_dir + "/ScintillaBase.cxx" ]
 if is_windows_build:
   lex_dll_special_sources += [ win32_dir + "/ScintillaWin.cxx" ]
+  
+lex_dll_special_objs = cpp.Compile( lex_dll_special_sources,
+                                    cppdefines = 'SCI_LEXER',
+                                    suffix = "_lex",
+                                    use_direct2d = use_direct2d )
 
-lex_dll_special_objs = cpp.Compile( lex_dll_special_sources, cppdefines = 'SCI_LEXER', prefix = "lex_", use_direct2d = use_direct2d )
+lex_dll_objs = cpp.Compile( lex_dll_sources, use_direct2d = use_direct2d )
 
-scilexer_dll = cpp.LinkSharedLibrary( lex_dll_sources, lex_dll_special_objs, lexers_lib,
+scilexer_dll = cpp.LinkSharedLibrary( lex_dll_objs, lex_dll_special_objs, rc_sources, lexers_lib,
                                       target = 'SciLexer',
                                       def_file = def_file,
-                                      use_direct2d = use_direct2d )
+                                      use_direct2d = use_direct2d,
+                                      batch = cpp_options.is_batch_build.get() )
 
 Alias( ['scilexer', 'SciLexer'], scilexer_dll )
 Default( scilexer_dll )

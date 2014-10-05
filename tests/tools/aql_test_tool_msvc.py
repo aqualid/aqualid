@@ -15,7 +15,7 @@ import msvc
 class TestToolMsvc( AqlTestCase ):
   
   # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, node, builder_output, progress, brief ):
+  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.built_nodes += 1
   
   #//-------------------------------------------------------//
@@ -237,7 +237,7 @@ class TestToolMsvc( AqlTestCase ):
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       
-      self.buildPrj( prj, num_src_files + 4, verbose = True )
+      self.buildPrj( prj, num_src_files + 4 )
       
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
@@ -247,7 +247,7 @@ class TestToolMsvc( AqlTestCase ):
       
       shlib = cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      self.buildPrj( prj, 3, verbose = False )
+      self.buildPrj( prj, 3 )
       
       self.touchCppFiles( hdr_files )
       
