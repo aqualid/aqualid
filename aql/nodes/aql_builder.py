@@ -186,6 +186,7 @@ class Builder (object):
     
     self = super(Builder, cls).__new__(cls)
     self.makeValue = self.makeSimpleValue
+    self.default_value_type = SimpleValue
     self.__is_batch = False
     
     return BuilderInitiator( self, options, args, kw )
@@ -317,7 +318,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, node ):
+  def   getTargetValues( self, source_values ):
     """
     If it's possible returns target values of the node, otherwise None 
     """
@@ -425,7 +426,12 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   fileValueType( self ):
+  def   getDefaultValueType( self ):
+    return self.default_value_type 
+  
+  #//-------------------------------------------------------//
+  
+  def   getFileValueType( self ):
     return self.file_value_type 
   
   #//-------------------------------------------------------//
@@ -435,17 +441,17 @@ class Builder (object):
       return value
     
     if isinstance( value, FilePath ):
-      return self.fileValueType()( name = value, tags = tags, use_cache = use_cache )
+      return self.file_value_type( name = value, tags = tags, use_cache = use_cache )
     
     return SimpleValue( value )
   
   #//-------------------------------------------------------//
   
   def   makeFileValue( self, value, tags = None, use_cache = False ):
-    if isinstance( value, ValueBase):
+    if isinstance( value, ValueBase ):
       return value
     
-    return self.fileValueType()( name = value, tags = tags, use_cache = use_cache )
+    return self.file_value_type( name = value, tags = tags, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   
@@ -485,3 +491,4 @@ class FileBuilder (Builder):
   def   _initAttrs( self, options ):
     super(FileBuilder,self)._initAttrs( options )
     self.makeValue = self.makeFileValue
+    self.default_value_type = self.file_value_type

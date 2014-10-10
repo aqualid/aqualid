@@ -112,10 +112,8 @@ class AqlLink (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, node ):
-    value_type = self.fileValueType()
-    target = value_type( name = self.target, signature = None )
-    return target
+  def   getTargetValues( self, source_values ):
+    return self.target
   
   #//-------------------------------------------------------//
   

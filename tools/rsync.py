@@ -237,7 +237,7 @@ class   RSyncPushBuilder( aql.FileBuilder ):
     remote_path = self.remote_path
     source_base = self.source_base
     
-    value_type = aql.SimpleValue if remote_path.isRemote() else self.fileValueType()
+    value_type = aql.SimpleValue if remote_path.isRemote() else self.getFileValueType()
     
     for src_value, src in zip( node.getSourceValues(), sources ):
       

@@ -185,7 +185,7 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
       
       self.buildPrj( prj, num_groups + 2 )
       
@@ -201,7 +201,7 @@ class TestToolMsvc( AqlTestCase ):
       self.buildPrj( prj, 0 )
       
       self.touchCppFiles( hdr_files )
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
       self.buildPrj( prj, num_groups + 1)
       
       

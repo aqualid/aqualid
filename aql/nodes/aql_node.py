@@ -24,7 +24,7 @@ __all__ = (
 import os
 
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir, eventStatus, logDebug, logInfo
-from aql.util_types import toSequence, isString, toString, FilePath, AqlException
+from aql.util_types import toSequence, isString, FilePath, AqlException
 
 from aql.values import ValueBase, FileValueBase, pickleable
 
@@ -152,13 +152,15 @@ class NodeStaleReason (object):
     code = self.code
     
     if code == NodeStaleReason.NO_SIGNATURE:
-      msg = "Node`s signature can't be calculated, rebuilding the node: %s" % node_name
+      msg = "Node`s is marked to rebuild always, rebuilding the node: %s" % node_name
     
     elif code == NodeStaleReason.SIGNATURE_CHANGED:
-      msg = "Node`s signature has been changed (it depends from sources, builder parameters and dependencies), rebuilding the node: %s" % node_name
+      msg = "Node`s signature has been changed (sources, builder parameters or dependencies were changed), rebuilding the node: %s" % node_name
     
     elif code == NodeStaleReason.NEW:
       msg = "Node's previous state has not been found, building the new node: %s" % node_name
+      # msg += "\nbuilder sig: %s" % (self.builder.signature)
+      # msg += "\nsources sig: %s" % ([ src.signature for src in self.sources], )
     
     elif code == NodeStaleReason.IMPLICIT_DEP_CHANGED:
       dep = "'%s'" % self.value if self.value else ""
@@ -321,6 +323,46 @@ def   _getClearStr( args, brief = True ):
   targets = next(args, None )
   
   return _joinArgs( targets, brief )
+
+#//===========================================================================//
+
+def   _makeNullValue( name, value_type ):
+  if isinstance( name, ValueBase ):
+    return name
+   
+  return value_type( name = name, signature = None )
+
+#//===========================================================================//
+
+def   _genNodeValueName( builder, source_values, name_hash ):
+  
+  target_values = builder.getTargetValues( source_values )
+  value_type = builder.getDefaultValueType()
+  
+  target_values = [ _makeNullValue( value, value_type ) for value in toSequence( target_values ) ]
+  
+  if target_values:
+    names = sorted( value.dumpId() for value in target_values )
+    name = simpleObjectSignature( names )
+  else:
+    names = sorted( value.dumpId() for value in source_values )
+    name = simpleObjectSignature( names, name_hash )
+  
+  return name, target_values
+
+#//===========================================================================//
+
+def   _genNodeValueSignature( source_values, sign_hash ):
+  
+  if sign_hash is None:
+    return None
+  
+  sign_hash = sign_hash.copy()
+  
+  for value in source_values:
+    sign_hash.update( value.signature )
+  
+  return sign_hash.digest()
 
 #//===========================================================================//
 
@@ -500,7 +542,7 @@ class Node (object):
     other = self._split( src_values )
     
     if __debug__:
-      self_source_values = set(self.source_values)
+      self_source_values = frozenset(self.source_values)
       for src_value in src_values:
         if src_value not in self_source_values:
           raise ErrorNodeSplitUnknownSource( self, src_value )
@@ -548,8 +590,6 @@ class Node (object):
       
       else:
         raise ErrorNodeDependencyInvalid( value )
-    
-    dep_values.sort( key = lambda v: v.name )
   
   #//=======================================================//
   
@@ -567,10 +607,11 @@ class Node (object):
     dep_values = self.dep_values
     
     for node in dep_nodes:
-      dep_values += node.target_values
+      dep_values.extend( node.target_values )
     
     dep_nodes.clear()
-    dep_values.sort( key = lambda v: toString( v.name ) )
+    
+    dep_values.sort( key = lambda v: v.dumpId() )
   
   #//=======================================================//
   
@@ -610,35 +651,19 @@ class Node (object):
   
   def   _setName( self ):
     
-    targets = tuple( toSequence( self.builder.getTargetValues( self ) ) )
-    if targets:
-      self.target_values = targets
-      names = sorted( value.valueId() for value in targets )
-      name = simpleObjectSignature( names )
-    else:
-      name_hash = self._getNameHash()
-      source_names = sorted( value.name for value in self.getSourceValues() )
-      for source_name in source_names:
-        name_hash.update( dumpSimpleObject( source_name ) )
-      name = name_hash.digest()
+    name_hash = self._getNameHash()
     
+    source_values = self.getSourceValues()
+    
+    name, self.target_values = _genNodeValueName( self.builder, source_values, name_hash )
     self.name = name
     return name
 
   #//=======================================================//
   
   def   _setSignature( self ):
-    
     sign_hash = self._getSignatureHash()
-    
-    if sign_hash is None:
-      sign = None
-    else:
-      for value in self.getSourceValues():
-        sign_hash.update( dumpSimpleObject( value.signature ) )
-      sign = sign_hash.digest()
-    
-    self.signature = sign
+    self.signature = sign = _genNodeValueSignature( self.getSourceValues(), sign_hash )
     return sign
   
   #//=======================================================//
@@ -982,15 +1007,14 @@ class BatchNode (Node):
     node_values = {}
     
     for src_value in self.source_values:
-      name = simpleObjectSignature( src_value.name, name_hash )
       
-      if sign_hash and src_value.signature:
-        signature = simpleObjectSignature( src_value.signature, sign_hash )
-      else:
-        signature = None
+      src_values = (src_value,)
+      
+      name, target_values = _genNodeValueName( self.builder, src_values, name_hash )
+      signature           = _genNodeValueSignature( src_values, sign_hash )
       
       ideps = []
-      node_values[ src_value ] = NodeValue( name, signature ), ideps
+      node_values[ src_value ] = NodeValue( name, signature, target_values ), ideps
     
     self.node_values = node_values
     return node_values
@@ -1096,6 +1120,7 @@ class BatchNode (Node):
       reason = NodeStaleReason( self.builder, (src_value,), node_value.targets ) if explain else None
       
       if not node_value.checkActual( vfile, built_node_names, reason ):
+        node_value.targets = None
         changed_sources.append( src_value )
       
       elif not changed_sources:

@@ -240,6 +240,11 @@ class CommonCppCompiler (aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
+  def   getTargetValues( self, source_values ):
+    return self.getObjPath( source_values[0].get() )
+  
+  #//-------------------------------------------------------//
+  
   def   getObjPath( self, file_path ):
     return self.getFileBuildPath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
   
@@ -322,6 +327,11 @@ class CommonResCompiler (aql.FileBuilder):
   
   def   split( self, node ):
     return self.splitSingle( node )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, source_values ):
+    return self.getObjPath( source_values[0].get() )
   
   #//-------------------------------------------------------//
   
@@ -440,10 +450,8 @@ class CommonCppLinkerBase( aql.FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, node ):
-    value_type = self.fileValueType()
-    target = value_type( name = self.target, signature = None )
-    return target
+  def   getTargetValues( self, source_values ):
+    return self.target
   
   #//-------------------------------------------------------//
   
