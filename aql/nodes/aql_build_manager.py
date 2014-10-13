@@ -112,6 +112,13 @@ class   ErrorNodeUnknown(AqlException):
 
 #//===========================================================================//
 
+class   ErrorNodeSignatureDifferent(AqlException):
+  def   __init__( self, node ):
+    msg = "Two similar nodes have different signatures (sources, builder parameters or dependencies): %s" % (node.getBuildStr( brief = False ), )
+    super(ErrorNodeSignatureDifferent, self).__init__( msg )
+
+#//===========================================================================//
+
 class   ErrorNodeDependencyUnknown(AqlException):
   def   __init__( self, node, dep_node ):
     msg = "Unable to add dependency to node '%s' from node '%s'" % (node, dep_node)
@@ -165,7 +172,6 @@ class _NodesTree (object):
   
   __slots__ = \
   (
-    'lock',
     'node2deps',
     'dep2nodes',
     'tail_nodes',
@@ -174,7 +180,6 @@ class _NodesTree (object):
   #//-------------------------------------------------------//
   
   def   __init__( self ):
-    self.lock = threading.Lock()
     self.node2deps = {}
     self.dep2nodes = {}
     self.tail_nodes = set()
@@ -243,7 +248,6 @@ class _NodesTree (object):
   
   def   __add( self, nodes ):
       for node in nodes:
-        
         if node not in self.node2deps:
           self.node2deps[ node ] = set()
           self.dep2nodes[ node ] = set()
@@ -261,46 +265,44 @@ class _NodesTree (object):
   #//-------------------------------------------------------//
   
   def   add( self, nodes ):
-    with self.lock:
-      self.__add( toSequence( nodes ) )
+    self.__add( toSequence( nodes ) )
     
   #//-------------------------------------------------------//
   
   def   depends( self, node, deps ):
-    with self.lock:
-      deps = toSequence( deps )
-      
-      self.__add( deps )
-      self.__depends( node, deps )
+    deps = toSequence( deps )
+    
+    self.__add( deps )
+    self.__depends( node, deps )
   
   #//-------------------------------------------------------//
   
   def   removeTail( self, node ):
-    with self.lock:
-      node2deps = self.node2deps
-      
-      try:
-        if node2deps[node]:
-          raise InternalErrorRemoveNonTailNode( node )
-      except KeyError as node:
-        raise InternalErrorRemoveUnknownTailNode( node.args[0] )
-      
-      tail_nodes = self.tail_nodes
-      
-      del node2deps[node]
-      tail_nodes.remove( node )
-      
-      for dep in self.dep2nodes.pop( node ):
-        d = node2deps[ dep ]
-        d.remove( node )
-        if not d:
-          tail_nodes.add( dep )
+    node2deps = self.node2deps
+    
+    try:
+      deps = node2deps.pop(node)
+      if deps:
+        raise InternalErrorRemoveNonTailNode( node )
+    except KeyError as node:
+      raise InternalErrorRemoveUnknownTailNode( node.args[0] )
+    
+    tail_nodes = self.tail_nodes
+    
+    # tail_nodes.remove( node )
+    
+    for dep in self.dep2nodes.pop( node ):
+      d = node2deps[ dep ]
+      d.remove( node )
+      if not d:
+        tail_nodes.add( dep )
     
   #//-------------------------------------------------------//
   
-  def   tails( self ):
-    with self.lock:
-      return set( self.tail_nodes )
+  def   popTails( self ):
+    tails = self.tail_nodes
+    self.tail_nodes = set()
+    return tails
   
   #//-------------------------------------------------------//
   
@@ -343,33 +345,32 @@ class _NodesTree (object):
   #//-------------------------------------------------------//
   
   def   selfTest( self ):
-    with self.lock:
-      if set(self.node2deps) != set(self.dep2nodes):
-        raise AssertionError("Not all deps are added")
+    if set(self.node2deps) != set(self.dep2nodes):
+      raise AssertionError("Not all deps are added")
+    
+    all_dep_nodes = set()
+    
+    for node in self.dep2nodes:
+      if node not in self.node2deps:
+        raise AssertionError("Missed node: %s" % (node,) )
       
-      all_dep_nodes = set()
+      node_deps = self.node2deps[node]
       
-      for node in self.dep2nodes:
-        if node not in self.node2deps:
-          raise AssertionError("Missed node: %s" % (node,) )
-        
-        node_deps = self.node2deps[node]
-        
-        if not node_deps:
-          if node not in self.tail_nodes:
-            raise AssertionError("Missed tail node: %s"  % (node,) )
-        else:
-          if node in self.tail_nodes:
-            raise AssertionError("Invalid tail node: %s"  % (node,) )
-        
-        all_dep_nodes |= node_deps
-        
-        for dep in node_deps:
-          if node not in self.dep2nodes[dep]:
-            raise AssertionError("node not in self.dep2nodes[dep]: dep: %s, node: %s"  % (dep, node) )
+      if not node_deps:
+        if node not in self.tail_nodes:
+          raise AssertionError("Missed tail node: %s"  % (node,) )
+      else:
+        if node in self.tail_nodes:
+          raise AssertionError("Invalid tail node: %s"  % (node,) )
       
-      if all_dep_nodes - set(self.dep2nodes):
-        raise AssertionError("Not all deps are added")
+      all_dep_nodes |= node_deps
+      
+      for dep in node_deps:
+        if node not in self.dep2nodes[dep]:
+          raise AssertionError("node not in self.dep2nodes[dep]: dep: %s, node: %s"  % (dep, node) )
+    
+    if all_dep_nodes - set(self.dep2nodes):
+      raise AssertionError("Not all deps are added")
 
 #//===========================================================================//
 
@@ -527,7 +528,7 @@ class _NodesBuilder (object):
   def   _checkPrebuildDepends(self, node ):
     dep_nodes = node.buildDepends()
     if dep_nodes:
-      self.build_manager.rebuildNode( node, dep_nodes )
+      self.build_manager.depends( node, dep_nodes )
       return True
     
     return False
@@ -539,7 +540,7 @@ class _NodesBuilder (object):
     if node.buildReplace():
       new_node_sources = node.getSourceNodes()
       if new_node_sources:
-        self.build_manager.rebuildNode( node, new_node_sources )
+        self.build_manager.depends( node, new_node_sources )
         return True
     
     return False
@@ -578,7 +579,7 @@ class _NodesBuilder (object):
           split_state.check_replace = check_actual
           split_state.initialized = split_node.builder is node.builder
         
-        self.build_manager.rebuildNode( node, split_nodes )
+        self.build_manager.depends( node, split_nodes )
         return True
   
     elif state.split_nodes is not None:
@@ -602,6 +603,8 @@ class _NodesBuilder (object):
   
   def   _prebuild( self, node, state ):
     
+    build_manager = self.build_manager
+    
     if not state.initialized:
       node.initiate()
       state.initialized = True
@@ -616,7 +619,13 @@ class _NodesBuilder (object):
       if self._checkPrebuildReplace( node ):
         return True
     
-    return self._checkPrebuildSplit( node, state )
+    if self._checkPrebuildSplit( node, state ):
+      return True
+    
+    if build_manager.addProcessingNode( node ):
+      return True
+    
+    return False
     
   #//-------------------------------------------------------//
   
@@ -639,11 +648,6 @@ class _NodesBuilder (object):
         changed = True
         continue
               
-      conflict_nodes = build_manager.getConflictingNodes( node )
-      if conflict_nodes:
-        build_manager.rebuildNode( node, conflict_nodes )
-        continue
-      
       if node_state.check_actual:
         vfile = vfiles[ node.builder ]
         actual = build_manager.isActualNode( node, vfile )
@@ -655,7 +659,7 @@ class _NodesBuilder (object):
           continue
           
       addTask( node, _buildNode, node )
-      build_manager.addBuildingNode( node )
+      build_manager.addBuildingNode()
       
       added_tasks += 1
       
@@ -752,9 +756,10 @@ class BuildManager (object):
   (
     '_nodes',
     '_built_targets',
-    '_waiting_nodes',
+    '_processing_nodes',
     '_failed_nodes',
     '_built_node_names',
+    'building',
     'completed',
     'actual',
     'explain',
@@ -771,10 +776,11 @@ class BuildManager (object):
   def   __reset(self, build_always = False, explain = False ):
     
     self._built_targets = {}
-    self._waiting_nodes = {}
+    self._processing_nodes = {}
     self._failed_nodes = {}
     self._built_node_names = set() if build_always else None
     
+    self.building = 0
     self.completed = 0
     self.actual = 0
     self.explain = explain
@@ -802,21 +808,17 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   getTailNodes(self):
-    
-    tails = self._nodes.tails()
-    tails.difference_update( self._waiting_nodes.values() )
-    tails.difference_update( self._failed_nodes )
-    
-    return tails
+    return self._nodes.popTails()
   
   #//-------------------------------------------------------//
   
   def   isWaiting(self):
-    return bool(self._waiting_nodes)
+    return self.building > 0 
   
   #//-------------------------------------------------------//
   
   def   actualNode( self, node ):
+    self.removeProcessingNode( node )
     self._nodes.removeTail( node )
     self.actual += 1
     
@@ -852,10 +854,11 @@ class BuildManager (object):
   
   def   completedNode( self, node, builder_output ):
     self._checkAlreadyBuilt( node )
+    self.removeProcessingNode( node )
     self._nodes.removeTail( node )
-    self._removeWaitingNode( node )
     self._addToBuiltNodeNames( node )
     
+    self.building -= 1
     self.completed += 1
     
     eventNodeBuildingFinished( node, builder_output, self.getProgressStr() )
@@ -865,46 +868,47 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   failedNode( self, node, error ):
-    self._removeWaitingNode( node )
+    self.building -= 1
     self._failed_nodes[ node ] = error
     
     eventNodeBuildingFailed( node, error )
   
   #//-------------------------------------------------------//
   
-  def   rebuildNode( self, node, pre_nodes ):
-    self.depends( node, pre_nodes )
-  
-  #//-------------------------------------------------------//
-  
-  def   getConflictingNodes( self, node ):
-    conflicting_nodes = set()
-    get_building_node = self._waiting_nodes.get
+  def   addProcessingNode( self, node ):
+    conflicting_nodes = []
+    processing_nodes = self._processing_nodes
     
-    for name in node.getNames():
-      building_node = get_building_node( name, None )
-      if building_node is not None:
-        conflicting_nodes.add( building_node )
+    for name, signature in node.getNamesAndSignatures():
+      node_signature = (node, signature)
+      
+      other = processing_nodes.setdefault( name, node_signature )
+      if other is not node_signature:
+        if other != node_signature:
+          raise ErrorNodeSignatureDifferent( node )
+        
+        conflicting_nodes.append( other[0] )
     
-    return conflicting_nodes
+    self.depends( node, conflicting_nodes )
+    
+    return bool(conflicting_nodes)
   
   #//-------------------------------------------------------//
   
-  def   addBuildingNode(self, node ):
-    wait_nodes = self._waiting_nodes
+  def   removeProcessingNode( self, node ):
+    processing_nodes = self._processing_nodes
     for name in node.getNames():
-      wait_nodes[ name ] = node
+      del processing_nodes[ name ]
   
   #//-------------------------------------------------------//
   
-  def   _removeWaitingNode(self, node ):
-    wait_nodes = self._waiting_nodes
-    for name in node.getNames():
-      del wait_nodes[ name ]
+  def   addBuildingNode( self ):
+    self.building += 1
   
   #//-------------------------------------------------------//
   
   def   removedNode( self, node ):
+    self.removeProcessingNode( node )
     self._nodes.removeTail( node )
     self.completed += 1
     
@@ -931,9 +935,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   _checkAlreadyBuilt( self, node ):
-    values = []
-    values += node.getTargetValues()
-    values += node.getSideEffectValues()
+    values = node.getTargetValues()
     
     built_targets = self._built_targets
     
@@ -988,7 +990,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   printBuildState(self):
-    logInfo("Waiting nodes: %s" % len(self._waiting_nodes) )
+    logInfo("Building nodes: %s" % self.building )
     logInfo("Failed nodes: %s" % len(self._failed_nodes) )
     logInfo("Completed nodes: %s" % self.completed )
     logInfo("Actual nodes: %s" % self.actual )

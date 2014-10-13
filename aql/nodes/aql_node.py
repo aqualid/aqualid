@@ -173,7 +173,7 @@ class NodeStaleReason (object):
       msg = "Node's target '%s' has changed, rebuilding the node: %s" % (self.value, node_name)
     
     elif code == NodeStaleReason.FORCE_REBUILD:
-      msg = "Node is up to date but force rebuild was requested, rebuilding the node: %s" % (node_name,)
+      msg = "Forced rebuild, rebuilding the node: %s" % (node_name,)
     
     else:
       msg = "Node's state is outdated, rebuilding the node: %s" % node_name
@@ -410,6 +410,12 @@ class   NodeValue (ValueBase):
   #//-------------------------------------------------------//
   
   def   checkActual( self, vfile, built_node_names, reason ):
+    
+    if (built_node_names is not None) and (self.name not in built_node_names):
+      if reason is not None:
+        reason.setForceRebuild()
+      return False
+    
     if not self.signature:
       if reason is not None:
         reason.setNoSignature()
@@ -435,12 +441,6 @@ class   NodeValue (ValueBase):
       return False
     
     if not _checkTargets( targets, reason ):
-      return False
-    
-    if (built_node_names is not None) and (self.name not in built_node_names):
-      if reason is not None:
-        reason.setForceRebuild()
-      
       return False
     
     self.targets = targets
@@ -570,6 +570,10 @@ class Node (object):
   
   def   getNames(self):
     return (self.name,)
+  
+  def   getNamesAndSignatures(self):
+    return ((self.name,self.signature),)
+
   
   #//=======================================================//
 
@@ -961,7 +965,10 @@ class BatchNode (Node):
   #//=======================================================//
   
   def   getNames(self):
-    return tuple(value.name for value, ideps in self.node_values.values())
+    return (value.name for value, ideps in self.node_values.values())
+  
+  def   getNamesAndSignatures(self):
+    return ((value.name, value.signature) for value, ideps in self.node_values.values())
   
   #//=======================================================//
   
