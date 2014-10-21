@@ -23,7 +23,6 @@ __all__ = (
 )
 
 import os.path
-import threading
 
 from aql.util_types import toSequence, AqlException
 from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
@@ -358,7 +357,7 @@ class _NodesTree (object):
       
       if not node_deps:
         if node not in self.tail_nodes:
-          raise AssertionError("Missed tail node: %s"  % (node,) )
+          raise AssertionError("Missed tail node: %s, tail_nodes: %s"  % (node, self.tail_nodes) )
       else:
         if node in self.tail_nodes:
           raise AssertionError("Invalid tail node: %s"  % (node,) )
@@ -470,7 +469,7 @@ class   _NodeState( object ):
     self.split_nodes = None
   
   def   __str__(self):
-    return "initialized :%s, check_depends: %s, check_replace: %s, check_split: %s, check_actual: %s, split_nodes: %s" %\
+    return "initialized: %s, check_depends: %s, check_replace: %s, check_split: %s, check_actual: %s, split_nodes: %s" %\
       (self.initialized, self.check_depends, self.check_replace, self.check_split, self.check_actual, self.split_nodes )
   
 #//===========================================================================//
@@ -484,13 +483,15 @@ class _NodesBuilder (object):
     'build_manager',
     'task_manager',
     'node_states',
+    'building_nodes',
   )
   
   #//-------------------------------------------------------//
   
   def   __init__( self, build_manager, jobs, keep_going ):
     self.vfiles         = _VFiles()
-    self.node_states = {}
+    self.node_states    = {}
+    self.building_nodes = {}
     self.build_manager  = build_manager
     self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going )
   
@@ -525,7 +526,42 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   _checkPrebuildDepends(self, node ):
+  def   _addBuildingNode( self, node, state ):
+    conflicting_nodes = []
+    building_nodes = self.building_nodes
+    
+    for name, signature in node.getNamesAndSignatures():
+      node_signature = (node, signature)
+      
+      other = building_nodes.setdefault( name, node_signature )
+      if other is not node_signature:
+        if other[1] != signature:
+          raise ErrorNodeSignatureDifferent( node )
+        
+        conflicting_nodes.append( other[0] )
+    
+    if conflicting_nodes:
+      state.check_actual = True
+      self.build_manager.depends( node, conflicting_nodes )
+      return True
+    
+    return False
+  
+  #//-------------------------------------------------------//
+  
+  def   _removeBuildingNode( self, node ):
+    building_nodes = self.building_nodes
+    for name in node.getNames():
+      del building_nodes[ name ]
+  
+  #//-------------------------------------------------------//
+  
+  def   isBuilding(self):
+    return bool(self.building_nodes)
+  
+  #//-------------------------------------------------------//
+  
+  def   _checkPrebuildDepends( self, node ):
     dep_nodes = node.buildDepends()
     if dep_nodes:
       self.build_manager.depends( node, dep_nodes )
@@ -576,7 +612,7 @@ class _NodesBuilder (object):
           split_state.check_split = False
           split_state.check_depends = False
           split_state.check_replace = False
-          split_state.check_replace = check_actual
+          split_state.check_actual = check_actual
           split_state.initialized = split_node.builder is node.builder
         
         self.build_manager.depends( node, split_nodes )
@@ -593,7 +629,8 @@ class _NodesBuilder (object):
         node.target_values = targets
         
       self._removeNodeState( node )
-      self.build_manager.actualNode( node )
+      
+      self.build_manager.completedSplitNode( node )
       
       return True
     
@@ -603,7 +640,7 @@ class _NodesBuilder (object):
   
   def   _prebuild( self, node, state ):
     
-    build_manager = self.build_manager
+    # print( "node: %s, state: %s" % (node, state))
     
     if not state.initialized:
       node.initiate()
@@ -620,9 +657,6 @@ class _NodesBuilder (object):
         return True
     
     if self._checkPrebuildSplit( node, state ):
-      return True
-    
-    if build_manager.addProcessingNode( node ):
       return True
     
     return False
@@ -647,19 +681,22 @@ class _NodesBuilder (object):
       if self._prebuild( node, node_state ):
         changed = True
         continue
-              
+      
+      if self._addBuildingNode( node, node_state ):
+        continue
+      
       if node_state.check_actual:
         vfile = vfiles[ node.builder ]
         actual = build_manager.isActualNode( node, vfile )
         
         if actual:
           self._removeNodeState( node )
+          self._removeBuildingNode( node )
           build_manager.actualNode( node )
           changed = True
           continue
           
       addTask( node, _buildNode, node )
-      build_manager.addBuildingNode()
       
       added_tasks += 1
       
@@ -667,7 +704,7 @@ class _NodesBuilder (object):
         changed = self._getFinishedNodes( block = False ) or changed
         added_tasks = 0
     
-    return self._getFinishedNodes( block = not changed ) or changed
+    self._getFinishedNodes( block = not changed )
   
   #//-------------------------------------------------------//
   
@@ -684,6 +721,7 @@ class _NodesBuilder (object):
       error = task.error
       
       self._removeNodeState( node )
+      self._removeBuildingNode( node )
       
       vfile = vfiles[ node.builder ]
       
@@ -756,10 +794,8 @@ class BuildManager (object):
   (
     '_nodes',
     '_built_targets',
-    '_processing_nodes',
     '_failed_nodes',
     '_built_node_names',
-    'building',
     'completed',
     'actual',
     'explain',
@@ -776,11 +812,9 @@ class BuildManager (object):
   def   __reset(self, build_always = False, explain = False ):
     
     self._built_targets = {}
-    self._processing_nodes = {}
     self._failed_nodes = {}
     self._built_node_names = set() if build_always else None
     
-    self.building = 0
     self.completed = 0
     self.actual = 0
     self.explain = explain
@@ -812,20 +846,6 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   isWaiting(self):
-    return self.building > 0 
-  
-  #//-------------------------------------------------------//
-  
-  def   actualNode( self, node ):
-    self.removeProcessingNode( node )
-    self._nodes.removeTail( node )
-    self.actual += 1
-    
-    node.shrink()
-  
-  #//-------------------------------------------------------//
-  
   def   actualNodeStatus( self, node ):
     eventNodeActual( node, self.getProgressStr() )
     self.actualNode( node )
@@ -848,17 +868,29 @@ class BuildManager (object):
   def   _addToBuiltNodeNames(self, node ):
     built_names = self._built_node_names
     if built_names is not None:
-      built_names.update( node.getNames() );
+      built_names.update( node.getNames() )
+  
+  #//-------------------------------------------------------//
+  
+  def   completedSplitNode(self, node ):
+    self._nodes.removeTail( node )
+    node.shrink()
+  
+  #//-------------------------------------------------------//
+  
+  def   actualNode( self, node ):
+    self._nodes.removeTail( node )
+    self.actual += 1
+    
+    node.shrink()
   
   #//-------------------------------------------------------//
   
   def   completedNode( self, node, builder_output ):
     self._checkAlreadyBuilt( node )
-    self.removeProcessingNode( node )
     self._nodes.removeTail( node )
     self._addToBuiltNodeNames( node )
     
-    self.building -= 1
     self.completed += 1
     
     eventNodeBuildingFinished( node, builder_output, self.getProgressStr() )
@@ -868,47 +900,13 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   failedNode( self, node, error ):
-    self.building -= 1
     self._failed_nodes[ node ] = error
     
     eventNodeBuildingFailed( node, error )
   
   #//-------------------------------------------------------//
   
-  def   addProcessingNode( self, node ):
-    conflicting_nodes = []
-    processing_nodes = self._processing_nodes
-    
-    for name, signature in node.getNamesAndSignatures():
-      node_signature = (node, signature)
-      
-      other = processing_nodes.setdefault( name, node_signature )
-      if other is not node_signature:
-        if other != node_signature:
-          raise ErrorNodeSignatureDifferent( node )
-        
-        conflicting_nodes.append( other[0] )
-    
-    self.depends( node, conflicting_nodes )
-    
-    return bool(conflicting_nodes)
-  
-  #//-------------------------------------------------------//
-  
-  def   removeProcessingNode( self, node ):
-    processing_nodes = self._processing_nodes
-    for name in node.getNames():
-      del processing_nodes[ name ]
-  
-  #//-------------------------------------------------------//
-  
-  def   addBuildingNode( self ):
-    self.building += 1
-  
-  #//-------------------------------------------------------//
-  
   def   removedNode( self, node ):
-    self.removeProcessingNode( node )
     self._nodes.removeTail( node )
     self.completed += 1
     
@@ -957,17 +955,13 @@ class BuildManager (object):
       nodes_tree.shrinkTo( nodes )
     
     with _NodesBuilder( self, jobs, keep_going ) as nodes_builder:
-      
       while True:
         tails = self.getTailNodes()
         
-        if not (tails or self.isWaiting()):
+        if not tails and not nodes_builder.isBuilding():
           break
         
-        changed = nodes_builder.build( tails )
-        
-        if not changed:
-          break
+        nodes_builder.build( tails )
     
     return self.isOk()
   
@@ -990,7 +984,6 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   printBuildState(self):
-    logInfo("Building nodes: %s" % self.building )
     logInfo("Failed nodes: %s" % len(self._failed_nodes) )
     logInfo("Completed nodes: %s" % self.completed )
     logInfo("Actual nodes: %s" % self.actual )

@@ -10,7 +10,8 @@ from aql.utils import fileChecksum, Tempdir, \
 
 from aql.values import SimpleValue, FileChecksumValue
 from aql.options import builtinOptions
-from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildManager, ErrorNodeDependencyCyclic
+from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildManager
+from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
 
 #//===========================================================================//
 
@@ -114,12 +115,12 @@ def   _build( bm ):
   try:
     bm.selfTest()
     success = bm.build( jobs = 1, keep_going = False )
+    bm.selfTest()
     if not success:
       bm.printFails()
       raise Exception("Nodes failed")
     
   finally:
-    bm.selfTest()
     bm.close()
     bm.selfTest()
 
@@ -443,11 +444,13 @@ class TestBuildManager( AqlTestCase ):
         src_values.append( FileChecksumValue( s ) )
       
       node = Node( builder, src_values )
+      node = Node( builder, node )
+      node = Node( builder, node )
       
       bm.add( node )
       _build( bm )
       
-      self.assertEqual( self.building_nodes, num_src_files )
+      self.assertEqual( self.building_nodes, num_src_files * 7 )
       
       #//-------------------------------------------------------//
       
@@ -553,6 +556,62 @@ class TestBuildManager( AqlTestCase ):
       
       self.assertEqual( self.finished_nodes, 2 )
 
+  #//-------------------------------------------------------//
+  
+  def test_bm_conflicts(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      num_src_files = 3
+      src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      builder1 = ChecksumSingleBuilder( options, 0, 256 )
+      builder2 = ChecksumSingleBuilder( options, 0, 1024 )
+      
+      node1 = Node( builder1, src_files )
+      node2 = Node( builder2, src_files )
+      # node1 = Node( builder1, node1 )
+      # node2 = Node( builder2, node2 )
+      
+      bm.add( node1 )
+      bm.add( node2 )
+      self.assertRaises( ErrorNodeSignatureDifferent, _build, bm )
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_no_conflicts(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      num_src_files = 3
+      src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      builder1 = ChecksumSingleBuilder( options, 0, 256 )
+      builder2 = ChecksumSingleBuilder( options, 0, 256 )
+      
+      node1 = Node( builder1, src_files )
+      node2 = Node( builder2, src_files )
+      node1 = Node( builder1, node1 )
+      node2 = Node( builder2, node2 )
+      
+      bm.add( node1 )
+      bm.add( node2 )
+      _build( bm )
+      
+      self.assertEqual( self.finished_nodes, 3 * 3 )
+  
   #//-------------------------------------------------------//
   
   @skip

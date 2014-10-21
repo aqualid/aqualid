@@ -42,28 +42,18 @@ class   ErrorNodeSplitUnknownSource( AqlException ):
     
 class   ErrorNoTargets( AttributeError ):
   def   __init__( self, node ):
-    msg = "Node targets are not built or set yet: %s" % (node.getBuildStr( brief = False ),)
+    msg = "Node targets are not built or set yet: %s" % (node,)
     super(ErrorNoTargets, self).__init__( msg )
 
 class   ErrorNoSrcTargets( AqlException ):
   def   __init__( self, node, src_value ):
-    msg = "Source '%s' targets are not built or set yet: %s" % (src_value.get(), node.getBuildStr( brief = False ),)
+    msg = "Source '%s' targets are not built or set yet: %s" % (src_value.get(), node)
     super(ErrorNoSrcTargets, self).__init__( msg )
 
 class   ErrorUnactualValue( AqlException ):
   def   __init__( self, value ):
     msg = "Target value is not actual: %s (%s)" % (value.name, type(value))
     super(ErrorUnactualValue, self).__init__( msg )
-
-class   ErrorNoImplicitDeps( AqlException ):
-  def   __init__( self, node ):
-    msg = "Node implicit dependencies are not built or set yet: %s" % (node.getBuildStr( brief = False ),)
-    super(ErrorNoImplicitDeps, self).__init__( msg )
-
-class   ErrorNodeNotInitialized( AqlException ):
-  def   __init__( self, node ):
-    msg = "Node is not initialized yet: %s" % (node, )
-    super(ErrorNodeNotInitialized, self).__init__( msg )
 
 class   ErrorNodeUnknownSource( AqlException ):
   def   __init__( self, src_value ):
@@ -573,7 +563,6 @@ class Node (object):
   
   def   getNamesAndSignatures(self):
     return ((self.name,self.signature),)
-
   
   #//=======================================================//
 
@@ -659,7 +648,11 @@ class Node (object):
     
     source_values = self.getSourceValues()
     
-    name, self.target_values = _genNodeValueName( self.builder, source_values, name_hash )
+    name, target_values = _genNodeValueName( self.builder, source_values, name_hash )
+    
+    if target_values:
+      self.target_values = target_values
+    
     self.name = name
     return name
 

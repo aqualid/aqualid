@@ -245,7 +245,7 @@ class TestToolMsvc( AqlTestCase ):
       
       self.touchCppFile( hdr_files[0] )
       
-      shlib = cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
       self.buildPrj( prj, 3 )
       
