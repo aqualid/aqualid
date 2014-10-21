@@ -50,7 +50,7 @@ cpp_options.cpppath += include_dirs
 base_sources = FindFiles( src_dir, '*.cxx',
                           exclude_mask = ["Catalogue.cxx", "ExternalLexer.cxx", "ScintillaBase.cxx"] )
 
-base_objs = [ cpp.Compile( base_sources ) ]
+base_objs = [ cpp.Compile( base_sources, batch = cpp_options.is_batch_build.get() ) ]
 
 if is_windows_build:
   base_objs += [
@@ -61,14 +61,14 @@ if is_windows_build:
   include_dirs = [ src_dir, include_dir, lexlib_dir ]
   
 elif is_unix_build:
-  base_objs += [ cpp.Compile( gtk_dir + "/PlatGtk.cxx") ]
+  base_objs += [ cpp.Compile( gtk_dir + "/PlatGtk.cxx" ) ]
 
 #//-------------------------------------------------------//
 # Create Lexers static library
 
 lexers_sources = FindFiles( lexers_dir, '*.cxx' )
 
-lexers_lib = cpp.LinkStaticLibrary( lexers_sources, target = 'Lexers' )
+lexers_lib = cpp.LinkStaticLibrary( lexers_sources, target = 'Lexers', batch = cpp_options.is_batch_build.get() )
 
 Alias( 'lexers', lexers_lib )
 Default( lexers_lib )
@@ -79,7 +79,7 @@ Default( lexers_lib )
 scintilla_sources  =  [ os.path.join( lexlib_dir, src ) for src in ('CharacterCategory.cxx', 'CharacterSet.cxx', 'PropSetSimple.cxx') ]
 scintilla_sources +=  [ src_dir + "/ScintillaBase.cxx" ]
 
-scintilla_objs = [ cpp.Compile( scintilla_sources) ]
+scintilla_objs = [ cpp.Compile( scintilla_sources, batch = cpp_options.is_batch_build.get() ) ]
 if is_windows_build:
   scintilla_objs += [ cpp.Compile( os.path.join(win32_dir, "ScintillaWin.cxx"), use_direct2d = use_direct2d )]
 
@@ -96,7 +96,7 @@ Default( scintilla_dll )
 lex_dll_sources = FindFiles( lexlib_dir, '*.cxx', exclude_mask = "LexerNoExceptions.cxx" )
 lex_dll_sources += ( os.path.join( src_dir, src ) for src in ["Catalogue.cxx", "ExternalLexer.cxx"] )
 
-lex_dll_objs = [ cpp.Compile( lex_dll_sources ) ]
+lex_dll_objs = [ cpp.Compile( lex_dll_sources, batch = cpp_options.is_batch_build.get() ) ]
 lex_dll_objs += [ cpp.Compile( src_dir + "/ScintillaBase.cxx",
                                cppdefines = 'SCI_LEXER',
                                suffix = "_lex" ) ]

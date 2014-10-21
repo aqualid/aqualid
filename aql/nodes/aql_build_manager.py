@@ -98,8 +98,8 @@ def   eventNodeRemoved( settings, node, progress ):
 #//===========================================================================//
 
 class   ErrorNodeDependencyCyclic( AqlException ):
-  def   __init__( self, node ):
-    msg = "Node has a cyclic dependency: %s" % (node,)
+  def   __init__( self, node, deps ):
+    msg = "Node '%s' (%s) has a cyclic dependency: %s" % (node, node.getBuildStr(True), deps )
     super(ErrorNodeDependencyCyclic, self).__init__( msg )
 
 #//===========================================================================//
@@ -227,7 +227,7 @@ class _NodesTree (object):
         return
       
       if self.__hasCycle( node, new_deps ):
-        raise ErrorNodeDependencyCyclic( node )
+        raise ErrorNodeDependencyCyclic( node, new_deps )
       
       self.tail_nodes.discard( node )
       
@@ -533,12 +533,12 @@ class _NodesBuilder (object):
     for name, signature in node.getNamesAndSignatures():
       node_signature = (node, signature)
       
-      other = building_nodes.setdefault( name, node_signature )
-      if other is not node_signature:
-        if other[1] != signature:
+      other_node, other_signature = building_nodes.setdefault( name, node_signature )
+      if other_node is not node:
+        if other_signature != signature:
           raise ErrorNodeSignatureDifferent( node )
         
-        conflicting_nodes.append( other[0] )
+        conflicting_nodes.append( other_node )
     
     if conflicting_nodes:
       state.check_actual = True
