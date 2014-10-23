@@ -893,9 +893,14 @@ class Node (object):
   #//=======================================================//
   
   def   getBuildStr( self, brief = True ):
-    args = self.builder.getBuildStrArgs( self, brief = brief )
-    return _getBuildStr( args, brief )
-  
+    try:
+      args = self.builder.getBuildStrArgs( self, brief = brief )
+      return _getBuildStr( args, brief )
+    except Exception:
+      pass
+    
+    return str(self)  # TODO: return raw data
+    
   #//=======================================================//
   
   def   printSources(self):

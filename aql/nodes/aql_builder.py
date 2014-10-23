@@ -156,14 +156,14 @@ class BuilderInitiator( object ):
   
   #//=======================================================//
   
+  def   canBuildBatch(self):
+    return self.builder.canBuildBatch()
+  
+  def   canBuild(self):
+    return self.builder.canBuild()
+  
   def   isBatch(self):
     return self.builder.isBatch()
-  
-  #//=======================================================//
-  
-  def   setBatch(self, batch = True):
-    self.builder.setBatch( batch )
-    return self
   
 #//===========================================================================//
 
@@ -187,7 +187,8 @@ class Builder (object):
     self = super(Builder, cls).__new__(cls)
     self.makeValue = self.makeSimpleValue
     self.default_value_type = SimpleValue
-    self.__is_batch = False
+    
+    self.__is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
     
     return BuilderInitiator( self, options, args, kw )
   
@@ -202,14 +203,18 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   isBatch(self):
-    return self.__is_batch
+  def   canBuildBatch(self):
+    return self.__class__.buildBatch != Builder.buildBatch
   
   #//-------------------------------------------------------//
   
-  def   setBatch(self, batch = True):
-    self.__is_batch = bool(batch)
-    return self
+  def   canBuild(self):
+    return self.__class__.build != Builder.build
+  
+  #//-------------------------------------------------------//
+  
+  def   isBatch(self):
+    return self.__is_batch
   
   #//-------------------------------------------------------//
   

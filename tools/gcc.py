@@ -334,20 +334,20 @@ class ToolGccCommon( ToolCommonCpp ):
   
   #//-------------------------------------------------------//
   
-  def   Compile( self, options, batch = False ):
-    return GccCompiler( options ).setBatch( batch )
+  def   Compile( self, options ):
+    return GccCompiler( options )
   
   def   CompileResource( self, options ):
     return GccResCompiler( options )
   
-  def   LinkStaticLibrary( self, options, target, batch = False ):
-    return GccArchiver( options, target, batch )
+  def   LinkStaticLibrary( self, options, target ):
+    return GccArchiver( options, target )
   
-  def   LinkSharedLibrary( self, options, target, batch = False ):
-    return GccLinker( options, target, shared = True, batch = batch )
+  def   LinkSharedLibrary( self, options, target ):
+    return GccLinker( options, target, shared = True )
   
-  def   LinkProgram( self, options, target, batch = False ):
-    return GccLinker( options, target, shared = False, batch = batch )
+  def   LinkProgram( self, options, target ):
+    return GccLinker( options, target, shared = False )
 
 #//===========================================================================//
 

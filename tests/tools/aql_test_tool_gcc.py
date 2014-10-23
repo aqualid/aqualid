@@ -369,7 +369,7 @@ class TestToolGcc( AqlTestCase ):
         print("WARNING: GCC tool has not been found. Skip the test.")
         return
       
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch_build = False )
       
       self.buildPrj( prj, num_src_files + 2 )
       
@@ -381,11 +381,11 @@ class TestToolGcc( AqlTestCase ):
       cpp.LinkLibrary( src_files, res_file, target = 'foo' )
       self.buildPrj( prj, 1 )
       
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch_build = False )
       self.buildPrj( prj, 0 )
       
       self.touchCppFiles( hdr_files )
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = False )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch_build = False )
       self.buildPrj( prj, num_src_files )
   
   #//-------------------------------------------------------//
@@ -433,57 +433,9 @@ class TestToolGcc( AqlTestCase ):
       self.buildPrj( prj, 1 )
       
       self.touchCppFiles( hdr_files )
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = False )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = False )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch_build = False )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch_build = False )
       self.buildPrj( prj, num_src_files )
-      
-  #//-------------------------------------------------------//
-  
-  @skip
-  def   test_gcc_linker_twin_nodes(self):
-    with Tempdir() as tmp_dir:
-      
-      build_dir = os.path.join( tmp_dir, 'output')
-      src_dir = os.path.join( tmp_dir, 'src')
-      
-      os.makedirs( src_dir )
-      
-      num_src_files = 2
-      
-      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
-      res_file = self.generateResFile( src_dir, 'foo' )
-      
-      
-      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
-      
-      prj = Project( cfg.options, cfg.targets )
-      
-      try:
-        cpp = prj.tools['c++']
-      except  ErrorToolNotFound:
-        print("WARNING: GCC tool has not been found. Skip the test.")
-        return
-      
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      
-      self.buildPrj( prj, num_src_files * 2 + 4 )
-      
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      self.buildPrj( prj, 0 )
-      
-      self.touchCppFile( hdr_files[0] )
-      
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo' )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo' )
-      self.buildPrj( prj, 2 )
-      
-      self.touchCppFiles( hdr_files )
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = False )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = False )
-      self.buildPrj( prj, num_src_files * 2 )
-      
 
 #//===========================================================================//
 

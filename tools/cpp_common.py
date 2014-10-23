@@ -285,16 +285,6 @@ class CommonCppCompiler (aql.FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  #//-------------------------------------------------------//
-  
-  def   buildBatch( self, node ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
-  
-  #//-------------------------------------------------------//
-  
   def   getTraceName( self, brief ):
     if brief:
       name = self.cmd[0]
@@ -394,8 +384,6 @@ class CommonCppLinkerBase( aql.FileBuilder ):
     builders = {}
     
     compiler = self.makeCompiler( node.options )
-    if self.batch:
-      compiler.setBatch()
     
     self.addSourceBuilders( builders, self.getCppExts(), compiler )
     
@@ -469,7 +457,7 @@ class CommonCppLinkerBase( aql.FileBuilder ):
 #noinspection PyAttributeOutsideInit
 class CommonCppArchiver( CommonCppLinkerBase ):
   
-  def   __init__( self, options, target, batch ):
+  def   __init__( self, options, target ):
     
     prefix = options.libprefix.get() + options.prefix.get()
     suffix = options.suffix.get()
@@ -478,14 +466,13 @@ class CommonCppArchiver( CommonCppLinkerBase ):
     self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
     self.cmd = options.lib_cmd.get()
     self.shared = False
-    self.batch = batch
     
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
 class CommonCppLinker( CommonCppLinkerBase ):
   
-  def   __init__( self, options, target, shared, batch ):
+  def   __init__( self, options, target, shared ):
     if shared:
       prefix = options.shlibprefix.get() + options.prefix.get()
       ext = options.shlibsuffix.get()
@@ -498,7 +485,6 @@ class CommonCppLinker( CommonCppLinkerBase ):
     self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
     self.cmd = options.link_cmd.get()
     self.shared = shared
-    self.batch = batch
 
 
 #//===========================================================================//
@@ -525,19 +511,19 @@ class ToolCommonCpp( aql.Tool ):
   def   CheckHeaders(self, options ):
     return HeaderChecker( options )
   
-  def   Compile( self, options, batch = False ):
+  def   Compile( self, options ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
   def   CompileResource( self, options ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
-  def   LinkStaticLibrary( self, options, target, batch = False ):
+  def   LinkStaticLibrary( self, options, target ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
-  def   LinkSharedLibrary( self, options, target, def_file = None, batch = False ):
+  def   LinkSharedLibrary( self, options, target, def_file = None ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
-  def   LinkProgram( self, options, target, batch = False ):
+  def   LinkProgram( self, options, target ):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
 
 #//===========================================================================//

@@ -102,19 +102,19 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.Compile( src_files, batch = True )
+      cpp.Compile( src_files, batch_build = True )
       self.buildPrj( prj, num_groups, jobs = num_groups )
       
-      cpp.Compile( src_files, batch = False )
+      cpp.Compile( src_files, batch_build = False )
       self.buildPrj( prj, 0 )
       
       self.touchCppFile( hdr_files[0] )
-      cpp.Compile( src_files, batch = False )
+      cpp.Compile( src_files, batch_build = False )
       self.buildPrj( prj, 1 )
       
       self.touchCppFiles( hdr_files[:group_size] )
       
-      cpp.Compile( src_files, batch = True, batch_groups = num_groups)
+      cpp.Compile( src_files, batch_build = True, batch_groups = num_groups)
       self.buildPrj( prj, num_groups )
   
   #//-------------------------------------------------------//
@@ -148,7 +148,7 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.Compile( src_files, batch = True, batch_groups = 1 )
+      cpp.Compile( src_files, batch_build = True, batch_groups = 1 )
       
       self.buildPrj( prj, 0, num_failed_nodes = 1 )
       
@@ -185,7 +185,7 @@ class TestToolMsvc( AqlTestCase ):
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch_build = True, batch_groups = num_groups )
       
       self.buildPrj( prj, num_groups + 2 )
       
@@ -197,11 +197,11 @@ class TestToolMsvc( AqlTestCase ):
       cpp.LinkLibrary( src_files, res_file, target = 'foo' )
       self.buildPrj( prj, 2 )
       
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch_build = True )
       self.buildPrj( prj, 0 )
       
       self.touchCppFiles( hdr_files )
-      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
+      cpp.LinkLibrary( src_files, res_file, target = 'foo', batch_build = True, batch_groups = num_groups )
       self.buildPrj( prj, num_groups + 1)
       
       
@@ -251,8 +251,8 @@ class TestToolMsvc( AqlTestCase ):
       
       self.touchCppFiles( hdr_files )
       
-      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch = True, batch_groups = num_groups )
-      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch = True, batch_groups = num_groups )
+      cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch_build = True, batch_groups = num_groups )
+      cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch_build = True, batch_groups = num_groups )
       self.buildPrj( prj, num_groups + 2, jobs = 1 )
       
 #//===========================================================================//

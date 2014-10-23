@@ -239,7 +239,7 @@ class BuilderWrapper( object ):
     
     builder = self.method( options, **args_kw )
     
-    if builder.isBatch():
+    if builder.isBatch() and ((len(sources) > 1) or not builder.canBuild()):
       node = BatchNode( builder, sources )
     else:
       node = Node( builder, sources )

@@ -467,5 +467,4 @@ class ToolRsync( aql.Tool ):
                                 host = host, login = login,
                                 key_file = key_file, exclude = exclude )
     
-    builder.setBatch()
     return builder
