@@ -600,7 +600,9 @@ class Node (object):
     dep_values = self.dep_values
     
     for node in dep_nodes:
-      dep_values.extend( node.target_values )
+      target_values = node.target_values
+      if target_values:
+        dep_values.extend( target_values )
     
     dep_nodes.clear()
     
@@ -796,7 +798,10 @@ class Node (object):
     node_value = NodeValue( name = self.name )
     
     node_value = vfile.findValue( node_value )
-    if node_value is not None:
+    if node_value is None:
+      if self.target_values is None:
+        self.target_values = tuple()
+    else:
       targets = node_value.targets
       itargets = node_value.itargets
       
@@ -806,9 +811,9 @@ class Node (object):
       else:
         self.target_values  = tuple()
         self.itarget_values = tuple()
-
-    vfile.removeValues( [ node_value ] )
-    
+      
+      vfile.removeValues( [ node_value ] )
+        
     try:
       self.builder.clear( self )
     except Exception:
@@ -1066,14 +1071,24 @@ class BatchNode (Node):
     for src_value in self.source_values:
       node_value, ideps = self.node_values[ src_value ]
       
-      node_value = vfile.findValue( node_value )
+      other = vfile.findValue( node_value )
       
-      if node_value is not None:
-        node_values.append( node_value )
+      if other is None:
+        if node_value.targets is None:
+          node_value.targets = tuple()
         
-        if node_value.targets is not None:
-          targets   += node_value.targets
-          itargets  += node_value.itargets
+        if node_value.itargets is None:
+          node_value.itargets = tuple()
+          
+      else:
+        node_values.append( other )
+        
+        node_value.targets = other.targets
+        node_value.itargets = other.itargets
+        
+        if other.targets is not None:
+          targets   += other.targets
+          itargets  += other.itargets
               
     self.target_values  = targets
     self.itarget_values = itargets

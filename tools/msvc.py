@@ -221,7 +221,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
       pdb = target + '.pdb'
       cmd.append( "/PDB:%s" % (pdb,) )
       itargets.append( pdb )
-      
+    
     cmd += [ '/nologo', '/OUT:%s' % target ]
     
     cmd += obj_files
@@ -239,6 +239,10 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
       tags = 'shlib'
       if os.path.exists( import_lib ):
         node.addTargets( import_lib, tags = 'implib' )
+      
+      exports_lib = os.path.splitext( target )[0] + '.exp'
+      if os.path.exists( exports_lib ):
+        itargets.append( exports_lib )
     
     node.addTargets( target, tags = tags, side_effects = itargets )
     
