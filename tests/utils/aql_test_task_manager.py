@@ -27,34 +27,38 @@ class TestTaskManager( AqlTestCase ):
     
     results = set()
     
-    for i in range(0,8):
+    num_of_tasks = 8
+    
+    for i in range(0,num_of_tasks):
       tm.addTask( i, _doAppend, i, results )
     
     time.sleep(0.5) # wait until all tasks are done
     
     done_tasks = tm.finishedTasks()
-    expected_tasks = sorted( zip( range(0,8), [None] * 8, [None] * 8 ) )
+    expected_tasks = [ TaskResult( task_id ) for task_id in range(num_of_tasks) ]
     
-    self.assertEqual( sorted(done_tasks), expected_tasks )
-    self.assertEqual( results, set(range(0,8)) )
+    self.assertEqual( sorted(expected_tasks), expected_tasks )
+    self.assertEqual( results, set(range(num_of_tasks)) )
 
   #//===========================================================================//
 
   def test_task_manager_fail(self):
     tm = TaskManager( num_threads = 4 )
     
-    for i in range(100):
+    num_of_tasks = 100
+    
+    for i in range(num_of_tasks):
       tm.addTask( i, _doFail, 0.0 )
     
     time.sleep(1) # wait until all tasks are done
     
     done_tasks = tm.finishedTasks()
     
-    self.assertEqual( len(done_tasks), 100 )
+    self.assertEqual( len(done_tasks), num_of_tasks )
     
     for i, t in enumerate( sorted(done_tasks) ):
-      self.assertEqual( t[0], i )
-      self.assertIsNotNone( t[1] )
+      self.assertEqual( t.task_id, i )
+      self.assertIsNotNone( t.error )
 
   #//===========================================================================//
 
@@ -77,10 +81,9 @@ class TestTaskManager( AqlTestCase ):
     
     done_tasks = sorted( tm.finishedTasks(), key = lambda result: result.task_id )
     
-    expected_tasks = [ TaskResult( task_id, error, result ) \
-                       for task_id, error, result in zip(range(jobs), [None] * jobs, [None] * jobs ) ] 
+    expected_tasks = [ TaskResult( task_id ) for task_id in range(jobs) ]
     
-    self.assertEqual( done_tasks, expected_tasks )
+    self.assertEqual( sorted(done_tasks), expected_tasks )
     self.assertEqual( results, set(range(jobs)) )
 
   #//===========================================================================//
@@ -103,8 +106,7 @@ class TestTaskManager( AqlTestCase ):
     self.assertEqual( results, set(range(num_tasks)) )
     
     done_tasks = tm.finishedTasks()
-    expected_tasks = [ TaskResult( task_id, error, result ) \
-                       for task_id, error, result in zip(range(num_tasks), [None] * num_tasks, [None] * num_tasks ) ] 
+    expected_tasks = [ TaskResult( task_id ) for task_id in range(num_tasks) ] 
     
     self.assertEqual( sorted(done_tasks), expected_tasks )
 

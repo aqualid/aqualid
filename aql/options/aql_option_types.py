@@ -45,8 +45,10 @@ class   ErrorOptionTypeEnumValueIsAlreadySet( AqlException ):
 #//===========================================================================//
 
 class   ErrorOptionTypeUnableConvertValue( TypeError ):
-  def   __init__( self, value_type, value ):
-    msg = "Unable to convert value '%s(%s)' to type '%s'" % (value, type(value), value_type)
+  def   __init__( self, option_type, invalid_value ):
+    self.option_type = option_type
+    self.invalid_value = invalid_value
+    msg = "Unable to convert option value '%s (%s)' to '%s'" % (invalid_value, type(invalid_value), option_type.rangeHelp())
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -126,7 +128,7 @@ class   OptionType (object):
       
       return self.value_type( value )
     except (TypeError, ValueError):
-      raise ErrorOptionTypeUnableConvertValue( self.value_type, value )
+      raise ErrorOptionTypeUnableConvertValue( self, value )
   
   def   toStr( self, value ):
     """
@@ -387,7 +389,7 @@ class   RangeOptionType (OptionType):
       try:
         min_value = self.value_type( min_value )
       except (TypeError, ValueError):
-        raise ErrorOptionTypeUnableConvertValue( self.value_type, min_value )
+        raise ErrorOptionTypeUnableConvertValue( self, min_value )
     else:
       min_value = self.value_type()
       
@@ -395,7 +397,7 @@ class   RangeOptionType (OptionType):
       try:
         max_value = self.value_type( max_value )
       except (TypeError, ValueError):
-        raise ErrorOptionTypeUnableConvertValue( self.value_type, max_value )
+        raise ErrorOptionTypeUnableConvertValue( self, max_value )
     else:
       max_value = self.value_type()
     
@@ -435,7 +437,7 @@ class   RangeOptionType (OptionType):
       return value
     
     except TypeError:
-      raise ErrorOptionTypeUnableConvertValue( self.value_type, value )
+      raise ErrorOptionTypeUnableConvertValue( self, value )
   
   #//-------------------------------------------------------//
   
@@ -493,7 +495,7 @@ class   ListOptionType (OptionType):
       return self.value_type( values )
       
     except (TypeError, ValueError):
-      raise ErrorOptionTypeUnableConvertValue( self.value_type, values )
+      raise ErrorOptionTypeUnableConvertValue( self, values )
 
   #//-------------------------------------------------------//
   
@@ -551,7 +553,7 @@ class   DictOptionType (OptionType):
       return self.value_type( values )
       
     except (TypeError, ValueError):
-      raise ErrorOptionTypeUnableConvertValue( self.value_type, values )
+      raise ErrorOptionTypeUnableConvertValue( self, values )
 
   #//-------------------------------------------------------//
   

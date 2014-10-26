@@ -21,8 +21,8 @@ __all__ = ( 'main', )
 import gc
 import os
 import cProfile
+import traceback
 
-from aql.util_types import AqlException
 from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, \
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 from .aql_project import Project, ProjectConfig
@@ -131,10 +131,11 @@ def   _main( prj_cfg ):
           prj.Clean()
           success = True
         else:
-          success = prj.Build( jobs         = prj_cfg.jobs,
-                               keep_going   = prj_cfg.keep_going,
-                               build_always = prj_cfg.build_always,
-                               explain      = prj_cfg.debug_explain )
+          success = prj.Build( jobs           = prj_cfg.jobs,
+                               keep_going     = prj_cfg.keep_going,
+                               build_always   = prj_cfg.build_always,
+                               explain        = prj_cfg.debug_explain,
+                               with_backtrace = prj_cfg.debug_backtrace )
           if not success:
             prj.build_manager.printFails()
       
@@ -153,8 +154,10 @@ def   _main( prj_cfg ):
 #//===========================================================================//
 
 def   main():
+  with_backtrace = True
   try:
     prj_cfg = ProjectConfig()
+    with_backtrace = prj_cfg.debug_backtrace
     
     debug_profile = prj_cfg.debug_profile
     
@@ -168,8 +171,12 @@ def   main():
       profiler.dump_stats( debug_profile )
     
     return status
-  except AqlException as ex:
-    # eventAqlError( ex )
-    raise
+  except Exception as ex:
+    if with_backtrace:
+      err = traceback.format_exc()
+    else:
+      err = str(ex)
+
+    eventAqlError( err )
   
 #//===========================================================================//

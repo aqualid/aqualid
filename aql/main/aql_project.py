@@ -117,7 +117,7 @@ class ProjectConfig( object ):
       CLIOption( "-v", "--verbose",           "verbose",          bool,       False,        "Verbose mode." ),
       CLIOption( "-s", "--no-output",         "no_output",        bool,       False,        "Don't print output streams of builder's commands." ),
       CLIOption( None, "--debug-memory",      "debug_memory",     bool,       False,        "Display memory usage." ),
-      CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file." ),
+      CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
       CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reasons why targets are being rebuilt" ),
       CLIOption( None, "--debug-backtrace",   "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
     )
@@ -548,7 +548,7 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   Build( self, jobs = None, keep_going = False, build_always = False, explain = False ):
+  def   Build( self, jobs = None, keep_going = False, build_always = False, explain = False, with_backtrace = True ):
     if not jobs:
       jobs = 0
     else:
@@ -569,7 +569,7 @@ class Project( object ):
     build_nodes = self._getBuildNodes()
     
     is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes,
-                                      build_always = build_always, explain = explain )
+                                      build_always = build_always, explain = explain, with_backtrace = with_backtrace )
     return is_ok
   
   #//=======================================================//

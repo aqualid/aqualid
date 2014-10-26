@@ -46,13 +46,31 @@ _exit_task = ( None, _exitEventFunction, [], {} )
 
 #//===========================================================================//
 
-TaskResult = collections.namedtuple("TaskResult", ['task_id', 'error', 'result'] )
+class TaskResult (object):
+  __slots__ = ('task_id', 'error', 'result')
+  
+  def   __init__(self, task_id = None, result = None, error = None ):
+    self.task_id = task_id
+    self.result = result
+    self.error = error
+  
+  def   __lt__(self, other):
+    return (self.task_id, self.result, self.error) < (other.task_id, other.result, other.error)
+  
+  def   __eq__(self, other):
+    return (self.task_id, self.result, self.error) == (other.task_id, other.result, other.error)
+  
+  def   __ne__(self, other):
+    return not self.__eq__(other)
+  
+  def   __str__(self):
+    return "task_id: %s, result: %s, error: %s" % (self.task_id, self.result, self.error)
 
 #//===========================================================================//
 
 class _TaskExecutor( threading.Thread ):
   
-  def __init__(self, tasks, finished_tasks, fail_handler, exit_event ):
+  def __init__(self, tasks, finished_tasks, fail_handler, exit_event, with_backtrace ):
     
     super(_TaskExecutor,self).__init__()
     
@@ -61,6 +79,7 @@ class _TaskExecutor( threading.Thread ):
     self.fail_handler     = fail_handler
     self.exit_event       = exit_event
     self.daemon           = True  # let that main thread to exit even if task threads are still active
+    self.with_backtrace   = with_backtrace
     
     self.start()
   
@@ -76,36 +95,37 @@ class _TaskExecutor( threading.Thread ):
       
       task_id, func, args, kw = tasks.get()
       
+      task_result = TaskResult( task_id = task_id ) if task_id is not None else None
+      
       try:
         result = func(*args, **kw)
         
-        if task_id is not None:
-          success = TaskResult( task_id = task_id, result = result, error = None )
-          finished_tasks.put( success )
+        if task_result is not None:
+          task_result.result = result
       
       except _ExitException:
+        task_result = None
         break
       
       except (Exception, BaseException) as ex:
+        task_result.error = "Internal error"
         
-        err = ''.join( traceback.format_exception_only( type(ex), ex ) )
-        
-        if not isinstance( ex, ExecCommandResult ):
-          tb = getattr( ex, '__traceback__', None )
-          if tb:
-            err += ''.join( traceback.format_tb( tb ) )
-          else:
-            err = traceback.format_exc()
+        if self.with_backtrace:
+          err = traceback.format_exc()
+        else:
+          err = str(ex)
                       
         if task_id is not None:
-          fail = TaskResult( task_id = task_id, result = None, error = err )
-          finished_tasks.put( fail )
+          task_result.error = err
         else:
           logWarning( "Task failed with error: %s" % (err,) )
         
         self.fail_handler( err )
       
       finally:
+        if task_result is not None:
+          finished_tasks.put( task_result )
+        
         tasks.task_done()
 
 
@@ -120,23 +140,27 @@ class TaskManager (object):
     'tasks',
     'finished_tasks',
     'unfinished_tasks',
+    'stop_on_fail',
+    'with_backtrace',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__(self, num_threads, stop_on_fail = False ):
+  def   __init__(self, num_threads, stop_on_fail = False, with_backtrace = True ):
     self.tasks            = queue.Queue()
     self.finished_tasks   = queue.Queue()
     self.exit_event       = threading.Event()
     self.lock             = threading.Lock()
     self.unfinished_tasks = 0
     self.threads          = []
+    self.stop_on_fail     = stop_on_fail
+    self.with_backtrace   = with_backtrace
     
-    self.start( num_threads, stop_on_fail )
+    self.start( num_threads )
   
   #//-------------------------------------------------------//
   
-  def   start( self, num_threads, stop_on_fail = False ):
+  def   start( self, num_threads ):
     with self.lock:
       if self.exit_event.is_set():
         self.__stop()
@@ -145,11 +169,11 @@ class TaskManager (object):
       
       num_threads -= len(threads)
       
-      fail_handler = self.failHandler if stop_on_fail else lambda err: None
+      fail_handler = self.failHandler if self.stop_on_fail else lambda err: None
       
       while num_threads > 0:
         num_threads -= 1
-        t = _TaskExecutor( self.tasks, self.finished_tasks, fail_handler, self.exit_event )
+        t = _TaskExecutor( self.tasks, self.finished_tasks, fail_handler, self.exit_event, self.with_backtrace )
         threads.append( t )
   
   #//-------------------------------------------------------//

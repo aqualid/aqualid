@@ -67,7 +67,7 @@ def   _build_options():
                                     description = "Type used to detect changes in dependency files" )
   
   options.file_signature = file_signature
-  options.fcheck = options.file_signature
+  options.signature = options.file_signature
   
   #//-------------------------------------------------------//
   

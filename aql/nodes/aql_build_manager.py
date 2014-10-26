@@ -54,7 +54,7 @@ def   eventBuildTargetTwice( settings, value, node1 ):
 @eventError
 def   eventFailedNode( settings, node, error ):
   
-  msg = node.getBuildStr( settings )
+  msg = node.getBuildStr( settings.brief )
   msg += '\n\n%s\n' % (error,)
   
   logError( msg )
@@ -488,12 +488,12 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, build_manager, jobs, keep_going ):
+  def   __init__( self, build_manager, jobs = 0, keep_going = False, with_backtrace = True ):
     self.vfiles         = _VFiles()
     self.node_states    = {}
     self.building_nodes = {}
     self.build_manager  = build_manager
-    self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going )
+    self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going, with_backtrace = with_backtrace )
   
   #//-------------------------------------------------------//
   
@@ -946,7 +946,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False ):
+  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False, with_backtrace = True ):
     
     self.__reset( build_always = build_always, explain = explain )
     
@@ -954,7 +954,7 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
-    with _NodesBuilder( self, jobs, keep_going ) as nodes_builder:
+    with _NodesBuilder( self, jobs, keep_going, with_backtrace ) as nodes_builder:
       while True:
         tails = self.getTailNodes()
         
@@ -1004,7 +1004,7 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
-    with _NodesBuilder( self, jobs = 1, keep_going = False ) as nodes_builder:
+    with _NodesBuilder( self ) as nodes_builder:
       while True:
         
         tails = self.getTailNodes()
@@ -1024,7 +1024,7 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
-    with _NodesBuilder( self, jobs = 1, keep_going = False ) as nodes_builder:
+    with _NodesBuilder( self ) as nodes_builder:
       
       while True:
         tails = self.getTailNodes()
