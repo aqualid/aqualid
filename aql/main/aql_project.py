@@ -86,7 +86,7 @@ class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options',
                'verbose', 'no_output', 'jobs', 'keep_going',
-               'build_always', 'clean', 'status',
+               'build_always', 'clean', 'status', 'list_options', 'list_targets',
                'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
   )
   
@@ -104,6 +104,7 @@ class ProjectConfig( object ):
       CLIOption( "-C", "--directory",         "directory",        FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
       CLIOption( "-f", "--makefile",          "makefile",         FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
       CLIOption( "-l", "--list-options",      "list_options",     bool,       False,        "List all available options and exit." ),
+      CLIOption( "-t", "--list-targets",      "list_targets",     bool,       False,        "List all available targets and exit." ),
       CLIOption( "-c", "--config",            "config",           FilePath,   None,         "The configuration file used to read CLI arguments." ),
       CLIOption( "-B", "--always",            "build_always",     bool,       False,        "Unconditionally build all targets." ),
       CLIOption( "-R", "--clean",             "clean",            bool,       False,        "Cleans targets." ),
@@ -142,9 +143,6 @@ class ProjectConfig( object ):
     
     options.update( cli_options )
     
-    if cli_config.list_options:
-      printOptions( options )
-    
     #//-------------------------------------------------------//
     
     self.options          = options
@@ -157,6 +155,8 @@ class ProjectConfig( object ):
     self.build_always     = cli_config.build_always
     self.clean            = cli_config.clean
     self.status           = cli_config.status
+    self.list_options     = cli_config.list_options
+    self.list_targets     = cli_config.list_targets
     self.jobs             = cli_config.jobs
     self.debug_profile    = cli_config.debug_profile
     self.debug_memory     = cli_config.debug_memory
@@ -384,6 +384,7 @@ class Project( object ):
     self.options = options
     self.scripts_cache = {}
     self.aliases = {}
+    self.alias_descriptions = {}
     self.defaults = []
     
     self.build_manager = BuildManager()
@@ -402,6 +403,7 @@ class Project( object ):
     other.scripts_cache = self.scripts_cache
     other.build_manager = self.build_manager
     other.aliases       = self.aliases
+    other.alias_descriptions = self.alias_descriptions
     other.defaults      = self.defaults
     other.options       = self.options.override()
     other.tools         = self.tools._override( other )
@@ -510,9 +512,12 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Alias( self, alias, nodes ):
+  def   Alias( self, alias, nodes, description = None ):
     for alias, node in itertools.product( toSequence( alias ), toSequence( nodes ) ):
-      self.aliases.setdefault( alias, []).append( node )
+      self.aliases.setdefault( alias, set()).add( node )
+      
+      if description:
+        self.alias_descriptions[ alias ] = description
     
   #//-------------------------------------------------------//
   
@@ -529,17 +534,31 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   _getBuildNodes( self ):
-    target_nodes = []
-    
+  def   _addAliasNodes(self, target_nodes, aliases ):
     try:
-      for alias in self.targets:
-        target_nodes += self.aliases[ alias ]
+      for alias in aliases:
+        target_nodes.update( self.aliases[ alias ] )
     except KeyError as ex:
       raise ErrorProjectUnknownTarget( ex.args[0] )
+  
+  #//=======================================================//
+  
+  def   _addDefaultNodes( self, target_nodes ):
+    for node in self.defaults:
+      if isinstance( node, Node ):
+        target_nodes.add( node )
+      else:
+        self._addAliasNodes( target_nodes, (node,) )
+  
+  #//=======================================================//
+  
+  def   _getBuildNodes( self ):
+    target_nodes = set()
+    
+    self._addAliasNodes( target_nodes, self.targets )
     
     if not target_nodes:
-      target_nodes = self.defaults
+      self._addDefaultNodes( target_nodes )
     
     if not target_nodes:
       target_nodes = None
@@ -586,5 +605,38 @@ class Project( object ):
     
     is_actual = self.build_manager.status( nodes = build_nodes, explain = explain )
     return is_actual
+  
+  #//=======================================================//
+  
+  def ListTargets( self ):
+    targets = []
+    node2alias = {}
+    
+    for alias, nodes in self.aliases.items():
+      key = frozenset(nodes)
+      target_info = node2alias.setdefault( key, [[],""])
+      target_info[0].append( alias )
+      description = self.alias_descriptions.get( alias, None )
+      if description:
+        if len(target_info[1]) < len(description):
+          target_info[1] = description
+    
+    build_nodes = self._getBuildNodes()
+    
+    for nodes, aliases_and_description in node2alias.items():
+      
+      aliases, description = aliases_and_description
+      
+      aliases.sort( key = lambda name: name.lower() )
+      max_alias = max( aliases, key = len )
+      aliases.remove( max_alias )
+      aliases.insert( 0, max_alias )
+      
+      is_built = (build_nodes is None) or nodes.issubset( build_nodes )
+      targets.append( (tuple(aliases), is_built, description) )
+    
+    targets.sort( key = lambda aliases: aliases[0][0].lower() )
+    
+    return targets  # sorted list in format: [ (target_names, is_built, description), ... ]
   
   #//=======================================================//

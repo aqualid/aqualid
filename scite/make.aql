@@ -70,7 +70,7 @@ lexers_sources = FindFiles( lexers_dir, '*.cxx' )
 
 lexers_lib = cpp.LinkStaticLibrary( lexers_sources, target = 'Lexers' )
 
-Alias( 'lexers', lexers_lib )
+Alias( ['lexers', 'lexlib' ], lexers_lib, "Build a static library of lexers" )
 Default( lexers_lib )
 
 #//-------------------------------------------------------//
@@ -87,8 +87,8 @@ def_file = FileValue( os.path.join( win32_dir, "Scintilla.def" ) ) if is_windows
 
 scintilla_dll = cpp.LinkSharedLibrary( scintilla_objs, base_objs, target = 'Scintilla', def_file = def_file )
 
-Alias( 'scintilla', scintilla_dll )
-Default( scintilla_dll )
+Alias( ['scintilla', 'Scintilla'], scintilla_dll, "Build Scintilla shared library" )
+Default( 'scintilla' )
 
 #//-------------------------------------------------------//
 #// Create SciLexer shared library
@@ -110,5 +110,5 @@ scilexer_dll = cpp.LinkSharedLibrary( lex_dll_objs, base_objs, lexers_lib,
                                       target = 'SciLexer',
                                       def_file = def_file )
 
-Alias( ['scilexer', 'SciLexer'], scilexer_dll )
+Alias( ['scilexer', 'SciLexer', 'lexdll'], scilexer_dll, "Build a shared library of lexers" )
 Default( scilexer_dll )

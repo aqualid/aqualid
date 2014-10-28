@@ -100,6 +100,34 @@ def   _printMemoryStatus():
 
 #//===========================================================================//
 
+def   _printTargets( targets ):
+  text = ["  Targets:", "==================", ""]
+  
+  max_name = ""
+  for names, is_built, description in targets:
+    max_name = max( max_name, *names, key = len )
+  
+  name_format = "{is_built} {name:<%s}" % len(max_name)
+  
+  for names, is_built, description in targets:
+    if len(names) > 1 and text[-1]:
+      text.append('')
+    
+    is_built_mark = "*" if is_built else " "
+    
+    for name in names:
+      text.append( name_format.format( name = name, is_built = is_built_mark ))
+    
+    text[-1] += ' :  ' + description
+    
+    if len(names) > 1:
+      text.append('')
+  
+  text.append('')
+  logInfo( '\n'.join(text) )
+
+#//===========================================================================//
+
 def   _main( prj_cfg ):
   with Chrono() as total_elapsed:
     
@@ -130,6 +158,12 @@ def   _main( prj_cfg ):
         elif prj_cfg.clean:
           prj.Clean()
           success = True
+        
+        elif prj_cfg.list_targets:
+          targets = prj.ListTargets()
+          _printTargets( targets )
+          success = True
+          
         else:
           success = prj.Build( jobs           = prj_cfg.jobs,
                                keep_going     = prj_cfg.keep_going,
