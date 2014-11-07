@@ -73,13 +73,13 @@ def   _preprocessorOptions( options ):
   
   options.cppdefines = aql.ListOptionType( unique = True, description = "C/C++ preprocessor defines", separators = None )
   options.defines = options.cppdefines
-  options.cppdefines_prefix = aql.StrOptionType( description = "Flag for C/C++ preprocessor defines." )
+  options.cppdefines_prefix = aql.StrOptionType( description = "Flag for C/C++ preprocessor defines.", is_hidden = True )
   options.cppdefines_flags = aql.ListOptionType( separators = None )
   options.cppdefines_flags += aql.SimpleOperation( _addPrefix, options.cppdefines_prefix, options.cppdefines )
   
   options.cpppath = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
   options.include = options.cpppath
-  options.cpppath_prefix  = aql.StrOptionType( description = "Flag for C/C++ preprocessor paths." )
+  options.cpppath_prefix  = aql.StrOptionType( description = "Flag for C/C++ preprocessor paths.", is_hidden = True )
   options.cpppath_flags = aql.ListOptionType( separators = None )
   options.cpppath_flags = aql.SimpleOperation( _addPrefix, options.cpppath_prefix, aql.SimpleOperation( _absFilePaths, options.cpppath ) )
   
@@ -108,7 +108,7 @@ def   _compilerOptions( options ):
   options.cc      = aql.PathOptionType( description = "C/C++ compiler program" )
   options.cc_name = aql.StrOptionType( is_tool_key = True, ignore_case = True, description = "C/C++ compiler name" )
   options.cc_ver  = aql.VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
-  options.cc_cmd  = aql.ListOptionType( description = "C/C++ compiler full command", separators = None )
+  options.cc_cmd  = aql.ListOptionType( separators = None, description = "C/C++ compiler full command", is_hidden = True)
   
   options.cc_cmd = options.cc
   options.If().language.eq('c++').cc_cmd += options.cxxflags
@@ -122,10 +122,10 @@ def   _compilerOptions( options ):
 
 def   _resourceCompilerOptions( options ):
   options.rc = aql.PathOptionType( description = "C/C++ resource compiler program" )
-  options.ressuffix = aql.StrOptionType( description = "Compiled resource file suffix." )
+  options.ressuffix = aql.StrOptionType( description = "Compiled resource file suffix.", is_hidden = True )
   
   options.rcflags = aql.ListOptionType( description = "C/C++ resource compiler flags", separators = None )
-  options.rc_cmd = aql.ListOptionType( description = "C/C++ resource resource compiler full command", separators = None )
+  options.rc_cmd = aql.ListOptionType( separators = None, description = "C/C++ resource resource compiler full command", is_hidden = True) 
   
   options.rc_cmd = [ options.rc ] + options.rcflags + options.cppdefines_flags + options.cpppath_flags
 
@@ -133,35 +133,35 @@ def   _resourceCompilerOptions( options ):
 
 def   _linkerOptions( options ):
   
-  options.libprefix = aql.StrOptionType( description = "Static library archiver prefix." )
-  options.libsuffix = aql.StrOptionType( description = "Static library archiver suffix." )
+  options.libprefix = aql.StrOptionType( description = "Static library archiver prefix.", is_hidden = True )
+  options.libsuffix = aql.StrOptionType( description = "Static library archiver suffix.", is_hidden = True )
   options.libflags  = aql.ListOptionType( description = "Static library archiver flags", separators = None )
   options.olibflags = aql.ListOptionType( description = "Static library archiver optimization flags", separators = None )
   options.lib       = aql.PathOptionType( description = "Static library archiver program" )
-  options.lib_cmd   = aql.ListOptionType( description = "Static library archiver full command", separators = None )
+  options.lib_cmd   = aql.ListOptionType( separators = None, description = "Static library archiver full command", is_hidden = True )
   options.lib_cmd   = [ options.lib ] + options.libflags + options.olibflags
   
-  options.shlibprefix = aql.StrOptionType( description = "Shared library prefix." )
-  options.shlibsuffix = aql.StrOptionType( description = "Shared library suffix." )
+  options.shlibprefix = aql.StrOptionType( description = "Shared library prefix.", is_hidden = True )
+  options.shlibsuffix = aql.StrOptionType( description = "Shared library suffix.", is_hidden = True )
   
   options.libpath = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True,
                                         description = "Paths to external libraries", separators = None )
-  options.libpath_prefix  = aql.StrOptionType( description = "Flag for library paths." )
+  options.libpath_prefix  = aql.StrOptionType( description = "Flag for library paths.", is_hidden = True )
   options.libpath_flags = aql.ListOptionType( separators = None )
   options.libpath_flags = aql.SimpleOperation( _addPrefix, options.libpath_prefix, aql.SimpleOperation( _absFilePaths, options.libpath ) )
   
   options.libs  = aql.ListOptionType( value_type = aql.PathOptionType(), unique = True,
                                       description = "Linking external libraries", separators = None )
-  options.libs_prefix  = aql.StrOptionType( description = "Prefix flag for libraries." )
-  options.libs_suffix  = aql.StrOptionType( description = "Suffix flag for libraries." )
+  options.libs_prefix  = aql.StrOptionType( description = "Prefix flag for libraries.", is_hidden = True )
+  options.libs_suffix  = aql.StrOptionType( description = "Suffix flag for libraries.", is_hidden = True )
   options.libs_flags = aql.ListOptionType( separators = None )
   options.libs_flags = aql.SimpleOperation( _addIxes, options.libs_prefix, options.libs_suffix, options.libs )
   
-  options.progsuffix = aql.StrOptionType( description = "Program suffix." )
+  options.progsuffix = aql.StrOptionType( description = "Program suffix.", is_hidden = True )
   options.linkflags  = aql.ListOptionType( description = "Linker flags", separators = None )
   options.olinkflags = aql.ListOptionType( description = "Linker optimization flags", separators = None )
   options.link       = aql.PathOptionType( description = "Linker program" )
-  options.link_cmd   = aql.ListOptionType( description = "Linker full command", separators = None )
+  options.link_cmd   = aql.ListOptionType( separators = None, description = "Linker full command", is_hidden = True )
   options.link_cmd   = [ options.link ] + options.linkflags + options.olinkflags + options.libpath_flags + options.libs_flags
 
 #//===========================================================================//

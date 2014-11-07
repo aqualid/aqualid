@@ -343,7 +343,7 @@ class ToolGccCommon( ToolCommonCpp ):
   def   LinkStaticLibrary( self, options, target ):
     return GccArchiver( options, target )
   
-  def   LinkSharedLibrary( self, options, target ):
+  def   LinkSharedLibrary( self, options, target, def_file = None ):
     return GccLinker( options, target, shared = True )
   
   def   LinkProgram( self, options, target ):

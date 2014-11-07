@@ -31,7 +31,7 @@ import itertools
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
 from aql.util_types import FilePath, ValueListType, UniqueList, SplitListType, toSequence, AqlException
 from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue
-from aql.options import builtinOptions, Options
+from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 
 from .aql_tools import ToolsManager
@@ -120,7 +120,7 @@ class ProjectConfig( object ):
       CLIOption( None, "--debug-memory",      "debug_memory",     bool,       False,        "Display memory usage." ),
       CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
       CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reasons why targets are being rebuilt" ),
-      CLIOption( None, "--debug-backtrace",   "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
+      CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -224,7 +224,7 @@ class BuilderWrapper( object ):
         if name in self.arg_names:
           args_kw[ name ] = value
         else:
-          options[ name ] = value
+          options.appendValue( name, value, iUpdateValue )
     
     return options, deps, sources, args_kw
   
@@ -287,14 +287,13 @@ class ProjectTools( object ):
   
   #//-------------------------------------------------------//
   
-  def   _override( self, project ):
-    other = super(ProjectTools,self).__new__( self.__class__ )
+  def   _getToolsOptions(self):
+    tools_options = {}
+    for name, tool in self.tools_cache.items():
+      tool = next(iter(tool.values()))
+      tools_options.setdefault( tool.options, []).append( name )
     
-    other.project = project
-    other.tools = self.tools
-    other.tools_cache = self.tools_cache
-    
-    return other
+    return tools_options
   
   #//-------------------------------------------------------//
   
@@ -303,7 +302,7 @@ class ProjectTools( object ):
     options_ref = options.getHashRef()
     
     try:
-      return self.tools_cache[ tool_name ][ options_ref ]
+      return self.tools_cache[ tool_name ][options_ref]
     except KeyError:
       pass
     
@@ -314,10 +313,8 @@ class ProjectTools( object ):
     attrs = self.__dict__
     
     for name in tool_names:
-      if name not in attrs:
-        attrs[ name ] = tool
-        name_tools = self.tools_cache.setdefault( name, {} )
-        name_tools[ options_ref ] = tool
+      attrs.setdefault( name, tool )
+      self.tools_cache.setdefault( name, {} )[ options_ref ] = tool
     
     return tool
   
@@ -390,25 +387,6 @@ class Project( object ):
     self.build_manager = BuildManager()
     
     self.tools = ProjectTools( self )
-  
-  #//-------------------------------------------------------//
-  
-  def   _override( self ):
-    """
-    @rtype : Project
-    """
-    other = super(Project,self).__new__( self.__class__ )
-    
-    other.targets       = self.targets
-    other.scripts_cache = self.scripts_cache
-    other.build_manager = self.build_manager
-    other.aliases       = self.aliases
-    other.alias_descriptions = self.alias_descriptions
-    other.defaults      = self.defaults
-    other.options       = self.options.override()
-    other.tools         = self.tools._override( other )
-    
-    return other
   
   #//-------------------------------------------------------//
   
@@ -489,9 +467,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   Include( self, makefile ):
-    
-    other = self._override()
-    return other._execScript( makefile, self.script_locals )
+    return self._execScript( makefile, self.script_locals )
   
   #//-------------------------------------------------------//
   
@@ -627,7 +603,7 @@ class Project( object ):
       
       aliases, description = aliases_and_description
       
-      aliases.sort( key = lambda name: name.lower() )
+      aliases.sort( key = str.lower )
       max_alias = max( aliases, key = len )
       aliases.remove( max_alias )
       aliases.insert( 0, max_alias )
@@ -639,4 +615,28 @@ class Project( object ):
     
     return targets  # sorted list in format: [ (target_names, is_built, description), ... ]
   
+  #//=======================================================//
+  
+  def   ListOptions( self ):
+    result = []
+    
+    options_name = "Builtin options:"
+    
+    border = "=" * len(options_name)
+    result.extend( ["", options_name, border, ""] )
+    
+    for group in self.options.help():
+      result.extend( group.text() )
+    
+    for tools_options, names in self.tools._getToolsOptions().items():
+      options_name = "Options of tool: %s" % (', '.join( names ) )
+      
+      border = "=" * len(options_name)
+      result.extend( ["", options_name, border, ""] )
+      
+      for group in tools_options.help():
+        result.extend( group.text() )
+    
+    return result
+    
   #//=======================================================//

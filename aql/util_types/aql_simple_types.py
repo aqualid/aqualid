@@ -18,7 +18,8 @@
 #
 
 __all__ = (
-  'AqlException','uStr', 'toUnicode', 'isString', 'toString', 'castStr', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString', 'Version',
+  'AqlException','uStr', 'toUnicode', 'isString', 'toString', 'castStr', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString',
+  'Version', 'SIMPLE_TYPES_SET', 'SIMPLE_TYPES', 'isSimpleValue', 'isSimpleType'
 )
 
 import re
@@ -216,3 +217,15 @@ class   Version (str):
   def   __le__( self, other ):  return self._cmp( other, operator.le )
   def   __gt__( self, other ):  return self._cmp( other, operator.gt )
   def   __ge__( self, other ):  return self._cmp( other, operator.ge )
+
+#//===========================================================================//
+
+SIMPLE_TYPES_SET = frozenset( (uStr,str,int,float,complex,bool,bytes,bytearray) )
+SIMPLE_TYPES = tuple(SIMPLE_TYPES_SET)
+
+def isSimpleValue( value, _simple_types = SIMPLE_TYPES ):
+  return isinstance( value, _simple_types )
+
+def isSimpleType( value_type, _simple_types = SIMPLE_TYPES ):
+  return issubclass( value_type, _simple_types )
+

@@ -24,6 +24,7 @@ __all__ = (
 
 import os
 import errno
+import operator
 
 from aql.util_types import FilePath
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
@@ -423,7 +424,7 @@ class Builder (object):
     group_size = node.options.batch_size.get()
     
     if self.relative_build_paths:
-      groups = groupPathsByDir( src_files, num_groups, group_size, pathGetter = lambda value: value.get() )
+      groups = groupPathsByDir( src_files, num_groups, group_size, pathGetter = operator.methodcaller('get') )
     else:
       groups = groupItems( src_files, num_groups, group_size )
     

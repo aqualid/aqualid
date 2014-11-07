@@ -74,6 +74,7 @@ class   ErrorToolNotFound( AqlException ):
 class   ToolInfo( object ):
   __slots__ = (
     'tool_class',
+    'names',
     'options',
     'setup_methods',
   )
@@ -174,14 +175,18 @@ class ToolsManager( Singleton ):
     for tool_class in tool_classes:
       tool_info = self.tool_info.get( tool_class, None )
       if tool_info is None:
+        names = self.tool_names.get( tool_class, [] )
+        
         tool_info = ToolInfo()
         tool_info.tool_class = tool_class
+        tool_info.names = names
+        
         self.tool_info[ tool_class ] = tool_info
         
         setup_methods = set()
         tool_info.setup_methods = setup_methods
         
-        for name in self.tool_names.get( tool_class, [] ):
+        for name in names:
           setup_methods.update( self.all_setup_methods.get( name, [] ) )
         else:
           setup_methods.add( _toolSetupStub )
@@ -219,7 +224,7 @@ class ToolsManager( Singleton ):
           
           tool_obj = tool_info.tool_class( tool_options )
           
-        except (NotImplementedError, ErrorProgramNotFound) as err:
+        except (NotImplementedError, ErrorProgramNotFound):
           setup_options.clear()
           tool_options.clear()
         

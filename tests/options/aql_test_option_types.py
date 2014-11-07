@@ -40,11 +40,11 @@ class TestOptionTypes( AqlTestCase ):
     
     opt_type = BoolOptionType( style = ('Yes', 'No'), true_values = [], false_values = [])
     
-    self.assertEqual( opt_type.rangeHelp(), ['Yes', 'No'] )
+    self.assertEqual( opt_type.helpRange(), ['Yes', 'No'] )
     
     opt_type.addValues('Y', 'N')
     opt_type.addValues('y', 'n')
-    self.assertEqual( opt_type.rangeHelp(), ['Y, Yes', 'N, No'] )
+    self.assertEqual( opt_type.helpRange(), ['Yes (or Y)', 'No (or N)'] )
     
     opt_type.addValues('1', '0')
     
@@ -154,7 +154,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( warn_level( -100 ), 0 )
     self.assertEqual( warn_level( 100 ), 5 )
     
-    self.assertEqual( warn_level.rangeHelp(), ['0 ... 5'] )
+    self.assertEqual( warn_level.helpRange(), ['0 ... 5'] )
     self.assertEqual( warn_level.range(), [0, 5] )
     
     warn_level.setRange( min_value = None, max_value = None, auto_correct = False )
@@ -182,7 +182,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( opt1( 'efg' ), 'EFG' )
     self.assertEqual( opt1( None ), '' )
     
-    self.assertEqual( opt1.rangeHelp(), [ range_help ] )
+    self.assertEqual( opt1.helpRange(), [ range_help ] )
     
   #//===========================================================================//
 
@@ -194,7 +194,7 @@ class TestOptionTypes( AqlTestCase ):
     
     self.assertRaises( ErrorOptionTypeUnableConvertValue, opt1, 'a1' )
     
-    self.assertEqual( opt1.rangeHelp(), ["Value of type 'int'"] )
+    self.assertEqual( opt1.helpRange(), [] )
     
     self.assertEqual( opt1(), 0 )
     self.assertEqual( opt1(1), opt1(1) )
@@ -249,7 +249,7 @@ class TestOptionTypes( AqlTestCase ):
     # self.assertEqual( opt1( '../abc/../123' ), '../123' )
     self.assertEqual( opt1( '../abc/../123' ), '../abc/../123' )
     
-    self.assertEqual( opt1.rangeHelp(), ["Value of type 'FilePath'"])
+    self.assertEqual( opt1.helpRange(), [])
 
   #//===========================================================================//
 
@@ -269,17 +269,17 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( ob( 'yes,no' ), 'on,disabled' )
     self.assertIn( 'yes', ob( 'yes,no' ) )
     
-    self.assertEqual( ob.rangeHelp(), ['enabled, On, Yes', 'disabled, No, Off'] )
+    self.assertEqual( ob.helpRange(), ['On (or enabled, Yes)', 'Off (or disabled, No)'] )
     
     on = ListOptionType( value_type = int, unique = True, range_help = "List of integers" )
     
     self.assertEqual( on( '1,0,2,1,1,2,0' ), [1,0,2] )
     self.assertRaises( ErrorOptionTypeUnableConvertValue, on, [1,'abc'] )
     
-    self.assertEqual( on.rangeHelp(), ["List of integers"] )
+    self.assertEqual( on.helpRange(), ["List of integers"] )
     
     on = ListOptionType( value_type = int )
-    self.assertEqual( on.rangeHelp(), ["List of type 'int'"] )
+    self.assertEqual( on.helpRange(), [] )
     
   #//===========================================================================//
   

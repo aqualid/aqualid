@@ -50,7 +50,8 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, isString, toUnicode, UniqueList, toSequence, isSequence, AqlException
+from aql.util_types import uStr, isString, toUnicode, UniqueList, toSequence, isSequence, \
+                           AqlException, SIMPLE_TYPES_SET 
 
 #//===========================================================================//
 
@@ -677,10 +678,9 @@ def   flattenList( seq ):
 
 #//===========================================================================//
 
-_SIMPLE_TYPES = frozenset( ( uStr,int,float,complex,bool,bytes,bytearray ) )
 _SIMPLE_SEQUENCES = (list, tuple, UniqueList, set, frozenset)
 
-def  simplifyValue( value, simple_types = _SIMPLE_TYPES, simple_lists = _SIMPLE_SEQUENCES ):
+def  simplifyValue( value, simple_types = SIMPLE_TYPES_SET, simple_lists = _SIMPLE_SEQUENCES ):
   
   if value is None:
     return None

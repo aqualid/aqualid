@@ -28,7 +28,7 @@ import weakref
 from aql.util_types import toSequence, isSequence, UniqueList, List, Dict, DictItem
 from aql.utils import simplifyValue
 
-from .aql_option_types import OptionType, DictOptionType, autoOptionType
+from .aql_option_types import OptionType, DictOptionType, autoOptionType, OptionHelpGroup, ErrorOptionTypeCantDeduce
 from .aql_option_value import OptionValue, Operation, InplaceOperation, ConditionalValue, Condition,\
                               SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation
 
@@ -516,6 +516,7 @@ def   _itemsByValue( items ):
   
   return values
 
+#//===========================================================================//
 
 #noinspection PyProtectedMember
 class Options (object):
@@ -605,7 +606,6 @@ class Options (object):
       return weakref.ref( self )
     
     return parent.getHashRef()
-    
   
   #//-------------------------------------------------------//
   
@@ -757,6 +757,42 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
+  def   help( self, with_parent = False, hidden = False ):
+    
+    if with_parent:
+      options_map = self._valuesMapByName()
+    else:
+      options_map = self.__dict__['__opt_values']
+
+    options2names = _itemsByValue( options_map.items() )
+    
+    result = {}
+    for option, names in options2names.items():
+      help = option.option_type.help()
+      
+      if help.isHidden() and not hidden:
+        continue
+      
+      help.names = names
+      
+      try:
+        help.current_value = self.evaluate( option, {} )
+      except Exception:
+        pass
+      
+      group_name = help.group if help.group else ""
+      
+      try:
+        group = result[ group_name ]
+      except KeyError:
+        group = result[ group_name ] = OptionHelpGroup( group_name )
+      
+      group.append( help )
+    
+    return sorted( result.values(), key = operator.attrgetter('name') )
+        
+  #//-------------------------------------------------------//
+  
   def   setGroup( self, group ):
     opt_values = self._valuesMapByName().values()
     
@@ -780,12 +816,21 @@ class Options (object):
     if not other:
       return
     
+    if self is other:
+      return
+    
     if isinstance( other, Options ):
       self.merge( other )
     
     else:
       for name, value in other.items():
-        self.__set_value( name, value, iUpdateValue )
+        if isinstance( value, (ConditionGeneratorHelper, ConditionGenerator, Options) ):
+          continue
+        
+        try:
+          self.__set_value( name, value, iUpdateValue )
+        except ErrorOptionTypeCantDeduce:
+          pass
   
   #//-------------------------------------------------------//
   

@@ -27,6 +27,7 @@ __all__ = (
 import os
 import re
 import fnmatch
+import operator
 
 from aql.util_types import isString, toSequence, AqlException
 
@@ -373,7 +374,7 @@ def   groupPathsByDir( file_paths, wish_groups = 1, max_group_size = -1, pathGet
     
     files.append( (dir_path, file_path) )
   
-  files.sort( key = lambda v:v[0] )
+  files.sort( key = operator.itemgetter(0) )
   
   last_dir = None
   

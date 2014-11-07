@@ -202,6 +202,16 @@ def   ValueDictType( dict_type, key_type, default_value_type = None ):
     #//-------------------------------------------------------//
     
     @staticmethod
+    def   getKeyType():
+      return key_type
+    
+    @staticmethod
+    def   getValueType():
+      return default_value_type
+    
+    #//-------------------------------------------------------//
+    
+    @staticmethod
     def   _toValue( key, value, val_types = __VALUE_TYPES, val_type = default_value_type ):
       try:
         if val_type is None:
@@ -232,7 +242,7 @@ def   ValueDictType( dict_type, key_type, default_value_type = None ):
     #//-------------------------------------------------------//
     
     @staticmethod
-    def   __toItems( items ):
+    def   __toItems( items, key_type = key_type ):
       if isinstance( items, _ValueDict ):
         return items
       
@@ -251,7 +261,7 @@ def   ValueDictType( dict_type, key_type, default_value_type = None ):
     #//-------------------------------------------------------//
     
     @staticmethod
-    def   __toValueDict( items ):
+    def   __toValueDict( items, key_type = key_type ):
       if isinstance( items, _ValueDict ):
         return items
       elif isinstance( items, DictItem ):

@@ -369,8 +369,9 @@ class TestOptions( AqlTestCase ):
     options2.bv = ListOptionType( value_type = str )
     options2.bv += 'debug,release,final'
     options2.build_variant = options2.bv
+    self.assertTrue( options.debug_on.option_value.option_type.is_auto )
     options.merge( options2 )
-    self.assertEqual( options.debug_on, options2.debug_on )
+    self.assertEqual( options.debug_on.get(), options2.debug_on.get() )
     self.assertEqual( options.bv, options2.bv )
     self.assertEqual( options.bv, options2.build_variant )
     self.assertEqual( options2.bv, options2.build_variant )

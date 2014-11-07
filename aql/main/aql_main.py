@@ -150,6 +150,8 @@ def   _main( prj_cfg ):
       
       eventBuilding()
       
+      success = True
+      
       with elapsed:
         if prj_cfg.status:
           success = prj.Status( explain = prj_cfg.debug_explain )
@@ -157,12 +159,15 @@ def   _main( prj_cfg ):
           
         elif prj_cfg.clean:
           prj.Clean()
-          success = True
         
         elif prj_cfg.list_targets:
           targets = prj.ListTargets()
           _printTargets( targets )
-          success = True
+        
+        elif prj_cfg.list_options:
+          options = prj.ListOptions()
+          logInfo( '\n'.join( options ) )
+          # _printOptions( options )
           
         else:
           success = prj.Build( jobs           = prj_cfg.jobs,

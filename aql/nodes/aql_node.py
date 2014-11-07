@@ -22,6 +22,7 @@ __all__ = (
 )
 
 import os
+import operator
 
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir, eventStatus, logDebug, logInfo
 from aql.util_types import toSequence, isString, FilePath, AqlException
@@ -606,7 +607,7 @@ class Node (object):
     
     dep_nodes.clear()
     
-    dep_values.sort( key = lambda v: v.dumpId() )
+    dep_values.sort( key = operator.methodcaller('dumpId') )
   
   #//=======================================================//
   
