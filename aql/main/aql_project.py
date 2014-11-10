@@ -103,7 +103,7 @@ class ProjectConfig( object ):
       
       CLIOption( "-C", "--directory",         "directory",        FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
       CLIOption( "-f", "--makefile",          "makefile",         FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
-      CLIOption( "-l", "--list-options",      "list_options",     bool,       False,        "List all available options and exit." ),
+      CLIOption( "-o", "--list-options",      "list_options",     bool,       False,        "List all available options and exit." ),
       CLIOption( "-t", "--list-targets",      "list_targets",     bool,       False,        "List all available targets and exit." ),
       CLIOption( "-c", "--config",            "config",           FilePath,   None,         "The configuration file used to read CLI arguments." ),
       CLIOption( "-B", "--always",            "build_always",     bool,       False,        "Unconditionally build all targets." ),

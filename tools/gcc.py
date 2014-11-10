@@ -41,8 +41,31 @@ def   _readDeps( dep_file, exclude_dirs, _space_splitter_re = re.compile(r'(?<!\
 
 #//===========================================================================//
 
+# t.c:3:10: error: called object is not a function or function pointer
+# t.c:1:17: note: declared here
+#  void foo(char **p, char **q)
+
+def   _parseOutput( output,
+                    _err_re = re.compile( r"(.+):\d+:\d+:\s+error:\s+") ):
+
+  failed_sources = set()
+  
+  for line in output.split('\n'):
+    m = _err_re.match( line )
+    if m:
+      source_path = m.group(1)
+      failed_sources.add( source_path ) 
+  
+  return failed_sources
+
+#//===========================================================================//
+
 #noinspection PyAttributeOutsideInit
 class GccCompiler (CommonCppCompiler):
+  
+  def   __init__(self, options ):
+    super(GccCompiler, self).__init__( options )
+    self.cmd += ['-c', '-MMD']
   
   def   build( self, node ):
     
@@ -55,7 +78,7 @@ class GccCompiler (CommonCppCompiler):
       
       cmd = list(self.cmd)
       
-      cmd += ['-c', '-o', obj_file, '-MMD', '-MF', dep_file]
+      cmd += ['-o', obj_file, '-MF', dep_file]
       cmd += sources
       
       out = self.execCmd( cmd, cwd, file_flag = '@' )
@@ -63,6 +86,48 @@ class GccCompiler (CommonCppCompiler):
       node.addTargets( obj_file, implicit_deps = _readDeps( dep_file, self.ext_cpppath ) )
       
       return out
+
+  #//-------------------------------------------------------//
+  
+  def   getDefaultObjExt(self):
+    return '.o'
+  
+  #//-------------------------------------------------------//
+  
+  def   _setTargets( self, node, obj_files, output ):
+    source_values = node.getSourceValues()
+    
+    failed_sources = _parseOutput( output )
+    
+    for src_value, obj_file in zip( source_values, obj_files ):
+      if src_value.get() not in failed_sources:
+        dep_file = os.path.splitext( obj_file )[0] + '.d'
+        implicit_deps = _readDeps( dep_file, self.ext_cpppath )
+        
+        node.addSourceTargets( src_value, obj_file, implicit_deps = implicit_deps )
+  
+  #//-------------------------------------------------------//
+  
+  def   buildBatch( self, node ):
+    
+    sources = node.getSources()
+    
+    obj_files = self.getFileBuildPaths( sources, ext = self.ext )
+    
+    cwd = obj_files[0].dirname()
+    
+    cmd = list(self.cmd)
+    cmd += sources
+    
+    result = self.execCmdResult( cmd, cwd, file_flag = '@' )
+    
+    output = result.output
+    self._setTargets( node, obj_files, output )
+    
+    if result.failed():
+      raise result
+    
+    return output
 
 #//===========================================================================//
 
@@ -349,7 +414,7 @@ class ToolGccCommon( ToolCommonCpp ):
 
 #//===========================================================================//
 
-@aql.tool('c++', 'g++', 'cpp', 'cxx')
+@aql.tool('c++', 'g++', 'gxx', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   language = "c++"
 
@@ -361,7 +426,7 @@ class ToolGcc( ToolGccCommon ):
 
 #//===========================================================================//
 
-@aql.tool('rc', 'msrc')
+@aql.tool('rc', 'windres')
 class ToolWindRes( ToolCommonRes ):
   
   @classmethod
