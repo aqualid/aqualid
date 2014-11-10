@@ -57,10 +57,14 @@ class   ErrorOptionTypeEnumValueIsAlreadySet( AqlException ):
 #//===========================================================================//
 
 class   ErrorOptionTypeUnableConvertValue( TypeError ):
-  def   __init__( self, option_type, invalid_value ):
-    self.option_type = option_type
+  def   __init__( self, option_help, invalid_value ):
+    if isinstance( option_help, OptionType ):
+      option_help = option_help.help()
+    
+    self.option_help = option_help
     self.invalid_value = invalid_value
-    msg = "Unable to convert option value '%s (%s)' to '%s'" % (invalid_value, type(invalid_value), option_type.helpType())
+    
+    msg = "Unable to convert value '%s (%s)' to option %s" % (invalid_value, type(invalid_value), option_help.errorText())
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -315,7 +319,24 @@ class OptionHelp( object ):
     result += details
     
     return result
-
+  
+  #//-------------------------------------------------------//
+  
+  def   errorText(self):
+    
+    result = []
+    
+    if self.names:
+      result.append( ', '.join( self.names ) )
+    
+    if self.type_name:
+      result.append( "Type: " + self.type_name )
+    
+    if self.allowed_values:
+      result.append( "Allowed values: %s" % ', '.join( self.allowed_values ) )
+    
+    return '. '.join( result )
+  
 #//===========================================================================//
 
 class OptionHelpGroup( object ):

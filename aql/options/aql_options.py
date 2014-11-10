@@ -25,10 +25,11 @@ __all__ = (
 import operator
 import weakref
 
-from aql.util_types import toSequence, isSequence, UniqueList, List, Dict, DictItem
+from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
 from aql.utils import simplifyValue
 
-from .aql_option_types import OptionType, DictOptionType, autoOptionType, OptionHelpGroup, ErrorOptionTypeCantDeduce
+from .aql_option_types import OptionType, DictOptionType, autoOptionType, OptionHelpGroup,\
+                              ErrorOptionTypeCantDeduce, ErrorOptionTypeUnableConvertValue
 from .aql_option_value import OptionValue, Operation, InplaceOperation, ConditionalValue, Condition,\
                               SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation
 
@@ -198,7 +199,7 @@ class OptionValueProxy (object):
   def   get( self, context = None ):
     self.child_ref = None
     
-    v = self.options.evaluate( self.option_value, context )
+    v = self.options.evaluate( self.option_value, context, self.name )
     return v if self.key is NotImplemented else v[self.key]
   
   #//-------------------------------------------------------//
@@ -622,8 +623,8 @@ class Options (object):
         continue
       
       if parent_opt_value.isSet():
-        value = self.evaluate( opt_value, None )
-        parent_value = parent.evaluate( parent_opt_value, None )
+        value = self.evaluate( opt_value, None, name )
+        parent_value = parent.evaluate( parent_opt_value, None, name )
         if value != parent_value:
           return True
     
@@ -776,7 +777,7 @@ class Options (object):
       help.names = names
       
       try:
-        help.current_value = self.evaluate( option, {} )
+        help.current_value = self.evaluate( option, {}, names )
       except Exception:
         pass
       
@@ -995,7 +996,7 @@ class Options (object):
   
   #//-------------------------------------------------------//
   
-  def   evaluate( self, option_value, context ):
+  def   _evaluate( self, option_value, context ):
     try:
       if context is not None:
         return context[ option_value ]
@@ -1011,6 +1012,23 @@ class Options (object):
       cache[ option_value ] = value
     
     return value
+  
+  #//-------------------------------------------------------//
+  
+  def   evaluate( self, option_value, context, name ):
+    try:
+      return self._evaluate( option_value, context )
+    except ErrorOptionTypeUnableConvertValue as err:
+      if not name:
+        raise
+      
+      option_help = err.option_help
+      if option_help.names:
+        raise
+    
+    option_help.names = tuple( toSequence( name ) )
+    
+    raise ErrorOptionTypeUnableConvertValue( option_help, err.invalid_value )
   
   #//-------------------------------------------------------//
   
