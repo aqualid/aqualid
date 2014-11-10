@@ -372,6 +372,34 @@ class ProjectTools( object ):
 
 #//===========================================================================//
 
+def   _textTargets( targets ):
+  text = ["","  Targets:", "==================", ""]
+  
+  max_name = ""
+  for names, is_built, description in targets:
+    max_name = max( max_name, *names, key = len )
+  
+  name_format = "{is_built} {name:<%s}" % len(max_name)
+  
+  for names, is_built, description in targets:
+    if len(names) > 1 and text[-1]:
+      text.append('')
+    
+    is_built_mark = "*" if is_built else " "
+    
+    for name in names:
+      text.append( name_format.format( name = name, is_built = is_built_mark ))
+    
+    text[-1] += ' :  ' + description
+    
+    if len(names) > 1:
+      text.append('')
+  
+  text.append('')
+  return text
+
+#//===========================================================================//
+
 #noinspection PyProtectedMember,PyAttributeOutsideInit
 class Project( object ):
   
@@ -611,32 +639,22 @@ class Project( object ):
       is_built = (build_nodes is None) or nodes.issubset( build_nodes )
       targets.append( (tuple(aliases), is_built, description) )
     
+    # sorted list in format: [ (target_names, is_built, description), ... ]
     targets.sort( key = lambda aliases: aliases[0][0].lower() )
     
-    return targets  # sorted list in format: [ (target_names, is_built, description), ... ]
+    return _textTargets(targets)
   
   #//=======================================================//
   
-  def   ListOptions( self ):
-    result = []
+  def   ListOptions( self, brief = False ):
     
-    options_name = "Builtin options:"
-    
-    border = "=" * len(options_name)
-    result.extend( ["", options_name, border, ""] )
-    
-    for group in self.options.help():
-      result.extend( group.text() )
+    result = self.options.helpText("Builtin options:", brief = brief )
     
     for tools_options, names in self.tools._getToolsOptions().items():
       options_name = "Options of tool: %s" % (', '.join( names ) )
-      
-      border = "=" * len(options_name)
-      result.extend( ["", options_name, border, ""] )
-      
-      for group in tools_options.help():
-        result.extend( group.text() )
+      result += tools_options.helpText( options_name, brief = brief)
     
+    result.append("")
     return result
     
   #//=======================================================//

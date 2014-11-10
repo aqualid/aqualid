@@ -793,6 +793,21 @@ class Options (object):
         
   #//-------------------------------------------------------//
   
+  def   helpText( self, title, with_parent = False, hidden = False, brief = False ):
+    
+    border = "=" * len(title)
+    result = ["", title, border, ""]
+    
+    for group in self.help( with_parent = with_parent, hidden = hidden ):
+      text = group.text( brief = brief, indent = 2 )
+      if result[-1]:
+        result.append("")
+      result.extend( text )
+    
+    return result
+  
+  #//-------------------------------------------------------//
+  
   def   setGroup( self, group ):
     opt_values = self._valuesMapByName().values()
     

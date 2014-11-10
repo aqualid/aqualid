@@ -243,10 +243,8 @@ class ToolGccCommon( ToolCommonCpp ):
   def   options( cls ):
     options = super(ToolGccCommon, cls).options()
     
-    options.gcc_path    = aql.PathOptionType()
-    options.gcc_target  = aql.StrOptionType( ignore_case = True )
-    options.gcc_prefix  = aql.StrOptionType( description = "GCC C/C++ compiler prefix" )
-    options.gcc_suffix  = aql.StrOptionType( description = "GCC C/C++ compiler suffix" )
+    options.gcc_prefix  = aql.StrOptionType( description = "GCC C/C++ compiler prefix", is_tool_key = True )
+    options.gcc_suffix  = aql.StrOptionType( description = "GCC C/C++ compiler suffix", is_tool_key = True )
     
     return options
   

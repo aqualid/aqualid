@@ -93,12 +93,12 @@ def   _preprocessorOptions( options ):
 
 def   _compilerOptions( options ):
   
-  options.language = aql.EnumOptionType( values = [('c++', 'cpp'), 'c'], default = 'c++', description = 'Current language' )
-  options.lang = options.language
+  options.language = aql.EnumOptionType( values = [('c++', 'cpp'), 'c'], default = 'c++',
+                                         description = 'Current language', is_hidden = True )
   
   options.pic = aql.BoolOptionType( description = "Generate position-independent code.", default = True )
   
-  options.objsuffix = aql.StrOptionType( description = "Object file suffix." )
+  options.objsuffix = aql.StrOptionType( description = "Object file suffix.", is_hidden = True )
   
   options.cxxflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
   options.cflags = aql.ListOptionType( description = "C++ compiler flags", separators = None )
@@ -193,8 +193,8 @@ class HeaderChecker (aql.Builder):
   def   __init__(self, options ):
     
     cpppath = list(options.cpppath.get())
-    cpppath += list(options.ext_cpppath.get())
-    cpppath += list(options.sys_cpppath.get())
+    cpppath += options.ext_cpppath.get()
+    cpppath += options.sys_cpppath.get()
     
     self.cpppath = cpppath
   
@@ -494,8 +494,6 @@ class CommonCppLinker( CommonCppLinkerBase ):
 class ToolCommonCpp( aql.Tool ):
   
   def   __init__( self, options ):
-    super( ToolCommonCpp, self).__init__( options )
-    
     options.If().cc_name.isTrue().build_dir_name  += '_' + options.cc_name + '_' + options.cc_ver
     self.LinkLibrary = self.LinkStaticLibrary
   

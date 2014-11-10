@@ -333,10 +333,8 @@ class OptionValue (object):
     
     if self.option_type.is_auto and not other.option_type.is_auto:
       self.option_type = other.option_type
-      self.conditional_values = other_values[:]
-      self.conditional_values += values[diff_index:]
-    else:
-      self.conditional_values += other_values[ diff_index: ]
+    
+    self.conditional_values += other_values[ diff_index: ]
     
   #//-------------------------------------------------------//
   

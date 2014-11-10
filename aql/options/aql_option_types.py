@@ -26,6 +26,12 @@ __all__ = (
 )
 
 import operator
+import itertools
+
+try:
+  zip_longest = itertools.zip_longest
+except AttributeError:
+  zip_longest = itertools.izip_longest
 
 from aql.util_types import String, uStr, isString, toString, IgnoreCaseString,\
                           Version, FilePath, toSequence, AqlException,\
@@ -123,40 +129,87 @@ def   autoOptionType( value ):
 
 def   _getTypeName( value_type ):
   if issubclass( value_type, bool ):
-    return "boolean"
+    name = "boolean"
   
-  if issubclass( value_type, int ):
-    return "integer"
+  elif issubclass( value_type, int ):
+    name = "integer"
   
-  if issubclass( value_type, IgnoreCaseString ):
-    return "case insensitive string"
+  elif issubclass( value_type, IgnoreCaseString ):
+    name = "case insensitive string"
   
-  if issubclass( value_type, (str, uStr) ):
-    return "string"
+  elif issubclass( value_type, (str, uStr) ):
+    name = "string"
   
-  return value_type.__name__
+  else:
+    name = value_type.__name__
+  
+  return name.title()
 
 #//===========================================================================//
 
-def   _indentList( indent_value, indent_size, values, prefix = "", suffix = "", separator = "" ):
+def   _joinToLength( values, max_length = 0, separator = "", prefix = "", suffix = "" ):
   
-  value_it = iter(values)
-  value = next(value_it, "")
+  result = []
+  current_value = ""
   
-  indent_size = max(indent_size, len(indent_value) + len(prefix) ) + 1
+  for value in values:
+    value = prefix + value + suffix
+    
+    if len(current_value) + len(value) > max_length:
+      if current_value:
+        current_value += separator
+        result.append( current_value )
+        current_value = ""
+    
+    if current_value:
+      current_value += separator
+      
+    current_value += value
   
-  indent_first_spaces = ' ' * (indent_size - len(indent_value) - len(prefix))
-  indent_values = [indent_value + indent_first_spaces + prefix + value ]
+  if current_value:
+    result.append( current_value )
   
-  indent_spaces = ' ' * indent_size
-  for value in value_it:
-    indent_values[-1] += separator
-    indent_values.append( indent_spaces + value )
+  return result
+
+#//===========================================================================//
+
+def   _indentItems( indent_value, values ):
   
-  indent_values[-1] += suffix
+  result = []
   
-  return indent_values
+  indent_spaces = ' ' * len(indent_value)
   
+  for value in values:
+    if value:
+      if result:
+        value = indent_spaces + value
+      else:
+        value = indent_value + value
+    
+    result.append( value )
+  
+  return result
+
+#//===========================================================================//
+
+def   _mergeLists( values1, values2, indent_size ):
+  result = []
+  
+  max_name    = max( values1, key = len)
+  indent_size = max( indent_size, len(max_name) ) + 1
+  
+  for left, right in zip_longest( values1, values2, fillvalue = "" ):
+    if not right:
+      right_indent = ""
+    else:
+      right_indent = ' ' * (indent_size - len(left))
+    
+    value = left + right_indent + right
+    
+    result.append( value )
+  
+  return result
+
 
 #//===========================================================================//
 
@@ -210,38 +263,54 @@ class OptionHelp( object ):
   
   #//-------------------------------------------------------//
   
+  def   _currentValue( self, details ):
+    if self.current_value is not None:
+      if isinstance( self.current_value, (list, tuple, UniqueList)):
+        current_value = map( toString, self.current_value )
+        if current_value:
+          current_value = _joinToLength( current_value, 64, separator = ",", prefix= "'", suffix="'")
+          current_value = _indentItems( "[ ", current_value )
+          current_value[-1] += " ]"
+          details.extend( current_value )
+        else:
+          details.append( "[]" )
+      else:
+        current_value = self.option_type.toStr( self.current_value )
+        if not current_value:
+          current_value = "''"
+        
+        details.append( current_value )
+    else:
+      details.append( "N/A" )
+  
+  #//-------------------------------------------------------//
+  
   def   text( self, brief = False, names_indent = 0 ):
     
     details = []
-    if self.description:
-      details.append( self.description )
+    
+    self._currentValue( details )
     
     if not brief:
+      if self.description:
+        details.append( self.description )
+    
       if self.type_name:
         details.append( "Type: " + self.type_name )
       
       if self.allowed_values:
-        details += _indentList( "Allowed values:", 0, self.allowed_values )
-      
-      if self.current_value is not None:
-        if isinstance( self.current_value, (list, tuple, UniqueList)):
-          current_value = map( toString, self.current_value )
-          details += _indentList( "Current value:", 0, current_value, prefix = "[ ", suffix = " ]", separator = ",")
-        else:
-          current_value = self.option_type.toStr( self.current_value )
-          details.append( "Current value: " + current_value )
+        details += _indentItems( "Allowed values: ", self.allowed_values )
+    
+    details = _indentItems( ": ", details )
     
     result = []
     
     if self.names:
       names = self.names
-      max_name = max( names, key = len)
       key_marker = '* ' if self.is_key else '  '
       names = [ key_marker + name for name in names ]
       
-      names_indent = max( names_indent, len(max_name) ) + 2 + len(key_marker)
-      details = _indentList( names[-1] + ':', names_indent, details )
-      result += names[:-1]
+      details = _mergeLists( names, details, names_indent + 2 )
     
     result += details
     
@@ -268,25 +337,33 @@ class OptionHelpGroup( object ):
   def   __iter__(self):
     return iter(self.help_list)
   
-  def text( self, brief = False ):
+  def text( self, brief = False, indent = 0 ):
     
     result = []
     
     group_name = self.name
     if group_name:
       group_name = "%s:" % (group_name)
-      # group_border = "-" * (len(group_name))
       group_border_bottom = "-" * len(group_name)
-      # result.extend( [ group_border, group_name, group_border_bottom ] )
-      result.extend( [ group_name, group_border_bottom, "" ] )
+      result.extend( [ group_name, group_border_bottom ] )
     
     names_indent = self.max_option_name_length
     
     self.help_list.sort( key = operator.attrgetter('names') ) 
     
     for help in self.help_list:
-      result.extend( help.text( brief, names_indent ))
-      result.append( "" )
+      opt_text = help.text( brief, names_indent )
+      
+      if (len(opt_text) > 1) and result and result[-1]:
+        result.append("")
+      
+      result.extend( opt_text )
+      
+      if len(opt_text) > 1:
+        result.append("")
+    
+    if indent:
+      result = _indentItems( ' ' * indent, result )
     
     return result
 
@@ -388,7 +465,7 @@ class   VersionOptionType (OptionType):
     super(VersionOptionType, self).__init__( Version, description, group, range_help, is_tool_key = is_tool_key, is_hidden = is_hidden )
   
   def   helpType(self):
-    return "version string"
+    return "Version String"
 
 #//===========================================================================//
 #//===========================================================================//
@@ -398,7 +475,7 @@ class   PathOptionType (OptionType):
     super(PathOptionType, self).__init__( FilePath, description, group, range_help, is_tool_key = is_tool_key, is_hidden = is_hidden )
   
   def   helpType(self):
-    return "file system path"
+    return "File System Path"
 
 #//===========================================================================//
 #//===========================================================================//

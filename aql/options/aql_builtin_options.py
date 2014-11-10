@@ -201,9 +201,10 @@ def     _diagnostic_options():
 
   options.lint = EnumOptionType( values = [('off', 0), ('on', 1), ('global',2)],
                                  default = 'off',
-                                 description = 'Lint source code.' )
+                                 description = 'Lint source code.',
+                                 is_hidden = True)
   
-  options.lint_flags = ListOptionType( description = "Lint tool options" )
+  options.lint_flags = ListOptionType( description = "Lint tool options", is_hidden = True )
   
   options.setGroup( "Diagnostic" )
   return options
