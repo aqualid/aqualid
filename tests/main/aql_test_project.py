@@ -140,7 +140,7 @@ options.build_variant = "final"
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
       prj.Build()
@@ -150,7 +150,7 @@ options.build_variant = "final"
       
       self.building_started = 0
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
       prj.Build()
       
@@ -164,7 +164,7 @@ options.build_variant = "final"
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir, "test"] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       cmd = prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
       cmd_other = prj.tools.ExecuteCommand( "python", "-c", "print('test other')" )
@@ -182,7 +182,7 @@ options.build_variant = "final"
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       cmd = prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
       cmd_other = prj.tools.ExecuteCommand( "python", "-c", "print('test other')" )
@@ -201,7 +201,7 @@ options.build_variant = "final"
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       tool = prj.tools.AddTool( TestTool )
       

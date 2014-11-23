@@ -29,7 +29,7 @@ class TestToolRsync( AqlTestCase ):
           
           cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
           
-          prj = Project( cfg.options, cfg.targets )
+          prj = Project( cfg )
           
           try:
             rsync = prj.tools.rsync
@@ -55,7 +55,7 @@ class TestToolRsync( AqlTestCase ):
 
         cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
 
-        prj = Project( cfg.options, cfg.targets )
+        prj = Project( cfg )
 
         remote_files = prj.tools.rsync.Push( src_dir + '/', target = 'test_rsync_push/',
                                              host = 'nas', key_file = r'C:\cygwin\home\me\rsync.key',
@@ -74,7 +74,7 @@ class TestToolRsync( AqlTestCase ):
           
           cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
           
-          prj = Project( cfg.options, cfg.targets )
+          prj = Project( cfg )
           
           try:
             rsync = prj.tools.rsync

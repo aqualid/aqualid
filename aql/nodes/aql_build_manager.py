@@ -378,13 +378,15 @@ class  _VFiles( object ):
   (
     'names',
     'handles',
+    'force_lock'
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__( self ):
+  def   __init__( self, force_lock = False ):
     self.handles = {}
     self.names = {}
+    self.force_lock = force_lock
   
   #//-------------------------------------------------------//
   
@@ -407,7 +409,7 @@ class  _VFiles( object ):
       return self.handles[ vfilename ]
     
     except KeyError:
-      vfile = ValuesFile( vfilename )
+      vfile = ValuesFile( vfilename, force = self.force_lock )
       self.handles[ vfilename ] = vfile
       
       return vfile
@@ -488,8 +490,8 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, build_manager, jobs = 0, keep_going = False, with_backtrace = True ):
-    self.vfiles         = _VFiles()
+  def   __init__( self, build_manager, jobs = 0, keep_going = False, with_backtrace = True, force_lock = False ):
+    self.vfiles         = _VFiles( force_lock = force_lock )
     self.node_states    = {}
     self.building_nodes = {}
     self.build_manager  = build_manager
@@ -946,7 +948,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False, with_backtrace = True ):
+  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False, with_backtrace = True, force_lock = False):
     
     self.__reset( build_always = build_always, explain = explain )
     
@@ -954,7 +956,7 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
-    with _NodesBuilder( self, jobs, keep_going, with_backtrace ) as nodes_builder:
+    with _NodesBuilder( self, jobs, keep_going, with_backtrace, force_lock = force_lock ) as nodes_builder:
       while True:
         tails = self.getTailNodes()
         
@@ -996,7 +998,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, nodes = None ):
+  def   clear( self, nodes = None, force_lock = False ):
     
     self.__reset()
     
@@ -1004,7 +1006,7 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
-    with _NodesBuilder( self ) as nodes_builder:
+    with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
       while True:
         
         tails = self.getTailNodes()
@@ -1016,7 +1018,7 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   status( self, nodes = None, explain = False ):
+  def   status( self, nodes = None, explain = False, force_lock = False ):
     
     self.__reset( explain = explain )
     
@@ -1024,7 +1026,7 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
-    with _NodesBuilder( self ) as nodes_builder:
+    with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
       
       while True:
         tails = self.getTailNodes()

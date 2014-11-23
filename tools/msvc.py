@@ -1,7 +1,8 @@
 import os
 import re
 
-import aql
+from aql import executeCommand, whereProgram, findOptionalPrograms,\
+  ListOptionType, PathOptionType, tool 
 
 from cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
                        ToolCommonRes, CommonResCompiler
@@ -256,7 +257,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
 
 def _getMsvcSpecs( cl ):
 
-  result = aql.executeCommand( cl )
+  result = executeCommand( cl )
 
   specs_re = re.compile( r'Compiler Version (?P<version>[0-9.]+) for (?P<machine>[a-zA-Z0-9_-]+)', re.MULTILINE )
 
@@ -288,8 +289,8 @@ class ToolMsvcCommon( ToolCommonCpp ):
   @classmethod
   def   setup( cls, options, env ):
     
-    cl = aql.whereProgram( 'cl', env )
-    link, lib, rc = aql.findOptionalPrograms( ['link', 'lib', 'rc' ], env )
+    cl = whereProgram( 'cl', env )
+    link, lib, rc = findOptionalPrograms( ['link', 'lib', 'rc' ], env )
     
     specs = _getMsvcSpecs( cl )
     
@@ -305,9 +306,9 @@ class ToolMsvcCommon( ToolCommonCpp ):
   def   __init__(self, options ):
     super(ToolMsvcCommon,self).__init__( options )
     
-    options.env['INCLUDE']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
-    options.env['LIB']      = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
-    options.env['LIBPATH']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+    options.env['INCLUDE']  = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
+    options.env['LIB']      = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
+    options.env['LIBPATH']  = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
     
     options.objsuffix     = '.obj'
     options.ressuffix     = '.res'
@@ -412,25 +413,25 @@ class ToolMsvcCommon( ToolCommonCpp ):
   
 #//===========================================================================//
 
-@aql.tool('c++', 'msvcpp','msvc++', 'cpp', 'cxx')
+@tool('c++', 'msvcpp','msvc++', 'cpp', 'cxx')
 class ToolMsVCpp( ToolMsvcCommon ):
   language = "c++"
 
 #//===========================================================================//
 
-@aql.tool('c', 'msvc', 'cc')
+@tool('c', 'msvc', 'cc')
 class ToolMsvc( ToolMsvcCommon ):
   language = "c"
 
 #//===========================================================================//
 
-@aql.tool('rc', 'msrc')
+@tool('rc', 'msrc')
 class ToolMsrc( ToolCommonRes ):
   
   @classmethod
   def   setup( cls, options, env ):
     
-    rc = aql.whereProgram( 'rc', env )
+    rc = whereProgram( 'rc', env )
     options.target_os = 'windows'
     options.rc = rc
   

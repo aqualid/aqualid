@@ -84,10 +84,11 @@ class   ErrorProjectBuilderMethodInvalidOptions( AqlException ):
 #noinspection PyUnresolvedReferences
 class ProjectConfig( object ):
   
-  __slots__ = ('directory', 'makefile', 'targets', 'options',
+  __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
                'verbose', 'no_output', 'jobs', 'keep_going',
                'build_always', 'clean', 'status', 'list_options', 'list_targets',
                'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
+               'force_lock',
   )
   
   #//-------------------------------------------------------//
@@ -97,7 +98,6 @@ class ProjectConfig( object ):
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
     Paths = SplitListType( ValueListType( UniqueList, FilePath ), ', ' )
-    Strings = SplitListType( ValueListType( UniqueList, str ), ', ' )
     
     CLI_OPTIONS = (
       
@@ -121,6 +121,8 @@ class ProjectConfig( object ):
       CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
       CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reasons why targets are being rebuilt" ),
       CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
+      CLIOption( None, "--force-lock",        "force_lock",       bool,       False,        "Forces to lock AQL DB file." ),
+      CLIOption( None, "--version",           "version",          bool,       False,        "Show version and exit." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -132,20 +134,21 @@ class ProjectConfig( object ):
     if config:
       cli_config.readConfig( config, { 'options': options })
     
-    cli_options = {}
+    arguments = {}
     
     ignore_options = {'list_options', 'config'}
     ignore_options.update( ProjectConfig.__slots__ )
     
     for name,value in cli_config.items():
       if (name not in ignore_options) and (value is not None):
-        cli_options[ name ] = value
+        arguments[ name ] = value
     
-    options.update( cli_options )
+    options.update( arguments )
     
     #//-------------------------------------------------------//
     
     self.options          = options
+    self.arguments        = arguments
     self.directory        = cli_config.directory.abspath()
     self.makefile         = cli_config.makefile
     self.targets          = cli_config.targets
@@ -158,6 +161,7 @@ class ProjectConfig( object ):
     self.list_options     = cli_config.list_options
     self.list_targets     = cli_config.list_targets
     self.jobs             = cli_config.jobs
+    self.force_lock       = cli_config.force_lock
     self.debug_profile    = cli_config.debug_profile
     self.debug_memory     = cli_config.debug_memory
     self.debug_explain    = cli_config.debug_explain
@@ -400,13 +404,14 @@ def   _textTargets( targets ):
 
 #//===========================================================================//
 
-#noinspection PyProtectedMember,PyAttributeOutsideInit
 class Project( object ):
   
-  def   __init__( self, options, targets ):
+  def   __init__( self, config ):
     
-    self.targets = targets
-    self.options = options
+    self.targets = config.targets
+    self.options = config.options
+    self.arguments = config.arguments
+    self.config = config
     self.scripts_cache = {}
     self.aliases = {}
     self.alias_descriptions = {}
@@ -481,6 +486,11 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
+  def   GetArguments(self):
+    return self.arguments
+  
+  #//-------------------------------------------------------//
+  
   def   ReadOptions( self, options_file, options = None ):
     
     if options is None:
@@ -490,11 +500,18 @@ class Project( object ):
     
     script_locals = self._execScript( options_file, script_locals )
     
+    # remove overridden options from CLI  
+    for arg in self.arguments:
+      try:
+        del script_locals[ arg ]
+      except KeyError:
+        pass
+    
     options.update( script_locals )
   
   #//-------------------------------------------------------//
   
-  def   Include( self, makefile ):
+  def   Script( self, makefile ):
     return self._execScript( makefile, self.script_locals )
   
   #//-------------------------------------------------------//
@@ -571,7 +588,12 @@ class Project( object ):
   
   #//=======================================================//
   
-  def   Build( self, jobs = None, keep_going = False, build_always = False, explain = False, with_backtrace = True ):
+  def   Build( self, jobs = None ):
+    config = self.config
+    
+    if jobs is None:
+      jobs = config.jobs
+    
     if not jobs:
       jobs = 0
     else:
@@ -591,23 +613,30 @@ class Project( object ):
     
     build_nodes = self._getBuildNodes()
     
+    keep_going     = config.keep_going,
+    build_always   = config.build_always
+    explain        = config.debug_explain
+    with_backtrace = config.debug_backtrace
+    force_lock     = config.force_lock
+    
     is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes,
-                                      build_always = build_always, explain = explain, with_backtrace = with_backtrace )
+                                      build_always = build_always, explain = explain,
+                                      with_backtrace = with_backtrace, force_lock = force_lock )
     return is_ok
   
   #//=======================================================//
   
-  def Clean( self ):
+  def Clean( self, force_lock = False ):
     build_nodes = self._getBuildNodes()
     
-    self.build_manager.clear( nodes = build_nodes )
+    self.build_manager.clear( nodes = build_nodes, force_lock = force_lock )
   
   #//=======================================================//
   
-  def Status( self, explain = False ):
+  def Status( self, explain = False, force_lock = False ):
     build_nodes = self._getBuildNodes()
     
-    is_actual = self.build_manager.status( nodes = build_nodes, explain = explain )
+    is_actual = self.build_manager.status( nodes = build_nodes, explain = explain, force_lock = force_lock )
     return is_actual
   
   #//=======================================================//

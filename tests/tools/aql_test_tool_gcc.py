@@ -361,7 +361,7 @@ class TestToolGcc( AqlTestCase ):
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       try:
         cpp = prj.tools['g++']
@@ -408,7 +408,7 @@ class TestToolGcc( AqlTestCase ):
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       try:
         cpp = prj.tools['c++']
@@ -455,7 +455,7 @@ class TestToolGcc( AqlTestCase ):
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       try:
         cpp = prj.tools['gxx']
@@ -501,7 +501,7 @@ class TestToolGcc( AqlTestCase ):
       
       cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
       
-      prj = Project( cfg.options, cfg.targets )
+      prj = Project( cfg )
       
       try:
         cpp = prj.tools['gxx']

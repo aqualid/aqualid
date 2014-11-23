@@ -2,7 +2,8 @@ import os
 import re
 import itertools
 
-import aql
+from aql import readTextFile, Tempfile, executeCommand, whereProgram, findOptionalProgram,\
+  StrOptionType, ListOptionType, PathOptionType, Version, tool 
 
 from cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
                         ToolCommonRes, CommonResCompiler
@@ -13,7 +14,7 @@ from cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, Com
 
 def   _readDeps( dep_file, exclude_dirs, _space_splitter_re = re.compile(r'(?<!\\)\s+') ):
   
-  deps = aql.readTextFile( dep_file )
+  deps = readTextFile( dep_file )
   
   dep_files = []
   
@@ -74,7 +75,7 @@ class GccCompiler (CommonCppCompiler):
     obj_file = self.getObjPath( sources[0] )
     cwd = obj_file.dirname()
     
-    with aql.Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
+    with Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
       
       cmd = list(self.cmd)
       
@@ -218,7 +219,7 @@ def   _checkProg( gcc_path, prog ):
 
 def   _findGcc( env, gcc_prefix, gcc_suffix ):
   gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
-  gcc = aql.whereProgram( gcc, env )
+  gcc = whereProgram( gcc, env )
   
   gxx = None
   ar = None
@@ -243,7 +244,7 @@ def   _findGcc( env, gcc_prefix, gcc_suffix ):
 #//===========================================================================//
 
 def   _getGccSpecs( gcc ):
-  result = aql.executeCommand( [gcc, '-v'] )
+  result = executeCommand( [gcc, '-v'] )
   
   target_re = re.compile( r'^\s*Target:\s+(.+)$', re.MULTILINE )
   version_re = re.compile( r'^\s*gcc version\s+(.+)$', re.MULTILINE )
@@ -254,7 +255,7 @@ def   _getGccSpecs( gcc ):
   target = match.group(1).strip() if match else ''
   
   match = version_re.search( out )
-  version = str(aql.Version( match.group(1).strip() if match else '' ))
+  version = Version( match.group(1).strip() if match else '' )
   
   target_list = target.split('-', 2)
   
@@ -300,7 +301,7 @@ class ToolGccCommon( ToolCommonCpp ):
     
     options.lib = ar
     
-    options.rc = aql.findOptionalProgram( 'windres', env )
+    options.rc = findOptionalProgram( 'windres', env )
   
   #//-------------------------------------------------------//
   
@@ -308,8 +309,8 @@ class ToolGccCommon( ToolCommonCpp ):
   def   options( cls ):
     options = super(ToolGccCommon, cls).options()
     
-    options.gcc_prefix  = aql.StrOptionType( description = "GCC C/C++ compiler prefix", is_tool_key = True )
-    options.gcc_suffix  = aql.StrOptionType( description = "GCC C/C++ compiler suffix", is_tool_key = True )
+    options.gcc_prefix  = StrOptionType( description = "GCC C/C++ compiler prefix", is_tool_key = True )
+    options.gcc_suffix  = StrOptionType( description = "GCC C/C++ compiler suffix", is_tool_key = True )
     
     return options
   
@@ -318,13 +319,13 @@ class ToolGccCommon( ToolCommonCpp ):
   def   __init__(self, options ):
     super(ToolGccCommon,self).__init__( options )
     
-    options.env['CPATH']  = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+    options.env['CPATH']  = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
     if self.language == 'c':
-      options.env['C_INCLUDE_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+      options.env['C_INCLUDE_PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
     else:
-      options.env['CPLUS_INCLUDE_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+      options.env['CPLUS_INCLUDE_PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
     
-    options.env['LIBRARY_PATH'] = aql.ListOptionType( value_type = aql.PathOptionType(), separators = os.pathsep )
+    options.env['LIBRARY_PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
     
     if_ = options.If()
     if_windows = if_.target_os.eq('windows')
@@ -414,25 +415,25 @@ class ToolGccCommon( ToolCommonCpp ):
 
 #//===========================================================================//
 
-@aql.tool('c++', 'g++', 'gxx', 'cpp', 'cxx')
+@tool('c++', 'g++', 'gxx', 'cpp', 'cxx')
 class ToolGxx( ToolGccCommon ):
   language = "c++"
 
 #//===========================================================================//
 
-@aql.tool('c', 'gcc', 'cc')
+@tool('c', 'gcc', 'cc')
 class ToolGcc( ToolGccCommon ):
   language = "c"
 
 #//===========================================================================//
 
-@aql.tool('rc', 'windres')
+@tool('rc', 'windres')
 class ToolWindRes( ToolCommonRes ):
   
   @classmethod
   def   setup( cls, options, env ):
     
-    rc = aql.whereProgram( 'windres', env )
+    rc = whereProgram( 'windres', env )
     options.target_os = 'windows'
     options.rc = rc
   

@@ -75,10 +75,10 @@ END
 
 class AqlTestCase( TestCaseBase ):
   
-  def   buildPrj( self, prj, num_built_nodes, num_failed_nodes = 0, jobs = 4, explain = False ):
+  def   buildPrj( self, prj, num_built_nodes, num_failed_nodes = 0, jobs = 4 ):
     self.built_nodes = 0
 
-    ok = prj.Build( jobs = jobs, explain = explain )
+    ok = prj.Build( jobs = jobs )
     if not ok:
       if num_failed_nodes == 0:
         prj.build_manager.printFails()

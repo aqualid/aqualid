@@ -20,6 +20,7 @@ __all__ = ( 'main', )
 
 import gc
 import os
+import sys
 import cProfile
 import traceback
 
@@ -108,15 +109,13 @@ def   _main( prj_cfg ):
     
     with Chdir( prj_cfg.directory ):
       makefile = prj_cfg.makefile
-      targets = prj_cfg.targets
-      options = prj_cfg.options
       
-      prj = Project( options, targets )
+      prj = Project( prj_cfg )
       
       eventReadingScripts()
       
       with Chrono() as elapsed:
-        prj.Include( makefile )
+        prj.Script( makefile )
       
       eventReadingScriptsDone( elapsed )
       
@@ -141,11 +140,7 @@ def   _main( prj_cfg ):
           logInfo( '\n'.join( text ) )
           
         else:
-          success = prj.Build( jobs           = prj_cfg.jobs,
-                               keep_going     = prj_cfg.keep_going,
-                               build_always   = prj_cfg.build_always,
-                               explain        = prj_cfg.debug_explain,
-                               with_backtrace = prj_cfg.debug_backtrace )
+          success = prj.Build()
           if not success:
             prj.build_manager.printFails()
       
@@ -160,12 +155,24 @@ def   _main( prj_cfg ):
   
   return status
 
+#//===========================================================================//
+
+def _patchSysModules():
+    aql_module = sys.modules.get( 'aql', None )
+    if aql_module is not None:
+      sys.modules.setdefault( 'aqualid', aql_module )
+    else:
+      aql_module = sys.modules.get( 'aqualid', None )
+      if aql_module is not None:
+        sys.modules.setdefault( 'aql', aql_module )
 
 #//===========================================================================//
 
 def   main():
   with_backtrace = True
   try:
+    _patchSysModules()
+    
     prj_cfg = ProjectConfig()
     with_backtrace = prj_cfg.debug_backtrace
     
@@ -181,12 +188,15 @@ def   main():
       profiler.dump_stats( debug_profile )
     
     return status
-  except Exception as ex:
+  except (Exception, KeyboardInterrupt) as ex:
     if with_backtrace:
       err = traceback.format_exc()
     else:
-      err = str(ex)
-
+      if isinstance(ex, KeyboardInterrupt):
+        err = "Keyboard Interrupt"
+      else:
+        err = str(ex)
+  
     eventAqlError( err )
   
 #//===========================================================================//

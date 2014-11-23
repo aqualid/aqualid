@@ -1,11 +1,5 @@
 import os
 
-# import aql
-
-# @aql.eventHandler
-# def   eventNodeBuilding( node, brief ):
-#   aql.logInfo("Building node: %s" % (node.getBuildStr( brief )) )
-
 SetBuildDir('output')
 
 cpp = Tool('c++', tools_path = '../tools')
