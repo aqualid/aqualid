@@ -60,22 +60,21 @@ class LogFormatter( object ):
   
 #//---------------------------------------------------------------------------//
 
-class Logger( logging.Logger ):
-  def   __new__( cls, name ):
-    self = logging.getLogger( name )
-    handler = logging.StreamHandler()
-    
-    formatter = LogFormatter()
-    handler.setFormatter(formatter)
-    
-    self.addHandler( handler )
-    self.setLevel( logging.DEBUG )
-    
-    return self
+def   _makeAqlLogger():
+  logger = logging.getLogger( "AQL" )
+  handler = logging.StreamHandler()
+  
+  formatter = LogFormatter()
+  handler.setFormatter(formatter)
+  
+  logger.addHandler( handler )
+  logger.setLevel( logging.DEBUG )
+  
+  return logger
 
 #//---------------------------------------------------------------------------//
 
-_logger = Logger( "AQL" )
+_logger = _makeAqlLogger()
 
 setLogLevel   = _logger.setLevel
 logCritical   = _logger.critical

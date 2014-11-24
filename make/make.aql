@@ -1,7 +1,6 @@
 import os
 import re
 import datetime
-import sysconfig
 
 import aql
 
@@ -261,7 +260,7 @@ Default( linked_file )
 
 #//-------------------------------------------------------//
 
-install_path = sysconfig.get_path('scripts')
-install = tools.Install( linked_file, target = install_path )
-
-Alias('install', install )
+# install_path = sysconfig.get_path('scripts')
+# install = tools.Install( linked_file, target = install_path )
+# 
+# Alias('install', install )
