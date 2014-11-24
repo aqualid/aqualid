@@ -93,7 +93,7 @@ class   Dict (dict):
   #//-------------------------------------------------------//
   
   def   dump( self ):
-    return { castStr(key): castStr(value) for key, value in self.items() }
+    return dict( map(castStr, pair) for pair in self.items() )
   
   #//-------------------------------------------------------//
   

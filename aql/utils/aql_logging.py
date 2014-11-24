@@ -73,7 +73,6 @@ class Logger( logging.Logger ):
     
     return self
 
-
 #//---------------------------------------------------------------------------//
 
 _logger = Logger( "AQL" )

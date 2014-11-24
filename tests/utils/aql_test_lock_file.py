@@ -86,9 +86,7 @@ class TestFileLock( AqlTestCase ):
       
       with flock1.writeLock():
         start_time = time.time()
-        with self.assertRaises( ErrorFileLocked ):
-          with flock2.writeLock():
-            self.assertFalse(True)
+        self.assertRaises( ErrorFileLocked, flock2.writeLock )
         self.assertGreaterEqual( time.time() - start_time, 3 )
 
   #//===========================================================================//

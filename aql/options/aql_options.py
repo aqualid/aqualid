@@ -118,7 +118,7 @@ def   _storeOpValue( options, value ):
       value = _OpValueExRef( value )
   
   elif isinstance( value, dict ):
-    value = { k: _storeOpValue( options, v ) for k, v in value.items() }
+    value = dict( (k,_storeOpValue( options, v )) for k, v in value.items() )
   
   elif isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
     value = [ _storeOpValue( options, v ) for v in value ]
@@ -145,7 +145,7 @@ def   _loadOpValue( options, context, value ):
     value = simplifyValue( value )
   
   elif isinstance( value, dict ):
-    value = { k: _loadOpValue( options, context, v ) for k, v in value.items() }
+    value = dict( (k, _loadOpValue( options, context, v )) for k, v in value.items() )
   
   elif isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
     value = [ _loadOpValue( options, context, v ) for v in value ]
@@ -513,7 +513,7 @@ def   _itemsByValue( items ):
     try:
       values[ value ].add( name )
     except KeyError:
-      values[ value ] = {name}
+      values[ value ] = set( (name,) )
   
   return values
 

@@ -698,7 +698,7 @@ def  simplifyValue( value, simple_types = SIMPLE_TYPES_SET, simple_lists = _SIMP
     return [ simplifyValue( v ) for v in value ]
   
   if isinstance( value, dict ):
-    return { key: simplifyValue( v ) for key,v in value.items() }
+    return dict( (key, simplifyValue( v )) for key,v in value.items() )
   
   try:
     return simplifyValue( value.get() )

@@ -136,7 +136,7 @@ class ProjectConfig( object ):
     
     arguments = {}
     
-    ignore_options = {'list_options', 'config'}
+    ignore_options = set( ('list_options', 'config') )
     ignore_options.update( ProjectConfig.__slots__ )
     
     for name,value in cli_config.items():
@@ -486,11 +486,6 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   GetArguments(self):
-    return self.arguments
-  
-  #//-------------------------------------------------------//
-  
   def   ReadOptions( self, options_file, options = None ):
     
     if options is None:
@@ -500,7 +495,7 @@ class Project( object ):
     
     script_locals = self._execScript( options_file, script_locals )
     
-    # remove overridden options from CLI  
+    # remove overridden options from CLI
     for arg in self.arguments:
       try:
         del script_locals[ arg ]

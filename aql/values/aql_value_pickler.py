@@ -116,7 +116,7 @@ def   _typeName( value_type ):
 def  pickleable( value_type, known_type_names = _known_type_names, known_type_ids = _known_type_ids ):
   if type(value_type) is type:
     type_name = _typeName( value_type )
-    type_id = binascii.crc32( type_name.encode( encoding = "utf-8" ) ) & 0xFFFFFFFF
+    type_id = binascii.crc32( type_name.encode("utf-8") ) & 0xFFFFFFFF
     
     other_type = known_type_ids.setdefault( type_id, value_type )
     if other_type is not value_type:

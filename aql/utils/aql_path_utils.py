@@ -25,6 +25,7 @@ __all__ = (
 )
 
 import os
+import sys
 import re
 import fnmatch
 import operator
@@ -47,10 +48,6 @@ class   ErrorProgramName( AqlException ):
   def   __init__( self, prog ):
     msg = "Invalid program name: %s(%s)" % (prog,type(prog))
     super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
-IS_WINDOWS = (os.name == 'nt')
 
 #//===========================================================================//
 
@@ -145,7 +142,7 @@ def   _getEnvPath( env = None ):
 
 #//===========================================================================//
 
-def   _getEnvPathExt( env = None ):
+def   _getEnvPathExt( env = None, IS_WINDOWS = os.name == 'nt' ):
   
   if env is None:
     path_exts = os.environ.get('PATHEXT', '')
@@ -158,7 +155,12 @@ def   _getEnvPathExt( env = None ):
     return ('.exe','.cmd','.bat','.com')
   
   if isString( path_exts ):
-    path_exts = path_exts.split( os.pathsep )
+    path_sep = os.pathsep if sys.platform != 'cygwin' else ';'
+    path_exts = path_exts.split( path_sep )
+  
+  if not IS_WINDOWS:
+    if '' not in path_exts:
+      path_exts.insert(0,'')
   
   return path_exts
 
@@ -166,8 +168,10 @@ def   _getEnvPathExt( env = None ):
 
 def   _findProgram( prog, paths, path_exts = None ):
   
-  if not path_exts or (os.path.splitext(prog)[1] in path_exts):
-    path_exts = tuple('',)
+  prog_ext = os.path.splitext(prog)[1]
+  
+  if not path_exts or (prog_ext and prog_ext in path_exts):
+    path_exts = ('',)
   
   for path in paths:
     prog_path = os.path.expanduser( os.path.join( path, prog ) )
@@ -185,11 +189,11 @@ def   whereProgram( prog, env = None ):
   paths = _getEnvPath( env )
   path_exts = _getEnvPathExt( env )
   
-  prog = _findProgram( prog, paths, path_exts )
-  if prog is None:
+  prog_path = _findProgram( prog, paths, path_exts )
+  if prog_path is None:
     raise ErrorProgramNotFound( prog )
   
-  return prog
+  return prog_path
 
 #//===========================================================================//
 

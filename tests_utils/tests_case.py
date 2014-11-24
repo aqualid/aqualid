@@ -19,6 +19,7 @@
 
 import sys
 import unittest
+import itertools
 
 __all__ = ('TestCaseSuite', 'TestCaseBase')
 
@@ -100,7 +101,7 @@ class TestCaseSuite(unittest.TestSuite):
     test_case_class = self.__getTestCaseClass()
     
     if self.__setUpTestCaseClass( test_case_class, result ):
-      super(TestCaseSuite, self).run( result, debug = debug )
+      super(TestCaseSuite, self).run( result )
     
     self.__tearDownTestCaseClass( test_case_class, result )
 
@@ -194,6 +195,16 @@ class TestCaseBase(unittest.TestCase):
       if msg is None: msg = str(a) + " is " + str(None) + ' is False'
       self.assertTrue( a is None, msg )
   
+  if not hasattr( unittest.TestCase, 'assertIs' ):
+    def assertIs( self, a, b, msg = None):
+      if msg is None: msg = str(a) + " is not " + str(b)
+      self.assertTrue( a is b, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertIsNot' ):
+    def assertIsNot( self, a, b, msg = None):
+      if msg is None: msg = str(a) + " is " + str(b)
+      self.assertTrue( a is not b, msg )
+  
   if not hasattr( unittest.TestCase, 'assertIsNotNone' ):
     def assertIsNotNone( self, a, msg = None):
       if msg is None: msg = str(a) + " is not " + str(None) + ' is False'
@@ -217,7 +228,35 @@ class TestCaseBase(unittest.TestCase):
   if not hasattr( unittest.TestCase, 'assertLessEqual' ):
     def assertLessEqual( self, a, b, msg = None):
       if msg is None: msg = str(a) + " <= " + str(b) + ' is False'
-      self.assertTrue( a <= b, msg)
+      self.assertTrue( a <= b, msg )
+  
+  if not hasattr( unittest.TestCase, 'assertItemsEqual' ):
+    def assertSequenceEqual( self, first, second, msg = None, seq_type = None):
+      if msg is None: msg = str(first) + " != " + str(first)
+      
+      if seq_type:
+        self.assertEqual( type(first), type(second), msg )
+      
+      first = iter(first)
+      second = iter(second)
+      
+      while True:
+        try:
+          v1 = next(first)
+        except StopIteration:
+          try:
+            v2 = next(second)
+          except StopIteration:
+            return
+          
+          self.assertTrue( False, msg )
+        
+        try:
+          v2 = next(second)
+        except StopIteration:
+          self.assertTrue( False, msg )
+        
+        self.assertEqual( v1, v2, msg )
   
   if not hasattr( unittest.TestCase, 'assertItemsEqual' ):
     def assertItemsEqual( self, actual, expected, msg = None):

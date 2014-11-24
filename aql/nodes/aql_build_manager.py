@@ -220,7 +220,7 @@ class _NodesTree (object):
     try:
       current_node_deps = node2deps[ node ]
       
-      deps = { dep for dep in deps if not dep.isBuilt() }
+      deps = set( dep for dep in deps if not dep.isBuilt() )
       new_deps = deps - current_node_deps
       
       if not new_deps:

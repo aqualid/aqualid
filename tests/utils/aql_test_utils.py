@@ -107,7 +107,11 @@ class TestUtils( AqlTestCase ):
   #//===========================================================================//
   
   def   test_exec_command( self ):
-    result = executeCommand("route")
+    if os.name == 'nt':
+      result = executeCommand("route")
+    else:
+      result = executeCommand("ls")
+    
     self.assertTrue( result.output )
   
   #//===========================================================================//

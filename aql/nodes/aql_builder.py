@@ -119,13 +119,13 @@ class BuilderInitiator( object ):
   
   def   __storeKw( self, kw ):
     storeValue = self.options._storeValue
-    return { name: storeValue( value ) for name, value in kw.items() }
+    return dict( (name, storeValue( value )) for name, value in kw.items() )
   
   #//=======================================================//
   
   def   __loadKw( self ):
     loadValue = self.options._loadValue
-    return { name: loadValue( value ) for name, value in self.kw.items() }
+    return dict( (name, loadValue( value )) for name, value in self.kw.items() )
   
   #//=======================================================//
   
