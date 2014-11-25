@@ -21,13 +21,10 @@ __all__ = (
   'TaskManager', 'TaskResult'
 )
 
-import sys
 import threading
-import collections
 import traceback
 
 from .aql_logging import logWarning
-from .aql_utils import ExecCommandResult
 
 try:
   import queue

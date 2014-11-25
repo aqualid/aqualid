@@ -3,19 +3,16 @@ import os.path
 import shutil
 import errno
 
+from aql.utils import groupItems
 from aql.nodes import Builder, FileBuilder
 from .aql_tools import Tool
 
-__all__ = ( "ExecuteCommand",
-            "InstallBuilder",
-            "BuiltinTool",
-          )
+__all__ = (
+  "BuiltinTool",
+)
 
 """
 Unique Value - name + type
-
-value
-node
 
 node = ExecuteCommand('gcc --help -v')
 
@@ -34,7 +31,7 @@ node = FindFiles( dir_node )
 dir_node = FileDir( prog_node )
 """
 
-def   _makeTagetDirs( path_dir ):
+def   _makeTargetDirs( path_dir ):
   try:
     os.makedirs( path_dir )
   except OSError as e:
@@ -61,7 +58,46 @@ class ExecuteCommand (Builder):
 
 #//===========================================================================//
 
-class InstallBuilder (FileBuilder):
+class CopyFilesBuilder (FileBuilder):
+  
+  NAME_ATTRS = ['target']
+  
+  def   __init__(self, options, target ):
+    self.target = os.path.abspath( target )
+    self.split = self.splitBatch
+  
+  #//-------------------------------------------------------//
+  
+  def   buildBatch( self, node ):
+    target = self.target
+    
+    _makeTargetDirs( target )
+    
+    for src_value in node.getSourceValues():
+      src = src_value.get()
+      
+      dst = os.path.join( target, os.path.basename( src ) )
+      shutil.copyfile( src, dst )
+      shutil.copymode( src, dst )
+      
+      node.addSourceTargets( src_value, dst )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceTargets( self, node, brief ):
+    return self.target
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, source_values ):
+    src = source_values[0].get()
+    return ( os.path.join( self.target, os.path.basename(src) ), )
+
+#//===========================================================================//
+ 
+class CopyFileAsBuilder (FileBuilder):
+  
+  NAME_ATTRS = ['target']
   
   def   __init__(self, options, target ):
     self.target = os.path.abspath( target )
@@ -69,21 +105,26 @@ class InstallBuilder (FileBuilder):
   #//-------------------------------------------------------//
   
   def   build( self, node ):
-    sources = node.getSources()
-    
     target = self.target
     
-    _makeTagetDirs( target )
+    target_dir = os.path.dirname( target )
+    _makeTargetDirs( target_dir )
     
-    for source in sources:
-      if os.path.isfile( source ):
-        shutil.copy( source, target )
+    source = node.getSources()[0]
     
-    node.setNoTargets()
+    shutil.copyfile( source, target )
+    shutil.copymode( source, target )
+    
+    node.addTargets( target )
   
   #//-------------------------------------------------------//
   
   def   getTraceTargets( self, node, brief ):
+    return self.target
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, source_values ):
     return self.target
 
 #//===========================================================================//
@@ -93,8 +134,11 @@ class BuiltinTool( Tool ):
   def   ExecuteCommand( self, options ):
     return ExecuteCommand( options )
   
-  def   Install(self, options, target ):
-    return InstallBuilder( options, target )
+  def   CopyFiles(self, options, target ):
+    return CopyFilesBuilder( options, target )
+  
+  def   CopyFileAs(self, options, target ):
+    return CopyFileAsBuilder( options, target )
   
   def   DirName(self, options):
     raise NotImplementedError()

@@ -278,7 +278,7 @@ class Builder (object):
   def   split( self, node ):
     """
     Could be used to dynamically split building sources to several nodes
-    Returns list of nodes or None
+    Returns list of groups of source values or None
     """
     return None
   
@@ -286,23 +286,38 @@ class Builder (object):
   
   def   splitSingle( self, node ):
     """
-    Splits each source to separate nodes 
-    Returns list of nodes or None
+    Implementation of split for splitting one-by-one 
     """
-    source_values = node.getSourceValues()
-    if len(source_values) < 2:
-      return None
+    return node.getSourceValues()
+  
+  #//-------------------------------------------------------//
+  
+  def   splitBatch( self, node ):
+    """
+    Implementation of split for splitting to batch groups of batch size  
+    """
+    num_groups = node.options.batch_groups.get()
+    group_size = node.options.batch_size.get()
     
-    return tuple( node.split( src_value ) for src_value in source_values )
+    return groupItems( node.getSourceValues(), num_groups, group_size )
   
   #//-------------------------------------------------------//
   
   def   splitBatchByBuildDir( self, node ):
-    src_groups = self.groupSourcesByBuildDir( node )
-    if len(src_groups) < 2:
-      return None
+    """
+    Implementation of split for grouping sources by output  
+    """
+    src_files = node.getSourceValues()
     
-    return tuple( node.split( src_group ) for src_group in src_groups )
+    num_groups = node.options.batch_groups.get()
+    group_size = node.options.batch_size.get()
+    
+    if self.relative_build_paths:
+      groups = groupPathsByDir( src_files, num_groups, group_size, pathGetter = operator.methodcaller('get') )
+    else:
+      groups = groupItems( src_files, num_groups, group_size )
+    
+    return groups
   
   #//-------------------------------------------------------//
   
@@ -414,21 +429,6 @@ class Builder (object):
       build_paths = [ FilePath( os.path.join( build_path, filename ) ) for filename in filenames ]
     
     return build_paths
-  
-  #//-------------------------------------------------------//
-  
-  def   groupSourcesByBuildDir( self, node ):
-    src_files = node.getSourceValues()
-    
-    num_groups = node.options.batch_groups.get()
-    group_size = node.options.batch_size.get()
-    
-    if self.relative_build_paths:
-      groups = groupPathsByDir( src_files, num_groups, group_size, pathGetter = operator.methodcaller('get') )
-    else:
-      groups = groupItems( src_files, num_groups, group_size )
-    
-    return groups
   
   #//-------------------------------------------------------//
   

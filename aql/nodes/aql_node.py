@@ -745,7 +745,10 @@ class Node (object):
     self.itarget_values = []
     self.idep_values = []
     
-    output = self.builder.build( self )
+    builder = self.builder
+    
+    # with Chdir( builder.getBuildPath() ):
+    output = builder.build( self )
 
     if self.target_values is None:
       raise ErrorNoTargets( self )
@@ -774,8 +777,15 @@ class Node (object):
   
   def   buildSplit( self ):
     self.updateDepValues()
-    return self.builder.split( self )
-  
+    groups = self.builder.split( self )
+    if not groups:
+      return None
+    
+    if len(groups) < 2:
+      return None
+    
+    return tuple( self.split( group ) for group in groups )
+
   #//=======================================================//
   
   def   save( self, vfile ):

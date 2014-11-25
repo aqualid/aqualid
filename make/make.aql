@@ -1,6 +1,7 @@
 import os
 import re
 import datetime
+import distutils.core
 
 import aql
 
@@ -214,17 +215,20 @@ class AqlLink (aql.Builder):
 
 #//===========================================================================//
 
-class AqlInstall (aql.Builder):
+class AqlSetup (aql.Builder):
   
-  def   __init__(self, options, *kw ):
-    self.kw = kw
+  SIGNATURE_ATTRS = ('args', )
+  
+  def   __init__(self, options, args ):
+    self.args = args
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     
-    import distutils.core
-    distutils.core.setup( **self.kw )
+    script = node.getSources()[0]
+    
+    distutils.core.run_setup( script, script_args = self.args )
     
     node.setNoTargets()
 
@@ -238,6 +242,9 @@ class AqlBuildTool( aql.Tool ):
   def   Link( self, options, target ):
     return AqlLink( options, target )
   
+  def   Setup( self, options, args ):
+    return AqlSetup( options, args )
+
   # def   Install( self, options, **kw ):
   #   return AqlInstall( options, **kw )
 

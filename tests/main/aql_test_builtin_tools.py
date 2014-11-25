@@ -11,7 +11,8 @@ from aql.util_types import FilePath
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from aql.main import ExecuteCommand, InstallBuilder
+from aql.main import Project, ProjectConfig, ErrorToolNotFound
+from aql.main.aql_builtin_tools import ExecuteCommand, CopyFilesBuilder, CopyFileAsBuilder
 
 #//===========================================================================//
 
@@ -28,6 +29,7 @@ class TestBuiltinTools( AqlTestCase ):
   # noinspection PyUnusedLocal
   def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.building_finished += 1
+    self.built_nodes += 1
   
   #//-------------------------------------------------------//
   
@@ -39,6 +41,7 @@ class TestBuiltinTools( AqlTestCase ):
     addUserHandler( self.eventNodeBuilding )
     
     self.building_finished = 0
+    self.built_nodes = 0
     addUserHandler( self.eventNodeBuildingFinished )
   
   #//-------------------------------------------------------//
@@ -103,7 +106,7 @@ class TestBuiltinTools( AqlTestCase ):
   
   #//-------------------------------------------------------//
 
-  def test_install(self):
+  def test_copy_files(self):
     
     with Tempdir() as tmp_install_dir:
       with Tempdir() as tmp_dir:
@@ -112,43 +115,48 @@ class TestBuiltinTools( AqlTestCase ):
         
         build_dir = os.path.join( tmp_dir, 'output' )
         
-        options = builtinOptions()
-  
-        options.build_dir = build_dir
-        
         num_sources = 3
-        
         sources = self.generateSourceFiles( tmp_dir, num_sources, 200 )
         
-        installer = InstallBuilder( options, str(tmp_install_dir) )
+        cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
         
-        bm = BuildManager()
-        try:
-          
-          result = Node( installer, sources )
+        prj = Project( cfg )
+        
+        node = prj.tools.CopyFiles( sources, target = tmp_install_dir )
+        
+        node.options.batch_groups = 1
+        
+        self.buildPrj( prj, 1 )
+        
+        prj.tools.CopyFiles( sources, target = tmp_install_dir )
+        
+        self.buildPrj( prj, 0 )
   
-          bm.add( result )
-          
-          self._build( bm, jobs = 1, keep_going = False )
-          
-          self.assertEqual( self.building_started, 1 )
-          self.assertEqual( self.building_started, self.building_finished )
-          
-          bm.close()
-          
-          result = Node( installer, sources )
-  
-          bm = BuildManager()
-          bm.add( result )
-          
-          self.building_started = 0
-          self._build( bm, jobs = 1, keep_going = False )
-          
-          self.assertEqual( self.building_started, 0 )
-          
-        finally:
-          bm.close()
+  #//-------------------------------------------------------//
 
+  def   test_copy_file_as(self):
+    
+    with Tempdir() as tmp_install_dir:
+      with Tempdir() as tmp_dir:
+        # tmp_install_dir = Tempdir()
+        # tmp_dir = Tempdir()
+        
+        build_dir = os.path.join( tmp_dir, 'output' )
+        
+        source = self.generateFile( tmp_dir, 0, 200 )
+        target = os.path.join( tmp_install_dir, 'copy_as_source.dat' )
+        
+        cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+        
+        prj = Project( cfg )
+        
+        prj.tools.CopyFileAs( source, target = target )
+        
+        self.buildPrj( prj, 1 )
+        
+        prj.tools.CopyFileAs( source, target = target )
+        
+        self.buildPrj( prj, 0 )
   
   #//-------------------------------------------------------//
 
