@@ -1,6 +1,6 @@
 
 import os
-import sys
+import site
 import datetime
 
 from distutils.core import setup
@@ -47,13 +47,12 @@ class InstallScripts( install_scripts ):
   def   __getInstallDir(self):
     
     install_dir = os.path.normcase( os.path.abspath(self.install_dir) )
-    sys_prefix = os.path.normcase( sys.prefix )
+    sys_prefix = os.path.normcase( site.USER_BASE )
     
-    if install_dir.startswith( sys_prefix ):
+    if not install_dir.startswith( sys_prefix ):
       install_dir = os.path.abspath( os.path.join( self.install_dir, '..' ) )
     
     return install_dir
-
   
   def run(self):
     install_scripts.run( self )
@@ -89,7 +88,7 @@ SETUP_ARGS = {
       'license'           : "MIT License",
       'platforms'         : "All platforms",
       'scripts'           : ['scripts/aql'],
-      'package_dir'       : {'': 'module'},
+      'package_dir'       : {'': 'modules'},
       'packages'          : ['aqualid'],
       'package_data'      : {'aqualid': ['tools/*']},
       'cmdclass'          : {

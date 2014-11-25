@@ -3,7 +3,7 @@ import os.path
 import shutil
 import errno
 
-from aql.utils import groupItems
+from aql.utils import openFile
 from aql.nodes import Builder, FileBuilder
 from .aql_tools import Tool
 
@@ -52,6 +52,11 @@ class ExecuteCommand (Builder):
   
   #//-------------------------------------------------------//
   
+  def   getTraceName(self, brief ):
+    return "Execute"
+  
+  #//-------------------------------------------------------//
+  
   def   getBuildStrArgs( self, node, brief ):
     cmd = node.getSourceValues()
     return (cmd,)
@@ -81,6 +86,11 @@ class CopyFilesBuilder (FileBuilder):
       shutil.copymode( src, dst )
       
       node.addSourceTargets( src_value, dst )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName(self, brief ):
+    return "Copy files"
   
   #//-------------------------------------------------------//
   
@@ -119,6 +129,50 @@ class CopyFileAsBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
+  def   getTraceName(self, brief ):
+    return "Copy file"
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceTargets( self, node, brief ):
+    return self.target
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, source_values ):
+    return self.target
+
+#//===========================================================================//
+ 
+class WriteFileBuilder (Builder):
+  
+  NAME_ATTRS = ['target']
+  
+  def   __init__(self, options, target ):
+    self.target = os.path.abspath( target )
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target = self.target
+    
+    target_dir = os.path.dirname( target )
+    _makeTargetDirs( target_dir )
+    
+    with openFile( target, write = True, binary = True ) as f:
+      f.truncate()
+      for src in node.getSources():
+        f.write( src )
+    
+    node.addTargets( self.makeFileValue( target ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName(self, brief ):
+    return "Writing content"
+  
+  #//-------------------------------------------------------//
+  
   def   getTraceTargets( self, node, brief ):
     return self.target
   
@@ -139,6 +193,9 @@ class BuiltinTool( Tool ):
   
   def   CopyFileAs(self, options, target ):
     return CopyFileAsBuilder( options, target )
+  
+  def   WriteFile(self, options, target ):
+    return WriteFileBuilder( options, target )
   
   def   DirName(self, options):
     raise NotImplementedError()

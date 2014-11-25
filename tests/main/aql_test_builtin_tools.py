@@ -160,6 +160,32 @@ class TestBuiltinTools( AqlTestCase ):
   
   #//-------------------------------------------------------//
 
+  def   test_write_file(self):
+    
+    with Tempdir() as tmp_install_dir:
+      with Tempdir() as tmp_dir:
+        # tmp_install_dir = Tempdir()
+        # tmp_dir = Tempdir()
+        
+        build_dir = os.path.join( tmp_dir, 'output' )
+        
+        cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+        
+        prj = Project( cfg )
+        
+        buf = "Test buffer content"
+        
+        target = os.path.join( tmp_install_dir, 'write_content.txt' )
+        prj.tools.WriteFile( buf, target = target )
+        
+        self.buildPrj( prj, 1 )
+        
+        prj.tools.WriteFile( buf, target = target )
+        
+        self.buildPrj( prj, 0 )
+  
+  #//-------------------------------------------------------//
+
 #//===========================================================================//
 
 if __name__ == "__main__":

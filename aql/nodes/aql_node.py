@@ -351,7 +351,11 @@ def   _genNodeValueSignature( source_values, sign_hash ):
   sign_hash = sign_hash.copy()
   
   for value in source_values:
-    sign_hash.update( value.signature )
+    value_signature = value.signature
+    if value_signature is None:
+      return None
+    
+    sign_hash.update( value_signature )
   
   return sign_hash.digest()
 
@@ -747,9 +751,8 @@ class Node (object):
     
     builder = self.builder
     
-    # with Chdir( builder.getBuildPath() ):
     output = builder.build( self )
-
+    
     if self.target_values is None:
       raise ErrorNoTargets( self )
     

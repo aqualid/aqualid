@@ -7,7 +7,7 @@ import aql
 
 HEADER = """#!/usr/bin/env python
 #
-# THIS FILE WAS AUTO-GENERATED FILE BY MAKE.AQL SCRIPT. DO NOT EDIT!
+# THIS FILE WAS AUTO-GENERATED. DO NOT EDIT!
 #
 # Copyright (c) 2011-%s the developers of Aqualid project
 #
@@ -37,6 +37,15 @@ if __name__ == '__main__':
   sys.modules[ aql_module_name ] = aql_module
   
   sys.exit( main() )
+"""
+
+#//===========================================================================//
+
+AQL_SCRIPT = HEADER + '\n' +\
+"""
+if __name__ == '__main__':
+  import aqualid
+  sys.exit( aqualid.main() )
 """
 
 #//===========================================================================//
@@ -251,6 +260,7 @@ class AqlBuildTool( aql.Tool ):
 #//===========================================================================//
 
 src_dir = os.path.abspath('../aql')
+tool_dir = os.path.abspath('../tools')
 
 SetBuildDir('output')
 options.build_dir_name = ''
@@ -266,8 +276,15 @@ Alias('link', linked_file)
 Default( linked_file )
 
 #//-------------------------------------------------------//
+install_dir = options.build_dir.get() + '/install/'
+module_dir = install_dir + 'modules/aqualid/'
 
-# install_path = sysconfig.get_path('scripts')
-# install = tools.Install( linked_file, target = install_path )
-# 
-# Alias('install', install )
+mod = tools.CopyFileAs( linked_file, target = module_dir + '__init__.py' )
+
+tool_files = FindFiles( tool_dir, '*.py' )
+aql_tools = tools.CopyFiles( tool_files, target = module_dir + 'tools' )
+copy_setup = tools.CopyFiles( "setup.py", target = install_dir )
+
+aql_script = tools.WriteFile( AQL_SCRIPT, target = install_dir + 'scripts/aql' )
+
+Alias('dist', [mod, aql_tools, aql_script, copy_setup] )
