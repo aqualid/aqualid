@@ -28,7 +28,7 @@ __all__ = (
 import types
 import itertools
 
-from aql.util_types import Singleton, toSequence, AqlException
+from aql.util_types import toSequence, AqlException
 
 from .aql_utils import equalFunctionArgs
 
@@ -75,12 +75,9 @@ class EventSettings( object ):
 
 #//===========================================================================//
 
-class EventManager( Singleton ):
+class EventManager( object ):
   
-  _instance = []
-  
-  __slots__ = \
-  (
+  __slots__ = (
     'default_handlers',
     'user_handlers',
     'ignored_events',
@@ -116,11 +113,11 @@ class EventManager( Singleton ):
       event = user_handler.__name__
     
     try:
-      defualt_handler = self.default_handlers[ event ][0]
+      default_handler = self.default_handlers[ event ][0]
     except KeyError:
       raise ErrorEventHandlerUnknownEvent( event )
     
-    if not equalFunctionArgs( defualt_handler, user_handler ):
+    if not equalFunctionArgs( default_handler, user_handler ):
       raise ErrorEventUserHandlerWrongArgs( event, user_handler )
     
     self.user_handlers.setdefault( event, [] ).append( user_handler )
@@ -190,7 +187,9 @@ class EventManager( Singleton ):
   
   def   setSettings(self, settings ):
     self.settings = settings
-    
+
+_event_manager = EventManager()
+
 #//===========================================================================//
 
 def   _eventImpl( handler, importance_level, event = None ):
@@ -198,11 +197,10 @@ def   _eventImpl( handler, importance_level, event = None ):
   if not event:
     event = handler.__name__
   
-  event_manager = EventManager.instance()
-  event_manager.addDefaultHandler( handler, importance_level )
+  _event_manager.addDefaultHandler( handler, importance_level )
   
   def   _sendEvent( *args, **kw ):
-    event_manager.sendEvent( event, *args, **kw )
+    _event_manager.sendEvent( event, *args, **kw )
   
   return _sendEvent
 
@@ -218,11 +216,11 @@ def   eventDebug( handler ):    return _eventImpl( handler, EVENT_DEBUG )
 def   eventHandler( event = None ):
   
   if isinstance( event, (types.FunctionType, types.MethodType)):
-    EventManager.instance().addUserHandler( event )
+    _event_manager.addUserHandler( event )
     return event
   
   def   _eventHandlerImpl( handler ):
-    EventManager.instance().addUserHandler( handler, event )
+    _event_manager.addUserHandler( handler, event )
     return handler
   
   return _eventHandlerImpl
@@ -230,36 +228,36 @@ def   eventHandler( event = None ):
 #//===========================================================================//
 
 def   setEventSettings( settings ):
-  EventManager.instance().setSettings( settings )
+  _event_manager.setSettings( settings )
 
 #//===========================================================================//
 
 def   enableEvents( event_filters ):
-  EventManager.instance().enableEvents( event_filters, True )
+  _event_manager.enableEvents( event_filters, True )
 
 #//===========================================================================//
 
 def   disableEvents( event_filters ):
-  EventManager.instance().enableEvents( event_filters, False )
+  _event_manager.enableEvents( event_filters, False )
 
 #//===========================================================================//
 
 def   disableDefaultHandlers( ):
-  EventManager.instance().enableDefaultHandlers( False )
+  _event_manager.enableDefaultHandlers( False )
 
 #//===========================================================================//
 
 def   enableDefaultHandlers():
-  EventManager.instance().enableDefaultHandlers( True )
+  _event_manager.enableDefaultHandlers( True )
 
 #//===========================================================================//
 
 def   addUserHandler( handler, event = None ):
-    EventManager.instance().addUserHandler( handler, event )
+    _event_manager.addUserHandler( handler, event )
 
 #//===========================================================================//
 
 def   removeUserHandler( handler ):
-    EventManager.instance().removeUserHandler( handler )
+    _event_manager.removeUserHandler( handler )
 
 #//===========================================================================//

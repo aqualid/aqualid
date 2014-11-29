@@ -18,12 +18,14 @@
 #
 
 __all__ = (
-  'AqlException','uStr', 'toUnicode', 'isString', 'toString', 'castStr', 'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString',
+  'AqlException','uStr', 'toUnicode', 'isUnicode', 'isString', 'toString', 'castStr', 'encodeStr', 'decodeBytes',
+  'String', 'IgnoreCaseString', 'LowerCaseString', 'UpperCaseString',
   'Version', 'SIMPLE_TYPES_SET', 'SIMPLE_TYPES', 'isSimpleValue', 'isSimpleType'
 )
 
 import re
 import sys
+import locale
 import operator
 
 #//===========================================================================//
@@ -35,58 +37,93 @@ class  AqlException (Exception):
 
 try:
   uStr = unicode
-  
+except NameError:
+  uStr = str
+
+#//===========================================================================//
+
+_try_encodings = []
+for enc in [
+            'utf-8',
+            locale.getpreferredencoding(False),
+            sys.stdout.encoding,
+            sys.getfilesystemencoding(),
+            sys.getdefaultencoding(),
+          ]:
+  enc = enc.lower()
+  if enc not in _try_encodings:
+    _try_encodings.append( enc )
+
+#//-------------------------------------------------------//
+
+def   encodeStr( str, encoding = None ):
+  if encoding:
+    return str.encode( encoding )
+
+  error = None
+  for encoding in _try_encodings:
+    try:
+      return str.encode( encoding )
+    except UnicodeEncodeError as ex:
+      if error is None:
+        error = ex
+
+  raise error
+
+#//===========================================================================//
+
+def   decodeBytes( obj, encoding = None, _try_encodings = _try_encodings ):
+  if encoding:
+    return uStr( obj, encoding )
+
+  error = None
+  for encoding in _try_encodings:
+    try:
+      return uStr( obj, encoding )
+    except UnicodeDecodeError as ex:
+      if error is None:
+        error = ex
+
+  raise error
+
+#//===========================================================================//
+
+def toUnicode( obj, encoding = None ):
+  if isinstance( obj, (bytearray, bytes) ):
+    return decodeBytes( obj, encoding )
+
+  return uStr( obj )
+
+#//===========================================================================//
+
+if uStr is str:
+  def   isUnicode( value, uStr = uStr, isinstance = isinstance ):
+    return isinstance(value, uStr)
+
   def   isString( value, uStr = uStr, str = str, isinstance = isinstance ):
     return isinstance( value, (uStr, str))
-  
+
   def   toString( value, uStr = uStr, str = str, isinstance = isinstance ):
     if isinstance( value, (uStr, str)):
       return value
     return str( value )
-  
-  _try_encodings = frozenset(enc.lower() for enc in filter( None, [
-                              'utf-8',
-                              sys.getdefaultencoding(),
-                              sys.stdout.encoding,
-                              sys.getfilesystemencoding()
-                            ]))
-  
-  def castStr( obj, encoding = None, uStr = uStr, _try_encodings = _try_encodings ):
+
+  #//-------------------------------------------------------//
+
+  def castStr( obj, encoding = None, uStr = uStr ):
     if isinstance( obj, uStr ):
-      if encoding:
-        return obj.encode( encoding )
-      else:
-        for encoding in _try_encodings:
-          try:
-            return obj.encode( encoding )
-          except UnicodeEncodeError:
-            pass
-    
+      return encodeStr( obj, encoding )
+
     return str( obj )
 
-  def toUnicode( obj, encoding = None, _try_encodings = _try_encodings ):
-    if isinstance( obj, (bytearray, bytes) ):
-      if encoding:
-        return uStr( obj, encoding )
-      else:
-        for encoding in _try_encodings:
-          try:
-            return uStr( obj, encoding )
-          except UnicodeDecodeError:
-            pass
-    
-    return uStr( obj )
-
-
-
-except NameError:
-  uStr = str
-  toString = str
+else:
+  toString = toUnicode
   castStr = str
-  toUnicode = str
-  
+
   def   isString( value, str = str, isinstance = isinstance ):
     return isinstance( value, str)
+
+  isUnicode = isString
 
 #//===========================================================================//
 

@@ -1,4 +1,6 @@
+.idea
 *.pyc
 *.pyo
 **/__pycache__/
 **/output/
+make/install

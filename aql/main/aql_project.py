@@ -34,7 +34,7 @@ from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumVal
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 
-from .aql_tools import ToolsManager
+from .aql_tools import getToolsManager
 from .aql_builtin_tools import BuiltinTool
 
 #//===========================================================================//
@@ -88,7 +88,7 @@ class ProjectConfig( object ):
                'verbose', 'no_output', 'jobs', 'keep_going',
                'build_always', 'clean', 'status', 'list_options', 'list_targets',
                'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
-               'force_lock',
+               'force_lock', 'show_version',
   )
   
   #//-------------------------------------------------------//
@@ -122,7 +122,7 @@ class ProjectConfig( object ):
       CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reasons why targets are being rebuilt" ),
       CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
       CLIOption( None, "--force-lock",        "force_lock",       bool,       False,        "Forces to lock AQL DB file." ),
-      CLIOption( None, "--version",           "version",          bool,       False,        "Show version and exit." ),
+      CLIOption( "-V", "--version",           "version",          bool,       False,        "Show version and exit." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -153,6 +153,7 @@ class ProjectConfig( object ):
     self.makefile         = cli_config.makefile
     self.targets          = cli_config.targets
     self.verbose          = cli_config.verbose
+    self.show_version     = cli_config.version
     self.no_output        = cli_config.no_output
     self.keep_going       = cli_config.keep_going
     self.build_always     = cli_config.build_always
@@ -284,7 +285,7 @@ class ProjectTools( object ):
     self.project = project
     self.tools_cache = {}
     
-    tools = ToolsManager.instance()
+    tools = getToolsManager()
     tools.loadTools( self.project.options.tools_path.get() )
     
     self.tools = tools
@@ -680,5 +681,3 @@ class Project( object ):
     
     result.append("")
     return result
-    
-  #//=======================================================//

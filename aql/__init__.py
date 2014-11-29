@@ -32,3 +32,10 @@ from .values import *
 from .options import *
 from .nodes import *
 from .main import *
+
+if __debug__:
+  # A workaround for multiprocessing module
+  import sys
+  import os.path
+  _AQL_MODULE_DIR = os.path.abspath( os.path.join( os.path.dirname(__file__), '..' ) )
+  sys.path.append( _AQL_MODULE_DIR )

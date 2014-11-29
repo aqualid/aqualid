@@ -203,7 +203,7 @@ class Builder (object):
     self.env = options.env.get().dump()
   
   #//-------------------------------------------------------//
-  
+
   def   canBuildBatch(self):
     return self.__class__.buildBatch != Builder.buildBatch
   

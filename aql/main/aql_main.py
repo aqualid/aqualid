@@ -26,9 +26,9 @@ import traceback
 
 from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, \
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
-from .aql_project import Project, ProjectConfig
 
-AQL_VERSION = "0.1"
+from .aql_project import Project, ProjectConfig
+from .aql_info import getAqlInfo, dumpAqlInfo
 
 #//===========================================================================//
 
@@ -111,7 +111,7 @@ def   _main( prj_cfg ):
       makefile = prj_cfg.makefile
       
       prj = Project( prj_cfg )
-      
+
       eventReadingScripts()
       
       with Chrono() as elapsed:
@@ -124,6 +124,7 @@ def   _main( prj_cfg ):
       success = True
       
       with elapsed:
+
         if prj_cfg.status:
           success = prj.Status( explain = prj_cfg.debug_explain )
           prj.build_manager.printStatusState()
@@ -160,9 +161,9 @@ def   _main( prj_cfg ):
 def _patchSysModules():
     aql_module = sys.modules.get( 'aql', None )
     if aql_module is not None:
-      sys.modules.setdefault( 'aqualid', aql_module )
+      sys.modules.setdefault( getAqlInfo().module, aql_module )
     else:
-      aql_module = sys.modules.get( 'aqualid', None )
+      aql_module = sys.modules.get( getAqlInfo().module, None )
       if aql_module is not None:
         sys.modules.setdefault( 'aql', aql_module )
 
@@ -177,7 +178,11 @@ def   main():
     with_backtrace = prj_cfg.debug_backtrace
     
     debug_profile = prj_cfg.debug_profile
-    
+
+    if prj_cfg.show_version:
+      logInfo( dumpAqlInfo() )
+      return 0
+
     if not debug_profile:
       status = _main( prj_cfg )
     else:

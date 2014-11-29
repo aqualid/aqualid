@@ -633,8 +633,12 @@ class Node (object):
   #//=======================================================//
   
   def   _getSignatureHash( self ):
-    
-    sign  = [ self.builder.signature ]
+
+    builder_signature = self.builder.signature
+    if builder_signature is None:
+      return None
+
+    sign = [ builder_signature ]
     
     for value in self.getDepValues():
       if value.isNull():

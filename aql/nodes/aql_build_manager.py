@@ -711,7 +711,6 @@ class _NodesBuilder (object):
   #//-------------------------------------------------------//
   
   def   _getFinishedNodes( self, block = True ):
-    # print("tasks: %s, finished_tasks: %s" % (self.task_manager.unfinished_tasks, self.task_manager.finished_tasks.qsize()))
     finished_tasks = self.task_manager.finishedTasks( block = block )
     
     vfiles = self.vfiles

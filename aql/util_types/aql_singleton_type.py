@@ -24,19 +24,17 @@ class Singleton( object ):
   
   @staticmethod
   def   getInstance( cls ):
-    instance = cls._instance
-    
-    if not instance:
-      instance.append( __import__('__main__').__dict__.setdefault( (cls.__module__, cls.__name__ ), [None] ) )
-    
-    instance = instance[0]
-    
+    try:
+      instance = cls._instance
+    except AttributeError:
+      instance = cls._instance = __import__('__main__').__dict__.setdefault( (cls.__module__, cls.__name__ ), [None] )
+
     return instance[0]
-  
+
   @staticmethod
   def   setInstance( cls, instance ):
-    cls._instance[0][0] = instance
-  
+    cls._instance[0] = instance
+
   @classmethod
   def   instance( cls, *args, **kw ):
     instance = Singleton.getInstance( cls )
@@ -46,6 +44,5 @@ class Singleton( object ):
     self = cls( *args, **kw )
     
     Singleton.setInstance( cls, self )
-    
 
     return self

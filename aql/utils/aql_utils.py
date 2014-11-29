@@ -98,7 +98,7 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
   if not isString( filename ):
     raise ErrorFileName( filename )
   
-  flags = _O_NOINHERIT
+  flags = _O_NOINHERIT | _O_BINARY
   mode = 'r'
   
   if not write:
@@ -118,8 +118,7 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
     
   if binary:
     mode += 'b'
-    flags |= _O_BINARY
-  
+
   fd = os.open( filename, flags )
   try:
     if sync:

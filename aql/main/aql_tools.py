@@ -17,12 +17,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'Tool', 'tool', 'toolSetup', 'ToolsManager', 'ErrorToolNotFound' )
+__all__ = ( 'Tool', 'tool', 'toolSetup', 'getToolsManager', 'ErrorToolNotFound' )
 
 import os
 
-from aql.util_types import toSequence, Singleton, AqlException
-from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProgramNotFound, whereProgram
+from aql.util_types import toSequence, AqlException
+from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProgramNotFound
 
 #noinspection PyStatementEffect
 """
@@ -88,7 +88,7 @@ class   ToolInfo( object ):
 
 #//===========================================================================//
 
-class ToolsManager( Singleton ):
+class ToolsManager( object ):
   
   __slots__ = (
     'tool_classes',
@@ -97,10 +97,6 @@ class ToolsManager( Singleton ):
     'all_setup_methods',
     'loaded_paths'
   )
-  
-  #//-------------------------------------------------------//
-  
-  _instance = []
   
   #//-------------------------------------------------------//
   
@@ -246,9 +242,14 @@ class ToolsManager( Singleton ):
 
 #//===========================================================================//
 
+_tools_manager = ToolsManager()
+
+def   getToolsManager():
+  return _tools_manager
+
 def   tool( *tool_names ):
   def   _tool( tool_class ):
-    ToolsManager.instance().addTool( tool_class, tool_names )
+    _tools_manager.addTool( tool_class, tool_names )
     return tool_class
   
   return _tool
@@ -257,7 +258,7 @@ def   tool( *tool_names ):
 
 def   toolSetup( *tool_names ):
   def   _tool_setup( setup_method ):
-    ToolsManager.instance().addSetup( setup_method, tool_names )
+    _tools_manager.addSetup( setup_method, tool_names )
     return setup_method
   
   return _tool_setup

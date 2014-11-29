@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project
+# Copyright (c) 2011-2014 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,7 +17,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from .aql_main import *
-from .aql_project import *
+from .aql_info import *
 from .aql_tools import *
 from .aql_builtin_tools import *
+from .aql_project import *
+from .aql_main import *

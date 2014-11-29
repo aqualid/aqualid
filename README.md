@@ -1,14 +1,14 @@
 Aqualid
 =======
 
-Flexible and scalable general purpose build tool.
+General purpose build tool.
 
 Key features:
-  - Dynamic building dependency graph
-  - Native Batch build support
+  - Flexible and scalable for large projects
+  - Dynamic dependency graph
+  - Batch build support
   - Distributed build scripts (no fixed project structure)
-  - Any build target types (files, strings, URLs, remote URLs etc.)
-  - Dynamic, conditional options
+  - Support any build target types (files, strings, URLs, remote resources etc.)
+  - Conditional options
   - Scons like build scripts (but don't compatible)
   - Tools are not part of the build tool
-
