@@ -25,7 +25,7 @@ aql_tool = AddTool( AqlBuildTool )
 pre_files = aql_tool.Preprocess( src_files )
 linked_file = aql_tool.Link( pre_files, target = "aql.py" )
 
-Alias('link', linked_file)
+Alias('link', linked_file, "Merge aql source files into one Python script.")
 Default( linked_file )
 
 #//-------------------------------------------------------//
@@ -44,10 +44,13 @@ win_script = tools.WriteFile(   WINDOWS_SCRIPT, target = install_dir + WINDOWS_S
 unix_script = tools.WriteFile(  UNIX_SCRIPT,    target = install_dir + UNIX_SCRIPT_PATH )
 setup_script = tools.WriteFile( SETUP_SCRIPT,   target = install_dir  + "setup.py" )
 
-sdist = tools.CreateSourceDist( setup_script, target = 'install' )
-wdist = tools.CreateWindowsDist( setup_script, target = 'install', formats = "msi,wininst" )
+sdist = tools.CreateDist( setup_script, target = 'install', command = "sdist", formats = "zip,bztar" )
+wdist = tools.CreateDist( setup_script, target = 'install', command = "bdist", formats = "msi,wininst" )
+rpm_dist = tools.CreateDist( setup_script, target = 'install', command = "bdist", formats = "rpm" )
 
 Depends( [sdist, wdist ], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
+Depends( [wdist, rpm_dist], sdist )
 
-Alias('dist', sdist )
-Alias('wdist', wdist )
+Alias('dist', sdist, "Build source distributions." )
+Alias('wdist', wdist, "Build Windows distributions." )
+Alias('rpm', wdist, "Build RPM distribution." )

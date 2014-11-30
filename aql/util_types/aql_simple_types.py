@@ -50,9 +50,10 @@ for enc in [
             sys.getfilesystemencoding(),
             sys.getdefaultencoding(),
           ]:
-  enc = enc.lower()
-  if enc not in _try_encodings:
-    _try_encodings.append( enc )
+  if enc:
+    enc = enc.lower()
+    if enc not in _try_encodings:
+      _try_encodings.append( enc )
 
 #//-------------------------------------------------------//
 
@@ -96,7 +97,7 @@ def toUnicode( obj, encoding = None ):
 
 #//===========================================================================//
 
-if uStr is str:
+if uStr is not str:
   def   isUnicode( value, uStr = uStr, isinstance = isinstance ):
     return isinstance(value, uStr)
 

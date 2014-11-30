@@ -1,19 +1,18 @@
 
 import datetime
 
-from aql import getAqlInfo
+from aql import getAqlInfo, readTextFile
 
 info = getAqlInfo()
 
-SCRIPTS_PATH = 'scripts/'
+SCRIPTS_PATH = 'scripts'
 MODULES_PATH = 'modules'
-AQL_MODULE_PATH = MODULES_PATH + '/' + info.name
+AQL_MODULE_PATH = MODULES_PATH + '/' + info.module
 
-UNIX_SCRIPT_PATH    = SCRIPTS_PATH + 'aql'
-WINDOWS_SCRIPT_PATH = SCRIPTS_PATH + 'aql.cmd'
+UNIX_SCRIPT_PATH    = SCRIPTS_PATH + '/aql'
+WINDOWS_SCRIPT_PATH = SCRIPTS_PATH + '/aql.cmd'
 
-MANIFEST = """
-include {unix_script}
+MANIFEST = """include {unix_script}
 include {win_script}
 """.format( unix_script = UNIX_SCRIPT_PATH,
             win_script = WINDOWS_SCRIPT_PATH )
@@ -21,23 +20,29 @@ include {win_script}
 #//===========================================================================//
 
 UNIX_SCRIPT ="""#!/bin/sh
-python -OO -c "import aqualid; aqualid.main()" "$@"
-""".format( year = datetime.date.today().year )
+python -OO -c "import {module}; {module}.main()" "$@"
+""".format( year = datetime.date.today().year, module = info.module )
 
 #//===========================================================================//
 
 WINDOWS_SCRIPT = """@echo off
-
 IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=
-  python -OO -c "import aqualid; aqualid.main()" %*
+  python -OO -c "import {module}; {module}.main()" %*
 
 ) ELSE (
   REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
   SET AQL_RUN_SCRIPT=YES
   CALL %0 %* <NUL
 )
-""".format( year = datetime.date.today().year )
+""".format( year = datetime.date.today().year, module = info.module )
+
+#//===========================================================================//
+
+def readLongDescription( readme_path ):
+  readme = readTextFile( readme_path )
+  readme = '\n'.join( readme.split('\n')[2:] )
+  return readme.strip()
 
 #//===========================================================================//
 
@@ -105,7 +110,7 @@ setup(
       cmdclass          = {{ 'install_scripts' : InstallScripts,}}
 )
 """.format( short_descr   = info.description,
-            long_descr    = "",
+            long_descr    = readLongDescription('../README.md'),
             name          = info.name,
             modname       = info.module,
             version       = info.version,

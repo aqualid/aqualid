@@ -133,7 +133,7 @@ def   openFile( filename, read = True, write = False, binary = False, sync = Fal
 
 #//===========================================================================//
 
-def readTextFile( filename, encoding = None ):
+def readTextFile( filename, encoding = 'utf-8' ):
   with openFile( filename, encoding = encoding ) as f:
     return f.read()
 
@@ -141,7 +141,7 @@ def readBinFile( filename ):
   with openFile( filename, binary = True ) as f:
     return f.read()
 
-def writeTextFile( filename, buf, encoding = None ):
+def writeTextFile( filename, buf, encoding = 'utf-8' ):
   with openFile( filename, write = True, encoding = encoding ) as f:
     f.truncate()
     f.write( toUnicode( buf ) )

@@ -4,8 +4,6 @@ import os
 import os.path
 import shutil
 import errno
-import multiprocessing
-import distutils.core
 
 from aql.util_types import isUnicode, encodeStr, decodeBytes
 from aql.utils import openFile
@@ -181,7 +179,7 @@ class WriteFileBuilder (Builder):
             src = encodeStr( src, self.encoding )
         else:
           if isinstance( src, (bytearray, bytes) ):
-            src = decodeBytes( src )
+            src = decodeBytes( src, self.encoding )
 
         f.write( src )
     
@@ -204,21 +202,10 @@ class WriteFileBuilder (Builder):
 
 #//===========================================================================//
 
-def   _runDistutilsSetup( script, args ):
-  script_dir = os.path.dirname( script )
-  os.chdir( script_dir )
-
-  dist = distutils.core.run_setup( script, script_args = args )
-
-  import pprint
-  pprint.pprint( dist )
-
-#//===========================================================================//
-
 class DistBuilder (FileBuilder):
 
   NAME_ATTRS = ('target',)
-  signature = None  # TODO: Build Always. Add parsing of run_setup output
+  signature = None  # TODO: Build Always. Add parsing of setup.py output
                     # copying <filepath> -> <detination dir>
 
   def   __init__(self, options, command, formats, target ):
@@ -227,7 +214,7 @@ class DistBuilder (FileBuilder):
 
     script_args = [ command ]
 
-    if command == 'bdist':
+    if command.startswith('bdist'):
       temp_dir = self.getBuildPath()
       script_args += [ '--bdist-base', temp_dir ]
 
@@ -235,9 +222,15 @@ class DistBuilder (FileBuilder):
       raise ErrorDistCommandInvalid( command )
 
     script_args += [ '--formats', formats, '--dist-dir', target ]
-
+    
+    self.command = command
     self.target = target
     self.script_args = script_args
+
+  #//-------------------------------------------------------//
+
+  def   getTraceName(self, brief ):
+    return "distutils %s" % (self.command)
 
   #//-------------------------------------------------------//
 
@@ -245,14 +238,15 @@ class DistBuilder (FileBuilder):
 
     script = node.getSources()[0]
 
-    p = multiprocessing.Process( target = _runDistutilsSetup, args = (script, self.script_args) )
-    p.start()
-    p.join()
+    cmd = [sys.executable, script ]
+    cmd += self.script_args
 
-    if p.exitcode != 0:
-      raise Exception( "distutils script %s failed" % (script,))
+    script_dir = os.path.dirname( script )
+    out = self.execCmd( cmd, script_dir )
 
     node.setNoTargets()
+
+    return out
 
 #//===========================================================================//
 
@@ -270,11 +264,8 @@ class BuiltinTool( Tool ):
   def   WriteFile(self, options, target, binary = False, encoding = None ):
     return WriteFileBuilder( options, target, binary = binary, encoding = encoding )
 
-  def   CreateSourceDist(self, options, target, formats = "zip,bztar" ):
-    return DistBuilder( options, command = "sdist", target = target, formats = formats )
-
-  def   CreateWindowsDist(self, options, target, formats = "msi" ):
-    return DistBuilder( options, command = "bdist", target = target, formats = formats)
+  def   CreateDist(self, options, target, command, formats ):
+    return DistBuilder( options, command = command, target = target, formats = formats )
 
   def   DirName(self, options):
     raise NotImplementedError()
