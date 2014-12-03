@@ -1,12 +1,16 @@
 
 import sys
+import io
 import os
 import os.path
 import shutil
 import errno
+import zipfile
+import tarfile
 
 from aql.util_types import isUnicode, encodeStr, decodeBytes
 from aql.utils import openFile
+from aql.values import FileValueBase
 from aql.nodes import Builder, FileBuilder
 from .aql_tools import Tool
 
@@ -41,15 +45,6 @@ class   ErrorDistCommandInvalid( Exception ):
 
 #//===========================================================================//
 
-def   _makeTargetDirs( path_dir ):
-  try:
-    os.makedirs( path_dir )
-  except OSError as e:
-    if e.errno != errno.EEXIST:
-      raise
-
-#//===========================================================================//
-
 class ExecuteCommand (Builder):
   
   def   build( self, node ):
@@ -78,15 +73,13 @@ class CopyFilesBuilder (FileBuilder):
   NAME_ATTRS = ['target']
   
   def   __init__(self, options, target ):
-    self.target = os.path.abspath( target )
+    self.target = self.getTargetDirPath( target )
     self.split = self.splitBatch
   
   #//-------------------------------------------------------//
   
   def   buildBatch( self, node ):
     target = self.target
-    
-    _makeTargetDirs( target )
     
     for src_value in node.getSourceValues():
       src = src_value.get()
@@ -120,17 +113,13 @@ class CopyFileAsBuilder (FileBuilder):
   NAME_ATTRS = ['target']
   
   def   __init__(self, options, target ):
-    self.target = os.path.abspath( target )
+    self.target = self.getTargetFilePath( target )
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
-    target = self.target
-    
-    target_dir = os.path.dirname( target )
-    _makeTargetDirs( target_dir )
-    
     source = node.getSources()[0]
+    target = self.target
     
     shutil.copyfile( source, target )
     shutil.copymode( source, target )
@@ -153,6 +142,177 @@ class CopyFileAsBuilder (FileBuilder):
     return self.target
 
 #//===========================================================================//
+
+class TarFilesBuilder (FileBuilder):
+  
+  NAME_ATTRS = ['target']
+  SIGNATURE_ATTRS = ['rename']
+  
+  def   __init__(self, options, target, mode, rename, ext ):
+    
+    if not mode:
+      mode = "w:bz2"
+    
+    if not ext:
+      if mode == "w:bz2":
+        ext = ".tar.bz2"
+      elif mode == "w:gz":
+        ext = ".tar.gz"
+    
+    self.target = self.getTargetFilePath( target, ext )
+    self.mode = mode
+    self.rename = rename if rename else tuple()
+  
+  #//-------------------------------------------------------//
+  
+  def __getArcname( self, file_path ):
+    for arc_name, path in self.rename:
+      if file_path == path:
+        return arc_name
+    
+    return os.path.basename( file_path )
+  
+  #//-------------------------------------------------------//
+  
+  def   __addFile( self, arch, filepath ):
+    arcname = self.__getArcname( filepath )
+    arch.add( filepath, arcname )
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   __addValue( arch, value ):
+    arcname = value.name
+    data = value.get()
+    if isUnicode( data ):
+      data = encodeStr( data )
+  
+    tinfo = tarfile.TarInfo(arcname)
+    tinfo.size = len(data)
+    arch.addfile( tinfo, io.BytesIO(data) )
+  
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target = self.target
+    
+    arch = tarfile.open( name = self.target, mode = self.mode )
+    try:
+      for value in node.getSourceValues():
+        if isinstance( value, FileValueBase ):
+          self.__addFile( arch, value.get() )
+        else:
+          self.__addValue( arch, value )
+      
+    finally:
+      arch.close()
+      
+    node.addTargets( target )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName(self, brief ):
+    return "Create Tar"
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceTargets( self, node, brief ):
+    return self.target
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, source_values ):
+    return self.target
+
+#//===========================================================================//
+ 
+class ZipFilesBuilder (FileBuilder):
+  
+  NAME_ATTRS = ['target']
+  SIGNATURE_ATTRS = ['rename']
+  
+  def   __init__(self, options, target, rename, ext = None ):
+    
+    if ext is None:
+      ext = ".zip"
+    
+    self.target = self.getTargetFilePath( target, ext = ext )
+    self.rename = rename if rename else tuple()
+  
+  #//-------------------------------------------------------//
+  
+  def   __openArch( self, large = False ):
+    try:
+      return zipfile.ZipFile( self.target, "w", zipfile.ZIP_DEFLATED, large )
+    except RuntimeError:
+      pass
+    
+    return zipfile.ZipFile( self.target, "w", zipfile.ZIP_STORED, large )
+  
+  #//-------------------------------------------------------//
+  
+  def __getArcname( self, file_path ):
+    for arc_name, path in self.rename:
+      if file_path == path:
+        return arc_name
+    
+    return os.path.basename( file_path )
+  
+  #//-------------------------------------------------------//
+  
+  def   __addFiles( self, arch, source_values ):
+    for value in source_values:
+      if isinstance( value, FileValueBase ):
+        filepath = value.get()
+        arcname = self.__getArcname( filepath )
+        arch.write( filepath, arcname )
+      else:
+        arcname = value.name
+        data = value.get()
+        if isUnicode( data ):
+          data = encodeStr( data )
+        
+        arch.writestr( arcname, data )
+
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    target = self.target
+    
+    source_values = node.getSourceValues()
+    
+    arch = self.__openArch()
+    
+    try:
+      self.__addFiles( arch, source_values )
+    except zipfile.LargeZipFile:
+      arch.close()
+      arch = None
+      arch = self.__openArch( large = True )
+      
+      self.__addFiles( arch, source_values )
+    finally:
+      if arch is not None:
+        arch.close()
+      
+    node.addTargets( target )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName(self, brief ):
+    return "Create Zip"
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceTargets( self, node, brief ):
+    return self.target
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetValues( self, source_values ):
+    return self.target
+
+#//===========================================================================//
  
 class WriteFileBuilder (Builder):
   
@@ -161,15 +321,12 @@ class WriteFileBuilder (Builder):
   def   __init__(self, options, target, binary = False, encoding = None ):
     self.binary = binary
     self.encoding = encoding
-    self.target = os.path.abspath( target )
+    self.target = self.getTargetFilePath( target )
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
     target = self.target
-    
-    target_dir = os.path.dirname( target )
-    _makeTargetDirs( target_dir )
     
     with openFile( target, write = True, binary = self.binary, encoding = self.encoding ) as f:
       f.truncate()
@@ -210,7 +367,7 @@ class DistBuilder (FileBuilder):
 
   def   __init__(self, options, command, formats, target ):
 
-    target = os.path.abspath( target )
+    target = self.getTargetDirPath( target )
 
     script_args = [ command ]
 
@@ -220,8 +377,11 @@ class DistBuilder (FileBuilder):
 
     elif command != 'sdist':
       raise ErrorDistCommandInvalid( command )
-
-    script_args += [ '--formats', formats, '--dist-dir', target ]
+    
+    if formats:
+      script_args += [ '--formats', formats ]
+    
+    script_args += [ '--dist-dir', target ]
     
     self.command = command
     self.target = target
@@ -264,9 +424,15 @@ class BuiltinTool( Tool ):
   def   WriteFile(self, options, target, binary = False, encoding = None ):
     return WriteFileBuilder( options, target, binary = binary, encoding = encoding )
 
-  def   CreateDist(self, options, target, command, formats ):
+  def   CreateDist( self, options, target, command, formats = None ):
     return DistBuilder( options, command = command, target = target, formats = formats )
-
+  
+  def   CreateZip(self, options, target, rename = None, ext = None ):
+    return ZipFilesBuilder( options, target = target, rename = rename, ext = ext )
+  
+  def   CreateTar(self, options, target, mode = None, rename = None, ext = None ):
+    return TarFilesBuilder( options, target = target, mode = mode, rename = rename, ext = ext )
+  
   def   DirName(self, options):
     raise NotImplementedError()
   

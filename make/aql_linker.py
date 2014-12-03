@@ -84,7 +84,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     #//-------------------------------------------------------//
     
-    aql_import_re = re.compile(r"^\s*from\s+(.+)\s+import\s+.+$", re.MULTILINE )
+    aql_import_re = re.compile(r"^\s*from\s+(\.?aql.+)\s+import\s+.+$", re.MULTILINE )
     
     aql_imports = set()
     def   aqlImportHandler( match, _aql_imports = aql_imports ):
@@ -113,8 +113,7 @@ class AqlPreprocess (aql.FileBuilder):
 class AqlLink (aql.Builder):
   
   def   __init__(self, options, target ):
-    prefix = options.prefix.get()
-    self.target = self.getFileBuildPath( target, prefix = prefix )
+    self.target = self.getTargetFilePath( target )
   
   #//-------------------------------------------------------//
   

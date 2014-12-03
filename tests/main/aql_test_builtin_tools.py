@@ -67,7 +67,7 @@ class TestBuiltinTools( AqlTestCase ):
     
     with Tempdir() as tmp_dir:
       
-      build_dir = FilePath(tmp_dir).join('build')
+      build_dir = os.path.join(tmp_dir, 'build')
       
       options = builtinOptions()
 
@@ -186,6 +186,41 @@ class TestBuiltinTools( AqlTestCase ):
   
   #//-------------------------------------------------------//
 
+  def test_zip_files(self):
+    
+    with Tempdir() as tmp_install_dir:
+      with Tempdir() as tmp_dir:
+        # tmp_install_dir = Tempdir()
+        # tmp_dir = Tempdir()
+        
+        build_dir = os.path.join( tmp_dir, 'output' )
+        
+        num_sources = 3
+        sources = self.generateSourceFiles( tmp_dir, num_sources, 200 )
+        
+        zip_file = tmp_install_dir + "/test.zip"
+        
+        cfg = ProjectConfig( args = [ "--bt", "build_dir=%s" % build_dir] )
+        
+        prj = Project( cfg )
+        
+        value = prj.Value( "test_content.txt", "To add to a ZIP file")
+        rename = [('test_file', sources[0])]
+        
+        prj.tools.CreateZip( sources, value, target = zip_file, rename = rename )
+        
+        self.buildPrj( prj, 1 )
+        
+        prj.tools.CreateZip( sources, value, target = zip_file, rename = rename )
+        
+        self.buildPrj( prj, 0 )
+        
+        self.touchCppFile( sources[-1] )
+        
+        prj.tools.CreateZip( sources, value, target = zip_file, rename = rename )
+        self.buildPrj( prj, 1 )
+
+        
 #//===========================================================================//
 
 if __name__ == "__main__":

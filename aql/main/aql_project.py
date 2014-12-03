@@ -30,7 +30,7 @@ import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
 from aql.util_types import FilePath, ValueListType, UniqueList, SplitListType, toSequence, AqlException
-from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue
+from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue, SimpleValue
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 
@@ -149,7 +149,7 @@ class ProjectConfig( object ):
     
     self.options          = options
     self.arguments        = arguments
-    self.directory        = cli_config.directory.abspath()
+    self.directory        = os.path.abspath( cli_config.directory )
     self.makefile         = cli_config.makefile
     self.targets          = cli_config.targets
     self.verbose          = cli_config.verbose
@@ -470,9 +470,14 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
+  def   Value( self, name, data ):
+    return SimpleValue( name = name, data = data )
+  
+  #//-------------------------------------------------------//
+  
   def   _execScript( self, script, script_locals ):
     
-    script = FilePath( script ).abspath()
+    script = os.path.abspath( script )
     
     scripts_cache = self.scripts_cache
     
@@ -480,7 +485,7 @@ class Project( object ):
     if script_result is not None:
       return script_result
 
-    with Chdir( script.dirname() ):
+    with Chdir( os.path.dirname( script ) ):
       script_result = execFile( script, script_locals )
       scripts_cache[ script ] = script_result
       return script_result

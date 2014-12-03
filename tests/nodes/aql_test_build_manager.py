@@ -60,7 +60,7 @@ class ChecksumBuilder (FileBuilder):
     
     chcksum_filename += '.%s.chksum' % alg
     
-    chcksum_filename = self.getFileBuildPath( chcksum_filename )
+    chcksum_filename = self.getTargetFromSourceFilePath( chcksum_filename )
     
     with open( chcksum_filename, 'wb' ) as f:
       f.write( chcksum.digest() )

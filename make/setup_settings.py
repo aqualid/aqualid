@@ -1,6 +1,4 @@
 
-import datetime
-
 from aql import getAqlInfo, readTextFile
 
 info = getAqlInfo()
@@ -21,7 +19,7 @@ include {win_script}
 
 UNIX_SCRIPT ="""#!/bin/sh
 python -OO -c "import {module}; {module}.main()" "$@"
-""".format( year = datetime.date.today().year, module = info.module )
+""".format( module = info.module )
 
 #//===========================================================================//
 
@@ -35,7 +33,21 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=YES
   CALL %0 %* <NUL
 )
-""".format( year = datetime.date.today().year, module = info.module )
+""".format( module = info.module )
+
+#//===========================================================================//
+
+STANDALONE_WINDOWS_SCRIPT = """@echo off
+IF [%AQL_RUN_SCRIPT%] == [YES] (
+  SET AQL_RUN_SCRIPT=
+  python -OO aql %*
+
+) ELSE (
+  REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
+  SET AQL_RUN_SCRIPT=YES
+  CALL %0 %* <NUL
+)
+"""
 
 #//===========================================================================//
 

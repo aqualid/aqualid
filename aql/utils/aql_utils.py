@@ -50,7 +50,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, isString, toUnicode, UniqueList, toSequence, isSequence, \
+from aql.util_types import uStr, isString, isUnicode, decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
                            AqlException, SIMPLE_TYPES_SET 
 
 #//===========================================================================//
@@ -141,15 +141,20 @@ def readBinFile( filename ):
   with openFile( filename, binary = True ) as f:
     return f.read()
 
-def writeTextFile( filename, buf, encoding = 'utf-8' ):
+def writeTextFile( filename, data, encoding = 'utf-8' ):
   with openFile( filename, write = True, encoding = encoding ) as f:
     f.truncate()
-    f.write( toUnicode( buf ) )
+    if isinstance( data, (bytearray, bytes) ):
+      data = decodeBytes( data, encoding )
+    f.write( data )
 
-def writeBinFile( filename, buf, encoding = None ):
+def writeBinFile( filename, data, encoding = None ):
   with openFile( filename, write = True, binary = True, encoding = encoding ) as f:
     f.truncate()
-    f.write( buf )
+    if isUnicode( data ):
+      data = encodeStr( data, encoding )
+
+    f.write( data )
 
 #//===========================================================================//
 

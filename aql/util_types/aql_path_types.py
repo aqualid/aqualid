@@ -110,6 +110,6 @@ class   FilePath (FilePathBase):
   
   #//-------------------------------------------------------//
   
-  def   join( self, *paths ):
+  def   joinPath( self, *paths ):
     return FilePath( os.path.join( self, *paths ) )
   

@@ -76,7 +76,7 @@ class MsvcCompiler (CommonCppCompiler):
     sources = node.getSources()
     
     obj_file = self.getObjPath( sources[0] )
-    cwd = obj_file.dirname()
+    cwd = os.path.dirname( obj_file )
     
     cmd = list(self.cmd)
     cmd += [ '/Fo%s' % obj_file ]
@@ -118,9 +118,9 @@ class MsvcCompiler (CommonCppCompiler):
     
     sources = node.getSources()
     
-    obj_files = self.getFileBuildPaths( sources, ext = self.ext )
+    obj_files = self.getTargetsFromSourceFilePaths( sources, ext = self.ext )
     
-    cwd = obj_files[0].dirname()
+    cwd = os.path.dirname( obj_files[0] )
     
     cmd = list(self.cmd)
     cmd += sources
@@ -144,7 +144,7 @@ class MsvcResCompiler (CommonResCompiler):
     src = node.getSources()[0]
     
     res_file = self.getObjPath( src )
-    cwd = res_file.dirname()
+    cwd = os.path.dirname( res_file )
     
     cmd = list(self.cmd)
     cmd += [ '/nologo', '/Fo%s' % res_file, src ]
@@ -178,7 +178,7 @@ class   MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
     cmd += [ '/nologo', "/OUT:%s" % self.target ]
     cmd += obj_files
     
-    cwd = self.target.dirname()
+    cwd = os.path.dirname( self.target )
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
@@ -227,7 +227,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
     
     cmd += obj_files
     
-    cwd = target.dirname()
+    cwd = os.path.dirname( target )
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     

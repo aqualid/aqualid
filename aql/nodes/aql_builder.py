@@ -60,27 +60,44 @@ def   _makeBuildPaths( dirnames ):
 
 #//===========================================================================//
 
-def   _splitFileName( file_path, ext = None, prefix = None, suffix = None ):
+def   _splitFileName( file_path, ext = None, prefix = None, suffix = None, replace_ext = False ):
   if isinstance( file_path, ValueBase ):
     file_path = file_path.get()
   
   dirname, filename = os.path.split( file_path )
   
-  name, path_ext = os.path.splitext( filename )
-  if ext is None: ext = path_ext
-  if prefix: name = prefix + name
-  if suffix: name += suffix
-  filename = name + ext
+  if ext:
+    if filename.endswith( ext ):
+      filename = filename[:-len(ext)]
   
+    elif replace_ext:
+      ext_pos = filename.rfind( os.path.extsep )
+      if ext_pos > 0:
+        filename = filename[:ext_pos]
+  else:
+    ext_pos = filename.rfind( os.path.extsep )
+    if ext_pos > 0:
+      ext = filename[ext_pos:]
+      filename = filename[:ext_pos]
+  
+  if prefix:
+    filename = prefix + filename
+  
+  if suffix:
+    filename += suffix
+  
+  if ext:
+    filename += ext
+ 
   return dirname, filename
 
 #//===========================================================================//
 
-def   _splitFileNames( file_paths, ext = None, prefix = None, suffix = None ):
+def   _splitFileNames( file_paths, ext = None, prefix = None, suffix = None, replace_ext = False ):
   dirnames = []
   filenames = []
   for file_path in file_paths:
-    dirname, filename = _splitFileName( file_path, ext, prefix, suffix )
+    dirname, filename = _splitFileName( file_path, ext = ext, prefix = prefix, suffix = suffix, replace_ext = replace_ext )
     dirnames.append( dirname )
     filenames.append( filename )
   
@@ -396,10 +413,43 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getFileBuildPath( self, file_path, ext = None, prefix = None, suffix = None ):
+  def getTargetFilePath(self, target, ext = None, prefix = None ):
+    target_dir, name = _splitFileName( target, prefix = prefix, ext = ext )
+    
+    if target_dir.startswith( (os.path.curdir, os.path.pardir )):
+      target_dir = os.path.abspath( target_dir )
+    elif not os.path.isabs( target_dir ):
+      target_dir = os.path.abspath( os.path.join( self.build_path, target_dir ) ) 
+    
+    _makeBuildPath( target_dir )
+    
+    target = os.path.join( target_dir, name )
+    return target
+  
+  #//-------------------------------------------------------//
+  
+  def getTargetDirPath(self, target_dir ):
+    target_dir, name = os.path.split( target_dir )
+    if not name:
+      target_dir, name = os.path.split( target_dir )
+      
+    if target_dir.startswith( (os.path.curdir, os.path.pardir) ):
+      target_dir = os.path.abspath( target_dir )
+    elif not os.path.isabs( target_dir ):
+      target_dir = os.path.abspath( os.path.join( self.build_path, target_dir ) ) 
+    
+    target_dir = os.path.join( target_dir, name )
+    
+    _makeBuildPath( target_dir )
+    
+    return target_dir
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetFromSourceFilePath( self, file_path, ext = None, prefix = None, suffix = None, replace_ext = True ):
     build_path = self.build_path
     
-    dirname, filename = _splitFileName( file_path, ext, prefix, suffix )
+    dirname, filename = _splitFileName( file_path, ext = ext, prefix = prefix, suffix = suffix, replace_ext = replace_ext )
     
     if self.relative_build_paths:
       build_path = relativeJoin( build_path, dirname )
@@ -408,25 +458,25 @@ class Builder (object):
     
     build_path = os.path.join( build_path, filename )
     
-    return FilePath( build_path )
+    return build_path
   
   #//-------------------------------------------------------//
   
-  def   getFileBuildPaths( self, file_paths, ext = None, prefix = None, suffix = None ):
+  def   getTargetsFromSourceFilePaths( self, file_paths, ext = None, prefix = None, suffix = None, replace_ext = True ):
     build_path = self.build_path
     
-    dirnames, filenames = _splitFileNames( file_paths, ext, prefix, suffix )
+    dirnames, filenames = _splitFileNames( file_paths, ext = ext, prefix = prefix, suffix = suffix, replace_ext = replace_ext )
     
     if self.relative_build_paths:
       dirnames = relativeJoinList( build_path, dirnames )
       _makeBuildPaths( dirnames )
      
-      build_paths = [ FilePath( os.path.join( dirname, filename ) ) for dirname, filename in zip( dirnames, filenames ) ]
+      build_paths = [ os.path.join( dirname, filename ) for dirname, filename in zip( dirnames, filenames ) ]
     
     else:
       _makeBuildPath( build_path )
       
-      build_paths = [ FilePath( os.path.join( build_path, filename ) ) for filename in filenames ]
+      build_paths = [ os.path.join( build_path, filename ) for filename in filenames ]
     
     return build_paths
   

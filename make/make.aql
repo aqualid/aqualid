@@ -1,11 +1,14 @@
 import os
 
+import aql
+
 from aql_linker import AqlBuildTool
 
 from setup_settings import  UNIX_SCRIPT_PATH, \
                             WINDOWS_SCRIPT_PATH, \
                             UNIX_SCRIPT, \
                             WINDOWS_SCRIPT, \
+                            STANDALONE_WINDOWS_SCRIPT, \
                             MANIFEST, \
                             AQL_MODULE_PATH, \
                             SETUP_SCRIPT
@@ -14,6 +17,7 @@ from setup_settings import  UNIX_SCRIPT_PATH, \
 
 src_dir = os.path.abspath('../aql')
 tool_dir = os.path.abspath('../tools')
+dist_dir = './install'
 
 SetBuildDir('output')
 options.build_dir_name = ''
@@ -30,27 +34,43 @@ Default( linked_file )
 
 #//-------------------------------------------------------//
 
-install_dir = options.build_dir.get() + '/setup/'
-module_dir = install_dir + AQL_MODULE_PATH
+info = aql.getAqlInfo()
+standalone_name = dist_dir + "/{name}-{version}.local".format( name = info.name, version = info.version )
+
+standalone_zip = tools.CreateZip( linked_file, Value( 'aql.cmd', STANDALONE_WINDOWS_SCRIPT ),
+                                  rename = [('aql', linked_file)],
+                                  target = standalone_name )
+
+standalone_tar = tools.CreateTar( linked_file,
+                                  rename = [('aql', linked_file)],
+                                  target = standalone_name )
+
+Alias( 'local', [standalone_zip, standalone_tar], "Create standalone distributions." )
+
+#//-------------------------------------------------------//
+
+setup_dir = 'setup/'
+module_dir = setup_dir + AQL_MODULE_PATH
 
 mod = tools.CopyFileAs( linked_file, target = module_dir + '/__init__.py' )
 
 tool_files = FindFiles( tool_dir, '*.py' )
-aql_tools = tools.CopyFiles( tool_files, target = module_dir + '/tools' )
-readme = tools.CopyFileAs( '../README.md', target = install_dir + '/README.txt' )
+aql_tools = tools.CopyFiles( tool_files,    target = module_dir + '/tools' )
+readme = tools.CopyFileAs( '../README.md',  target = setup_dir + '/README.txt' )
 
-manifest = tools.WriteFile(     MANIFEST,       target = install_dir + "MANIFEST.in" )
-win_script = tools.WriteFile(   WINDOWS_SCRIPT, target = install_dir + WINDOWS_SCRIPT_PATH )
-unix_script = tools.WriteFile(  UNIX_SCRIPT,    target = install_dir + UNIX_SCRIPT_PATH )
-setup_script = tools.WriteFile( SETUP_SCRIPT,   target = install_dir  + "setup.py" )
+manifest = tools.WriteFile(     MANIFEST,       target = setup_dir + "MANIFEST.in" )
+win_script = tools.WriteFile(   WINDOWS_SCRIPT, target = setup_dir + WINDOWS_SCRIPT_PATH )
+unix_script = tools.WriteFile(  UNIX_SCRIPT,    target = setup_dir + UNIX_SCRIPT_PATH )
+setup_script = tools.WriteFile( SETUP_SCRIPT,   target = setup_dir + "setup.py" )
 
-sdist = tools.CreateDist( setup_script, target = 'install', command = "sdist", formats = "zip,bztar" )
-wdist = tools.CreateDist( setup_script, target = 'install', command = "bdist", formats = "msi,wininst" )
-rpm_dist = tools.CreateDist( setup_script, target = 'install', command = "bdist", formats = "rpm" )
+sdist = tools.CreateDist( setup_script, target = dist_dir, command = "sdist", formats = "zip,bztar" )
+wdist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "msi,wininst" )
+rpm_dist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "rpm" )
 
 Depends( [sdist, wdist ], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
 Depends( [wdist, rpm_dist], sdist )
 
-Alias('dist', sdist, "Build source distributions." )
+Alias('sdist', sdist, "Build source distributions." )
 Alias('wdist', wdist, "Build Windows distributions." )
-Alias('rpm', wdist, "Build RPM distribution." )
+Alias('rpm', rpm_dist, "Build RPM distribution." )
+

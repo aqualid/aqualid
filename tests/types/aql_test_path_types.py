@@ -32,9 +32,9 @@ class TestPathTypes( AqlTestCase ):
     
     self.assertEqual( p.change( ext = '.ttt', dirname = 'test', name = 'test_file', prefix = '_'), os.path.join( 'test', '_test_file.ttt' ) )
     
-    self.assertEqual( FilePath('foo/bar').join( 'foo/file.txt' ).normpath(), os.path.normpath( 'foo/bar/foo/file.txt' ) )
-    self.assertEqual( FilePath('foo/bar').join( 'foo', 'file.txt' ).normpath(), os.path.normpath( 'foo/bar/foo/file.txt') )
-    self.assertEqual( FilePath('foo/bar').join( 'foo', 'foo2', 'test', 'file.txt' ).normpath(), os.path.normpath( 'foo/bar/foo/foo2/test/file.txt' ) )
+    self.assertEqual( FilePath('foo/bar').joinPath( 'foo/file.txt' ).normpath(), os.path.normpath( 'foo/bar/foo/file.txt' ) )
+    self.assertEqual( FilePath('foo/bar').joinPath( 'foo', 'file.txt' ).normpath(), os.path.normpath( 'foo/bar/foo/file.txt') )
+    self.assertEqual( FilePath('foo/bar').joinPath( 'foo', 'foo2', 'test', 'file.txt' ).normpath(), os.path.normpath( 'foo/bar/foo/foo2/test/file.txt' ) )
     
 #//===========================================================================//
 

@@ -249,7 +249,7 @@ class CommonCppCompiler (FileBuilder):
   #//-------------------------------------------------------//
   
   def   getObjPath( self, file_path ):
-    return self.getFileBuildPath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
+    return self.getTargetFromSourceFilePath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
   
   #//-------------------------------------------------------//
   
@@ -329,7 +329,7 @@ class CommonResCompiler (FileBuilder):
   #//-------------------------------------------------------//
   
   def   getObjPath( self, file_path ):
-    return self.getFileBuildPath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
+    return self.getTargetFromSourceFilePath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
   
   #//-------------------------------------------------------//
   
@@ -462,11 +462,10 @@ class CommonCppArchiver( CommonCppLinkerBase ):
   
   def   __init__( self, options, target ):
     
-    prefix = options.libprefix.get() + options.prefix.get()
-    suffix = options.suffix.get()
+    prefix = options.libprefix.get()
     ext = options.libsuffix.get()
     
-    self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
+    self.target = self.getTargetFilePath( target, ext = ext, prefix = prefix )
     self.cmd = options.lib_cmd.get()
     self.shared = False
     
@@ -477,15 +476,13 @@ class CommonCppLinker( CommonCppLinkerBase ):
   
   def   __init__( self, options, target, shared ):
     if shared:
-      prefix = options.shlibprefix.get() + options.prefix.get()
+      prefix = options.shlibprefix.get()
       ext = options.shlibsuffix.get()
     else:
       prefix = options.prefix.get()
       ext = options.progsuffix.get()
     
-    suffix = options.suffix.get()
-    
-    self.target = self.getFileBuildPath( target, prefix = prefix, suffix = suffix, ext = ext )
+    self.target = self.getTargetFilePath( target, prefix = prefix, ext = ext )
     self.cmd = options.link_cmd.get()
     self.shared = shared
 

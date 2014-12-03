@@ -288,8 +288,6 @@ class _NodesTree (object):
     
     tail_nodes = self.tail_nodes
     
-    # tail_nodes.remove( node )
-    
     for dep in self.dep2nodes.pop( node ):
       d = node2deps[ dep ]
       d.remove( node )
@@ -706,7 +704,7 @@ class _NodesBuilder (object):
         changed = self._getFinishedNodes( block = False ) or changed
         added_tasks = 0
     
-    self._getFinishedNodes( block = not changed )
+    return self._getFinishedNodes( block = not changed )
   
   #//-------------------------------------------------------//
   
@@ -718,6 +716,7 @@ class _NodesBuilder (object):
     build_manager = self.build_manager
     
     for task in finished_tasks:
+      
       node = task.task_id
       error = task.error
       
@@ -734,8 +733,9 @@ class _NodesBuilder (object):
           node.save( vfile )
         
         build_manager.failedNode( node, error )
-
-    return bool(finished_tasks)
+    
+    # return false when there are no more task processing threads
+    return finished_tasks or not block
   
   #//-------------------------------------------------------//
   
@@ -962,7 +962,9 @@ class BuildManager (object):
         if not tails and not nodes_builder.isBuilding():
           break
         
-        nodes_builder.build( tails )
+        if not nodes_builder.build( tails ):
+          # no more processing threads
+          break
     
     return self.isOk()
   

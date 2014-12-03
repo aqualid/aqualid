@@ -878,7 +878,11 @@ class Node (object):
   #//=======================================================//
   
   def   get(self):
-    return self.getTargets()
+    targets = self.getTargets()
+    if len(targets) == 1:
+      return targets[0]
+    
+    return targets
   
   #//=======================================================//
   

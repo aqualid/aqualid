@@ -89,7 +89,6 @@ class _TaskExecutor( threading.Thread ):
     is_exiting        = self.exit_event.is_set
     
     while not is_exiting():
-      
       task_id, func, args, kw = tasks.get()
       
       task_result = TaskResult( task_id = task_id ) if task_id is not None else None
@@ -124,7 +123,6 @@ class _TaskExecutor( threading.Thread ):
           finished_tasks.put( task_result )
         
         tasks.task_done()
-
 
 #//===========================================================================//
 

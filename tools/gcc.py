@@ -69,11 +69,11 @@ class GccCompiler (CommonCppCompiler):
     self.cmd += ['-c', '-MMD']
   
   def   build( self, node ):
-    
     sources = node.getSources()
     
     obj_file = self.getObjPath( sources[0] )
-    cwd = obj_file.dirname()
+    
+    cwd = os.path.dirname( obj_file )
     
     with Tempfile( prefix = obj_file, suffix = '.d', dir = cwd ) as dep_file:
       
@@ -113,9 +113,9 @@ class GccCompiler (CommonCppCompiler):
     
     sources = node.getSources()
     
-    obj_files = self.getFileBuildPaths( sources, ext = self.ext )
+    obj_files = self.getTargetsFromSourceFilePaths( sources, ext = self.ext )
     
-    cwd = obj_files[0].dirname()
+    cwd = os.path.dirname( obj_files[0] )
     
     cmd = list(self.cmd)
     cmd += sources
@@ -139,7 +139,7 @@ class GccResCompiler (CommonResCompiler):
     src = node.getSources()[0]
     
     res_file = self.getObjPath( src )
-    cwd = res_file.dirname()
+    cwd = os.path.dirname( res_file )
     
     cmd = list(self.cmd)
     cmd += [ '-o', res_file, '-i', src ]
@@ -171,7 +171,7 @@ class GccArchiver (GccCompilerMaker, CommonCppArchiver ):
     cmd.append( self.target )
     cmd += node.getSources()
     
-    cwd = self.target.dirname()
+    cwd = os.path.dirname( self.target )
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
@@ -199,7 +199,7 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
           
     cmd += [ '-o', self.target ]
     
-    cwd = self.target.dirname()
+    cwd = os.path.dirname( self.target )
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     

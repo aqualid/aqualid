@@ -87,9 +87,8 @@ class TestToolGcc( AqlTestCase ):
     with Tempdir() as tmp_dir:
       
       root_dir = FilePath(tmp_dir)
-      build_dir = root_dir.join('build')
-      
-      src_dir   = root_dir.join('src')
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src')
       os.makedirs( src_dir )
       
       num_src_files = 5
@@ -158,10 +157,8 @@ class TestToolGcc( AqlTestCase ):
     
     with Tempdir() as tmp_dir:
       
-      root_dir = FilePath(tmp_dir)
-      build_dir = root_dir.join('build')
-      
-      src_dir   = root_dir.join('src')
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src' )
       os.makedirs( src_dir )
       
       num_src_files = 5
@@ -222,11 +219,11 @@ class TestToolGcc( AqlTestCase ):
     
     with Tempdir() as tmp_dir:
       
-      root_dir = FilePath(tmp_dir)
-      build_dir = root_dir.join('build')
-      
-      src_dir   = root_dir.join('src')
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src' )
       os.makedirs( src_dir )
+      
+      i = 0
       
       num_src_files = 5
       
@@ -244,6 +241,7 @@ class TestToolGcc( AqlTestCase ):
       archiver = gcc.LinkLibrary( options, target = 'foo' )
       
       bm = BuildManager()
+      
       try:
         obj = Node( cpp_compiler, src_files )
         lib = Node( archiver, obj )
@@ -251,6 +249,7 @@ class TestToolGcc( AqlTestCase ):
         bm.add( lib )
         
         self.built_nodes = 0
+        
         self._build( bm )
         self.assertEqual( self.built_nodes, num_src_files + 1 )
         
@@ -280,10 +279,9 @@ class TestToolGcc( AqlTestCase ):
     
     with Tempdir() as tmp_dir:
       
-      root_dir = FilePath(tmp_dir)
-      build_dir = root_dir.join('build')
-      
-      src_dir   = root_dir.join('src')
+      root_dir = tmp_dir
+      build_dir = os.path.join( root_dir, 'build' )
+      src_dir   = os.path.join( root_dir, 'src' )
       os.makedirs( src_dir )
       
       num_src_files = 5
