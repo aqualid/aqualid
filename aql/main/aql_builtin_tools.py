@@ -4,7 +4,6 @@ import io
 import os
 import os.path
 import shutil
-import errno
 import zipfile
 import tarfile
 
@@ -158,6 +157,8 @@ class TarFilesBuilder (FileBuilder):
         ext = ".tar.bz2"
       elif mode == "w:gz":
         ext = ".tar.gz"
+      elif mode == "w":
+        ext = ".tar"
     
     self.target = self.getTargetFilePath( target, ext )
     self.mode = mode

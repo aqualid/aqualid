@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'findFiles', 'findFileInPaths', 'absFilePath', 'changePath',
+  'findFiles', 'findFileInPaths', 'absFilePath', 'changePath', 'splitPath',
   'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
   'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir',
   'Chdir',
@@ -293,6 +293,15 @@ def _splitPath( path ):
   path = path.split( os.path.sep )
   path.insert( 0, drive )
   
+  return path
+
+#//===========================================================================//
+
+def   splitPath( path ):
+  path = os.path.normcase( os.path.normpath( path ) )
+  path = _splitPath( path )
+  
+  path = [p for p in path if p]
   return path
 
 #//===========================================================================//

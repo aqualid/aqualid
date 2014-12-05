@@ -50,7 +50,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, isString, isUnicode, decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
+from aql.util_types import uStr, isString, isUnicode, toUnicode, decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
                            AqlException, SIMPLE_TYPES_SET 
 
 #//===========================================================================//
@@ -397,17 +397,8 @@ def _decodeData( data ):
   if not data:
     return str()
   
-  if not isinstance(data, uStr):
-    try:
-      codec = sys.stdout.encoding
-    except AttributeError:
-      codec = None
+  data = toUnicode( data )
     
-    if not codec:
-      codec = 'utf-8'
-
-    data = data.decode( codec )
-  
   data = data.replace('\r\n', '\n')
   data = data.replace('\r', '\n')
   
@@ -638,13 +629,9 @@ def   loadModule( module_file, update_sys_path = True ):
   
   module_dir = os.path.dirname( module_file )
   module_name = os.path.splitext( os.path.basename( module_file ) )[0]
-  # module_name = os.path.basename( module_file )
   
   fp, pathname, description = imp.find_module( module_name, [ module_dir ] )
-  # pathname = module_file
-  # description = ('','r',imp.PY_SOURCE)
   
-  # with openFile( module_file ) as fp:
   m = imp.load_module( module_name, fp, pathname, description )
   if update_sys_path:
     sys_path = sys.path

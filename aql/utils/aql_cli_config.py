@@ -52,6 +52,8 @@ class   CLIOption( object ):
     
     if self.value_type is bool:
       action = 'store_false' if self.default else 'store_true'
+    elif issubclass( self.value_type, (list, UniqueList)):
+      action = 'append'
     else:
       action = 'store'
     
@@ -156,11 +158,15 @@ class   CLIConfig( object ):
     defaults = self._defaults
     
     try:
-      value_type = defaults[ name ][1]
+      default_value, value_type = defaults[ name ]
     except KeyError:
-      defaults[ name ] = (value, type(value))
+      if value is not None:
+        defaults[ name ] = (value, type(value))
     else:
-      if type(value) is not value_type:
+      if value is None:
+        value = default_value
+      
+      elif type(value) is not value_type:
         value = value_type( value )
     
     super(CLIConfig, self).__setattr__( name, value )
@@ -189,7 +195,10 @@ class   CLIConfig( object ):
       super(CLIConfig, self).__setattr__( name, value )
     else:
       self.__set( name, value )
-      self._set_options.add( name )
+      if value is None:
+        self._set_options.discard( name )
+      else:
+        self._set_options.add( name )
   
   #//-------------------------------------------------------//
   

@@ -51,7 +51,7 @@ class TestToolMsvc( AqlTestCase ):
       src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
       res_file = self.generateResFile( src_dir, 'foo' )
       
-      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir, "batch_build=0"] )
       
       prj = Project( cfg )
       
@@ -223,7 +223,7 @@ class TestToolMsvc( AqlTestCase ):
       res_file = self.generateResFile( src_dir, 'foo' )
       main_src_file = self.generateMainCppFile( src_dir, 'main')
       
-      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir, "batch_build=0"] )
       
       prj = Project( cfg )
       

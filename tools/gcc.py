@@ -28,8 +28,8 @@ def   _readDeps( dep_file, exclude_dirs, _space_splitter_re = re.compile(r'(?<!\
     
     line = line.rstrip('\\ ').strip()
     
-    tmp_dep_files = filter( None, _space_splitter_re.split( line ) )
-    tmp_dep_files = [dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files ]
+    tmp_dep_files = _space_splitter_re.split( line )
+    tmp_dep_files = [dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files if dep_file]
     
     dep_files += map( os.path.abspath, tmp_dep_files )
   

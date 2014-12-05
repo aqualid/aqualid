@@ -113,8 +113,8 @@ class ToolsManager( object ):
   @staticmethod
   def   __addToMap( values_map, names, value ):
     setdefault = values_map.setdefault
-    for name in toSequence( names ):
-      setdefault( name, [] ).append( value )
+    for name in names:
+      setdefault( name, [] ).insert( 0, value )
   
   #//-------------------------------------------------------//
   
@@ -133,28 +133,29 @@ class ToolsManager( object ):
     if not hasattr(setup_method, '__call__'):
       raise ErrorToolInvalidSetupMethod( setup_method )
     
+    names = toSequence( names )
     self.__addToMap( self.all_setup_methods, names, setup_method )
   
   #//-------------------------------------------------------//
   
   def   loadTools( self, paths ):
     
-    if not paths:
-      return
-    
-    paths = tuple( toSequence( paths ) )
-    paths = set( map( lambda path: os.path.normcase( os.path.abspath( path ) ), paths ) )
-    paths -= self.loaded_paths
-    
-    module_files = findFiles( paths, mask = "*.py" )
-    
-    for module_file in module_files:
-      try:
-        loadModule( module_file, update_sys_path = False )
-      except Exception as ex:
-        eventToolsUnableLoadModule( module_file, ex )
-    
-    self.loaded_paths |= paths
+    for path in toSequence( paths ):
+      path = os.path.expandvars( path )
+      path = os.path.expanduser( path )
+      path = os.path.normcase( os.path.abspath( path ) )
+      
+      if path in self.loaded_paths:
+        continue
+      
+      self.loaded_paths.add( path )
+      
+      module_files = findFiles( path, mask = "*.py" )
+      for module_file in module_files:
+        try:
+          loadModule( module_file, update_sys_path = False )
+        except Exception as ex:
+          eventToolsUnableLoadModule( module_file, ex )
   
   #//-------------------------------------------------------//
   

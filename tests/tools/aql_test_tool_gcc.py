@@ -404,12 +404,12 @@ class TestToolGcc( AqlTestCase ):
       res_file = self.generateResFile( src_dir, 'foo' )
       main_src_file = self.generateMainCppFile( src_dir, 'main')
       
-      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir, "batch_build=0"] )
       
       prj = Project( cfg )
       
       try:
-        cpp = prj.tools['c++']
+        cpp = prj.tools['gxx']
       except  ErrorToolNotFound:
         print("WARNING: GCC tool has not been found. Skip the test.")
         return

@@ -37,7 +37,7 @@ Default( linked_file )
 info = aql.getAqlInfo()
 standalone_name = dist_dir + "/{name}-{version}.local".format( name = info.name, version = info.version )
 
-standalone_zip = tools.CreateZip( linked_file, Value( 'aql.cmd', STANDALONE_WINDOWS_SCRIPT ),
+standalone_zip = tools.CreateZip( linked_file, Value( STANDALONE_WINDOWS_SCRIPT, 'aql.cmd' ),
                                   rename = [('aql', linked_file)],
                                   target = standalone_name )
 

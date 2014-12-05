@@ -15,6 +15,12 @@ from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSign
 
 #//===========================================================================//
 
+class FailedBuilder (Builder):
+  def   build( self, node ):
+    raise Exception("Builder always fail.") 
+
+#//===========================================================================//
+
 class CopyValueBuilder (Builder):
   
   def   __init__(self, options ):
@@ -613,6 +619,27 @@ class TestBuildManager( AqlTestCase ):
       _build( bm )
       
       self.assertEqual( self.finished_nodes, 3 * 3 )
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_node_build_fail(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      builder = FailedBuilder( options )
+      
+      for i in range(4):
+        node = Node( builder, SimpleValue("123-%s" % (i,)) )
+        bm.add( node )
+      
+      self.assertRaises( Exception, _build, bm )
+      self.assertEqual( self.finished_nodes, 0 )
   
   #//-------------------------------------------------------//
   

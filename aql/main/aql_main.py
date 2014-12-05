@@ -24,7 +24,7 @@ import sys
 import cProfile
 import traceback
 
-from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, \
+from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, splitPath, \
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 
 from .aql_project import Project, ProjectConfig
@@ -63,20 +63,23 @@ def   eventBuildSummary( settings, elapsed ):
 
 #//===========================================================================//
 
-def   _findMakeScript( start_dir, main_script, main_script_default ):
-  if os.path.isdir( main_script ):
-    main_script = os.path.join( main_script, main_script_default )
-  else:
-    script_dir, main_script = os.path.split( main_script )
-    if script_dir:
-      return script_dir, main_script
+def   _findMakeScript( script ):
   
-  script_dir = start_dir
+  if os.path.isabs( script ):
+    return script
   
-  while True:
-    main_script_path = os.path.join( script_dir, main_script )
-    if os.path.isfile( main_script_path ):
-      return main_script_path
+  cwd = splitPath( os.path.abspath('.') )
+  path_sep = os.path.sep
+  
+  while cwd:
+    print("_findMakeScript: cwd: %s" % (cwd,))
+    script_path = path_sep.join( cwd ) + path_sep + script
+    if os.path.isfile( script_path ):
+      return os.path.normpath( script_path )
+    
+    cwd.pop()
+  
+  return script
 
 #//===========================================================================//
 
@@ -109,6 +112,9 @@ def   _main( prj_cfg ):
     
     with Chdir( prj_cfg.directory ):
       makefile = prj_cfg.makefile
+      
+      if prj_cfg.search_up:
+        makefile = _findMakeScript( makefile )
       
       prj = Project( prj_cfg )
 

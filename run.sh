@@ -1,2 +1,2 @@
 #!/bin/sh
-python -OO -c "import aql; aql.main()" "$@"
+python -OO -c "import aql; aql.main()" $@

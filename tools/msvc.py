@@ -16,7 +16,7 @@ from cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, Comm
 def   _parseOutput( source_paths, output, exclude_dirs,
                     _err_re = re.compile( r".+\s+:\s+(fatal\s)?error\s+[0-9A-Z]+:") ):
 
-  gen_code = "Generating Code..."
+  gen_code = ("Generating Code...", "Compiling...")
   include_prefix = "Note: including file:"
   sources_deps = []
   sources_errors = []

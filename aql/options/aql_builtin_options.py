@@ -71,8 +71,6 @@ def   _build_options():
   
   #//-------------------------------------------------------//
   
-  options.tools_path = ListOptionType( value_type = PathOptionType(), unique = True, description = "Tools search path" )
-  
   options.batch_build = BoolOptionType( description = "Prefer batch build." )
   options.batch_groups = OptionType( value_type = int, default = 1, description = "Preferred number of batching groups." )
   options.batch_size = OptionType( value_type = int, default = 0, description = "Preferred size of a batching group." )

@@ -25,6 +25,7 @@ __all__ = ( 'Project', 'ProjectConfig',
           )
 
 import os.path
+import site
 import types
 import itertools
 
@@ -34,8 +35,10 @@ from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumVal
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 
+from .aql_info import getAqlInfo
 from .aql_tools import getToolsManager
 from .aql_builtin_tools import BuiltinTool
+
 
 #//===========================================================================//
 
@@ -81,11 +84,37 @@ class   ErrorProjectBuilderMethodInvalidOptions( AqlException ):
 
 #//===========================================================================//
 
+def   _getUserConfigDir( info = getAqlInfo() ):
+  return os.path.join( os.path.expanduser('~'), '.config', info.module )
+
+#//===========================================================================//
+
+def   _getDefaultToolsPath( info = getAqlInfo() ):
+  from distutils.sysconfig import get_python_lib
+  python_site = os.path.join( get_python_lib(), info.module )
+  
+  user_site = os.path.join( site.USER_SITE, info.module )
+  
+  user_local = _getUserConfigDir()
+  
+  return [ os.path.join(path, 'tools') for path in (python_site, user_site, user_local) ]
+
+#//===========================================================================//
+
+def   _readConfig( config_file, cli_config, options, tools_path ):
+  cli_config.readConfig( config_file, { 'options': options })
+  
+  if cli_config.tools_path:
+    tools_path.extend( cli_config.tools_path )
+    cli_config.tools_path = None
+
+#//===========================================================================//
+
 #noinspection PyUnresolvedReferences
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
-               'verbose', 'no_output', 'jobs', 'keep_going',
+               'verbose', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path',
                'build_always', 'clean', 'status', 'list_options', 'list_targets',
                'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
                'force_lock', 'show_version',
@@ -97,7 +126,7 @@ class ProjectConfig( object ):
     
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
-    Paths = SplitListType( ValueListType( UniqueList, FilePath ), ', ' )
+    Paths = ValueListType( UniqueList, FilePath )
     
     CLI_OPTIONS = (
       
@@ -111,7 +140,7 @@ class ProjectConfig( object ):
       CLIOption( "-n", "--status",            "status",           bool,       False,        "Print status of targets." ),
       CLIOption( "-u", "--up",                "search_up",        bool,       False,        "Search up directory tree for a make file." ),
                                                                   
-      CLIOption( "-b", "--build-directory",   "build_dir",        FilePath,   'output',     "Build output path.", 'FILE PATH'),
+      # CLIOption( "-b", "--build-directory",   "build_dir",        FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tools-path",        "tools_path",       Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",        "keep_going",       bool,       False,        "Keep going when some targets can't be built." ),
       CLIOption( "-j", "--jobs",              "jobs",             int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
@@ -129,10 +158,33 @@ class ProjectConfig( object ):
     
     options = builtinOptions()
     
-    config = cli_config.config
+    #//-------------------------------------------------------//
+    # Add default tools path 
     
+    tools_path = _getDefaultToolsPath()
+    cli_tools_path = cli_config.tools_path
+    cli_config.tools_path = None
+    
+    #//-------------------------------------------------------//
+    # Read a config file from user's home
+    
+    user_config = os.path.join( _getUserConfigDir(), 'default.cfg' )
+    if os.path.isfile( user_config ):
+      _readConfig( user_config, cli_config, options, tools_path )
+    
+    #//-------------------------------------------------------//
+    # Read a config file specified from CLI
+    
+    config = cli_config.config
     if config:
-      cli_config.readConfig( config, { 'options': options })
+      _readConfig( config, cli_config, options, tools_path )
+    
+    # add user specified tools_path to the end of search path to override default tools
+    if cli_tools_path:
+      tools_path.extend( cli_tools_path )
+    
+    #//-------------------------------------------------------//
+    # Apply non-cli arguments to options 
     
     arguments = {}
     
@@ -151,6 +203,8 @@ class ProjectConfig( object ):
     self.arguments        = arguments
     self.directory        = os.path.abspath( cli_config.directory )
     self.makefile         = cli_config.makefile
+    self.search_up        = cli_config.search_up
+    self.tools_path       = tools_path
     self.targets          = cli_config.targets
     self.verbose          = cli_config.verbose
     self.show_version     = cli_config.version
@@ -286,7 +340,8 @@ class ProjectTools( object ):
     self.tools_cache = {}
     
     tools = getToolsManager()
-    tools.loadTools( self.project.options.tools_path.get() )
+    
+    tools.loadTools( self.project.config.tools_path )
     
     self.tools = tools
   
@@ -345,10 +400,11 @@ class ProjectTools( object ):
   
   def   Tools( self, *tool_names, **kw ):
     
-    tools_path = kw.pop('tools_path', [])
     options = kw.pop( 'options', None )
     
-    self.tools.loadTools( tools_path )
+    tools_path = kw.pop('tools_path', None )
+    if tools_path:
+      self.tools.loadTools( tools_path )
     
     if options is None:
       options = self.project.options
@@ -356,8 +412,6 @@ class ProjectTools( object ):
     if kw:
       options = options.override()
       options.update( kw )
-    
-    self.tools.loadTools( options.tools_path.get() )
     
     tools = [ self.__addTool( tool_name, options ) for tool_name in tool_names ]
     
@@ -470,8 +524,8 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Value( self, name, data ):
-    return SimpleValue( name = name, data = data )
+  def   Value( self, data, name = None ):
+    return SimpleValue( data = data, name = name )
   
   #//-------------------------------------------------------//
   
@@ -507,6 +561,10 @@ class Project( object ):
         del script_locals[ arg ]
       except KeyError:
         pass
+    
+    tools_path = script_locals.pop( 'tools_path', None )
+    if tools_path:
+      self.tools.tools.loadTools( tools_path )
     
     options.update( script_locals )
   
