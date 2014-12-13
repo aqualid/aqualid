@@ -183,8 +183,7 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, src_files )
         res = Node( res_compiler, res_file )
         
-        bm.add( obj )
-        bm.add( res )
+        bm.add( [obj, res] )
         
         self.built_nodes = 0
         
@@ -202,8 +201,7 @@ class TestToolGcc( AqlTestCase ):
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
         res = Node( res_compiler, res_file )
-        bm.add( obj )
-        bm.add( res )
+        bm.add( [obj, res] )
         
         self.built_nodes = 0
         self._build( bm )
@@ -246,7 +244,7 @@ class TestToolGcc( AqlTestCase ):
         obj = Node( cpp_compiler, src_files )
         lib = Node( archiver, obj )
         
-        bm.add( lib )
+        bm.add( [lib] )
         
         self.built_nodes = 0
         
@@ -263,8 +261,7 @@ class TestToolGcc( AqlTestCase ):
         bm = BuildManager()
         obj = Node( cpp_compiler, src_files )
         lib = Node( archiver, obj )
-        bm.add( obj )
-        bm.add( lib )
+        bm.add( [obj,lib] )
         
         self.built_nodes = 0
         self._build( bm )
@@ -309,7 +306,7 @@ class TestToolGcc( AqlTestCase ):
         foo_lib = Node( archiver, obj )
         foo_prog = Node( linker, [ foo_lib, main_obj ] )
         
-        bm.add( foo_prog )
+        bm.add( [foo_prog] )
         
         self.built_nodes = 0
         self._build( bm )
@@ -331,7 +328,7 @@ class TestToolGcc( AqlTestCase ):
         foo_lib = Node( archiver, obj )
         foo_prog = Node( linker, [ foo_lib, main_obj ] )
         
-        bm.add( foo_prog )
+        bm.add( [foo_prog] )
         
         self.built_nodes = 0
         self._build( bm )

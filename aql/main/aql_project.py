@@ -305,7 +305,7 @@ class BuilderWrapper( object ):
 
     node.depends( deps )
 
-    self.project.AddNodes( node )
+    self.project.AddNodes( (node,) )
     
     return node
 
@@ -586,9 +586,41 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   Depends( self, nodes, dependencies ):
+    dependencies = tuple(toSequence( dependencies ))
+    
     for node in toSequence( nodes ):
       node.depends( dependencies )
       self.build_manager.depends( node, node.dep_nodes )
+  
+  #//-------------------------------------------------------//
+  
+  def   Requires( self, nodes, dependencies ):
+    dependencies = tuple( dep for dep in toSequence( dependencies ) if isinstance( dep, Node ) )
+    
+    depends = self.build_manager.depends
+    for node in toSequence( nodes ):
+      depends( node, dependencies )
+  
+  #//-------------------------------------------------------//
+  
+  def   RequireModules( self, nodes, dependencies ):
+    dependencies = tuple( dep for dep in toSequence( dependencies ) if isinstance( dep, Node ) )
+    
+    moduleDepends = self.build_manager.moduleDepends
+    for node in toSequence( nodes ):
+      moduleDepends( node, dependencies )
+  
+  #//-------------------------------------------------------//
+  
+  def   SyncModules( self, nodes ):
+    nodes = tuple( node for node in toSequence( nodes ) if isinstance( node, Node ) )
+    self.build_manager.sync( nodes, deep = True)
+  
+  #//-------------------------------------------------------//
+  
+  def   Sync( self, nodes ):
+    nodes = tuple( node for node in toSequence( nodes ) if isinstance( node, Node ) )
+    self.build_manager.sync( nodes )
   
   #//-------------------------------------------------------//
   

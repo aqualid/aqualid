@@ -1,5 +1,7 @@
 import sys
 import os.path
+import time
+import threading
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -18,6 +20,97 @@ from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSign
 class FailedBuilder (Builder):
   def   build( self, node ):
     raise Exception("Builder always fail.") 
+
+#//===========================================================================//
+
+_sync_lock = threading.Lock()
+_sync_value = 0
+
+class SyncValueBuilder (Builder):
+  NAME_ATTRS = ('name',)
+  
+  def   __init__(self, options, name, number, sleep_interval = 1 ):
+    self.signature = b''
+    
+    self.name = name
+    self.sleep_interval = sleep_interval
+    self.number = number
+    
+    # self.initLocks( lock_names )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName(self, brief ):
+    name = self.__class__.__name__
+    name += "(%s:%s)" % (self.name, self.number,)
+    return name
+  
+  #//-------------------------------------------------------//
+  
+  def   initLocks(self, lock_names, sync_locks ):
+    self.locks = locks = []
+    self.lock_names = lock_names
+    
+    for lock_name in lock_names:
+      lock = sync_locks.get( lock_name, None )
+      if lock is None:
+        lock = threading.Lock()
+        sync_locks[ lock_name ] = lock
+      
+      locks.append( lock )
+  
+  #//-------------------------------------------------------//
+  
+  def   acquireLocks( self ):
+    locks = []
+    
+    try:
+      for i, lock in enumerate( self.locks ):
+        if not lock.acquire( False ):
+          raise Exception("Lock '%s' is already acquired." % (self.lock_names[i]))
+        
+        locks.insert( 0, lock )
+    except:
+      self.releaseLocks( locks )
+      raise
+    
+    return locks
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   releaseLocks( locks ):
+    for lock in locks:
+      lock.release()
+    
+  #//-------------------------------------------------------//
+  
+  def   build( self, node ):
+    
+    if self.number:
+      global _sync_value
+      
+      with _sync_lock:
+        _sync_value = _sync_value + self.number
+        
+        if (_sync_value % self.number) != 0:
+          raise Exception( "_sync_value: %s, number: %s, node: %s" % (_sync_value, self.number, node))
+        
+    time.sleep( self.sleep_interval )
+    
+    if self.number:  
+      with _sync_lock:
+        if (_sync_value % self.number) != 0:
+          raise Exception( "_sync_value: %s, number: %s, node: %s" % (_sync_value, self.number, node))
+        
+        _sync_value = _sync_value - self.number
+    
+    target = [ src for src in node.getSources() ]
+    target = self.makeSimpleValue( target )
+    
+    # self.releaseLocks( locks )
+    
+    node.addTargets( target )
 
 #//===========================================================================//
 
@@ -107,8 +200,8 @@ def   _addNodesToBM( builder, src_files, Node = Node ):
     checksums_node = Node( builder, src_files )
     checksums_node2 = Node( builder, checksums_node )
     
-    bm.add( checksums_node ); bm.selfTest()
-    bm.add( checksums_node2 ); bm.selfTest()
+    bm.add( [checksums_node] ); bm.selfTest()
+    bm.add( [checksums_node2] ); bm.selfTest()
   except Exception:
     bm.close()
     raise
@@ -117,10 +210,10 @@ def   _addNodesToBM( builder, src_files, Node = Node ):
 
 #//===========================================================================//
 
-def   _build( bm ):
+def   _build( bm, jobs = 1, keep_going = False, explain = False ):
   try:
     bm.selfTest()
-    success = bm.build( jobs = 1, keep_going = False )
+    success = bm.build( jobs = jobs, keep_going = keep_going, explain = explain )
     bm.selfTest()
     if not success:
       bm.printFails()
@@ -224,23 +317,23 @@ class TestBuildManager( AqlTestCase ):
     node6 = Node( builder, node5 )
     node6.depends( [node0, node1] )
     
-    bm.add( node0 ); bm.selfTest(); self.assertEqual( len(bm), 1 )
-    bm.add( node1 ); bm.selfTest(); self.assertEqual( len(bm), 2 )
-    bm.add( node2 ); bm.selfTest(); self.assertEqual( len(bm), 3 )
-    bm.add( node3 ); bm.selfTest(); self.assertEqual( len(bm), 4 )
-    bm.add( node4 ); bm.selfTest(); self.assertEqual( len(bm), 5 )
-    bm.add( node5 ); bm.selfTest(); self.assertEqual( len(bm), 6 )
-    bm.add( node6 ); bm.selfTest(); self.assertEqual( len(bm), 7 )
+    bm.add( [node0] ); bm.selfTest(); self.assertEqual( len(bm), 1 )
+    bm.add( [node1] ); bm.selfTest(); self.assertEqual( len(bm), 2 )
+    bm.add( [node2] ); bm.selfTest(); self.assertEqual( len(bm), 3 )
+    bm.add( [node3] ); bm.selfTest(); self.assertEqual( len(bm), 4 )
+    bm.add( [node4] ); bm.selfTest(); self.assertEqual( len(bm), 5 )
+    bm.add( [node5] ); bm.selfTest(); self.assertEqual( len(bm), 6 )
+    bm.add( [node6] ); bm.selfTest(); self.assertEqual( len(bm), 7 )
     
-    node0.depends( node3 ); bm.depends( node0, node3 ); bm.selfTest()
-    node1.depends( node3 ); bm.depends( node1, node3 ); bm.selfTest()
-    node2.depends( node3 ); bm.depends( node2, node3 ); bm.selfTest()
-    node3.depends( node4 ); bm.depends( node3, node4 ); bm.selfTest()
-    node0.depends( node5 ); bm.depends( node0, node5 ); bm.selfTest()
-    node5.depends( node3 ); bm.depends( node5, node3 ); bm.selfTest()
+    node0.depends( node3 ); bm.depends( node0, [node3] ); bm.selfTest()
+    node1.depends( node3 ); bm.depends( node1, [node3] ); bm.selfTest()
+    node2.depends( node3 ); bm.depends( node2, [node3] ); bm.selfTest()
+    node3.depends( node4 ); bm.depends( node3, [node4] ); bm.selfTest()
+    node0.depends( node5 ); bm.depends( node0, [node5] ); bm.selfTest()
+    node5.depends( node3 ); bm.depends( node5, [node3] ); bm.selfTest()
     
     def   _cyclicDeps( src_node, dep_node ):
-      src_node.depends( dep_node ); bm.depends( src_node, dep_node )
+      src_node.depends( dep_node ); bm.depends( src_node, [dep_node] )
     
     self.assertRaises(ErrorNodeDependencyCyclic, _cyclicDeps, node4, node3 )
   
@@ -356,7 +449,7 @@ class TestBuildManager( AqlTestCase ):
       bm.add( nodes )
       
       self.finished_nodes = 0
-      bm.build( jobs = 1, keep_going = False, nodes = copy_node3 )
+      bm.build( jobs = 1, keep_going = False, nodes = [copy_node3] )
       bm.close()
       self.assertEqual( self.finished_nodes, 2 )
       
@@ -455,7 +548,7 @@ class TestBuildManager( AqlTestCase ):
       node = Node( builder, node )
       node = Node( builder, node )
       
-      bm.add( node )
+      bm.add( [node] )
       _build( bm )
       
       self.assertEqual( self.building_nodes, num_src_files * 7 )
@@ -468,7 +561,7 @@ class TestBuildManager( AqlTestCase ):
       builder = ChecksumSingleBuilder( options, 0, 256 )
       
       node = Node( builder, src_values )
-      bm.add( node ); bm.selfTest()
+      bm.add( [node] ); bm.selfTest()
       bm.status(); bm.selfTest()
       
       self.assertEqual( self.outdated_nodes, 0 )
@@ -495,7 +588,7 @@ class TestBuildManager( AqlTestCase ):
       
       node_md5 = Node( builder, node.at('md5') )
       
-      bm.add( node_md5 )
+      bm.add( [node_md5] )
       
       _build( bm )
       
@@ -513,7 +606,7 @@ class TestBuildManager( AqlTestCase ):
       
       node_md5 = Node( builder, node.at('md5') )
       
-      bm.add( node_md5 )
+      bm.add( [node_md5] )
       
       _build( bm )
       
@@ -540,7 +633,7 @@ class TestBuildManager( AqlTestCase ):
       
       node_md5 = Node( single_builder, node.at('md5') )
       
-      bm.add( node_md5 )
+      bm.add( [node_md5] )
       
       _build( bm )
       
@@ -558,7 +651,7 @@ class TestBuildManager( AqlTestCase ):
       
       node_md5 = Node( single_builder, node.at('md5') )
       
-      bm.add( node_md5 )
+      bm.add( [node_md5] )
       
       _build( bm )
       
@@ -587,8 +680,7 @@ class TestBuildManager( AqlTestCase ):
       # node1 = Node( builder1, node1 )
       # node2 = Node( builder2, node2 )
       
-      bm.add( node1 )
-      bm.add( node2 )
+      bm.add( [node1, node2])
       self.assertRaises( ErrorNodeSignatureDifferent, _build, bm )
   
   #//-------------------------------------------------------//
@@ -614,8 +706,7 @@ class TestBuildManager( AqlTestCase ):
       node1 = Node( builder1, node1 )
       node2 = Node( builder2, node2 )
       
-      bm.add( node1 )
-      bm.add( node2 )
+      bm.add( [node1, node2] )
       _build( bm )
       
       self.assertEqual( self.finished_nodes, 3 * 3 )
@@ -634,12 +725,83 @@ class TestBuildManager( AqlTestCase ):
       
       builder = FailedBuilder( options )
       
-      for i in range(4):
-        node = Node( builder, SimpleValue("123-%s" % (i,)) )
-        bm.add( node )
+      nodes = [ Node( builder, SimpleValue("123-%s" % (i,)) ) for i in range(4)]
+      bm.add( nodes )
       
       self.assertRaises( Exception, _build, bm )
       self.assertEqual( self.finished_nodes, 0 )
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_sync_nodes(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      nodes = [ Node( SyncValueBuilder( options, name = "%s" % i, number = n ), SimpleValue("123-%s" % i) ) for i,n in zip( range(4), [3,5,7,11] ) ] 
+      bm.add( nodes )
+      bm.sync( nodes )
+      
+      _build( bm, jobs = 4 )
+  
+  #//-------------------------------------------------------//
+  
+  @skip
+  def test_bm_sync_modules(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      """
+             10    11__
+            / | \ / \  \
+          20 21  22  23 24
+         /  \ | / \   \ |
+        30    31   32  33
+      """
+      
+      node30 = Node( SyncValueBuilder( options, name = "30", number = 7 ), SimpleValue("30") )
+      node31 = Node( SyncValueBuilder( options, name = "31", number = 0, sleep_interval = 0 ), SimpleValue("31") )
+      node32 = Node( SyncValueBuilder( options, name = "32", number = 0, sleep_interval = 0 ), SimpleValue("32") )
+      node33 = Node( SyncValueBuilder( options, name = "33", number = 17 ), SimpleValue("33") )
+      
+      node20 = Node( SyncValueBuilder( options, name = "20", number = 7 ), (node30, node31) )
+      node21 = Node( SyncValueBuilder( options, name = "21", number = 7 ), (node31,) )
+      node22 = Node( SyncValueBuilder( options, name = "22", number = 0, sleep_interval = 5), (node31, node32) )
+      node23 = Node( SyncValueBuilder( options, name = "23", number = 17 ), (node33,) )
+      node24 = Node( SyncValueBuilder( options, name = "24", number = 17 ), (node33,) )
+       
+      node10 = Node( SyncValueBuilder( options, name = "10", number = 7 ), (node20, node21, node22) )
+      node11 = Node( SyncValueBuilder( options, name = "11", number = 17 ), (node22, node23, node24) )
+      
+      # print( "node30: %s" % node30 )
+      # print( "node31: %s" % node31 )
+      # print( "node32: %s" % node32 )
+      # print( "node33: %s" % node33 )
+      # 
+      # print( "node20: %s" % node20 )
+      # print( "node21: %s" % node21 )
+      # print( "node22: %s" % node22 )
+      # print( "node23: %s" % node23 )
+      # print( "node24: %s" % node24 )
+      # 
+      # print( "node10: %s" % node10 )
+      # print( "node11: %s" % node11 )
+      
+      bm.add( (node10, node11) )
+      bm.sync( (node10, node11), deep = True )
+      
+      _build( bm, jobs = 2 )
   
   #//-------------------------------------------------------//
   
@@ -664,11 +826,7 @@ class TestBuildManager( AqlTestCase ):
         node3 = Node( builder, node2 )
         node4 = Node( builder, node3 )
         
-        bm.add( node0 )
-        bm.add( node1 )
-        bm.add( node2 )
-        bm.add( node3 )
-        bm.add( node4 )
+        bm.add( [node0, node1, node2, node3, node4] )
         
         bm.build(1, False)
         
@@ -686,7 +844,7 @@ class TestBuildManager( AqlTestCase ):
 def   _generateNodeTree( bm, builder, node, depth ):
   while depth:
     node = Node( builder, node )
-    bm.add( node )
+    bm.add( [ node ] )
     depth -= 1
 
 #//===========================================================================//
@@ -702,7 +860,7 @@ class TestBuildManagerSpeed( AqlTestCase ):
     builder = CopyValueBuilder()
     
     node = Node( builder, value )
-    bm.add( node )
+    bm.add( [node] )
     
     _generateNodeTree( bm, builder, node, 5000 )
 

@@ -82,7 +82,7 @@ class TestBuiltinTools( AqlTestCase ):
         
         result = Node( exec_cmd, cmd )
 
-        bm.add( result )
+        bm.add( [result] )
         
         self._build( bm, jobs = 1, keep_going = False )
         
@@ -94,7 +94,7 @@ class TestBuiltinTools( AqlTestCase ):
         result = Node( exec_cmd, cmd )
 
         bm = BuildManager()
-        bm.add( result )
+        bm.add( [result] )
         
         self.building_started = 0
         self._build( bm, jobs = 1, keep_going = False )

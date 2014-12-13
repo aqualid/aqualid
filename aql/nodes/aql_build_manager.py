@@ -23,8 +23,8 @@ __all__ = (
 )
 
 import os.path
+import itertools
 
-from aql.util_types import toSequence, AqlException
 from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
 from aql.values import ValuesFile
 
@@ -97,73 +97,45 @@ def   eventNodeRemoved( settings, node, progress ):
 
 #//===========================================================================//
 
-class   ErrorNodeDependencyCyclic( AqlException ):
+class   ErrorNodeDependencyCyclic( Exception ):
   def   __init__( self, node, deps ):
     msg = "Node '%s' (%s) has a cyclic dependency: %s" % (node, node.getBuildStr(True), deps )
     super(ErrorNodeDependencyCyclic, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorNodeUnknown(AqlException):
+class   ErrorNodeUnknown(Exception):
   def   __init__( self, node ):
     msg = "Unknown node '%s'" % (node, )
     super(ErrorNodeUnknown, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorNodeSignatureDifferent(AqlException):
+class   ErrorNodeSignatureDifferent(Exception):
   def   __init__( self, node ):
     msg = "Two similar nodes have different signatures (sources, builder parameters or dependencies): %s" % (node.getBuildStr( brief = False ), )
     super(ErrorNodeSignatureDifferent, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorNodeDependencyUnknown(AqlException):
+class   ErrorNodeDependencyUnknown(Exception):
   def   __init__( self, node, dep_node ):
     msg = "Unable to add dependency to node '%s' from node '%s'" % (node, dep_node)
     super(ErrorNodeDependencyUnknown, self).__init__( msg )
 
 #//===========================================================================//
 
-class   InternalErrorRemoveNonTailNode( AqlException ):
+class   InternalErrorRemoveNonTailNode( Exception ):
   def   __init__( self, node ):
     msg = "Removing non-tail node: %s" % (node,)
     super(InternalErrorRemoveNonTailNode, self).__init__( msg )
 
 #//===========================================================================//
 
-class   InternalErrorRemoveUnknownTailNode(AqlException):
+class   InternalErrorRemoveUnknownTailNode(Exception):
   def   __init__( self, node ):
     msg = "Remove unknown tail node: : %s" % (node,)
     super(InternalErrorRemoveUnknownTailNode, self).__init__( msg )
-
-#//===========================================================================//
-
-class   BuildStat (object):
-  __slots__ = \
-    (
-      'total',
-      'completed',
-      'failed',
-    )
-  
-  def   __init__(self, total):
-    self.total = total
-    self.completed = 0
-    self.failed = 0
-  
-  def   addTotal(self, count ):
-    self.total += count
-    
-  def   incCompleted(self):
-    self.completed += 1
-    
-  def   incFailed(self):
-    self.failed += 1
-  
-  def   getProgressStr(self):
-    progress = "%s/%s" % (self.completed + self.failed, self.total )
-    return progress
 
 #//===========================================================================//
 
@@ -212,7 +184,7 @@ class _NodesTree (object):
   
   #//-------------------------------------------------------//
   
-  def   __depends( self, node, deps ):
+  def   _depends( self, node, deps ):
     
     node2deps = self.node2deps
     dep2nodes = self.dep2nodes
@@ -245,7 +217,7 @@ class _NodesTree (object):
     
   #//-------------------------------------------------------//
   
-  def   __add( self, nodes ):
+  def   add( self, nodes ):
       for node in nodes:
         if node not in self.node2deps:
           self.node2deps[ node ] = set()
@@ -255,24 +227,17 @@ class _NodesTree (object):
           node_srcnodes = node.getSourceNodes()
           node_depnodes = node.getDepNodes()
 
-          self.__add( node_srcnodes )       # TODO: recursively add sources and depends
-          self.__add( node_depnodes )       # It would be better to rewrite this code to avoid the recursion
+          self.add( node_srcnodes )       # recursively add sources and depends
+          self.add( node_depnodes )       # TODO: It would be better to rewrite this code to avoid the recursion
           
-          self.__depends( node, node_srcnodes )
-          self.__depends( node, node_depnodes )
-    
-  #//-------------------------------------------------------//
-  
-  def   add( self, nodes ):
-    self.__add( toSequence( nodes ) )
-    
+          self._depends( node, node_srcnodes )
+          self._depends( node, node_depnodes )
+            
   #//-------------------------------------------------------//
   
   def   depends( self, node, deps ):
-    deps = toSequence( deps )
-    
-    self.__add( deps )
-    self.__depends( node, deps )
+    self.add( deps )
+    self._depends( node, deps )
   
   #//-------------------------------------------------------//
   
@@ -296,6 +261,11 @@ class _NodesTree (object):
     
   #//-------------------------------------------------------//
   
+  def   filterUnknownDeps(self, deps ):
+    return [ dep for dep in deps if dep in self.node2deps ]
+  
+  #//-------------------------------------------------------//
+  
   def   popTails( self ):
     tails = self.tail_nodes
     self.tail_nodes = set()
@@ -304,7 +274,7 @@ class _NodesTree (object):
   #//-------------------------------------------------------//
   
   def   __getAllNodes(self, nodes ):
-    nodes = set(toSequence(nodes))
+    nodes = set(nodes)
     all_nodes = set( nodes )
     
     node2deps = self.node2deps
@@ -353,12 +323,15 @@ class _NodesTree (object):
       
       node_deps = self.node2deps[node]
       
-      if not node_deps:
-        if node not in self.tail_nodes:
-          raise AssertionError("Missed tail node: %s, tail_nodes: %s"  % (node, self.tail_nodes) )
-      else:
+      if node_deps:
         if node in self.tail_nodes:
           raise AssertionError("Invalid tail node: %s"  % (node,) )
+      # if not node_deps:
+      #   if node not in self.tail_nodes:
+      #     raise AssertionError("Missed tail node: %s, tail_nodes: %s"  % (node, self.tail_nodes) )
+      # else:
+      #   if node in self.tail_nodes:
+      #     raise AssertionError("Invalid tail node: %s"  % (node,) )
       
       all_dep_nodes |= node_deps
       
@@ -474,6 +447,185 @@ class   _NodeState( object ):
   
 #//===========================================================================//
 
+def   _getModuleNodes( node, module_cache, node_cache ):
+  try:
+    return module_cache[ node ]
+  except KeyError:
+    pass
+  
+  result = set( (node,) )
+  
+  try:
+    src_nodes = node_cache[ node ]
+  except KeyError:
+    node_cache[ node ] = src_nodes = frozenset(node.getSourceNodes())
+
+  for src in src_nodes:
+    result.update( _getModuleNodes( src, module_cache, node_cache ) )
+  
+  module_cache[ node ] = result
+  return result
+
+#//===========================================================================//
+
+def   _getLeafNodes( nodes, exclude_nodes, node_cache ):
+  leafs = set()
+  for node in nodes:
+    if node_cache[node].issubset( exclude_nodes ):
+      leafs.add( node )
+  
+  return leafs
+  
+#//===========================================================================//
+
+class _NodeLocker( object ):
+  __slots__ = (
+    'node2deps',
+    'dep2nodes',
+    'locked_nodes',
+    'unlocked_nodes',
+  )
+  
+  def   __init__( self ):
+    self.node2deps = {}
+    self.dep2nodes = {}
+    self.locked_nodes = {}
+    self.unlocked_nodes = []
+  
+  #//-------------------------------------------------------//
+  
+  def   syncModules( self, nodes, module_cache = None, node_cache = None ):
+    
+    if module_cache is None:
+      module_cache = {}
+    
+    if node_cache is None:
+      node_cache = {}
+    
+    for node1, node2 in itertools.product( nodes, nodes ):
+      if node1 is not node2:
+        self.__addModules( node1, node2, module_cache, node_cache )
+    
+  #//-------------------------------------------------------//
+  
+  def   __addModules( self, node1, node2, module_cache, node_cache ):
+    
+    node1_sources = _getModuleNodes( node1, module_cache, node_cache )
+    node2_sources = _getModuleNodes( node2, module_cache, node_cache )
+    
+    common = node1_sources & node2_sources
+    node1_sources -= common
+    node2_sources -= common
+    
+    leafs1 = _getLeafNodes( node1_sources, common, node_cache )
+    leafs2 = _getLeafNodes( node2_sources, common, node_cache )
+    
+    for leaf in leafs1:
+      self.__add( leaf, node2_sources )
+    
+    for leaf in leafs2:
+      self.__add( leaf, node1_sources )
+  
+  #//-------------------------------------------------------//
+  
+  def   sync( self, nodes ):
+    for node in nodes:
+      node_deps = self.__add( node, nodes )
+      node_deps.remove( node )
+  
+  #//-------------------------------------------------------//
+  
+  def __add( self, node, deps ):
+    try:
+      node_set = self.node2deps[ node ]
+    except KeyError:
+      node_set = set()
+      self.node2deps[ node ] = node_set
+    
+    node_set.update( deps )
+    
+    for dep in deps:
+      if dep is not node:
+        try:
+          dep_set = self.dep2nodes[ dep ]
+        except KeyError:
+          dep_set = set()
+          self.dep2nodes[ dep ] = dep_set
+        
+        dep_set.add( node )
+    
+    return node_set
+  
+  #//-------------------------------------------------------//
+  
+  def   lock( self, node, building_nodes ):
+    
+    deps = self.node2deps.get( node, None )
+    if not deps:
+      # node doesn't have to be synchronized
+      return True
+    
+    for dep in deps:
+      if dep in building_nodes:
+        try:
+          self.locked_nodes[dep].add( node )
+        except KeyError:
+          self.locked_nodes[dep] = set( (node,) )
+        
+        return False
+    
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   unlock( self, node ):
+    
+    for dep in self.node2deps.pop( node, tuple() ):
+      self.dep2nodes[ dep ].remove( node )
+      
+    for dep in self.dep2nodes.pop( node, tuple() ):
+      self.node2deps[ dep ].remove( node )
+    
+    unlocked_nodes = self.locked_nodes.pop(node, None)
+    if not unlocked_nodes:
+      return 
+    
+    self.unlocked_nodes.extend( unlocked_nodes )
+  
+  #//-------------------------------------------------------//
+  
+  def   popUnlocked(self):
+    unlocked_nodes = self.unlocked_nodes
+    self.unlocked_nodes = []
+    
+    return unlocked_nodes
+
+  #//-------------------------------------------------------//
+  
+  def   selfTest( self ):
+    for node, deps in self.node2deps.items():
+      if node in deps:
+        raise AssertionError("Node depends from itself: %s"  % (node,) )
+      
+      for dep in deps:
+        if node not in self.dep2nodes[ dep ]:
+          raise AssertionError("Dependency '%s' doesn't have node '%s'"  % (dep, node,) )
+    
+    for node, deps in self.locked_nodes.items():
+      for dep in deps:
+        if node not in self.node2deps[dep]:
+          raise AssertionError("Locked node %s does't actually depend from node %s"  % (dep, node) )
+        
+        if dep in self.unlocked_nodes:
+          raise AssertionError("Locked node %s is actually locked"  % (dep,) )
+    
+    for node in self.unlocked_nodes:
+      if node not in self.node2deps:
+        raise AssertionError("Unknown unlocked node %s"  % (node,) )
+
+
+#//===========================================================================//
+
 # noinspection PyAttributeOutsideInit
 class _NodesBuilder (object):
   
@@ -523,29 +675,34 @@ class _NodesBuilder (object):
       del self.node_states[ node ]
     except KeyError:
       pass
-  
+    
   #//-------------------------------------------------------//
   
   def   _addBuildingNode( self, node, state ):
     conflicting_nodes = []
     building_nodes = self.building_nodes
     
+    node_names = {}
+    
     for name, signature in node.getNamesAndSignatures():
-      node_signature = (node, signature)
+      other = building_nodes.get( name, None )
+      if other is None:
+        node_names[ name ] = (node, signature)
+        continue
       
-      other_node, other_signature = building_nodes.setdefault( name, node_signature )
-      if other_node is not node:
-        if other_signature != signature:
-          raise ErrorNodeSignatureDifferent( node )
+      other_node, other_signature = other
+      if other_signature != signature:
+        raise ErrorNodeSignatureDifferent( node )
         
-        conflicting_nodes.append( other_node )
+      conflicting_nodes.append( other_node )
     
     if conflicting_nodes:
       state.check_actual = True
       self.build_manager.depends( node, conflicting_nodes )
-      return True
+      return False
     
-    return False
+    building_nodes.update( node_names )
+    return True
   
   #//-------------------------------------------------------//
   
@@ -663,7 +820,7 @@ class _NodesBuilder (object):
     
   #//-------------------------------------------------------//
   
-  def   build( self, nodes ):
+  def   build( self, nodes, node_locker ):
     
     build_manager = self.build_manager
     
@@ -675,6 +832,8 @@ class _NodesBuilder (object):
     changed = False
     
     for node in nodes:
+      if (node_locker is not None) and (not node_locker.lock( node, self.node_states )):
+        continue
       
       node_state = self._getNodeState( node )
       
@@ -682,7 +841,7 @@ class _NodesBuilder (object):
         changed = True
         continue
       
-      if self._addBuildingNode( node, node_state ):
+      if not self._addBuildingNode( node, node_state ):
         continue
       
       if node_state.check_actual:
@@ -791,12 +950,14 @@ class _NodesBuilder (object):
 
 class BuildManager (object):
   
-  __slots__ = \
-  (
+  __slots__ = (
     '_nodes',
     '_built_targets',
     '_failed_nodes',
     '_built_node_names',
+    '_node_locker',
+    '_module_cache',
+    '_node_cache',
     'completed',
     'actual',
     'explain',
@@ -806,6 +967,7 @@ class BuildManager (object):
   
   def   __init__(self):
     self._nodes = _NodesTree()
+    self._node_locker = None
     self.__reset()
   
   #//-------------------------------------------------------//
@@ -814,6 +976,8 @@ class BuildManager (object):
     
     self._built_targets = {}
     self._failed_nodes = {}
+    self._module_cache = {}
+    self._node_cache = {}
     self._built_node_names = set() if build_always else None
     
     self.completed = 0
@@ -832,6 +996,44 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   moduleDepends( self, node, deps ):
+    module_cache = self._module_cache
+    node_cache = self._node_cache
+    
+    module_nodes = _getModuleNodes( node, module_cache, node_cache )
+    
+    for dep in deps:
+      dep_nodes = _getModuleNodes( dep, module_cache, node_cache )
+      
+      common = module_nodes & dep_nodes
+      only_module_nodes = module_nodes - common 
+      
+      leafs = _getLeafNodes( only_module_nodes, common, node_cache )
+      
+      for leaf in leafs:
+        self._nodes.depends( leaf, (dep,) )
+  
+  #//-------------------------------------------------------//
+  
+  def   sync( self, nodes, deep = False ):
+    node_locker = self._node_locker
+    if node_locker is None:
+      self._node_locker = node_locker = _NodeLocker()
+        
+    if deep:
+      node_locker.syncModules( nodes, self._module_cache, self._node_cache )
+    else:
+      node_locker.sync( nodes )
+  
+  #//-------------------------------------------------------//
+  
+  def   unlockNode( self, node ):
+    node_locker = self._node_locker
+    if node_locker is not None:    
+      node_locker.unlock( node )
+  
+  #//-------------------------------------------------------//
+  
   def   __len__(self):
     return len(self._nodes)
   
@@ -839,11 +1041,20 @@ class BuildManager (object):
   
   def   selfTest( self ):
     self._nodes.selfTest()
+    if self._node_locker is not None:
+      self._node_locker.selfTest()
   
   #//-------------------------------------------------------//
   
-  def   getTailNodes(self):
-    return self._nodes.popTails()
+  def   getNextNodes( self ):
+    tails = self._nodes.popTails()
+    
+    if not tails:
+      node_locker = self._node_locker
+      if node_locker is not None:
+        return node_locker.popUnlocked()
+    
+    return tails
   
   #//-------------------------------------------------------//
   
@@ -874,12 +1085,15 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   completedSplitNode(self, node ):
+    
+    self.unlockNode( node )
     self._nodes.removeTail( node )
     node.shrink()
   
   #//-------------------------------------------------------//
   
   def   actualNode( self, node ):
+    self.unlockNode( node )
     self._nodes.removeTail( node )
     self.actual += 1
     
@@ -889,6 +1103,7 @@ class BuildManager (object):
   
   def   completedNode( self, node, builder_output ):
     self._checkAlreadyBuilt( node )
+    self.unlockNode( node )
     self._nodes.removeTail( node )
     self._addToBuiltNodeNames( node )
     
@@ -901,6 +1116,7 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   failedNode( self, node, error ):
+    self.unlockNode( node )
     self._failed_nodes[ node ] = error
     
     eventNodeBuildingFailed( node, error )
@@ -955,14 +1171,16 @@ class BuildManager (object):
     if nodes is not None:
       nodes_tree.shrinkTo( nodes )
     
+    node_locker = self._node_locker
+    
     with _NodesBuilder( self, jobs, keep_going, with_backtrace, force_lock = force_lock ) as nodes_builder:
       while True:
-        tails = self.getTailNodes()
+        tails = self.getNextNodes()
         
         if not tails and not nodes_builder.isBuilding():
           break
         
-        if not nodes_builder.build( tails ):
+        if not nodes_builder.build( tails, node_locker ):
           # no more processing threads
           break
     
@@ -1010,7 +1228,7 @@ class BuildManager (object):
     with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
       while True:
         
-        tails = self.getTailNodes()
+        tails = self.getNextNodes()
         
         if not tails:
           break
@@ -1030,7 +1248,7 @@ class BuildManager (object):
     with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
       
       while True:
-        tails = self.getTailNodes()
+        tails = self.getNextNodes()
         
         if not tails:
           break
