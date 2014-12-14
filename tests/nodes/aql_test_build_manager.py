@@ -801,7 +801,60 @@ class TestBuildManager( AqlTestCase ):
       bm.add( (node10, node11) )
       bm.sync( (node10, node11), deep = True )
       
-      _build( bm, jobs = 2 )
+      _build( bm, jobs = 4 )
+  
+  #//-------------------------------------------------------//
+  
+  def test_bm_require_modules(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      bm = BuildManager()
+      
+      self.finished_nodes = 0
+      
+      """
+             10    11__
+            / | \ / \  \
+          20 21  22  23 24
+         /  \ | / \   \ |
+        30    31   32  33
+      """
+      
+      node30 = Node( SyncValueBuilder( options, name = "30", number = 7 ), SimpleValue("30") )
+      node31 = Node( SyncValueBuilder( options, name = "31", number = 0, sleep_interval = 0 ), SimpleValue("31") )
+      node32 = Node( SyncValueBuilder( options, name = "32", number = 0, sleep_interval = 0 ), SimpleValue("32") )
+      node33 = Node( SyncValueBuilder( options, name = "33", number = 17 ), SimpleValue("33") )
+      
+      node20 = Node( SyncValueBuilder( options, name = "20", number = 7 ), (node30, node31) )
+      node21 = Node( SyncValueBuilder( options, name = "21", number = 7 ), (node31,) )
+      node22 = Node( SyncValueBuilder( options, name = "22", number = 0, sleep_interval = 5), (node31, node32) )
+      node23 = Node( SyncValueBuilder( options, name = "23", number = 17 ), (node33,) )
+      node24 = Node( SyncValueBuilder( options, name = "24", number = 17 ), (node33,) )
+       
+      node10 = Node( SyncValueBuilder( options, name = "10", number = 7 ), (node20, node21, node22) )
+      node11 = Node( SyncValueBuilder( options, name = "11", number = 17 ), (node22, node23, node24) )
+      
+      # print( "node30: %s" % node30 )
+      # print( "node31: %s" % node31 )
+      # print( "node32: %s" % node32 )
+      # print( "node33: %s" % node33 )
+      # 
+      # print( "node20: %s" % node20 )
+      # print( "node21: %s" % node21 )
+      # print( "node22: %s" % node22 )
+      # print( "node23: %s" % node23 )
+      # print( "node24: %s" % node24 )
+      # 
+      # print( "node10: %s" % node10 )
+      # print( "node11: %s" % node11 )
+      
+      bm.add( (node10, node11) )
+      bm.moduleDepends( node10, [node11] )
+      
+      _build( bm, jobs = 4 )
   
   #//-------------------------------------------------------//
   

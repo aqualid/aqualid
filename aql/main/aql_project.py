@@ -612,14 +612,17 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   SyncModules( self, nodes ):
-    nodes = tuple( node for node in toSequence( nodes ) if isinstance( node, Node ) )
-    self.build_manager.sync( nodes, deep = True)
+  # TODO: It works not fully correctly yet. See test aq_test_sync_modules
+  # def   SyncModules( self, nodes ):
+  #   nodes = tuple( node for node in toSequence( nodes ) if isinstance( node, Node ) )
+  #   self.build_manager.sync( nodes, deep = True)
   
   #//-------------------------------------------------------//
   
-  def   Sync( self, nodes ):
-    nodes = tuple( node for node in toSequence( nodes ) if isinstance( node, Node ) )
+  def   Sync( self, *nodes ):
+    nodes = flattenList( nodes )
+    
+    nodes = tuple( node for node in nodes if isinstance( node, Node ) )
     self.build_manager.sync( nodes )
   
   #//-------------------------------------------------------//

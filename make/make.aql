@@ -67,8 +67,8 @@ sdist = tools.CreateDist( setup_script, target = dist_dir, command = "sdist", fo
 wdist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "msi,wininst" )
 rpm_dist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "rpm" )
 
-Depends( [sdist, wdist ], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
-Depends( [wdist, rpm_dist], sdist )
+Depends( [sdist, wdist, rpm_dist], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
+Sync( wdist, rpm_dist, sdist )
 
 Alias('sdist', sdist, "Build source distributions." )
 Alias('wdist', wdist, "Build Windows distributions." )
