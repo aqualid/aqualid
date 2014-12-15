@@ -17,18 +17,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-__all__ = ( 'DictItem', 'Dict', 'ValueDictType', 'SplitDictType' )
+__all__ = ( 'Dict', 'ValueDictType', 'SplitDictType' )
 
 from .aql_simple_types import castStr, isString
 from .aql_list_types import List
-
-#//===========================================================================//
-
-class DictItem( tuple ):
-
-  #noinspection PyInitNewSignature
-  def   __new__( cls, key, value ):
-    return super(DictItem, cls).__new__( cls, (key, value ) )
 
 #//===========================================================================//
 
@@ -40,9 +32,6 @@ class   Dict (dict):
   def   toItems( items ):
     if not items or (items is NotImplemented):
       return tuple()
-    
-    if isinstance( items, DictItem ):
-      return (items,)
     
     try:
       items = items.items
@@ -66,29 +55,6 @@ class   Dict (dict):
         self[key] = value
     
     return self
-  
-  #//-------------------------------------------------------//
-  
-  def   __eq__( self, other ):
-    if isinstance( other, DictItem ): return self[ other[0] ] == other[1]
-    return super(Dict,self).__eq__( other )
-  
-  def   __lt__( self, other ):
-    if isinstance( other, DictItem ): return self[ other[0] ] < other[1]
-    return super(Dict,self).__lt__( other )
-  
-  def   __gt__( self, other ):
-    if isinstance( other, DictItem ): return self[ other[0] ] > other[1]
-    return super(Dict,self).__gt__( other )
-  
-  def   __ne__( self, other ):
-    return not (self == other)
-  
-  def   __le__( self, other ):
-    return not (self > other)
-  
-  def   __ge__( self, other ):
-    return not (self < other)
   
   #//-------------------------------------------------------//
   
@@ -140,7 +106,7 @@ def   SplitDictType( dict_type, separators ):
     
     @staticmethod
     def   __toSplitDict( items ):
-      if isinstance( items, (SplitDict, DictItem) ):
+      if isinstance( items, SplitDict ):
         return items
       
       return SplitDict( items )
@@ -264,11 +230,6 @@ def   ValueDictType( dict_type, key_type, default_value_type = None ):
     def   __toValueDict( items, key_type = key_type ):
       if isinstance( items, _ValueDict ):
         return items
-      elif isinstance( items, DictItem ):
-        key, value = items
-        key = key_type( key )
-        value = _ValueDict._toValue( key, value )
-        return DictItem( key, value )
       
       return _ValueDict( items )
     

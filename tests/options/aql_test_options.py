@@ -420,7 +420,8 @@ class TestOptions( AqlTestCase ):
     self.assertEqual( options.env['path'].get(), '/work/bin' )
     self.assertEqual( options.env['Include'].get(), '/work/bin' )
     
-    options.env['Path'] += '/usr/bin'
+    options.env['Path'] = options.env['Path'] + ['/usr/bin']
+    
     options.env['path'] += ['/usr/local/bin', '/home/user/bin']
     options.env['Home'] = '/home/user'
     options.env['path'] += options.env['Home']

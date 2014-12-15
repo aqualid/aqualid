@@ -5,7 +5,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import AqlTestCase, runLocalTests
 
-from aql.util_types import Dict, SplitDictType, ValueDictType, DictItem
+from aql.util_types import Dict, SplitDictType, ValueDictType
 
 #//===========================================================================//
 
@@ -64,7 +64,8 @@ class TestDictTypes( AqlTestCase ):
     
     self.assertEqual( d, ds )
     
-    d.update( DictItem(2,1) )
+    ds[2] = 1
+    ds.update(((2,1),))
     
     ds.update( "7=8")
     
@@ -74,9 +75,9 @@ class TestDictTypes( AqlTestCase ):
     self.assertIn( 3, ds )
     self.assertEqual( ds.setdefault( 5, 10 ), 10 )
     self.assertEqual( ds.get( 5 ), 10 )
-    self.assertEqual( ds.setdefault( 2, '0' ), 0 )
+    self.assertEqual( ds.setdefault( 2, '0' ), 1 )
     
-    self.assertEqual( ds, DictItem(7, 8) )
+    self.assertEqual( ds[7], 8 )
     
 
 #//===========================================================================//

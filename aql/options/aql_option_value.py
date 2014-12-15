@@ -25,7 +25,7 @@ __all__ = (
 
 import operator
 
-from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
+from aql.util_types import toSequence, UniqueList, Dict
 
 #//===========================================================================//
 
@@ -36,13 +36,37 @@ class   ErrorOptionValueMergeNonOptionValue( TypeError ):
 
 #//===========================================================================//
 
-def   _setOperator( options, context, dest_value, value ):
-  if isinstance( dest_value, Dict ) and isinstance( value, DictItem ):
-    dest_value.update( value )
-    return dest_value
+class   ErrorOptionValueOperationFailed( TypeError ):
+  def   __init__( self, op, args, kw, err ):
+    
+    args_str = ""
+    if args:
+      args_str += ', '.join( map( str, args ) )
+    
+    if kw:
+      if args_str:
+        args_str += ","
+      args_str += str( kw )
+    
+    msg = "Operation %s( %s ) failed with error: %s" % (op, args_str, err)
+    super(type(self), self).__init__( msg )
+
+#//===========================================================================//
+
+def   _setOperator( dest_value, value ):
   return value
 
-def   _updateOperator( options, context, dest_value, value ):
+def   _iAddKeyOperator( dest_value, key, value ):
+  dest_value[key] += value
+  return dest_value
+
+def   _iSubKeyOperator( dest_value, key, value ):
+  dest_value[key] -= value
+  return dest_value
+
+#//===========================================================================//
+
+def   _updateOperator( dest_value, value ):
   if isinstance( dest_value, (UniqueList, list) ):
     dest_value += value
     return dest_value
@@ -52,29 +76,31 @@ def   _updateOperator( options, context, dest_value, value ):
   else:
     return value
 
-def   _simpleAction( options, context, action, *args, **kw ):
-  return action( *args, **kw )
-
-def   _simpleInplaceAction( options, context, dest_value, action, *args, **kw ):
-  return action( dest_value, *args, **kw )
-
-def   SimpleOperation( action, *args, **kw ):
-  return Operation( _simpleAction, action, *args, **kw )
-
-def   SimpleInplaceOperation( action, *args, **kw ):
-  return InplaceOperation( _simpleInplaceAction, action, *args, **kw )
+#//===========================================================================//
 
 def   SetValue( value ):
-  return InplaceOperation( _setOperator, value )
+  return SimpleInplaceOperation( _setOperator, value )
+
+def   SetKey( key, value ):
+  return SimpleInplaceOperation( operator.setitem, key, value )
+
+def   GetKey( value, key ):
+  return SimpleOperation( operator.getitem, value, key )
 
 def   iAddValue( value ):
   return SimpleInplaceOperation( operator.iadd, value )
+
+def   iAddKey( key, value ):
+  return SimpleInplaceOperation( _iAddKeyOperator, key, value )
+
+def   iSubKey( key, value ):
+  return SimpleInplaceOperation( _iSubKeyOperator, key, value )
 
 def   iSubValue( value ):
   return SimpleInplaceOperation( operator.isub, value )
 
 def   iUpdateValue( value ):
-  return InplaceOperation( _updateOperator, value )
+  return SimpleInplaceOperation( _updateOperator, value )
 
 #//===========================================================================//
 
@@ -181,9 +207,23 @@ class   Operation( object ):
   
   #//-------------------------------------------------------//
   
+  def   _callAction(self, options, context, args, kw ):
+    return self.action( options, context, *args, **kw )
+  
+  #//-------------------------------------------------------//
+  
   def   __call__( self, options, context, unconverter ):
     args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
-    result = self.action( options, context, *args, **kw )
+    
+    err = None
+    try:
+      result = self._callAction( options, context, args, kw )
+    except Exception as ex:
+      err = ex
+    
+    if err is not None:
+      raise ErrorOptionValueOperationFailed( self.action, args, kw, err )
+    
     return result
 
   #//-------------------------------------------------------//
@@ -206,44 +246,60 @@ class   Operation( object ):
   def   __rsub__( self, other ):
     return SimpleOperation( operator.sub, other, self )
 
+#//===========================================================================//
+
+class SimpleOperation( Operation ):
+  def   _callAction(self, options, context, args, kw ):
+    return self.action( *args, **kw )
 
 #//===========================================================================//
-#OptionValueOperation
 
 class   InplaceOperation( object ):
   __slots__ = (
     'action',
     'kw',
     'args',
-    # 'operation'
   )
   
   def   __init__( self, action, *args, **kw ):
     
-    # self.operation = operation
     self.action = action
     self.args = args
     self.kw = kw
   
   def   convert(self, options, converter ):
     self.args, self.kw = _convertArgs( self.args, self.kw, options, converter )
-    
-    # op = self.operation
-    # if op is not None:
-    #   op.convert( options, converter )
+      
+  def   _callAction(self, options, context, dest_value, args, kw ):
+    return self.action( options, context, dest_value, *args, **kw )
   
   def   __call__( self, options, context, dest_value, value_type, unconverter ):
-    # if self.operation is not None:
-    #   dest_value = self.operation( options, context, dest_value, value_type, unconverter )
-    
     if self.action is None:
       return dest_value
     
     args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
     
-    dest_value = self.action( options, context, dest_value, *args, **kw )
-    dest_value = value_type( dest_value )
+    err = None
+    
+    try:
+      result = self._callAction( options, context, dest_value, args, kw )
+    except Exception as ex:
+      err = ex
+    
+    if err is not None:
+      raise ErrorOptionValueOperationFailed( self.action, args, kw, err )
+    
+    if result is None:
+      result = dest_value
+    
+    dest_value = value_type( result )
     return dest_value
+
+#//===========================================================================//
+
+class SimpleInplaceOperation( InplaceOperation ):
+  def   _callAction(self, options, context, dest_value, args, kw ):
+    return self.action( dest_value, *args, **kw )
 
 #//===========================================================================//
 

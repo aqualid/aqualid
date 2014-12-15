@@ -25,13 +25,14 @@ __all__ = (
 import operator
 import weakref
 
-from aql.util_types import toSequence, UniqueList, List, Dict, DictItem
+from aql.util_types import toSequence, UniqueList, List, Dict
 from aql.utils import simplifyValue
 
 from .aql_option_types import OptionType, DictOptionType, autoOptionType, OptionHelpGroup,\
                               ErrorOptionTypeCantDeduce, ErrorOptionTypeUnableConvertValue
 from .aql_option_value import OptionValue, Operation, InplaceOperation, ConditionalValue, Condition,\
-                              SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation
+                              SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation,\
+                              SetKey, iAddKey, iSubKey
 
 #//===========================================================================//
 
@@ -70,6 +71,11 @@ class   ErrorOptionsNoIteration( TypeError ):
     msg = "Options doesn't support iteration"
     super(type(self), self).__init__( msg )
 
+class   ErrorOptionsUnableEvaluate( TypeError ):
+  def   __init__( self, name, err ):
+    msg = "Unable to evaluate option '%s', error: %s" % (name, err)
+    super(type(self), self).__init__( msg )
+
 #//===========================================================================//
 
 class   _OpValueRef( tuple ):
@@ -103,10 +109,7 @@ class   _OpValueExRef( tuple ):
 #//===========================================================================//
 
 def   _storeOpValue( options, value ):
-  if isinstance( value, DictItem ):
-    key, value = value
-  else:
-    key = NotImplemented
+  # print("_storeOpValue: %s (%s)" % (value,type(value)))
   
   if isinstance( value, OptionValueProxy ):
     value_options = value.options
@@ -123,19 +126,11 @@ def   _storeOpValue( options, value ):
   elif isinstance( value, (list, tuple, UniqueList, set, frozenset) ):
     value = [ _storeOpValue( options, v ) for v in value ]
   
-  if key is not NotImplemented:
-    value = DictItem( key, value )
-  
   return value
 
 #//===========================================================================//
 
 def   _loadOpValue( options, context, value ):
-  if isinstance( value, DictItem ):
-    key, value = value
-  else:
-    key = NotImplemented
-  
   if isinstance( value, _OpValueRef ):
     value = value.get( options, context )
     value = simplifyValue( value )
@@ -153,26 +148,15 @@ def   _loadOpValue( options, context, value ):
   else:
     value = simplifyValue( value )
   
-  if key is not NotImplemented:
-    value = DictItem( key, value )
-  
   return value
 
 #//===========================================================================//
 
 def   _evalCmpValue( value ):
-  if isinstance( value, DictItem ):
-    key, value = value
-  else:
-    key = NotImplemented
-  
   if isinstance( value, OptionValueProxy ):
     value = value.get()
   
   value = simplifyValue( value )  
-  
-  if key is not NotImplemented:
-    value = DictItem( key, value )
   
   return value
 
@@ -208,7 +192,7 @@ class OptionValueProxy (object):
     self.child_ref = None
     
     if self.key is not NotImplemented:
-      other = DictItem(self.key, other)
+      other = iAddKey(self.key, other)
     
     self.options._appendValue( self.option_value, self.from_parent, other, iAddValue )
     return self
@@ -239,7 +223,7 @@ class OptionValueProxy (object):
     self.child_ref = None
     
     if self.key is not NotImplemented:
-      other = DictItem(self.key, other)
+      other = iSubKey(self.key, other)
     
     self.options._appendValue( self.option_value, self.from_parent, other, iSubValue )
     return self
@@ -250,7 +234,7 @@ class OptionValueProxy (object):
     self.child_ref = None
     
     if self.key is not NotImplemented:
-      value = DictItem(self.key, value)
+      value = SetKey(self.key, value)
     
     self.options._appendValue( self.option_value, self.from_parent, value, SetValue )
   
@@ -271,16 +255,11 @@ class OptionValueProxy (object):
         option_type.setValueType( key, value )
         return
     
-    value = DictItem( key, value )
+    value = SetKey( key, value )
     
     self.child_ref = None
     
     self.options._appendValue( self.option_value, self.from_parent, value, SetValue )
-  
-  #//-------------------------------------------------------//
-  
-  def   __iter__(self):
-    raise TypeError()
   
   #//-------------------------------------------------------//
   
@@ -291,6 +270,11 @@ class OptionValueProxy (object):
     child = OptionValueProxy( self.option_value, self.from_parent, self.name, self.options, key )
     self.child_ref = weakref.ref( child )
     return child
+  
+  #//-------------------------------------------------------//
+  
+  def   __iter__(self):
+    raise TypeError()
   
   #//-------------------------------------------------------//
   
@@ -407,22 +391,23 @@ class ConditionGeneratorHelper( object ):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __cmpValue( options, context, cmp_method, name, *args ):
-    return getattr( getattr( options, name ), cmp_method )( context, *args )
+  def   __cmpValue( options, context, cmp_method, name, key, *args ):
+    opt = getattr( options, name )
+    if key is not NotImplemented:
+      opt = opt[key]
+    
+    return getattr( opt, cmp_method )( context, *args )
   
   #//-------------------------------------------------------//
   
   @staticmethod
-  def __makeCmpCondition( condition, cmp_method, name, *args ):
-    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_method, name, *args )
+  def __makeCmpCondition( condition, cmp_method, name, key, *args ):
+    return Condition( condition, ConditionGeneratorHelper.__cmpValue, cmp_method, name, key, *args )
   
   #//-------------------------------------------------------//
   
   def   cmp( self, cmp_method, *args ):
-    if self.key is not NotImplemented:
-      args = [ DictItem( self.key, *args ) ]
-    
-    condition = self.__makeCmpCondition( self.condition, cmp_method, self.name, *args )
+    condition = self.__makeCmpCondition( self.condition, cmp_method, self.name, self.key, *args )
     return ConditionGenerator( self.options, condition )
   
   #//-------------------------------------------------------//
@@ -443,7 +428,7 @@ class ConditionGeneratorHelper( object ):
   def   __setitem__( self, key, value ):
     if not isinstance(value, ConditionGeneratorHelper):
       
-      value = DictItem(key, value)
+      value = SetKey( key, value )
       
       self.options.appendValue( self.name, value, SetValue, self.condition )
   
@@ -467,7 +452,7 @@ class ConditionGeneratorHelper( object ):
   
   def   __iadd__( self, value ):
     if self.key is not NotImplemented:
-      value = DictItem( self.key, value )
+      value = iAddKey( self.key, value )
     
     self.options.appendValue( self.name, value, iAddValue, self.condition )
     return self
@@ -476,7 +461,7 @@ class ConditionGeneratorHelper( object ):
   
   def   __isub__( self, value ):
     if self.key is not NotImplemented:
-      value = DictItem( self.key, value )
+      value = iSubKey( self.key, value )
     
     self.options.appendValue( self.name, value, iSubValue, self.condition )
     return self
@@ -1006,19 +991,24 @@ class Options (object):
     cache = self.__dict__['__cache']
     
     try:
-      value = cache[ option_value ]
+      return cache[ option_value ]
     except KeyError:
-      value = option_value.get( self, context, _loadOpValue )
-      cache[ option_value ] = value
+      pass
+      
+    value = option_value.get( self, context, _loadOpValue )
+    cache[ option_value ] = value
     
     return value
   
   #//-------------------------------------------------------//
   
   def   evaluate( self, option_value, context, name ):
+    
     try:
       return self._evaluate( option_value, context )
-    except ErrorOptionTypeUnableConvertValue as err:
+    except ErrorOptionTypeUnableConvertValue as ex:
+      err = ex
+      
       if not name:
         raise
       
@@ -1026,9 +1016,15 @@ class Options (object):
       if option_help.names:
         raise
     
-    option_help.names = tuple( toSequence( name ) )
+    except Exception as ex:
+      err = ex
     
-    raise ErrorOptionTypeUnableConvertValue( option_help, err.invalid_value )
+    if isinstance( err, ErrorOptionTypeUnableConvertValue ):
+      option_help.names = tuple( toSequence( name ) )
+      raise ErrorOptionTypeUnableConvertValue( option_help, err.invalid_value )
+    else:
+      raise ErrorOptionsUnableEvaluate( name, err )
+    
   
   #//-------------------------------------------------------//
   

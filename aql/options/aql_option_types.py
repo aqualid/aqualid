@@ -270,7 +270,7 @@ class OptionHelp( object ):
   def   _currentValue( self, details ):
     if self.current_value is not None:
       if isinstance( self.current_value, (list, tuple, UniqueList)):
-        current_value = map( toString, self.current_value )
+        current_value = [ toString(v) for v in self.current_value ]
         if current_value:
           current_value = _joinToLength( current_value, 64, separator = ",", prefix= "'", suffix="'")
           current_value = _indentItems( "[ ", current_value )

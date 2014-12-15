@@ -22,7 +22,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'getToolsManager', 'ErrorToolNotFound' 
 import os
 
 from aql.util_types import toSequence, AqlException
-from aql.utils import logWarning, loadModule, findFiles, eventWarning, ErrorProgramNotFound
+from aql.utils import logWarning, logError, loadModule, findFiles, eventWarning, ErrorProgramNotFound
 
 #noinspection PyStatementEffect
 """
@@ -43,8 +43,8 @@ def   eventToolsUnableLoadModule( settings, module, err ):
 #//===========================================================================//
 
 @eventWarning
-def   eventToolsToolFailed( settings, tool_class, err ):
-  logWarning( "Tool init failed: %s - %s" % (tool_class, err))
+def   eventToolsToolFailed( settings, tool_class ):
+  logError( "Failed to initialize tool: %s" % (tool_class,))
 
 #//===========================================================================//
 
@@ -162,12 +162,11 @@ class ToolsManager( object ):
   def   __getToolInfoList( self, name ):
     
     tools_info = []
-    empty_list = tuple()
     
     if (type(name) is type) and issubclass( name, Tool ):
       tool_classes = ( name, )
     else:
-      tool_classes = self.tool_classes.get( name, empty_list )
+      tool_classes = self.tool_classes.get( name, tuple() )
     
     for tool_class in tool_classes:
       tool_info = self.tool_info.get( tool_class, None )
@@ -185,7 +184,8 @@ class ToolsManager( object ):
         
         for name in names:
           setup_methods.update( self.all_setup_methods.get( name, [] ) )
-        else:
+        
+        if not setup_methods:
           setup_methods.add( _toolSetupStub )
       
       tools_info.append( tool_info )
@@ -201,12 +201,11 @@ class ToolsManager( object ):
     for tool_info in tool_info_list:
       
       tool_options = options.override()
-      
       tool_options.merge( tool_info.options )
       
       for setup in tool_info.setup_methods:
         setup_options = tool_options.override()
-
+        
         try:
           setup( setup_options )
           
@@ -217,23 +216,23 @@ class ToolsManager( object ):
           if setup_options.hasChangedKeyOptions():
             raise NotImplementedError()
           
-          setup_options.join()
-          
-          tool_obj = tool_info.tool_class( tool_options )
+          tool_obj = tool_info.tool_class( setup_options )
           
         except (NotImplementedError, ErrorProgramNotFound):
           setup_options.clear()
-          tool_options.clear()
-        
-        except Exception as err:
+                  
+        except Exception:
             setup_options.clear()
             tool_options.clear()
-            eventToolsToolFailed( tool_info.tool_class, err )
+            eventToolsToolFailed( tool_info.tool_class )
             raise
         else:
+          setup_options.join()
           tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
           return tool_obj, tool_names, tool_options
-    
+      
+      tool_options.clear()
+      
     raise ErrorToolNotFound( tool_name )
   
   #//=======================================================//
