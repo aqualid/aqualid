@@ -215,14 +215,10 @@ class   Operation( object ):
   def   __call__( self, options, context, unconverter ):
     args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
     
-    err = None
     try:
       result = self._callAction( options, context, args, kw )
     except Exception as ex:
-      err = ex
-    
-    if err is not None:
-      raise ErrorOptionValueOperationFailed( self.action, args, kw, err )
+      raise ErrorOptionValueOperationFailed( self.action, args, kw, ex )
     
     return result
 
@@ -279,15 +275,10 @@ class   InplaceOperation( object ):
     
     args, kw = _unconvertArgs( self.args, self.kw, options, context, unconverter )
     
-    err = None
-    
     try:
       result = self._callAction( options, context, dest_value, args, kw )
     except Exception as ex:
-      err = ex
-    
-    if err is not None:
-      raise ErrorOptionValueOperationFailed( self.action, args, kw, err )
+      raise ErrorOptionValueOperationFailed( self.action, args, kw, ex )
     
     if result is None:
       result = dest_value

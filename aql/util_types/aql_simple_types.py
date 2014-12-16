@@ -45,8 +45,8 @@ except NameError:
 _try_encodings = []
 for enc in [
             'utf-8',
-            locale.getpreferredencoding(False),
             sys.stdout.encoding,
+            locale.getpreferredencoding(False),
             sys.getfilesystemencoding(),
             sys.getdefaultencoding(),
           ]:

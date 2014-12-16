@@ -273,6 +273,12 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   update( self, value ):
+    self.child_ref = None
+    self.options._appendValue( self.option_value, self.from_parent, value, iUpdateValue )
+      
+  #//-------------------------------------------------------//
+  
   def   __iter__(self):
     raise TypeError()
   
@@ -1006,25 +1012,20 @@ class Options (object):
     
     try:
       return self._evaluate( option_value, context )
+    
     except ErrorOptionTypeUnableConvertValue as ex:
-      err = ex
-      
       if not name:
         raise
       
-      option_help = err.option_help
+      option_help = ex.option_help
       if option_help.names:
         raise
+      
+      option_help.names = tuple( toSequence( name ) )
+      raise ErrorOptionTypeUnableConvertValue( option_help, ex.invalid_value )
     
     except Exception as ex:
-      err = ex
-    
-    if isinstance( err, ErrorOptionTypeUnableConvertValue ):
-      option_help.names = tuple( toSequence( name ) )
-      raise ErrorOptionTypeUnableConvertValue( option_help, err.invalid_value )
-    else:
-      raise ErrorOptionsUnableEvaluate( name, err )
-    
+      raise ErrorOptionsUnableEvaluate( name, ex )
   
   #//-------------------------------------------------------//
   

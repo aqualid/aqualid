@@ -212,8 +212,13 @@ def     _diagnostic_options():
 #noinspection PyUnresolvedReferences
 def   _env_options():
   
+  if os.path.normcase('ABC') == os.path.normcase('abc'):
+    env_key_type = UpperCaseString
+  else:
+    env_key_type = String
+  
   options = Options()
-  options.env = DictOptionType( key_type = UpperCaseString )
+  options.env = DictOptionType( key_type = env_key_type )
   options.env['PATH'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
   options.env['PATHEXT'] = ListOptionType( value_type = PathOptionType(), separators = os.pathsep )
   options.env['TEMP'] = PathOptionType()

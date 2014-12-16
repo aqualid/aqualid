@@ -495,6 +495,7 @@ class Project( object ):
       'Tool'      : self.tools.Tool,
       'Tools'     : self.tools.Tools,
       'AddTool'   : self.tools.AddTool,
+      'LoadTools' : self.tools.tools.loadTools,
       'FindFiles' : findFiles
     }
     

@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
-                      executeCommand, flattenList, groupItems
+                      executeCommand, flattenList, groupItems, Tempfile, getShellScriptEnv
 
 class TestUtils( AqlTestCase ):
 
@@ -113,6 +113,35 @@ class TestUtils( AqlTestCase ):
       result = executeCommand("ls")
     
     self.assertTrue( result.output )
+  
+  #//===========================================================================//
+  
+  def   test_get_env( self ):
+    
+    if os.name == 'nt':
+      set_env = "set "
+      suffix = ".bat"
+    else:
+      set_env = ""
+      suffix = ".sh"
+    
+    def   set_env_var_str( name, value ):
+      if os.name == 'nt':
+        return "set %s=%s\n" % (name, value)
+      else:
+        return "{name}={value};export {name}\n".format( name = name, value = value )
+    
+    with Tempfile( suffix = suffix, mode = "w+" ) as script:
+      script.write( set_env_var_str( 'TEST_ENV_A', 1 ) )
+      script.write( set_env_var_str( 'TEST_ENV_B', 2 ) )
+      
+      script.close()
+      
+      env = getShellScriptEnv( script, "x86" )
+      self.assertEqual( len(env), 2 )
+      self.assertEqual( env['TEST_ENV_A'], '1' )
+      self.assertEqual( env['TEST_ENV_B'], '2' )
+    
   
   #//===========================================================================//
   

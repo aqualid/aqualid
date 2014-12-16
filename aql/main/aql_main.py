@@ -72,7 +72,6 @@ def   _findMakeScript( script ):
   path_sep = os.path.sep
   
   while cwd:
-    print("_findMakeScript: cwd: %s" % (cwd,))
     script_path = path_sep.join( cwd ) + path_sep + script
     if os.path.isfile( script_path ):
       return os.path.normpath( script_path )

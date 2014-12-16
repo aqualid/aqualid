@@ -23,7 +23,7 @@ __all__ = (
   'fileSignature', 'fileTimeSignature', 'fileChecksum',
   'loadModule',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-  'executeCommand', 'ExecCommandResult', 
+  'executeCommand', 'ExecCommandResult', 'getShellScriptEnv', 
   'cpuCount', 'memoryUsage',
   'flattenList', 'simplifyValue',
   'Chrono', 'ItemsGroups', 'groupItems'
@@ -31,6 +31,7 @@ __all__ = (
 
 import io
 import os
+import re
 import imp
 import sys
 import time
@@ -503,26 +504,72 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
   
   try:
     
-    exception = None
     try:
-      p = subprocess.Popen( cmd, stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = cwd, env = env, universal_newlines = False )
-      (stdoutdata, stderrdata) = p.communicate()
-      returncode = p.returncode
+      p = subprocess.Popen( cmd, cwd = cwd, env = env,
+                            stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = False )
+      stdout, stderr = p.communicate()
+      returncode = p.poll()
     except Exception as ex:
-      exception = ex
+      raise ExecCommandException( cmd, exception = ex )
     
-    if exception:
-      raise ExecCommandException( cmd, exception = exception )
+    stdout = _decodeData( stdout )
+    stderr = _decodeData( stderr )
     
-    stdoutdata = _decodeData( stdoutdata )
-    stderrdata = _decodeData( stderrdata )
-    
-    return ExecCommandResult( cmd, status = returncode, stdout = stdoutdata, stderr = stderrdata )
+    return ExecCommandResult( cmd, status = returncode, stdout = stdout, stderr = stderr )
     
   finally:
     if cmd_file is not None:
       cmd_file.close()
       removeFiles( cmd_file.name )
+
+#//===========================================================================//
+
+def   getShellScriptEnv( script, args = None, _var_re = re.compile( r'^\w+=' ) ):
+  
+  args = toSequence( args )
+  
+  script = os.path.abspath( os.path.expanduser( os.path.expandvars(script) ) )
+  
+  os_env = os.environ
+  
+  cwd, script = os.path.split( script )
+  
+  if os.name == "nt":
+    cmd = ['call', script ]
+  else:
+    cmd = ['.', script ]
+  
+  cmd += args
+  cmd += ['&&', 'set']
+  
+  try:
+    p = subprocess.Popen( cmd, cwd = cwd, shell = True, env = os_env,
+                          stdin = None, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = False )
+    stdout, stderr = p.communicate()
+    status = p.poll()
+  except Exception as ex:
+    raise ExecCommandException( cmd, exception = ex )
+  
+  stdout = _decodeData( stdout )
+  stderr = _decodeData( stderr )
+  
+  if status != 0:
+    raise ExecCommandResult( cmd, status, stdout, stderr )
+  
+  script_env = {}
+  
+  for line in stdout.split('\n'):
+    match = _var_re.match( line )
+    
+    if match:
+      name, sep, value = line.partition('=')
+      value = value.strip()
+      
+      current = os_env.get( name, None )
+      if (current is None) or (value != current.strip()):
+        script_env[ name ] = value
+  
+  return script_env
 
 #//===========================================================================//
 
