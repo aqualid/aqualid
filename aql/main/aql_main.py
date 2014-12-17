@@ -22,8 +22,10 @@ import gc
 import os
 import sys
 import cProfile
+import pstats
 import traceback
 
+from aql.util_types import toUnicode
 from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, splitPath, \
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 
@@ -196,6 +198,11 @@ def   main():
       status = profiler.runcall( _main, prj_cfg )
       
       profiler.dump_stats( debug_profile )
+      
+      p = pstats.Stats( debug_profile )
+      p.strip_dirs()
+      p.sort_stats('cumulative')
+      p.print_stats( 30 )
     
     return status
   except (Exception, KeyboardInterrupt) as ex:
@@ -205,7 +212,7 @@ def   main():
       if isinstance(ex, KeyboardInterrupt):
         err = "Keyboard Interrupt"
       else:
-        err = str(ex)
+        err = toUnicode(ex)
   
     eventAqlError( err )
   

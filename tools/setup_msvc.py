@@ -16,17 +16,29 @@
 # script = r"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"
 # 
 # @toolSetup('msvcpp','msvc++', 'msvc')
-# def   setupMsvc32( options ):
-#   vc_env = getShellScriptEnv( script, "x86" )
-#   options.env.update( vc_env )
+# def   setupMsvc( options ):
 #   
-# @toolSetup('msvcpp','msvc++', 'msvc')
-# def   setupMsvc64( options ):
-#   vc_env = getShellScriptEnv( script, "amd64" )
-#   options.env.update( vc_env )
-# 
-# @toolSetup('msvcpp','msvc++', 'msvc')
-# def   setupMsvcArm( options ):
-#   vc_env = getShellScriptEnv( script, "arm" )
+#   cc_name = options.cc_name
+#   if cc_name.isSet() and cc_name != 'msvc':
+#     return
+#   
+#   target_arch = options.target_arch
+#   
+#   if not target_arch.isSet():
+#     target = "x86"
+#   
+#   elif target_arch == 'x86-32':
+#     target = "x86"
+#   
+#   elif target_arch == 'x86-64':
+#     target = "amd64"
+#   
+#   elif target_arch == 'arm':
+#     target = "arm"
+#   
+#   else:
+#     raise NotImplementedError()
+#   
+#   vc_env = getShellScriptEnv( script, target )
 #   options.env.update( vc_env )
 
