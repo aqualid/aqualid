@@ -115,8 +115,8 @@ class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
                'verbose', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path',
-               'build_always', 'clean', 'status', 'list_options', 'list_targets',
-               'debug_profile', 'debug_memory', 'debug_explain', 'debug_backtrace',
+               'build_always', 'clean', 'status', 'list_options', 'list_tool_options', 'list_targets',
+               'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
                'force_lock', 'show_version',
   )
   
@@ -127,31 +127,34 @@ class ProjectConfig( object ):
     CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
     
     Paths = ValueListType( UniqueList, FilePath )
+    Strings = ValueListType( UniqueList, str )
     
     CLI_OPTIONS = (
       
-      CLIOption( "-C", "--directory",         "directory",        FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
-      CLIOption( "-f", "--makefile",          "makefile",         FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
-      CLIOption( "-o", "--list-options",      "list_options",     bool,       False,        "List all available options and exit." ),
-      CLIOption( "-t", "--list-targets",      "list_targets",     bool,       False,        "List all available targets and exit." ),
-      CLIOption( "-c", "--config",            "config",           FilePath,   None,         "The configuration file used to read CLI arguments." ),
-      CLIOption( "-B", "--always",            "build_always",     bool,       False,        "Unconditionally build all targets." ),
-      CLIOption( "-R", "--clean",             "clean",            bool,       False,        "Cleans targets." ),
-      CLIOption( "-n", "--status",            "status",           bool,       False,        "Print status of targets." ),
-      CLIOption( "-u", "--up",                "search_up",        bool,       False,        "Search up directory tree for a make file." ),
-                                                                  
-      # CLIOption( "-b", "--build-directory",   "build_dir",        FilePath,   'output',     "Build output path.", 'FILE PATH'),
-      CLIOption( "-I", "--tools-path",        "tools_path",       Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
-      CLIOption( "-k", "--keep-going",        "keep_going",       bool,       False,        "Keep going when some targets can't be built." ),
-      CLIOption( "-j", "--jobs",              "jobs",             int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
-      CLIOption( "-v", "--verbose",           "verbose",          bool,       False,        "Verbose mode." ),
-      CLIOption( "-s", "--no-output",         "no_output",        bool,       False,        "Don't print output streams of builder's commands." ),
-      CLIOption( None, "--debug-memory",      "debug_memory",     bool,       False,        "Display memory usage." ),
-      CLIOption( None, "--debug-profile",     "debug_profile",    FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
-      CLIOption( None, "--debug-explain",     "debug_explain",    bool,       False,        "Show the reasons why targets are being rebuilt" ),
-      CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",  bool,       False,        "Show call stack back traces for errors." ),
-      CLIOption( None, "--force-lock",        "force_lock",       bool,       False,        "Forces to lock AQL DB file." ),
-      CLIOption( "-V", "--version",           "version",          bool,       False,        "Show version and exit." ),
+      CLIOption( "-C", "--directory",         "directory",          FilePath,   '',           "Change directory before reading the make files.", 'FILE PATH'),
+      CLIOption( "-f", "--makefile",          "makefile",           FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
+      CLIOption( "-l", "--list-options",      "list_options",       bool,       False,        "List current options and exit." ),
+      CLIOption( "-L", "--list-tool-options", "list_tool_options",  Strings,    [],           "List tool options and exit.", "TOOL_NAME" ),
+      CLIOption( "-t", "--list-targets",      "list_targets",       bool,       False,        "List all available targets and exit." ),
+      CLIOption( "-c", "--config",            "config",             FilePath,   None,         "The configuration file used to read CLI arguments." ),
+      CLIOption( "-B", "--always",            "build_always",       bool,       False,        "Unconditionally build all targets." ),
+      CLIOption( "-R", "--clean",             "clean",              bool,       False,        "Cleans targets." ),
+      CLIOption( "-n", "--status",            "status",             bool,       False,        "Print status of targets." ),
+      CLIOption( "-u", "--up",                "search_up",          bool,       False,        "Search up directory tree for a make file." ),
+                                                                    
+      # CLIOption( "-b", "--build-directory",   "build_dir",          FilePath,   'output',     "Build output path.", 'FILE PATH'),
+      CLIOption( "-I", "--tools-path",        "tools_path",         Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
+      CLIOption( "-k", "--keep-going",        "keep_going",         bool,       False,        "Keep going when some targets can't be built." ),
+      CLIOption( "-j", "--jobs",              "jobs",               int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
+      CLIOption( "-v", "--verbose",           "verbose",            bool,       False,        "Verbose mode." ),
+      CLIOption( "-s", "--no-output",         "no_output",          bool,       False,        "Don't print output streams of builder's commands." ),
+      CLIOption( None, "--debug-memory",      "debug_memory",       bool,       False,        "Display memory usage." ),
+      CLIOption( "-P", "--debug-profile",     "debug_profile",      FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
+      CLIOption( "-T", "--debug-profile-top", "debug_profile_top",  int,        30,           "Show the specified number of top functions from profiler report.", 'FILE PATH' ),
+      CLIOption( None, "--debug-explain",     "debug_explain",      bool,       False,        "Show the reasons why targets are being rebuilt" ),
+      CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",    bool,       False,        "Show call stack back traces for errors." ),
+      CLIOption( None, "--force-lock",        "force_lock",         bool,       False,        "Forces to lock AQL DB file." ),
+      CLIOption( "-V", "--version",           "version",            bool,       False,        "Show version and exit." ),
     )
     
     cli_config = CLIConfig( CLI_USAGE, CLI_OPTIONS, args )
@@ -188,8 +191,8 @@ class ProjectConfig( object ):
     
     arguments = {}
     
-    ignore_options = set( ('list_options', 'config') )
-    ignore_options.update( ProjectConfig.__slots__ )
+    ignore_options = set( ProjectConfig.__slots__ )
+    ignore_options.add( 'config' )
     
     for name,value in cli_config.items():
       if (name not in ignore_options) and (value is not None):
@@ -199,28 +202,30 @@ class ProjectConfig( object ):
     
     #//-------------------------------------------------------//
     
-    self.options          = options
-    self.arguments        = arguments
-    self.directory        = os.path.abspath( cli_config.directory )
-    self.makefile         = cli_config.makefile
-    self.search_up        = cli_config.search_up
-    self.tools_path       = tools_path
-    self.targets          = cli_config.targets
-    self.verbose          = cli_config.verbose
-    self.show_version     = cli_config.version
-    self.no_output        = cli_config.no_output
-    self.keep_going       = cli_config.keep_going
-    self.build_always     = cli_config.build_always
-    self.clean            = cli_config.clean
-    self.status           = cli_config.status
-    self.list_options     = cli_config.list_options
-    self.list_targets     = cli_config.list_targets
-    self.jobs             = cli_config.jobs
-    self.force_lock       = cli_config.force_lock
-    self.debug_profile    = cli_config.debug_profile
-    self.debug_memory     = cli_config.debug_memory
-    self.debug_explain    = cli_config.debug_explain
-    self.debug_backtrace  = cli_config.debug_backtrace
+    self.options            = options
+    self.arguments          = arguments
+    self.directory          = os.path.abspath( cli_config.directory )
+    self.makefile           = cli_config.makefile
+    self.search_up          = cli_config.search_up
+    self.tools_path         = tools_path
+    self.targets            = cli_config.targets
+    self.verbose            = cli_config.verbose
+    self.show_version       = cli_config.version
+    self.no_output          = cli_config.no_output
+    self.keep_going         = cli_config.keep_going
+    self.build_always       = cli_config.build_always
+    self.clean              = cli_config.clean
+    self.status             = cli_config.status
+    self.list_options       = cli_config.list_options
+    self.list_tool_options  = cli_config.list_tool_options
+    self.list_targets       = cli_config.list_targets
+    self.jobs               = cli_config.jobs
+    self.force_lock         = cli_config.force_lock
+    self.debug_profile      = cli_config.debug_profile
+    self.debug_profile_top  = cli_config.debug_profile_top
+    self.debug_memory       = cli_config.debug_memory
+    self.debug_explain      = cli_config.debug_explain
+    self.debug_backtrace    = cli_config.debug_backtrace
 
 #//===========================================================================//
 
@@ -354,6 +359,11 @@ class ProjectTools( object ):
       tools_options.setdefault( tool.options, []).append( name )
     
     return tools_options
+  
+  #//-------------------------------------------------------//
+  
+  def   _getToolNames(self):
+    return sorted( self.tools_cache )
   
   #//-------------------------------------------------------//
   
@@ -750,6 +760,8 @@ class Project( object ):
           target_info[1] = description
     
     build_nodes = self._getBuildNodes()
+    self.build_manager.shrink( build_nodes )
+    build_nodes = self.build_manager.getNodes()
     
     for nodes, aliases_and_description in node2alias.items():
       
@@ -771,12 +783,27 @@ class Project( object ):
   #//=======================================================//
   
   def   ListOptions( self, brief = False ):
-    
-    result = self.options.helpText("Builtin options:", brief = brief )
+    result = self.options.helpText( "Builtin options:", brief = brief )
+    result.append("")
+    tool_names = self.tools._getToolNames()
+    if tool_names:
+      result.append("Available options of tools: %s" % (', '.join(tool_names)) )
+    if result[-1]:
+      result.append("")
+    return result
+  
+  #//=======================================================//
+  
+  def   ListToolsOptions( self, tools, brief = False ):
+    tools = set( toSequence( tools ) )
+    result = []
     
     for tools_options, names in self.tools._getToolsOptions().items():
-      options_name = "Options of tool: %s" % (', '.join( names ) )
-      result += tools_options.helpText( options_name, brief = brief)
-    
-    result.append("")
+      names_set = tools & set(names)
+      if names_set:
+        tools -= names_set
+        options_name = "Options of tool: %s" % (', '.join( names ) )
+        result += tools_options.helpText( options_name, brief = brief)
+    if result and result[-1]:
+      result.append("")
     return result

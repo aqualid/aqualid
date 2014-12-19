@@ -11,6 +11,7 @@
 #   $PYTHONUSERBASE/lib/pythonX.Y/site-packages
 #   $HOME/.config/aqualid/tools
 #
+#
 # from aql import toolSetup, getShellScriptEnv
 # 
 # script = r"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"
@@ -18,16 +19,12 @@
 # @toolSetup('msvcpp','msvc++', 'msvc')
 # def   setupMsvc( options ):
 #   
-#   cc_name = options.cc_name
-#   if cc_name.isSet() and cc_name != 'msvc':
+#   if options.cc_name.isSetNotTo('msvc'):
 #     return
 #   
 #   target_arch = options.target_arch
 #   
-#   if not target_arch.isSet():
-#     target = "x86"
-#   
-#   elif target_arch == 'x86-32':
+#   if not target_arch.isSet() or (target_arch == 'x86-32'):
 #     target = "x86"
 #   
 #   elif target_arch == 'x86-64':

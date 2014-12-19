@@ -43,8 +43,8 @@ def   eventToolsUnableLoadModule( settings, module, err ):
 #//===========================================================================//
 
 @eventWarning
-def   eventToolsToolFailed( settings, tool_class ):
-  logError( "Failed to initialize tool: %s" % (tool_class,))
+def   eventToolsToolFailed( settings, tool_info ):
+  logError( "Failed to initialize tool: name: %s, class: %s" % (tool_info.names,tool_info.tool_class))
 
 #//===========================================================================//
 
@@ -112,9 +112,16 @@ class ToolsManager( object ):
   
   @staticmethod
   def   __addToMap( values_map, names, value ):
-    setdefault = values_map.setdefault
     for name in names:
-      setdefault( name, [] ).insert( 0, value )
+      try:
+        value_list = values_map[ name ]
+        if value in value_list:
+          continue
+      except KeyError:
+        value_list = []
+        values_map[ name ] = value_list
+      
+      value_list.insert( 0, value )
   
   #//-------------------------------------------------------//
   
@@ -199,39 +206,34 @@ class ToolsManager( object ):
     tool_info_list = self.__getToolInfoList( tool_name )
     
     for tool_info in tool_info_list:
-      
-      tool_options = options.override()
-      tool_options.merge( tool_info.options )
-      
       for setup in tool_info.setup_methods:
-        setup_options = tool_options.override()
+        
+        tool_options = options.override()
         
         try:
-          setup( setup_options )
+          tool_options.merge( tool_info.options )
           
-          env = setup_options.env.get()
+          setup( tool_options )
           
-          tool_info.tool_class.setup( setup_options, env )
+          env = tool_options.env.get()
           
-          if setup_options.hasChangedKeyOptions():
+          tool_info.tool_class.setup( tool_options, env )
+          
+          if tool_options.hasChangedKeyOptions():
             raise NotImplementedError()
           
-          tool_obj = tool_info.tool_class( setup_options )
+          tool_obj = tool_info.tool_class( tool_options )
           
         except (NotImplementedError, ErrorProgramNotFound):
-          setup_options.clear()
+          tool_options.clear()
                   
         except Exception:
-            setup_options.clear()
             tool_options.clear()
-            eventToolsToolFailed( tool_info.tool_class )
+            eventToolsToolFailed( tool_info )
             raise
         else:
-          setup_options.join()
           tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
           return tool_obj, tool_names, tool_options
-      
-      tool_options.clear()
       
     raise ErrorToolNotFound( tool_name )
   

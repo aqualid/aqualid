@@ -192,7 +192,7 @@ def   dumpSimpleObject( obj ):
   
   else:
     try:
-      data = marshal.dumps( obj )
+      data = marshal.dumps( obj, 2) # stick with version 2 to avoid support for object instancing and recursion
     except ValueError:
       raise ErrorUnmarshallableObject( obj )
   

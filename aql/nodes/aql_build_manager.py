@@ -160,6 +160,9 @@ class _NodesTree (object):
   def   __len__(self):
     return len(self.node2deps)
   
+  def   getNodes(self):
+    return frozenset( self.node2deps )
+  
   #//-------------------------------------------------------//
   
   def   __hasCycle( self, node, new_deps ):
@@ -1163,13 +1166,24 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   shrink( self, nodes ):
+    if not nodes:
+      return
+    
+    self._nodes.shrinkTo( nodes )
+  
+  #//-------------------------------------------------------//
+  
+  def   getNodes(self):
+    return self._nodes.getNodes()
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False, with_backtrace = True, force_lock = False):
     
     self.__reset( build_always = build_always, explain = explain )
     
-    nodes_tree = self._nodes
-    if nodes is not None:
-      nodes_tree.shrinkTo( nodes )
+    self.shrink( nodes )
     
     node_locker = self._node_locker
     
@@ -1221,9 +1235,7 @@ class BuildManager (object):
     
     self.__reset()
     
-    nodes_tree = self._nodes
-    if nodes is not None:
-      nodes_tree.shrinkTo( nodes )
+    self.shrink( nodes )
     
     with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
       while True:
@@ -1241,9 +1253,7 @@ class BuildManager (object):
     
     self.__reset( explain = explain )
     
-    nodes_tree = self._nodes
-    if nodes is not None:
-      nodes_tree.shrinkTo( nodes )
+    self.shrink( nodes )
     
     with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
       

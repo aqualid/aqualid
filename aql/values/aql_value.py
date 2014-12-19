@@ -171,7 +171,11 @@ class   SimpleValue ( ValueBase ):
     if not tags:
       tags = None
     
-    return self.data, self.name, self.signature, tags
+    name = self.name
+    if name == self.signature:
+      name = None
+    
+    return self.data, name, self.signature, tags
   
   #//-------------------------------------------------------//
   

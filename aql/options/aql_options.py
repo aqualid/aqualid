@@ -180,6 +180,11 @@ class OptionValueProxy (object):
   
   #//-------------------------------------------------------//
   
+  def   isSetNotTo( self, value ):
+    return self.option_value.isSet() and (self != value )
+  
+  #//-------------------------------------------------------//
+  
   def   get( self, context = None ):
     self.child_ref = None
     

@@ -284,6 +284,9 @@ class ToolGccCommon( ToolCommonCpp ):
   @classmethod
   def   setup( cls, options, env ):
     
+    if options.cc_name.isSetNotTo('gcc'):
+      raise NotImplementedError()
+    
     gcc_prefix = options.gcc_prefix.get()
     gcc_suffix = options.gcc_suffix.get()
     

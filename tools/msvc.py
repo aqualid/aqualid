@@ -289,6 +289,9 @@ class ToolMsvcCommon( ToolCommonCpp ):
   @classmethod
   def   setup( cls, options, env ):
     
+    if options.cc_name.isSetNotTo( 'msvc' ):
+      raise NotImplementedError()
+    
     cl = whereProgram( 'cl', env )
     link, lib, rc = findOptionalPrograms( ['link', 'lib', 'rc' ], env )
     

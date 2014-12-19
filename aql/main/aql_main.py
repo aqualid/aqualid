@@ -97,11 +97,87 @@ def _setLogLevel( level ):
 
 #//===========================================================================//
 
-def   _printMemoryStatus():
+def   _startMemoryTracing():
+  try:
+    import tracemalloc
+  except ImportError:
+    return
+  
+  tracemalloc.start()
+  
+#//===========================================================================//
+
+def   _stopMemoryTracing():
+  try:
+    import tracemalloc
+  except ImportError:
+    return
+  
+  snapshot = tracemalloc.take_snapshot()
+  
+  _logMemoryTop( snapshot )
+  
+  # snapshot = snapshot.filter_traces((
+  #       tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+  #       tracemalloc.Filter(False, "<unknown>"),
+  # ))
+  # 
+  # top_stats = snapshot.statistics('lineno', cumulative = True )
+  # 
+  # logInfo("[ Top memory blocks  ]")
+  # for stat in top_stats[:50]:
+  #   logInfo( stat )
+  # logInfo("")
+  
+  tracemalloc.stop()
+
+#//===========================================================================//
+
+def _logMemoryTop( snapshot, group_by = 'lineno', limit = 30 ):
+  
+  try:
+    import tracemalloc
+    import linecache
+  except ImportError:
+    return
+
+  snapshot = snapshot.filter_traces((
+      tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+      tracemalloc.Filter(False, "<unknown>"),
+  ))
+  
+  top_stats = snapshot.statistics( group_by )
+
+  logInfo("Top %s lines" % limit)
+  for index, stat in enumerate(top_stats[:limit], 1):
+      frame = stat.traceback[0]
+      # replace "/path/to/module/file.py" with "module/file.py"
+      filename = os.sep.join(frame.filename.split(os.sep)[-2:])
+      logInfo("#%s: %s:%s: %.1f KiB"
+            % (index, filename, frame.lineno, stat.size / 1024))
+      line = linecache.getline(frame.filename, frame.lineno).strip()
+      if line:
+          logInfo('    %s' % line)
+
+  other = top_stats[limit:]
+  if other:
+      size = sum(stat.size for stat in other)
+      logInfo("%s other: %.1f KiB" % (len(other), size / 1024))
+  total = sum(stat.size for stat in top_stats)
+  logInfo("Total allocated size: %.1f KiB" % (total / 1024))
+
+#//===========================================================================//
+
+def _printMemoryStatus():
+  
+  _stopMemoryTracing()
+  
   mem_usage = memoryUsage()
   num_objects = len(gc.get_objects())
   
-  logInfo("Objects: %s, memory usage: %s Kb" % (num_objects, mem_usage))
+  obj_mem_usage = sum( sys.getsizeof(obj) for obj in gc.get_objects() )
+  
+  logInfo("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb" % (num_objects, obj_mem_usage / 1024, mem_usage))
 
 #//===========================================================================//
 
@@ -112,6 +188,10 @@ def   _main( prj_cfg ):
     setEventSettings( ev_settings )
     
     with Chdir( prj_cfg.directory ):
+      
+      if prj_cfg.debug_memory:
+        _startMemoryTracing()
+      
       makefile = prj_cfg.makefile
       
       if prj_cfg.search_up:
@@ -143,10 +223,16 @@ def   _main( prj_cfg ):
           text = prj.ListTargets()
           logInfo( '\n'.join( text ) )
         
-        elif prj_cfg.list_options:
-          text = prj.ListOptions( brief = not prj_cfg.verbose )
-          logInfo( '\n'.join( text ) )
+        elif prj_cfg.list_options or prj_cfg.list_tool_options:
+          text = []
           
+          if prj_cfg.list_options:
+            text += prj.ListOptions( brief = not prj_cfg.verbose )
+          
+          if prj_cfg.list_tool_options:
+            text += prj.ListToolsOptions( prj_cfg.list_tool_options, brief = not prj_cfg.verbose )
+          
+          logInfo( '\n'.join( text ) )
         else:
           success = prj.Build()
           if not success:
@@ -202,7 +288,7 @@ def   main():
       p = pstats.Stats( debug_profile )
       p.strip_dirs()
       p.sort_stats('cumulative')
-      p.print_stats( 30 )
+      p.print_stats( prj_cfg.debug_profile_top )
     
     return status
   except (Exception, KeyboardInterrupt) as ex:
