@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012, 2013 The developers of Aqualid project
+# Copyright (c) 2012-2014 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -22,7 +22,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'getToolsManager', 'ErrorToolNotFound' 
 import os
 
 from aql.util_types import toSequence, AqlException
-from aql.utils import logWarning, logError, loadModule, findFiles, eventWarning, ErrorProgramNotFound
+from aql.utils import logWarning, logError, loadModule, loadPackage, findFiles, eventWarning, ErrorProgramNotFound
 
 #noinspection PyStatementEffect
 """
@@ -44,7 +44,7 @@ def   eventToolsUnableLoadModule( settings, module, err ):
 
 @eventWarning
 def   eventToolsToolFailed( settings, tool_info ):
-  logError( "Failed to initialize tool: name: %s, class: %s" % (tool_info.names,tool_info.tool_class))
+  logError( "Failed to initialize tool: name: %s, class: %s" % (tool_info.names,tool_info.tool_class.__name__))
 
 #//===========================================================================//
 
@@ -158,9 +158,18 @@ class ToolsManager( object ):
       self.loaded_paths.add( path )
       
       module_files = findFiles( path, mask = "*.py" )
+      if not module_files:
+        continue
+      
+      try:
+        package = loadPackage( path, generate_name = True )
+        package_name = package.__name__
+      except ImportError:
+        package_name = None
+      
       for module_file in module_files:
         try:
-          loadModule( module_file, update_sys_path = False )
+          loadModule( module_file, package_name )
         except Exception as ex:
           eventToolsUnableLoadModule( module_file, ex )
   

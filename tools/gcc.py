@@ -5,7 +5,7 @@ import itertools
 from aql import readTextFile, Tempfile, executeCommand, whereProgram, findOptionalProgram,\
   StrOptionType, ListOptionType, PathOptionType, Version, tool 
 
-from cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
+from .cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
                         ToolCommonRes, CommonResCompiler
 
 #//===========================================================================//

@@ -4,7 +4,7 @@ import re
 from aql import executeCommand, whereProgram, findOptionalPrograms,\
   ListOptionType, PathOptionType, tool 
 
-from cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
+from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
                        ToolCommonRes, CommonResCompiler
 
 #//===========================================================================//

@@ -21,7 +21,7 @@ __all__ = (
   'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
   'newHash', 'dumpSimpleObject', 'simpleObjectSignature', 'objectSignature', 'dataSignature',
   'fileSignature', 'fileTimeSignature', 'fileChecksum',
-  'loadModule',
+  'loadModule', 'loadPackage',
   'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
   'executeCommand', 'ExecCommandResult', 'getShellScriptEnv', 
   'cpuCount', 'memoryUsage',
@@ -670,25 +670,35 @@ except ImportError:
 
 #//===========================================================================//
 
-def   loadModule( module_file, update_sys_path = True ):
+def   loadModule( module_file, package_name = None ):
   
-  module_file = os.path.abspath( module_file )
+  module_dir, module_file = os.path.split( module_file )
   
-  module_dir = os.path.dirname( module_file )
-  module_name = os.path.splitext( os.path.basename( module_file ) )[0]
+  module_name = os.path.splitext( module_file )[0]
   
   fp, pathname, description = imp.find_module( module_name, [ module_dir ] )
   
-  m = imp.load_module( module_name, fp, pathname, description )
-  if update_sys_path:
-    sys_path = sys.path
-    try:
-      sys_path.remove( module_dir )
-    except ValueError:
-      pass
-    sys_path.insert( 0, module_dir )
+  if package_name:
+    module_name = package_name + '.' + module_name
+  
+  module = imp.load_module( module_name, fp, pathname, description )
+  return module
 
-  return m
+#//===========================================================================//
+
+def   loadPackage( path, name = None, generate_name = False ):
+  find_path, find_name = os.path.split( path )
+  
+  fp, pathname, description = imp.find_module( find_name, [ find_path ] )
+  
+  if not name:
+    if generate_name:
+      name = newHash( dumpSimpleObject( path ) ).hexdigest()
+    else:
+      name = find_name
+  
+  package = imp.load_module( name, fp, pathname, description )
+  return package
 
 #//===========================================================================//
 
