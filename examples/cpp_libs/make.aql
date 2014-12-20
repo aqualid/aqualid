@@ -1,0 +1,27 @@
+import os
+
+SetBuildDir('output')
+
+cpp = Tool('c++')
+
+cpp.options.If().target_os.eq('windows').cppdefines += 'WIN32'
+
+src_dir = 'src'
+lib_dir = src_dir + '/lib'
+api_dir = src_dir + '/api'
+
+lib_files = FindFiles( lib_dir, '*.cpp' )
+lib = cpp.LinkStaticLibrary( lib_files, target = 'tool' )
+
+api_files = FindFiles( api_dir, '*.cpp' )
+
+api = cpp.LinkSharedLibrary( api_files, lib, target = 'toolapi', cpppath = [ lib_dir, api_dir ] )
+api.options.cppdefines += 'MAKING_LIBRARY'
+
+main_file = src_dir + '/main.cpp'
+
+main = cpp.LinkProgram( main_file, api.at('implib'), target = 'test', cpppath = [ api_dir ] )
+
+
+tools.ExecuteCommand( main, 'print' )
+

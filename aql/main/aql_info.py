@@ -22,7 +22,7 @@ class AqlInfo (object):
     self.name         = "Aqualid"
     self.module       = "aqualid"
     self.description  = "General purpose build tool."
-    self.version      = 0.9
+    self.version      = 0.5
     self.date         = None
     self.url          = 'https://github.com/menify/aqualid'
     self.license      = "MIT License"

@@ -61,7 +61,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     empty_re = re.compile(r'^\s*\r*\n', re.MULTILINE)
     slash_re = re.compile(r'\\\r*\n', re.MULTILINE)
-    comments_re = re.compile(r"#.*$", re.MULTILINE )
+    comments_re = re.compile(r"^\s*#.*$", re.MULTILINE )
     all_stmt_re = re.compile(r"^__all__\s*=\s*\(.+?\)", re.MULTILINE | re.DOTALL )
     
     content = aql.readTextFile( src_file )
