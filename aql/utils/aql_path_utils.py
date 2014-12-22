@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'findFiles', 'findFileInPaths', 'absFilePath', 'changePath', 'splitPath',
+  'findFiles', 'findFileInPaths', 'absFilePath', 'expandFilePath','changePath', 'splitPath',
   'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
   'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir',
   'Chdir',
@@ -51,16 +51,24 @@ class   ErrorProgramName( AqlException ):
 
 #//===========================================================================//
 
-def   absFilePath( file_path ):
+def   absFilePath( file_path, path_sep = os.path.sep,
+                              seps = (os.path.sep, os.path.altsep),
+                              _abspath = os.path.abspath,
+                              _normcase = os.path.normcase):
   if not file_path:
     file_path = '.'
 
-  if file_path[-1] in (os.path.sep, os.path.altsep):
-    last_sep = os.path.sep
+  if file_path[-1] in seps:
+    last_sep = path_sep
   else:
     last_sep = ''
 
-  return os.path.normcase( os.path.abspath( file_path ) ) + last_sep
+  return _normcase( _abspath( file_path ) ) + last_sep
+
+#//===========================================================================//
+
+def   expandFilePath( path, _normpath = os.path.normpath, _expanduser = os.path.expanduser, _expandvars = os.path.expandvars ):
+  return _normpath( _expanduser( _expandvars(path) ) )
 
 #//===========================================================================//
 

@@ -26,7 +26,8 @@ import pstats
 import traceback
 
 from aql.util_types import toUnicode
-from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage, splitPath, \
+from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage,\
+                      splitPath, expandFilePath,\
                       logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
 
 from .aql_project import Project, ProjectConfig
@@ -181,6 +182,16 @@ def _printMemoryStatus():
 
 #//===========================================================================//
 
+def   _setBuildDir( options, makefile ):
+    build_dir = options.build_dir.get()
+    if os.path.isabs( build_dir ):
+      return
+    
+    makefile_dir = os.path.abspath( os.path.dirname( makefile ) )
+    options.build_dir = os.path.join( makefile_dir, build_dir )
+
+#//===========================================================================//
+
 def   _main( prj_cfg ):
   with Chrono() as total_elapsed:
     
@@ -192,10 +203,12 @@ def   _main( prj_cfg ):
       if prj_cfg.debug_memory:
         _startMemoryTracing()
       
-      makefile = prj_cfg.makefile
+      makefile = expandFilePath( prj_cfg.makefile )
       
       if prj_cfg.search_up:
         makefile = _findMakeScript( makefile )
+      
+      _setBuildDir( prj_cfg.options, makefile )
       
       prj = Project( prj_cfg )
 

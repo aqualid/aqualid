@@ -22,7 +22,7 @@ __all__ = ( 'Tool', 'tool', 'toolSetup', 'getToolsManager', 'ErrorToolNotFound' 
 import os
 
 from aql.util_types import toSequence, AqlException
-from aql.utils import logWarning, logError, loadModule, loadPackage, findFiles, eventWarning, ErrorProgramNotFound
+from aql.utils import logWarning, logError, loadModule, loadPackage, expandFilePath, findFiles, eventWarning, ErrorProgramNotFound
 
 #noinspection PyStatementEffect
 """
@@ -148,9 +148,7 @@ class ToolsManager( object ):
   def   loadTools( self, paths ):
     
     for path in toSequence( paths ):
-      path = os.path.expandvars( path )
-      path = os.path.expanduser( path )
-      path = os.path.normcase( os.path.abspath( path ) )
+      path = expandFilePath( path )
       
       if path in self.loaded_paths:
         continue

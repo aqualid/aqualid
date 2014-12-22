@@ -4,7 +4,7 @@
 
 IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=
-  python -c "import aql; aql.main()" %*
+  python -OO -c "import aql; aql.main()" %*
 
 ) ELSE (
   REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed

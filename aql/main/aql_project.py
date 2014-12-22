@@ -29,8 +29,8 @@ import site
 import types
 import itertools
 
-from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir
-from aql.util_types import FilePath, ValueListType, UniqueList, SplitListType, toSequence, AqlException
+from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir, expandFilePath
+from aql.util_types import FilePath, ValueListType, UniqueList, toSequence, AqlException
 from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue, SimpleValue
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
@@ -592,7 +592,9 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   SetBuildDir( self, build_dir ):
-    self.options.build_dir = os.path.abspath(build_dir)
+    build_dir = os.path.abspath( expandFilePath( build_dir ) )
+    if self.options.build_dir != build_dir:
+      self.options.build_dir = build_dir
   
   #//-------------------------------------------------------//
   

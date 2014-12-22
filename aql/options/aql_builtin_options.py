@@ -37,7 +37,7 @@ def   _build_options():
   options = Options()
   
   options.build_path            = PathOptionType( description = "The building directory full path." )
-  options.build_dir             = PathOptionType( description = "The building directory." )
+  options.build_dir             = PathOptionType( description = "The building directory.", default = 'output' )
   options.relative_build_paths  = BoolOptionType( description = "The building directory suffix.", default = True )
   options.build_dir_name        = StrOptionType( description  = "The building directory name." )
   options.prefix                = StrOptionType( description  = "Output files prefix." )
@@ -92,6 +92,8 @@ def   _target_options():
                                       is_tool_key = True,
                                       description = "The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'." )
   
+  options.os = options.target_os
+  
   options.target_arch = EnumOptionType( values = [ 'native',
                                                    ('x86-32', 'x86_32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
                                                    ('x86-64','x86_64', 'amd64', 'x64'),
@@ -101,6 +103,8 @@ def   _target_options():
                                         default = 'native',
                                         is_tool_key = True,
                                         description = "The target machine type, e.g. 'i386'" )
+  
+  options.arch = options.target_arch
   
   options.target_subsystem = EnumOptionType(  values = [ 'console', 'windows' ],
                                               default = 'console',
@@ -115,7 +119,6 @@ def   _target_options():
   options.target_os_version = VersionOptionType( description = "The target system's release version, e.g. '2.2.0' or '5.1.2600'" )
   
   options.target_cpu = StrOptionType( ignore_case = True,
-                                      is_tool_key = True,
                                       description = "The target real processor name, e.g. 'amdk6'." )
   
   options.target_cpu_flags = ListOptionType( value_type = IgnoreCaseString,

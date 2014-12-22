@@ -492,8 +492,9 @@ class   VersionOptionType (OptionType):
 #//===========================================================================//
 
 class   PathOptionType (OptionType):
-  def     __init__( self, description = None, group = None, range_help = None, is_tool_key = False, is_hidden = False ):
-    super(PathOptionType, self).__init__( FilePath, description, group, range_help, is_tool_key = is_tool_key, is_hidden = is_hidden )
+  def     __init__( self, description = None, group = None, range_help = None, is_tool_key = False, is_hidden = False, default = NotImplemented ):
+    super(PathOptionType, self).__init__( FilePath, description, group, range_help,
+                                          is_tool_key = is_tool_key, is_hidden = is_hidden, default = default )
   
   def   helpType(self):
     return "File System Path"
