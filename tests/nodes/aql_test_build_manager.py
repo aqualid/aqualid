@@ -239,11 +239,6 @@ class TestBuildManager( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
-    self.finished_nodes += 1
-  
-  #//-------------------------------------------------------//
-  
   def   eventNodeActual( self, settings, node, progress ):
     self.actual_nodes += 1
   
@@ -262,13 +257,8 @@ class TestBuildManager( AqlTestCase ):
   def   setUp( self ):
     super(TestBuildManager,self).setUp()
     
-    # disableDefaultHandlers()
-    
     self.building_nodes = 0
     addUserHandler( self.eventNodeBuilding )
-    
-    self.finished_nodes = 0
-    addUserHandler( self.eventNodeBuildingFinished )
     
     self.actual_nodes = 0
     addUserHandler( self.eventNodeActual )
@@ -283,14 +273,11 @@ class TestBuildManager( AqlTestCase ):
   
   def   tearDown( self ):
     removeUserHandler( [  self.eventNodeBuilding,
-                          self.eventNodeBuildingFinished,
                           self.eventNodeOutdated,
                           self.eventNodeActual,
                           self.eventNodeRemoved,
                       ] )
 
-    enableDefaultHandlers()
-    
     super(TestBuildManager,self).tearDown()
   
   #//-------------------------------------------------------//
@@ -350,30 +337,30 @@ class TestBuildManager( AqlTestCase ):
       
       builder = ChecksumBuilder( options, 0, 256 )
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       _buildChecksums( builder, src_files )
       self.assertEqual( self.building_nodes, 2 )
-      self.assertEqual( self.building_nodes, self.finished_nodes )
+      self.assertEqual( self.building_nodes, self.built_nodes )
       
       #//-------------------------------------------------------//
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       _buildChecksums( builder, src_files )
       self.assertEqual( self.building_nodes, 0 )
-      self.assertEqual( self.building_nodes, self.finished_nodes )
+      self.assertEqual( self.building_nodes, self.built_nodes )
       
       #//-------------------------------------------------------//
       
       builder = ChecksumBuilder( options, 32, 1024 )
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       _buildChecksums( builder, src_files )
       self.assertEqual( self.building_nodes, 2 )
-      self.assertEqual( self.building_nodes, self.finished_nodes )
+      self.assertEqual( self.building_nodes, self.built_nodes )
       
       #//-------------------------------------------------------//
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       _buildChecksums( builder, src_files )
       self.assertEqual( self.building_nodes, 0 )
       self.assertEqual( self.building_nodes, self.building_nodes )
@@ -408,10 +395,10 @@ class TestBuildManager( AqlTestCase ):
       
       bm.add( _makeNodes( builder ) )
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       bm.build( jobs = 1, keep_going = False )
       bm.close()
-      self.assertEqual( self.finished_nodes, 7 )
+      self.assertEqual( self.built_nodes, 7 )
       
       #// --------- //
       
@@ -448,10 +435,10 @@ class TestBuildManager( AqlTestCase ):
       copy_node3 = nodes[4]
       bm.add( nodes )
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       bm.build( jobs = 1, keep_going = False, nodes = [copy_node3] )
       bm.close()
-      self.assertEqual( self.finished_nodes, 2 )
+      self.assertEqual( self.built_nodes, 2 )
       
       #// --------- //
       
@@ -459,10 +446,10 @@ class TestBuildManager( AqlTestCase ):
       node2 = nodes[1]; copy_node3  = nodes[4]
       bm.add( nodes )
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       bm.build( jobs = 1, keep_going = False, nodes = [node2, copy_node3] )
       bm.close()
-      self.assertEqual( self.finished_nodes, 1 )
+      self.assertEqual( self.built_nodes, 1 )
       
       #// --------- //
   
@@ -478,10 +465,10 @@ class TestBuildManager( AqlTestCase ):
       
       builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       _buildChecksums( builder, src_files )
       self.assertEqual( self.building_nodes, 2 )
-      self.assertEqual( self.building_nodes, self.finished_nodes )
+      self.assertEqual( self.building_nodes, self.built_nodes )
       
       bm = _addNodesToBM( builder, src_files )
       try:
@@ -506,10 +493,10 @@ class TestBuildManager( AqlTestCase ):
       
       builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       _buildChecksums( builder, src_files, Node = BatchNode )
       self.assertEqual( self.building_nodes, 2 )
-      self.assertEqual( self.building_nodes, self.finished_nodes )
+      self.assertEqual( self.building_nodes, self.built_nodes )
       
       bm = _addNodesToBM( builder, src_files, Node = BatchNode )
       try:
@@ -535,7 +522,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.building_nodes = self.finished_nodes = 0
+      self.building_nodes = self.built_nodes = 0
       self.actual_nodes = self.outdated_nodes = 0
       
       builder = ChecksumSingleBuilder( options, 0, 256 )
@@ -582,7 +569,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       node = Node( builder, src_files )
       
@@ -592,7 +579,7 @@ class TestBuildManager( AqlTestCase ):
       
       _build( bm )
       
-      self.assertEqual( self.finished_nodes, num_src_files * 2 )
+      self.assertEqual( self.built_nodes, num_src_files * 2 )
       
       #//-------------------------------------------------------//
       
@@ -600,7 +587,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       node = Node( builder, src_files )
       
@@ -610,7 +597,7 @@ class TestBuildManager( AqlTestCase ):
       
       _build( bm )
       
-      self.assertEqual( self.finished_nodes, 2 )
+      self.assertEqual( self.built_nodes, 2 )
   
   #//-------------------------------------------------------//
   
@@ -627,7 +614,7 @@ class TestBuildManager( AqlTestCase ):
       single_builder = ChecksumSingleBuilder( options, 0, 256 )
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       node = BatchNode( builder, src_files )
       
@@ -637,7 +624,7 @@ class TestBuildManager( AqlTestCase ):
       
       _build( bm )
       
-      self.assertEqual( self.finished_nodes, num_src_files + 1 )
+      self.assertEqual( self.built_nodes, num_src_files + 1 )
       
       #//-------------------------------------------------------//
       
@@ -645,7 +632,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       node = BatchNode( builder, src_files )
       
@@ -655,7 +642,7 @@ class TestBuildManager( AqlTestCase ):
       
       _build( bm )
       
-      self.assertEqual( self.finished_nodes, 2 )
+      self.assertEqual( self.built_nodes, 2 )
 
   #//-------------------------------------------------------//
   
@@ -670,7 +657,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       builder1 = ChecksumSingleBuilder( options, 0, 256 )
       builder2 = ChecksumSingleBuilder( options, 0, 1024 )
@@ -696,7 +683,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       builder1 = ChecksumSingleBuilder( options, 0, 256 )
       builder2 = ChecksumSingleBuilder( options, 0, 256 )
@@ -709,7 +696,7 @@ class TestBuildManager( AqlTestCase ):
       bm.add( [node1, node2] )
       _build( bm )
       
-      self.assertEqual( self.finished_nodes, 3 * 3 )
+      self.assertEqual( self.built_nodes, 3 * 3 )
   
   #//-------------------------------------------------------//
   
@@ -721,7 +708,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       builder = FailedBuilder( options )
       
@@ -729,7 +716,7 @@ class TestBuildManager( AqlTestCase ):
       bm.add( nodes )
       
       self.assertRaises( Exception, _build, bm )
-      self.assertEqual( self.finished_nodes, 0 )
+      self.assertEqual( self.built_nodes, 0 )
   
   #//-------------------------------------------------------//
   
@@ -741,7 +728,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       nodes = [ Node( SyncValueBuilder( options, name = "%s" % i, number = n ), SimpleValue("123-%s" % i) ) for i,n in zip( range(4), [3,5,7,11] ) ] 
       bm.add( nodes )
@@ -760,7 +747,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       """
              10    11__
@@ -813,7 +800,7 @@ class TestBuildManager( AqlTestCase ):
       
       bm = BuildManager()
       
-      self.finished_nodes = 0
+      self.built_nodes = 0
       
       """
              10    11__

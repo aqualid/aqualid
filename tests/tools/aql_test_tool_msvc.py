@@ -5,38 +5,12 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempdir, Tempfile, removeUserHandler, addUserHandler, enableDefaultHandlers
+from aql.utils import Tempdir, Tempfile
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
-
-import msvc
 
 #//===========================================================================//
 
 class TestToolMsvc( AqlTestCase ):
-  
-  # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
-    self.built_nodes += 1
-  
-  #//-------------------------------------------------------//
-  
-  def   setUp( self ):
-    super(TestToolMsvc,self).setUp()
-    # disableDefaultHandlers()
-    
-    self.built_nodes = 0
-    addUserHandler( self.eventNodeBuildingFinished )
-  
-  #//-------------------------------------------------------//
-  
-  def   tearDown( self ):
-    removeUserHandler( self.eventNodeBuildingFinished )
-
-    enableDefaultHandlers()
-    
-    super(TestToolMsvc,self).tearDown()
-  
-  #//-------------------------------------------------------//
   
   def   test_msvc_compiler(self):
     with Tempdir() as tmp_dir:
@@ -56,12 +30,12 @@ class TestToolMsvc( AqlTestCase ):
       prj = Project( cfg )
       
       try:
-        cpp = prj.tools['msvc++']
+        cpp = prj.tools.Tool('msvc++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
       except  ErrorToolNotFound:
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
       
-      cpp.Compile( src_files )
+      cpp.Compile( src_files, batch_build = False )
       cpp.CompileResource( res_file )
       
       self.buildPrj( prj, num_src_files + 1 )
@@ -97,7 +71,7 @@ class TestToolMsvc( AqlTestCase ):
       prj = Project( cfg )
       
       try:
-        cpp = prj.tools['msvc++']
+        cpp = prj.tools.Tool('msvc++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
       except  ErrorToolNotFound:
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
@@ -143,7 +117,7 @@ class TestToolMsvc( AqlTestCase ):
       prj = Project( cfg )
       
       try:
-        cpp = prj.tools['msvc++']
+        cpp = prj.tools.Tool('msvc++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
       except  ErrorToolNotFound:
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
@@ -180,7 +154,7 @@ class TestToolMsvc( AqlTestCase ):
       prj = Project( cfg )
       
       try:
-        cpp = prj.tools['msvc++']
+        cpp = prj.tools.Tool('msvc++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
       except  ErrorToolNotFound:
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return
@@ -228,7 +202,7 @@ class TestToolMsvc( AqlTestCase ):
       prj = Project( cfg )
       
       try:
-        cpp = prj.tools['msvc++']
+        cpp = prj.tools.Tool('msvc++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
       except  ErrorToolNotFound:
         print("WARNING: MSVC tool has not been found. Skip the test.")
         return

@@ -26,31 +26,19 @@ class TestBuiltinTools( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
-    self.building_finished += 1
-    self.built_nodes += 1
-  
-  #//-------------------------------------------------------//
-  
   def   setUp( self ):
     super(TestBuiltinTools,self).setUp()
     # disableDefaultHandlers()
     
     self.building_started = 0
     addUserHandler( self.eventNodeBuilding )
-    
-    self.building_finished = 0
-    self.built_nodes = 0
-    addUserHandler( self.eventNodeBuildingFinished )
   
   #//-------------------------------------------------------//
   
   def   tearDown( self ):
     removeUserHandler( self.eventNodeBuilding )
-    removeUserHandler( self.eventNodeBuildingFinished )
 
-    enableDefaultHandlers()
+    super(TestBuiltinTools, self).tearDown()
   
   #//-------------------------------------------------------//
 
@@ -87,7 +75,7 @@ class TestBuiltinTools( AqlTestCase ):
         self._build( bm, jobs = 1, keep_going = False )
         
         self.assertEqual( self.building_started, 1 )
-        self.assertEqual( self.building_started, self.building_finished )
+        self.assertEqual( self.building_started, self.built_nodes )
         
         bm.close()
         

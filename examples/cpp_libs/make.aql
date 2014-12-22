@@ -1,27 +1,24 @@
-import os
-
 SetBuildDir('output')
 
 cpp = Tool('c++')
 
 cpp.options.If().target_os.eq('windows').cppdefines += 'WIN32'
 
-src_dir = 'src'
-lib_dir = src_dir + '/lib'
-api_dir = src_dir + '/api'
-
-lib_files = FindFiles( lib_dir, '*.cpp' )
+lib_files = FindFiles( 'src/lib', '*.cpp' )
 lib = cpp.LinkStaticLibrary( lib_files, target = 'tool' )
 
-api_files = FindFiles( api_dir, '*.cpp' )
+api_files = FindFiles( 'src/api', '*.cpp' )
+api = cpp.LinkSharedLibrary( api_files, lib, target = 'toolapi',
+                             cpppath = [ 'src/lib', 'src/api' ],
+                             cppdefines = 'MAKING_LIBRARY' )
 
-api = cpp.LinkSharedLibrary( api_files, lib, target = 'toolapi', cpppath = [ lib_dir, api_dir ] )
-api.options.cppdefines += 'MAKING_LIBRARY'
+main = cpp.LinkProgram( 'src/main.cpp', api.at('implib'), target = 'test', cpppath = 'src/api' )
 
-main_file = src_dir + '/main.cpp'
+run = tools.ExecuteCommand( main, 'print' )
 
-main = cpp.LinkProgram( main_file, api.at('implib'), target = 'test', cpppath = [ api_dir ] )
-
-
-tools.ExecuteCommand( main, 'print' )
+Default( main )
+Alias( 'lib',   lib,  "Build static library" )
+Alias( 'api',   api,  "Build API library" )
+Alias( 'main',  main, "Build main program" )
+Alias( 'run',   run,  "Run main program" )
 

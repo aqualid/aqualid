@@ -183,7 +183,19 @@ class GccArchiver (GccCompilerMaker, CommonCppArchiver ):
 
 class GccLinker( GccCompilerMaker, CommonCppLinker ):
   
+  def   __init__( self, options, target, shared ):
+    super(GccLinker, self).__init__( options, target, shared )
+    
+    self.is_windows = options.target_os == 'windows'
+    self.libsuffix = options.libsuffix.get()
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, node ):
+    
+    target = self.target
+    import_lib = None
+    shared = self.shared
     
     cmd = list(self.cmd)
     
@@ -191,19 +203,29 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
     
     cmd[2:2] = obj_files
     
-    if self.shared:
-      cmd += [ '-shared' ]
-      tags = ('shlib','implib')
-    else:
-      tags = None
+    if shared:
+      cmd.append( '-shared' )
+      
+      if self.is_windows:
+        import_lib = os.path.splitext( target )[0] + self.libsuffix
+        cmd.append( '-Wl,--out-implib,%s' % import_lib )
           
-    cmd += [ '-o', self.target ]
+    cmd += [ '-o', target ]
     
-    cwd = os.path.dirname( self.target )
+    cwd = os.path.dirname( target )
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.addTargets( self.target, tags = tags )
+    if shared:
+      if import_lib:
+        tags = ('shlib',)
+        node.addTargets( import_lib, tags = ('implib',) )
+      else:
+        tags = ('shlib', 'implib')
+    else:
+      tags = None
+
+    node.addTargets( target, tags = tags )
     
     return out
 

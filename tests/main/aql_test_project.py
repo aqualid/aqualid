@@ -46,30 +46,17 @@ class TestProject( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  # noinspection PyUnusedLocal
-  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
-    self.building_finished += 1
-  
-  #//-------------------------------------------------------//
-  
   def   setUp( self ):
     super(TestProject,self).setUp()
-    disableDefaultHandlers()
     
     self.building_started = 0
     addUserHandler( self.eventNodeBuilding )
     
-    self.building_finished = 0
-    addUserHandler( self.eventNodeBuildingFinished )
-  
   #//-------------------------------------------------------//
   
   def   tearDown( self ):
     removeUserHandler( self.eventNodeBuilding )
-    removeUserHandler( self.eventNodeBuildingFinished )
 
-    enableDefaultHandlers()
-    
     super(TestProject,self).tearDown()
   
   #//-------------------------------------------------------//
@@ -146,7 +133,7 @@ options.build_variant = "final"
       prj.Build()
       
       self.assertEqual( self.building_started, 1 )
-      self.assertEqual( self.building_finished, 1 )
+      self.assertEqual( self.built_nodes, 1 )
       
       self.building_started = 0
       
@@ -172,7 +159,7 @@ options.build_variant = "final"
       prj.Alias('test', cmd )
       prj.Build()
       
-      self.assertEqual( self.building_finished, 1 )
+      self.assertEqual( self.built_nodes, 1 )
   
   #//-------------------------------------------------------//
   
@@ -191,7 +178,7 @@ options.build_variant = "final"
       prj.Default( [cmd_other, cmd_other2] )
       prj.Build()
       
-      self.assertEqual( self.building_finished, 2 )
+      self.assertEqual( self.built_nodes, 2 )
   
   #//=======================================================// 
   
@@ -208,45 +195,45 @@ options.build_variant = "final"
       tool.Noop( v1 = "a", v2 = "b", v3 = "c" )
       prj.Build()
       
-      self.assertEqual( self.building_finished, 1 )
+      self.assertEqual( self.built_nodes, 1 )
       
       #//-------------------------------------------------------//
       
-      self.building_finished = 0
+      self.built_nodes = 0
       
       tool.Noop( v1 = "aa", v2 = "bb", v3 = "cc" )
       prj.Build()
-      self.assertEqual( self.building_finished, 0 )
+      self.assertEqual( self.built_nodes, 0 )
       
       #//-------------------------------------------------------//
       
-      self.building_finished = 0
+      self.built_nodes = 0
       
       v1 = SimpleValue("a", name = "value1")
       
       tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
       prj.Build()
-      self.assertEqual( self.building_finished, 1 )
+      self.assertEqual( self.built_nodes, 1 )
       
       #//-------------------------------------------------------//
       
-      self.building_finished = 0
+      self.built_nodes = 0
       
       v1 = SimpleValue("ab", name = "value1")
       
       tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
       prj.Build()
-      self.assertEqual( self.building_finished, 1 )
+      self.assertEqual( self.built_nodes, 1 )
       
       #//-------------------------------------------------------//
       
-      self.building_finished = 0
+      self.built_nodes = 0
       
       v1 = SimpleValue("ab", name = "value1")
       
       tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
       prj.Build()
-      self.assertEqual( self.building_finished, 0 )
+      self.assertEqual( self.built_nodes, 0 )
 
 #//===========================================================================//
 

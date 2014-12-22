@@ -7,7 +7,7 @@ _search_paths = [ '.', 'tests_utils', 'tools' ]
 sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', p) ), _search_paths )
 
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
-from aql.utils  import Tempfile
+from aql.utils  import Tempfile, addUserHandler, removeUserHandler, enableDefaultHandlers
 from aql.util_types import FilePath
 from aql.values import FileChecksumValue, FileTimestampValue
 
@@ -74,6 +74,30 @@ END
 #//===========================================================================//
 
 class AqlTestCase( TestCaseBase ):
+  
+  # noinspection PyUnusedLocal
+  def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
+    self.built_nodes += 1
+  
+  #//===========================================================================//
+  
+  def   setUp( self ):
+    super(AqlTestCase,self).setUp()
+    # disableDefaultHandlers()
+    
+    self.built_nodes = 0
+    addUserHandler( self.eventNodeBuildingFinished )
+  
+  #//===========================================================================//
+  
+  def   tearDown( self ):
+    removeUserHandler( self.eventNodeBuildingFinished )
+
+    enableDefaultHandlers()
+    
+    super(AqlTestCase,self).tearDown()
+  
+  #//===========================================================================//
   
   def   buildPrj( self, prj, num_built_nodes, num_failed_nodes = 0, jobs = 4 ):
     self.built_nodes = 0
