@@ -64,7 +64,7 @@ unix_script = tools.WriteFile(  UNIX_SCRIPT,    target = setup_dir + UNIX_SCRIPT
 setup_script = tools.WriteFile( SETUP_SCRIPT,   target = setup_dir + "setup.py" )
 
 sdist = tools.CreateDist( setup_script, target = dist_dir, command = "sdist", formats = "zip,bztar" )
-wdist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "msi,wininst" )
+wdist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "wininst" )
 rpm_dist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "rpm" )
 
 Depends( [sdist, wdist, rpm_dist], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
