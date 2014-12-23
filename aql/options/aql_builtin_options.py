@@ -23,7 +23,7 @@ __all__ = (
 
 import os
 
-from aql.util_types import IgnoreCaseString, UpperCaseString
+from aql.util_types import String, IgnoreCaseString, UpperCaseString
 
 from .aql_options import Options
 from .aql_option_value import SimpleOperation

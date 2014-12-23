@@ -528,19 +528,22 @@ def   getShellScriptEnv( script, args = None, _var_re = re.compile( r'^\w+=' ) )
   
   args = toSequence( args )
   
-  script = os.path.abspath( os.path.expanduser( os.path.expandvars(script) ) )
+  script_path = os.path.abspath( os.path.expanduser( os.path.expandvars(script) ) )
   
   os_env = os.environ
   
-  cwd, script = os.path.split( script )
+  cwd, script = os.path.split( script_path )
   
   if os.name == "nt":
     cmd = ['call', script ]
-  else:
-    cmd = ['.', script ]
+    cmd += args
+    cmd += ['&&', 'set']
   
-  cmd += args
-  cmd += ['&&', 'set']
+  else:
+    cmd = [ '.', './' + script ]
+    cmd += args
+    cmd += ['&&', 'printenv']
+    cmd = ' '.join( cmd )
   
   try:
     p = subprocess.Popen( cmd, cwd = cwd, shell = True, env = os_env,
