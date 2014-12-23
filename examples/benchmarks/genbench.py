@@ -376,6 +376,8 @@ import os
 
 SetBuildDir('output')
 
+options.signature = 'time'
+
 cpp = Tool('c++')
 
 cpp.options.include = os.path.abspath('.')
