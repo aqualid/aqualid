@@ -13,8 +13,87 @@ Benchmark results:
 Aqualid |      |      |      |      |              |               |
 --------+-------------+-------------+--------------+---------------+
 
+bench10x10:
+==========
+
+  WAF:
+    mem_usage_waf_14-12-26_01:04:00.txt
+    Peak memory usage: 14676
+    Time: 29.83287262916565
+    
+    No build:
+      Memory usage report: mem_usage_waf_14-12-26_01:11:42.txt
+      Peak memory usage: 10556
+      Time: 0.757382869720459
+
+  SCons:
+    Memory usage report: mem_usage_scons_14-12-26_01:07:38.txt
+    Peak memory usage: 18992
+    Time: 30.592342853546143
+    
+    No build:
+      Memory usage report: mem_usage_scons_14-12-26_01:10:54.txt
+      Peak memory usage: 17208
+      Time: 1.7614600658416748
+
+  Aqualid:
+    Memory usage report: mem_usage_python_14-12-26_01:09:13.txt
+    Peak memory usage: 13672
+    Time: 30.584914684295654
+
+    No build:
+      Memory usage report: mem_usage_python_14-12-26_01:10:20.txt
+      Peak memory usage: 12884
+      Time: 0.7567257881164551
+  
+  Make:
+    Time: 29.58003282546997
+    
+    No build:
+      Time: 0.2556774616241455
+
+bench50x20:
+===========
+  
+  Aqualid:
+    Memory usage report: mem_usage_python_14-12-26_08:50:47.txt
+    Peak memory usage: 19600
+    Time: 301.296941280365
+    
+    No build:
+      Memory usage report: mem_usage_python_14-12-26_08:58:36.txt
+      Peak memory usage: 16096
+      Time: 2.764598846435547
+  
+  SCons:
+    Memory usage report: mem_usage_scons_14-12-26_01:19:52.txt
+    Peak memory usage: 77832
+    Time: 302.3306245803833
+    
+    No build:
+      Memory usage report: mem_usage_scons_14-12-26_01:25:55.txt
+      Peak memory usage: 63656
+      Time: 12.035361051559448
+
+
+  WAF:
+    Memory usage report: mem_usage_waf_14-12-26_01:27:21.txt
+    Peak memory usage: 42472
+    Time: 291.0272374153137
+    
+    No build:
+      Memory usage report: mem_usage_waf_14-12-26_01:33:11.txt
+      Peak memory usage: 17412
+      Time: 1.5105257034301758
+   
+   Make:
+    Time: 294.2592706680298
+    
+    No build:
+      Time: 1.008063793182373
 
 bench50x10:
+==========
   Aqualid:
     Full:
       memory usage peaks: (15616, 15396)
@@ -42,3 +121,50 @@ bench50x10:
     
 Building targets finished (4 min 27 sec)
 Total time: 4 min 27 sec
+
+
+bench100x100:
+=============
+
+  Aqualid:
+    Memory usage report: mem_usage_python_14-12-26_09:12:06.txt
+    Peak memory usage: 126644
+    Time: 3127.544729948044
+    
+    No build:
+      Memory usage report: mem_usage_python_14-12-26_10:12:23.txt
+      Peak memory usage: 121360
+      Time: 48.096006631851196
+
+
+  WAF:
+    Memory usage report: mem_usage_waf_14-12-26_10:15:14.txt
+    Peak memory usage: 724408
+    Time: 3097.9311816692352
+    
+    No build:
+      Memory usage report: mem_usage_waf_14-12-27_00:12:56.txt
+      Peak memory usage: 108780
+      Time: 15.799631118774414
+
+  
+  SCons:
+  
+    Memory usage report: mem_usage_scons_14-12-27_00:15:43.txt
+    Peak memory usage: 1085900
+    Time: 3258.431975364685
+    
+    No build:
+      Memory usage report: mem_usage_scons_14-12-27_01:12:17.txt
+      Peak memory usage: 641680
+      Time: 232.00546288490295
+
+
+bench1000x100:
+==============
+
+  Aqualid:
+    Memory usage report: mem_usage_python_14-12-27_01:27:14.txt
+    Peak memory usage: 697184
+    Time: 32796.19154429436
+

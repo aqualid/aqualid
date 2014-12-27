@@ -999,7 +999,12 @@ class Options (object):
     except KeyError:
       pass
     
-    cache = self.__dict__['__cache']
+    attrs = self.__dict__
+    
+    if attrs['__opt_values']:
+      cache = attrs['__cache']
+    else:
+      cache = attrs['__parent'].__dict__['__cache']
     
     try:
       return cache[ option_value ]
