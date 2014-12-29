@@ -64,6 +64,11 @@ bench50x20:
       Memory usage report: mem_usage_python_14-12-26_08:58:36.txt
       Peak memory usage: 16096
       Time: 2.764598846435547
+      
+      Memory usage report: mem_usage_python_14-12-27_17:27:52.txt
+      Peak memory usage: 15440
+      Time: 2.260558605194092
+
   
   SCons:
     Memory usage report: mem_usage_scons_14-12-26_01:19:52.txt
@@ -167,4 +172,46 @@ bench1000x100:
     Memory usage report: mem_usage_python_14-12-27_01:27:14.txt
     Peak memory usage: 697184
     Time: 32796.19154429436
+    
+    No build:
+      Memory usage report: mem_usage_python_14-12-28_22:29:13.txt
+      Peak memory usage: 1129372
+      Time: 490.63968324661255
+
+Waf:
+    [  9425/101000] Compiling lib_94/class_24.cpp
+    Waf: Leaving directory `/home/me/benchmarks/bench1000x100/out'
+    Build failed
+    Traceback (most recent call last):
+      File "/lib/waf3-1.8.4-49677eda8dc0a18b3ab8371496a5bf19/waflib/Context.py", line 344, in exec_command
+        p = subprocess.Popen(cmd, **kw)
+      File "/usr/lib/python3.4/subprocess.py", line 858, in __init__
+        restore_signals, start_new_session)
+      File "/usr/lib/python3.4/subprocess.py", line 1394, in _execute_child
+        restore_signals, start_new_session, preexec_fn)
+    OSError: [Errno 12] Cannot allocate memory
+
+    During handling of the above exception, another exception occurred:
+
+    Traceback (most recent call last):
+      File "/lib/waf3-1.8.4-49677eda8dc0a18b3ab8371496a5bf19/waflib/Task.py", line 209, in process
+        ret = self.run()
+      File "<string>", line 23, in f
+      File "/lib/waf3-1.8.4-49677eda8dc0a18b3ab8371496a5bf19/waflib/Task.py", line 178, in exec_command
+        return bld.exec_command(cmd, **kw)
+      File "/lib/waf3-1.8.4-49677eda8dc0a18b3ab8371496a5bf19/waflib/Context.py", line 351, in exec_command
+        raise Errors.WafError('Execution failure: %s' % str(e), ex=e)
+    waflib.Errors.WafError: Execution failure: [Errno 12] Cannot allocate memory
+
+    Memory usage report: mem_usage_waf_14-12-28_01:53:51.txt
+    Peak memory usage: 970780
+    Time: 2997.7374637126923
+
+Scons:
+  python ../memory_monitor.py scons
+  scons: Reading SConscript files ...
+
+  Memory usage report: mem_usage_scons_14-12-28_12:11:28.txt
+  Peak memory usage: 1423812
+  Time: 3992.1388335227966
 
