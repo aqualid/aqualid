@@ -77,7 +77,7 @@ scintilla_objs = [ cpp.Compile( scintilla_sources ) ]
 if is_windows_build:
   scintilla_objs += [ cpp.Compile( os.path.join(win32_dir, "ScintillaWin.cxx"), use_direct2d = use_direct2d )]
 
-def_file = FileValue( os.path.join( win32_dir, "Scintilla.def" ) ) if is_windows_build else None
+def_file = FileEntity( os.path.join( win32_dir, "Scintilla.def" ) ) if is_windows_build else None
 
 scintilla_dll = cpp.LinkSharedLibrary( scintilla_objs, base_objs, target = 'Scintilla', def_file = def_file )
 

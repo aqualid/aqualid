@@ -117,7 +117,7 @@ class AqlLink (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_values ):
     return self.target
   
   #//-------------------------------------------------------//
@@ -186,9 +186,9 @@ class AqlLink (aql.Builder):
     
     std_modules = set()
     
-    for value in node.getSourceValues():
-      file_name = value.name
-      mod_std_imports, mod_deps, mod_content = value.data
+    for entity in node.getSourceEntities():
+      file_name = entity.name
+      mod_std_imports, mod_deps, mod_content = entity.data
       
       if not mod_content:
         continue
@@ -214,7 +214,7 @@ class AqlLink (aql.Builder):
     
     aql.writeTextFile( self.target, content )
     
-    target = self.makeFileValue( self.target  )
+    target = self.makeFileEntity( self.target )
     
     node.addTargets( target )
 

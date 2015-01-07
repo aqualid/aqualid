@@ -521,7 +521,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   FileValue(self, filepath, options = None ):
+  def   FileEntity(self, filepath, options = None ):
     if options is None:
       options = self.options
     file_type = FileTimestampEntity if options.file_signature == 'timestamp' else FileChecksumEntity
@@ -535,7 +535,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   Value( self, data, name = None ):
+  def   Entity( self, data, name = None ):
     return SimpleEntity( data = data, name = name )
   
   #//-------------------------------------------------------//
