@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.values import SimpleValue
+from aql.values import SimpleEntity
 from aql.nodes import Node, Builder
 from aql.utils import Tempfile, Tempdir,\
   removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
@@ -90,7 +90,7 @@ options.build_variant = "final"
       def   __init__(self):
         self.signature = b''
       def   build( self, build_manager, vfile, node ):
-        return self.nodeTargets( SimpleValue( b"", name = "value1" ) )
+        return self.nodeTargets( SimpleEntity( b"", name = "value1" ) )
     
     class TestTool:
       def   TestBuilder( self, prj, options ):
@@ -209,7 +209,7 @@ options.build_variant = "final"
       
       self.built_nodes = 0
       
-      v1 = SimpleValue("a", name = "value1")
+      v1 = SimpleEntity("a", name = "value1")
       
       tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
       prj.Build()
@@ -219,7 +219,7 @@ options.build_variant = "final"
       
       self.built_nodes = 0
       
-      v1 = SimpleValue("ab", name = "value1")
+      v1 = SimpleEntity("ab", name = "value1")
       
       tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
       prj.Build()
@@ -229,7 +229,7 @@ options.build_variant = "final"
       
       self.built_nodes = 0
       
-      v1 = SimpleValue("ab", name = "value1")
+      v1 = SimpleEntity("ab", name = "value1")
       
       tool.Noop( v1 = v1, v2 = "b", v3 = "c" )
       prj.Build()

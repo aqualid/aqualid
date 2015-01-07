@@ -9,7 +9,7 @@ import tarfile
 
 from aql.util_types import isUnicode, encodeStr, decodeBytes
 from aql.utils import openFile
-from aql.values import FileValueBase
+from aql.values import FileEntityBase
 from aql.nodes import Builder, FileBuilder
 from .aql_tools import Tool
 
@@ -18,7 +18,7 @@ __all__ = (
 )
 
 """
-Unique Value - name + type
+Unique Entity - name + type
 
 node = ExecuteCommand('gcc --help -v')
 
@@ -62,7 +62,7 @@ class ExecuteCommand (Builder):
   #//-------------------------------------------------------//
   
   def   getBuildStrArgs( self, node, brief ):
-    cmd = node.getSourceValues()
+    cmd = node.getSourceEntities()
     return (cmd,)
 
 #//===========================================================================//
@@ -80,14 +80,14 @@ class CopyFilesBuilder (FileBuilder):
   def   buildBatch( self, node ):
     target = self.target
     
-    for src_value in node.getSourceValues():
-      src = src_value.get()
+    for src_entity in node.getSourceEntities():
+      src = src_entity.get()
       
       dst = os.path.join( target, os.path.basename( src ) )
       shutil.copyfile( src, dst )
       shutil.copymode( src, dst )
       
-      node.addSourceTargets( src_value, dst )
+      node.addSourceTargets( src_entity, dst )
   
   #//-------------------------------------------------------//
   
@@ -101,8 +101,8 @@ class CopyFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
-    src = source_values[0].get()
+  def   getTargetEntities( self, source_entities ):
+    src = source_entities[0].get()
     return ( os.path.join( self.target, os.path.basename(src) ), )
 
 #//===========================================================================//
@@ -137,7 +137,7 @@ class CopyFileAsBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_entities ):
     return self.target
 
 #//===========================================================================//
@@ -182,9 +182,9 @@ class TarFilesBuilder (FileBuilder):
   #//-------------------------------------------------------//
   
   @staticmethod
-  def   __addValue( arch, value ):
-    arcname = value.name
-    data = value.get()
+  def   __addEntity( arch, entity ):
+    arcname = entity.name
+    data = entity.get()
     if isUnicode( data ):
       data = encodeStr( data )
   
@@ -199,11 +199,11 @@ class TarFilesBuilder (FileBuilder):
     
     arch = tarfile.open( name = self.target, mode = self.mode )
     try:
-      for value in node.getSourceValues():
-        if isinstance( value, FileValueBase ):
-          self.__addFile( arch, value.get() )
+      for entity in node.getSourceEntities():
+        if isinstance( entity, FileEntityBase ):
+          self.__addFile( arch, entity.get() )
         else:
-          self.__addValue( arch, value )
+          self.__addEntity( arch, entity )
       
     finally:
       arch.close()
@@ -222,7 +222,7 @@ class TarFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_entities ):
     return self.target
 
 #//===========================================================================//
@@ -261,15 +261,15 @@ class ZipFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   __addFiles( self, arch, source_values ):
-    for value in source_values:
-      if isinstance( value, FileValueBase ):
-        filepath = value.get()
+  def   __addFiles( self, arch, source_entities ):
+    for entity in source_entities:
+      if isinstance( entity, FileEntityBase ):
+        filepath = entity.get()
         arcname = self.__getArcname( filepath )
         arch.write( filepath, arcname )
       else:
-        arcname = value.name
-        data = value.get()
+        arcname = entity.name
+        data = entity.get()
         if isUnicode( data ):
           data = encodeStr( data )
         
@@ -280,18 +280,18 @@ class ZipFilesBuilder (FileBuilder):
   def   build( self, node ):
     target = self.target
     
-    source_values = node.getSourceValues()
+    source_entities = node.getSourceEntities()
     
     arch = self.__openArch()
     
     try:
-      self.__addFiles( arch, source_values )
+      self.__addFiles( arch, source_entities )
     except zipfile.LargeZipFile:
       arch.close()
       arch = None
       arch = self.__openArch( large = True )
       
-      self.__addFiles( arch, source_values )
+      self.__addFiles( arch, source_entities )
     finally:
       if arch is not None:
         arch.close()
@@ -310,7 +310,7 @@ class ZipFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_entities ):
     return self.target
 
 #//===========================================================================//
@@ -341,7 +341,7 @@ class WriteFileBuilder (Builder):
 
         f.write( src )
     
-    node.addTargets( self.makeFileValue( target ) )
+    node.addTargets( self.makeFileEntity( target ) )
   
   #//-------------------------------------------------------//
   
@@ -355,7 +355,7 @@ class WriteFileBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_entities ):
     return self.target
 
 #//===========================================================================//
@@ -363,8 +363,6 @@ class WriteFileBuilder (Builder):
 class DistBuilder (FileBuilder):
 
   NAME_ATTRS = ('target',)
-  signature = None  # TODO: Build Always. Add parsing of setup.py output
-                    # copying <filepath> -> <detination dir>
 
   def   __init__(self, options, command, formats, target ):
 
@@ -399,14 +397,48 @@ class DistBuilder (FileBuilder):
 
     script = node.getSources()[0]
 
-    cmd = [sys.executable, script ]
+    cmd = [ sys.executable, script ]
     cmd += self.script_args
 
     script_dir = os.path.dirname( script )
     out = self.execCmd( cmd, script_dir )
-
+    
+    # TODO: Add parsing of setup.py output "copying <filepath> -> <detination dir>"
     node.setNoTargets()
 
+    return out
+
+#//===========================================================================//
+
+class   InstallDistBuilder (FileBuilder):
+
+  NAME_ATTRS = ('user',)
+
+  def   __init__(self, options, user ):
+
+    self.user = user
+
+  #//-------------------------------------------------------//
+
+  def   getTraceName(self, brief ):
+    return "distutils install"
+
+  #//-------------------------------------------------------//
+
+  def   build( self, node ):
+
+    script = node.getSources()[0]
+
+    cmd = [ sys.executable, script, "install" ]
+    if self.user:
+      cmd.append( "--user" )
+
+    script_dir = os.path.dirname( script )
+    out = self.execCmd( cmd, script_dir )
+    
+    # TODO: Add parsing of setup.py output "copying <filepath> -> <detination dir>"
+    node.setNoTargets()
+    
     return out
 
 #//===========================================================================//
@@ -427,6 +459,9 @@ class BuiltinTool( Tool ):
 
   def   CreateDist( self, options, target, command, formats = None ):
     return DistBuilder( options, command = command, target = target, formats = formats )
+  
+  def   InstallDist( self, options, user = True ):
+    return InstallDistBuilder( options, user = user )
   
   def   CreateZip(self, options, target, rename = None, ext = None ):
     return ZipFilesBuilder( options, target = target, rename = rename, ext = ext )

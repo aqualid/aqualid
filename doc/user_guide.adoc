@@ -1,0 +1,346 @@
+= Aqualid build system user's guide
+
+== Introduction:
+
+Aqualid is general purpose build system.
+The main difference from many other build systems (like SCons, Waf, CMake, Qmake, make etc.) is
+that it's designed to build any type of entities. The most of build systems is designed to build
+files. Aqualid doesn't know anything about types of the building entities.
+Entity can be any type like file, string, URL, DB record etc.
+
+Why is it called Aqualid? +
+In science fiction reality, http://www.goodreads.com/book/show/12941319-the-unman-kovrigin-s-chronicles[Aqualid] is universal building material
+that can be used in the construction of just about anything.
+Great thanks to http://en.wikipedia.org/wiki/Vadim_Shefner[Vadim Shefner] for this excellent story.
+
+=== Main principles
+  
+Correctness::
+Aqualid tracks changes in all input and output entities (many other build systems don't track changes in output files),
+as well as any changes in builder's flags.
+By default Aqualid uses MD5 checksum to track changes in files, but it can be easily changed to use timestamps.
+    
+Performance::
+Good performance is very important for any build system.
+Fast full builds and especially incremental builds is the main reason why developers use build systems.
+Otherwise they would use simple shell/batch scripts.
+To improve build performance Aqualid tracks dependencies between targets and execute independent targets in
+parallel to better utilize available system resources like CPU, memory etc.
+  
+Scalability::
+Build time depends from number building targets.
+Aqualid tries to use efficient algorithms to track dependencies between targets.
+Also Aqualid tries to use minimal memory needed to build the remaining targets.
+To achieve this it frees memory of already built targets.
+    
+Flexible::
+Aqualid allows to use any set of tools using customized flags in portable ways.
+For example it's easy to change compiler or specific version of compiler from command line or build scripts.
+No project reconfiguration required.
+Any part of project can be built by certain compiler or certain version of compiler or with custom flags.
+While other part of project can be built by another compiler version.
+    
+Simple::
+Aqualid build scripts are Python scripts.
+Structure of build scripts is very similar to SCons build scripts, but they are not compatible.
+Declaration of building targets is like a function call. Result of this function can be passed to other functions.
+
+
+== Installation:
+
+Aqualid is a Python script. It should work fine with any version of Python from 2.6 to 3.x
+  
+=== On Windows:
+Download Windows installer Aqualid-*.exe and run it. Then follow the installation wizard steps.
+  
+=== On Any System:
+Download and extract Aqualid-<version>.zip or Aqualid-<version>.tar.bz2 +
+Then go to the extracted directory Aqualid-<version>.
+
+To install for all users:
+....
+> python setup.py install
+....
+
+To install for the current user:
+....
+> python setup.py install --user
+....
+
+== Usage examples:
+  
+=== Build a simple C++ program:
+
+[source,python]
+.Build script:
+----
+tools.cpp.LinkProgram( 'hello.cpp', target = 'hello' )
+----
+
+Global variable `tools` is used to get access to C{plus}{plus} tool using its name `cpp`. + 
+`LinkProgram` is a method of C{plus}{plus} tool which is used to create an executable. +
+`target` argument is used to specify name of the executable file. +
+For Windows it automatically appends suffix `.exe`. For Unix it doesn't append any suffix. 
+
+.Output:
+----
+$ aql
+Reading scripts...
+Reading scripts finished (44 ms)
+Building targets...
+(1/2) g++ << hello.cpp >> hello.o
+(2/2) g++ << hello.o >> hello
+Building targets finished (778 ms)
+Total time: 888 ms
+----
+
+.Verbose output: 
+----
+$ aql -v
+Reading scripts...
+Reading scripts finished (38 ms)
+Building targets...
+(1/2) /usr/bin/g++ -frtti -fexceptions -pipe -x c++ -g -fPIC -O0 -fno-inline -c -MMD << /home/me/work/src/aqualid/examples/cpp_hello/hello.cpp >> /home/me/work/src/aqualid/examples/cpp_hello/output/linux_x86-64_debug_gcc_4.9.2/cpp_hello/hello.o
+(2/2) /usr/bin/g++ -pipe << /home/me/work/src/aqualid/examples/cpp_hello/output/linux_x86-64_debug_gcc_4.9.2/cpp_hello/hello.o >> /home/me/work/src/aqualid/examples/cpp_hello/output/linux_x86-64_debug_gcc_4.9.2/hello
+Building targets finished (590 ms)
+Total time: 694 ms
+----
+
+.Cross compilation from Linux for Windows 64-bit:
+----
+$ aql target_os=windows -v
+Reading scripts...
+Reading scripts finished (20 ms)
+Building targets...
+(1/2) /usr/bin/x86_64-w64-mingw32-g++ -frtti -fexceptions -pipe -x c++ -g -O0 -fno-inline -c -MMD << /home/me/work/src/aqualid/examples/cpp_hello/hello.cpp >> /home/me/work/src/aqualid/examples/cpp_hello/output/windows_x86-64_debug_gcc_4.9.2/cpp_hello/hello.o
+(2/2) /usr/bin/x86_64-w64-mingw32-g++ -pipe -Wl,--subsystem,console << /home/me/work/src/aqualid/examples/cpp_hello/output/windows_x86-64_debug_gcc_4.9.2/cpp_hello/hello.o >> /home/me/work/src/aqualid/examples/cpp_hello/output/windows_x86-64_debug_gcc_4.9.2/hello.exe                                                                               
+Building targets finished (266 ms)                                                                                                                                           
+Total time: 295 ms
+----
+
+.Cross compilation from Linux for Windows 32-bit:
+----
+$ aql target_os=windows target_arch=x86-32
+Reading scripts...
+Reading scripts finished (20 ms)
+Building targets...
+(1/2) /usr/bin/i686-w64-mingw32-g++ -frtti -fexceptions -pipe -x c++ -g -O0 -fno-inline -c -MMD << /home/me/work/src/aqualid/examples/cpp_hello/hello.cpp >> /home/me/work/src/aqualid/examples/cpp_hello/output/windows_x86-32_debug_gcc_4.9.2/cpp_hello/hello.o
+(2/2) /usr/bin/i686-w64-mingw32-g++ -pipe -Wl,--subsystem,console << /home/me/work/src/aqualid/examples/cpp_hello/output/windows_x86-32_debug_gcc_4.9.2/cpp_hello/hello.o >> /home/me/work/src/aqualid/examples/cpp_hello/output/windows_x86-32_debug_gcc_4.9.2/hello.exe
+Building targets finished (260 ms)
+Total time: 290 ms
+----
+
+Output directory depends from target OS, CPU architecture and version of C++ compiler. +
+For example, for GCC 4.9.2, OS  Linux 64 bit, output directory is `linux_x86-64_debug_gcc_4.9.2`. +
+For GCC 4.9.2, OS  Windows 64 bit, output directory is `windows_x86-64_debug_gcc_4.9.2`. +
+For GCC 4.9.2, OS  Windows 32 bit, output directory is `windows_x86-32_debug_gcc_4.9.2`.
+
+Different output directories allow us to have builds for multiple platforms at the same time.
+
+
+=== Build C++ static and shared libraries and link a program:
+
+.Project structure:
+....
+./
+  make.aql
+  src/
+    main.cpp
+    api/
+      tool_api.cpp
+      tool_api.hpp
+    lib/
+      tool.cpp
+      tool.hpp
+....
+
+[source,python]
+.Build script:
+----
+SetBuildDir('output')
+
+cpp = Tool('c++')
+
+lib = cpp.LinkStaticLibrary( 'src/lib/tool.cpp', cpppath = 'src/lib', target = 'tool' )
+
+dll = cpp.LinkSharedLibrary( 'src/api/tool_api.cpp', lib, target = 'toolapi',
+                             cpppath = [ 'src/lib', 'src/api' ],
+                             cppdefines = 'MAKING_LIBRARY' )
+
+dll_implib = dll.at('implib')
+
+main = cpp.LinkProgram( 'src/main.cpp', dll_implib, target = 'test', cpppath = 'src/api' )
+----
+
+Method `SetBuildDir` is used explicitly set build output directory.
+By default it's set to 'output' directory inside directory of initial build script file.
+This method can be called anytime from any script. Output directory may be set to any place.
+
+Method `Tool` returns a tool by name. Similar to the `tools` variable.
+
+Methods `LinkStaticLibrary` and `LinkSharedLibrary` of C{plus}{plus} tool build static and shared libraries.
+
+`cpppath` and `cppdefines` options are used to set C{plus}{plus} preprocessor include paths and definitions.
+
+`LinkSharedLibrary` returns several targets: shared library itself and import library which should be used to link the
+shared library with other shared libraries or executables.
+Specific targets can be filtered by tags using method `at`. For example shared library can accessed by tag `shlib`. 
+
+At the last line we link a program `test` from `main.cpp` source file and the import library.
+
+
+.Output
+----
+$ aql
+Reading scripts...
+Reading scripts finished (44 ms)
+Building targets...
+(1/4) g++ << tool.cpp >> tool.o
+(2/4) ar << tool.o >> libtool.a
+(3/5) g++ << tool_api.cpp >> tool_api.o
+(4/5) g++ << tool_api.o libtool.a >> libtoolapi.so
+(5/6) g++ << main.cpp >> main.o
+(6/6) g++ << main.o libtoolapi.so >> test
+Building targets finished (1 sec 600 ms)
+Total time: 1 sec 663 ms
+----
+
+=== Build sub-projects
+Lets split the previous project into three sub-projects: static library, shared library and executable.
+
+.Project structure:
+....
+./
+  make.aql
+  make.cfg
+  src/
+    main.cpp
+    make.aql
+    api/
+      make.aql
+      tool_api.cpp
+      tool_api.hpp
+    lib/
+      make.aql
+      tool.cpp
+      tool.hpp
+....
+
+[source,python]
+.make.cfg:
+----
+import os.path
+
+build_dir = os.path.abspath('output')
+----
+This is common configuration file which sets just one option `build_dir` - base build output directory.
+All our sub-projects use this configuration file to have the same output directory.
+
+
+[source,python]
+.lib/make.aql
+----
+Config('../../make.cfg')
+
+lib = tools.cpp.LinkStaticLibrary( 'tool.cpp', api_cpppath = '.', target = 'tool' )
+
+Alias( 'lib', lib, "Build static library" )
+----
+This build script is designed to build the static library. +
+`Config` method is used to read the configuration file and update options. In our case case we set only one option - `build_dir`. +
+
+Option `api_cpppath` is used to defined include paths which should be used by clients of this library.  
+
+Method `Alias` is used to add user friendly alias for a target or set of targets.
+User can use aliases to build only certain targets.
+
+
+[source,python]
+.api/make.aql
+----
+Config('../../make.cfg')
+
+lib = Script('../lib/make.aql')['lib']
+
+dll = tools.cpp.LinkSharedLibrary( 'tool_api.cpp', lib, target = 'toolapi',
+                                   cpppath = lib.options.api_cpppath,
+                                   api_cpppath = '.',
+                                   cppdefines = 'MAKING_LIBRARY' )
+
+Alias( 'dll', dll,  "Build shared library" )
+----
+This build script of the shared library. +
+
+Method `Script` is used to read another build script file.
+It also returns a dictionary of all local variables defined inside the executed script.
+
+Option `cpppath` is set to `lib.options.api_cpppath` to use the static library API.
+
+[source,python]
+.src/make.aql
+----
+Config('../make.cfg')
+
+dll = Script('api/make.aql')['dll']
+
+dll_implib = dll.at('implib')
+
+main = tools.cpp.LinkProgram( 'main.cpp', dll_implib, target = 'test',
+                              cpppath = dll.options.api_cpppath )
+
+Alias( 'main', main, "Build main program" )
+----
+
+This build script of the main executable. +
+
+[source,python]
+.make.aql
+----
+Script('src/make.aql')
+----
+A build script in the top directory of the project just for convenience to be able to run a build from the project top. +   
+
+
+Running Aqualid from the top directory will build all sub-projects.
+CLI option `-t` can be use to list all targets which will be built:
+----
+$ aql -t
+Reading scripts...
+Reading scripts finished (56 ms)
+Building targets...
+
+  Targets:
+==================
+
+* dll  :  Build shared library
+* lib  :  Build static library
+* main :  Build main program
+
+Building targets finished ()
+Total time: 123 ms
+----
+
+== Project and options
+
+stub
+
+=== Structure and build/clean targets
+
+stub
+
+== Tools
+
+stub
+
+=== Configuration
+
+stub
+
+=== Builders
+
+stub
+
+== Build
+
+stub
+

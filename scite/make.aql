@@ -6,7 +6,7 @@ cpp = Tool('c++', tools_path = '../tools')
 
 cpp_options = cpp.options
 
-ReadOptions( 'make.cfg', cpp_options )
+Config( 'make.cfg', cpp_options )
 
 is_windows_build = bool( cpp_options.target_os == 'windows')
 is_unix_build = not is_windows_build

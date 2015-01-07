@@ -1,9 +1,9 @@
 import os
 import itertools
 
-from aql import readTextFile, Tempfile, executeCommand, whereProgram, findOptionalProgram, findFileInPaths,\
+from aql import findFileInPaths,\
   StrOptionType, BoolOptionType, VersionOptionType, ListOptionType,\
-  PathOptionType, EnumOptionType, SimpleOperation, Options, \
+  PathOptionType, AbsPathOptionType, EnumOptionType, SimpleOperation, Options, \
   Builder, FileBuilder, BatchNode, Node, Tool 
 
 #//===========================================================================//
@@ -67,11 +67,6 @@ def   _addIxes( prefix, suffix, values ):
 
 #//===========================================================================//
 
-def   _absFilePaths( file_paths ):
-  return tuple( os.path.normcase( os.path.abspath( path ) ) for path in file_paths )
-
-#//===========================================================================//
-
 def   _preprocessorOptions( options ):
   
   options.cppdefines = ListOptionType( unique = True, description = "C/C++ preprocessor defines", separators = None )
@@ -80,17 +75,21 @@ def   _preprocessorOptions( options ):
   options.cppdefines_flags = ListOptionType( separators = None )
   options.cppdefines_flags += SimpleOperation( _addPrefix, options.cppdefines_prefix, options.cppdefines )
   
-  options.cpppath = ListOptionType( value_type = PathOptionType(), unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
-  options.include = options.cpppath
-  options.cpppath_prefix  = StrOptionType( description = "Flag for C/C++ preprocessor paths.", is_hidden = True )
   options.cpppath_flags = ListOptionType( separators = None )
-  options.cpppath_flags = SimpleOperation( _addPrefix, options.cpppath_prefix, SimpleOperation( _absFilePaths, options.cpppath ) )
+  options.cpppath_prefix  = StrOptionType( description = "Flag for C/C++ preprocessor paths.", is_hidden = True )
   
-  options.ext_cpppath   = ListOptionType( value_type = PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
+  options.cpppath = ListOptionType( value_type = AbsPathOptionType(), unique = True, description = "C/C++ preprocessor paths to headers", separators = None )
+  options.include = options.cpppath
+  options.cpppath_flags = SimpleOperation( _addPrefix, options.cpppath_prefix, options.cpppath )
+  
+  options.api_cpppath = ListOptionType( value_type = AbsPathOptionType(), unique = True, description = "C/C++ preprocessor paths to API headers", separators = None )
+  options.cpppath_flags += SimpleOperation( _addPrefix, options.cpppath_prefix, options.api_cpppath )
+  
+  options.ext_cpppath   = ListOptionType( value_type = AbsPathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
   options.ext_include   = options.ext_cpppath
-  options.cpppath_flags += SimpleOperation( _addPrefix, options.cpppath_prefix, SimpleOperation( _absFilePaths, options.ext_cpppath ) )
-  options.ext_cpppath   = ListOptionType( value_type = PathOptionType(), unique = True, description = "C/C++ preprocessor path to external headers", separators = None )
-  options.sys_cpppath   = ListOptionType( value_type = PathOptionType(), description = "C/C++ preprocessor path to standard headers", separators = None )
+  options.cpppath_flags += SimpleOperation( _addPrefix, options.cpppath_prefix, options.ext_cpppath )
+  
+  options.sys_cpppath = ListOptionType( value_type = AbsPathOptionType(), description = "C/C++ preprocessor path to standard headers", separators = None )
 
 #//===========================================================================//
 
@@ -108,7 +107,7 @@ def   _compilerOptions( options ):
   options.ccflags = ListOptionType( description = "Common C/C++ compiler flags", separators = None )
   options.occflags = ListOptionType( description = "Common C/C++ compiler optimization flags", separators = None )
   
-  options.cc      = PathOptionType( description = "C/C++ compiler program" )
+  options.cc      = AbsPathOptionType( description = "C/C++ compiler program" )
   options.cc_name = StrOptionType( is_tool_key = True, ignore_case = True, description = "C/C++ compiler name" )
   options.cc_ver  = VersionOptionType( is_tool_key = True, description = "C/C++ compiler version" )
   options.cc_cmd  = ListOptionType( separators = None, description = "C/C++ compiler full command", is_hidden = True)
@@ -124,7 +123,7 @@ def   _compilerOptions( options ):
 #//===========================================================================//
 
 def   _resourceCompilerOptions( options ):
-  options.rc = PathOptionType( description = "C/C++ resource compiler program" )
+  options.rc = AbsPathOptionType( description = "C/C++ resource compiler program" )
   options.ressuffix = StrOptionType( description = "Compiled resource file suffix.", is_hidden = True )
   
   options.rcflags = ListOptionType( description = "C/C++ resource compiler flags", separators = None )
@@ -140,20 +139,20 @@ def   _linkerOptions( options ):
   options.libsuffix = StrOptionType( description = "Static library archiver suffix.", is_hidden = True )
   options.libflags  = ListOptionType( description = "Static library archiver flags", separators = None )
   options.olibflags = ListOptionType( description = "Static library archiver optimization flags", separators = None )
-  options.lib       = PathOptionType( description = "Static library archiver program" )
+  options.lib       = AbsPathOptionType( description = "Static library archiver program" )
   options.lib_cmd   = ListOptionType( separators = None, description = "Static library archiver full command", is_hidden = True )
   options.lib_cmd   = [ options.lib ] + options.libflags + options.olibflags
   
   options.shlibprefix = StrOptionType( description = "Shared library prefix.", is_hidden = True )
   options.shlibsuffix = StrOptionType( description = "Shared library suffix.", is_hidden = True )
   
-  options.libpath = ListOptionType( value_type = PathOptionType(), unique = True,
+  options.libpath = ListOptionType( value_type = AbsPathOptionType(), unique = True,
                                         description = "Paths to external libraries", separators = None )
   options.libpath_prefix  = StrOptionType( description = "Flag for library paths.", is_hidden = True )
   options.libpath_flags = ListOptionType( separators = None )
-  options.libpath_flags = SimpleOperation( _addPrefix, options.libpath_prefix, SimpleOperation( _absFilePaths, options.libpath ) )
+  options.libpath_flags = SimpleOperation( _addPrefix, options.libpath_prefix, options.libpath )
   
-  options.libs  = ListOptionType( value_type = PathOptionType(), unique = True,
+  options.libs  = ListOptionType( value_type = StrOptionType(), unique = True,
                                       description = "Linking external libraries", separators = None )
   options.libs_prefix  = StrOptionType( description = "Prefix flag for libraries.", is_hidden = True )
   options.libs_suffix  = StrOptionType( description = "Suffix flag for libraries.", is_hidden = True )
@@ -163,7 +162,7 @@ def   _linkerOptions( options ):
   options.progsuffix = StrOptionType( description = "Program suffix.", is_hidden = True )
   options.linkflags  = ListOptionType( description = "Linker flags", separators = None )
   options.olinkflags = ListOptionType( description = "Linker optimization flags", separators = None )
-  options.link       = PathOptionType( description = "Linker program" )
+  options.link       = AbsPathOptionType( description = "Linker program" )
   options.link_cmd   = ListOptionType( separators = None, description = "Linker full command", is_hidden = True )
   options.link_cmd   = [ options.link ] + options.linkflags + options.olinkflags + options.libpath_flags + options.libs_flags
 
@@ -243,7 +242,7 @@ class CommonCppCompiler (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_values ):
     return self.getObjPath( source_values[0].get() )
   
   #//-------------------------------------------------------//
@@ -323,7 +322,7 @@ class CommonResCompiler (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_values ):
     return self.getObjPath( source_values[0].get() )
   
   #//-------------------------------------------------------//
@@ -386,11 +385,12 @@ class CommonCppLinkerBase( FileBuilder ):
   def   getSourceBuilders( self, node ):
     builders = {}
     
-    compiler = self.makeCompiler( node.options )
+    options = node.options
+    compiler = self.makeCompiler( options )
     
     self.addSourceBuilders( builders, self.getCppExts(), compiler )
     
-    rc_compiler = self.makeResCompiler( node.options )
+    rc_compiler = self.makeResCompiler( options )
     self.addSourceBuilders( builders, self.getResExts(), rc_compiler )
     
     return builders
@@ -420,7 +420,7 @@ class CommonCppLinkerBase( FileBuilder ):
     
     cwd = node.cwd
     
-    for src_file in node.getSourceValues():
+    for src_file in node.getSourceEntities():
       
       ext = os.path.splitext( src_file.get() )[1]
       builder = builders.get( ext, None )
@@ -441,7 +441,7 @@ class CommonCppLinkerBase( FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_values ):
     return self.target
   
   #//-------------------------------------------------------//

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType', 'BoolOptionType', 
+  'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType', 'AbsPathOptionType', 'BoolOptionType', 
   'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
   'autoOptionType', 'OptionHelpGroup', 'OptionHelp',
   'ErrorOptionTypeEnumAliasIsAlreadySet', 'ErrorOptionTypeEnumValueIsAlreadySet',
@@ -34,7 +34,7 @@ except AttributeError:
   zip_longest = itertools.izip_longest
 
 from aql.util_types import String, uStr, isString, toString, IgnoreCaseString,\
-                          Version, FilePath, toSequence, AqlException,\
+                          Version, FilePath, AbsFilePath, toSequence, AqlException,\
                           UniqueList, List, SplitListType, ValueListType,\
                           Dict, SplitDictType, ValueDictType,\
                           isSimpleValue
@@ -339,7 +339,7 @@ class OptionHelp( object ):
   
 #//===========================================================================//
 
-class OptionHelpGroup( object ):
+class   OptionHelpGroup( object ):
   __slots__ = (
     'name',
     'max_option_name_length',
@@ -495,6 +495,17 @@ class   PathOptionType (OptionType):
   def     __init__( self, description = None, group = None, range_help = None, is_tool_key = False, is_hidden = False, default = NotImplemented ):
     super(PathOptionType, self).__init__( FilePath, description, group, range_help,
                                           is_tool_key = is_tool_key, is_hidden = is_hidden, default = default )
+  
+  def   helpType(self):
+    return "File System Path"
+
+#//===========================================================================//
+#//===========================================================================//
+
+class   AbsPathOptionType (OptionType):
+  def     __init__( self, description = None, group = None, range_help = None, is_tool_key = False, is_hidden = False, default = NotImplemented ):
+    super(AbsPathOptionType, self).__init__( AbsFilePath, description, group, range_help,
+                                             is_tool_key = is_tool_key, is_hidden = is_hidden, default = default )
   
   def   helpType(self):
     return "File System Path"

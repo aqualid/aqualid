@@ -18,71 +18,71 @@
 #
 
 __all__ = (
-  'ValuesFile',
+  'EntitiesFile',
 )
 
 from aql.util_types import AqlException 
 from aql.utils import DataFile, FileLock
 
-from .aql_value_pickler import ValuePickler
+from .aql_value_pickler import EntityPickler
 
 #//===========================================================================//
 
-class   ErrorValuesFileUnknownValue( AqlException ):
-  def   __init__( self, value ):
-    msg = "Unknown value: %s" % (value, )
+class   ErrorEntitiesFileUnknownEntity( AqlException ):
+  def   __init__( self, entity ):
+    msg = "Unknown entity: %s" % (entity, )
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class ValuesFile (object):
+class EntitiesFile (object):
   
   __slots__ = (
     
     'data_file',
     'file_lock',
-    'key2value',
-    'value2key',
+    'key2entity',
+    'entity2key',
     'pickler',
   )
   
   #//---------------------------------------------------------------------------//
   
-  def   getValueByKey(self, key ):
-    return self.key2value.get(key, None )
+  def   getEntityByKey(self, key ):
+    return self.key2entity.get(key, None )
   
   #//---------------------------------------------------------------------------//
   
-  def   __getKeyByValueId(self, value_id ):
-    return self.value2key.get( value_id, None )
+  def   __getKeyByEntityId(self, entity_id ):
+    return self.entity2key.get( entity_id, None )
   
   #//---------------------------------------------------------------------------//
   
-  def   __addValueToCache(self, key, value_id, value ):
-    self.value2key[ value_id ] = key
-    self.key2value[ key ] = value
+  def   __addEntityToCache(self, key, entity_id, entity ):
+    self.entity2key[ entity_id ] = key
+    self.key2entity[ key ] = entity
   
   #//---------------------------------------------------------------------------//
   
-  def   __updateValueInCache(self, old_key, new_key, value_id, value ):
-    self.value2key[ value_id ] = new_key
-    del self.key2value[ old_key ]
-    self.key2value[ new_key ] = value
+  def   __updateEntityInCache(self, old_key, new_key, entity_id, entity ):
+    self.entity2key[ entity_id ] = new_key
+    del self.key2entity[ old_key ]
+    self.key2entity[ new_key ] = entity
   
   #//---------------------------------------------------------------------------//
   
   def   __clearCache(self ):
-    self.value2key.clear()
-    self.key2value.clear()
+    self.entity2key.clear()
+    self.key2entity.clear()
   
   #//---------------------------------------------------------------------------//
   
   def   __init__( self, filename, force = False ):
-    self.key2value = {}
-    self.value2key = {}
+    self.key2entity = {}
+    self.entity2key = {}
     self.data_file = None
-    self.pickler = ValuePickler()
+    self.pickler = EntityPickler()
     self.open( filename, force = force )
   
   #//---------------------------------------------------------------------------//
@@ -93,7 +93,7 @@ class ValuesFile (object):
   #//-------------------------------------------------------//
 
   #noinspection PyUnusedLocal
-  def   __exit__(self, exc_type, exc_value, traceback):
+  def   __exit__(self, exc_type, exc_entity, traceback):
     self.close()
   
   #//---------------------------------------------------------------------------//
@@ -112,12 +112,12 @@ class ValuesFile (object):
     loads = self.pickler.loads
     for key, data in data_file:
       try:
-        value = loads( data )
+        entity = loads( data )
       except Exception:
         invalid_keys.append( key )
       else:
-        value_id = value.valueId()
-        self.__addValueToCache( key, value_id, value )
+        entity_id = entity.getId()
+        self.__addEntityToCache( key, entity_id, entity )
       
     data_file.remove( invalid_keys )
   
@@ -135,36 +135,36 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   findValue( self, value ):
-    key = self.__getKeyByValueId( value.valueId() )
+  def   findEntity( self, entity ):
+    key = self.__getKeyByEntityId( entity.getId() )
     if key is None:
       return None
     
-    return self.getValueByKey( key )
+    return self.getEntityByKey( key )
   
   #//---------------------------------------------------------------------------//
   
-  def   addValue( self, value ):
+  def   addEntity( self, entity ):
     
-    reserve = not value.IS_SIZE_FIXED
+    reserve = not entity.IS_SIZE_FIXED
     
-    value_id = value.valueId()
-    key = self.__getKeyByValueId( value_id )
+    entity_id = entity.getId()
+    key = self.__getKeyByEntityId( entity_id )
     
     if key is None:
-      data = self.pickler.dumps( value )
+      data = self.pickler.dumps( entity )
       key = self.data_file.append( data, reserve )
       
-      self.__addValueToCache( key, value_id, value )
+      self.__addEntityToCache( key, entity_id, entity )
     
     else:
-      val = self.getValueByKey( key )
+      val = self.getEntityByKey( key )
       
-      if value != val:
-        data = self.pickler.dumps( value )
+      if entity != val:
+        data = self.pickler.dumps( entity )
         new_key = self.data_file.replace( key, data, reserve )
         
-        self.__updateValueInCache(key, new_key, value_id, value )
+        self.__updateEntityInCache(key, new_key, entity_id, entity )
         
         return new_key
     
@@ -172,32 +172,32 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   replaceValue(self, key, value ):
-    reserve = not value.IS_SIZE_FIXED
+  def   replaceEntity(self, key, entity ):
+    reserve = not entity.IS_SIZE_FIXED
     
-    data = self.pickler.dumps( value )
+    data = self.pickler.dumps( entity )
     new_key = self.data_file.replace( key, data, reserve )
     
-    self.__updateValueInCache(key, new_key, value.valueId(), value )
+    self.__updateEntityInCache(key, new_key, entity.getId(), entity )
   
   #//---------------------------------------------------------------------------//
   
-  def   findValues(self, values ):
-    return tuple( map( self.findValue, values ) )
+  def   findEntities(self, entities ):
+    return tuple( map( self.findEntity, entities ) )
   
   #//---------------------------------------------------------------------------//
   
-  def   addValues( self, values ):
-    return tuple( map( self.addValue, values ) )
+  def   addEntities( self, entities ):
+    return tuple( map( self.addEntity, entities ) )
   
   #//---------------------------------------------------------------------------//
   
-  def   removeValues( self, values ):
+  def   removeEntities( self, entities ):
     remove_keys = []
     
-    for value in values:
+    for entity in entities:
       
-      key = self.__getKeyByValueId( value.valueId() )
+      key = self.__getKeyByEntityId( entity.getId() )
       
       if key is not None:
         remove_keys.append( key )
@@ -206,8 +206,8 @@ class ValuesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   getValuesByKeys( self, keys ):
-    return [ self.getValueByKey( key ) for key in keys ]
+  def   getEntitiesByKeys( self, keys ):
+    return [ self.getEntityByKey( key ) for key in keys ]
   
   #//---------------------------------------------------------------------------//
   
@@ -223,19 +223,19 @@ class ValuesFile (object):
     if self.data_file is not None:
       self.data_file.selfTest()
     
-    for key, value in self.key2value.items():
-      value_id = value.valueId()  
+    for key, entity in self.key2entity.items():
+      entity_id = entity.getId()  
       
-      if value_id not in self.value2key:
-        raise AssertionError("value (%s) not in self.value2key" % (value_id,))
+      if entity_id not in self.entity2key:
+        raise AssertionError("entity (%s) not in self.entity2key" % (entity_id,))
         
-      if key != self.value2key[ value_id ]:
-        raise AssertionError("key(%s) != self.value2key[ value_id(%) ](%s) % (key, value_id, self.value2key[ value_id ])" )
+      if key != self.entity2key[ entity_id ]:
+        raise AssertionError("key(%s) != self.entity2key[ entity_id(%) ](%s) % (key, entity_id, self.entity2key[ entity_id ])" )
     
-    size = len(self.key2value)
+    size = len(self.key2entity)
     
-    if size != len(self.value2key):
-      raise AssertionError( "size(%s) != len(self.value2key)(%s)" % (size, len(self.value2key)) )
+    if size != len(self.entity2key):
+      raise AssertionError( "size(%s) != len(self.entity2key)(%s)" % (size, len(self.entity2key)) )
     
     data_file_size = len(self.data_file)
     if data_file_size != size:

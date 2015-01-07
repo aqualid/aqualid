@@ -11,7 +11,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values import FileChecksumValue, FileTimestampValue, SimpleValue, ValuePickler, pickleable
+from aql.values import FileChecksumEntity, FileTimestampEntity, SimpleEntity, EntityPickler, pickleable
 
 #//===========================================================================//
 
@@ -20,8 +20,8 @@ class TestValuePickler( AqlTestCase ):
     
     with Tempfile() as tmp:
       tmp_name = str(tmp)
-      vpick = ValuePickler()
-      value = FileChecksumValue( tmp )
+      vpick = EntityPickler()
+      value = FileChecksumEntity( tmp )
       
       vl = vpick.dumps( value )
       vl = vpick.dumps( value )
@@ -32,19 +32,19 @@ class TestValuePickler( AqlTestCase ):
       v = vpick.loads( vl )
       self.assertEqual( value, v )
       
-      value = FileTimestampValue( tmp )
+      value = FileTimestampEntity( tmp )
       v = vpick.loads( vpick.dumps( value ) )
       self.assertEqual( value, v )
     
-    value = SimpleValue( '123-345', name = tmp_name )
+    value = SimpleEntity( '123-345', name = tmp_name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = SimpleValue( '123-345', name = tmp_name )
+    value = SimpleEntity( '123-345', name = tmp_name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value, v )
     
-    value = SimpleValue( name = tmp_name )
+    value = SimpleEntity( name = tmp_name )
     v = vpick.loads( vpick.dumps( value ) )
     self.assertEqual( value.name, v.name )
     self.assertTrue( v.isNull() )
@@ -60,8 +60,8 @@ class TestValuePickler( AqlTestCase ):
     
     with Tempfile() as tmp:
       
-      vpick = ValuePickler()
-      value = FileChecksumValue( tmp )
+      vpick = EntityPickler()
+      value = FileChecksumEntity( tmp )
       
       t = lambda pload = vpick.loads, pdump = vpick.dumps, value = value: pload( pdump( value ) )
       t = timeit.timeit( t, number = 10000 )

@@ -31,7 +31,7 @@ import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir, expandFilePath
 from aql.util_types import FilePath, ValueListType, UniqueList, toSequence, AqlException
-from aql.values import NullValue, ValueBase, FileTimestampValue, FileChecksumValue, DirValue, SimpleValue
+from aql.values import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 
@@ -282,7 +282,7 @@ class BuilderWrapper( object ):
         sources += toSequence( value )
       else:
         for v in toSequence( value ):
-          if isinstance( v, (Node, NodeTargetsFilter, ValueBase) ):
+          if isinstance( v, (Node, NodeTargetsFilter, EntityBase) ):
             deps.append( v )
                   
         if name in self.arg_names:
@@ -524,19 +524,19 @@ class Project( object ):
   def   FileValue(self, filepath, options = None ):
     if options is None:
       options = self.options
-    file_type = FileTimestampValue if options.file_signature == 'timestamp' else FileChecksumValue
+    file_type = FileTimestampEntity if options.file_signature == 'timestamp' else FileChecksumEntity
     
     return file_type( filepath )
   
   #//-------------------------------------------------------//
   
-  def   DirValue( self, filepath ):
-    return DirValue( filepath )
+  def   DirEntity( self, filepath ):
+    return DirEntity( filepath )
   
   #//-------------------------------------------------------//
   
   def   Value( self, data, name = None ):
-    return SimpleValue( data = data, name = name )
+    return SimpleEntity( data = data, name = name )
   
   #//-------------------------------------------------------//
   
@@ -557,7 +557,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   ReadOptions( self, options_file, options = None ):
+  def   Config( self, options_file, options = None ):
     
     if options is None:
       options = self.options
@@ -656,7 +656,7 @@ class Project( object ):
   #//-------------------------------------------------------//
   
   def   AlwaysBuild( self, nodes ):
-    null_value = NullValue()
+    null_value = NullEntity()
     for node in toSequence( nodes ):
       node.depends( null_value )
   

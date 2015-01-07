@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'pickleable', 'ValuePickler',
+  'pickleable', 'EntityPickler',
 )
 
 import binascii
@@ -38,7 +38,7 @@ _known_type_ids = {}
 
 #//===========================================================================//
 
-class   ValuePickler (object):
+class   EntityPickler (object):
   
   __slots__ = ( 'pickler', 'unpickler', 'buffer' )
   
@@ -60,15 +60,15 @@ class   ValuePickler (object):
   
   #//-------------------------------------------------------//
   @staticmethod
-  def persistent_id( value, known_type_names = _known_type_names ):
+  def persistent_id( entity, known_type_names = _known_type_names ):
     
-    value_type = type(value)
-    type_name = _typeName( value_type )
+    entity_type = type(entity)
+    type_name = _typeName( entity_type )
     
     try:
       type_id = known_type_names[ type_name ]
       
-      return type_id, value.__getnewargs__()
+      return type_id, entity.__getnewargs__()
     except KeyError:
       return None
   
@@ -79,19 +79,19 @@ class   ValuePickler (object):
     type_id, new_args = pid
     
     try:
-      value_type = known_type_ids[ type_id ]
-      return value_type.__new__(value_type, *new_args )
+      entity_type = known_type_ids[ type_id ]
+      return entity_type.__new__(entity_type, *new_args )
     
     except KeyError:
       raise pickle.UnpicklingError("Unsupported persistent object")
   
   #//-------------------------------------------------------//
   
-  def   dumps( self, value ):
+  def   dumps( self, entity ):
     buf = self.buffer
     buf.seek(0)
     buf.truncate(0)
-    self.pickler.dump( value )
+    self.pickler.dump( entity )
     
     return buf.getvalue()
  
@@ -108,21 +108,21 @@ class   ValuePickler (object):
 
 #//===========================================================================//
 
-def   _typeName( value_type ):
-  return value_type.__module__ + '.' + value_type.__name__
+def   _typeName( entity_type ):
+  return entity_type.__module__ + '.' + entity_type.__name__
 
 #//===========================================================================//
 
-def  pickleable( value_type, known_type_names = _known_type_names, known_type_ids = _known_type_ids ):
-  if type(value_type) is type:
-    type_name = _typeName( value_type )
+def  pickleable( entity_type, known_type_names = _known_type_names, known_type_ids = _known_type_ids ):
+  if type(entity_type) is type:
+    type_name = _typeName( entity_type )
     type_id = binascii.crc32( type_name.encode("utf-8") ) & 0xFFFFFFFF
     
-    other_type = known_type_ids.setdefault( type_id, value_type )
-    if other_type is not value_type:
+    other_type = known_type_ids.setdefault( type_id, entity_type )
+    if other_type is not entity_type:
       raise AqlException( "Two different type names have identical CRC32 checksum: '%s' and '%s'" % (_typeName( other_type ), type_name ) )
     
     known_type_names[ type_name ] = type_id
   
-  return value_type
+  return entity_type
 

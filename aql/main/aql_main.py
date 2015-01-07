@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 The developers of Aqualid project
+# Copyright (c) 2013-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -219,43 +219,43 @@ def   _main( prj_cfg ):
       
       eventReadingScriptsDone( elapsed )
       
-      eventBuilding()
-      
       success = True
       
-      with elapsed:
-
-        if prj_cfg.status:
-          success = prj.Status( explain = prj_cfg.debug_explain )
-          prj.build_manager.printStatusState()
-          
-        elif prj_cfg.clean:
-          prj.Clean()
+      if prj_cfg.status:
+        success = prj.Status( explain = prj_cfg.debug_explain )
+        prj.build_manager.printStatusState()
         
-        elif prj_cfg.list_targets:
-          text = prj.ListTargets()
-          logInfo( '\n'.join( text ) )
+      elif prj_cfg.clean:
+        prj.Clean()
+      
+      elif prj_cfg.list_targets:
+        text = prj.ListTargets()
+        logInfo( '\n'.join( text ) )
+      
+      elif prj_cfg.list_options or prj_cfg.list_tool_options:
+        text = []
         
-        elif prj_cfg.list_options or prj_cfg.list_tool_options:
-          text = []
-          
-          if prj_cfg.list_options:
-            text += prj.ListOptions( brief = not prj_cfg.verbose )
-          
-          if prj_cfg.list_tool_options:
-            text += prj.ListToolsOptions( prj_cfg.list_tool_options, brief = not prj_cfg.verbose )
-          
-          logInfo( '\n'.join( text ) )
-        else:
+        if prj_cfg.list_options:
+          text += prj.ListOptions( brief = not prj_cfg.verbose )
+        
+        if prj_cfg.list_tool_options:
+          text += prj.ListToolsOptions( prj_cfg.list_tool_options, brief = not prj_cfg.verbose )
+        
+        logInfo( '\n'.join( text ) )
+      else:
+        eventBuilding()
+        
+        with elapsed:
           success = prj.Build()
-          if not success:
-            prj.build_manager.printFails()
+        
+        eventBuildingDone( success, elapsed )
+        
+        if not success:
+          prj.build_manager.printFails()
       
       if prj_cfg.debug_memory:
         _printMemoryStatus()
       
-      eventBuildingDone( success, elapsed )
-        
   eventBuildSummary( total_elapsed )
   
   status = int(not success)

@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.util_types import toSequence
 from aql.utils import Tempfile, Tempdir, writeBinFile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
-from aql.values import SimpleValue, NullValue, FileChecksumValue, ValuesFile
+from aql.values import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
 from aql.nodes import Node, BatchNode, Builder, FileBuilder
 
 
@@ -40,7 +40,7 @@ class ChecksumBuilder (Builder):
     target_values = []
     itarget_values = []
     
-    for source_value in node.getSourceValues():
+    for source_value in node.getSourceEntities():
       content = source_value.data.encode()
       chcksum = hashlib.md5()
       chcksum.update( content )
@@ -67,7 +67,7 @@ class CopyBuilder (FileBuilder):
     target_values = []
     itarget_values = []
     
-    idep = SimpleValue( b'1234' )
+    idep = SimpleEntity( b'1234' )
     
     for src in node.getSources():
       new_name = src + '.' + self.ext
@@ -85,9 +85,9 @@ class CopyBuilder (FileBuilder):
   
   def   buildBatch( self, node ):
     
-    idep = SimpleValue( b'1234' )
+    idep = SimpleEntity( b'1234' )
     
-    for src_value in node.getSourceValues():
+    for src_value in node.getSourceEntities():
       src = src_value.get()
       
       new_name = src + '.' + self.ext
@@ -114,11 +114,11 @@ class TestNodes( AqlTestCase ):
     
     with Tempfile() as tmp:
       
-      vfile = ValuesFile( tmp )
+      vfile = EntitiesFile( tmp )
       try:
-        value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
-        value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
-        value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
+        value1 = SimpleEntity( "http://aql.org/download1", name = "target_url1" )
+        value2 = SimpleEntity( "http://aql.org/download2", name = "target_url2" )
+        value3 = SimpleEntity( "http://aql.org/download3", name = "target_url3" )
         
         options = builtinOptions()
         builder = ChecksumBuilder( options )
@@ -140,7 +140,7 @@ class TestNodes( AqlTestCase ):
         self.assertTrue( node.checkActual( vfile ) )
         
         node = Node( builder, [value1, value2, value3] )
-        node.depends( NullValue() )
+        node.depends( NullEntity() )
         node.initiate()
         
         self.assertFalse( node.checkActual( vfile ) )
@@ -174,10 +174,10 @@ class TestNodes( AqlTestCase ):
     node.save( vfile )
     self.assertTrue( node.checkActual( vfile ) )
     
-    for tmp_file in node.getTargetValues():
+    for tmp_file in node.getTargetEntities():
       tmp_files.append( tmp_file.name )
     
-    for tmp_file in node.getSideEffectValues():
+    for tmp_file in node.getSideEffectEntities():
       tmp_files.append( tmp_file.name )
     
     return node
@@ -191,12 +191,12 @@ class TestNodes( AqlTestCase ):
       
       with Tempfile() as tmp:
         
-        vfile = ValuesFile( tmp )
+        vfile = EntitiesFile( tmp )
         try:
           with Tempfile( suffix = '.1' ) as tmp1:
             with Tempfile( suffix = '.2' ) as tmp2:
-              value1 = FileChecksumValue( tmp1 )
-              value2 = FileChecksumValue( tmp2 )
+              value1 = FileChecksumEntity( tmp1 )
+              value2 = FileChecksumEntity( tmp2 )
               
               options = builtinOptions()
               
@@ -211,11 +211,11 @@ class TestNodes( AqlTestCase ):
               
               tmp1.write(b'123')
               tmp1.flush()
-              value1 = FileChecksumValue( tmp1 )
+              value1 = FileChecksumEntity( tmp1 )
               node = self._rebuildNode( vfile, builder, [value1, value2], [], tmp_files )
               
               with Tempfile( suffix = '.3' ) as tmp3:
-                value3 = FileChecksumValue( tmp3 )
+                value3 = FileChecksumEntity( tmp3 )
                 
                 node3 = self._rebuildNode( vfile, builder, [value3], [], tmp_files )
                 
@@ -235,31 +235,31 @@ class TestNodes( AqlTestCase ):
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                dep = SimpleValue( "1", name = "dep1" )
+                dep = SimpleEntity( "1", name = "dep1" )
                 node = self._rebuildNode( vfile, builder, [value1, node3], [dep], tmp_files )
                 
-                dep = SimpleValue( "11", name = "dep1" )
+                dep = SimpleEntity( "11", name = "dep1" )
                 node = self._rebuildNode( vfile, builder, [value1, node3], [dep], tmp_files )
                 node3 = self._rebuildNode( vfile, builder3, [value1], [], tmp_files )
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 node3 = self._rebuildNode( vfile, builder3, [value2], [], tmp_files )
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                node_tname = node.getTargetValues()[0].name
+                node_tname = node.getTargetEntities()[0].name
                 
                 with open( node_tname, 'wb' ) as f:
                   f.write( b'333' )
                   f.flush()
                 
-                FileChecksumValue( node_tname, use_cache = False )
+                FileChecksumEntity( node_tname, use_cache = False )
                 
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
-                with open( node.getSideEffectValues()[0].name, 'wb' ) as f:
+                with open( node.getSideEffectEntities()[0].name, 'wb' ) as f:
                   f.write( b'abc' )
                   f.flush()
                 
-                FileChecksumValue( node.getSideEffectValues()[0].name, use_cache = False )
+                FileChecksumEntity( node.getSideEffectEntities()[0].name, use_cache = False )
                 
                 node = Node( builder, [value1] )
                 node.depends( [node3] )
@@ -284,7 +284,7 @@ class TestNodes( AqlTestCase ):
     builder = CopyBuilder( options, "tmp", "i" )
     
     node = BatchNode( builder, src_files )
-    dep = SimpleValue( "11", name = "dep1" )
+    dep = SimpleEntity( "11", name = "dep1" )
     node.depends( dep )
     
     node.initiate()
@@ -295,7 +295,7 @@ class TestNodes( AqlTestCase ):
       self.assertFalse( node.checkActual( vfile ) )
       node.build()
       node.save( vfile )
-      self.assertEqual( len(node.getSourceValues()), built_count )
+      self.assertEqual( len(node.getSourceEntities()), built_count )
       self.assertTrue( node.checkActual( vfile ) )
   
   #//=======================================================//
@@ -305,7 +305,7 @@ class TestNodes( AqlTestCase ):
     with Tempdir() as tmp_dir:
       vfile_name = Tempfile( dir = tmp_dir )
       vfile_name.close()
-      with ValuesFile( vfile_name ) as vfile:
+      with EntitiesFile( vfile_name ) as vfile:
         src_files = self.generateSourceFiles( tmp_dir, 5, 100 )
         
         self._rebuildBatchNode( vfile, src_files, len(src_files) )
@@ -317,14 +317,14 @@ class TestNodes( AqlTestCase ):
         
         writeBinFile( src_files[1], b"src_file1" )
         writeBinFile( src_files[2], b"src_file1" )
-        FileChecksumValue( src_files[1] )   # clear cached value
-        FileChecksumValue( src_files[2] )   # clear cached value
+        FileChecksumEntity( src_files[1] )   # clear cached value
+        FileChecksumEntity( src_files[2] )   # clear cached value
         
         self._rebuildBatchNode( vfile, src_files, 2 )
 
 #//===========================================================================//
 
-_FileValueType = FileChecksumValue
+_FileValueType = FileChecksumEntity
 
 class TestSpeedBuilder (Builder):
   
@@ -343,7 +343,7 @@ class TestSpeedBuilder (Builder):
     itarget_values = []
     idep_values = []
     
-    for source_value in node.getSourceValues():
+    for source_value in node.getSourceEntities():
       new_name = source_value.name + '.' + self.ext
       idep_name = source_value.name + '.' + self.idep
       
@@ -402,7 +402,7 @@ class TestNodesSpeed ( AqlTestCase ):
       
       with Tempfile() as tmp:
         
-        vfile = ValuesFile( tmp )
+        vfile = EntitiesFile( tmp )
         try:
           builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
           

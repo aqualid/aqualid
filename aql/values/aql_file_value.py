@@ -18,13 +18,13 @@
 #
 
 __all__ = (
-  'FileValueBase', 'FileChecksumValue', 'FileTimestampValue', 'DirValue',
+  'FileEntityBase', 'FileChecksumEntity', 'FileTimestampEntity', 'DirEntity',
 )
 
 import os
 import errno
 
-from .aql_value import ValueBase
+from .aql_value import EntityBase
 from .aql_value_pickler import pickleable
 
 from aql.util_types import AqlException
@@ -32,14 +32,14 @@ from aql.utils import fileSignature, fileTimeSignature, absFilePath
 
 #//===========================================================================//
 
-class   ErrorFileValueNoName( AqlException ):
+class   ErrorFileEntityNoName( AqlException ):
   def   __init__( self ):
     msg = "Filename is not specified"
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   FileValueBase (ValueBase):
+class   FileEntityBase (EntityBase):
   
   def   get(self):
     return self.name
@@ -106,24 +106,24 @@ def   _getFileTimestamp( path, use_cache = False, _cache = {} ):
 #//===========================================================================//
 
 @pickleable
-class FileChecksumValue( FileValueBase ):
+class FileChecksumEntity( FileEntityBase ):
   
   IS_SIZE_FIXED = True
   
   def   __new__( cls, name, signature = NotImplemented, tags = None, use_cache = False ):
 
-    if isinstance(name, FileValueBase):
+    if isinstance(name, FileEntityBase):
       name = name.name
     else:
-      if isinstance(name, ValueBase):
+      if isinstance(name, EntityBase):
         name = name.get()
     
     if not name:
-      raise ErrorFileValueNoName()
+      raise ErrorFileEntityNoName()
 
     name = absFilePath( name )
       
-    self = super(FileChecksumValue, cls).__new__( cls, name, signature, tags = tags )
+    self = super(FileChecksumEntity, cls).__new__( cls, name, signature, tags = tags )
 
     if signature is NotImplemented:
       if use_cache:
@@ -147,7 +147,7 @@ class FileChecksumValue( FileValueBase ):
   def   getActual(self):
     name = self.name
     signature = _getFileChecksum( name, use_cache = True )
-    return super(FileChecksumValue, self).__new__( self.__class__, name, signature, self.tags )
+    return super(FileChecksumEntity, self).__new__( self.__class__, name, signature, self.tags )
   
   #//-------------------------------------------------------//
   
@@ -162,23 +162,23 @@ class FileChecksumValue( FileValueBase ):
 #//===========================================================================//
 
 @pickleable
-class FileTimestampValue( FileValueBase ):
+class FileTimestampEntity( FileEntityBase ):
   
   IS_SIZE_FIXED = True
   
   def   __new__( cls, name, signature = NotImplemented, tags = None, use_cache = False ):
-    if isinstance(name, FileValueBase):
+    if isinstance(name, FileEntityBase):
       name = name.name
     else:
-      if isinstance(name, ValueBase):
+      if isinstance(name, EntityBase):
         name = name.get()
       
       if not name:
-        raise ErrorFileValueNoName()
+        raise ErrorFileEntityNoName()
       
       name = absFilePath( name )
     
-    self = super(FileTimestampValue, cls).__new__( cls, name, signature, tags = tags )
+    self = super(FileTimestampEntity, cls).__new__( cls, name, signature, tags = tags )
 
     if signature is NotImplemented:
       if use_cache:
@@ -202,7 +202,7 @@ class FileTimestampValue( FileValueBase ):
   def   getActual(self):
     name = self.name
     signature = _getFileTimestamp( name, use_cache = True )
-    return super(FileTimestampValue, self).__new__( self.__class__, name, signature, self.tags )
+    return super(FileTimestampEntity, self).__new__( self.__class__, name, signature, self.tags )
   
   #//-------------------------------------------------------//
   
@@ -217,7 +217,7 @@ class FileTimestampValue( FileValueBase ):
 #//===========================================================================//
 
 @pickleable
-class   DirValue (FileTimestampValue):
+class   DirEntity (FileTimestampEntity):
   
   def   remove( self ):
     try:

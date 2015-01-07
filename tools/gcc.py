@@ -96,7 +96,7 @@ class GccCompiler (CommonCppCompiler):
   #//-------------------------------------------------------//
   
   def   _setTargets( self, node, obj_files, output ):
-    source_values = node.getSourceValues()
+    source_values = node.getSourceEntities()
     
     failed_sources = _parseOutput( output )
     

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012 The developers of Aqualid project
+# Copyright (c) 2012-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -19,6 +19,7 @@
 
 __all__ = (
   'FilePath',
+  'AbsFilePath',
 )
 
 import os.path
@@ -112,4 +113,18 @@ class   FilePath (FilePathBase):
   
   def   joinPath( self, *paths ):
     return FilePath( os.path.join( self, *paths ) )
-  
+
+#//===========================================================================//
+
+class   AbsFilePath (FilePath):
+  def     __new__( cls, value = None ):
+    
+    if type(value) is cls:
+        return value
+    
+    if value is None:
+        value = ''
+    
+    value = os.path.normcase( os.path.abspath( value ) )
+    
+    return super(AbsFilePath, cls).__new__(cls, value)

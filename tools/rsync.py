@@ -188,7 +188,7 @@ class   RSyncPushBuilder( aql.FileBuilder ):
     self.cmd = self.__getCmd( options, key_file, exclude )
     self.rsync = options.rsync.get()
     
-    self.file_value_type = aql.FileTimestampValue
+    self.file_value_type = aql.FileTimestampEntity
     
   #//-------------------------------------------------------//
   
@@ -237,9 +237,9 @@ class   RSyncPushBuilder( aql.FileBuilder ):
     remote_path = self.remote_path
     source_base = self.source_base
     
-    value_type = aql.SimpleValue if remote_path.isRemote() else self.getFileValueType()
+    value_type = aql.SimpleEntity if remote_path.isRemote() else self.getFileEntityType()
     
-    for src_value, src in zip( node.getSourceValues(), sources ):
+    for src_value, src in zip( node.getSourceEntities(), sources ):
       
       if not source_base:
         src = os.path.basename( src )
@@ -321,17 +321,17 @@ class   RSyncPullBuilder( aql.Builder ):
     self.cmd = self.__getCmd( options, key_file, exclude )
     self.rsync = options.rsync.get()
     
-    self.file_value_type = aql.FileTimestampValue
+    self.file_value_type = aql.FileTimestampEntity
     
   #//-------------------------------------------------------//
 
-  def   makeValue(self, value, use_cache = False ):
+  def   makeEntity(self, value, use_cache = False ):
     if aql.isString( value ):
       remote_path = RemotePath( value, self.login, self.host )
       if not remote_path.isRemote():
-        return self.makeFileValue( value )
+        return self.makeFileEntity( value )
 
-    return super( self, RSyncPullBuilder ).makeValue( value )
+    return super( self, RSyncPullBuilder ).makeEntity( value )
 
   #//-------------------------------------------------------//
 
@@ -396,7 +396,7 @@ class   RSyncPullBuilder( aql.Builder ):
       
     out = self.execCmd( cmd )
     
-    targets = self.makeFileValues( targets )
+    targets = self.makeFileEntities( targets )
     
     node.addTargets( targets )
     

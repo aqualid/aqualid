@@ -1,0 +1,11 @@
+Config('../../make.cfg')
+
+lib = Script('../lib/make.aql')['lib']
+
+dll = tools.cpp.LinkSharedLibrary( 'tool_api.cpp', lib, target = 'toolapi',
+                                   cpppath = lib.options.api_cpppath,
+                                   api_cpppath = '.',
+                                   cppdefines = 'MAKING_LIBRARY' )
+
+
+Alias( 'dll', dll,  "Build shared library" )

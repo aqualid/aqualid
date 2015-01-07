@@ -9,7 +9,7 @@ sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
 from aql.utils  import Tempfile, addUserHandler, removeUserHandler, enableDefaultHandlers
 from aql.util_types import FilePath
-from aql.values import FileChecksumValue, FileTimestampValue
+from aql.values import FileChecksumEntity, FileTimestampEntity
 
 #//===========================================================================//
 
@@ -192,8 +192,8 @@ class AqlTestCase( TestCaseBase ):
     with open( cpp_file, 'a' ) as f:
       f.write( new_line )
     
-    FileChecksumValue( cpp_file, use_cache = False )
-    FileTimestampValue( cpp_file, use_cache = False )
+    FileChecksumEntity( cpp_file, use_cache = False )
+    FileTimestampEntity( cpp_file, use_cache = False )
   
   #//===========================================================================//
   

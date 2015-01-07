@@ -26,7 +26,7 @@ import os.path
 import itertools
 
 from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
-from aql.values import ValuesFile
+from aql.values import EntitiesFile
 
 #//===========================================================================//
 
@@ -45,9 +45,9 @@ def   eventNodeOutdated( settings, node, progress ):
 #//===========================================================================//
 
 @eventWarning
-def   eventBuildTargetTwice( settings, value, node1 ):
+def   eventBuildTargetTwice( settings, entity, node1 ):
   logWarning("Target '%s' is built twice. The last time built by: '%s' " %
-             ( value.name, node1.getBuildStr( settings.brief )) )
+             ( entity.name, node1.getBuildStr( settings.brief )) )
 
 #//===========================================================================//
 
@@ -383,7 +383,7 @@ class  _VFiles( object ):
       return self.handles[ vfilename ]
     
     except KeyError:
-      vfile = ValuesFile( vfilename, force = self.force_lock )
+      vfile = EntitiesFile( vfilename, force = self.force_lock )
       self.handles[ vfilename ] = vfile
       
       return vfile
@@ -784,9 +784,9 @@ class _NodesBuilder (object):
       else:
         targets = []
         for split_node in state.split_nodes:
-          targets += split_node.getTargetValues()
+          targets += split_node.getTargetEntities()
         
-        node.target_values = targets
+        node.target_entities = targets
         
       self._removeNodeState( node )
       
@@ -1153,16 +1153,16 @@ class BuildManager (object):
   #//-------------------------------------------------------//
   
   def   _checkAlreadyBuilt( self, node ):
-    values = node.getTargetValues()
+    entities = node.getTargetEntities()
     
     built_targets = self._built_targets
     
-    for value in values:
-      value_sign = value.signature
-      other_value_sign = built_targets.setdefault( value.valueId(), value_sign )
+    for entity in entities:
+      entity_sign = entity.signature
+      other_entity_sign = built_targets.setdefault( entity.getId(), entity_sign )
       
-      if other_value_sign != value_sign:
-        eventBuildTargetTwice( value, node )
+      if other_entity_sign != entity_sign:
+        eventBuildTargetTwice( entity, node )
   
   #//-------------------------------------------------------//
   

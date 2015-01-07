@@ -5,14 +5,15 @@ cpp = Tool('c++')
 cpp.options.If().target_os.eq('windows').cppdefines += 'WIN32'
 
 lib_files = FindFiles( 'src/lib', '*.cpp' )
-lib = cpp.LinkStaticLibrary( lib_files, target = 'tool' )
+lib = cpp.LinkStaticLibrary( lib_files, target = 'tool', api_cpppath = 'src/lib', )
 
-api_files = FindFiles( 'src/api', '*.cpp' )
-api = cpp.LinkSharedLibrary( api_files, lib, target = 'toolapi',
-                             cpppath = [ 'src/lib', 'src/api' ],
+dll_files = FindFiles( 'src/api', '*.cpp' )
+dll = cpp.LinkSharedLibrary( api_files, lib, target = 'toolapi',
+                             cpppath = lib.options.api_cpppath,
+                             api_cpppath = 'src/api',
                              cppdefines = 'MAKING_LIBRARY' )
 
-main = cpp.LinkProgram( 'src/main.cpp', api.at('implib'), target = 'test', cpppath = 'src/api' )
+main = cpp.LinkProgram( 'src/main.cpp', api.at('implib'), target = 'test', cpppath = dll.options.api_cpppath )
 
 run = tools.ExecuteCommand( main, 'print' )
 

@@ -28,7 +28,7 @@ import operator
 
 from aql.util_types import FilePath
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
-from aql.values import ValueBase, FileChecksumValue, FileTimestampValue, SimpleValue
+from aql.values import EntityBase, FileChecksumEntity, FileTimestampEntity, SimpleEntity
 
 #//===========================================================================//
 
@@ -61,7 +61,7 @@ def   _makeBuildPaths( dirnames ):
 #//===========================================================================//
 
 def   _splitFileName( file_path, ext = None, prefix = None, suffix = None, replace_ext = False ):
-  if isinstance( file_path, ValueBase ):
+  if isinstance( file_path, EntityBase ):
     file_path = file_path.get()
   
   dirname, filename = os.path.split( file_path )
@@ -106,7 +106,7 @@ def   _splitFileNames( file_paths, ext = None, prefix = None, suffix = None, rep
 #//===========================================================================//
 
 def   _fileSinature2Type( file_signature_type ):
-  return FileTimestampValue if file_signature_type == 'timestamp' else FileChecksumValue
+  return FileTimestampEntity if file_signature_type == 'timestamp' else FileChecksumEntity
 
 #//===========================================================================//
 
@@ -203,8 +203,8 @@ class Builder (object):
   def   __new__(cls, options, *args, **kw):
     
     self = super(Builder, cls).__new__(cls)
-    self.makeValue = self.makeSimpleValue
-    self.default_value_type = SimpleValue
+    self.makeEntity = self.makeSimpleEntity
+    self.default_entity_type = SimpleEntity
     
     self.__is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
     
@@ -216,7 +216,7 @@ class Builder (object):
     self.build_dir = options.build_dir.get()
     self.build_path = options.build_path.get()
     self.relative_build_paths = options.relative_build_paths.get()
-    self.file_value_type = _fileSinature2Type( options.file_signature.get() )
+    self.file_entity_type = _fileSinature2Type( options.file_signature.get() )
     self.env = options.env.get().dump()
   
   #//-------------------------------------------------------//
@@ -305,7 +305,7 @@ class Builder (object):
     """
     Implementation of split for splitting one-by-one 
     """
-    return node.getSourceValues()
+    return node.getSourceEntities()
   
   #//-------------------------------------------------------//
   
@@ -316,7 +316,7 @@ class Builder (object):
     num_groups = node.options.batch_groups.get()
     group_size = node.options.batch_size.get()
     
-    return groupItems( node.getSourceValues(), num_groups, group_size )
+    return groupItems( node.getSourceEntities(), num_groups, group_size )
   
   #//-------------------------------------------------------//
   
@@ -324,7 +324,7 @@ class Builder (object):
     """
     Implementation of split for grouping sources by output  
     """
-    src_files = node.getSourceValues()
+    src_files = node.getSourceEntities()
     
     num_groups = node.options.batch_groups.get()
     group_size = node.options.batch_size.get()
@@ -356,9 +356,9 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getTargetValues( self, source_values ):
+  def   getTargetEntities( self, source_entities ):
     """
-    If it's possible returns target values of the node, otherwise None 
+    If it's possible returns target entities of the node, otherwise None 
     """
     return None
   
@@ -370,12 +370,12 @@ class Builder (object):
   #//-------------------------------------------------------//
   
   def   getTraceSources( self, node, brief ):
-    return node.getSourceValues()
+    return node.getSourceEntities()
 
   #//-------------------------------------------------------//
   
   def   getTraceTargets( self, node, brief ):
-    return node.getBuildTargetValues()
+    return node.getBuildTargetEntities()
 
   #//-------------------------------------------------------//
   
@@ -482,38 +482,38 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getDefaultValueType( self ):
-    return self.default_value_type 
+  def   getDefaultEntityType( self ):
+    return self.default_entity_type 
   
   #//-------------------------------------------------------//
   
-  def   getFileValueType( self ):
-    return self.file_value_type 
+  def   getFileEntityType( self ):
+    return self.file_entity_type 
   
   #//-------------------------------------------------------//
   
-  def   makeSimpleValue(self, value, tags = None, use_cache = False ):
-    if isinstance( value, ValueBase):
-      return value
+  def   makeSimpleEntity(self, entity, tags = None, use_cache = False ):
+    if isinstance( entity, EntityBase):
+      return entity
     
-    if isinstance( value, FilePath ):
-      return self.file_value_type( name = value, tags = tags, use_cache = use_cache )
+    if isinstance( entity, FilePath ):
+      return self.file_entity_type( name = entity, tags = tags, use_cache = use_cache )
     
-    return SimpleValue( value )
+    return SimpleEntity( entity )
   
   #//-------------------------------------------------------//
   
-  def   makeFileValue( self, value, tags = None, use_cache = False ):
-    if isinstance( value, ValueBase ):
-      return value
+  def   makeFileEntity( self, entity, tags = None, use_cache = False ):
+    if isinstance( entity, EntityBase ):
+      return entity
     
-    return self.file_value_type( name = value, tags = tags, use_cache = use_cache )
+    return self.file_entity_type( name = entity, tags = tags, use_cache = use_cache )
   
   #//-------------------------------------------------------//
   
-  def   makeFileValues( self, values, tags = None, use_cache = False ):
-    make_value = self.makeFileValue
-    return [ make_value( value, tags = tags, use_cache = use_cache ) for value in toSequence( values ) ]
+  def   makeFileEntities( self, entities, tags = None, use_cache = False ):
+    make_entity = self.makeFileEntity
+    return [ make_entity( entity, tags = tags, use_cache = use_cache ) for entity in toSequence( entities ) ]
   
   #//-------------------------------------------------------//
   
@@ -546,5 +546,5 @@ class Builder (object):
 class FileBuilder (Builder):
   def   _initAttrs( self, options ):
     super(FileBuilder,self)._initAttrs( options )
-    self.makeValue = self.makeFileValue
-    self.default_value_type = self.file_value_type
+    self.makeEntity = self.makeFileEntity
+    self.default_entity_type = self.file_entity_type

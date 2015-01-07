@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import fileChecksum, Tempdir, \
   disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
 
-from aql.values import SimpleValue, FileChecksumValue
+from aql.values import SimpleEntity, FileChecksumEntity
 from aql.options import builtinOptions
 from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
@@ -106,7 +106,7 @@ class SyncValueBuilder (Builder):
         _sync_value = _sync_value - self.number
     
     target = [ src for src in node.getSources() ]
-    target = self.makeSimpleValue( target )
+    target = self.makeSimpleEntity( target )
     
     # self.releaseLocks( locks )
     
@@ -120,19 +120,19 @@ class CopyValueBuilder (Builder):
     self.signature = b''
   
   def   build( self, node ):
-    target_values = []
+    target_entities = []
     
-    for source_value in node.getSourceValues():
-      copy_value = SimpleValue( source_value.get(), name = source_value.name + '_copy' )
-      target_values.append( copy_value )
+    for source_value in node.getSourceEntities():
+      copy_value = SimpleEntity( source_value.get(), name = source_value.name + '_copy' )
+      target_entities.append( copy_value )
     
-    node.addTargets( target_values )
+    node.addTargets( target_entities )
   
   def   getTraceTargets( self, node, brief ):
-    return tuple( value.name for value in node.getTargetValues() )
+    return tuple( value.name for value in node.getTargetEntities() )
   
   def   getTraceSources( self, node, brief ):
-    return tuple( value.name for value in node.getSourceValues() )
+    return tuple( value.name for value in node.getSourceEntities() )
 
 
 #//===========================================================================//
@@ -164,23 +164,23 @@ class ChecksumBuilder (FileBuilder):
     with open( chcksum_filename, 'wb' ) as f:
       f.write( chcksum.digest() )
     
-    return self.makeFileValue( chcksum_filename, tags = alg )
+    return self.makeFileEntity( chcksum_filename, tags = alg )
   
   #//-------------------------------------------------------//
   
   def   build( self, node ):
-    target_values = []
+    target_entities = []
     
     for src in node.getSources():
-      target_values.append( self._buildSrc( src, 'md5' ) )
-      target_values.append( self._buildSrc( src, 'sha512' ) )
+      target_entities.append( self._buildSrc( src, 'md5' ) )
+      target_entities.append( self._buildSrc( src, 'sha512' ) )
     
-    node.addTargets( target_values )
+    node.addTargets( target_entities )
   
   #//-------------------------------------------------------//
   
   def   buildBatch( self, node ):
-    for src_value in node.getSourceValues():
+    for src_value in node.getSourceEntities():
       targets = [ self._buildSrc( src_value.get(), 'md5' ),
                   self._buildSrc( src_value.get(), 'sha512' ) ]
       
@@ -286,9 +286,9 @@ class TestBuildManager( AqlTestCase ):
     
     bm = BuildManager()
     
-    value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
-    value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
-    value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
+    value1 = SimpleEntity( "http://aql.org/download1", name = "target_url1" )
+    value2 = SimpleEntity( "http://aql.org/download2", name = "target_url2" )
+    value3 = SimpleEntity( "http://aql.org/download3", name = "target_url3" )
     
     options = builtinOptions()
     
@@ -387,9 +387,9 @@ class TestBuildManager( AqlTestCase ):
     
       bm = BuildManager()
       
-      value1 = SimpleValue( "http://aql.org/download1", name = "target_url1" )
-      value2 = SimpleValue( "http://aql.org/download2", name = "target_url2" )
-      value3 = SimpleValue( "http://aql.org/download3", name = "target_url3" )
+      value1 = SimpleEntity( "http://aql.org/download1", name = "target_url1" )
+      value2 = SimpleEntity( "http://aql.org/download2", name = "target_url2" )
+      value3 = SimpleEntity( "http://aql.org/download3", name = "target_url3" )
       
       builder = CopyValueBuilder( options )
       
@@ -527,11 +527,11 @@ class TestBuildManager( AqlTestCase ):
       
       builder = ChecksumSingleBuilder( options, 0, 256 )
       
-      src_values = []
+      src_entities = []
       for s in src_files:
-        src_values.append( FileChecksumValue( s ) )
+        src_entities.append( FileChecksumEntity( s ) )
       
-      node = Node( builder, src_values )
+      node = Node( builder, src_entities )
       node = Node( builder, node )
       node = Node( builder, node )
       
@@ -547,7 +547,7 @@ class TestBuildManager( AqlTestCase ):
       bm = BuildManager()
       builder = ChecksumSingleBuilder( options, 0, 256 )
       
-      node = Node( builder, src_values )
+      node = Node( builder, src_entities )
       bm.add( [node] ); bm.selfTest()
       bm.status(); bm.selfTest()
       
@@ -712,7 +712,7 @@ class TestBuildManager( AqlTestCase ):
       
       builder = FailedBuilder( options )
       
-      nodes = [ Node( builder, SimpleValue("123-%s" % (i,)) ) for i in range(4)]
+      nodes = [ Node( builder, SimpleEntity("123-%s" % (i,)) ) for i in range(4)]
       bm.add( nodes )
       
       self.assertRaises( Exception, _build, bm )
@@ -730,7 +730,7 @@ class TestBuildManager( AqlTestCase ):
       
       self.built_nodes = 0
       
-      nodes = [ Node( SyncValueBuilder( options, name = "%s" % i, number = n ), SimpleValue("123-%s" % i) ) for i,n in zip( range(4), [3,5,7,11] ) ] 
+      nodes = [ Node( SyncValueBuilder( options, name = "%s" % i, number = n ), SimpleEntity("123-%s" % i) ) for i,n in zip( range(4), [3,5,7,11] ) ] 
       bm.add( nodes )
       bm.sync( nodes )
       
@@ -757,10 +757,10 @@ class TestBuildManager( AqlTestCase ):
         30    31   32  33
       """
       
-      node30 = Node( SyncValueBuilder( options, name = "30", number = 7 ), SimpleValue("30") )
-      node31 = Node( SyncValueBuilder( options, name = "31", number = 0, sleep_interval = 0 ), SimpleValue("31") )
-      node32 = Node( SyncValueBuilder( options, name = "32", number = 0, sleep_interval = 0 ), SimpleValue("32") )
-      node33 = Node( SyncValueBuilder( options, name = "33", number = 17 ), SimpleValue("33") )
+      node30 = Node( SyncValueBuilder( options, name = "30", number = 7 ), SimpleEntity("30") )
+      node31 = Node( SyncValueBuilder( options, name = "31", number = 0, sleep_interval = 0 ), SimpleEntity("31") )
+      node32 = Node( SyncValueBuilder( options, name = "32", number = 0, sleep_interval = 0 ), SimpleEntity("32") )
+      node33 = Node( SyncValueBuilder( options, name = "33", number = 17 ), SimpleEntity("33") )
       
       node20 = Node( SyncValueBuilder( options, name = "20", number = 7 ), (node30, node31) )
       node21 = Node( SyncValueBuilder( options, name = "21", number = 7 ), (node31,) )
@@ -810,10 +810,10 @@ class TestBuildManager( AqlTestCase ):
         30    31   32  33
       """
       
-      node30 = Node( SyncValueBuilder( options, name = "30", number = 7 ), SimpleValue("30") )
-      node31 = Node( SyncValueBuilder( options, name = "31", number = 0, sleep_interval = 0 ), SimpleValue("31") )
-      node32 = Node( SyncValueBuilder( options, name = "32", number = 0, sleep_interval = 0 ), SimpleValue("32") )
-      node33 = Node( SyncValueBuilder( options, name = "33", number = 17 ), SimpleValue("33") )
+      node30 = Node( SyncValueBuilder( options, name = "30", number = 7 ), SimpleEntity("30") )
+      node31 = Node( SyncValueBuilder( options, name = "31", number = 0, sleep_interval = 0 ), SimpleEntity("31") )
+      node32 = Node( SyncValueBuilder( options, name = "32", number = 0, sleep_interval = 0 ), SimpleEntity("32") )
+      node33 = Node( SyncValueBuilder( options, name = "33", number = 17 ), SimpleEntity("33") )
       
       node20 = Node( SyncValueBuilder( options, name = "20", number = 7 ), (node30, node31) )
       node21 = Node( SyncValueBuilder( options, name = "21", number = 7 ), (node31,) )
@@ -856,12 +856,12 @@ class TestBuildManager( AqlTestCase ):
       builder = ChecksumBuilder( options, 0, 256, replace_ext = False )
       bm = BuildManager()
       try:
-        src_values = []
+        src_entities = []
         for s in src_files:
-          src_values.append( FileChecksumValue( s ) )
+          src_entities.append( FileChecksumEntity( s ) )
         
         node0 = Node( builder, None )
-        node1 = Node( builder, src_values )
+        node1 = Node( builder, src_entities )
         node2 = Node( builder, node1 )
         node3 = Node( builder, node2 )
         node4 = Node( builder, node3 )
@@ -896,7 +896,7 @@ class TestBuildManagerSpeed( AqlTestCase ):
     
     bm = BuildManager()
     
-    value = SimpleValue( "http://aql.org/download", name = "target_url1" )
+    value = SimpleEntity( "http://aql.org/download", name = "target_url1" )
     builder = CopyValueBuilder()
     
     node = Node( builder, value )

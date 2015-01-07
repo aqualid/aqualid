@@ -1,0 +1,13 @@
+SetBuildDir('output')
+
+cpp = Tool('c++')
+
+lib = cpp.LinkStaticLibrary( 'src/lib/tool.cpp', target = 'tool' )
+
+dll = cpp.LinkSharedLibrary( 'src/api/tool_api.cpp', lib, target = 'toolapi',
+                             cpppath = [ 'src/lib', 'src/api' ],
+                             cppdefines = 'MAKING_LIBRARY' )
+
+dll_implib = api.at('implib')
+
+main = cpp.LinkProgram( 'src/main.cpp', dll_implib, target = 'test', cpppath = 'src/api' )

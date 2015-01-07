@@ -102,7 +102,7 @@ class MsvcCompiler (CommonCppCompiler):
   #//-------------------------------------------------------//
   
   def   _setTargets( self, node, sources, obj_files, output ):
-    source_values = node.getSourceValues()
+    source_values = node.getSourceEntities()
     
     deps, errors, out = _parseOutput( sources, output, self.ext_cpppath )
     

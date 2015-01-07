@@ -17,7 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 __all__ = (
-  'ValueBase', 'SignatureValue', 'SimpleValue', 'NullValue',
+  'EntityBase', 'SignatureEntity', 'SimpleEntity', 'NullEntity',
 )
 
 from aql.util_types import toSequence, castStr, AqlException
@@ -26,26 +26,26 @@ from .aql_value_pickler import pickleable
 
 #//===========================================================================//
 
-class   ErrorValueNameEmpty( AqlException ):
+class   ErrorEntityNameEmpty( AqlException ):
   def   __init__( self ):
     msg = "Vale name is empty"
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorSignatureValueInvalidDataType( AqlException ):
+class   ErrorSignatureEntityInvalidDataType( AqlException ):
   def   __init__( self, data ):
-    msg = "Signature value data type must be bytes or bytearray, actual type: '%s'" % (type(data),)
+    msg = "Signature data type must be bytes or bytearray, actual type: '%s'" % (type(data),)
     super(type(self), self).__init__( msg )
 
-class   ErrorTextValueInvalidDataType( AqlException ):
+class   ErrorTextEntityInvalidDataType( AqlException ):
   def   __init__( self, text ):
-    msg = "Text value data type must be string, actual type: '%s'" % (type(text),)
+    msg = "Text data type must be string, actual type: '%s'" % (type(text),)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
 
-class   ValueBase (object):
+class   EntityBase (object):
   
   IS_SIZE_FIXED = False
   
@@ -56,9 +56,9 @@ class   ValueBase (object):
   def   __new__( cls, name, signature, tags = None ):
     
     if not name:
-      raise ErrorValueNameEmpty()
+      raise ErrorEntityNameEmpty()
     
-    self = super(ValueBase,cls).__new__(cls)
+    self = super(EntityBase,cls).__new__(cls)
     self.name = name
     self.signature = signature
     self.tags = frozenset( toSequence(tags) ) if tags else None
@@ -67,7 +67,7 @@ class   ValueBase (object):
   
   #//-------------------------------------------------------//
   
-  def   valueId(self):
+  def   getId(self):
     return self.name, self.__class__
   
   #//-------------------------------------------------------//
@@ -79,7 +79,7 @@ class   ValueBase (object):
   #//-------------------------------------------------------//
   
   def   __hash__(self):
-    return hash( self.valueId() )
+    return hash( self.getId() )
   
   #//-------------------------------------------------------//
   
@@ -139,7 +139,7 @@ class   ValueBase (object):
 
 # noinspection PyUnresolvedReferences
 @pickleable
-class   SimpleValue ( ValueBase ):
+class   SimpleEntity ( EntityBase ):
   
   __slots__ = ('data', )
   
@@ -154,7 +154,7 @@ class   SimpleValue ( ValueBase ):
     if not name:
       name = signature
     
-    self = super(SimpleValue, cls).__new__( cls, name, signature, tags )
+    self = super(SimpleEntity, cls).__new__( cls, name, signature, tags )
     self.data = data
     
     return self
@@ -191,14 +191,14 @@ class   SimpleValue ( ValueBase ):
 
 # noinspection PyUnresolvedReferences
 @pickleable
-class   NullValue ( ValueBase ):
+class   NullEntity ( EntityBase ):
   
   def   __new__(cls):
     
     name = 'N'
     signature = None
     
-    return super(NullValue, cls).__new__( cls, name, signature )
+    return super(NullEntity, cls).__new__( cls, name, signature )
   
   #//-------------------------------------------------------//
 
@@ -224,7 +224,7 @@ class   NullValue ( ValueBase ):
 #//===========================================================================//
 
 @pickleable
-class   SignatureValue (ValueBase):
+class   SignatureEntity (EntityBase):
   
   IS_SIZE_FIXED = True
   
@@ -232,12 +232,12 @@ class   SignatureValue (ValueBase):
     
     if data is not None:
       if not isinstance( data, (bytes, bytearray) ):
-        raise ErrorSignatureValueInvalidDataType( data )
+        raise ErrorSignatureEntityInvalidDataType( data )
     
     if not name:
       name = data
     
-    return super(SignatureValue, cls).__new__( cls, name, data )
+    return super(SignatureEntity, cls).__new__( cls, name, data )
   
   #//-------------------------------------------------------//
 

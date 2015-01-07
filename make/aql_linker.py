@@ -104,7 +104,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     content = empty_re.sub( "", content )
     
-    target = aql.SimpleValue( name = src_file, data = (std_imports, aql_imports, content) )
+    target = aql.SimpleEntity( name = src_file, data = (std_imports, aql_imports, content) )
     
     node.addTargets( target )
 

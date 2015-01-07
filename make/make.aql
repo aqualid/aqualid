@@ -66,11 +66,13 @@ setup_script = tools.WriteFile( SETUP_SCRIPT,   target = setup_dir + "setup.py" 
 sdist = tools.CreateDist( setup_script, target = dist_dir, command = "sdist", formats = "zip,bztar" )
 wdist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "wininst" )
 rpm_dist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", formats = "rpm" )
+install_dist = tools.InstallDist( setup_script, user = True )
 
-Depends( [sdist, wdist, rpm_dist], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
-Sync( wdist, rpm_dist, sdist )
+Depends( [sdist, wdist, rpm_dist, install_dist], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
+Sync( wdist, rpm_dist, sdist, install_dist )
 
 Alias('sdist', sdist, "Build source distributions." )
 Alias('wdist', wdist, "Build Windows distributions." )
 Alias('rpm', rpm_dist, "Build RPM distribution." )
+Alias('install', install_dist, "Install distribution for the current user only." )
 
