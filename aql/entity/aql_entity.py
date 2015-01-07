@@ -22,7 +22,7 @@ __all__ = (
 
 from aql.util_types import toSequence, castStr, AqlException
 from aql.utils import simpleObjectSignature, dumpSimpleObject
-from .aql_value_pickler import pickleable
+from .aql_entity_pickler import pickleable
 
 #//===========================================================================//
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 201-2014 The developers of Aqualid project
+# Copyright (c) 201-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,7 +17,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from .aql_file_value import *
-from .aql_value import *
-from .aql_value_pickler import *
-from .aql_values_file import *
+from .aql_file_entity import *
+from .aql_entity import *
+from .aql_entity_pickler import *
+from .aql_entities_file import *

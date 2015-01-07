@@ -6,7 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.values import SimpleEntity
+from aql.entity import SimpleEntity
 from aql.nodes import Node, Builder
 from aql.utils import Tempfile, Tempdir,\
   removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers

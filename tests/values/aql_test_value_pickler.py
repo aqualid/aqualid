@@ -11,7 +11,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values import FileChecksumEntity, FileTimestampEntity, SimpleEntity, EntityPickler, pickleable
+from aql.entity import FileChecksumEntity, FileTimestampEntity, SimpleEntity, EntityPickler, pickleable
 
 #//===========================================================================//
 

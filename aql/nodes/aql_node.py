@@ -27,7 +27,7 @@ import operator
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir, eventStatus, logDebug, logInfo
 from aql.util_types import toSequence, isString, FilePath, AqlException
 
-from aql.values import EntityBase, FileEntityBase, pickleable
+from aql.entity import EntityBase, FileEntityBase, pickleable
 
 #//===========================================================================//
 

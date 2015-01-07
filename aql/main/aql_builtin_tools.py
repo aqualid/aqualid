@@ -9,7 +9,7 @@ import tarfile
 
 from aql.util_types import isUnicode, encodeStr, decodeBytes
 from aql.utils import openFile
-from aql.values import FileEntityBase
+from aql.entity import FileEntityBase
 from aql.nodes import Builder, FileBuilder
 from .aql_tools import Tool
 

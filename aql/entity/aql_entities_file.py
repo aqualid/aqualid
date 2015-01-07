@@ -24,7 +24,7 @@ __all__ = (
 from aql.util_types import AqlException 
 from aql.utils import DataFile, FileLock
 
-from .aql_value_pickler import EntityPickler
+from .aql_entity_pickler import EntityPickler
 
 #//===========================================================================//
 

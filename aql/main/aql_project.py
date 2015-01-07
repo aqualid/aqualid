@@ -31,7 +31,7 @@ import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir, expandFilePath
 from aql.util_types import FilePath, ValueListType, UniqueList, toSequence, AqlException
-from aql.values import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
+from aql.entity import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
 

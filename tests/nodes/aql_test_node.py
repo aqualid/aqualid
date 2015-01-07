@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.util_types import toSequence
 from aql.utils import Tempfile, Tempdir, writeBinFile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
-from aql.values import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
+from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
 from aql.nodes import Node, BatchNode, Builder, FileBuilder
 
 

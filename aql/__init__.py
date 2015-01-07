@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -22,13 +22,13 @@ __all__ = (
   'nodes', 
   'options', 
   'utils', 
-  'values',
+  'entity',
   'util_types',
 )
 
 from .utils import *
 from .util_types import *
-from .values import *
+from .entity import *
 from .options import *
 from .nodes import *
 from .main import *

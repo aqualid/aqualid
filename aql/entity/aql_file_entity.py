@@ -24,8 +24,8 @@ __all__ = (
 import os
 import errno
 
-from .aql_value import EntityBase
-from .aql_value_pickler import pickleable
+from .aql_entity import EntityBase
+from .aql_entity_pickler import pickleable
 
 from aql.util_types import AqlException
 from aql.utils import fileSignature, fileTimeSignature, absFilePath

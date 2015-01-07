@@ -26,7 +26,7 @@ import os.path
 import itertools
 
 from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
-from aql.values import EntitiesFile
+from aql.entity import EntitiesFile
 
 #//===========================================================================//
 

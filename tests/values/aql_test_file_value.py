@@ -7,7 +7,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile
-from aql.values.aql_file_value import FileChecksumEntity, FileTimestampEntity
+from aql.entity.aql_file_entity import FileChecksumEntity, FileTimestampEntity
 
 class TestFileValue( AqlTestCase ):
   def test_file_value(self):

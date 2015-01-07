@@ -28,7 +28,7 @@ import operator
 
 from aql.util_types import FilePath
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
-from aql.values import EntityBase, FileChecksumEntity, FileTimestampEntity, SimpleEntity
+from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity, SimpleEntity
 
 #//===========================================================================//
 

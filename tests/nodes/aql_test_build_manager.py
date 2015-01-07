@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import fileChecksum, Tempdir, \
   disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
 
-from aql.values import SimpleEntity, FileChecksumEntity
+from aql.entity import SimpleEntity, FileChecksumEntity
 from aql.options import builtinOptions
 from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
