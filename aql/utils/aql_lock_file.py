@@ -215,5 +215,80 @@ except ImportError:
     FileLock = WindowsFileLock
     
   except ImportError:
+    try:
+      FileLock = GeneralFileLock
+      # import msvcrt
+      # import ctypes
+      # from ctypes import *
+      # from ctypes.wintypes import BOOL, DWORD, HANDLE
+      # 
+      # LOCKFILE_FAIL_IMMEDIATELY = 0x1
+      # LOCKFILE_EXCLUSIVE_LOCK = 0x2
+      # 
+      # # --- the code is taken from pyserial project ---
+      # #
+      # # detect size of ULONG_PTR
+      # def is_64bit():
+      #   return ctypes.sizeof(ctypes.c_ulong) != ctypes.sizeof(ctypes.c_void_p)
+      # 
+      # if is_64bit():
+      #   ULONG_PTR = ctypes.c_int64
+      # else:
+      #   ULONG_PTR = ctypes.c_ulong
+      # 
+      # PVOID = ctypes.c_void_p
+      # 
+      # # --- Union inside Structure by stackoverflow:3480240 ---
+      # class _OFFSET(ctypes.Structure):
+      #   _fields_ = [
+      #     ('Offset', DWORD),
+      #     ('OffsetHigh', DWORD)
+      #   ]
+      # 
+      # class _OFFSET_UNION(ctypes.Union):
+      #   _anonymous_ = ['_offset']
+      #   
+      #   _fields_ = [
+      #     ('_offset', _OFFSET),
+      #     ('Pointer', PVOID)
+      #   ]
+      # 
+      # class OVERLAPPED(ctypes.Structure):
+      #   _anonymous_ = ['_offset_union']
+      #   
+      #   _fields_ = [
+      #     ('Internal', ULONG_PTR),
+      #     ('InternalHigh', ULONG_PTR),
+      #     ('_offset_union', _OFFSET_UNION),
+      #     ('hEvent', HANDLE)
+      #   ]
+      # 
+      # LPOVERLAPPED = ctypes.POINTER(OVERLAPPED)
+      # # --- Define function prototypes for extra safety ---
+      # LockFileEx = windll.kernel32.LockFileEx
+      # LockFileEx.restype = BOOL
+      # LockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, DWORD, LPOVERLAPPED]
+      # 
+      # UnlockFileEx = windll.kernel32.UnlockFileEx
+      # UnlockFileEx.restype = BOOL
+      # UnlockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, LPOVERLAPPED] 
+      # 
+      #  def lock(file, flags):
+      #   """ Return True on success, False otherwise """
+      #   hfile = msvcrt.get_osfhandle(file.fileno())
+      #   overlapped = OVERLAPPED()
+      #   if LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, byref(overlapped)):
+      #     return True
+      #   else:
+      #     return False
+      # 
+      # def unlock(file):
+      #   hfile = msvcrt.get_osfhandle(file.fileno())
+      #   overlapped = OVERLAPPED()
+      #   if UnlockFileEx(hfile, 0, 0, 0xFFFF0000, byref(overlapped)):
+      #     return True
+      #   else:
+      #     return False 
     
-    FileLock = GeneralFileLock
+    except ImportError:
+      FileLock = GeneralFileLock
