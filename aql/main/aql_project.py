@@ -478,6 +478,7 @@ class Project( object ):
     self.arguments = config.arguments
     self.config = config
     self.scripts_cache = {}
+    self.configs_cache = {}
     self.aliases = {}
     self.alias_descriptions = {}
     self.defaults = []
@@ -540,49 +541,56 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   _execScript( self, script, script_locals ):
+  def   Config( self, config, options = None ):
     
-    script = os.path.abspath( script )
+    config = os.path.normcase( os.path.abspath( config ) )
+    
+    if options is None:
+      options = self.options
+    
+    options_ref = options.getHashRef()
+    
+    options_set = self.configs_cache.setdefault( config, set() )
+    
+    if options_ref in options_set:
+      return
+    
+    config_locals = { 'options': options }
+    
+    with Chdir( os.path.dirname( config ) ):
+      result = execFile( config, config_locals )
+    
+    # remove overridden options from CLI
+    for arg in self.arguments:
+      try:
+        del result[ arg ]
+      except KeyError:
+        pass
+    
+    tools_path = result.pop( 'tools_path', None )
+    if tools_path:
+      self.tools.tools.loadTools( tools_path )
+    
+    options.update( result )
+    options_set.add( options_ref )
+  
+  #//-------------------------------------------------------//
+  
+  def   Script( self, script ):
+    
+    script = os.path.normcase( os.path.abspath( script ) )
     
     scripts_cache = self.scripts_cache
     
     script_result = scripts_cache.get( script, None )
     if script_result is not None:
       return script_result
-
+    
     with Chdir( os.path.dirname( script ) ):
-      script_result = execFile( script, script_locals )
-      scripts_cache[ script ] = script_result
-      return script_result
-  
-  #//-------------------------------------------------------//
-  
-  def   Config( self, options_file, options = None ):
+      script_result = execFile( script, self.script_locals )
     
-    if options is None:
-      options = self.options
-    
-    script_locals = { 'options': options }
-    
-    script_locals = self._execScript( options_file, script_locals )
-    
-    # remove overridden options from CLI
-    for arg in self.arguments:
-      try:
-        del script_locals[ arg ]
-      except KeyError:
-        pass
-    
-    tools_path = script_locals.pop( 'tools_path', None )
-    if tools_path:
-      self.tools.tools.loadTools( tools_path )
-    
-    options.update( script_locals )
-  
-  #//-------------------------------------------------------//
-  
-  def   Script( self, makefile ):
-    return self._execScript( makefile, self.script_locals )
+    scripts_cache[ script ] = script_result
+    return script_result
   
   #//-------------------------------------------------------//
   

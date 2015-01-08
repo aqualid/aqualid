@@ -192,7 +192,7 @@ class TestBuiltinTools( AqlTestCase ):
         
         prj = Project( cfg )
         
-        value = prj.Value( "test_content.txt", "To add to a ZIP file")
+        value = prj.Entity( "test_content.txt", "To add to a ZIP file")
         rename = [('test_file', sources[0])]
         
         prj.tools.CreateZip( sources, value, target = zip_file, rename = rename )

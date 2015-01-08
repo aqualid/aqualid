@@ -13,7 +13,7 @@ In science fiction reality, http://www.goodreads.com/book/show/12941319-the-unma
 that can be used in the construction of just about anything.
 Great thanks to http://en.wikipedia.org/wiki/Vadim_Shefner[Vadim Shefner] for this excellent story.
 
-=== Main principles
+=== Main principles:
   
 Correctness::
 Aqualid tracks changes in all input and output entities (many other build systems don't track changes in output files),
@@ -300,14 +300,13 @@ Script('src/make.aql')
 ----
 A build script in the top directory of the project just for convenience to be able to run a build from the project top. +   
 
-
 Running Aqualid from the top directory will build all sub-projects.
-CLI option `-t` can be use to list all targets which will be built:
+
+.CLI option `-t` can be used to list all targets which could be built:
 ----
 $ aql -t
 Reading scripts...
-Reading scripts finished (56 ms)
-Building targets...
+Reading scripts finished (34 ms)
 
   Targets:
 ==================
@@ -316,9 +315,58 @@ Building targets...
 * lib  :  Build static library
 * main :  Build main program
 
-Building targets finished ()
-Total time: 123 ms
+Total time: 68 ms
 ----
+If a target is marked with star (*) it means that the target will be built.  
+
+.If you want to build specific targets you can pass target names as CLI arguments:
+----
+$ aql dll -t
+Reading scripts...
+Reading scripts finished (21 ms)
+
+  Targets:
+==================
+
+* dll  :  Build shared library
+* lib  :  Build static library
+  main :  Build main program
+
+Total time: 30 ms
+----
+Target `lib` will be built as dependency of target `dll`.
+
+.If we go to sub-project `lib` and run the Aqualid, it will read only sub-project build scripts:
+----
+$ cd src/lib/
+$ aql -t
+Reading scripts...
+Reading scripts finished (41 ms)
+
+  Targets:
+==================
+
+* lib :  Build static library                                                                                                                                                
+
+.Similar for `api` sub-project:
+----
+$ cd ../api/
+[me@bell api]$ aql -t                                                                                                                                                        
+Reading scripts...                                                                                                                                                           
+Reading scripts finished (40 ms)                                                                                                                                             
+                                                                                                                                                                             
+  Targets:                                                                                                                                                                   
+==================
+
+* dll :  Build shared library
+* lib :  Build static library
+
+Total time: 59 ms
+----
+
+Splitting project into several sub-projects could help to reduce time of work-cycles (change-build-test) for large projects.
+It could be useful for developers who are working only on a small number of sub-projects.
+
 
 == Project and options
 
