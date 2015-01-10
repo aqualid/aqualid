@@ -362,7 +362,8 @@ class WriteFileBuilder (Builder):
 
 class DistBuilder (FileBuilder):
 
-  NAME_ATTRS = ('target',)
+  NAME_ATTRS = ('target', 'command')
+  SIGNATURE_ATTRS = ('script_args', )
 
   def   __init__(self, options, command, formats, target ):
 
