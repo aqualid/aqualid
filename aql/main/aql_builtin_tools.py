@@ -145,9 +145,9 @@ class CopyFileAsBuilder (FileBuilder):
 class TarFilesBuilder (FileBuilder):
   
   NAME_ATTRS = ['target']
-  SIGNATURE_ATTRS = ['rename']
+  SIGNATURE_ATTRS = ['rename', 'basedir']
   
-  def   __init__(self, options, target, mode, rename, ext ):
+  def   __init__(self, options, target, mode, rename, basedir, ext ):
     
     if not mode:
       mode = "w:bz2"
@@ -163,6 +163,7 @@ class TarFilesBuilder (FileBuilder):
     self.target = self.getTargetFilePath( target, ext )
     self.mode = mode
     self.rename = rename if rename else tuple()
+    self.basedir = basedir
   
   #//-------------------------------------------------------//
   
@@ -170,6 +171,11 @@ class TarFilesBuilder (FileBuilder):
     for arc_name, path in self.rename:
       if file_path == path:
         return arc_name
+    
+    basedir = self.basedir
+    if basedir:
+      if file_path.startswith( basedir ):
+        return file_path[ len(basedir) : ]
     
     return os.path.basename( file_path )
   
@@ -230,15 +236,16 @@ class TarFilesBuilder (FileBuilder):
 class ZipFilesBuilder (FileBuilder):
   
   NAME_ATTRS = ['target']
-  SIGNATURE_ATTRS = ['rename']
+  SIGNATURE_ATTRS = ['rename', 'basedir']
   
-  def   __init__(self, options, target, rename, ext = None ):
+  def   __init__(self, options, target, rename, basedir, ext ):
     
     if ext is None:
       ext = ".zip"
     
     self.target = self.getTargetFilePath( target, ext = ext )
     self.rename = rename if rename else tuple()
+    self.basedir = basedir
   
   #//-------------------------------------------------------//
   
@@ -256,6 +263,11 @@ class ZipFilesBuilder (FileBuilder):
     for arc_name, path in self.rename:
       if file_path == path:
         return arc_name
+    
+    basedir = self.basedir
+    if basedir:
+      if file_path.startswith( basedir ):
+        return file_path[ len(basedir) : ]
     
     return os.path.basename( file_path )
   
@@ -464,11 +476,11 @@ class BuiltinTool( Tool ):
   def   InstallDist( self, options, user = True ):
     return InstallDistBuilder( options, user = user )
   
-  def   CreateZip(self, options, target, rename = None, ext = None ):
-    return ZipFilesBuilder( options, target = target, rename = rename, ext = ext )
+  def   CreateZip(self, options, target, rename = None, basedir = None, ext = None ):
+    return ZipFilesBuilder( options, target = target, rename = rename, basedir = basedir, ext = ext )
   
-  def   CreateTar(self, options, target, mode = None, rename = None, ext = None ):
-    return TarFilesBuilder( options, target = target, mode = mode, rename = rename, ext = ext )
+  def   CreateTar(self, options, target, mode = None, rename = None, basedir = None, ext = None ):
+    return TarFilesBuilder( options, target = target, mode = mode, rename = rename, basedir = basedir, ext = ext )
   
   def   DirName(self, options):
     raise NotImplementedError()

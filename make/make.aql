@@ -76,3 +76,17 @@ Alias('wdist', wdist, "Build Windows distributions." )
 Alias('rpm', rpm_dist, "Build RPM distribution." )
 Alias('install', install_dist, "Install distribution for the current user only." )
 
+
+#//-------------------------------------------------------//
+#// Examples
+
+examples_name = dist_dir + "/{name}-{version}-examples".format( name = info.name, version = info.version )
+
+examples_dir = os.path.abspath('../examples')
+
+examples = FindFiles( examples_dir, ["*.cpp", "*.hpp", "*.aql", "*.cfg"], exclude_subdir_mask = ["benchmarks", ".*", "_*"] )
+examples_zip = tools.CreateZip( examples, target = examples_name, basedir = examples_dir )
+examples_tar = tools.CreateTar( examples, target = examples_name, basedir = examples_dir )
+
+Alias('examples', [examples_zip, examples_tar], "Create an archive of examples" )
+
