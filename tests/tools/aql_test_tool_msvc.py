@@ -228,7 +228,53 @@ class TestToolMsvc( AqlTestCase ):
       cpp.LinkSharedLibrary( src_files, res_file, target = 'foo', batch_build = True, batch_groups = num_groups )
       cpp.LinkProgram( src_files, main_src_file, res_file, target = 'foo', batch_build = True, batch_groups = num_groups )
       self.buildPrj( prj, num_groups + 2, jobs = 1 )
+  
+  #//-------------------------------------------------------//
+  
+  def test_msvc_res_compiler(self):
+    
+    with Tempdir() as tmp_dir:
       
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src')
+      os.makedirs( src_dir )
+      
+      num_src_files = 2
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      res_file = self.generateResFile( src_dir, 'foo' )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg )
+      try:
+        cpp = prj.tools.Tool('msvc++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
+      except  ErrorToolNotFound:
+        print("WARNING: MSVC tool has not been found. Skip the test.")
+        return
+      try:
+        rc = prj.tools.Tool('msrc', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
+      except  ErrorToolNotFound:
+        print("WARNING: MS RC tool has not been found. Skip the test.")
+        return
+      
+      cpp.Compile( src_files, batch_build = False )
+      rc.Compile( res_file )
+      self.buildPrj( prj, num_src_files + 1)
+      
+      cpp.Compile( src_files, batch_build = False )
+      rc.Compile( res_file )
+      self.buildPrj( prj, 0 )
+      
+      cpp.Compile( src_files, batch_build = False )
+      rc.Compile( res_file )
+      self.touchCppFile( res_file )
+      self.buildPrj( prj, 1 )
+      
+      cpp.Compile( src_files, batch_build = False )
+      rc.Compile( res_file )
+      self.buildPrj( prj, 0 )
+
 #//===========================================================================//
 
 if __name__ == "__main__":

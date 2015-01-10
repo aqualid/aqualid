@@ -81,22 +81,20 @@ class TestToolGcc( AqlTestCase ):
       
       gcc.Compile( src_files, batch_build = False )
       rc.Compile( res_file )
-      self.buildPrj( prj, num_src_files )
+      self.buildPrj( prj, num_src_files + 1)
       
       gcc.Compile( src_files, batch_build = False )
-      gcc.CompileResource( res_file )
+      rc.Compile( res_file )
       self.buildPrj( prj, 0 )
       
       gcc.Compile( src_files, batch_build = False )
       rc.Compile( res_file )
-      
       self.touchCppFile( res_file )
       self.buildPrj( prj, 1 )
       
       gcc.Compile( src_files, batch_build = False )
       rc.Compile( res_file )
       self.buildPrj( prj, 0 )
-      
   
   #//-------------------------------------------------------//
   

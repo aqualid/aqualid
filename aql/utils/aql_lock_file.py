@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -95,7 +95,7 @@ try:
   #//===========================================================================//
   #   Unix implementation
   #//===========================================================================//
-  #noinspection PyUnresolvedReferences
+  
   import fcntl
   
   class UnixFileLock (object):
@@ -105,7 +105,7 @@ try:
     def   __init__( self, filename ):
       filename = os.path.normcase( os.path.abspath( filename ) )
       self.filename = filename
-      self.fd = os.open( filename, os.O_RDWR | os.O_CREAT )
+      self.fd = None
     
     def   __enter__(self):
       return self
@@ -113,6 +113,17 @@ try:
     #noinspection PyUnusedLocal
     def   __exit__(self, exc_type, exc_value, traceback):
       self.releaseLock()
+    
+    def   __open(self):
+      
+      if self.fd is None:
+        self.fd = os.open( self.filename, os.O_CREAT | os.O_RDWR )
+    
+    #//-------------------------------------------------------//
+    
+    def   __close(self):
+      os.close( self.fd )
+      self.fd = None
     
     def   readLock( self, wait = True, force = False ):
       self.__lock( write = False, wait = wait )
@@ -123,6 +134,8 @@ try:
       return self
     
     def   __lock( self, write, wait ):
+      
+      self.__open()
       
       if write:
         flags = fcntl.LOCK_EX
@@ -141,48 +154,116 @@ try:
     
     def   releaseLock( self ):
       fcntl.lockf( self.fd, fcntl.LOCK_UN )
+      self.__close()
   
   FileLock = UnixFileLock
   
 except ImportError:
-
   try:
-    #//===========================================================================//
-    #   Widows implementation
-    #//===========================================================================//
-    #noinspection PyUnresolvedReferences
-    import win32con
-    #noinspection PyUnresolvedReferences
-    import win32file
-    #noinspection PyUnresolvedReferences
-    import pywintypes
+    import msvcrt
+    import ctypes
+    import ctypes.wintypes
     
     class WindowsFileLock (object):
       
-      __slots__ = ('hfile', 'filename' )
-      _overlapped = pywintypes.OVERLAPPED()
-    
+      def __initWinTypes(self):
+        self.LOCKFILE_FAIL_IMMEDIATELY = 0x1
+        self.LOCKFILE_EXCLUSIVE_LOCK = 0x2
+        
+        if ctypes.sizeof(ctypes.c_ulong) != ctypes.sizeof(ctypes.c_void_p): # is 64 bit
+          ULONG_PTR = ctypes.c_int64
+        else:
+          ULONG_PTR = ctypes.c_ulong
+        
+        PVOID = ctypes.c_void_p
+        DWORD = ctypes.wintypes.DWORD
+        HANDLE = ctypes.wintypes.HANDLE
+        
+        class _OFFSET(ctypes.Structure):
+          _fields_ = [
+            ('Offset', DWORD),
+            ('OffsetHigh', DWORD)
+          ]
+        
+        class _OFFSET_UNION(ctypes.Union):
+          _anonymous_ = ['_offset']
+          
+          _fields_ = [
+            ('_offset', _OFFSET),
+            ('Pointer', PVOID)
+          ]
+        
+        class OVERLAPPED(ctypes.Structure):
+          _anonymous_ = ['_offset_union']
+          
+          _fields_ = [
+            ('Internal', ULONG_PTR),
+            ('InternalHigh', ULONG_PTR),
+            ('_offset_union', _OFFSET_UNION),
+            ('hEvent', HANDLE)
+          ]
+        
+        LPOVERLAPPED = ctypes.POINTER(OVERLAPPED)
+        
+        self.overlapped = OVERLAPPED()
+        self.poverlapped = LPOVERLAPPED( self.overlapped )
+        
+        self.LockFileEx = ctypes.windll.kernel32.LockFileEx
+        self.UnlockFileEx = ctypes.windll.kernel32.UnlockFileEx
+      
+      #//-------------------------------------------------------//
+      
       def   __init__( self, filename ):
         
+        self.__initWinTypes()
         filename = os.path.normcase( os.path.abspath( filename ) )
-        
         self.filename = filename
-        lockfilename = filename  + ".lock"
-        
-        self.hfile = win32file.CreateFile( lockfilename,
-                                           win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                                           win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-                                           None,
-                                           win32file.OPEN_ALWAYS,
-                                           0,
-                                           None )
+        self.fd = None
+        self.handle = None
       
+      #//-------------------------------------------------------//
+        
       def   __enter__(self):
         return self
-
+        
       #noinspection PyUnusedLocal
       def   __exit__(self, exc_type, exc_value, traceback):
         self.releaseLock()
+      
+      #//-------------------------------------------------------//
+      
+      def   __open(self):
+        
+        if self.fd is None:
+          lockfilename = self.filename + ".lock"
+          self.fd = os.open( lockfilename, os.O_CREAT | os.O_RDWR | os.O_NOINHERIT )
+          self.handle = msvcrt.get_osfhandle( self.fd )
+      
+      #//-------------------------------------------------------//
+      
+      def   __close(self):
+        os.close( self.fd )
+        self.fd = None
+        self.handle = None
+      
+      #//-------------------------------------------------------//
+      
+      def   __lock( self, write, wait ):
+        self.__open()
+        
+        if write:
+          flags = self.LOCKFILE_EXCLUSIVE_LOCK
+        else:
+          flags = 0
+        
+        if not wait:
+          flags |= self.LOCKFILE_FAIL_IMMEDIATELY
+        
+        result = self.LockFileEx( self.handle, flags, 0, 0, 4096, self.poverlapped )
+        if not result:
+          raise ErrorFileLocked( self.filename )
+      
+      #//-------------------------------------------------------//
       
       def   readLock( self, wait = True, force = False ):
         self.__lock( write = False, wait = wait )
@@ -192,103 +273,11 @@ except ImportError:
         self.__lock( write = True, wait = wait )
         return self
       
-      def   __lock( self, write, wait ):
-        
-        if write:
-          flags = win32con.LOCKFILE_EXCLUSIVE_LOCK
-        else:
-          flags = 0
-        
-        if not wait:
-          flags |= win32con.LOCKFILE_FAIL_IMMEDIATELY
-        
-        overlapped = pywintypes.OVERLAPPED()
-        
-        result = win32file.LockFileEx( self.hfile, flags, 0, 4096, overlapped )
-        if not result:
-          raise ErrorFileLocked( self.filename )
-      
       def   releaseLock( self ):
-        overlapped = pywintypes.OVERLAPPED()
-        win32file.UnlockFileEx( self.hfile, 0, 4096, overlapped )
-    
+        self.UnlockFileEx( self.handle, 0, 0, 4096, self.poverlapped )
+        self.__close()
+              
     FileLock = WindowsFileLock
-    
+  
   except ImportError:
-    try:
-      FileLock = GeneralFileLock
-      # import msvcrt
-      # import ctypes
-      # from ctypes import *
-      # from ctypes.wintypes import BOOL, DWORD, HANDLE
-      # 
-      # LOCKFILE_FAIL_IMMEDIATELY = 0x1
-      # LOCKFILE_EXCLUSIVE_LOCK = 0x2
-      # 
-      # # --- the code is taken from pyserial project ---
-      # #
-      # # detect size of ULONG_PTR
-      # def is_64bit():
-      #   return ctypes.sizeof(ctypes.c_ulong) != ctypes.sizeof(ctypes.c_void_p)
-      # 
-      # if is_64bit():
-      #   ULONG_PTR = ctypes.c_int64
-      # else:
-      #   ULONG_PTR = ctypes.c_ulong
-      # 
-      # PVOID = ctypes.c_void_p
-      # 
-      # # --- Union inside Structure by stackoverflow:3480240 ---
-      # class _OFFSET(ctypes.Structure):
-      #   _fields_ = [
-      #     ('Offset', DWORD),
-      #     ('OffsetHigh', DWORD)
-      #   ]
-      # 
-      # class _OFFSET_UNION(ctypes.Union):
-      #   _anonymous_ = ['_offset']
-      #   
-      #   _fields_ = [
-      #     ('_offset', _OFFSET),
-      #     ('Pointer', PVOID)
-      #   ]
-      # 
-      # class OVERLAPPED(ctypes.Structure):
-      #   _anonymous_ = ['_offset_union']
-      #   
-      #   _fields_ = [
-      #     ('Internal', ULONG_PTR),
-      #     ('InternalHigh', ULONG_PTR),
-      #     ('_offset_union', _OFFSET_UNION),
-      #     ('hEvent', HANDLE)
-      #   ]
-      # 
-      # LPOVERLAPPED = ctypes.POINTER(OVERLAPPED)
-      # # --- Define function prototypes for extra safety ---
-      # LockFileEx = windll.kernel32.LockFileEx
-      # LockFileEx.restype = BOOL
-      # LockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, DWORD, LPOVERLAPPED]
-      # 
-      # UnlockFileEx = windll.kernel32.UnlockFileEx
-      # UnlockFileEx.restype = BOOL
-      # UnlockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, LPOVERLAPPED] 
-      # 
-      #  def lock(file, flags):
-      #   """ Return True on success, False otherwise """
-      #   hfile = msvcrt.get_osfhandle(file.fileno())
-      #   overlapped = OVERLAPPED()
-      #   if LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, byref(overlapped)):
-      #     return True
-      #   else:
-      #     return False
-      # 
-      # def unlock(file):
-      #   hfile = msvcrt.get_osfhandle(file.fileno())
-      #   overlapped = OVERLAPPED()
-      #   if UnlockFileEx(hfile, 0, 0, 0xFFFF0000, byref(overlapped)):
-      #     return True
-      #   else:
-      #     return False 
-    
-    except ImportError:
-      FileLock = GeneralFileLock
+    FileLock = GeneralFileLock
