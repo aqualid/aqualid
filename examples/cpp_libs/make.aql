@@ -8,18 +8,20 @@ lib_files = FindFiles( 'src/lib', '*.cpp' )
 lib = cpp.LinkStaticLibrary( lib_files, target = 'tool', api_cpppath = 'src/lib', )
 
 dll_files = FindFiles( 'src/api', '*.cpp' )
-dll = cpp.LinkSharedLibrary( api_files, lib, target = 'toolapi',
+dll = cpp.LinkSharedLibrary( dll_files, lib, target = 'toolapi',
                              cpppath = lib.options.api_cpppath,
                              api_cpppath = 'src/api',
                              cppdefines = 'MAKING_LIBRARY' )
 
-main = cpp.LinkProgram( 'src/main.cpp', api.at('implib'), target = 'test', cpppath = dll.options.api_cpppath )
+dll_implib = dll.at('implib')
+
+main = cpp.LinkProgram( 'src/main.cpp', dll_implib, target = 'test', cpppath = dll.options.api_cpppath )
 
 run = tools.ExecuteCommand( main, 'print' )
 
 Default( main )
 Alias( 'lib',   lib,  "Build static library" )
-Alias( 'api',   api,  "Build API library" )
+Alias( 'api',   dll,  "Build API library" )
 Alias( 'main',  main, "Build main program" )
 Alias( 'run',   run,  "Run main program" )
 

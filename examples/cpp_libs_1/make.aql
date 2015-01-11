@@ -10,6 +10,6 @@ dll = cpp.LinkSharedLibrary( 'src/api/tool_api.cpp', lib, target = 'toolapi',
                              cpppath = [ 'src/lib', 'src/api' ],
                              cppdefines = 'MAKING_LIBRARY' )
 
-dll_implib = api.at('implib')
+dll_implib = dll.at('implib')
 
 main = cpp.LinkProgram( 'src/main.cpp', dll_implib, target = 'test', cpppath = 'src/api' )
