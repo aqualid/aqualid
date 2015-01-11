@@ -25,8 +25,11 @@ python -OO -c "import {module}; {module}.main()" "$@"
 
 WINDOWS_SCRIPT = """@echo off
 IF [%AQL_RUN_SCRIPT%] == [YES] (
+  SETLOCAL
+  SET "PATH=%~dp0;%PATH%"
   SET AQL_RUN_SCRIPT=
   python -OO -c "import {module}; {module}.main()" %*
+  ENDLOCAL
 
 ) ELSE (
   REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
@@ -60,6 +63,7 @@ def readLongDescription( readme_path ):
 
 SETUP_SCRIPT = """
 import os
+import errno
 
 from distutils.core import setup
 from distutils.command.install_scripts import install_scripts
@@ -75,6 +79,13 @@ except LookupError:
     codecs.register(func)
 
 #//===========================================================================//
+
+def   _removeFile( file ):
+  try:
+    os.remove( file )
+  except OSError as ex:
+    if ex.errno != errno.ENOENT:
+      raise
 
 class InstallScripts( install_scripts ):
 
@@ -104,7 +115,9 @@ class InstallScripts( install_scripts ):
       if install_dir:
         for script in self.get_outputs():
           if script.endswith( ('.cmd','.bat') ):
-            self.move_file( script, install_dir )
+            dest_script = os.path.join( install_dir, os.path.basename( script ) )
+            _removeFile( dest_script )
+            self.move_file( script, dest_script )
 
 if os.name == 'nt':
   scripts = [ '{win_script}']

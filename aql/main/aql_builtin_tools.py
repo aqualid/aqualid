@@ -163,7 +163,7 @@ class TarFilesBuilder (FileBuilder):
     self.target = self.getTargetFilePath( target, ext )
     self.mode = mode
     self.rename = rename if rename else tuple()
-    self.basedir = basedir
+    self.basedir = os.path.normcase(os.path.normpath(basedir)) if basedir else None
   
   #//-------------------------------------------------------//
   
@@ -245,7 +245,7 @@ class ZipFilesBuilder (FileBuilder):
     
     self.target = self.getTargetFilePath( target, ext = ext )
     self.rename = rename if rename else tuple()
-    self.basedir = basedir
+    self.basedir = os.path.normcase(os.path.normpath(basedir)) if basedir else None
   
   #//-------------------------------------------------------//
   

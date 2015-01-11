@@ -1,10 +1,12 @@
-Config('../make.cfg')
+cpp = tools.cpp
+
+Config( '../make.cfg', cpp.options )
 
 dll = Script('api/make.aql')['dll']
 
 dll_implib = dll.at('implib')
 
-main = tools.cpp.LinkProgram( 'main.cpp', dll_implib, target = 'test',
-                              cpppath = dll.options.api_cpppath )
+main = cpp.LinkProgram( 'main.cpp', dll_implib, target = 'test',
+                        cpppath = dll.options.api_cpppath )
 
 Alias( 'main', main, "Build main program" )
