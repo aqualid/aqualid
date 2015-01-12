@@ -24,7 +24,7 @@ class AqlInfo (object):
     self.description  = "General purpose build tool."
     self.version      = 0.5
     self.date         = None
-    self.url          = 'https://github.com/menify/aqualid'
+    self.url          = 'https://github.com/aqualid'
     self.license      = "MIT License"
 
   #//-------------------------------------------------------//
