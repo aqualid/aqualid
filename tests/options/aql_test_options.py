@@ -664,10 +664,27 @@ class TestOptions( AqlTestCase ):
     options.cc_ver = '4.8'
     self.assertTrue( child.hasChangedKeyOptions() )
 
+  @skip
+  def   test_options_wiki_examples(self):
+    options = Options()
     
+    options.debug_symbols = BoolOptionType( description = 'Include debug symbols' )
     
-
+    options.build_variant = EnumOptionType( values = ['debug', 'release'],
+                                            default = 'debug',
+                                            description = "Current build variant" )
     
+    options.If().build_variant.eq('debug').debug_symbols = True
+  
+    print( options.debug_symbols )
+    
+    options.build_variant = 'release'
+    
+    print( options.debug_symbols )
+    
+    options.build_variant = 'debug'
+    
+    print( options.debug_symbols )
 
 
 #//===========================================================================//

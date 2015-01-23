@@ -161,9 +161,9 @@ def   _code_gen_options():
   
   options = Options()
   
-  options.debug_symbols = BoolOptionType( description = 'Include debug symbols' )
+  options.debug_symbols = BoolOptionType( description = 'Include debug symbols', style = ('on', 'off')  )
   
-  options.profile = BoolOptionType( description = 'Enable compiler profiling' )
+  options.profile = BoolOptionType( description = 'Enable compiler profiling', style = ('on', 'off')  )
   
   options.keep_asm = BoolOptionType( description = 'Keep generated assemblers files' )
 
@@ -173,7 +173,7 @@ def   _code_gen_options():
   options.rt_link = options.runtime_link
   
   
-  options.runtime_debug = BoolOptionType( description = 'Use debug version of runtime library' )
+  options.runtime_debug = BoolOptionType( description = 'Use debug version of runtime library', style = ('on', 'off')  )
   options.rt_debug = options.runtime_debug
 
   options.rtti = BoolOptionType( description = 'Enable Run Time Type Information', default = True )

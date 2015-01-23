@@ -17,16 +17,17 @@ include {win_script}
 
 #//===========================================================================//
 
-UNIX_SCRIPT ="""#!/bin/sh
-python -OO -c "import {module}; {module}.main()" "$@"
-""".format( module = info.module )
+UNIX_SCRIPT ="""#!/usr/bin/env python
+if __name__ == '__main__':
+  import {module}
+  {module}.main()
+""".format( module = info.module ).replace('\r', '')
 
 #//===========================================================================//
 
 WINDOWS_SCRIPT = """@echo off
 IF [%AQL_RUN_SCRIPT%] == [YES] (
   SETLOCAL
-  SET "PATH=%~dp0;%PATH%"
   SET AQL_RUN_SCRIPT=
   python -OO -c "import {module}; {module}.main()" %*
   ENDLOCAL
@@ -36,7 +37,7 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=YES
   CALL %0 %* <NUL
 )
-""".format( module = info.module )
+""".format( module = info.module ).replace('\r','').replace('\n','\r\n')
 
 #//===========================================================================//
 
@@ -50,7 +51,7 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=YES
   CALL %0 %* <NUL
 )
-"""
+""".replace('\r','').replace('\n','\r\n')
 
 #//===========================================================================//
 
@@ -131,7 +132,7 @@ LONG_DESCRIPTION = \"""
 setup(
       name              = '{name}',
       version           = '{version}',
-      author            = 'Konstanin Bozhikov',
+      author            = 'Constanine Bozhikov',
       author_email      = 'voidmb@gmail.com',
       description       = '{short_descr}',
       long_description  = LONG_DESCRIPTION,

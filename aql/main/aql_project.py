@@ -24,6 +24,7 @@ __all__ = ( 'Project', 'ProjectConfig',
             'ErrorProjectInvalidMethod',
           )
 
+import sys
 import os.path
 import site
 import types
@@ -84,20 +85,63 @@ class   ErrorProjectBuilderMethodInvalidOptions( AqlException ):
 
 #//===========================================================================//
 
-def   _getUserConfigDir( info = getAqlInfo() ):
-  return os.path.join( os.path.expanduser('~'), '.config', info.module )
+def   _getUserConfigDir():
+  return os.path.join( os.path.expanduser('~'), '.config' )
+
+#//===========================================================================//
+
+def   _getSitePackagesDirs():
+  
+  try:
+    return site.getsitepackages()
+  except Exception:
+    pass
+  
+  local_path = os.path.normcase( os.path.expanduser('~') )
+  
+  paths = []
+  for path in sys.path:
+    path = os.path.normcase( path )
+    if path.endswith('-packages') and not path.startswith( local_path ):
+      paths.append( path )
+  
+  try:
+    from distutils.sysconfig import get_python_lib
+    lib_path = get_python_lib()
+    if lib_path not in paths:
+      paths.append( lib_path )
+  except Exception:
+    pass
+  
+  return paths
+
+#//===========================================================================//
+
+def   _getAqualidInstallDir():
+  try:
+    import aql
+    return os.path.dirname( aql.__file__ )
+  except Exception:
+    return None
 
 #//===========================================================================//
 
 def   _getDefaultToolsPath( info = getAqlInfo() ):
-  from distutils.sysconfig import get_python_lib
-  python_site = os.path.join( get_python_lib(), info.module )
   
-  user_site = os.path.join( site.USER_SITE, info.module )
+  aql_module_name = info.module
   
-  user_local = _getUserConfigDir()
+  tool_dirs = [ os.path.join( path, aql_module_name) for path in _getSitePackagesDirs() ]
   
-  return [ os.path.join(path, 'tools') for path in (python_site, user_site, user_local) ]
+  tool_dirs += (site.USER_SITE, _getUserConfigDir() )
+  
+  tool_dirs = [ os.path.join( path, aql_module_name) for path in tool_dirs]
+  
+  aql_dir = _getAqualidInstallDir()
+  if aql_dir:
+    tool_dirs.insert( -2, aql_dir ) # insert before the local tools
+  
+  tool_dirs = [ os.path.join( path, 'tools') for path in tool_dirs ]
+  return tool_dirs
 
 #//===========================================================================//
 
@@ -522,7 +566,12 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   FileEntity(self, filepath, options = None ):
+  def   GetProject(self):
+    return self
+  
+  #//-------------------------------------------------------//
+  
+  def   File(self, filepath, options = None ):
     if options is None:
       options = self.options
     file_type = FileTimestampEntity if options.file_signature == 'timestamp' else FileChecksumEntity
@@ -531,7 +580,7 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
-  def   DirEntity( self, filepath ):
+  def   Dir( self, filepath ):
     return DirEntity( filepath )
   
   #//-------------------------------------------------------//

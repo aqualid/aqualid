@@ -30,7 +30,7 @@ import re
 import fnmatch
 import operator
 
-from aql.util_types import isString, toSequence, AqlException
+from aql.util_types import isString, toString, toSequence, AqlException
 
 from .aql_utils import ItemsGroups
 
@@ -207,17 +207,17 @@ def   whereProgram( prog, env = None ):
 
 class ProgramFinder( object ):
   __slots__ = (
-    'prog',
+    'progs',
     'paths',
     'exts',
     'result',
   )
   
-  def   __init__(self, prog, paths, exts ):
-    if not isString(prog):
-      raise ErrorProgramName( prog )
+  def   __init__(self, progs, paths, exts ):
+    if not progs:
+      raise ErrorProgramName( progs )
     
-    self.prog   = prog
+    self.progs  = tuple( map( toString, toSequence( progs ) ) )
     self.paths  = paths
     self.exts   = exts
     self.result = None
@@ -239,19 +239,23 @@ class ProgramFinder( object ):
     if progpath:
       return progpath
     
-    prog_full_path = _findProgram( self.prog, self.paths, self.exts )
-    if prog_full_path is None:
-      prog_full_path = self.prog
+    for prog in self.progs:
+      prog_full_path = _findProgram( prog, self.paths, self.exts )
+      if prog_full_path is not None:
+        self.result = prog_full_path
+        return prog_full_path
     
-    self.result = prog_full_path
-    return prog_full_path
+    self.result = self.progs[0]
+    return self.result
   
 #//=======================================================//
 
-def   findOptionalProgram( prog, env = None ):
+def   findOptionalProgram( prog, env = None, exts = None ):
   paths = _getEnvPath( env )
-  path_exts = _getEnvPathExt( env )
-  return ProgramFinder( prog, paths, path_exts )
+  if exts is None:
+    exts = _getEnvPathExt( env )
+  
+  return ProgramFinder( prog, paths, exts )
 
 #//===========================================================================//
 

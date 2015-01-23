@@ -3,7 +3,7 @@ import itertools
 
 from aql import findFileInPaths,\
   StrOptionType, BoolOptionType, VersionOptionType, ListOptionType,\
-  PathOptionType, AbsPathOptionType, EnumOptionType, SimpleOperation, Options, \
+  AbsPathOptionType, EnumOptionType, SimpleOperation, Options, \
   Builder, FileBuilder, BatchNode, Node, Tool 
 
 #//===========================================================================//
@@ -117,8 +117,8 @@ def   _compilerOptions( options ):
   options.If().language.eq('c').cc_cmd += options.cflags
   options.cc_cmd += options.ccflags + options.occflags + options.cppdefines_flags + options.cpppath_flags
   
-  options.cxxstd = EnumOptionType( values = ['default', ('c++98', 'c++03'), ('c++11', 'c++0x'), ('c++14','c++1y') ], default = 'default',
-                                       description = 'C++ language standard.' )
+  options.cxxstd = EnumOptionType( values = ['default', ('c++98', 'c++03'), ('c++11', 'c++0x'), ('c++14','c++1y') ],
+                                   default = 'default', description = 'C++ language standard.' )
   
 #//===========================================================================//
 

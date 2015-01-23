@@ -268,6 +268,17 @@ class Builder (object):
     self.signature = simpleObjectSignature( sign )
   
   #//-------------------------------------------------------//
+  
+  def   isActual( self, source_entities, target_entities ):
+    """
+    Checks that source entities are up to date. It called only if all other checks were successful.   
+    :param source_entities: Building source entities 
+    :param target_entities: Previous target entities 
+    :return: True if is up to date otherwise False
+    """
+    return True
+  
+  #//-------------------------------------------------------//
 
   def   clear( self, node ):
     node.removeTargets()

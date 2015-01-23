@@ -239,29 +239,9 @@ def   _checkProg( gcc_path, prog ):
 
 #//===========================================================================//
 
-def   _findGcc( env, gcc_prefix, gcc_suffix ):
-  gcc = '%sgcc%s' % (gcc_prefix, gcc_suffix)
-  gcc = whereProgram( gcc, env )
-  
-  gxx = None
-  ar = None
-  
-  gcc_ext = os.path.splitext( gcc )[1]
-  
-  gcc_prefixes = [gcc_prefix, ''] if gcc_prefix else ['']
-  gcc_suffixes = [gcc_suffix + gcc_ext, gcc_ext ] if gcc_suffix else [gcc_ext]
-  
-  gcc_path = os.path.dirname( gcc )
-  
-  for gcc_prefix, gcc_suffix in itertools.product( gcc_prefixes, gcc_suffixes ):
-    if not gxx: gxx = _checkProg( gcc_path, '%sg++%s' % (gcc_prefix, gcc_suffix) )
-    if not gxx: gxx = _checkProg( gcc_path, '%sc++%s' % (gcc_prefix, gcc_suffix) )
-    if not ar:  ar  = _checkProg( gcc_path, '%sar%s' % (gcc_prefix, gcc_suffix) )
-  
-  if not gxx or not ar:
-    raise NotImplementedError()
-  
-  return gcc, gxx, ar
+def   _findGcc( prog, env, gcc_prefix, gcc_suffix ):
+  gcc = '%s%s%s' % (gcc_prefix, prog, gcc_suffix)
+  return whereProgram( gcc, env )
 
 #//===========================================================================//
 
@@ -312,21 +292,29 @@ class ToolGccCommon( ToolCommonCpp ):
     gcc_prefix = options.gcc_prefix.get()
     gcc_suffix = options.gcc_suffix.get()
     
-    gcc, gxx, ar = _findGcc( env, gcc_prefix, gcc_suffix )
+    if cls.language == 'c':
+      cc = "gcc"
+    else:
+      cc = "g++"
+    
+    gcc = _findGcc( cc, env, gcc_prefix, gcc_suffix )
     specs = _getGccSpecs( gcc )
     
     options.update( specs )
     
-    if cls.language == 'c':
-      options.cc = gcc
-      options.link = gcc
-    else:
-      options.cc = gxx
-      options.link = gxx
+    options.cc = gcc
+    options.link = gcc
     
-    options.lib = ar
+    gcc_ext = os.path.splitext( gcc )[1]
     
-    options.rc = findOptionalProgram( 'windres', env )
+    prefixes = [gcc_prefix, ''] if gcc_prefix else ['']
+    suffixes = [gcc_suffix + gcc_ext, gcc_ext ] if gcc_suffix else [gcc_ext]
+    
+    ar = tuple( prefix + 'ar' + suffix for prefix, suffix in itertools.product( prefixes, suffixes ) )
+    rc = tuple( prefix + 'windres' + suffix for prefix, suffix in itertools.product( prefixes, suffixes ) )
+    
+    options.lib = findOptionalProgram( ar, env, exts = tuple() )
+    options.rc = findOptionalProgram( rc, env, exts = tuple() )
   
   #//-------------------------------------------------------//
   
@@ -402,6 +390,10 @@ class ToolGccCommon( ToolCommonCpp ):
     if_.inlining.eq('off').occflags   += '-fno-inline'
     if_.inlining.eq('on').occflags    += '-finline'
     if_.inlining.eq('full').occflags  += '-finline-functions'
+    
+    if_.warning_level.eq(0).ccflags += '-w'
+    if_.warning_level.eq(3).ccflags += '-Wall'
+    if_.warning_level.eq(4).ccflags += ['-Wall', '-Wextra', '-Wfloat-equal', '-Wundef', '-Wshadow', '-Wredundant-decls']
     
     if_.warning_as_error.isTrue().ccflags += '-Werror'
     
