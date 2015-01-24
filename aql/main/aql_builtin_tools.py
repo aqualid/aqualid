@@ -7,7 +7,7 @@ import shutil
 import zipfile
 import tarfile
 
-from aql.util_types import isUnicode, encodeStr, decodeBytes
+from aql.util_types import isUnicode, encodeStr, decodeBytes, isString, toSequence
 from aql.utils import openFile
 from aql.entity import FileEntityBase
 from aql.nodes import Builder, FileBuilder
@@ -374,10 +374,10 @@ class WriteFileBuilder (Builder):
 
 class DistBuilder (FileBuilder):
 
-  NAME_ATTRS = ('target', 'command')
+  NAME_ATTRS = ('target', 'command', 'formats')
   SIGNATURE_ATTRS = ('script_args', )
 
-  def   __init__(self, options, command, formats, target ):
+  def   __init__(self, options, command, args, target ):
 
     target = self.getTargetDirPath( target )
 
@@ -390,19 +390,37 @@ class DistBuilder (FileBuilder):
     elif command != 'sdist':
       raise ErrorDistCommandInvalid( command )
     
-    if formats:
-      script_args += [ '--formats', formats ]
+    formats = set()
+    
+    if args:
+      if isString( args ):
+        args = args.split()
+      else:
+        args = toSequence( args )
+      
+      script_args += args
+      
+      for arg in args:
+        if command.startswith('bdist'):
+          if arg.startswith( '--formats=' ):
+            v = arg[len('--formats='):].split(',')
+            formats.update( v )
+          
+          elif arg.startswith( '--plat-name=' ):
+            v = arg[len('--plat-name='):]
+            formats.add( v )
     
     script_args += [ '--dist-dir', target ]
     
     self.command = command
     self.target = target
     self.script_args = script_args
+    self.formats = formats
 
   #//-------------------------------------------------------//
 
   def   getTraceName(self, brief ):
-    return "distutils %s" % (self.command)
+    return "distutils %s" % ' '.join(self.script_args)
 
   #//-------------------------------------------------------//
 
@@ -470,8 +488,8 @@ class BuiltinTool( Tool ):
   def   WriteFile(self, options, target, binary = False, encoding = None ):
     return WriteFileBuilder( options, target, binary = binary, encoding = encoding )
 
-  def   CreateDist( self, options, target, command, formats = None ):
-    return DistBuilder( options, command = command, target = target, formats = formats )
+  def   CreateDist( self, options, target, command, args = None ):
+    return DistBuilder( options, target = target, command = command, args = args )
   
   def   InstallDist( self, options, user = True ):
     return InstallDistBuilder( options, user = user )
