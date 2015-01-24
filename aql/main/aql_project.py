@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2014 The developers of Aqualid project
+# Copyright (c) 2012-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -158,7 +158,7 @@ def   _readConfig( config_file, cli_config, options, tools_path ):
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
-               'verbose', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path',
+               'verbose', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path', 'no_tool_errors',
                'build_always', 'clean', 'status', 'list_options', 'list_tool_options', 'list_targets',
                'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
                'force_lock', 'show_version',
@@ -185,6 +185,7 @@ class ProjectConfig( object ):
       CLIOption( "-R", "--clean",             "clean",              bool,       False,        "Cleans targets." ),
       CLIOption( "-n", "--status",            "status",             bool,       False,        "Print status of targets." ),
       CLIOption( "-u", "--up",                "search_up",          bool,       False,        "Search up directory tree for a make file." ),
+      CLIOption( "-e", "--no-tool-errors",    "no_tool_errors",     bool,       False,        "Stop on any error during initialization of tools." ),
                                                                     
       # CLIOption( "-b", "--build-directory",   "build_dir",          FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tools-path",        "tools_path",         Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
@@ -252,6 +253,7 @@ class ProjectConfig( object ):
     self.makefile           = cli_config.makefile
     self.search_up          = cli_config.search_up
     self.tools_path         = tools_path
+    self.no_tool_errors     = cli_config.no_tool_errors
     self.targets            = cli_config.targets
     self.verbose            = cli_config.verbose
     self.show_version       = cli_config.version
@@ -420,9 +422,11 @@ class ProjectTools( object ):
     except KeyError:
       pass
     
-    tool, tool_names, tool_options = self.tools.getTool( tool_name, options )
+    project = self.project
     
-    tool = ToolWrapper( tool, self.project, tool_options )
+    tool, tool_names, tool_options = self.tools.getTool( tool_name, options, project.config.no_tool_errors )
+    
+    tool = ToolWrapper( tool, project, tool_options )
     
     attrs = self.__dict__
     

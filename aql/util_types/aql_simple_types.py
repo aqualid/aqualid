@@ -240,7 +240,13 @@ class   Version (str):
     self_ver = self.__version
     other_ver = self.__convert( other ).__version
     
-    min_len = min( len(self_ver), len(other_ver) )
+    len_self = len(self_ver)
+    len_other = len(other_ver)
+    
+    min_len = min( len_self, len_other )
+    if min_len == 0:
+      return cmp_op( len_self, len_other )
+    
     self_ver = self_ver[:min_len]
     other_ver = other_ver[:min_len]
     

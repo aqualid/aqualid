@@ -19,7 +19,7 @@
 
 __all__ = (
   'findFiles', 'findFileInPaths', 'absFilePath', 'expandFilePath','changePath', 'splitPath',
-  'whereProgram', 'ErrorProgramNotFound', 'findOptionalProgram', 'findOptionalPrograms',
+  'findProgram', 'findPrograms', 'findOptionalProgram', 'findOptionalPrograms',
   'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir',
   'Chdir',
 )
@@ -36,17 +36,9 @@ from .aql_utils import ItemsGroups
 
 #//===========================================================================//
 
-#noinspection PyUnusedLocal
-class   ErrorProgramNotFound( AqlException ):
-  def   __init__( self, program ):
-    msg = "Program '%s' has not been found" % (program,)
-    super(type(self), self).__init__( msg )
-
-#//===========================================================================//
-
-class   ErrorProgramName( AqlException ):
+class   ErrorNoPrograms( AqlException ):
   def   __init__( self, prog ):
-    msg = "Invalid program name: %s(%s)" % (prog,type(prog))
+    msg = "No programs were specified: %s(%s)" % (prog,type(prog))
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -137,89 +129,141 @@ def   findFileInPaths( paths, filename ):
 
 #//===========================================================================//
 
-def   _getEnvPath( env = None ):
+def   _getEnvPath( env, hint_prog = None ):
   
-  if env is None:
-    env = os.environ
-  
-  paths = env.get('PATH', '')
+  paths = env.get('PATH', tuple() )
   if isString( paths ):
     paths = paths.split( os.pathsep )
+  
+  paths = [ os.path.expanduser( path ) for path in paths ] 
+  
+  if hint_prog:
+    hint_dir = os.path.dirname( hint_prog )
+    paths.insert(0, hint_dir )
   
   return paths
 
 #//===========================================================================//
 
-def   _getEnvPathExt( env = None, IS_WINDOWS = os.name == 'nt' ):
+def   _getEnvPathExt( env, hint_prog = None, is_windows = (os.name == 'nt'), is_cygwin = (sys.platform == 'cygwin') ):
   
-  if env is None:
-    path_exts = os.environ.get('PATHEXT', '')
-  else:
-    path_exts = env.get('PATHEXT', None )
-    if path_exts is None:
-      path_exts = os.environ.get('PATHEXT', '')
-      
-  if not path_exts and IS_WINDOWS:
-    return ('.exe','.cmd','.bat','.com')
+  if not is_windows and not is_cygwin:
+    return tuple()
+  
+  if hint_prog:
+    hint_ext = os.path.splitext( hint_prog )[1]
+    return (hint_ext,)
+  
+  path_exts = env.get('PATHEXT', None )
+  if path_exts is None:
+    path_exts = os.environ.get('PATHEXT', None )
   
   if isString( path_exts ):
-    path_sep = os.pathsep if sys.platform != 'cygwin' else ';'
+    path_sep = ';' if is_cygwin else os.pathsep
     path_exts = path_exts.split( path_sep )
   
-  if not IS_WINDOWS:
+  if not path_exts:
+    path_exts = ['.exe','.cmd','.bat','.com']
+  
+  if is_cygwin:
     if '' not in path_exts:
-      path_exts.insert(0,'')
+      path_exts = [''] + path_exts
   
   return path_exts
 
 #//===========================================================================//
 
-def   _findProgram( prog, paths, path_exts = None ):
+def   _addProgramExts( progs, exts ):
   
-  prog_ext = os.path.splitext(prog)[1]
+  progs = toSequence( progs )
   
-  if not path_exts or (prog_ext and prog_ext in path_exts):
-    path_exts = ('',)
+  if not exts:
+    return tuple(progs)
   
+  result = []
+  for prog in progs:
+    prog_ext = os.path.splitext(prog)[1]
+    
+    if prog_ext or (prog_ext in exts):
+      result.append( prog )
+    else:
+      result += ( prog + ext for ext in exts )
+  
+  return result
+
+#//===========================================================================//
+
+def   _findProgram( progs, paths ):
   for path in paths:
-    prog_path = os.path.expanduser( os.path.join( path, prog ) )
-    for ext in path_exts:
-      p = prog_path + ext
-      if os.access( p, os.X_OK ):
-        return os.path.normcase( p )
+    for prog in progs:
+      prog_path = os.path.join( path, prog )
+      if os.access( prog_path, os.X_OK ):
+        return os.path.normcase( prog_path )
   
   return None
 
 #//===========================================================================//
 
-def   whereProgram( prog, env = None ):
+def   findProgram( prog, env, hint_prog = None ):
+  paths = _getEnvPath( env, hint_prog )
+  path_ext = _getEnvPathExt( env, hint_prog )
   
-  paths = _getEnvPath( env )
-  path_exts = _getEnvPathExt( env )
+  progs = _addProgramExts( prog, path_ext )
   
-  prog_path = _findProgram( prog, paths, path_exts )
-  if prog_path is None:
-    raise ErrorProgramNotFound( prog )
-  
-  return prog_path
+  return _findProgram( progs, paths )
 
 #//===========================================================================//
 
-class ProgramFinder( object ):
+def   findPrograms( progs, env, hint_prog = None ):
+  paths = _getEnvPath( env, hint_prog )
+  path_ext = _getEnvPathExt( env, hint_prog )
+  
+  result = []
+  for prog in progs:
+    progs = _addProgramExts( prog, path_ext )
+    prog = _findProgram( progs, paths )
+    result.append( prog )
+  
+  return result
+
+#//===========================================================================//
+
+def   findOptionalProgram( prog, env, hint_prog = None ):
+  paths = _getEnvPath( env, hint_prog )
+  path_ext = _getEnvPathExt( env, hint_prog )
+  progs = _addProgramExts( prog, path_ext )
+
+  return _OptionalProgramFinder( progs, paths )
+
+#//===========================================================================//
+
+def   findOptionalPrograms( progs, env, hint_prog = None ):
+  paths = _getEnvPath( env, hint_prog )
+  path_ext = _getEnvPathExt( env, hint_prog )
+  
+  result = []
+  for prog in progs:
+    progs = _addProgramExts( prog, path_ext )
+    prog = _OptionalProgramFinder( progs, paths )
+    result.append( prog )
+  
+  return result
+
+#//===========================================================================//
+
+class _OptionalProgramFinder( object ):
   __slots__ = (
     'progs',
     'paths',
-    'exts',
     'result',
   )
   
-  def   __init__(self, progs, paths, exts ):
+  def   __init__(self, progs, paths ):
     if not progs:
-      raise ErrorProgramName( progs )
+      raise ErrorNoPrograms( progs )
     
-    self.progs  = tuple( map( toString, toSequence( progs ) ) )
+    self.progs  = progs
     self.paths  = paths
-    self.exts   = exts
     self.result = None
   
   def   __nonzero__(self):
@@ -239,32 +283,15 @@ class ProgramFinder( object ):
     if progpath:
       return progpath
     
-    for prog in self.progs:
-      prog_full_path = _findProgram( prog, self.paths, self.exts )
-      if prog_full_path is not None:
-        self.result = prog_full_path
-        return prog_full_path
+    prog_full_path = _findProgram( self.progs, self.paths )
+    if prog_full_path is not None:
+      self.result = prog_full_path
+      return prog_full_path
     
     self.result = self.progs[0]
     return self.result
   
 #//=======================================================//
-
-def   findOptionalProgram( prog, env = None, exts = None ):
-  paths = _getEnvPath( env )
-  if exts is None:
-    exts = _getEnvPathExt( env )
-  
-  return ProgramFinder( prog, paths, exts )
-
-#//===========================================================================//
-
-def   findOptionalPrograms( progs, env = None ):
-  paths = _getEnvPath( env )
-  path_exts = _getEnvPathExt( env )
-  return tuple( ProgramFinder( prog, paths, path_exts ) for prog in progs )
-
-#//===========================================================================//
 
 def  _normLocalPath( path ):
 

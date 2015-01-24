@@ -20,23 +20,33 @@ include {win_script}
 UNIX_SCRIPT ="""#!/usr/bin/env python
 if __name__ == '__main__':
   import {module}
-  {module}.main()
+  import sys
+  sys.exit({module}.main())
 """.format( module = info.module ).replace('\r', '')
 
 #//===========================================================================//
 
 WINDOWS_SCRIPT = """@echo off
-IF [%AQL_RUN_SCRIPT%] == [YES] (
-  SETLOCAL
-  SET AQL_RUN_SCRIPT=
-  python -OO -c "import {module}; {module}.main()" %*
-  ENDLOCAL
+@echo off
 
-) ELSE (
-  REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
-  SET AQL_RUN_SCRIPT=YES
-  CALL %0 %* <NUL
-)
+set AQL_ERRORLEVEL=
+IF [%AQL_RUN_SCRIPT%] == [YES] goto run
+
+REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
+SET AQL_RUN_SCRIPT=YES
+CALL %0 %* <NUL
+set AQL_ERRORLEVEL=%ERRORLEVEL%
+goto exit
+
+:run
+SET AQL_RUN_SCRIPT=
+SETLOCAL
+SET "PATH=%~dp0;%PATH%"
+python -OO -c "import {module}; import sys; sys.exit({module}.main())" %*
+ENDLOCAL & set AQL_ERRORLEVEL=%ERRORLEVEL%
+
+:exit
+exit /B %AQL_ERRORLEVEL%
 """.format( module = info.module ).replace('\r','').replace('\n','\r\n')
 
 #//===========================================================================//

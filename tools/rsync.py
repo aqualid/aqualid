@@ -419,9 +419,9 @@ class   RSyncPullBuilder( aql.Builder ):
 class ToolRsync( aql.Tool ):
   
   @classmethod
-  def   setup( cls, options, env ):
+  def   setup( cls, options ):
     
-    rsync = aql.whereProgram( 'rsync', env )
+    rsync = cls.findProgram( options, 'rsync' )
     
     options.rsync = rsync
     if not options.rsync_cygwin.isSet():

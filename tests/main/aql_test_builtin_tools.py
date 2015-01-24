@@ -5,14 +5,12 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import AqlTestCase, runLocalTests
 
-from aql.utils import Tempdir, whereProgram, \
-    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
-from aql.util_types import FilePath
+from aql.utils import Tempdir, removeUserHandler, addUserHandler
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
-from aql.main import Project, ProjectConfig, ErrorToolNotFound
-from aql.main.aql_builtin_tools import ExecuteCommand, CopyFilesBuilder, CopyFileAsBuilder
+from aql.main import Project, ProjectConfig
+from aql.main.aql_builtin_tools import ExecuteCommand
 
 #//===========================================================================//
 
@@ -59,7 +57,7 @@ class TestBuiltinTools( AqlTestCase ):
       
       options = builtinOptions()
 
-      cmd = [ whereProgram( "python" ), '-c', 'print("TEST EXEC")']
+      cmd = [ sys.executable, '-c', 'print("TEST EXEC")']
 
       options.build_dir = build_dir
       

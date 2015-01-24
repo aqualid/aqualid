@@ -1,8 +1,7 @@
 import os
 import re
 
-from aql import executeCommand, whereProgram, findOptionalPrograms,\
-  ListOptionType, PathOptionType, tool 
+from aql import executeCommand, ListOptionType, PathOptionType, tool 
 
 from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
                        ToolCommonRes, CommonResCompiler
@@ -287,13 +286,13 @@ def _getMsvcSpecs( cl ):
 class ToolMsvcCommon( ToolCommonCpp ):
   
   @classmethod
-  def   setup( cls, options, env ):
+  def   setup( cls, options ):
     
     if options.cc_name.isSetNotTo( 'msvc' ):
       raise NotImplementedError()
     
-    cl = whereProgram( 'cl', env )
-    link, lib, rc = findOptionalPrograms( ['link', 'lib', 'rc' ], env )
+    cl = cls.findProgram( options, 'cl' )
+    link, lib, rc = cls.findOptionalPrograms( options, ['link', 'lib', 'rc'] )
     
     specs = _getMsvcSpecs( cl )
     
@@ -432,9 +431,9 @@ class ToolMsvc( ToolMsvcCommon ):
 class ToolMsrc( ToolCommonRes ):
   
   @classmethod
-  def   setup( cls, options, env ):
+  def   setup( cls, options ):
     
-    rc = whereProgram( 'rc', env )
+    rc = cls.findProgram( options, 'rc' )
     options.target_os = 'windows'
     options.rc = rc
   

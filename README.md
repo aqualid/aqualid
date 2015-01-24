@@ -11,4 +11,3 @@ Key features:
   - Support any build target types (files, strings, URLs, remote resources etc.)
   - Conditional options
   - Scons like build scripts (but don't compatible)
-  - Tools are not part of the build tool

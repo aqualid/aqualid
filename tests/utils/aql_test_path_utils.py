@@ -1,4 +1,5 @@
 import sys
+import os
 import os.path
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
@@ -6,7 +7,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import AqlTestCase, runLocalTests
 
 from aql.utils import findFiles, changePath, \
-  whereProgram, ErrorProgramNotFound, findOptionalProgram, findOptionalPrograms, \
+  findProgram, findPrograms, findOptionalProgram, findOptionalPrograms, \
   relativeJoin, excludeFilesFromDirs, groupPathsByDir, \
   Chdir
 
@@ -95,18 +96,32 @@ class TestPathUtils( AqlTestCase ):
   #//===========================================================================//
   
   def   test_find_prog( self ):
-    self.assertTrue( whereProgram( 'route' ) )
-    self.assertRaises( ErrorProgramNotFound, whereProgram, 'route', env = {} )
+    os_env = os.environ
+    prog = findProgram( 'route', os_env )
+    self.assertEqual( findProgram( 'route', os_env, prog ), prog )
+    self.assertIsNone( findProgram( 'non-existing-program', os_env, prog ) )
+    self.assertIsNone( findProgram( 'route', env = {} ) )
+    self.assertEqual( findProgram( 'route', {}, prog ), prog )
     
-    self.assertTrue( findOptionalProgram( 'route' ) )
+    route1, route2 = findPrograms( ['route', 'route'], os_env )
+    self.assertEqual( route1, route2 )
     
-    prog = findOptionalProgram( 'route', env = {} )
-    self.assertEqual( prog.get(), 'route' )
+    route1, route2 = findPrograms( ['route', 'route'], env = {}, hint_prog = prog )
+    self.assertEqual( route1, route2 )
     
-    self.assertEqual( len(findOptionalPrograms( ['route'] )), 1 )
+    self.assertTrue( findOptionalProgram( 'route', os_env ) )
+    
+    oprog = findOptionalProgram( 'route', env = {} )
+    self.assertTrue( oprog.get().startswith('route') )
+    
+    route1, route2 = findOptionalPrograms( ['route', 'route'], os_env )
+    self.assertEqual( route1.get(), route2.get() )
+    
+    route1, route2 = findOptionalPrograms( ['route', 'route'], env = {}, hint_prog = prog )
+    self.assertEqual( route1.get(), route2.get() )
     
     progs = findOptionalPrograms( ['route'], env = {} )
-    self.assertEqual( progs[0].get(), 'route' )
+    self.assertTrue( progs[0].get().startswith( 'route' ) )
   
   #//===========================================================================//
   

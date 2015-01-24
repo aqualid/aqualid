@@ -303,7 +303,6 @@ def   main():
       p.sort_stats('cumulative')
       p.print_stats( prj_cfg.debug_profile_top )
     
-    return status
   except (Exception, KeyboardInterrupt) as ex:
     if with_backtrace:
       err = traceback.format_exc()
@@ -314,5 +313,8 @@ def   main():
         err = toUnicode(ex)
   
     eventAqlError( err )
+    status = 1
+  
+  return status
   
 #//===========================================================================//

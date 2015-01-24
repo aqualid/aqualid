@@ -2,8 +2,7 @@ import os
 import re
 import itertools
 
-from aql import readTextFile, Tempfile, executeCommand, whereProgram, findOptionalProgram,\
-  StrOptionType, ListOptionType, PathOptionType, Version, tool 
+from aql import readTextFile, Tempfile, executeCommand, StrOptionType, ListOptionType, PathOptionType, tool 
 
 from .cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
                         ToolCommonRes, CommonResCompiler
@@ -239,12 +238,6 @@ def   _checkProg( gcc_path, prog ):
 
 #//===========================================================================//
 
-def   _findGcc( prog, env, gcc_prefix, gcc_suffix ):
-  gcc = '%s%s%s' % (gcc_prefix, prog, gcc_suffix)
-  return whereProgram( gcc, env )
-
-#//===========================================================================//
-
 def   _getGccSpecs( gcc ):
   result = executeCommand( [gcc, '-v'] )
   
@@ -257,7 +250,7 @@ def   _getGccSpecs( gcc ):
   target = match.group(1).strip() if match else ''
   
   match = version_re.search( out )
-  version = Version( match.group(1).strip() if match else '' )
+  version = match.group(1).strip() if match else ''
   
   target_list = target.split('-', 2)
   
@@ -281,10 +274,18 @@ def   _getGccSpecs( gcc ):
 
 #//===========================================================================//
 
+def   _generateProgNames( prog, prefix, suffix ):
+  prefixes = [prefix, ''] if prefix else ['']
+  suffixes = [suffix, '' ] if suffix else ['']
+  
+  return tuple( prefix + prog + suffix for prefix, suffix in itertools.product( prefixes, suffixes ) )
+
+#//===========================================================================//
+
 class ToolGccCommon( ToolCommonCpp ):
   
   @classmethod
-  def   setup( cls, options, env ):
+  def   setup( cls, options ):
     
     if options.cc_name.isSetNotTo('gcc'):
       raise NotImplementedError()
@@ -297,7 +298,8 @@ class ToolGccCommon( ToolCommonCpp ):
     else:
       cc = "g++"
     
-    gcc = _findGcc( cc, env, gcc_prefix, gcc_suffix )
+    gcc = cls.findProgram( options, gcc_prefix + cc + gcc_suffix )
+    
     specs = _getGccSpecs( gcc )
     
     options.update( specs )
@@ -305,16 +307,13 @@ class ToolGccCommon( ToolCommonCpp ):
     options.cc = gcc
     options.link = gcc
     
-    gcc_ext = os.path.splitext( gcc )[1]
+    ar = _generateProgNames( 'ar', gcc_prefix, gcc_suffix )
+    rc = _generateProgNames( 'windres', gcc_prefix, gcc_suffix )
     
-    prefixes = [gcc_prefix, ''] if gcc_prefix else ['']
-    suffixes = [gcc_suffix + gcc_ext, gcc_ext ] if gcc_suffix else [gcc_ext]
+    lib, rc = cls.findOptionalPrograms( options, [ar, rc], gcc )
     
-    ar = tuple( prefix + 'ar' + suffix for prefix, suffix in itertools.product( prefixes, suffixes ) )
-    rc = tuple( prefix + 'windres' + suffix for prefix, suffix in itertools.product( prefixes, suffixes ) )
-    
-    options.lib = findOptionalProgram( ar, env, exts = tuple() )
-    options.rc = findOptionalProgram( rc, env, exts = tuple() )
+    options.lib = lib
+    options.rc = rc
   
   #//-------------------------------------------------------//
   
@@ -322,8 +321,8 @@ class ToolGccCommon( ToolCommonCpp ):
   def   options( cls ):
     options = super(ToolGccCommon, cls).options()
     
-    options.gcc_prefix  = StrOptionType( description = "GCC C/C++ compiler prefix", is_tool_key = True )
-    options.gcc_suffix  = StrOptionType( description = "GCC C/C++ compiler suffix", is_tool_key = True )
+    options.gcc_prefix  = StrOptionType( description = "GCC C/C++ compiler prefix" )
+    options.gcc_suffix  = StrOptionType( description = "GCC C/C++ compiler suffix" )
     
     return options
   
@@ -447,10 +446,28 @@ class ToolGcc( ToolGccCommon ):
 @tool('rc', 'windres')
 class ToolWindRes( ToolCommonRes ):
   
+  #//-------------------------------------------------------//
+  
   @classmethod
-  def   setup( cls, options, env ):
+  def   options( cls ):
+    options = super(ToolWindRes, cls).options()
     
-    rc = whereProgram( 'windres', env )
+    options.gcc_prefix = StrOptionType( description = "GCC C/C++ compiler prefix" )
+    options.gcc_suffix = StrOptionType( description = "GCC C/C++ compiler suffix" )
+    
+    return options
+  
+  #//-------------------------------------------------------//
+  
+  @classmethod
+  def   setup( cls, options ):
+    
+    gcc_prefix = options.gcc_prefix.get()
+    gcc_suffix = options.gcc_suffix.get()
+    
+    rc = _generateProgNames( 'windres', gcc_prefix, gcc_suffix )
+    
+    rc = cls.findProgram( options, rc )
     options.target_os = 'windows'
     options.rc = rc
   

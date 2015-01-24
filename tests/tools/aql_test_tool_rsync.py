@@ -8,8 +8,6 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempdir
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
-import rsync
-
 #//===========================================================================//
 
 def   _build( prj ):
@@ -32,7 +30,7 @@ class TestToolRsync( AqlTestCase ):
           prj = Project( cfg )
           
           try:
-            rsync = prj.tools.rsync
+            rsync = prj.tools.Tool('rsync', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
           except  ErrorToolNotFound:
             print("WARNING: Rsync tool has not been found. Skip the test.")
             return
@@ -56,8 +54,10 @@ class TestToolRsync( AqlTestCase ):
         cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir] )
 
         prj = Project( cfg )
-
-        remote_files = prj.tools.rsync.Push( src_dir + '/', target = 'test_rsync_push/',
+        
+        rsync = prj.tools.Tool('rsync', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
+        
+        remote_files = rsync.Push( src_dir + '/', target = 'test_rsync_push/',
                                              host = 'nas', key_file = r'C:\cygwin\home\me\rsync.key',
                                              exclude="*.h" )
         remote_files.options.rsync_flags += ['--chmod=u+xrw,g+xr,o+xr']
@@ -77,7 +77,7 @@ class TestToolRsync( AqlTestCase ):
           prj = Project( cfg )
           
           try:
-            rsync = prj.tools.rsync
+            rsync = prj.tools.Tool('rsync', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
           except  ErrorToolNotFound:
             print("WARNING: Rsync tool has not been found. Skip the test.")
             return
