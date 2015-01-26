@@ -86,21 +86,44 @@ def   _build_options():
 def   _target_options():
   options = Options()
   
-  options.target_os = EnumOptionType( values = ['native', ('windows', 'win32', 'win64'), ('linux', 'linux-gnu'),
-                                                'cygwin', ('OS-X', 'osx', 'darwin' ), 'java', 'sunos', 'hpux', 'elf'],
+  options.target_os = EnumOptionType( values = ['native', 'unknown',
+                                                ('windows', 'win32', 'win64'),
+                                                ('linux', 'linux-gnu'),
+                                                'uclinux',
+                                                'cygwin',
+                                                'interix',
+                                                'freebsd',
+                                                'openbsd',
+                                                'netbsd',
+                                                ('OS-X', 'osx', 'darwin'),
+                                                'java',
+                                                'sunos',
+                                                'hpux',
+                                                'vxworks',
+                                                'solaris',
+                                                'elf'],
                                       default = 'native',
+                                      strict = False,
                                       is_tool_key = True,
                                       description = "The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'." )
   
   options.os = options.target_os
   
-  options.target_arch = EnumOptionType( values = [ 'native',
+  options.target_arch = EnumOptionType( values = [ 'native', 'unknown',
                                                    ('x86-32', 'x86_32', 'x86', '80x86', 'i386', 'i486', 'i586', 'i686'),
                                                    ('x86-64','x86_64', 'amd64', 'x64'),
                                                    'arm', 'arm64',
                                                    'alpha',
-                                                   'mips' ],
+                                                   'mips',
+                                                   'ia64',
+                                                   'm68k',
+                                                   'sparc',
+                                                   'sparc64',
+                                                   'sparcv9',
+                                                   'powerpc',
+                                                  ],
                                         default = 'native',
+                                        strict = False,
                                         is_tool_key = True,
                                         description = "The target machine type, e.g. 'i386'" )
   

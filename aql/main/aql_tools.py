@@ -65,8 +65,9 @@ class   ErrorToolInvalidSetupMethod( AqlException ):
     super(type(self), self).__init__( msg )
 
 class   ErrorToolNotFound( AqlException ):
-  def   __init__( self, tool_name ):
-    msg = "Tool '%s' has not been found" % (tool_name,)
+  def   __init__( self, tool_name, loaded_paths ):
+    loaded_paths = ', '.join( loaded_paths )
+    msg = "Tool '%s' has not been found in the following paths: %s" % (tool_name, loaded_paths)
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
@@ -107,7 +108,7 @@ class ToolsManager( object ):
     self.tool_names = {}
     self.all_setup_methods = {}
     self.tool_info = {}
-    self.loaded_paths = set()
+    self.loaded_paths = []
   
   #//-------------------------------------------------------//
   
@@ -155,7 +156,7 @@ class ToolsManager( object ):
       if path in self.loaded_paths:
         continue
       
-      self.loaded_paths.add( path )
+      self.loaded_paths.append( path )
       
       module_files = findFiles( path, mask = "*.py" )
       if not module_files:
@@ -244,7 +245,7 @@ class ToolsManager( object ):
           tool_names = self.tool_names.get( tool_info.tool_class, tuple() )
           return tool_obj, tool_names, tool_options
     
-    raise ErrorToolNotFound( tool_name )
+    raise ErrorToolNotFound( tool_name, self.loaded_paths )
   
   #//=======================================================//
   

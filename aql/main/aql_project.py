@@ -130,11 +130,11 @@ def   _getDefaultToolsPath( info = getAqlInfo() ):
   
   aql_module_name = info.module
   
-  tool_dirs = [ os.path.join( path, aql_module_name) for path in _getSitePackagesDirs() ]
+  tool_dirs = _getSitePackagesDirs()
   
-  tool_dirs += (site.USER_SITE, _getUserConfigDir() )
+  tool_dirs += ( site.USER_SITE, _getUserConfigDir() )
   
-  tool_dirs = [ os.path.join( path, aql_module_name) for path in tool_dirs]
+  tool_dirs = [ os.path.join( path, aql_module_name ) for path in tool_dirs]
   
   aql_dir = _getAqualidInstallDir()
   if aql_dir:

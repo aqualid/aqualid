@@ -7,7 +7,8 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
                         DictOptionType, PathOptionType, \
-                        ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet, ErrorOptionTypeUnableConvertValue
+                        ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet,\
+                        ErrorOptionTypeUnableConvertValue, ErrorOptionTypeNoEnumValues
 from aql.util_types import IgnoreCaseString, UpperCaseString, Dict, FilePath
 
 #//===========================================================================//
@@ -127,14 +128,32 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( optimization(), 0 )
     
     self.assertRaises( ErrorOptionTypeUnableConvertValue, optimization, 3 )
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, optimization, 'three' )
     
     et = EnumOptionType( values = [] )
-    self.assertRaises( ErrorOptionTypeUnableConvertValue, et )
+    self.assertRaises( ErrorOptionTypeNoEnumValues, et )
+  
+  #//===========================================================================//
+
+  def test_enum_option_strict(self):
+    optimization = EnumOptionType( values = ( (0, 10), (1, 100), (2, 1000) ),
+                                   value_type = int, strict = False )
+    
+    values = [0, 1, 2, 10, 100, 1000, 3, 4 ]
+    base_values = [0, 1, 2, 0, 1, 2, 3, 4 ]
+    
+    for v, base in zip( values, base_values ):
+      self.assertEqual( optimization( v ), base )
+    
+    self.assertRaises( ErrorOptionTypeUnableConvertValue, optimization, 'three' )
+    
+    et = EnumOptionType( values = [], strict = False )
+    self.assertEqual( et(), '' )
 
   #//===========================================================================//
 
   def test_range_option(self):
-    warn_level = RangeOptionType( min_value = 0, max_value = 5, auto_correct = False,
+    warn_level = RangeOptionType( min_value = 0, max_value = 5, coerce = False,
                                   description = 'Warning level', group = "Diagnostics" )
     
     self.assertEqual( warn_level( 0 ), 0 )
@@ -144,7 +163,7 @@ class TestOptionTypes( AqlTestCase ):
     self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level, 10 )
     self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level, -1 )
     
-    warn_level = RangeOptionType( min_value = 0, max_value = 5, auto_correct = True,
+    warn_level = RangeOptionType( min_value = 0, max_value = 5, coerce = True,
                                   description = 'Warning level', group = "Diagnostics" )
     
     self.assertEqual( warn_level( 0 ), 0 )
@@ -157,11 +176,11 @@ class TestOptionTypes( AqlTestCase ):
     self.assertEqual( warn_level.helpRange(), ['0 ... 5'] )
     self.assertEqual( warn_level.range(), [0, 5] )
     
-    warn_level.setRange( min_value = None, max_value = None, auto_correct = False )
+    warn_level.setRange( min_value = None, max_value = None, coerce = False )
     self.assertEqual( warn_level( 0 ), 0 )
     self.assertRaises( ErrorOptionTypeUnableConvertValue, warn_level, 1 )
     
-    warn_level.setRange( min_value = None, max_value = None, auto_correct = True )
+    warn_level.setRange( min_value = None, max_value = None, coerce = True )
     self.assertEqual( warn_level( 0 ), 0 )
     self.assertEqual( warn_level( 10 ), 0 )
     self.assertEqual( warn_level( -10 ), 0 )

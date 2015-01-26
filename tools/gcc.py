@@ -232,9 +232,29 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
 #// TOOL IMPLEMENTATION
 #//===========================================================================//
 
-def   _checkProg( gcc_path, prog ):
-  prog = os.path.join( gcc_path, prog )
-  return prog if os.path.isfile( prog ) else None
+_OS_PREFIXES = (
+  
+  'linux', 'mingw32', 'cygwin', 
+  'freebsd', 'openbsd', 'netbsd', 'darwin',
+  'sunos', 'hpux', 'vxworks', 'solaris', 'interix',
+  'uclinux', 'elf',
+)
+
+_OS_NAMES = {
+  
+  'mingw32': 'windows',
+  'darwin': 'osx',
+  'sunos': 'solaris',
+}
+
+def   _getTargetOs( target_os ):
+  for target in target_os.split('-'):
+    for prefix in _OS_PREFIXES:
+      if target.startswith( prefix ):
+        name = _OS_NAMES.get( prefix, prefix )
+        return name
+  
+  return target_os
 
 #//===========================================================================//
 
@@ -252,16 +272,15 @@ def   _getGccSpecs( gcc ):
   match = version_re.search( out )
   version = match.group(1).strip() if match else ''
   
-  target_list = target.split('-', 2)
+  target_list = target.split('-', 1)
   
-  target_os = target_list[-1]
+  target_os = target_list[1]
   if len(target_list) > 1:
     target_arch = target_list[0]
   else:
-    target_arch = 'native'
+    target_arch = 'unknown'
   
-  if target_os.find('mingw32') != -1:
-    target_os = 'windows'
+  target_os = _getTargetOs( target_os )
   
   specs = {
     'cc_name':      'gcc',

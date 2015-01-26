@@ -615,19 +615,25 @@ class   EnumOptionType (OptionType):
   
   __slots__ = (
     '__values',
+    'strict',
+    
   )
   
-  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString, default = NotImplemented,
+  def   __init__( self, values, description = None, group = None, value_type = IgnoreCaseString,
+                  default = NotImplemented, strict = True,
                   is_tool_key = False, is_hidden = False ):
     
-    super(EnumOptionType,self).__init__( value_type, description, group, default = default, is_tool_key = is_tool_key, is_hidden = is_hidden )
+    super(EnumOptionType,self).__init__( value_type, description, group, default = default,
+                                         is_tool_key = is_tool_key, is_hidden = is_hidden )
     
     self.__values = {}
     
     if default is not NotImplemented:
       self.addValues( default )
-
+    
     self.addValues( values )
+    
+    self.strict = strict
   
   #//-------------------------------------------------------//
   
@@ -662,23 +668,33 @@ class   EnumOptionType (OptionType):
   
   def   __call__( self, value = NotImplemented ):
     
-    try:
-      if value is NotImplemented:
-        value = self.default
-        if value is not NotImplemented:
-          return value
-        
-        try:
-          value = next(iter(self.__values.values()))
-          return value
-        except StopIteration:
+    if value is NotImplemented:
+      value = self.default
+      if value is not NotImplemented:
+        return value
+      
+      try:
+        value = next(iter(self.__values.values()))
+        return value
+      except StopIteration:
+        if self.strict:
           raise ErrorOptionTypeNoEnumValues( self )
-      
-      value = self.__values[ self.value_type( value ) ]
-      return value
-      
-    except (KeyError, TypeError):
+        else:
+          return self.value_type()
+    
+    try:
+      value = self.value_type( value )
+    except (TypeError, ValueError):
       raise ErrorOptionTypeUnableConvertValue( self, value )
+            
+    result = self.__values.get( value, None )
+    if result is None:
+      if self.strict:
+        raise ErrorOptionTypeUnableConvertValue( self, value )
+      else:
+        return value
+      
+    return result
   
   #//-------------------------------------------------------//
   
@@ -723,23 +739,23 @@ class   RangeOptionType (OptionType):
   __slots__ = (
     'min_value',
     'max_value',
-    'auto_correct',
+    'coerce',
   )
 
-  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, auto_correct = True,
+  def   __init__( self, min_value, max_value, description = None, group = None, value_type = int, coerce = True,
                   default = NotImplemented, is_tool_key = False, is_hidden = False ):
     
     #noinspection PyTypeChecker
     super(RangeOptionType,self).__init__( value_type, description, group, default = default,
                                           is_tool_key = is_tool_key, is_hidden = is_hidden )
     
-    self.setRange( min_value, max_value, auto_correct )
+    self.setRange( min_value, max_value, coerce )
     if default is not NotImplemented:
       self.default = self( default )
   
   #//-------------------------------------------------------//
   
-  def   setRange( self, min_value, max_value, auto_correct = True ):
+  def   setRange( self, min_value, max_value, coerce = True ):
     
     if min_value is not None:
       try:
@@ -760,8 +776,8 @@ class   RangeOptionType (OptionType):
     self.min_value = min_value
     self.max_value = max_value
     
-    if auto_correct is not None:
-      self.auto_correct = auto_correct
+    if coerce is not None:
+      self.coerce = coerce
     
   #//-------------------------------------------------------//
   
@@ -777,7 +793,7 @@ class   RangeOptionType (OptionType):
       value = self.value_type( value )
       
       if value < min_value:
-        if self.auto_correct:
+        if self.coerce:
           value = min_value
         else:
           raise TypeError()
@@ -785,7 +801,7 @@ class   RangeOptionType (OptionType):
       max_value = self.max_value
       
       if value > max_value:
-        if self.auto_correct:
+        if self.coerce:
           value = max_value
         else:
           raise TypeError()
