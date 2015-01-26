@@ -292,7 +292,7 @@ class ToolMsvcCommon( ToolCommonCpp ):
       raise NotImplementedError()
     
     cl = cls.findProgram( options, 'cl' )
-    link, lib, rc = cls.findOptionalPrograms( options, ['link', 'lib', 'rc'] )
+    link, lib, rc = cls.findOptionalPrograms( options, ['link', 'lib', 'rc'], cl )
     
     specs = _getMsvcSpecs( cl )
     
