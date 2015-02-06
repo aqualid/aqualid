@@ -1,0 +1,7 @@
+cpp = tools.cpp
+
+gen = cpp.LinkProgram( 'generator.cpp', target = 'gen_hpp' )
+
+base_hpp = tools.ExecuteProgram( gen, target = 'base_obj.h', target_prefix = '-o' )
+
+cpp.LinkProgram( 'main.cpp', target = 'test', cpppath = tools.DirName( base_hpp ) )

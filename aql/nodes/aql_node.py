@@ -184,7 +184,7 @@ def   _checkDeps( vfile, dep_keys, reason ):
           reason.setImplicitDepChanged()
         return False
       
-      actual_entity = entity.getActual()
+      actual_entity = entity.getActual()    # TODO: store actual status in vfile
       if entity != actual_entity:
         vfile.replaceEntity( key, actual_entity )
         if reason is not None:
@@ -512,6 +512,11 @@ class Node (object):
   
   #//=======================================================//
   
+  def   getWeight( self ):
+    return self.builder.getWeight( self )
+  
+  #//=======================================================//
+  
   def   _split( self, src_entities ):
     
     other = object.__new__( self.__class__ )
@@ -813,13 +818,17 @@ class Node (object):
     """
     Cleans produced entities
     """
+    
+    node_keys = []
     node_entity = NodeEntity( name = self.name )
     
-    node_entity = vfile.findEntity( node_entity )
-    if node_entity is None:
+    node_key = vfile.findEntityKey( node_entity )
+    if node_key is None:
       if self.target_entities is None:
         self.target_entities = tuple()
     else:
+      node_entity = vfile.getEntityByKey( node_key )
+      
       targets = node_entity.targets
       itargets = node_entity.itargets
       
@@ -830,12 +839,14 @@ class Node (object):
         self.target_entities  = tuple()
         self.itarget_entities = tuple()
       
-      vfile.removeEntities( [ node_entity ] )
+      node_keys.append( node_key )
         
     try:
       self.builder.clear( self )
     except Exception:
       pass
+    
+    return node_keys
     
   #//=======================================================//
   
@@ -1090,14 +1101,14 @@ class BatchNode (Node):
   def   clear( self, vfile ):
     targets = []
     itargets = []
-    node_entities = []
+    node_keys = []
     
     for src_entity in self.source_entities:
       node_entity, ideps = self.node_entities[ src_entity ]
       
-      other = vfile.findEntity( node_entity )
+      other_key = vfile.findEntityKey( node_entity )
       
-      if other is None:
+      if other_key is None:
         if node_entity.targets is None:
           node_entity.targets = tuple()
         
@@ -1105,7 +1116,9 @@ class BatchNode (Node):
           node_entity.itargets = tuple()
           
       else:
-        node_entities.append( other )
+        other = vfile.getEntityByKey( other_key )
+        
+        node_keys.append( other_key )
         
         node_entity.targets = other.targets
         node_entity.itargets = other.itargets
@@ -1117,12 +1130,12 @@ class BatchNode (Node):
     self.target_entities  = targets
     self.itarget_entities = itargets
     
-    vfile.removeEntities( node_entities )
-    
     try:
       self.builder.clear( self )
     except Exception:
       pass
+  
+    return node_keys
   
   #//=======================================================//
   

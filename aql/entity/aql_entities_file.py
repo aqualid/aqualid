@@ -63,6 +63,10 @@ class EntitiesFile (object):
     self.entity2key[ entity_id ] = key
     self.key2entity[ key ] = entity
   
+  def   __removeEntityFromCache( self, key, entity_id ):
+    del self.entity2key[ entity_id ]
+    del self.key2entity[ key ]
+  
   #//---------------------------------------------------------------------------//
   
   def   __updateEntityInCache(self, old_key, new_key, entity_id, entity ):
@@ -135,6 +139,11 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
+  def   findEntityKey( self, entity ):
+    return self.__getKeyByEntityId( entity.getId() )
+  
+  #//---------------------------------------------------------------------------//
+  
   def   findEntity( self, entity ):
     key = self.__getKeyByEntityId( entity.getId() )
     if key is None:
@@ -202,6 +211,11 @@ class EntitiesFile (object):
       if key is not None:
         remove_keys.append( key )
     
+    self.data_file.remove( remove_keys )
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   removeEntityKeys( self, remove_keys ):
     self.data_file.remove( remove_keys )
   
   #//---------------------------------------------------------------------------//

@@ -696,7 +696,7 @@ class TestBuildManager( AqlTestCase ):
       bm.add( [node1, node2] )
       _build( bm )
       
-      self.assertEqual( self.built_nodes, 3 * 3 )
+      self.assertEqual( self.built_nodes, 3 + 3 * 2 )
   
   #//-------------------------------------------------------//
   

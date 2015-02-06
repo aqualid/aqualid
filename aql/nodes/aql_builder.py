@@ -349,6 +349,11 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
+  def   getWeight( self, node ):
+    return len(node.getSourceEntities())
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, node ):
     """
     Builds a node
@@ -524,7 +529,7 @@ class Builder (object):
   
   def   makeFileEntities( self, entities, tags = None, use_cache = False ):
     make_entity = self.makeFileEntity
-    return [ make_entity( entity, tags = tags, use_cache = use_cache ) for entity in toSequence( entities ) ]
+    return [ make_entity( entity, tags = tags, use_cache = use_cache ) for entity in entities ]
   
   #//-------------------------------------------------------//
   

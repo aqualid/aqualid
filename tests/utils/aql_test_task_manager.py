@@ -23,34 +23,43 @@ def   _doFail( delay = 0 ):
 
 class TestTaskManager( AqlTestCase ):
   def test_task_manager(self):
-    tm = TaskManager( 4 )
+    
+    jobs = 1
+    tm = TaskManager( 0 )
     
     results = set()
     
     num_of_tasks = 8
     
-    for i in range(0,num_of_tasks):
-      tm.addTask( i, _doAppend, i, results )
+    for i in range(num_of_tasks):
+      tm.addTask( num_of_tasks - i, i, _doAppend, i, results )
+    
+    tm.start( jobs )
     
     time.sleep(0.5) # wait until all tasks are done
     
-    done_tasks = tm.finishedTasks()
-    expected_tasks = [ TaskResult( task_id ) for task_id in range(num_of_tasks) ]
+    done_tasks = [result.task_id for result in tm.finishedTasks()]
+    expected_tasks = sorted(range(num_of_tasks), reverse = True)
     
-    self.assertEqual( sorted(expected_tasks), expected_tasks )
+    self.assertEqual( done_tasks, expected_tasks )
     self.assertEqual( results, set(range(num_of_tasks)) )
 
   #//===========================================================================//
 
   def test_task_manager_fail(self):
-    tm = TaskManager( num_threads = 4 )
+    
+    jobs = 4
+    
+    tm = TaskManager( jobs )
     
     num_of_tasks = 100
     
     for i in range(num_of_tasks):
-      tm.addTask( i, _doFail, 0.0 )
+      tm.addTask( 0, i, _doFail, 0.0 )
     
-    time.sleep(1) # wait until all tasks are done
+    tm.start( jobs )
+    
+    time.sleep(0.5) # wait until all tasks are done
     
     done_tasks = tm.finishedTasks()
     
@@ -72,43 +81,17 @@ class TestTaskManager( AqlTestCase ):
     results = set()
     
     for i in range(num_tasks):
-      tm.addTask( i, _doAppend, i, results, 1 )
+      tm.addTask( 0, i, _doAppend, i, results, 1 )
     
     time.sleep(0.2)
     
     tm.stop()
     tm.stop()
     
-    done_tasks = sorted( tm.finishedTasks(), key = lambda result: result.task_id )
+    done_tasks = sorted( result.task_id for result in tm.finishedTasks() )
     
-    expected_tasks = [ TaskResult( task_id ) for task_id in range(jobs) ]
-    
-    self.assertEqual( sorted(done_tasks), expected_tasks )
-    self.assertEqual( results, set(range(jobs)) )
-
-  #//===========================================================================//
-  
-  def test_task_manager_finish(self):
-    tm = TaskManager( 1 )
-    
-    results = set()
-    
-    num_tasks = 8
-    
-    for i in range(num_tasks):
-      tm.addTask( i, _doAppend, i, results, 0.2 )
-    
-    tm.finish()
-    
-    for i in range(num_tasks, num_tasks * 2):
-      tm.addTask( i, _doAppend, i, results, 0.2 )
-    
-    self.assertEqual( results, set(range(num_tasks)) )
-    
-    done_tasks = tm.finishedTasks()
-    expected_tasks = [ TaskResult( task_id ) for task_id in range(num_tasks) ] 
-    
-    self.assertEqual( sorted(done_tasks), expected_tasks )
+    self.assertEqual( len(done_tasks), jobs )
+    self.assertEqual( results, set(done_tasks) )
 
   #//===========================================================================//
 
@@ -119,11 +102,11 @@ class TestTaskManager( AqlTestCase ):
     
     num_tasks = 3
     
-    tm.addTask( 0, _doAppend, 0, results, 0.3 )
+    tm.addTask( 0, 0, _doAppend, 0, results, 0.3 )
     
-    tm.addTask( 1, _doFail, 0.1 )
+    tm.addTask( 0, 1, _doFail, 0.1 )
     
-    tm.addTask( 2, _doAppend, 2, results, 0 )
+    tm.addTask( 0, 2, _doAppend, 2, results, 0 )
     
     time.sleep(1)
     
@@ -143,27 +126,31 @@ class TestTaskManager( AqlTestCase ):
   #//===========================================================================//
 
   def test_task_manager_stop_on_fail(self):
-    tm = TaskManager( 4, stop_on_fail = True )
+    num_tasks = 8
+    jobs = 4
+    
+    tm = TaskManager( 0, stop_on_fail = True )
     
     results = set()
     
-    num_tasks = 8
+    for i in range( jobs - 1 ):
+      tm.addTask( 0, i, _doAppend, i, results, 0.5 )
     
-    for i in range(3):
-      tm.addTask( i, _doAppend, i, results, 0.3 )
+    tm.addTask( 1, jobs - 1, _doFail, 0.1 )
     
-    tm.addTask( i + 1, _doFail, 0.1 )
+    for i in range(jobs, num_tasks):
+      tm.addTask( 2, i, _doAppend, i, results, 0 )
     
-    for i in range(i + 2,num_tasks):
-      tm.addTask( i, _doAppend, i, results, 0 )
+    tm.start( jobs )
     
     time.sleep(1)
     
     done_tasks = sorted( tm.finishedTasks(), key=lambda t: t.task_id )
-    self.assertEqual( len(done_tasks), 4 )
+    print()
+    self.assertEqual( len(done_tasks), jobs )
     
     expected_tasks = [ TaskResult( task_id, error, result ) \
-                       for task_id, error, result in zip(range(4), [None] * num_tasks, [None] * num_tasks ) ] 
+                       for task_id, error, result in zip(range(jobs), [None] * num_tasks, [None] * num_tasks ) ] 
 
     self.assertEqual( done_tasks[:3], expected_tasks[:3] )
     

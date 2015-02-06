@@ -858,7 +858,7 @@ class _NodesBuilder (object):
           changed = True
           continue
           
-      addTask( node, _buildNode, node )
+      addTask( -node.getWeight(), node, _buildNode, node )
       
       added_tasks += 1
       
@@ -906,6 +906,8 @@ class _NodesBuilder (object):
     vfiles = self.vfiles
     build_manager = self.build_manager
     
+    remove_keys = {}
+    
     for node in nodes:
       
       node_state = self._getNodeState( node )
@@ -916,9 +918,15 @@ class _NodesBuilder (object):
         continue
       
       vfile = vfiles[ node.builder ]
-      node.clear( vfile )
+      node_keys = node.clear( vfile )
+      
+      remove_keys.setdefault( vfile, [] ).extend( node_keys )
+      
       build_manager.removedNode( node )
-  
+    
+    for vfile, remove_keys in remove_keys.items():
+      vfile.removeEntityKeys( remove_keys )
+    
   #//-------------------------------------------------------//
   
   def   status( self, nodes ):

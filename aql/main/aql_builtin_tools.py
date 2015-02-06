@@ -6,6 +6,7 @@ import os.path
 import shutil
 import zipfile
 import tarfile
+import itertools
 
 from aql.util_types import isUnicode, encodeStr, decodeBytes, isString, toSequence
 from aql.utils import openFile
@@ -17,26 +18,6 @@ __all__ = (
   "BuiltinTool",
 )
 
-"""
-Unique Entity - name + type
-
-node = ExecuteCommand('gcc --help -v')
-
-tools.cpp.cxx
-
-node = ExecuteCommand( tools.cpp.cxx, '--help -v' )
-node = ExecuteMethod( target = my_function )
-
-dir_node = CopyFiles( prog_node, target = dir_name )
-dir_node = CopyFilesAs( prog_node, target = dir_name )
-dir_node = MoveFiles( prog_node,  )
-dir_node = MoveFilesAs( prog_node )
-dir_node = RemoveFiles( prog_node )
-node = FindFiles( dir_node )
-
-dir_node = FileDir( prog_node )
-"""
-
 class   ErrorDistCommandInvalid( Exception ):
   def   __init__( self, command ):
     msg = "distutils command '%s' is not supported" % (command,)
@@ -46,11 +27,49 @@ class   ErrorDistCommandInvalid( Exception ):
 
 class ExecuteCommand (Builder):
   
+  NAME_ATTRS = ('targets',)
+  
+  def   __init__(self, options, target = None, target_flag = None ):
+    
+    self.targets = [ self.getTargetFilePath( target ) for target in toSequence(target) ]
+    self.target_flag = target_flag
+  
+  #//-------------------------------------------------------//
+  
+  def   _getTargetsCmd( self ):
+    
+    targets = self.targets
+    
+    prefix = self.target_flag
+    if not prefix:
+      return tuple(targets)
+    
+    prefix = prefix.lstrip()
+    
+    if not prefix:
+      return tuple(targets)
+    
+    rprefix = prefix.rstrip()
+    
+    if prefix != rprefix:
+      return tuple( itertools.chain( *((rprefix, target) for target in targets )) )
+    
+    return tuple( "%s%s" % (prefix, target) for target in targets ) 
+  
+  #//-------------------------------------------------------//
+  
   def   build( self, node ):
     cmd = node.getSources()
+    
+    targets = self._getTargetsCmd()
+    if targets:
+      cmd += targets
+    
     out = self.execCmd( cmd )
     
-    node.setNoTargets()
+    targets = self.makeFileEntities( targets )
+    
+    node.addTargets( targets )
     
     return out
   
@@ -58,6 +77,12 @@ class ExecuteCommand (Builder):
   
   def   getTraceName(self, brief ):
     return "Execute"
+  
+  #//-------------------------------------------------------//
+  
+  def   getTargetEntities( self, source_entities ):
+    file_type = self.file_entity_type
+    return [ file_type( target, signature = None ) for target in self.targets ]
   
   #//-------------------------------------------------------//
   
@@ -96,11 +121,6 @@ class CopyFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceTargets( self, node, brief ):
-    return self.target
-  
-  #//-------------------------------------------------------//
-  
   def   getTargetEntities( self, source_entities ):
     src = source_entities[0].get()
     return ( os.path.join( self.target, os.path.basename(src) ), )
@@ -129,11 +149,6 @@ class CopyFileAsBuilder (FileBuilder):
   
   def   getTraceName(self, brief ):
     return "Copy file"
-  
-  #//-------------------------------------------------------//
-  
-  def   getTraceTargets( self, node, brief ):
-    return self.target
   
   #//-------------------------------------------------------//
   
@@ -220,11 +235,6 @@ class TarFilesBuilder (FileBuilder):
   
   def   getTraceName(self, brief ):
     return "Create Tar"
-  
-  #//-------------------------------------------------------//
-  
-  def   getTraceTargets( self, node, brief ):
-    return self.target
   
   #//-------------------------------------------------------//
   
@@ -317,11 +327,6 @@ class ZipFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceTargets( self, node, brief ):
-    return self.target
-  
-  #//-------------------------------------------------------//
-  
   def   getTargetEntities( self, source_entities ):
     return self.target
 
@@ -359,11 +364,6 @@ class WriteFileBuilder (Builder):
   
   def   getTraceName(self, brief ):
     return "Writing content"
-  
-  #//-------------------------------------------------------//
-  
-  def   getTraceTargets( self, node, brief ):
-    return self.target
   
   #//-------------------------------------------------------//
   
@@ -476,8 +476,8 @@ class   InstallDistBuilder (FileBuilder):
 
 class BuiltinTool( Tool ):
   
-  def   ExecuteCommand( self, options ):
-    return ExecuteCommand( options )
+  def   ExecuteCommand( self, options, target = None, target_flag = None ):
+    return ExecuteCommand( options, target = target, target_flag = target_flag )
   
   def   CopyFiles(self, options, target ):
     return CopyFilesBuilder( options, target )

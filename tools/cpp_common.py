@@ -485,6 +485,11 @@ class CommonCppLinker( CommonCppLinkerBase ):
     self.target = self.getTargetFilePath( target, prefix = prefix, ext = ext )
     self.cmd = options.link_cmd.get()
     self.shared = shared
+  
+  #//-------------------------------------------------------//
+  
+  def   getWeight( self, node ):
+    return 2 * len(node.getSourceEntities())
 
 
 #//===========================================================================//
