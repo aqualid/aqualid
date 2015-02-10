@@ -1,11 +1,12 @@
 import os
 import sys
+import itertools
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, Tempdir
+from aql.utils import Tempfile, Tempdir, setEventSettings, EventSettings
 
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
@@ -271,6 +272,44 @@ class TestToolGcc( AqlTestCase ):
       
       self.buildPrj( prj, 1 )
   
+  #//-------------------------------------------------------//
+  
+  def test_gcc_copy_ideps(self):
+    
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src')
+      copy_dir  = os.path.join( tmp_dir, 'dist')
+      os.makedirs( src_dir )
+      
+      setEventSettings( EventSettings( brief = False, with_output = True ) )
+      
+      num_src_files = 5
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg )
+      try:
+        gcc = prj.tools.Tool('g++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
+      except  ErrorToolNotFound:
+        print("WARNING: GCC tool has not been found. Skip the test.")
+        return
+      
+      node = gcc.Compile( src_files, batch_build = False )
+      prj.tools.CopyFiles( node.filterSources(), node.filterImplicitDependencies(), target = copy_dir, batch_groups = 1 )
+      
+      self.buildPrj( prj, num_src_files + 1 )
+      
+      for file in itertools.chain(src_files, hdr_files):
+        self.assertTrue( os.path.isfile( os.path.join( copy_dir, os.path.basename( file ) ) ) )
+      
+      node = gcc.Compile( src_files, batch_build = False )
+      prj.tools.CopyFiles( node.filterSources(), node.filterImplicitDependencies(), target = copy_dir, batch_groups = 1 )
+      self.buildPrj( prj, 0 )
+
 #//===========================================================================//
 
 if __name__ == "__main__":

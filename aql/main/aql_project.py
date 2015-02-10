@@ -34,7 +34,7 @@ from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenLi
 from aql.util_types import FilePath, ValueListType, UniqueList, toSequence, AqlException
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
 from aql.options import builtinOptions, Options, iUpdateValue
-from aql.nodes import BuildManager, Node, BatchNode, NodeTargetsFilter
+from aql.nodes import BuildManager, Node, BatchNode, NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
 
 from .aql_info import getAqlInfo
 from .aql_tools import getToolsManager
@@ -328,7 +328,7 @@ class BuilderWrapper( object ):
         sources += toSequence( value )
       else:
         for v in toSequence( value ):
-          if isinstance( v, (Node, NodeTargetsFilter, EntityBase) ):
+          if isinstance( v, (Node, NodeFilter, EntityBase) ):
             deps.append( v )
                   
         if name in self.arg_names:
@@ -355,7 +355,7 @@ class BuilderWrapper( object ):
       node = Node( builder, sources )
 
     node.depends( deps )
-
+    
     self.project.AddNodes( (node,) )
     
     return node
@@ -870,3 +870,11 @@ class Project( object ):
     if result and result[-1]:
       result.append("")
     return result
+  
+  #//=======================================================//
+  
+  def   DirName( self, node ):
+    return NodeDirNameFilter( node )
+  
+  def   BaseName(self, node ):
+    return NodeBaseNameFilter( node )

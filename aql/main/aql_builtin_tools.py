@@ -75,11 +75,6 @@ class ExecuteCommand (Builder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
-    return "Execute"
-  
-  #//-------------------------------------------------------//
-  
   def   getTargetEntities( self, source_entities ):
     file_type = self.file_entity_type
     return [ file_type( target, signature = None ) for target in self.targets ]
@@ -87,8 +82,25 @@ class ExecuteCommand (Builder):
   #//-------------------------------------------------------//
   
   def   getBuildStrArgs( self, node, brief ):
-    cmd = node.getSourceEntities()
-    return (cmd,)
+    sources = node.getSourceEntities()
+    
+    try:
+      name = sources[0]
+    except Exception:
+      name = ''
+    
+    try:
+      targets = self.getTargetEntities( sources )
+    except Exception:
+      targets = None
+    
+    try:
+      sources = sources[1:]
+    except Exception:
+      sources = None
+    
+    return name, sources, targets
+
 
 #//===========================================================================//
 
@@ -499,9 +511,3 @@ class BuiltinTool( Tool ):
   
   def   CreateTar(self, options, target, mode = None, rename = None, basedir = None, ext = None ):
     return TarFilesBuilder( options, target = target, mode = mode, rename = rename, basedir = basedir, ext = ext )
-  
-  def   DirName(self, options):
-    raise NotImplementedError()
-  
-  def   BaseName(self, options):
-    raise NotImplementedError()

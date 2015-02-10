@@ -18,7 +18,8 @@
 #
 
 __all__ = (
-  'Node', 'BatchNode', 'NodeTargetsFilter',
+  'Node', 'BatchNode',
+  'NodeFilter', 'NodeDirNameFilter', 'NodeBaseNameFilter',
 )
 
 import os
@@ -27,7 +28,7 @@ import operator
 from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir, eventStatus, logDebug, logInfo
 from aql.util_types import toSequence, isString, FilePath, AqlException
 
-from aql.entity import EntityBase, FileEntityBase, pickleable
+from aql.entity import EntityBase, FileEntityBase, SimpleEntity, pickleable
 
 #//===========================================================================//
 
@@ -173,7 +174,7 @@ class NodeStaleReason (object):
       
 #//===========================================================================//
 
-def   _checkDeps( vfile, dep_keys, reason ):
+def   _checkDeps( vfile, dep_keys, dep_entities, reason ):
   if dep_keys:
     
     for key in dep_keys:
@@ -190,7 +191,9 @@ def   _checkDeps( vfile, dep_keys, reason ):
         if reason is not None:
           reason.setImplicitDepChanged( entity )
         return False
-        
+      
+      dep_entities.append( entity )
+      
   return True
 
 #//===========================================================================//
@@ -367,6 +370,7 @@ class   NodeEntity (EntityBase):
   __slots__ = (
     'targets',
     'itargets',
+    'ideps',
     'idep_keys',
   )
   
@@ -432,7 +436,9 @@ class   NodeEntity (EntityBase):
     itargets  = other.itargets
     idep_keys = other.idep_keys
     
-    if not _checkDeps( vfile, idep_keys, reason ):
+    ideps = []
+    
+    if not _checkDeps( vfile, idep_keys, ideps, reason ):
       return False
     
     if not _checkTargets( targets, reason ):
@@ -440,25 +446,88 @@ class   NodeEntity (EntityBase):
     
     self.targets = targets
     self.itargets = itargets
+    self.ideps = ideps
     
     return True
   
 #//===========================================================================//
 
-class NodeTargetsFilter( object ):
+class NodeFilter (object):
+  
+  __slots__ = \
+  (
+    'node',
+    'node_attribute',
+  )
+  
+  def   __init__( self, node, node_attribute = 'target_entities' ):
+    self.node = node
+    self.node_attribute = node_attribute
+  
+  #//-------------------------------------------------------//
+  
+  def   getNode(self):
+    node = self.node
+    
+    while isinstance( node, NodeFilter ):
+      node = node.node
+    
+    return node
+  
+  #//-------------------------------------------------------//
+  
+  def   get(self):
+    
+    entities = self.getEntities()
+    if len(entities) == 1:
+      return entities[0]
+    
+    return entities
+ 
+  #//-------------------------------------------------------//
+  
+  def   getEntities(self):
+    node = self.node
+    if isinstance( node, NodeFilter ):
+      entities = node.getEntities()
+    else:
+      entities = getattr( node, self.node_attribute )
+    
+    return self._get( entities )
+  
+  #//-------------------------------------------------------//
+  
+  def   _get( self, entities ):
+    return entities
+  
+#//===========================================================================//
+
+class NodeTagsFilter( NodeFilter ):
   __slots__ = \
     (
-      'node',
       'tags',
     )
   
-  def   __init__(self, node, tags ):
-    self.node = node
+  def   __init__( self, node, tags, node_attribute = 'target_entities' ):
+    super(NodeTagsFilter, self).__init__( node, node_attribute )
     self.tags = frozenset( toSequence( tags ) )
   
-  def   get(self):
+  def   _get( self, entities ):
     tags = self.tags
-    return tuple( entity for entity in self.node.getTargetEntities() if entity.tags and (entity.tags & tags) )
+    return tuple( entity for entity in entities if entity.tags and (entity.tags & tags) )
+
+#//===========================================================================//
+
+class NodeDirNameFilter( NodeFilter ):
+  
+  def   _get( self, entities ):
+    return tuple( SimpleEntity( os.path.dirname( entity.get() ) ) for entity in entities )
+
+#//===========================================================================//
+
+class NodeBaseNameFilter( NodeFilter ):
+  def   _get( self, entities ):
+    return tuple( SimpleEntity( os.path.basename( entity.get() ) ) for entity in entities )
 
 #//===========================================================================//
 
@@ -585,8 +654,8 @@ class Node (object):
       if isinstance( entity, Node ):
         dep_nodes.add( entity )
       
-      elif isinstance( entity, NodeTargetsFilter ):
-        dep_nodes.add( entity.node )
+      elif isinstance( entity, NodeFilter ):
+        dep_nodes.add( entity.getNode() )
       
       elif isinstance( entity, EntityBase ):
         dep_entities.append( entity )
@@ -692,8 +761,8 @@ class Node (object):
         if isinstance( src, Node ):
           entities += src.target_entities
         
-        elif isinstance( src, NodeTargetsFilter ):
-          entities += src.get()
+        elif isinstance( src, NodeFilter ):
+          entities += src.getEntities()
         
         elif isinstance( src, EntityBase ):
           entities.append( src )
@@ -726,8 +795,8 @@ class Node (object):
       if isinstance(src, Node):
         nodes.append( src )
       
-      elif isinstance(src, NodeTargetsFilter):
-        nodes.append( src.node )
+      elif isinstance(src, NodeFilter):
+        nodes.append( src.getNode() )
         
     return nodes
   
@@ -736,9 +805,9 @@ class Node (object):
   def   shrink(self):
     self.cwd = None
     self.dep_nodes = None
-    self.dep_entities = None
+    # self.dep_entities = None
     self.sources = None
-    self.source_entities = None
+    # self.source_entities = None
     
     self.name = None
     self.signature = None
@@ -861,6 +930,7 @@ class Node (object):
       
     self.target_entities  = node_entity.targets
     self.itarget_entities = node_entity.itargets
+    self.idep_entities    = node_entity.ideps
     
     return True
     
@@ -884,7 +954,29 @@ class Node (object):
   #//=======================================================//
   
   def   at(self, tags ):
-    return NodeTargetsFilter( self, tags )
+    return NodeTagsFilter( self, tags )
+  
+  #//=======================================================//
+  
+  def   __filter( self, node_attribute, tags ):
+    if tags is None:
+      return NodeFilter( self, node_attribute )
+    
+    return NodeTagsFilter( self, tags, node_attribute )
+  
+  #//=======================================================//
+  
+  def   filterSources( self, tags = None ):
+    return self.__filter( 'source_entities', tags )
+  
+  def   filterSideEffects( self, tags = None ):
+    return self.__filter( 'itarget_entities', tags )
+  
+  def   filterImplicitDependencies( self, tags = None ):
+    return self.__filter( 'idep_entities', tags )
+  
+  def   filterDependencies( self, tags = None ):
+    return self.__filter( 'dep_entities', tags )
   
   #//=======================================================//
   
@@ -930,6 +1022,22 @@ class Node (object):
   
   #//=======================================================//
   
+  def   _pullTargets( self, nodes ):
+    targets   = []
+    itargets  = []
+    ideps  = []
+    
+    for node in nodes:
+      targets   += node.target_entities
+      itargets  += node.itarget_entities
+      ideps     += node.idep_entities
+      
+    self.target_entities = targets
+    self.itarget_entities = itargets
+    self.idep_entities = ideps
+  
+  #//=======================================================//
+  
   def   getBuildStr( self, brief = True ):
     try:
       args = self.builder.getBuildStrArgs( self, brief = brief )
@@ -960,9 +1068,9 @@ class Node (object):
         else:
           result.append( src ) 
       
-      elif isinstance( src, NodeTargetsFilter ):
+      elif isinstance( src, NodeFilter ):
         try:
-          targets = src.get()
+          targets = src.getEntities()
         except AttributeError:
           continue
         
@@ -1170,6 +1278,7 @@ class BatchNode (Node):
     changed_sources = []
     targets = []
     itargets = []
+    ideps = []
     
     for src_entity in self.source_entities:
       node_entity, ideps = self.node_entities[ src_entity ]
@@ -1183,6 +1292,7 @@ class BatchNode (Node):
       elif not changed_sources:
         targets   += node_entity.targets
         itargets  += node_entity.itargets
+        ideps     += node_entity.ideps
     
     if changed_sources:
       self.changed_source_entities = changed_sources
@@ -1190,6 +1300,8 @@ class BatchNode (Node):
     
     self.target_entities  = targets
     self.itarget_entities = itargets
+    self.idep_entities    = ideps
+    
     return True
   
   #//=======================================================//

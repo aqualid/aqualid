@@ -6,6 +6,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import AqlTestCase, runLocalTests
 
 from aql.utils import Tempdir, removeUserHandler, addUserHandler
+from aql.utils import EventSettings, setEventSettings
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
@@ -115,6 +116,40 @@ class TestBuiltinTools( AqlTestCase ):
         self.buildPrj( prj, 1 )
         
         prj.tools.CopyFiles( sources, target = tmp_install_dir )
+        
+        self.buildPrj( prj, 0 )
+  
+  #//-------------------------------------------------------//
+
+  def   test_node_filter_dirname(self):
+    
+    with Tempdir() as tmp_install_dir:
+      with Tempdir() as tmp_dir:
+        
+        build_dir = os.path.join( tmp_dir, 'output' )
+        
+        num_sources = 3
+        sources = self.generateSourceFiles( tmp_dir, num_sources, 200 )
+        
+        # setEventSettings( EventSettings( brief = False, with_output = True ) )
+        
+        cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+        # cfg.debug_explain = True
+        
+        prj = Project( cfg )
+        
+        node = prj.tools.CopyFiles( sources[0], target = tmp_install_dir )
+        
+        prj.tools.CopyFiles( sources[1:], target = prj.DirName( node ) )
+        
+        self.buildPrj( prj, 3 )
+        
+        for src in sources:
+          tgt = os.path.join( tmp_install_dir, os.path.basename( src ) )
+          self.assertTrue( os.path.isfile( tgt ) )
+        
+        node = prj.tools.CopyFiles( sources[0], target = tmp_install_dir )
+        prj.tools.CopyFiles( sources[1:], target = prj.DirName( node ) )
         
         self.buildPrj( prj, 0 )
   

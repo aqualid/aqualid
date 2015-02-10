@@ -765,7 +765,10 @@ class _NodesBuilder (object):
         check_actual = False
       
       split_nodes = node.buildSplit()
-      if split_nodes:
+      if not split_nodes:
+        if not check_actual:
+          state.check_actual = False
+      else:
         state.split_nodes = split_nodes
         for split_node in split_nodes:
           split_state = self._getNodeState( split_node )
@@ -782,11 +785,7 @@ class _NodesBuilder (object):
       if node.isBatch():
         node._populateTargets()
       else:
-        targets = []
-        for split_node in state.split_nodes:
-          targets += split_node.getTargetEntities()
-        
-        node.target_entities = targets
+        node._pullTargets( state.split_nodes )
         
       self._removeNodeState( node )
       
