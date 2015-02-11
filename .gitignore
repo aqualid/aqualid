@@ -4,4 +4,5 @@
 *.prof
 **/__pycache__/
 **/output/
+**/build_output/
 make/install
