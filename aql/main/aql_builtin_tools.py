@@ -27,12 +27,17 @@ class   ErrorDistCommandInvalid( Exception ):
 
 class ExecuteCommand (Builder):
   
-  NAME_ATTRS = ('targets',)
+  NAME_ATTRS = ('targets','cwd')
   
-  def   __init__(self, options, target = None, target_flag = None ):
+  def   __init__(self, options, target = None, target_flag = None, cwd = None ):
     
     self.targets = [ self.getTargetFilePath( target ) for target in toSequence(target) ]
     self.target_flag = target_flag
+    
+    if cwd:
+      cwd = self.getTargetDirPath( cwd )
+    
+    self.cwd = cwd 
   
   #//-------------------------------------------------------//
   
@@ -65,7 +70,7 @@ class ExecuteCommand (Builder):
     if targets:
       cmd += targets
     
-    out = self.execCmd( cmd )
+    out = self.execCmd( cmd, cwd = self.cwd )
     
     targets = self.makeFileEntities( targets )
     
@@ -488,8 +493,11 @@ class   InstallDistBuilder (FileBuilder):
 
 class BuiltinTool( Tool ):
   
-  def   ExecuteCommand( self, options, target = None, target_flag = None ):
-    return ExecuteCommand( options, target = target, target_flag = target_flag )
+  def   ExecuteCommand( self, options, target = None, target_flag = None, cwd = None ):
+    return ExecuteCommand( options, target = target, target_flag = target_flag, cwd = cwd )
+  
+  def   Command( self, options, target = None, target_flag = None, cwd = None ):
+    return ExecuteCommand( options, target = target, target_flag = target_flag, cwd = cwd )
   
   def   CopyFiles(self, options, target ):
     return CopyFilesBuilder( options, target )

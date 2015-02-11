@@ -27,17 +27,17 @@ import errno
 import operator
 
 from aql.util_types import FilePath
-from aql.utils import simpleObjectSignature, simplifyValue, executeCommand, eventDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
+from aql.utils import simpleObjectSignature, simplifyValue, executeCommand,\
+  eventDebug, logDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
 from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity, SimpleEntity
 
 #//===========================================================================//
 
 @eventDebug
 def   eventExecCmd( settings, cmd, cwd, env ):
-  # from aql.utils import logDebug
-  # cmd = ' '.join( cmd )
-  # logDebug("EXEC: %s" % (cmd, ) )
-  pass
+  if settings.trace_exec:
+    cmd = ' '.join( cmd )
+    logDebug("CWD: '%s', CMD: '%s'" % (cwd, cmd,) )
 
 #//===========================================================================//
 
@@ -448,7 +448,11 @@ class Builder (object):
     target_dir, name = os.path.split( target_dir )
     if not name:
       target_dir, name = os.path.split( target_dir )
-      
+          
+    elif not target_dir and name in (os.path.curdir, os.path.pardir):
+      target_dir = name
+      name = ''
+    
     if target_dir.startswith( (os.path.curdir, os.path.pardir) ):
       target_dir = os.path.abspath( target_dir )
     elif not os.path.isabs( target_dir ):

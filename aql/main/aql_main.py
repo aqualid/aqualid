@@ -195,7 +195,9 @@ def   _setBuildDir( options, makefile ):
 def   _main( prj_cfg ):
   with Chrono() as total_elapsed:
     
-    ev_settings = EventSettings( brief = not prj_cfg.verbose, with_output = not prj_cfg.no_output )
+    ev_settings = EventSettings( brief = not prj_cfg.verbose,
+                                 with_output = not prj_cfg.no_output,
+                                 trace_exec = prj_cfg.debug_exec )
     setEventSettings( ev_settings )
     
     with Chdir( prj_cfg.directory ):

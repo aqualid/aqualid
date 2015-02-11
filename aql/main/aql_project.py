@@ -161,6 +161,7 @@ class ProjectConfig( object ):
                'verbose', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path', 'no_tool_errors',
                'build_always', 'clean', 'status', 'list_options', 'list_tool_options', 'list_targets',
                'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
+               'debug_exec',
                'force_lock', 'show_version',
   )
   
@@ -187,7 +188,6 @@ class ProjectConfig( object ):
       CLIOption( "-u", "--up",                "search_up",          bool,       False,        "Search up directory tree for a make file." ),
       CLIOption( "-e", "--no-tool-errors",    "no_tool_errors",     bool,       False,        "Stop on any error during initialization of tools." ),
                                                                     
-      # CLIOption( "-b", "--build-directory",   "build_dir",          FilePath,   'output',     "Build output path.", 'FILE PATH'),
       CLIOption( "-I", "--tools-path",        "tools_path",         Paths,      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
       CLIOption( "-k", "--keep-going",        "keep_going",         bool,       False,        "Keep going when some targets can't be built." ),
       CLIOption( "-j", "--jobs",              "jobs",               int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
@@ -197,6 +197,7 @@ class ProjectConfig( object ):
       CLIOption( "-P", "--debug-profile",     "debug_profile",      FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
       CLIOption( "-T", "--debug-profile-top", "debug_profile_top",  int,        30,           "Show the specified number of top functions from profiler report.", 'FILE PATH' ),
       CLIOption( None, "--debug-explain",     "debug_explain",      bool,       False,        "Show the reasons why targets are being rebuilt" ),
+      CLIOption( None, "--debug-exec",        "debug_exec",         bool,       False,        "Full trace of all executed commands." ),
       CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",    bool,       False,        "Show call stack back traces for errors." ),
       CLIOption( None, "--force-lock",        "force_lock",         bool,       False,        "Forces to lock AQL DB file." ),
       CLIOption( "-V", "--version",           "version",            bool,       False,        "Show version and exit." ),
@@ -272,6 +273,7 @@ class ProjectConfig( object ):
     self.debug_memory       = cli_config.debug_memory
     self.debug_explain      = cli_config.debug_explain
     self.debug_backtrace    = cli_config.debug_backtrace
+    self.debug_exec         = cli_config.debug_exec
 
 #//===========================================================================//
 

@@ -230,7 +230,7 @@ def   _getTraceArg( entity, brief ):
     if isinstance( entity, EntityBase ):
       value = entity.get()
 
-    if isinstance( entity, FilePath ):
+    elif isinstance( entity, FilePath ):
       if brief:
         value = os.path.basename( entity )
 
@@ -259,7 +259,7 @@ def   _joinArgs( entities, brief ):
   
   for arg in toSequence(entities):
     arg = _getTraceArg(arg, brief )
-    if arg:
+    if arg and isString( arg ):
       args.append( arg )
   
   if not brief or (len(args) < 3):

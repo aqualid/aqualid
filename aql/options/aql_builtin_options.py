@@ -37,7 +37,7 @@ def   _build_options():
   options = Options()
   
   options.build_path            = PathOptionType( description = "The building directory full path." )
-  options.build_dir             = PathOptionType( description = "The building directory.", default = 'output' )
+  options.build_dir             = PathOptionType( description = "The building directory.", default = 'build_output' )
   options.relative_build_paths  = BoolOptionType( description = "The building directory suffix.", default = True )
   options.build_dir_name        = StrOptionType( description  = "The building directory name." )
   options.prefix                = StrOptionType( description  = "Output files prefix." )

@@ -66,12 +66,14 @@ class   ErrorEventHandlerUnknownEvent ( AqlException ):
 class EventSettings( object ):
   __slots__ = (
     'brief',
-    'with_output'
+    'with_output',
+    'trace_exec'
   )
   
-  def   __init__(self, brief = True, with_output = True ):
+  def   __init__(self, brief = True, with_output = True, trace_exec = False ):
     self.brief = brief
     self.with_output = with_output
+    self.trace_exec = trace_exec
 
 #//===========================================================================//
 
