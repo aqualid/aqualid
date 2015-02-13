@@ -149,14 +149,16 @@ options.build_variant = "final"
     
     with Tempdir() as tmp_dir:
       
-      cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir, "test"] )
+      cfg = ProjectConfig( args = [ "build_dir=%s" % tmp_dir, "test", "run"] )
       
       prj = Project( cfg )
       
       cmd = prj.tools.ExecuteCommand( "python", "-c", "print('test builtin')" )
       cmd_other = prj.tools.ExecuteCommand( "python", "-c", "print('test other')" )
       
-      prj.Alias('test', cmd )
+      self.assertSequenceEqual( prj.GetBuildTargets(), ['test', 'run'])
+      
+      prj.Alias( prj.GetBuildTargets(), cmd )
       prj.Build()
       
       self.assertEqual( self.built_nodes, 1 )

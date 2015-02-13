@@ -72,18 +72,17 @@ class MsvcCompiler (CommonCppCompiler):
   
   def   build( self, node ):
     
-    sources = node.getSources()
+    source = node.getSources()[0]
     
-    obj_file = self.getObjPath( sources[0] )
+    obj_file = self.getObjPath( source )
     cwd = os.path.dirname( obj_file )
     
     cmd = list(self.cmd)
-    cmd += [ '/Fo%s' % obj_file ]
-    cmd += sources
+    cmd += [ '/Fo%s' % obj_file, source ]
     
     result = self.execCmdResult( cmd, cwd, file_flag = '@' )
     
-    deps, errors, out = _parseOutput( sources, result.output, self.ext_cpppath )
+    deps, errors, out = _parseOutput( (source,), result.output, self.ext_cpppath )
     
     if result.failed():
       result.output = out
@@ -413,6 +412,12 @@ class ToolMsvcCommon( ToolCommonCpp ):
   def   LinkProgram( self, options, target ):
     return MsvcLinker( options, target, shared = False, def_file = None )
   
+  Object = Compile
+  Resource = CompileResource
+  Library = LinkStaticLibrary
+  SharedLibrary = LinkSharedLibrary
+  Program = LinkProgram
+  
 #//===========================================================================//
 
 @tool('c++', 'msvcpp','msvc++', 'cpp', 'cxx')
@@ -443,3 +448,5 @@ class ToolMsrc( ToolCommonRes ):
   
   def   Compile( self, options ):
     return MsvcResCompiler( options )
+  
+  Object = Compile

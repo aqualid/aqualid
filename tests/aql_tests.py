@@ -79,6 +79,10 @@ class AqlTestCase( TestCaseBase ):
   def   eventNodeBuildingFinished( self, settings, node, builder_output, progress ):
     self.built_nodes += 1
   
+  # noinspection PyUnusedLocal
+  def   eventNodeRemoved( self, settings, node, progress ):
+    self.removed_nodes += 1
+  
   #//===========================================================================//
   
   def   setUp( self ):
@@ -86,12 +90,15 @@ class AqlTestCase( TestCaseBase ):
     # disableDefaultHandlers()
     
     self.built_nodes = 0
+    self.removed_nodes = 0
     addUserHandler( self.eventNodeBuildingFinished )
+    addUserHandler( self.eventNodeRemoved )
   
   #//===========================================================================//
   
   def   tearDown( self ):
     removeUserHandler( self.eventNodeBuildingFinished )
+    removeUserHandler( self.eventNodeRemoved )
 
     enableDefaultHandlers()
     
@@ -110,6 +117,15 @@ class AqlTestCase( TestCaseBase ):
     
     self.assertEqual( prj.build_manager.failsCount(), num_failed_nodes )
     self.assertEqual( self.built_nodes,               num_built_nodes )
+  
+  #//===========================================================================//
+  
+  def   clearPrj( self, prj, num_clear_nodes ):
+    self.removed_nodes = 0
+
+    prj.Clear()
+    
+    self.assertEqual( self.removed_nodes, num_clear_nodes )
   
   #//===========================================================================//
   

@@ -577,6 +577,11 @@ class Project( object ):
   
   #//-------------------------------------------------------//
   
+  def   GetBuildTargets(self):
+    return self.targets
+  
+  #//-------------------------------------------------------//
+  
   def   File(self, filepath, options = None ):
     if options is None:
       options = self.options
@@ -796,7 +801,7 @@ class Project( object ):
   
   #//=======================================================//
   
-  def Clean( self, force_lock = False ):
+  def Clear( self, force_lock = False ):
     build_nodes = self._getBuildNodes()
     
     self.build_manager.clear( nodes = build_nodes, force_lock = force_lock )

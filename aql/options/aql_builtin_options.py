@@ -42,6 +42,7 @@ def   _build_options():
   options.build_dir_name        = StrOptionType( description  = "The building directory name." )
   options.prefix                = StrOptionType( description  = "Output files prefix." )
   options.suffix                = StrOptionType( description  = "Output files suffix." )
+  options.target                = StrOptionType( description  = "Output file name." )
   
   build_variant = EnumOptionType( values =  [
                                               ('debug', 'dbg', 'd' ),

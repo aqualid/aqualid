@@ -244,7 +244,7 @@ def   _getTraceArg( entity, brief ):
       max_len = 64 if brief else 256
       src_len = len(value)
       if src_len > max_len:
-        value = "%s..." % value[:max_len]
+        value = "%s...%s" % (value[:max_len//2], value[src_len - (max_len//2):])
 
     else:
       value = None
@@ -885,8 +885,10 @@ class Node (object):
   
   def   clear( self, vfile ):
     """
-    Cleans produced entities
+    Clear produced entities
     """
+    
+    self.idep_entities = tuple()
     
     node_keys = []
     node_entity = NodeEntity( name = self.name )
@@ -895,6 +897,9 @@ class Node (object):
     if node_key is None:
       if self.target_entities is None:
         self.target_entities = tuple()
+      
+      self.itarget_entities = tuple()
+      
     else:
       node_entity = vfile.getEntityByKey( node_key )
       
@@ -909,7 +914,7 @@ class Node (object):
         self.itarget_entities = tuple()
       
       node_keys.append( node_key )
-        
+      
     try:
       self.builder.clear( self )
     except Exception:
@@ -1209,10 +1214,11 @@ class BatchNode (Node):
   def   clear( self, vfile ):
     targets = []
     itargets = []
+    ideps = []
     node_keys = []
     
     for src_entity in self.source_entities:
-      node_entity, ideps = self.node_entities[ src_entity ]
+      node_entity, src_ideps = self.node_entities[ src_entity ]
       
       other_key = vfile.findEntityKey( node_entity )
       
@@ -1234,9 +1240,11 @@ class BatchNode (Node):
         if other.targets is not None:
           targets   += other.targets
           itargets  += other.itargets
+          ideps     += src_ideps
               
     self.target_entities  = targets
     self.itarget_entities = itargets
+    self.idep_entities    = ideps
     
     try:
       self.builder.clear( self )
@@ -1258,18 +1266,21 @@ class BatchNode (Node):
   def   _populateTargets( self ):
     targets   = []
     itargets  = []
+    ideps  = []
     
     for src_entity in self.source_entities:
-      node_entity, ideps = self.node_entities[ src_entity ]
+      node_entity, src_ideps = self.node_entities[ src_entity ]
       node_targets = node_entity.targets
       if node_targets is None:
         raise ErrorNoSrcTargets( self, src_entity )
       
       targets += node_targets
       itargets += node_entity.itargets
+      ideps += src_ideps
     
     self.target_entities = targets
     self.itarget_entities = itargets
+    self.idep_entities = ideps
   
   #//=======================================================//
   

@@ -25,7 +25,31 @@ class   ErrorDistCommandInvalid( Exception ):
 
 #//===========================================================================//
 
-class ExecuteCommand (Builder):
+def   _getMethodFullName( m ):
+  full_name = []
+  mod = getattr( m, '__module__', None )
+  if mod:
+    full_name.append( mod )
+  
+  name = getattr( m, '__qualname__', None )
+  if name:
+    full_name.append( name )
+  else:
+    cls = getattr( m, 'im_class', None )
+    if cls is not None:
+      cls_name = getattr( cls, '__name__', None )
+      if cls_name:
+        full_name.append( cls_name )
+    
+    name = getattr( m, '__name__', None )
+    if name:
+      full_name.append( name )
+      
+  return '.'.join( full_name )
+
+#//===========================================================================//
+
+class ExecuteCommandBuilder (Builder):
   
   NAME_ATTRS = ('targets','cwd')
   
@@ -95,18 +119,67 @@ class ExecuteCommand (Builder):
       name = ''
     
     try:
-      targets = self.getTargetEntities( sources )
-    except Exception:
-      targets = None
-    
-    try:
       sources = sources[1:]
     except Exception:
       sources = None
     
+    try:
+      targets = self.getTraceTargets( node, brief )
+    except Exception:
+      targets = None
+    
     return name, sources, targets
 
+#//===========================================================================//
 
+class   ExecuteMethodBuilder (Builder):
+  
+  NAME_ATTRS = ('method_name',)
+  SIGNATURE_ATTRS = ('args','kw')
+  
+  def __init__(self, options, method, args, kw, single, make_files, clear_targets ):
+    
+    self.method_name = _getMethodFullName( method )
+    self.method = method
+    self.args = args if args else []
+    self.kw = kw if kw else {}
+    
+    if not clear_targets:
+      self.clear = lambda node: None
+      
+    
+    if single:
+      self.split = self.splitSingle
+    
+    if make_files:
+      self.makeEntity = self.makeFileEntity
+      self.default_entity_type = self.file_entity_type
+  
+  #//-------------------------------------------------------//
+  
+  def build( self, node ):
+    return self.method( self, node, *self.args, **self.kw )
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceName( self, brief ):
+    name = self.method_name
+    
+    if not brief:
+      args = ''
+      if self.args:
+        args = ','.join( self.args )
+      
+      if self.kw:
+        if args:
+          args += ','
+        args += ','.join( "%s=%s" % (k,v) for k,v in self.kw.items() )
+      
+      if args:
+       return "%s(%s)" % (name, args)
+    
+    return name
+    
 #//===========================================================================//
 
 class CopyFilesBuilder (FileBuilder):
@@ -494,10 +567,14 @@ class   InstallDistBuilder (FileBuilder):
 class BuiltinTool( Tool ):
   
   def   ExecuteCommand( self, options, target = None, target_flag = None, cwd = None ):
-    return ExecuteCommand( options, target = target, target_flag = target_flag, cwd = cwd )
+    return ExecuteCommandBuilder( options, target = target, target_flag = target_flag, cwd = cwd )
   
-  def   Command( self, options, target = None, target_flag = None, cwd = None ):
-    return ExecuteCommand( options, target = target, target_flag = target_flag, cwd = cwd )
+  Command = ExecuteCommand
+  
+  def   ExecuteMethod( self, options, method, args = None, kw = None, single = True, make_files = True, clear_targets = True):
+    return ExecuteMethodBuilder( options, method = method, args = args, kw = kw, single = single, make_files = make_files, clear_targets = clear_targets )
+  
+  Method = ExecuteMethod
   
   def   CopyFiles(self, options, target ):
     return CopyFilesBuilder( options, target )

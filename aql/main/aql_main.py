@@ -228,7 +228,7 @@ def   _main( prj_cfg ):
         prj.build_manager.printStatusState()
         
       elif prj_cfg.clean:
-        prj.Clean()
+        prj.Clear()
       
       elif prj_cfg.list_targets:
         text = prj.ListTargets()

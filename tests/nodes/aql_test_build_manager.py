@@ -266,16 +266,12 @@ class TestBuildManager( AqlTestCase ):
     self.outdated_nodes = 0
     addUserHandler( self.eventNodeOutdated )
     
-    self.removed_nodes = 0
-    addUserHandler( self.eventNodeRemoved )
-  
   #//-------------------------------------------------------//
   
   def   tearDown( self ):
     removeUserHandler( [  self.eventNodeBuilding,
                           self.eventNodeOutdated,
-                          self.eventNodeActual,
-                          self.eventNodeRemoved,
+                          self.eventNodeActual
                       ] )
 
     super(TestBuildManager,self).tearDown()
@@ -505,6 +501,9 @@ class TestBuildManager( AqlTestCase ):
         
         self.assertEqual( self.outdated_nodes, 0)
         self.assertEqual( self.actual_nodes, 2 )
+        
+        bm = _addNodesToBM( builder, src_files, Node = BatchNode )
+        bm.clear(); bm.selfTest()
         
       finally:
         bm.close()

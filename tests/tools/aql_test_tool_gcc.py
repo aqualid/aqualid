@@ -50,6 +50,98 @@ class TestToolGcc( AqlTestCase ):
       
       gcc.Compile( src_files, batch_build = False )
       self.buildPrj( prj, 0 )
+      
+      gcc.Compile( src_files, batch_build = False )
+      self.clearPrj( prj, num_src_files )
+  
+  def test_gcc_compiler_target(self):
+    
+    # setEventSettings( EventSettings( brief = False, with_output = True, trace_exec = False ) )
+    
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src')
+      os.makedirs( src_dir )
+      
+      num_src_files = 2
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg )
+      try:
+        gcc = prj.tools.Tool('g++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
+      except  ErrorToolNotFound:
+        print("WARNING: GCC tool has not been found. Skip the test.")
+        return
+      
+      gcc.options.batch_build = False
+      gcc.options.If().target.isTrue().objsuffix = ''
+      
+      targets = [ os.path.join( build_dir, 'src_file%s.o' % i ) for i, src in enumerate(src_files ) ]
+      
+      for src,target in zip(src_files,targets):
+        gcc.Compile( src, target = target )
+      
+      for target in targets:
+        self.assertFalse( os.path.isfile( target ) )
+
+      self.buildPrj( prj, num_src_files )
+      
+      for target in targets:
+        self.assertTrue( os.path.isfile( target ) )
+      
+      for src,target in zip(src_files,targets):
+        gcc.Compile( src, target = target )
+      
+      self.buildPrj( prj, 0 )
+      
+      for src,target in zip(src_files,targets):
+        gcc.Compile( src, target = target )
+
+      self.clearPrj( prj, num_src_files )
+      
+      for target in targets:
+        self.assertFalse( os.path.isfile( target ) )
+  
+  #//===========================================================================//
+  
+  def test_gcc_compiler_target_errors(self):
+    
+    with Tempdir() as tmp_dir:
+      
+      build_dir = os.path.join( tmp_dir, 'build' )
+      src_dir   = os.path.join( tmp_dir, 'src')
+      os.makedirs( src_dir )
+      
+      num_src_files = 2
+      
+      src_files, hdr_files = self.generateCppFiles( src_dir, 'foo', num_src_files )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg )
+      try:
+        gcc = prj.tools.Tool('g++', tools_path = os.path.join( os.path.dirname(__file__), '../../tools' ))
+      except  ErrorToolNotFound:
+        print("WARNING: GCC tool has not been found. Skip the test.")
+        return
+      
+      gcc.Compile( src_files, target = 'src_file0', batch_build = False )
+      
+      with self.assertRaises( Exception ) as cm:
+        prj.Build()
+      
+      self.assertEqual( cm.exception.__class__.__name__, 'ErrorCompileWithCustomTarget' )
+      
+      gcc.Compile( src_files, target = 'src_file0', batch_build = True )
+      
+      with self.assertRaises( Exception ) as cm:
+        prj.Build()
+              
+      self.assertEqual( cm.exception.__class__.__name__, 'ErrorBatchCompileWithCustomTarget' )
   
   #//-------------------------------------------------------//
   
@@ -230,6 +322,9 @@ class TestToolGcc( AqlTestCase ):
       
       cpp.Compile( src_files, batch_build = True, batch_groups = num_groups)
       self.buildPrj( prj, num_groups )
+      
+      cpp.Compile( src_files, batch_build = True, batch_groups = num_groups)
+      self.clearPrj( prj, num_groups )
   
   #//-------------------------------------------------------//
   
@@ -283,7 +378,7 @@ class TestToolGcc( AqlTestCase ):
       copy_dir  = os.path.join( tmp_dir, 'dist')
       os.makedirs( src_dir )
       
-      setEventSettings( EventSettings( brief = False, with_output = True ) )
+      # setEventSettings( EventSettings( brief = False, with_output = True ) )
       
       num_src_files = 5
       

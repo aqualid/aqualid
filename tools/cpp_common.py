@@ -10,23 +10,36 @@ from aql import findFileInPaths,\
 
 class   ErrorBatchBuildCustomExt( Exception ):
   def   __init__( self, node, ext ):
-    msg = "Custom extension '%s' is not supported for batch building of node: %s" % (ext, node.getBuildStr( brief = False ))
+    msg = "Custom extension '%s' is not supported in batch building of node: %s" % (ext, node.getBuildStr( brief = False ))
     super(ErrorBatchBuildCustomExt, self).__init__(msg)
 
 #//===========================================================================//
 
 class   ErrorBatchBuildWithPrefix( Exception ):
   def   __init__( self, node, prefix ):
-    msg = "Filename prefix '%s' is not supported for batch building of node: %s" % (prefix, node.getBuildStr( brief = False ))
+    msg = "Filename prefix '%s' is not supported in batch building of node: %s" % (prefix, node.getBuildStr( brief = False ))
     super(ErrorBatchBuildWithPrefix, self).__init__(msg)
 
 #//===========================================================================//
 
-class   ErrorBatchBuildCustomSuffix( Exception ):
+class   ErrorBatchBuildWithSuffix( Exception ):
   def   __init__( self, node, suffix ):
-    msg = "Filename suffix '%s' is not supported for batch building of node: %s" % (suffix, node.getBuildStr( brief = False ))
-    super(ErrorBatchBuildCustomSuffix, self).__init__(msg)
+    msg = "Filename suffix '%s' is not supported in batch building of node: %s" % (suffix, node.getBuildStr( brief = False ))
+    super(ErrorBatchBuildWithSuffix, self).__init__(msg)
 
+#//===========================================================================//
+
+class   ErrorBatchCompileWithCustomTarget( Exception ):
+  def   __init__( self, node, target ):
+    msg = "Explicit output target '%s' is not supported in batch building of node: %s" % (target, node.getBuildStr( brief = False ))
+    super(ErrorBatchCompileWithCustomTarget, self).__init__(msg)
+
+#//===========================================================================//
+
+class   ErrorCompileWithCustomTarget( Exception ):
+  def   __init__( self, node, target ):
+    msg = "Compile several source files using the same target '%s' is not supported: %s" % (target, node.getBuildStr( brief = False ))
+    super(ErrorCompileWithCustomTarget, self).__init__(msg)
 
 #//===========================================================================//
 #// BUILDERS IMPLEMENTATION
@@ -219,7 +232,7 @@ class HeaderChecker (Builder):
 #//===========================================================================//
 
 #noinspection PyAttributeOutsideInit
-class CommonCppCompiler (FileBuilder):
+class CommonCompiler (FileBuilder):
   
   NAME_ATTRS = ( 'prefix', 'suffix', 'ext' )
   SIGNATURE_ATTRS = ('cmd', )
@@ -227,18 +240,23 @@ class CommonCppCompiler (FileBuilder):
   #//-------------------------------------------------------//
   
   #noinspection PyUnusedLocal
-  def   __init__(self, options ):
+  def   __init__(self, options, ext, cmd ):
     
     self.prefix = options.prefix.get()
     self.suffix = options.suffix.get()
-    self.ext = options.objsuffix.get()
+    self.ext = ext
+    self.cmd = list(cmd)
+    
+    target = options.target.get()
+    if target:
+      self.target = self.getTargetFilePath( target, self.ext, self.prefix )
+    else:
+      self.target = None
     
     ext_cpppath = list( options.ext_cpppath.get() )
     ext_cpppath += options.sys_cpppath.get()
     
     self.ext_cpppath = tuple( set( os.path.normcase( os.path.abspath( folder ) ) + os.path.sep for folder in ext_cpppath ) )
-    
-    self.cmd = list( options.cc_cmd.get() )
   
   #//-------------------------------------------------------//
   
@@ -247,8 +265,11 @@ class CommonCppCompiler (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getObjPath( self, file_path ):
-    return self.getTargetFromSourceFilePath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
+  def   getObjPath( self, source ):
+    if self.target:
+      return self.target
+    
+    return self.getTargetFromSourceFilePath( source, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
   
   #//-------------------------------------------------------//
   
@@ -271,19 +292,25 @@ class CommonCppCompiler (FileBuilder):
       raise ErrorBatchBuildWithPrefix( node, self.prefix )
     
     if self.suffix:
-      raise ErrorBatchBuildCustomSuffix( node, self.suffix )
-
+      raise ErrorBatchBuildWithSuffix( node, self.suffix )
+    
+    if self.target:
+      raise ErrorBatchCompileWithCustomTarget( node, self.target )
+    
   #//-------------------------------------------------------//
   
   def   split( self, node ):
     if node.isBatch():
       self.checkBatchSplit( node )
-      split_nodes = self.splitBatchByBuildDir( node )
+      source_entities = self.splitBatchByBuildDir( node )
     
     else:
-      split_nodes = self.splitSingle( node )
+      source_entities = self.splitSingle( node )
     
-    return split_nodes
+      if self.target and (len(source_entities) > 1):
+        raise ErrorCompileWithCustomTarget( node, self.target )
+    
+    return source_entities
   
   #//-------------------------------------------------------//
   
@@ -298,48 +325,21 @@ class CommonCppCompiler (FileBuilder):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
-class CommonResCompiler (FileBuilder):
+class CommonCppCompiler (CommonCompiler):
   
-  NAME_ATTRS = ( 'prefix', 'suffix', 'ext' )
-  SIGNATURE_ATTRS = ('cmd', )
-  
-  #//-------------------------------------------------------//
-  
-  #noinspection PyUnusedLocal
   def   __init__(self, options ):
-    
-    self.prefix = options.prefix.get()
-    self.suffix = options.suffix.get()
-    self.ext = options.ressuffix.get()
-    
-    self.cmd = options.rc_cmd.get()
-  
-  #//-------------------------------------------------------//
-  
-  def   split( self, node ):
-    return self.splitSingle( node )
-  
-  #//-------------------------------------------------------//
-  
-  def   getTargetEntities( self, source_values ):
-    return self.getObjPath( source_values[0].get() )
-  
-  #//-------------------------------------------------------//
-  
-  def   getObjPath( self, file_path ):
-    return self.getTargetFromSourceFilePath( file_path, ext = self.ext, prefix = self.prefix, suffix = self.suffix )
-  
-  #//-------------------------------------------------------//
-  
-  def   getTraceName( self, brief ):
-    if brief:
-      name = self.cmd[0]
-      name = os.path.splitext( os.path.basename( name ) )[0]
-    else:
-      name = ' '.join( self.cmd )
-    
-    return name
+    super(CommonCppCompiler, self).__init__( options,
+                                             ext = options.objsuffix.get(),
+                                             cmd = options.cc_cmd.get() )
+
+#//===========================================================================//
+
+#noinspection PyAttributeOutsideInit
+class CommonResCompiler (CommonCompiler):
+  def   __init__(self, options ):
+    super(CommonResCompiler, self).__init__( options,
+                                             ext = options.ressuffix.get(),
+                                             cmd = options.rc_cmd.get() )
 
 #//===========================================================================//
 

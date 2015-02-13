@@ -68,9 +68,9 @@ class GccCompiler (CommonCppCompiler):
     self.cmd += ['-c', '-MMD']
   
   def   build( self, node ):
-    sources = node.getSources()
+    src = node.getSources()[0]
     
-    obj_file = self.getObjPath( sources[0] )
+    obj_file = self.getObjPath( src )
     
     cwd = os.path.dirname( obj_file )
     
@@ -78,8 +78,7 @@ class GccCompiler (CommonCppCompiler):
       
       cmd = list(self.cmd)
       
-      cmd += ['-o', obj_file, '-MF', dep_file]
-      cmd += sources
+      cmd += ['-o', obj_file, '-MF', dep_file, src]
       
       out = self.execCmd( cmd, cwd, file_flag = '@' )
       
@@ -439,14 +438,22 @@ class ToolGccCommon( ToolCommonCpp ):
   def   CompileResource( self, options ):
     return GccResCompiler( options )
   
+  
   def   LinkStaticLibrary( self, options, target ):
     return GccArchiver( options, target )
+  
   
   def   LinkSharedLibrary( self, options, target, def_file = None ):
     return GccLinker( options, target, shared = True )
   
   def   LinkProgram( self, options, target ):
     return GccLinker( options, target, shared = False )
+  
+  Object = Compile
+  Resource = CompileResource
+  Library = LinkStaticLibrary
+  SharedLibrary = LinkSharedLibrary
+  Program = LinkProgram
 
 #//===========================================================================//
 
@@ -496,3 +503,6 @@ class ToolWindRes( ToolCommonRes ):
       
   def   Compile( self, options ):
     return GccResCompiler( options )
+  
+  Object = Compile
+

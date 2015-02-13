@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -11,7 +12,7 @@ from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
 from aql.main import Project, ProjectConfig
-from aql.main.aql_builtin_tools import ExecuteCommand
+from aql.main.aql_builtin_tools import ExecuteCommandBuilder
 
 #//===========================================================================//
 
@@ -62,7 +63,7 @@ class TestBuiltinTools( AqlTestCase ):
 
       options.build_dir = build_dir
       
-      exec_cmd = ExecuteCommand( options )
+      exec_cmd = ExecuteCommandBuilder( options )
       
       bm = BuildManager()
       try:
@@ -118,6 +119,71 @@ class TestBuiltinTools( AqlTestCase ):
         prj.tools.CopyFiles( sources, target = tmp_install_dir )
         
         self.buildPrj( prj, 0 )
+  
+  #//-------------------------------------------------------//
+
+  def test_exec_method(self):
+    
+    def   CopyFileExt( builder, node, ext ):
+      src_file = node.getSources()[0]
+      dst_file = os.path.splitext(src_file)[0] + ext
+      shutil.copy( src_file, dst_file )
+      node.addTargets( dst_file )
+    
+    with Tempdir() as tmp_dir:
+      
+      setEventSettings( EventSettings( brief = True, with_output = True, trace_exec = False ) )
+      
+      build_dir = os.path.join( tmp_dir, 'build_output' )
+      
+      num_sources = 2
+      sources, headers = self.generateCppFiles( tmp_dir, 'test_method_', num_sources )
+      
+      cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
+      
+      prj = Project( cfg )
+      
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',) )
+      prj.tools.ExecuteMethod( headers, method = CopyFileExt, args = ('.hxx',) )
+      
+      self.buildPrj( prj, len(sources) + len(headers) )
+      
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',) )
+      prj.tools.ExecuteMethod( headers, method = CopyFileExt, args = ('.hxx',) )
+      
+      self.buildPrj( prj, 0 )
+      
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cc',) )
+      self.buildPrj( prj, len(sources) )
+      
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',) )
+      self.buildPrj( prj, len(sources) )
+      
+      #//-------------------------------------------------------//
+      
+      for src in sources:
+        self.assertTrue( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
+      
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',) )
+      self.clearPrj( prj, len(sources) )
+      
+      for src in sources:
+        self.assertFalse( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
+      
+      #//-------------------------------------------------------//
+      
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',) )
+      self.buildPrj( prj, len(sources) )
+      
+      for src in sources:
+        self.assertTrue( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
+        
+      prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',), clear_targets = False )
+      self.clearPrj( prj, len(sources) )
+      
+      for src in sources:
+        self.assertTrue( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
+      
   
   #//-------------------------------------------------------//
 
