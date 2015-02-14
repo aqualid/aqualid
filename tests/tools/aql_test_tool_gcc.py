@@ -80,7 +80,7 @@ class TestToolGcc( AqlTestCase ):
       gcc.options.batch_build = False
       gcc.options.If().target.isTrue().objsuffix = ''
       
-      targets = [ os.path.join( build_dir, 'src_file%s.o' % i ) for i, src in enumerate(src_files ) ]
+      targets = [ os.path.join( build_dir, 'src_file%s.o' % i ) for i in range(len(src_files) ) ]
       
       for src,target in zip(src_files,targets):
         gcc.Compile( src, target = target )

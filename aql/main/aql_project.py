@@ -154,11 +154,10 @@ def   _readConfig( config_file, cli_config, options, tools_path ):
 
 #//===========================================================================//
 
-#noinspection PyUnresolvedReferences
 class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
-               'verbose', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path', 'no_tool_errors',
+               'verbose', 'silent', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path', 'no_tool_errors',
                'build_always', 'clean', 'status', 'list_options', 'list_tool_options', 'list_targets',
                'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
                'debug_exec',
@@ -192,7 +191,8 @@ class ProjectConfig( object ):
       CLIOption( "-k", "--keep-going",        "keep_going",         bool,       False,        "Keep going when some targets can't be built." ),
       CLIOption( "-j", "--jobs",              "jobs",               int,        None,         "Number of parallel jobs to process targets.", 'NUMBER' ),
       CLIOption( "-v", "--verbose",           "verbose",            bool,       False,        "Verbose mode." ),
-      CLIOption( "-s", "--no-output",         "no_output",          bool,       False,        "Don't print output streams of builder's commands." ),
+      CLIOption( "-s", "--silent",            "silent",             bool,       False,        "Don't print any messages except warnings and errors." ),
+      CLIOption( None, "--no-output",         "no_output",          bool,       False,        "Don't print builder's output messages." ),
       CLIOption( None, "--debug-memory",      "debug_memory",       bool,       False,        "Display memory usage." ),
       CLIOption( "-P", "--debug-profile",     "debug_profile",      FilePath,   None,         "Run under profiler and save the results in the specified file.", 'FILE PATH' ),
       CLIOption( "-T", "--debug-profile-top", "debug_profile_top",  int,        30,           "Show the specified number of top functions from profiler report.", 'FILE PATH' ),
@@ -257,6 +257,7 @@ class ProjectConfig( object ):
     self.no_tool_errors     = cli_config.no_tool_errors
     self.targets            = cli_config.targets
     self.verbose            = cli_config.verbose
+    self.silent             = cli_config.silent
     self.show_version       = cli_config.version
     self.no_output          = cli_config.no_output
     self.keep_going         = cli_config.keep_going

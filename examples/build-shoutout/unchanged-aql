@@ -1,0 +1,7 @@
+
+targets = GetBuildTargets()
+
+src = tools.Command( 'sh', './unchanged-gen', File('input'), '--', target = './source', cwd = '.' )
+out = tools.Command( 'sh', './unchanged-run', src, '--', target = './' + targets[0], cwd = '.' )
+
+Alias( targets, out )

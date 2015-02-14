@@ -454,8 +454,7 @@ class   NodeEntity (EntityBase):
 
 class NodeFilter (object):
   
-  __slots__ = \
-  (
+  __slots__ = (
     'node',
     'node_attribute',
   )
@@ -476,6 +475,14 @@ class NodeFilter (object):
   
   #//-------------------------------------------------------//
   
+  def   __iter__(self):
+    raise TypeError()
+  
+  def   __getitem__(self, item ):
+    return NodeIndexFilter( self, item )
+  
+  #//-------------------------------------------------------//
+  
   def   get(self):
     
     entities = self.getEntities()
@@ -493,18 +500,12 @@ class NodeFilter (object):
     else:
       entities = getattr( node, self.node_attribute )
     
-    return self._get( entities )
-  
-  #//-------------------------------------------------------//
-  
-  def   _get( self, entities ):
     return entities
   
 #//===========================================================================//
 
 class NodeTagsFilter( NodeFilter ):
-  __slots__ = \
-    (
+  __slots__ = (
       'tags',
     )
   
@@ -512,21 +513,44 @@ class NodeTagsFilter( NodeFilter ):
     super(NodeTagsFilter, self).__init__( node, node_attribute )
     self.tags = frozenset( toSequence( tags ) )
   
-  def   _get( self, entities ):
+  def   getEntities(self):
+    entities = super(NodeTagsFilter, self).getEntities()
+  
     tags = self.tags
     return tuple( entity for entity in entities if entity.tags and (entity.tags & tags) )
 
 #//===========================================================================//
 
-class NodeDirNameFilter( NodeFilter ):
+class NodeIndexFilter( NodeFilter ):
+  __slots__ = (
+      'index',
+    )
   
-  def   _get( self, entities ):
+  def   __init__( self, node, index, node_attribute = 'target_entities' ):
+    super(NodeIndexFilter, self).__init__( node, node_attribute )
+    self.index = index
+  
+  def   getEntities(self):
+    entities = super(NodeIndexFilter, self).getEntities()
+    
+    try:
+      return toSequence( entities[ self.index ] )
+    except IndexError:
+      return tuple()
+    
+
+#//===========================================================================//
+
+class NodeDirNameFilter( NodeFilter ):
+  def   getEntities(self):
+    entities = super(NodeDirNameFilter, self).getEntities()
     return tuple( SimpleEntity( os.path.dirname( entity.get() ) ) for entity in entities )
 
 #//===========================================================================//
 
 class NodeBaseNameFilter( NodeFilter ):
-  def   _get( self, entities ):
+  def   getEntities(self):
+    entities = super(NodeBaseNameFilter, self).getEntities()
     return tuple( SimpleEntity( os.path.basename( entity.get() ) ) for entity in entities )
 
 #//===========================================================================//
@@ -960,6 +984,14 @@ class Node (object):
   
   def   at(self, tags ):
     return NodeTagsFilter( self, tags )
+  
+  #//=======================================================//
+  
+  def   __iter__(self):
+    raise TypeError()
+  
+  def   __getitem__(self, item ):
+    return NodeIndexFilter( self, item )
   
   #//=======================================================//
   

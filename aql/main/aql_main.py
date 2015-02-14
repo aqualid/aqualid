@@ -28,7 +28,7 @@ import traceback
 from aql.util_types import toUnicode
 from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage,\
                       splitPath, expandFilePath,\
-                      logInfo, logError, setLogLevel, LOG_DEBUG, LOG_INFO, LOG_WARNING
+                      logInfo, logError, setLogLevel, LOG_WARNING
 
 from .aql_project import Project, ProjectConfig
 from .aql_info import getAqlInfo, dumpAqlInfo
@@ -85,19 +85,6 @@ def   _findMakeScript( script ):
 
 #//===========================================================================//
 
-def _setLogLevel( level ):
-  
-  if level <= 0:
-    level = LOG_WARNING
-  elif level == 1:
-    level = LOG_INFO
-  else:
-    level = LOG_DEBUG
-  
-  setLogLevel( level )
-
-#//===========================================================================//
-
 def   _startMemoryTracing():
   try:
     import tracemalloc
@@ -117,18 +104,6 @@ def   _stopMemoryTracing():
   snapshot = tracemalloc.take_snapshot()
   
   _logMemoryTop( snapshot )
-  
-  # snapshot = snapshot.filter_traces((
-  #       tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-  #       tracemalloc.Filter(False, "<unknown>"),
-  # ))
-  # 
-  # top_stats = snapshot.statistics('lineno', cumulative = True )
-  # 
-  # logInfo("[ Top memory blocks  ]")
-  # for stat in top_stats[:50]:
-  #   logInfo( stat )
-  # logInfo("")
   
   tracemalloc.stop()
 
@@ -290,7 +265,10 @@ def   main():
     if prj_cfg.show_version:
       logInfo( dumpAqlInfo() )
       return 0
-
+    
+    if prj_cfg.silent:
+      setLogLevel( LOG_WARNING )
+    
     if not debug_profile:
       status = _main( prj_cfg )
     else:

@@ -1,0 +1,31 @@
+import os.path
+
+from aql import readTextFile, writeTextFile
+
+def   ReadFiles( builder, node ):
+  src_file = node.getSources()[0]
+  
+  files = readTextFile( src_file )
+  files = map( str.strip, files.splitlines() )
+  
+  node.addTargets( files )
+
+def   CatFiles( builder, node, target ):
+  
+  result = ''
+  
+  for src_file in node.getSources():
+    result += readTextFile( src_file )
+  
+  writeTextFile( target, result )
+  
+  node.addTargets( target )
+
+
+files_list = tools.ExecuteMethod( File('list'), method = ReadFiles, clear_targets = False )
+
+targets = GetBuildTargets()
+
+content_file = os.path.abspath( targets[0] )
+content = tools.ExecuteMethod( files_list, method = CatFiles, args = (content_file,), single = False )
+Alias( targets, content )

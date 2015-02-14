@@ -695,7 +695,34 @@ class TestBuildManager( AqlTestCase ):
       bm.add( [node1, node2] )
       _build( bm )
       
-      self.assertEqual( self.built_nodes, 3 + 3 * 2 )
+      self.assertEqual( self.built_nodes, num_src_files + num_src_files * 2 )
+        
+  #//-------------------------------------------------------//
+  
+  def test_bm_node_index(self):
+    
+    with Tempdir() as tmp_dir:
+      options = builtinOptions()
+      options.build_dir = tmp_dir
+      
+      num_src_files = 2
+      src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
+      
+      bm = BuildManager()
+      
+      self.built_nodes = 0
+      
+      builder = ChecksumSingleBuilder( options, 0, 256 )
+      
+      node  =   Node( builder, src_files )
+      nodes = [ Node( builder, node[i * 2] ) for i in range(num_src_files + 1) ]
+      node2 =   Node( builder, node[1:2][:] )
+      # 
+      bm.add( [node2] )
+      bm.add( nodes )
+      _build( bm )
+      
+      self.assertEqual( self.built_nodes, num_src_files + num_src_files + 1 + 1 )
   
   #//-------------------------------------------------------//
   

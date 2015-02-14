@@ -28,7 +28,7 @@ from .aql_entity_pickler import pickleable
 
 class   ErrorEntityNameEmpty( AqlException ):
   def   __init__( self ):
-    msg = "Vale name is empty"
+    msg = "Entity name is empty"
     super(type(self), self).__init__( msg )
 
 #//===========================================================================//
