@@ -483,29 +483,30 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
   
   cmd_file = None
   if isString(cmd):
-    cmd = [ cmd ]
-  
-  for v in toSequence( cmd ):
-    if not isString( v ):
-      raise ErrorInvalidExecCommand( v )
-  
-  if file_flag:
-    cmd_length = sum( map(len, cmd ) ) + len(cmd) - 1
+    shell = True
+  else:
+    shell = False
     
-    if cmd_length > max_cmd_length:
-      args_str = subprocess.list2cmdline( cmd[1:] ).replace('\\', '\\\\')
+    for v in toSequence( cmd ):
+      if not isString( v ):
+        raise ErrorInvalidExecCommand( v )
+    
+    if file_flag:
+      cmd_length = sum( map(len, cmd ) ) + len(cmd) - 1
       
-      cmd_file = tempfile.NamedTemporaryFile( mode = 'w+', suffix = '.args', delete = False )
-      
-      cmd_file.write( args_str )
-      cmd_file.close()
-      
-      cmd = [cmd[0], file_flag + cmd_file.name]
+      if cmd_length > max_cmd_length:
+        args_str = subprocess.list2cmdline( cmd[1:] ).replace('\\', '\\\\')
+        
+        cmd_file = tempfile.NamedTemporaryFile( mode = 'w+', suffix = '.args', delete = False )
+        
+        cmd_file.write( args_str )
+        cmd_file.close()
+        
+        cmd = [cmd[0], file_flag + cmd_file.name]
   
   try:
-    
     try:
-      p = subprocess.Popen( cmd, cwd = cwd, env = env,
+      p = subprocess.Popen( cmd, cwd = cwd, env = env, shell = shell,
                             stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = False )
       stdout, stderr = p.communicate()
       returncode = p.poll()

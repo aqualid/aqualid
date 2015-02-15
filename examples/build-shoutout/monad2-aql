@@ -1,35 +1,20 @@
 import os.path
 
-from aql import readTextFile, writeTextFile
+from aql import readTextFile
 
-
-def   ReadFiles( builder, node ):
+def   CatFiles( builder, node, target ):
   src_file = node.getSources()[0]
+  
+  cmd = "cat '{src_file}' | xargs cat > '{target}'".format( src_file = src_file, target = target )
+  
+  builder.execCmd( cmd, cwd = '.')
   
   files = readTextFile( src_file )
   files = map( str.strip, files.splitlines() )
   
-  node.addTargets( files )
+  node.addTargets( target, implicit_deps = files )
 
+gen_list = tools.Command( 'sh','./monad2-run', File('source'), '--', target = './list', cwd = '.' )
 
-def   CatFiles( builder, node, target ):
-  
-  result = ''
-  
-  for src_file in node.getSources():
-    result += readTextFile( src_file )
-  
-  writeTextFile( target, result )
-  
-  node.addTargets( target )
-
-
-list = tools.Command( 'sh','./monad2-run', File('source'), '--', target = './list', cwd = '.' )
-
-files_list = tools.Method( list, method = ReadFiles, clear_targets = False )
-
-targets = GetBuildTargets()
-
-content_file = os.path.abspath( targets[0] )
-content = tools.Method( files_list, method = CatFiles, args = (content_file,), single = False )
-Alias( targets, content )
+content = tools.Method( gen_list, method = CatFiles, args = ('output',) )
+Alias( 'output', content )

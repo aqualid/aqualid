@@ -1,21 +1,10 @@
 
 import os.path
-import shutil
 
-def   CopyFileExt( builder, node, ext ):
-  
-  src_file = node.getSources()[0]
-  dst_file = os.path.splitext(src_file)[0] + ext
-  
-  shutil.copy( src_file, dst_file )
-  
-  node.addTargets( dst_file )
+target = GetBuildTargets()[0]
+source = os.path.splitext(target)[0] + '.in'
 
+out = tools.Command( 'cp', File(source), target = './' + target, cwd = '.' )
 
-targets = GetBuildTargets()
-
-sources = [ os.path.splitext(target)[0] + '.in' for target in targets ]
-
-node = tools.Method( sources, method = CopyFileExt, args = ('.out',) )
-Alias( targets, node )
+Alias( target, out )
 

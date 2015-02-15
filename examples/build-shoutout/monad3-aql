@@ -1,9 +1,9 @@
 import os.path
 
-from aql import readTextFile, writeTextFile
+from aql import readTextFile
 
 
-def   ReadFiles( builder, node ):
+def   GenFile( builder, node ):
   src_file = node.getSources()[0]
   
   files = readTextFile( src_file )
@@ -14,26 +14,26 @@ def   ReadFiles( builder, node ):
       builder.execCmd( ['sh','./monad3-gen', '--', 'gen'], cwd = '.')
       break
   
-  node.addTargets( files )
-  
+  node.setNoTargets()
 
 def   CatFiles( builder, node, target ):
+  src_file = node.getSources()[0]
   
-  result = ''
+  cmd = "cat '{src_file}' | xargs cat > '{target}'".format( src_file = src_file, target = target )
   
-  for src_file in node.getSources():
-    result += readTextFile( src_file )
+  builder.execCmd( cmd, cwd = '.')
   
-  writeTextFile( target, result )
+  files = readTextFile( src_file )
+  files = map( str.strip, files.splitlines() )
   
-  node.addTargets( target )
+  node.addTargets( target, implicit_deps = files )
 
 
 gen_list = tools.Command( 'sh','./monad3-run', File('source'), '--', target = './list', cwd = '.' )
 
-files_list = tools.Method( gen_list, method = ReadFiles, clear_targets = False )
+gen = tools.Method( gen_list, method = GenFile )
 
-targets = GetBuildTargets()
+content = tools.Method( gen_list, method = CatFiles, args = ('output',) )
+Depends( content, gen )
 
-content = tools.Method( files_list, method = CatFiles, args = (targets[0],), single = False )
-Alias( targets, content )
+Alias( 'output', content )

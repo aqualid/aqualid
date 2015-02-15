@@ -1349,7 +1349,7 @@ class BatchNode (Node):
   
   #//=======================================================//
   
-  def   addTargets( self, targets, itargets = None, ideps = None, tags = None ):
+  def   addTargets( self, targets, side_effects = None, implicit_deps = None, tags = None ):
     raise Exception( "addTargets() is not allowed for batch build. addSourceTargets() must be used instead." )
   
   #//=======================================================//
