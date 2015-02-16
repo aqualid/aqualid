@@ -86,7 +86,8 @@ examples_name = dist_dir + "/{name}-{version}-examples".format( name = info.name
 
 examples_dir = os.path.abspath('../examples')
 
-examples = FindFiles( examples_dir, ["*.cpp", "*.hpp", "*.aql", "*.cfg"], exclude_subdir_mask = ["benchmarks", ".*", "_*"] )
+examples = FindFiles( examples_dir, ["*.cpp", "*.hpp", "*.aql", "*.cfg"],
+                      exclude_subdir_mask = ["benchmarks", "build-shoutout", ".*", "_*"] )
 examples_zip = tools.CreateZip( examples, target = examples_name, basedir = examples_dir )
 examples_tar = tools.CreateTar( examples, target = examples_name, basedir = examples_dir )
 
