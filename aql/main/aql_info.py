@@ -21,7 +21,7 @@ class AqlInfo (object):
   def   __init__(self):
     self.name         = "Aqualid"
     self.module       = "aqualid"
-    self.description  = "General purpose build tool."
+    self.description  = "General purpose build system."
     self.version      = 0.53
     self.date         = None
     self.url          = 'https://github.com/aqualid'

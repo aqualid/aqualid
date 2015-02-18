@@ -63,14 +63,7 @@ class   FileEntityBase (EntityBase):
 
 #//===========================================================================//
 
-# noinspection PyDefaultArgument
-def   _getFileChecksum( path, use_cache = False, _cache = {} ):
-  if use_cache:
-    try:
-      return _cache[ path ]
-    except KeyError:
-      pass
-  
+def   _getFileChecksum( path ):
   try:
     signature = fileSignature( path )
   except (OSError, IOError) as err:
@@ -82,25 +75,16 @@ def   _getFileChecksum( path, use_cache = False, _cache = {} ):
     except (OSError, IOError):
       return None
   
-  _cache[ path ] = signature
   return signature
 
 #//===========================================================================//
 
-# noinspection PyDefaultArgument
-def   _getFileTimestamp( path, use_cache = False, _cache = {} ):
-  if use_cache:
-    try:
-      return _cache[ path ]
-    except KeyError:
-      pass
-  
+def   _getFileTimestamp( path ):
   try:
     signature = fileTimeSignature( path )
   except (OSError, IOError):
     return None
   
-  _cache[ path ] = signature
   return signature
 
 #//===========================================================================//
@@ -110,8 +94,8 @@ class FileChecksumEntity( FileEntityBase ):
   
   IS_SIZE_FIXED = True
   
-  def   __new__( cls, name, signature = NotImplemented, tags = None, use_cache = False ):
-
+  def   __new__( cls, name, signature = NotImplemented, tags = None ):
+    
     if isinstance(name, FileEntityBase):
       name = name.name
     else:
@@ -120,33 +104,23 @@ class FileChecksumEntity( FileEntityBase ):
     
     if not name:
       raise ErrorFileEntityNoName()
-
-    name = absFilePath( name )
+    
+    name = os.path.normcase( os.path.abspath( name ) )
       
     self = super(FileChecksumEntity, cls).__new__( cls, name, signature, tags = tags )
-
-    if signature is NotImplemented:
-      if use_cache:
-        del self.signature
-      else:
-        self.signature = _getFileChecksum( name )
-
+    
     return self
   
   #//-------------------------------------------------------//
-
-  def   __getattr__(self, attr):
-    if attr == 'signature':
-      self.signature = signature = _getFileChecksum( self.name, use_cache = True )
-      return signature
-
-    raise AttributeError("Unknown attribute: '%s'" % (attr,))
+  
+  def   getSignature(self):
+    return _getFileChecksum( self.name )
 
   #//-------------------------------------------------------//
 
-  def   getActual(self):
+  def   isActual(self):
     name = self.name
-    signature = _getFileChecksum( name, use_cache = True )
+    signature = _getFileChecksum( name )
     return super(FileChecksumEntity, self).__new__( self.__class__, name, signature, self.tags )
   
   #//-------------------------------------------------------//
@@ -155,7 +129,7 @@ class FileChecksumEntity( FileEntityBase ):
     if not self.signature:
       return False
     
-    signature = _getFileChecksum( self.name, use_cache = True )
+    signature = _getFileChecksum( self.name )
     
     return self.signature == signature
 
@@ -166,7 +140,7 @@ class FileTimestampEntity( FileEntityBase ):
   
   IS_SIZE_FIXED = True
   
-  def   __new__( cls, name, signature = NotImplemented, tags = None, use_cache = False ):
+  def   __new__( cls, name, signature = NotImplemented, tags = None ):
     if isinstance(name, FileEntityBase):
       name = name.name
     else:
@@ -179,29 +153,19 @@ class FileTimestampEntity( FileEntityBase ):
       name = absFilePath( name )
     
     self = super(FileTimestampEntity, cls).__new__( cls, name, signature, tags = tags )
-
-    if signature is NotImplemented:
-      if use_cache:
-        del self.signature
-      else:
-        self.signature = _getFileTimestamp( name )
-
+    
     return self
   
   #//-------------------------------------------------------//
-
-  def   __getattr__(self, attr):
-    if attr == 'signature':
-      self.signature = signature = _getFileTimestamp( self.name, use_cache = True )
-      return signature
-
-    raise AttributeError("Unknown attribute: '%s'" % (attr,))
+  
+  def   getSignature(self):
+    return _getFileTimestamp( self.name )
 
   #//-------------------------------------------------------//
-
+  
   def   getActual(self):
     name = self.name
-    signature = _getFileTimestamp( name, use_cache = True )
+    signature = _getFileTimestamp( name )
     return super(FileTimestampEntity, self).__new__( self.__class__, name, signature, self.tags )
   
   #//-------------------------------------------------------//
@@ -210,7 +174,7 @@ class FileTimestampEntity( FileEntityBase ):
     if not self.signature:
       return False
     
-    signature = _getFileTimestamp( self.name, use_cache = True )
+    signature = _getFileTimestamp( self.name )
     
     return self.signature == signature
 

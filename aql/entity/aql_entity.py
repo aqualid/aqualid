@@ -49,7 +49,7 @@ class   EntityBase (object):
   
   IS_SIZE_FIXED = False
   
-  __slots__ = ( 'name', 'signature', 'tags' )
+  __slots__ = ( 'id', 'name', 'signature', 'tags' )
   
   #//-------------------------------------------------------//
   
@@ -59,32 +59,41 @@ class   EntityBase (object):
       raise ErrorEntityNameEmpty()
     
     self = super(EntityBase,cls).__new__(cls)
+    
+    self.id = simpleObjectSignature( (name, cls.__name__, cls.__module__) )
     self.name = name
-    self.signature = signature
+    if signature is not NotImplemented:
+      self.signature = signature
     self.tags = frozenset( toSequence(tags) ) if tags else None
     
     return self
   
   #//-------------------------------------------------------//
   
-  def   getId(self):
-    return self.name, self.__class__
-  
-  #//-------------------------------------------------------//
-  
-  def   dumpId(self):
-    cls = self.__class__
-    return dumpSimpleObject(self.name), cls.__name__, cls.__module__
-  
-  #//-------------------------------------------------------//
-  
   def   __hash__(self):
-    return hash( self.getId() )
+    return hash( self.id )
   
   #//-------------------------------------------------------//
   
   def   get(self):
+    """
+    Returns value of the entity
+    """
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   getSignature(self):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__(self, attr):
+    if attr == 'signature':
+      self.signature = signature = self.getSignature()
+      return signature
+    
+    raise AttributeError("Unknown attribute: '%s'" % (attr,))
   
   #//-------------------------------------------------------//
   
@@ -94,16 +103,21 @@ class   EntityBase (object):
   #//-------------------------------------------------------//
   
   def   isActual( self ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+    """
+    Checks whether the entity is actual or not
+    """
+    return bool(self.signature)
   
   #//-------------------------------------------------------//
   
-  def   getActual( self ):
-    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  def   update( self ):
+    """
+    Updates signature of entity
+    """
+    pass
   
   #//-------------------------------------------------------//
 
-  # noinspection PyMethodMayBeStatic
   def   __getstate__(self):
     return {}
   
@@ -113,11 +127,10 @@ class   EntityBase (object):
   #//-------------------------------------------------------//
   
   def   __eq__( self, other):
-    return (type(self) == type(other)) and \
-           (self.name == other.name) and \
+    return (self.id == other.id) and \
            (self.signature == other.signature)
   
-  def   __ne__( self, other):
+  def   __ne__( self, other ):
     return not self.__eq__( other )
   
   #//-------------------------------------------------------//
@@ -134,6 +147,7 @@ class   EntityBase (object):
   
   def   remove( self ):
     pass
+
 
 #//===========================================================================//
 
@@ -176,16 +190,6 @@ class   SimpleEntity ( EntityBase ):
       name = None
     
     return self.data, name, self.signature, tags
-  
-  #//-------------------------------------------------------//
-  
-  def   isActual( self ):
-    return bool(self.signature)
-  
-  #//-------------------------------------------------------//
-  
-  def   getActual( self ):
-    return self
 
 #//===========================================================================//
 
@@ -215,11 +219,6 @@ class   NullEntity ( EntityBase ):
   def   isActual( self ):
     return False
   
-  #//-------------------------------------------------------//
-  
-  def   getActual( self ):
-    return self
-
 
 #//===========================================================================//
 
@@ -254,10 +253,5 @@ class   SignatureEntity (EntityBase):
   def   isActual( self ):
     return bool(self.signature)
   
-  #//-------------------------------------------------------//
-  
-  def   getActual( self ):
-    return self
-
 
 #//===========================================================================//

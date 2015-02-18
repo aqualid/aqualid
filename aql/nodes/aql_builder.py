@@ -512,28 +512,28 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   makeSimpleEntity(self, entity, tags = None, use_cache = False ):
+  def   makeSimpleEntity(self, entity, tags = None ):
     if isinstance( entity, EntityBase):
       return entity
     
     if isinstance( entity, FilePath ):
-      return self.file_entity_type( name = entity, tags = tags, use_cache = use_cache )
+      return self.file_entity_type( name = entity, tags = tags )
     
     return SimpleEntity( entity )
   
   #//-------------------------------------------------------//
   
-  def   makeFileEntity( self, entity, tags = None, use_cache = False ):
+  def   makeFileEntity( self, entity, tags = None ):
     if isinstance( entity, EntityBase ):
       return entity
     
-    return self.file_entity_type( name = entity, tags = tags, use_cache = use_cache )
+    return self.file_entity_type( name = entity, tags = tags )
   
   #//-------------------------------------------------------//
   
-  def   makeFileEntities( self, entities, tags = None, use_cache = False ):
+  def   makeFileEntities( self, entities, tags = None ):
     make_entity = self.makeFileEntity
-    return [ make_entity( entity, tags = tags, use_cache = use_cache ) for entity in entities ]
+    return [ make_entity( entity, tags = tags ) for entity in entities ]
   
   #//-------------------------------------------------------//
   
