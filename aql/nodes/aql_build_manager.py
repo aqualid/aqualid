@@ -1166,7 +1166,7 @@ class BuildManager (object):
     
     for entity in entities:
       entity_sign = entity.signature
-      other_entity_sign = built_targets.setdefault( entity.getId(), entity_sign )
+      other_entity_sign = built_targets.setdefault( entity.id, entity_sign )
       
       if other_entity_sign != entity_sign:
         eventBuildTargetTwice( entity, node )

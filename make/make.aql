@@ -70,7 +70,8 @@ rpm_dist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist",
 install_user = tools.InstallDist( setup_script, user = True )
 install_system = tools.InstallDist( setup_script, user = False )
 
-Depends( [sdist, wdist32, wdist64, rpm_dist, install_user, install_system ], [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
+Depends( [sdist, wdist32, wdist64, rpm_dist, install_user, install_system ],
+         [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
 Sync( wdist32, wdist64, rpm_dist, sdist, install_user, install_system )
 
 Alias('sdist', sdist, "Build source distributions." )

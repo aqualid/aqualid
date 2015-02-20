@@ -185,8 +185,8 @@ def   _checkDeps( vfile, dep_keys, dep_entities, reason ):
           reason.setImplicitDepChanged()
         return False
       
-      actual_entity = entity.getActual()    # TODO: store actual status in vfile
-      if entity != actual_entity:
+      actual_entity = entity.getActual()
+      if entity is not actual_entity:
         vfile.replaceEntity( key, actual_entity )
         if reason is not None:
           reason.setImplicitDepChanged( entity )
@@ -320,26 +320,15 @@ def   _getClearStr( args, brief = True ):
 
 #//===========================================================================//
 
-def   _makeNullEntity( name, entity_type ):
-  if isinstance( name, EntityBase ):
-    return name
-   
-  return entity_type( name = name, signature = None )
-
-#//===========================================================================//
-
 def   _genNodeEntityName( builder, source_entities, name_hash ):
   
-  target_entities = builder.getTargetEntities( source_entities )
-  entity_type = builder.getDefaultEntityType()
-  
-  target_entities = [ _makeNullEntity( entity, entity_type ) for entity in toSequence( target_entities ) ]
+  target_entities = builder._getTargetEntities( source_entities )
   
   if target_entities:
-    names = sorted( entity.dumpId() for entity in target_entities )
+    names = sorted( entity.id for entity in target_entities )
     name = simpleObjectSignature( names )
   else:
-    names = sorted( entity.dumpId() for entity in source_entities )
+    names = sorted( entity.id for entity in source_entities )
     name = simpleObjectSignature( names, name_hash )
   
   return name, target_entities
@@ -362,6 +351,132 @@ def   _genNodeEntitySignature( source_entities, sign_hash ):
   
   return sign_hash.digest()
 
+#//===========================================================================//
+
+class   _Node (object):
+  
+  __slots__ = (
+    'name',
+    'signature',
+    'builder',
+    'source_entites',
+    'deps_entites',
+    'target_entities'
+  )
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, builder, sources ):
+    
+    self.builder        = builder
+    self.source_entites = sources
+    
+  
+  #//-------------------------------------------------------//
+  
+  def   _setTargets(self):
+    builder = self.builder
+    self.target_entities = targets = builder.makeEntities( builder.getTargetEntities() )
+    return targets
+  
+  #//-------------------------------------------------------//
+  
+  def   _setName( self ):
+    
+    name_hash = self._getNameHash()
+    
+    newHash( self.builder.name )
+    
+    hash = newHash( dumpSimpleObject( self.builder.name ) )
+    name_entities = self.target_entities
+    if not name_entities:
+      name_entities = self.source_entities
+    
+    names = sorted( entity.id for entity in name_entities )
+    for name in 
+    name = simpleObjectSignature( names, name_hash )
+    
+    source_entities = self.getSourceEntities()
+    
+    name, target_entities = _genNodeEntityName( self.builder, source_entities, name_hash )
+    
+    if target_entities:
+      self.target_entities = target_entities
+    
+    self.name = name
+    return name
+    
+    target_entities = builder._getTargetEntities( source_entities )
+    
+    if target_entities:
+      names = sorted( entity.id for entity in target_entities )
+      name = simpleObjectSignature( names )
+    else:
+      names = sorted( entity.id for entity in source_entities )
+      name = simpleObjectSignature( names, name_hash )
+    
+    return name, target_entities
+
+  
+  #//-------------------------------------------------------//
+  
+  def   get(self):
+    return self.name
+  
+  #//-------------------------------------------------------//
+  
+  def   __getnewargs__(self):
+    return self.name, self.signature, self.targets, self.itargets, self.idep_keys
+  
+  #//-------------------------------------------------------//
+  
+  def   __bool__( self ):
+    return (self.signature is not None) and (self.targets is not None)
+  
+  #//-------------------------------------------------------//
+  
+  def   checkActual( self, vfile, built_node_names, reason ):
+    
+    if (built_node_names is not None) and (self.name not in built_node_names):
+      if reason is not None:
+        reason.setForceRebuild()
+      return False
+    
+    other = vfile.findEntity( self )
+    
+    if other is None:
+      if reason is not None:
+        reason.setNew()
+      return False
+    
+    if not self.signature:
+      if reason is not None:
+        reason.setNoSignature()
+      return False
+    
+    if self.signature != other.signature:
+      if reason is not None:
+        reason.setSignatureChanged()
+      return False
+    
+    targets   = other.targets
+    itargets  = other.itargets
+    idep_keys = other.idep_keys
+    
+    ideps = []
+    
+    if not _checkDeps( vfile, idep_keys, ideps, reason ):
+      return False
+    
+    if not _checkTargets( targets, reason ):
+      return False
+    
+    self.targets = targets
+    self.itargets = itargets
+    self.ideps = ideps
+    
+    return True
+  
 #//===========================================================================//
 
 @pickleable
@@ -388,11 +503,6 @@ class   NodeEntity (EntityBase):
   
   #//-------------------------------------------------------//
   
-  def   __eq__( self, other):
-    return (type(self) == type(other)) and (self.__getnewargs__() == other.__getnewargs__())
-  
-  #//-------------------------------------------------------//
-  
   def   get(self):
     return self.name
   
@@ -415,16 +525,16 @@ class   NodeEntity (EntityBase):
         reason.setForceRebuild()
       return False
     
-    if not self.signature:
-      if reason is not None:
-        reason.setNoSignature()
-      return False
-    
     other = vfile.findEntity( self )
     
     if other is None:
       if reason is not None:
         reason.setNew()
+      return False
+    
+    if not self.signature:
+      if reason is not None:
+        reason.setNoSignature()
       return False
     
     if self.signature != other.signature:
@@ -565,8 +675,7 @@ class Node (object):
     'options',
     'cwd',
     
-    'name',
-    'signature',
+    'impl_nodes',
     
     'sources',
     'source_entities',
@@ -614,13 +723,13 @@ class Node (object):
     
     other = object.__new__( self.__class__ )
     
-    other.builder         = self.builder
-    other.options         = self.options
-    other.builder_data    = None
-    other.cwd             = self.cwd
-    other.sources         = tuple()
+    other.builder           = self.builder
+    other.options           = self.options
+    other.builder_data      = None
+    other.cwd               = self.cwd
+    other.sources           = tuple()
     other.source_entities   = src_entities
-    other.dep_nodes       = self.dep_nodes
+    other.dep_nodes         = self.dep_nodes
     other.dep_entities      = self.dep_entities
     other.target_entities   = None
     
@@ -709,7 +818,7 @@ class Node (object):
     
     dep_nodes.clear()
     
-    dep_entities.sort( key = operator.methodcaller('dumpId') )
+    dep_entities.sort( key = operator.attrgetter('id') )
   
   #//=======================================================//
   
@@ -792,7 +901,7 @@ class Node (object):
           entities.append( src )
         
         else:
-          entity = makeEntity( src, use_cache = True )
+          entity = makeEntity( src )
           entities.append( entity )
     
     self.sources = tuple()
@@ -976,9 +1085,9 @@ class Node (object):
     if self.target_entities is None:
       self.target_entities = []
     
-    self.target_entities.extend(  entity_maker( entity, tags = tags )     for entity in toSequence(targets) )
-    self.itarget_entities.extend( entity_maker( entity )                  for entity in toSequence(side_effects) )
-    self.idep_entities.extend(    entity_maker( entity, use_cache = True) for entity in toSequence(implicit_deps) )
+    self.target_entities.extend(  entity_maker( entity, tags = tags ) for entity in toSequence(targets) )
+    self.itarget_entities.extend( entity_maker( entity )              for entity in toSequence(side_effects) )
+    self.idep_entities.extend(    entity_maker( entity )              for entity in toSequence(implicit_deps) )
 
   #//=======================================================//
   
@@ -1369,9 +1478,9 @@ class BatchNode (Node):
     if node_targets is None: node_entity.targets = node_targets = []
     if node_itargets is None: node_entity.itargets = node_itargets = []
     
-    node_targets.extend(  entity_maker( entity, tags = tags)        for entity in toSequence( targets ) )
-    node_itargets.extend( entity_maker( entity )                    for entity in toSequence( side_effects ) )
-    node_ideps.extend(    entity_maker( entity, use_cache = True )  for entity in toSequence( implicit_deps ) )
+    node_targets.extend(  entity_maker( entity, tags = tags)    for entity in toSequence( targets ) )
+    node_itargets.extend( entity_maker( entity )                for entity in toSequence( side_effects ) )
+    node_ideps.extend(    entity_maker( entity )                for entity in toSequence( implicit_deps ) )
       
   #//=======================================================//
   

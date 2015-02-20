@@ -204,7 +204,6 @@ class Builder (object):
     
     self = super(Builder, cls).__new__(cls)
     self.makeEntity = self.makeSimpleEntity
-    self.default_entity_type = SimpleEntity
     
     self.__is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
     
@@ -533,6 +532,10 @@ class Builder (object):
   
   def   makeFileEntities( self, entities, tags = None ):
     make_entity = self.makeFileEntity
+    return [ make_entity( entity, tags = tags ) for entity in entities ]
+  
+  def   makeEntities( self, entities, tags = None ):
+    make_entity = self.makeEntity
     return [ make_entity( entity, tags = tags ) for entity in entities ]
   
   #//-------------------------------------------------------//

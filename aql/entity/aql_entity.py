@@ -47,8 +47,6 @@ class   ErrorTextEntityInvalidDataType( AqlException ):
 
 class   EntityBase (object):
   
-  IS_SIZE_FIXED = False
-  
   __slots__ = ( 'id', 'name', 'signature', 'tags' )
   
   #//-------------------------------------------------------//
@@ -110,11 +108,11 @@ class   EntityBase (object):
   
   #//-------------------------------------------------------//
   
-  def   update( self ):
+  def   getActual( self ):
     """
-    Updates signature of entity
+    Returns an actual entity. If the current entity is actual then it will be simply returned 
     """
-    pass
+    return self
   
   #//-------------------------------------------------------//
 
@@ -151,7 +149,6 @@ class   EntityBase (object):
 
 #//===========================================================================//
 
-# noinspection PyUnresolvedReferences
 @pickleable
 class   SimpleEntity ( EntityBase ):
   
@@ -193,7 +190,6 @@ class   SimpleEntity ( EntityBase ):
 
 #//===========================================================================//
 
-# noinspection PyUnresolvedReferences
 @pickleable
 class   NullEntity ( EntityBase ):
   
@@ -225,9 +221,7 @@ class   NullEntity ( EntityBase ):
 @pickleable
 class   SignatureEntity (EntityBase):
   
-  IS_SIZE_FIXED = True
-  
-  def   __new__( cls, data = None, name = None ):
+  def   __new__( cls, data = None, name = None, tags = None ):
     
     if data is not None:
       if not isinstance( data, (bytes, bytearray) ):
@@ -236,7 +230,7 @@ class   SignatureEntity (EntityBase):
     if not name:
       name = data
     
-    return super(SignatureEntity, cls).__new__( cls, name, data )
+    return super(SignatureEntity, cls).__new__( cls, name, data, tags )
   
   #//-------------------------------------------------------//
 
@@ -246,12 +240,15 @@ class   SignatureEntity (EntityBase):
   #//-------------------------------------------------------//
   
   def     __getnewargs__(self):
-    return self.signature, self.name
-  
-  #//-------------------------------------------------------//
-  
-  def   isActual( self ):
-    return bool(self.signature)
+    tags = self.tags
+    if not tags:
+      tags = None
+    
+    name = self.name
+    if name == self.signature:
+      name = None
+    
+    return self.signature, name, tags
   
 
 #//===========================================================================//

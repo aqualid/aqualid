@@ -35,7 +35,6 @@ class   ErrorEntitiesFileUnknownEntity( AqlException ):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
 class EntitiesFile (object):
   
   __slots__ = (
@@ -49,8 +48,18 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   getEntityByKey(self, key ):
-    return self.key2entity.get(key, None )
+  def   getEntityByKey( self, key ):
+    
+    try:
+      entity = self.key2entity[ key ]
+      if entity is None:
+        data = self.data_file[ key ]
+        entity = self.pickler.loads( data )
+        self.key2entity[ key ] = entity
+    except Exception:
+      return None
+    
+    return entity
   
   #//---------------------------------------------------------------------------//
   
@@ -63,9 +72,21 @@ class EntitiesFile (object):
     self.entity2key[ entity_id ] = key
     self.key2entity[ key ] = entity
   
-  def   __removeEntityFromCache( self, key, entity_id ):
-    del self.entity2key[ entity_id ]
-    del self.key2entity[ key ]
+  #//---------------------------------------------------------------------------//
+  
+  def   __removeEntityByKey( self, key ):
+    
+    entity = self.key2entity.pop( key, None )
+    if entity is not None:
+      del self.entity2key[ entity.id ]
+  
+  def   __removeEntityByEntityId( self, entity_id ):
+    
+    key = self.entity2key.pop( entity_id, None )
+    if key is not None:
+      del self.key2entity[ key ]
+    
+    return key
   
   #//---------------------------------------------------------------------------//
   
@@ -120,8 +141,7 @@ class EntitiesFile (object):
       except Exception:
         invalid_keys.append( key )
       else:
-        entity_id = entity.getId()
-        self.__addEntityToCache( key, entity_id, entity )
+        self.__addEntityToCache( key, entity.id, entity )
       
     data_file.remove( invalid_keys )
   
@@ -140,12 +160,12 @@ class EntitiesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   findEntityKey( self, entity ):
-    return self.__getKeyByEntityId( entity.getId() )
+    return self.__getKeyByEntityId( entity.id )
   
   #//---------------------------------------------------------------------------//
   
   def   findEntity( self, entity ):
-    key = self.__getKeyByEntityId( entity.getId() )
+    key = self.__getKeyByEntityId( entity.id )
     if key is None:
       return None
     
@@ -153,16 +173,26 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   addEntity( self, entity ):
+  def   dropEntityCache(self, entity ):
+    try:
+      key = self.entity2key[ entity.id ]
+      self.key2entity[ key ] = None
+    except KeyError:
+      pass
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   addEntity( self, entity, cache = True ):
     
-    reserve = not entity.IS_SIZE_FIXED
-    
-    entity_id = entity.getId()
+    entity_id = entity.id
     key = self.__getKeyByEntityId( entity_id )
     
     if key is None:
       data = self.pickler.dumps( entity )
-      key = self.data_file.append( data, reserve )
+      key = self.data_file.append( data )
+      
+      if not cache:
+        entity = None
       
       self.__addEntityToCache( key, entity_id, entity )
     
@@ -171,9 +201,12 @@ class EntitiesFile (object):
       
       if entity != val:
         data = self.pickler.dumps( entity )
-        new_key = self.data_file.replace( key, data, reserve )
+        new_key = self.data_file.replace( key, data )
         
-        self.__updateEntityInCache(key, new_key, entity_id, entity )
+        if not cache:
+          entity = None
+        
+        self.__updateEntityInCache( key, new_key, entity_id, entity )
         
         return new_key
     
@@ -182,12 +215,10 @@ class EntitiesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   replaceEntity(self, key, entity ):
-    reserve = not entity.IS_SIZE_FIXED
-    
     data = self.pickler.dumps( entity )
-    new_key = self.data_file.replace( key, data, reserve )
+    new_key = self.data_file.replace( key, data )
     
-    self.__updateEntityInCache(key, new_key, entity.getId(), entity )
+    self.__updateEntityInCache(key, new_key, entity.id, entity )
   
   #//---------------------------------------------------------------------------//
   
@@ -205,9 +236,7 @@ class EntitiesFile (object):
     remove_keys = []
     
     for entity in entities:
-      
-      key = self.__getKeyByEntityId( entity.getId() )
-      
+      key = self.__removeEntityByEntityId( entity.id )
       if key is not None:
         remove_keys.append( key )
     
@@ -216,6 +245,10 @@ class EntitiesFile (object):
   #//---------------------------------------------------------------------------//
   
   def   removeEntityKeys( self, remove_keys ):
+    
+    for key in remove_keys:
+      self.__removeEntityByKey( key )
+    
     self.data_file.remove( remove_keys )
   
   #//---------------------------------------------------------------------------//
@@ -233,18 +266,20 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   selfTest(self):
+  def   selfTest(self, log = False):
     if self.data_file is not None:
       self.data_file.selfTest()
     
-    for key, entity in self.key2entity.items():
-      entity_id = entity.getId()  
+    for entity_id, key in self.entity2key.items():
+      if log:
+        print("key: %s, entity_id: %s" % (key, entity_id))
       
-      if entity_id not in self.entity2key:
-        raise AssertionError("entity (%s) not in self.entity2key" % (entity_id,))
-        
-      if key != self.entity2key[ entity_id ]:
-        raise AssertionError("key(%s) != self.entity2key[ entity_id(%) ](%s) % (key, entity_id, self.entity2key[ entity_id ])" )
+      if key not in self.key2entity:
+        raise AssertionError("key (%s) not in key2entity" % (key,))
+      
+      entity = self.key2entity[ key ]
+      if (entity is not None) and (entity.id != entity_id):
+        raise AssertionError("key(%s) != self.entity2key[ entity_id(%) ](%s)" % (key, entity_id, self.entity2key[ entity_id ]) )
     
     size = len(self.key2entity)
     

@@ -108,9 +108,7 @@ class   DataFileChunk (object):
     
     capacity = self.capacity
     if capacity < size:
-      self.capacity = size
-      if reserve:
-        self.capacity += min( size // 4, 64 )
+      self.capacity = size + (min( size // 4, 64 ) if reserve else 4)
       
       oversize = self.capacity - capacity
     
@@ -386,7 +384,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def append( self, data, reserve = True ):
+  def append( self, data ):
     
     stream  = self.stream
     key     = self.file_header.nextKey( stream )
@@ -394,7 +392,7 @@ class DataFile (object):
     
     location = DataFileChunk( offset )
     
-    chunk, oversize = location.pack( key, data, reserve )
+    chunk, oversize = location.pack( key, data, reserve = False )
     
     stream.seek( offset )
     stream.write( chunk )
@@ -406,7 +404,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   modify(self, key, data, reserve = True ):
+  def   modify(self, key, data ):
     
     stream = self.stream
     
@@ -414,7 +412,7 @@ class DataFile (object):
     location = locations[ key ]
     
     tail_offset = location.offset + location.chunkSize()
-    chunk, oversize = location.pack( key, data, reserve )
+    chunk, oversize = location.pack( key, data, reserve = True )
     
     if oversize > 0:
       chunk += bytearray( location.capacity - location.size )
@@ -429,7 +427,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   replace(self, key, data, reserve = True ):
+  def   replace(self, key, data ):
     
     stream = self.stream
     
@@ -441,7 +439,7 @@ class DataFile (object):
     locations[ key ] = location
     
     tail_offset = location.offset + location.chunkSize()
-    chunk, oversize = location.pack( key, data, reserve )
+    chunk, oversize = location.pack( key, data, reserve = True )
     
     if oversize > 0:
       chunk += bytearray( location.capacity - location.size )

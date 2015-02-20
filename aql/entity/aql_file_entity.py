@@ -28,7 +28,7 @@ from .aql_entity import EntityBase
 from .aql_entity_pickler import pickleable
 
 from aql.util_types import AqlException
-from aql.utils import fileSignature, fileTimeSignature, absFilePath
+from aql.utils import fileSignature, fileTimeSignature
 
 #//===========================================================================//
 
@@ -40,6 +40,30 @@ class   ErrorFileEntityNoName( AqlException ):
 #//===========================================================================//
 
 class   FileEntityBase (EntityBase):
+  
+  __slots__ = ('is_actual',)
+  
+  #//-------------------------------------------------------//
+  
+  def   __new__( cls, name, signature = NotImplemented, tags = None ):
+    
+    if isinstance(name, FileEntityBase):
+      name = name.name
+    else:
+      if isinstance(name, EntityBase):
+        name = name.get()
+    
+    if not name:
+      raise ErrorFileEntityNoName()
+    
+    name = os.path.normcase( os.path.abspath( name ) )
+      
+    self = super(FileEntityBase, cls).__new__( cls, name, signature, tags = tags )
+    self.is_actual = False
+    
+    return self
+
+  #//-------------------------------------------------------//
   
   def   get(self):
     return self.name
@@ -60,6 +84,36 @@ class   FileEntityBase (EntityBase):
       os.remove( self.name )
     except OSError:
       pass
+
+  #//-------------------------------------------------------//
+
+  def   getActual(self):
+    if self.is_actual:
+      return self
+    
+    signature = self.getSignature()
+    if self.signature == signature:
+      self.is_actual = True
+      return self
+    
+    other = super(FileEntityBase, self).__new__( self.__class__, self.name, signature, self.tags )
+    other.is_actual = True
+    return other
+  
+  #//-------------------------------------------------------//
+  
+  def   isActual( self ):
+    if not self.signature:
+      return False
+    
+    if self.is_actual:
+      return True
+    
+    if self.signature == self.getSignature():
+      self.is_actual = True
+      return True
+    
+    return False
 
 #//===========================================================================//
 
@@ -92,91 +146,16 @@ def   _getFileTimestamp( path ):
 @pickleable
 class FileChecksumEntity( FileEntityBase ):
   
-  IS_SIZE_FIXED = True
-  
-  def   __new__( cls, name, signature = NotImplemented, tags = None ):
-    
-    if isinstance(name, FileEntityBase):
-      name = name.name
-    else:
-      if isinstance(name, EntityBase):
-        name = name.get()
-    
-    if not name:
-      raise ErrorFileEntityNoName()
-    
-    name = os.path.normcase( os.path.abspath( name ) )
-      
-    self = super(FileChecksumEntity, cls).__new__( cls, name, signature, tags = tags )
-    
-    return self
-  
-  #//-------------------------------------------------------//
-  
   def   getSignature(self):
     return _getFileChecksum( self.name )
-
-  #//-------------------------------------------------------//
-
-  def   isActual(self):
-    name = self.name
-    signature = _getFileChecksum( name )
-    return super(FileChecksumEntity, self).__new__( self.__class__, name, signature, self.tags )
-  
-  #//-------------------------------------------------------//
-  
-  def   isActual( self ):
-    if not self.signature:
-      return False
-    
-    signature = _getFileChecksum( self.name )
-    
-    return self.signature == signature
 
 #//===========================================================================//
 
 @pickleable
 class FileTimestampEntity( FileEntityBase ):
   
-  IS_SIZE_FIXED = True
-  
-  def   __new__( cls, name, signature = NotImplemented, tags = None ):
-    if isinstance(name, FileEntityBase):
-      name = name.name
-    else:
-      if isinstance(name, EntityBase):
-        name = name.get()
-      
-      if not name:
-        raise ErrorFileEntityNoName()
-      
-      name = absFilePath( name )
-    
-    self = super(FileTimestampEntity, cls).__new__( cls, name, signature, tags = tags )
-    
-    return self
-  
-  #//-------------------------------------------------------//
-  
   def   getSignature(self):
     return _getFileTimestamp( self.name )
-
-  #//-------------------------------------------------------//
-  
-  def   getActual(self):
-    name = self.name
-    signature = _getFileTimestamp( name )
-    return super(FileTimestampEntity, self).__new__( self.__class__, name, signature, self.tags )
-  
-  #//-------------------------------------------------------//
-  
-  def   isActual( self ):
-    if not self.signature:
-      return False
-    
-    signature = _getFileTimestamp( self.name )
-    
-    return self.signature == signature
 
 #//===========================================================================//
 
