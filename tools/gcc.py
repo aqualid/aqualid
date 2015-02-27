@@ -273,10 +273,11 @@ def   _getGccSpecs( gcc ):
   
   target_list = target.split('-', 1)
   
-  target_os = target_list[1]
   if len(target_list) > 1:
     target_arch = target_list[0]
+    target_os = target_list[1]
   else:
+    target_os = target_list[0]
     target_arch = 'unknown'
   
   target_os = _getTargetOs( target_os )

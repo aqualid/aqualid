@@ -11,3 +11,17 @@ Key features:
   - Support any build target types (files, strings, URLs, remote resources etc.)
   - Conditional options
   - Scons like build scripts (but don't compatible)
+
+[Introduction](https://github.com/aqualid/aqualid/wiki/Introduction)
+
+More information can be found in [Wiki](https://github.com/aqualid/aqualid/wiki)
+
+Build System Shootout [results](https://github.com/aqualid/aqualid/tree/master/examples/build-shoutout)
+
+Performance [benchmarks](https://github.com/aqualid/aqualid/wiki/Benchmark-results-for-v0.5)
+####Memory usage of full build of a synthetic project with 10k files:
+![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k/bench10k_full.png)
+
+####Memory usage of up to date build of the project with 10k files:
+![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k/bench10k_nop.png)
+
