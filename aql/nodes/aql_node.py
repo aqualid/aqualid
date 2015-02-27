@@ -1,5 +1,5 @@
 
-# Copyright (c) 2011-2014 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -174,53 +174,6 @@ class NodeStaleReason (object):
       
 #//===========================================================================//
 
-def   _checkDeps( vfile, dep_keys, dep_entities, reason ):
-  if dep_keys:
-    
-    for key in dep_keys:
-      entity = vfile.getEntityByKey( key )
-      
-      if entity is None:
-        if reason is not None:
-          reason.setImplicitDepChanged()
-        return False
-      
-      actual_entity = entity.getActual()
-      if entity is not actual_entity:
-        vfile.replaceEntity( key, actual_entity )
-        if reason is not None:
-          reason.setImplicitDepChanged( entity )
-        return False
-      
-      dep_entities.append( entity )
-      
-  return True
-
-#//===========================================================================//
-
-def   _checkTargets( entities, reason ):
-  if entities is None:
-    if reason is not None:
-      reason.setNoTargets()
-    return False
-  
-  for entity in entities:
-    if not entity.isActual():
-      if reason is not None:
-        reason.setTargetChanged( entity )
-      return False
-      
-  return True
-
-#//===========================================================================//
-
-def   _ensureActualEntities( entities ):
-  for entity in entities:
-    if not entity.isActual():
-      raise ErrorUnactualEntity( entity )
-
-#//===========================================================================//
-
 def   _getTraceArg( entity, brief ):
   if isinstance( entity, FileEntityBase ):
     value = entity.get()
@@ -320,205 +273,193 @@ def   _getClearStr( args, brief = True ):
 
 #//===========================================================================//
 
-def   _genNodeEntityName( builder, source_entities, name_hash ):
-  
-  target_entities = builder._getTargetEntities( source_entities )
-  
-  if target_entities:
-    names = sorted( entity.id for entity in target_entities )
-    name = simpleObjectSignature( names )
-  else:
-    names = sorted( entity.id for entity in source_entities )
-    name = simpleObjectSignature( names, name_hash )
-  
-  return name, target_entities
-
-#//===========================================================================//
-
-def   _genNodeEntitySignature( source_entities, sign_hash ):
-  
-  if sign_hash is None:
-    return None
-  
-  sign_hash = sign_hash.copy()
-  
-  for entity in source_entities:
-    entity_signature = entity.signature
-    if entity_signature is None:
-      return None
-    
-    sign_hash.update( entity_signature )
-  
-  return sign_hash.digest()
-
-#//===========================================================================//
-
-class   _Node (object):
-  
-  __slots__ = (
-    'name',
-    'signature',
-    'builder',
-    'source_entites',
-    'deps_entites',
-    'target_entities'
-  )
-  
-  #//-------------------------------------------------------//
-  
-  def   __init__( self, builder, sources ):
-    
-    self.builder        = builder
-    self.source_entites = sources
-    
-  
-  #//-------------------------------------------------------//
-  
-  def   _setTargets(self):
-    builder = self.builder
-    self.target_entities = targets = builder.makeEntities( builder.getTargetEntities() )
-    return targets
-  
-  #//-------------------------------------------------------//
-  
-  def   _setName( self ):
-    
-    name_hash = self._getNameHash()
-    
-    newHash( self.builder.name )
-    
-    hash = newHash( dumpSimpleObject( self.builder.name ) )
-    name_entities = self.target_entities
-    if not name_entities:
-      name_entities = self.source_entities
-    
-    names = sorted( entity.id for entity in name_entities )
-    for name in 
-    name = simpleObjectSignature( names, name_hash )
-    
-    source_entities = self.getSourceEntities()
-    
-    name, target_entities = _genNodeEntityName( self.builder, source_entities, name_hash )
-    
-    if target_entities:
-      self.target_entities = target_entities
-    
-    self.name = name
-    return name
-    
-    target_entities = builder._getTargetEntities( source_entities )
-    
-    if target_entities:
-      names = sorted( entity.id for entity in target_entities )
-      name = simpleObjectSignature( names )
-    else:
-      names = sorted( entity.id for entity in source_entities )
-      name = simpleObjectSignature( names, name_hash )
-    
-    return name, target_entities
-
-  
-  #//-------------------------------------------------------//
-  
-  def   get(self):
-    return self.name
-  
-  #//-------------------------------------------------------//
-  
-  def   __getnewargs__(self):
-    return self.name, self.signature, self.targets, self.itargets, self.idep_keys
-  
-  #//-------------------------------------------------------//
-  
-  def   __bool__( self ):
-    return (self.signature is not None) and (self.targets is not None)
-  
-  #//-------------------------------------------------------//
-  
-  def   checkActual( self, vfile, built_node_names, reason ):
-    
-    if (built_node_names is not None) and (self.name not in built_node_names):
-      if reason is not None:
-        reason.setForceRebuild()
-      return False
-    
-    other = vfile.findEntity( self )
-    
-    if other is None:
-      if reason is not None:
-        reason.setNew()
-      return False
-    
-    if not self.signature:
-      if reason is not None:
-        reason.setNoSignature()
-      return False
-    
-    if self.signature != other.signature:
-      if reason is not None:
-        reason.setSignatureChanged()
-      return False
-    
-    targets   = other.targets
-    itargets  = other.itargets
-    idep_keys = other.idep_keys
-    
-    ideps = []
-    
-    if not _checkDeps( vfile, idep_keys, ideps, reason ):
-      return False
-    
-    if not _checkTargets( targets, reason ):
-      return False
-    
-    self.targets = targets
-    self.itargets = itargets
-    self.ideps = ideps
-    
-    return True
-  
-#//===========================================================================//
-
 @pickleable
 class   NodeEntity (EntityBase):
   
   __slots__ = (
-    'targets',
-    'itargets',
-    'ideps',
+    'name',
+    'signature',
+    
+    'builder',
+    'source_entities',
+    'dep_entities',
+    
+    'target_entities',
+    'itarget_entities',
+    'idep_entities',
     'idep_keys',
   )
   
   #//-------------------------------------------------------//
   
-  def   __new__( cls, name, signature = None, targets = None, itargets = None, idep_keys = None ):
+  def   __new__( cls, name = NotImplemented, signature = NotImplemented, targets = None, itargets = None, idep_keys = None,
+                 builder = None, source_entities = None, dep_entities = None ):
     
-    self = super(NodeEntity,cls).__new__(cls, name, signature)
+    self = super(NodeEntity,cls).__new__( cls, name, signature )
     
-    self.targets    = targets
-    self.itargets   = itargets
-    self.idep_keys  = idep_keys
+    if targets is not None:
+      self.target_entities    = targets
+      self.itarget_entities   = itargets
+      self.idep_keys          = idep_keys
+    else:
+      self.builder          = builder
+      self.source_entities  = source_entities
+      self.dep_entities     = dep_entities
     
     return self
   
   #//-------------------------------------------------------//
   
-  def   get(self):
+  def   get( self ):
     return self.name
   
   #//-------------------------------------------------------//
   
-  def   __getnewargs__(self):
+  def   __getnewargs__( self ):
     return self.name, self.signature, self.targets, self.itargets, self.idep_keys
   
   #//-------------------------------------------------------//
   
-  def   __bool__( self ):
-    return (self.signature is not None) and (self.targets is not None)
+  def   getTargets( self ):
+    builder = self.builder
+    return builder.makeEntities( builder.getTargetEntities( self.source_entities ) )
   
   #//-------------------------------------------------------//
   
-  def   checkActual( self, vfile, built_node_names, reason ):
+  def   getName( self ):
+    
+    hash = newHash( self.builder.name )
+    
+    name_entities = self.target_entities
+    if not name_entities:
+      name_entities = self.source_entities
+    
+    names = sorted( entity.id for entity in name_entities )
+    for name in names:
+      hash.update( name )
+    
+    return hash.digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   getSignature( self ):
+    
+    builder_signature = self.builder.signature
+    if builder_signature is None:
+      return None
+    
+    hash = newHash( builder_signature )
+    
+    for entity in self.dep_entities:
+      ent_sign = entity.signature
+      if not ent_sign:
+        return None
+      
+      hash.update( entity.id )
+      hash.update( ent_sign )
+    
+    for entity in self.source_entities:
+      entity_signature = entity.signature
+      if entity_signature is None:
+        return None
+      
+      hash.update( entity_signature )
+    
+    return hash.digest()
+  
+  #//-------------------------------------------------------//
+  
+  def   __getattr__(self, attr):
+    if attr == 'target_entities':
+      self.target_entities = targets = self.getTargets() 
+      return targets
+    
+    return super(NodeEntity, self).__getattr__( attr )
+
+  #//-------------------------------------------------------//
+  
+  _ACTUAL_IDEPS_CACHE = {}
+  
+  @staticmethod
+  def   _checkIdeps( vfile, idep_keys, idep_entities, reason, _actual_ideps_cache = _ACTUAL_IDEPS_CACHE ):
+    for key in idep_keys:
+      entity = vfile.getEntityByKey( key )
+      
+      if entity is None:
+        if reason is not None:
+          reason.setImplicitDepChanged()
+        return False
+      
+      entity_id = entity.id
+      
+      if entity_id not in _actual_ideps_cache:
+        actual_entity = entity.getActual()
+        if entity is actual_entity:
+          _actual_ideps_cache[ entity_id ] = key, entity
+        else:
+          new_key = vfile.replaceEntity( key, actual_entity )
+          _actual_ideps_cache[ entity_id ] = new_key, actual_entity
+          
+          if reason is not None:
+            reason.setImplicitDepChanged( entity )
+          return False
+            
+      idep_entities.append( entity )
+    
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   _saveIdeps( self, vfile, _actual_ideps_cache = _ACTUAL_IDEPS_CACHE ):
+    
+    keys = []
+    entities = []
+    new_entities = []
+    for entity in toSequence(self.idep_entities):
+      entity_id = entity.id
+      pair = _actual_ideps_cache.get( entity_id, None )
+      if pair is None:
+        if entity.signature is None:
+          raise ErrorUnactualEntity( entity )
+        
+        new_entities.append( entity )
+      else:
+        key, entity = pair
+        keys.append( key )
+      
+      entities.append( entity )
+    
+    keys[0:1] = vfile.addEntities( new_entities ) 
+    
+    self.idep_entities  = entities
+    self.idep_keys      = keys
+  
+  #//-------------------------------------------------------//
+  
+  @staticmethod
+  def   _checkTargets( entities, reason ):
+    if entities is None:
+      if reason is not None:
+        reason.setNoTargets()
+      return False
+    
+    for entity in entities:
+      if not entity.isActual():
+        if reason is not None:
+          reason.setTargetChanged( entity )
+        return False
+        
+    return True
+  
+  #//-------------------------------------------------------//
+  
+  def   checkActual( self, vfile, built_node_names = None, explain = False ):
+    
+    reason = NodeStaleReason( self.builder, self.source_entities, self.target_entities ) if explain else None
+    
+    self.target_entities = []
+    self.itarget_entities = []
+    self.idep_entities = []
     
     if (built_node_names is not None) and (self.name not in built_node_names):
       if reason is not None:
@@ -542,24 +483,73 @@ class   NodeEntity (EntityBase):
         reason.setSignatureChanged()
       return False
     
-    targets   = other.targets
-    itargets  = other.itargets
-    idep_keys = other.idep_keys
-    
     ideps = []
-    
-    if not _checkDeps( vfile, idep_keys, ideps, reason ):
+    if not self._checkIdeps( vfile, other.idep_keys, ideps, reason ):
       return False
     
-    if not _checkTargets( targets, reason ):
+    if not self._checkTargets( other.target_entities, reason ):
       return False
     
-    self.targets = targets
-    self.itargets = itargets
-    self.ideps = ideps
+    self.target_entities = other.target_entities
+    self.itarget_entities = other.itarget_entities
+    self.idep_entities = ideps
     
     return True
+
+  #//-------------------------------------------------------//
   
+  def   save( self, vfile ):
+    
+    for entity in self.target_entities:
+      if entity.signature is None:
+        raise ErrorUnactualEntity( entity )
+    
+    self._saveIdeps( vfile )
+    
+    vfile.addEntity( self )
+  
+  #//-------------------------------------------------------//
+  
+  def   addTargets( self, entities, tags = None ):
+    self.target_entities.extend( self.builder.makeEntities( toSequence(entities), tags ) )
+  
+  def   addTargetFiles( self, entities, tags = None ):
+    self.target_entities.extend( self.builder.makeFileEntities( toSequence(entities), tags ) )
+  
+  add = addTargets
+  addFiles = addTargetFiles
+  
+  #//-------------------------------------------------------//
+  
+  def   addSideEffects( self, entities, tags = None ):
+    self.itarget_entities.extend( self.builder.makeEntities( toSequence(entities), tags ) )
+  
+  def   addSideEffectFiles( self, entities, tags = None ):
+    self.itarget_entities.extend( self.builder.makeFileEntities( toSequence(entities), tags ) )
+  
+  #//-------------------------------------------------------//
+  
+  def   addDependencies( self, entities, tags = None ):
+    self.idep_entities.extend( self.builder.makeEntities( toSequence(entities), tags ) )
+  
+  def   addDependencyFiles( self, entities, tags = None ):
+    self.idep_entities.extend( self.builder.makeFileEntities( toSequence(entities), tags ) )
+
+#//===========================================================================//
+
+class _NodeBatchTargets ( object ):
+  
+  def   __init__( self, node_entities_map ):
+    self.node_entities_map = node_entities_map
+    
+  #//-------------------------------------------------------//
+  
+  def   __getitem__( self, source ):
+    try:
+      return self.node_entities_map[ source ]
+    except KeyError:
+      raise ErrorNodeUnknownSource( source )
+
 #//===========================================================================//
 
 class NodeFilter (object):
@@ -668,14 +658,19 @@ class NodeBaseNameFilter( NodeFilter ):
 #noinspection PyAttributeOutsideInit
 class Node (object):
   
-  __slots__ = \
-  (
+  __slots__ = (
     'builder',
-    'builder_data',
     'options',
     'cwd',
     
-    'impl_nodes',
+    'initiated',
+    'depends_called',
+    'replace_called',
+    'split_called',
+    'is_actual',
+    
+    'node_entities',
+    'node_entities_map',
     
     'sources',
     'source_entities',
@@ -694,90 +689,36 @@ class Node (object):
 
     self.builder = builder
     self.options = getattr( builder, 'options', None )
-    self.builder_data = None
     
     if cwd is None:
       self.cwd = os.path.abspath( os.getcwd() )
     else:
       self.cwd = cwd
     
+    self.initiated      = False
+    self.depends_called = False
+    self.replace_called = False
+    self.split_called   = False
+    self.is_actual      = False
+    
     self.sources = tuple(toSequence( sources ))
     self.dep_nodes = set()
     self.dep_entities = []
-    
-    self.target_entities = None
   
   #//=======================================================//
   
-  def   isBatch(self):
-    return False
+  def   shrink(self):
+    self.cwd = None
+    self.dep_nodes = None
+    self.sources = None
+    self.node_entities = None
+    self.node_entities_map = None
+    
+    self.builder = None
+    self.options = None
   
   #//=======================================================//
   
-  def   getWeight( self ):
-    return self.builder.getWeight( self )
-  
-  #//=======================================================//
-  
-  def   _split( self, src_entities ):
-    
-    other = object.__new__( self.__class__ )
-    
-    other.builder           = self.builder
-    other.options           = self.options
-    other.builder_data      = None
-    other.cwd               = self.cwd
-    other.sources           = tuple()
-    other.source_entities   = src_entities
-    other.dep_nodes         = self.dep_nodes
-    other.dep_entities      = self.dep_entities
-    other.target_entities   = None
-    
-    return other
-  
-  #//=======================================================//
-  
-  def   split( self, src_entities ):
-    
-    src_entities = tuple( toSequence( src_entities ) )
-    
-    other = self._split( src_entities )
-    
-    if __debug__:
-      self_source_entities = frozenset(self.source_entities)
-      for src_entity in src_entities:
-        if src_entity not in self_source_entities:
-          raise ErrorNodeSplitUnknownSource( self, src_entity )
-    
-    return other
-  
-  #//=======================================================//
-
-  def   __getattr__(self, attr):
-    if attr == 'name':
-      return self._setName()
-
-    if attr == 'signature':
-      return self._setSignature()
-
-    if attr == 'source_entities':
-      return self._setSourceEntities()
-
-    if attr in [ 'itarget_entities', 'idep_entities' ]:
-      raise ErrorNoTargets( self )
-
-    raise AttributeError( "Node has not attribute '%s'" % (attr,) )
-
-  #//=======================================================//
-  
-  def   getNames(self):
-    return (self.name,)
-  
-  def   getNamesAndSignatures(self):
-    return ((self.name,self.signature),)
-  
-  #//=======================================================//
-
   def   depends( self, dependencies ):
     
     dep_nodes = self.dep_nodes
@@ -798,12 +739,40 @@ class Node (object):
   
   #//=======================================================//
   
-  def   getDepNodes(self):
-    return self.dep_nodes
+  def   __getattr__(self, attr):
+    if attr in [ 'target_entities', 'itarget_entities', 'idep_entities' ]:
+      raise ErrorNoTargets( self )
+
+    raise AttributeError( "Node has not attribute '%s'" % (attr,) )
   
   #//=======================================================//
   
-  def   updateDepEntities(self):
+  def   _setSourceEntities(self):
+    entities = []
+    
+    makeEntity = self.builder.makeEntity
+    
+    for src in self.sources:
+      
+      if isinstance( src, Node ):
+        entities += src.target_entities
+      
+      elif isinstance( src, NodeFilter ):
+        entities += src.getEntities()
+      
+      elif isinstance( src, EntityBase ):
+        entities.append( src )
+      
+      else:
+        entity = makeEntity( src )
+        entities.append( entity )
+    
+    self.sources = None
+    self.source_entities = tuple(entities)
+  
+  #//=======================================================//
+  
+  def   _updateDepEntities(self):
     dep_nodes = self.dep_nodes
     
     if not dep_nodes:
@@ -822,198 +791,211 @@ class Node (object):
   
   #//=======================================================//
   
-  def   getDepEntities(self):
-    self.updateDepEntities()
-    return self.dep_entities
-  
-  #//=======================================================//
-  
   def   initiate(self):
-    with Chdir(self.cwd):
-      self.builder = self.builder.initiate()
-
-  #//=======================================================//
-  
-  def   _getNameHash( self ):
-    return newHash( dumpSimpleObject( self.builder.name ) )
-  
-  #//=======================================================//
-  
-  def   _getSignatureHash( self ):
-
-    builder_signature = self.builder.signature
-    if builder_signature is None:
-      return None
-
-    sign = [ builder_signature ]
-    
-    for entity in self.getDepEntities():
-      if entity.isNull():
-        return None
-      
-      sign.append( entity.name )
-      sign.append( entity.signature )
-    
-    sign_hash = newHash( dumpSimpleObject( sign ) )
-
-    return sign_hash
-  
-  #//=======================================================//
-  
-  def   _setName( self ):
-    
-    name_hash = self._getNameHash()
-    
-    source_entities = self.getSourceEntities()
-    
-    name, target_entities = _genNodeEntityName( self.builder, source_entities, name_hash )
-    
-    if target_entities:
-      self.target_entities = target_entities
-    
-    self.name = name
-    return name
-
-  #//=======================================================//
-  
-  def   _setSignature( self ):
-    sign_hash = self._getSignatureHash()
-    self.signature = sign = _genNodeEntitySignature( self.getSourceEntities(), sign_hash )
-    return sign
-  
-  #//=======================================================//
-  
-  def   _setSourceEntities(self):
-    entities = []
-    
-    makeEntity = self.builder.makeEntity
-    
-    with Chdir(self.cwd):
-      for src in self.sources:
+    if self.initiated:
+      if self.sources:            # reinitialize the replaced source entities
+        self._setSourceEntities()
+    else:
+      with Chdir(self.cwd):
+        self.builder = self.builder.initiate()
+        self._setSourceEntities()
+        self._updateDepEntities()
         
-        if isinstance( src, Node ):
-          entities += src.target_entities
-        
-        elif isinstance( src, NodeFilter ):
-          entities += src.getEntities()
-        
-        elif isinstance( src, EntityBase ):
-          entities.append( src )
-        
-        else:
-          entity = makeEntity( src )
-          entities.append( entity )
+      self.initiated = True
     
-    self.sources = tuple()
-    entities = tuple(entities)
-    self.source_entities = entities
-    return entities
-  
-  #//=======================================================//
-  
-  def   getSources(self):
-    return tuple( src.get() for src in self.getSourceEntities() )
-  
-  #//=======================================================//
-  
-  def   getSourceEntities(self):
-    return self.source_entities
-  
-  #//=======================================================//
-  
-  def   getSourceNodes(self):
-    nodes = []
-    
-    for src in self.sources:
-      if isinstance(src, Node):
-        nodes.append( src )
-      
-      elif isinstance(src, NodeFilter):
-        nodes.append( src.getNode() )
-        
-    return nodes
-  
-  #//=======================================================//
-  
-  def   shrink(self):
-    self.cwd = None
-    self.dep_nodes = None
-    # self.dep_entities = None
-    self.sources = None
-    # self.source_entities = None
-    
-    self.name = None
-    self.signature = None
-    self.builder = None
-    self.builder_data = None
-    self.options = None
-  
-  #//=======================================================//
-  
-  def   isBuilt(self):
-    return self.builder is None
-  
-  #//=======================================================//
-  
-  def   build(self):
-    self.target_entities = None
-    self.itarget_entities = []
-    self.idep_entities = []
-    
-    builder = self.builder
-    
-    output = builder.build( self )
-    
-    if self.target_entities is None:
-      raise ErrorNoTargets( self )
-    
-    return output
   
   #//=======================================================//
   
   def   buildDepends( self ):
-    return self.builder.depends( self )
+    if self.depends_called:
+      return None
+      
+    nodes = self.builder.depends( self.source_entities )
+    self.depends_called = True
+    return nodes
   
   #//=======================================================//
   
   def   buildReplace( self ):
     
-    sources = self.builder.replace( self )
+    if self.replace_called:
+      return False
+    
+    sources = self.builder.replace( self.source_entities )
     if sources is None:
       return False
     
-    self.sources = tuple( toSequence( sources ) )
-    del self.source_entities
+    self.sources = tuple( toSequence( sources ) )   # source_entities will be reinitialized later
     
     return True
   
   #//=======================================================//
   
-  def   buildSplit( self ):
-    self.updateDepEntities()
-    groups = self.builder.split( self )
+  def   _splitBatch( self, vfile, built_node_names, explain ):
+    builder = self.builder
+    dep_entities = self.dep_entities
+    node_entities = []
+    not_actual_nodes = {}
+    not_actual_sources = []
+    for src in self.source_entities:
+      node_entity = NodeEntity( builder = builder, source_entities = (src,), dep_entities = dep_entities )
+      if not node_entity.checkActual( vfile, built_node_names, explain ):
+        not_actual_nodes[ src ] = node_entity
+        not_actual_sources.append( src )
+      
+      node_entities.append( node_entity )
+    
+    self.node_entities  = node_entities
+    self.is_actual      = True       # we don't need to check actual status anymore
+    
+    if not not_actual_nodes:
+      return None
+    
+    groups = builder.split( not_actual_sources )
     if not groups:
+      groups = not_actual_sources   # this should never happen, looks like a bug in the builder
+    
+    split_nodes = []
+    
+    for group in groups:
+      group = tuple(toSequence( group ))
+      
+      node_entities = tuple( not_actual_nodes[src] for src in group )
+      node = self._split( group, node_entities )
+      node.node_entities_map = not_actual_nodes
+      
+      split_nodes.append( node )
+    
+    return split_nodes
+  
+  #//=======================================================//
+  
+  def   buildSplit( self, vfile, built_node_names = None, explain = False ):
+    if self.split_called:
       return None
     
-    if len(groups) < 2:
+    self.split_called = True
+    
+    builder = self.builder
+    dep_entities = self.dep_entities
+    
+    if builder.isBatch():
+      return self._splitBatch( vfile, built_node_names, explain )
+    
+    #//-------------------------------------------------------//
+    sources = self.source_entities
+    
+    groups = self.builder.split( sources )
+    
+    if (not groups) or (len(groups) < 2):                 # No source groups, just build the sources
+      node_entity = NodeEntity( builder = builder,
+                                source_entities = sources,
+                                dep_entities = dep_entities )
+      
+      self.is_actual = node_entity.checkActual( vfile, built_node_names, explain )
+      self.node_entities = (node_entity,)
       return None
     
-    return tuple( self.split( group ) for group in groups )
+    #//-------------------------------------------------------//
+    # create split Nodes
+    
+    node_entities = []
+    split_nodes = []
+    for group in groups:
+      
+      group = toSequence( group )
+      
+      node_entity = NodeEntity( builder = builder,
+                                source_entities = group,
+                                dep_entities = dep_entities )
+      
+      if not node_entity.checkActual( vfile, built_node_names, explain ):
+        node = self._split( group, (node_entity,) )
+        split_nodes.append( node_entity )
+      
+      node_entities.append( node_entity )
+    
+    self.node_entities = node_entities
+    self.is_actual = True       # we don't need to check actual status anymore
+    
+    return split_nodes
+  
+  #//=======================================================//
+  
+  def   _split( self, source_entities, node_entities ):
+    
+    other = object.__new__( self.__class__ )
+    
+    other.builder         = self.builder
+    other.source_entities = source_entities
+    other.node_entities   = node_entities
+    other.initiated       = True
+    other.depends_called  = True
+    other.replace_called  = True
+    other.split_called    = True
+    other.is_actual       = False
+    
+    return other
+  
+  #//=======================================================//
+  
+  def   _populateTargets( self ):
+    
+    node_entities = self.node_entities
+    
+    if len(node_entities) == 1:
+      node_entity = node_entities[0]
+      
+      self.target_entities  = node_entity.targets
+      self.itarget_entities = node_entity.itargets
+      self.idep_entities    = node_entity.ideps
+    
+    else:
+      
+      targets   = []
+      itargets  = []
+      ideps  = []
+      
+      for node_entity in self.node_entities:
+        targets   += node_entity.target_entities
+        itargets  += node_entity.itarget_entities
+        ideps     += node_entity.idep_entities
+        
+      self.target_entities = targets
+      self.itarget_entities = itargets
+      self.idep_entities = ideps
+  
+  #//=======================================================//
+  
+  def   isActual( self ):
+    
+    if not self.is_actual:
+      return False
+    
+    self._populateTargets()
+    return True
+  
+  #//=======================================================//
+  
+  def   build( self ):
+    
+    targets = self.node_entities
+    if len(targets) == 1:
+      output = self.builder.build( self.source_entities, targets )
+    else:
+      targets = _NodeBatchTargets( self.node_entities_map )
+      output = self.builder.buildBatch( self.source_entities, targets )
+    
+    self._populateTargets()
+    
+    return output
 
   #//=======================================================//
   
   def   save( self, vfile ):
-    if __debug__:
-      _ensureActualEntities( self.target_entities )
-      _ensureActualEntities( self.idep_entities )
-
-    idep_keys = vfile.addEntities( self.idep_entities )
-    
-    node_entity = NodeEntity( name = self.name, signature = self.signature,
-                            targets = self.target_entities, itargets = self.itarget_entities, idep_keys = idep_keys )
-    
-    vfile.addEntity( node_entity )
-
+    for node_entity in self.node_entities:
+      node_entity.save( vfile )
+  
   #//=======================================================//
   
   def   clear( self, vfile ):
@@ -1054,41 +1036,54 @@ class Node (object):
       pass
     
     return node_keys
-    
+  
   #//=======================================================//
   
-  def   checkActual( self, vfile, built_node_names = None, explain = False ):
+  def   getWeight( self ):
+    return self.builder.getWeight( self )
+  
+  #//=======================================================//
+  
+  def   getNames(self):
+    return (entity.name for entity in self.node_entities)
+  
+  def   getNamesAndSignatures(self):
+    return ((entity.name, entity.signature) for entity in self.node_entities)
+  
+  #//=======================================================//
+  
+  def   getDepNodes(self):
+    return self.dep_nodes
+  
+  #//=======================================================//
+  
+  def   getSources(self):
+    return tuple( src.get() for src in self.getSourceEntities() )
+  
+  #//=======================================================//
+  
+  def   getSourceEntities(self):
+    return self.source_entities
+  
+  #//=======================================================//
+  
+  def   getSourceNodes(self):
+    nodes = []
     
-    node_entity = NodeEntity( name = self.name, signature = self.signature )
-    
-    reason = NodeStaleReason( self.builder, self.source_entities, self.target_entities ) if explain else None
-    
-    if not node_entity.checkActual( vfile, built_node_names, reason ):
-      return False
+    for src in self.sources:
+      if isinstance(src, Node):
+        nodes.append( src )
       
-    self.target_entities  = node_entity.targets
-    self.itarget_entities = node_entity.itargets
-    self.idep_entities    = node_entity.ideps
-    
-    return True
-    
-  #//=======================================================//
-  
-  def   setNoTargets( self ):
-    self.target_entities = []
+      elif isinstance(src, NodeFilter):
+        nodes.append( src.getNode() )
+        
+    return nodes
   
   #//=======================================================//
   
-  def   addTargets( self, targets, side_effects = None, implicit_deps = None, tags = None ):
-    entity_maker = self.builder.makeEntity
-    
-    if self.target_entities is None:
-      self.target_entities = []
-    
-    self.target_entities.extend(  entity_maker( entity, tags = tags ) for entity in toSequence(targets) )
-    self.itarget_entities.extend( entity_maker( entity )              for entity in toSequence(side_effects) )
-    self.idep_entities.extend(    entity_maker( entity )              for entity in toSequence(implicit_deps) )
-
+  def   isBuilt(self):
+    return self.builder is None
+  
   #//=======================================================//
   
   def   at(self, tags ):
@@ -1127,67 +1122,27 @@ class Node (object):
   #//=======================================================//
   
   def   get(self):
-    targets = self.getTargets()
+    targets = self.getTargetEntities()
     if len(targets) == 1:
-      return targets[0]
+      return targets[0].get()
     
-    return targets
-  
-  #//=======================================================//
-  
-  def   getTargets(self):
-    return tuple( target.get() for target in self.getTargetEntities() )
+    return tuple( target.get() for target in targets )
   
   #//=======================================================//
   
   def   getTargetEntities(self):
-    target_entities = self.target_entities
-    if target_entities is None:
-      raise ErrorNoTargets( self )
-    
-    return target_entities
-  
-  #//=======================================================//
-  
-  def   getBuildTargetEntities(self):
-    return self.getTargetEntities()
-  
-  #//=======================================================//
-
-  def   getSideEffectEntities(self):
-    return self.itarget_entities
-  
-  #//=======================================================//
-  
-  def   removeTargets(self):
-    for entity in self.getTargetEntities():
-      entity.remove()
-    
-    for entity in self.getSideEffectEntities():
-      entity.remove()
-  
-  #//=======================================================//
-  
-  def   _pullTargets( self, nodes ):
-    targets   = []
-    itargets  = []
-    ideps  = []
-    
-    for node in nodes:
-      targets   += node.target_entities
-      itargets  += node.itarget_entities
-      ideps     += node.idep_entities
-      
-    self.target_entities = targets
-    self.itarget_entities = itargets
-    self.idep_entities = ideps
+    return self.target_entities
   
   #//=======================================================//
   
   def   getBuildStr( self, brief = True ):
     try:
-      args = self.builder.getBuildStrArgs( self, brief = brief )
+      targets = getattr( self, 'target_entities', None )
+      
+      args = self.builder.getTraceArgs( self.source_entities, targets, brief )
+      
       return _getBuildStr( args, brief )
+    
     except Exception as ex:
       if 'BuilderInitiator' not in str(ex):
         print("getBuildStr: ex: %s, %s" % (ex,ex.args))
@@ -1237,277 +1192,3 @@ class Node (object):
   def   printTargets(self):
     targets = [ t.get() for t in getattr(self, 'target_entities', []) ]
     logInfo("node '%s' targets: %s" % (self, targets))
-  
-#//===========================================================================//
-
-#noinspection PyAttributeOutsideInit
-class BatchNode (Node):
-  
-  __slots__ = \
-    (
-      'node_entities',
-      'changed_source_entities',
-    )
-  
-  #//=======================================================//
-  
-  def   isBatch(self):
-    return True
-  
-  #//=======================================================//
-  
-  def   getNames(self):
-    return (entity.name for entity, ideps in self.node_entities.values())
-  
-  def   getNamesAndSignatures(self):
-    return ((entity.name, entity.signature) for entity, ideps in self.node_entities.values())
-  
-  #//=======================================================//
-  
-  def   __getattr__(self, attr):
-    if attr in ['name', 'signature']:
-      raise AttributeError("Attribute '%s' is not applicable for BatchNode" % (attr,))
-
-    if attr == 'node_entities':
-      return self._setNodeEntities()
-
-    if attr == 'changed_source_entities':
-      return self._setSourceEntities()
-
-    return super(BatchNode,self).__getattr__( attr )
-
-  #//=======================================================//
-  
-  def   split( self, src_entities ):
-    src_entities = tuple( toSequence( src_entities ) )
-    
-    other = self._split( src_entities )
-    
-    other.changed_source_entities = src_entities
-    other_node_entities = {}
-    other.node_entities = other_node_entities
-    
-    node_entities = self.node_entities
-    for src_entity in src_entities:
-      try:
-        other_node_entities[ src_entity ] = node_entities[ src_entity ]
-      except KeyError:
-        raise ErrorNodeSplitUnknownSource( self, src_entity )
-    
-    return other
-  
-  #//=======================================================//
-
-  def   _setNodeEntities( self ):
-
-    name_hash = self._getNameHash()
-    sign_hash = self._getSignatureHash()
-    
-    node_entities = {}
-    
-    for src_entity in self.source_entities:
-      
-      src_entities = (src_entity,)
-      
-      name, target_entities = _genNodeEntityName( self.builder, src_entities, name_hash )
-      signature = _genNodeEntitySignature( src_entities, sign_hash )
-      
-      ideps = []
-      node_entities[ src_entity ] = NodeEntity( name, signature, target_entities ), ideps
-    
-    self.node_entities = node_entities
-    return node_entities
-      
-  #//=======================================================//
-  
-  def   _setSourceEntities(self):
-    src_entities = super(BatchNode,self)._setSourceEntities()
-    self.changed_source_entities = src_entities
-    return src_entities
-  
-  #//=======================================================//
-  
-  def   getSourceEntities(self):
-    return self.changed_source_entities
-  
-  #//=======================================================//
-  
-  def   save( self, vfile ):
-    
-    for src_entity in self.changed_source_entities:
-      node_entity, ideps = self.node_entities[ src_entity ]
-      
-      targets = node_entity.targets
-      
-      if targets is None:
-        continue
-      
-      if __debug__:
-        _ensureActualEntities( targets )
-        _ensureActualEntities( ideps )
-
-      node_entity.idep_keys = vfile.addEntities( ideps )
-      
-      vfile.addEntity( node_entity )
-  
-  #//=======================================================//
-  
-  def   clear( self, vfile ):
-    targets = []
-    itargets = []
-    ideps = []
-    node_keys = []
-    
-    for src_entity in self.source_entities:
-      node_entity, src_ideps = self.node_entities[ src_entity ]
-      
-      other_key = vfile.findEntityKey( node_entity )
-      
-      if other_key is None:
-        if node_entity.targets is None:
-          node_entity.targets = tuple()
-        
-        if node_entity.itargets is None:
-          node_entity.itargets = tuple()
-          
-      else:
-        other = vfile.getEntityByKey( other_key )
-        
-        node_keys.append( other_key )
-        
-        node_entity.targets = other.targets
-        node_entity.itargets = other.itargets
-        
-        if other.targets is not None:
-          targets   += other.targets
-          itargets  += other.itargets
-          ideps     += src_ideps
-              
-    self.target_entities  = targets
-    self.itarget_entities = itargets
-    self.idep_entities    = ideps
-    
-    try:
-      self.builder.clear( self )
-    except Exception:
-      pass
-  
-    return node_keys
-  
-  #//=======================================================//
-  
-  def   build(self):
-    output = self.builder.buildBatch( self )
-    self._populateTargets()
-    
-    return output
-  
-  #//=======================================================//
-  
-  def   _populateTargets( self ):
-    targets   = []
-    itargets  = []
-    ideps  = []
-    
-    for src_entity in self.source_entities:
-      node_entity, src_ideps = self.node_entities[ src_entity ]
-      node_targets = node_entity.targets
-      if node_targets is None:
-        raise ErrorNoSrcTargets( self, src_entity )
-      
-      targets += node_targets
-      itargets += node_entity.itargets
-      ideps += src_ideps
-    
-    self.target_entities = targets
-    self.itarget_entities = itargets
-    self.idep_entities = ideps
-  
-  #//=======================================================//
-  
-  def   checkActual( self, vfile, built_node_names = None, explain = False ):
-    
-    changed_sources = []
-    targets = []
-    itargets = []
-    ideps = []
-    
-    for src_entity in self.source_entities:
-      node_entity, ideps = self.node_entities[ src_entity ]
-      
-      reason = NodeStaleReason( self.builder, (src_entity,), node_entity.targets ) if explain else None
-      
-      if not node_entity.checkActual( vfile, built_node_names, reason ):
-        node_entity.targets = None
-        changed_sources.append( src_entity )
-      
-      elif not changed_sources:
-        targets   += node_entity.targets
-        itargets  += node_entity.itargets
-        ideps     += node_entity.ideps
-    
-    if changed_sources:
-      self.changed_source_entities = changed_sources
-      return False
-    
-    self.target_entities  = targets
-    self.itarget_entities = itargets
-    self.idep_entities    = ideps
-    
-    return True
-  
-  #//=======================================================//
-  
-  def   addTargets( self, targets, side_effects = None, implicit_deps = None, tags = None ):
-    raise Exception( "addTargets() is not allowed for batch build. addSourceTargets() must be used instead." )
-  
-  #//=======================================================//
-  
-  def   addSourceTargets( self, src_entity, targets, side_effects = None, implicit_deps = None, tags = None ):
-    
-    try:
-      node_entity, node_ideps = self.node_entities[ src_entity ]
-    except KeyError:
-      raise ErrorNodeUnknownSource( src_entity )
-
-    entity_maker = self.builder.makeEntity
-    
-    node_targets = node_entity.targets
-    node_itargets = node_entity.itargets
-    
-    if node_targets is None: node_entity.targets = node_targets = []
-    if node_itargets is None: node_entity.itargets = node_itargets = []
-    
-    node_targets.extend(  entity_maker( entity, tags = tags)    for entity in toSequence( targets ) )
-    node_itargets.extend( entity_maker( entity )                for entity in toSequence( side_effects ) )
-    node_ideps.extend(    entity_maker( entity )                for entity in toSequence( implicit_deps ) )
-      
-  #//=======================================================//
-  
-  def   setNoTargets( self ):
-    for src_entity in self.changed_source_entities:
-      node_entity, node_ideps = self.node_entities[ src_entity ]
-      node_entity.targets = []
-  
-  #//=======================================================//
-  
-  def   getBuildTargetEntities(self):
-    targets = []
-    
-    for src_entity in self.changed_source_entities:
-      node_entity, ideps = self.node_entities[ src_entity ]
-      node_targets = node_entity.targets
-      if node_targets:
-        targets += node_targets
-    
-    return targets
-  
-  #//=======================================================//
-  
-  def   shrink(self):
-    super( BatchNode, self).shrink()
-    
-    self.node_entities = None
-    self.changed_source_entities = None
-
-  

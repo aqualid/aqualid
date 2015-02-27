@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2014 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -834,7 +834,7 @@ class _NodesBuilder (object):
     changed = False
     
     for node in nodes:
-      if (node_locker is not None) and (not node_locker.lock( node, self.node_states )):
+      if (node_locker is not None) and (not node_locker.lock( node, self.building_nodes )):
         continue
       
       node_state = self._getNodeState( node )

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2014 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -205,7 +205,11 @@ class Builder (object):
     self = super(Builder, cls).__new__(cls)
     self.makeEntity = self.makeSimpleEntity
     
-    self.__is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
+    is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
+    self.__is_batch = is_batch
+    if is_batch:
+      self.batch_groups = options.batch_groups.get()
+      self.batch_size = options.batch_size.get()
     
     return BuilderInitiator( self, options, args, kw )
   
@@ -216,7 +220,7 @@ class Builder (object):
     self.build_path = options.build_path.get()
     self.relative_build_paths = options.relative_build_paths.get()
     self.file_entity_type = _fileSinature2Type( options.file_signature.get() )
-    self.env = options.env.get().dump()
+    self.env = options.env.get()
   
   #//-------------------------------------------------------//
 
@@ -270,7 +274,7 @@ class Builder (object):
   
   def   isActual( self, source_entities, target_entities ):
     """
-    Checks that source entities are up to date. It called only if all other checks were successful.   
+    Checks that source entities are up to date. It called only if all other checks were successful.
     :param source_entities: Building source entities 
     :param target_entities: Previous target entities 
     :return: True if is up to date otherwise False
@@ -279,12 +283,16 @@ class Builder (object):
   
   #//-------------------------------------------------------//
 
-  def   clear( self, node ):
-    node.removeTargets()
+  def   clear( self, target_entities, side_effect_entities ):
+    for entity in target_entities:
+      entity.remove()
+    
+    for entity in side_effect_entities:
+      entity.remove()
   
   #//-------------------------------------------------------//
   
-  def   depends( self, node ):
+  def   depends( self, source_entities ):
     """
     Could be used to dynamically generate dependency nodes 
     Returns list of dependency nodes or None
@@ -293,67 +301,62 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   replace( self, node ):
+  def   replace( self, source_entities ):
     """
     Could be used to dynamically replace sources
-    Returns list of nodes/values or None (if sources are not changed)
+    Returns list of nodes/entities or None (if sources are not changed)
     """
     return None
   
   #//-------------------------------------------------------//
   
-  def   split( self, node ):
+  def   split( self, source_entities ):
     """
     Could be used to dynamically split building sources to several nodes
-    Returns list of groups of source values or None
+    Returns list of groups of source entities or None
     """
     return None
   
   #//-------------------------------------------------------//
   
-  def   splitSingle( self, node ):
+  def   splitSingle( self, source_entities ):
     """
     Implementation of split for splitting one-by-one 
     """
-    return node.getSourceEntities()
+    return source_entities
   
   #//-------------------------------------------------------//
   
-  def   splitBatch( self, node ):
+  def   splitBatch( self, source_entities ):
     """
     Implementation of split for splitting to batch groups of batch size  
     """
-    num_groups = node.options.batch_groups.get()
-    group_size = node.options.batch_size.get()
-    
-    return groupItems( node.getSourceEntities(), num_groups, group_size )
+    return groupItems( source_entities, self.batch_groups, self.batch_size )
   
   #//-------------------------------------------------------//
   
-  def   splitBatchByBuildDir( self, node ):
+  def   splitBatchByBuildDir( self, source_entities ):
     """
     Implementation of split for grouping sources by output  
     """
-    src_files = node.getSourceEntities()
-    
-    num_groups = node.options.batch_groups.get()
-    group_size = node.options.batch_size.get()
+    num_groups = self.batch_groups
+    group_size = self.batch_size
     
     if self.relative_build_paths:
-      groups = groupPathsByDir( src_files, num_groups, group_size, pathGetter = operator.methodcaller('get') )
+      groups = groupPathsByDir( source_entities, num_groups, group_size, pathGetter = operator.methodcaller('get') )
     else:
-      groups = groupItems( src_files, num_groups, group_size )
+      groups = groupItems( source_entities, num_groups, group_size )
     
     return groups
   
   #//-------------------------------------------------------//
   
-  def   getWeight( self, node ):
-    return len(node.getSourceEntities())
+  def   getWeight( self, source_entities ):
+    return len(source_entities)
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     """
     Builds a node
     Returns a build output string or None
@@ -362,7 +365,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
+  def   buildBatch( self, source_entities, targets ):
     """
     Builds a node
     Returns a build output string or None
@@ -384,17 +387,17 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getTraceSources( self, node, brief ):
-    return node.getSourceEntities()
+  def   getTraceSources( self, source_entities, brief ):
+    return source_entities
 
   #//-------------------------------------------------------//
   
-  def   getTraceTargets( self, node, brief ):
-    return node.getBuildTargetEntities()
+  def   getTraceTargets( self, target_entities, brief ):
+    return target_entities
 
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
+  def   getTraceArgs( self, source_entities, target_entities, brief ):
     
     try:
       name = self.getTraceName( brief )
@@ -402,12 +405,12 @@ class Builder (object):
       name = ''
     
     try:
-      sources = self.getTraceSources( node, brief )
+      sources = self.getTraceSources( source_entities, brief )
     except Exception:
       sources = None
 
     try:
-      targets = self.getTraceTargets( node, brief )
+      targets = self.getTraceTargets( target_entities, brief )
     except Exception:
       targets = None
     
@@ -532,11 +535,11 @@ class Builder (object):
   
   def   makeFileEntities( self, entities, tags = None ):
     make_entity = self.makeFileEntity
-    return [ make_entity( entity, tags = tags ) for entity in entities ]
+    return ( make_entity( entity, tags = tags ) for entity in entities )
   
   def   makeEntities( self, entities, tags = None ):
     make_entity = self.makeEntity
-    return [ make_entity( entity, tags = tags ) for entity in entities ]
+    return ( make_entity( entity, tags = tags ) for entity in entities )
   
   #//-------------------------------------------------------//
   
@@ -553,7 +556,7 @@ class Builder (object):
   def   execCmdResult(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):
     
     if env is None:
-      env = self.env
+      env = self.env.dump()
     
     if cwd is None:
       cwd = self.getBuildPath()

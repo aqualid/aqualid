@@ -53,15 +53,16 @@ class   EntityBase (object):
   
   def   __new__( cls, name, signature, tags = None ):
     
-    if not name:
-      raise ErrorEntityNameEmpty()
-    
     self = super(EntityBase,cls).__new__(cls)
     
-    self.id = simpleObjectSignature( (name, cls.__name__, cls.__module__) )
-    self.name = name
+    if name is not NotImplemented:
+      if not name:
+        raise ErrorEntityNameEmpty()
+      self.name = name
+    
     if signature is not NotImplemented:
       self.signature = signature
+    
     self.tags = frozenset( toSequence(tags) ) if tags else None
     
     return self
@@ -81,6 +82,16 @@ class   EntityBase (object):
   
   #//-------------------------------------------------------//
   
+  
+  def   getId(self):
+    cls = self.__class__
+    return simpleObjectSignature( (self.name, cls.__name__, cls.__module__) )
+  #//-------------------------------------------------------//
+  
+  def   getName(self):
+    raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
+  #//-------------------------------------------------------//
+  
   def   getSignature(self):
     raise NotImplementedError( "Abstract method. It should be implemented in a child class." )
   
@@ -90,6 +101,12 @@ class   EntityBase (object):
     if attr == 'signature':
       self.signature = signature = self.getSignature()
       return signature
+    elif attr == 'name':
+      self.name = name = self.getName()
+      return name
+    elif attr == 'id':
+      self.name = name = self.getName()
+      return name
     
     raise AttributeError("Unknown attribute: '%s'" % (attr,))
   
@@ -135,11 +152,6 @@ class   EntityBase (object):
 
   def   __str__(self):
     return castStr(self.get())
-  
-  #//-------------------------------------------------------//
-  
-  def   isNull( self ):
-    return self.signature is None
   
   #//-------------------------------------------------------//
   

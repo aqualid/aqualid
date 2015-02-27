@@ -41,10 +41,6 @@ class   ErrorFileEntityNoName( AqlException ):
 
 class   FileEntityBase (EntityBase):
   
-  __slots__ = ('is_actual',)
-  
-  #//-------------------------------------------------------//
-  
   def   __new__( cls, name, signature = NotImplemented, tags = None ):
     
     if isinstance(name, FileEntityBase):
@@ -59,8 +55,6 @@ class   FileEntityBase (EntityBase):
     name = os.path.normcase( os.path.abspath( name ) )
       
     self = super(FileEntityBase, cls).__new__( cls, name, signature, tags = tags )
-    self.is_actual = False
-    
     return self
 
   #//-------------------------------------------------------//
@@ -88,16 +82,11 @@ class   FileEntityBase (EntityBase):
   #//-------------------------------------------------------//
 
   def   getActual(self):
-    if self.is_actual:
-      return self
-    
     signature = self.getSignature()
     if self.signature == signature:
-      self.is_actual = True
       return self
     
     other = super(FileEntityBase, self).__new__( self.__class__, self.name, signature, self.tags )
-    other.is_actual = True
     return other
   
   #//-------------------------------------------------------//
@@ -106,11 +95,7 @@ class   FileEntityBase (EntityBase):
     if not self.signature:
       return False
     
-    if self.is_actual:
-      return True
-    
     if self.signature == self.getSignature():
-      self.is_actual = True
       return True
     
     return False

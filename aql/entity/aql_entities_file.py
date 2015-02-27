@@ -182,7 +182,7 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   addEntity( self, entity, cache = True ):
+  def   addEntity( self, entity ):
     
     entity_id = entity.id
     key = self.__getKeyByEntityId( entity_id )
@@ -191,10 +191,7 @@ class EntitiesFile (object):
       data = self.pickler.dumps( entity )
       key = self.data_file.append( data )
       
-      if not cache:
-        entity = None
-      
-      self.__addEntityToCache( key, entity_id, entity )
+      self.__addEntityToCache( key, entity_id, None )
     
     else:
       val = self.getEntityByKey( key )
@@ -203,10 +200,7 @@ class EntitiesFile (object):
         data = self.pickler.dumps( entity )
         new_key = self.data_file.replace( key, data )
         
-        if not cache:
-          entity = None
-        
-        self.__updateEntityInCache( key, new_key, entity_id, entity )
+        self.__updateEntityInCache( key, new_key, entity_id, None )
         
         return new_key
     
@@ -218,7 +212,8 @@ class EntitiesFile (object):
     data = self.pickler.dumps( entity )
     new_key = self.data_file.replace( key, data )
     
-    self.__updateEntityInCache(key, new_key, entity.id, entity )
+    self.__updateEntityInCache( key, new_key, entity.id, None )
+    return new_key
   
   #//---------------------------------------------------------------------------//
   
