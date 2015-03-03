@@ -11,7 +11,7 @@ from aql.util_types import toSequence
 from aql.utils import Tempfile, Tempdir, writeBinFile, disableDefaultHandlers, enableDefaultHandlers
 from aql.options import builtinOptions
 from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
-from aql.nodes import Node, BatchNode, Builder, FileBuilder
+from aql.nodes import Node, Builder, FileBuilder
 
 
 #//===========================================================================//
@@ -36,20 +36,16 @@ class ChecksumBuilder (Builder):
   def   __init__(self, options ):
     self.signature = b''
   
-  def   build( self, node ):
-    target_values = []
-    itarget_values = []
-    
-    for source_value in node.getSourceEntities():
+  def   build( self, source_entities, targets ):
+    for source_value in source_entities:
       content = source_value.data.encode()
       chcksum = hashlib.md5()
       chcksum.update( content )
       chcksum_sha512 = hashlib.sha512()
       chcksum_sha512.update( content )
-      target_values.append( chcksum.digest() )
-      itarget_values.append( chcksum_sha512.digest() )
-    
-    node.addTargets( target_values, itarget_values )
+      
+      targets.add( chcksum.digest() )
+      targets.addSideEffects( chcksum_sha512.digest() )
 
 #//===========================================================================//
 
@@ -63,13 +59,14 @@ class CopyBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     target_values = []
     itarget_values = []
     
     idep = SimpleEntity( b'1234' )
     
-    for src in node.getSources():
+    for src in source_entities:
+      src = src.get()
       new_name = src + '.' + self.ext
       new_iname = src + '.' + self.iext
       
@@ -79,15 +76,17 @@ class CopyBuilder (FileBuilder):
       target_values.append( new_name )
       itarget_values.append( new_iname )
     
-    node.addTargets( target_values, itarget_values, idep )
+    targets.add( target_values )
+    targets.addSideEffects( itarget_values )
+    targets.addImplicitDeps( idep )
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
+  def   buildBatch( self, source_entities, targets ):
     
     idep = SimpleEntity( b'1234' )
     
-    for src_value in node.getSourceEntities():
+    for src_value in source_entities:
       src = src_value.get()
       
       new_name = src + '.' + self.ext
@@ -96,7 +95,10 @@ class CopyBuilder (FileBuilder):
       shutil.copy( src, new_name )
       shutil.copy( src, new_iname )
       
-      node.addSourceTargets( src_value, new_name, new_iname, idep )
+      src_targets = targets[src_value]
+      src_targets.add( new_name )
+      src_targets.addSideEffects( new_iname )
+      src_targets.addImplicitDeps( idep )
 
 #//===========================================================================//
 
@@ -280,10 +282,11 @@ class TestNodes( AqlTestCase ):
   
   def   _rebuildBatchNode(self, vfile, src_files, built_count ):
     options = builtinOptions()
+    options.batch_build = True
     
     builder = CopyBuilder( options, "tmp", "i" )
     
-    node = BatchNode( builder, src_files )
+    node = Node( builder, src_files )
     dep = SimpleEntity( "11", name = "dep1" )
     node.depends( dep )
     
@@ -338,21 +341,15 @@ class TestSpeedBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    target_values = []
-    itarget_values = []
-    idep_values = []
-    
-    for source_value in node.getSourceEntities():
+  def   build( self, source_entities, targets ):
+    for source_value in source_entities:
       new_name = source_value.name + '.' + self.ext
       idep_name = source_value.name + '.' + self.idep
       
       shutil.copy( source_value.name, new_name )
       
-      target_values.append( _FileValueType( new_name ) )
-      idep_values.append( _FileValueType( idep_name ) )
-    
-    node.addTargets( target_values, itarget_values, idep_values )
+      targets.addFiles( new_name )
+      targets.addImplicitDepFiles( idep_name )
   
   #//-------------------------------------------------------//
   

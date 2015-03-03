@@ -12,14 +12,14 @@ from aql.utils import fileChecksum, Tempdir, \
 
 from aql.entity import SimpleEntity, FileChecksumEntity
 from aql.options import builtinOptions
-from aql.nodes import Node, BatchNode, Builder, FileBuilder, BuildManager
+from aql.nodes import Node, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
 
 #//===========================================================================//
 
 class FailedBuilder (Builder):
-  def   build( self, node ):
-    raise Exception("Builder always fail.") 
+  def   build(self, source_entities, targets):
+    raise Exception("Builder always fail.")
 
 #//===========================================================================//
 
@@ -85,7 +85,7 @@ class SyncValueBuilder (Builder):
     
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build(self, source_entities, targets):
     
     if self.number:
       global _sync_value
@@ -105,12 +105,12 @@ class SyncValueBuilder (Builder):
         
         _sync_value = _sync_value - self.number
     
-    target = [ src for src in node.getSources() ]
+    target = [ src.get() for src in source_entities ]
     target = self.makeSimpleEntity( target )
     
     # self.releaseLocks( locks )
     
-    node.addTargets( target )
+    targets.add( target )
 
 #//===========================================================================//
 
@@ -119,14 +119,14 @@ class CopyValueBuilder (Builder):
   def   __init__(self, options ):
     self.signature = b''
   
-  def   build( self, node ):
+  def   build(self, source_entities, targets ):
     target_entities = []
     
-    for source_value in node.getSourceEntities():
+    for source_value in source_entities:
       copy_value = SimpleEntity( source_value.get(), name = source_value.name + '_copy' )
       target_entities.append( copy_value )
     
-    node.addTargets( target_entities )
+    targets.add( target_entities )
   
   def   getTraceTargets( self, node, brief ):
     return tuple( value.name for value in node.getTargetEntities() )
@@ -168,23 +168,24 @@ class ChecksumBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build(self, source_entities, targets):
     target_entities = []
     
-    for src in node.getSources():
+    for src in source_entities:
+      src = src.get()
       target_entities.append( self._buildSrc( src, 'md5' ) )
       target_entities.append( self._buildSrc( src, 'sha512' ) )
     
-    node.addTargets( target_entities )
+    targets.add( target_entities )
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
-    for src_value in node.getSourceEntities():
-      targets = [ self._buildSrc( src_value.get(), 'md5' ),
-                  self._buildSrc( src_value.get(), 'sha512' ) ]
+  def   buildBatch(self, source_entities, targets):
+    for src_value in source_entities:
+      target_files = [ self._buildSrc( src_value.get(), 'md5' ),
+                      self._buildSrc( src_value.get(), 'sha512' ) ]
       
-      node.addSourceTargets( src_value, targets )
+      targets[src_value].add( target_files )
 
 #//===========================================================================//
 
@@ -194,7 +195,7 @@ class ChecksumSingleBuilder (ChecksumBuilder):
 
 #//===========================================================================//
 
-def   _addNodesToBM( builder, src_files, Node = Node ):
+def   _addNodesToBM( builder, src_files ):
   bm = BuildManager()
   try:
     checksums_node = Node( builder, src_files )
@@ -225,9 +226,9 @@ def   _build( bm, jobs = 1, keep_going = False, explain = False ):
 
 #//===========================================================================//
 
-def   _buildChecksums( builder, src_files, Node = Node ):
+def   _buildChecksums( builder, src_files ):
   
-  bm = _addNodesToBM( builder, src_files, Node )
+  bm = _addNodesToBM( builder, src_files )
   _build( bm )
 
 #//===========================================================================//
@@ -484,17 +485,18 @@ class TestBuildManager( AqlTestCase ):
     with Tempdir() as tmp_dir:
       options = builtinOptions()
       options.build_dir = tmp_dir
+      options.batch_build = True
       
       src_files = self.generateSourceFiles( tmp_dir, 3, 201 )
       
       builder = ChecksumBuilder( options, 0, 256, replace_ext = True )
       
       self.building_nodes = self.built_nodes = 0
-      _buildChecksums( builder, src_files, Node = BatchNode )
+      _buildChecksums( builder, src_files )
       self.assertEqual( self.building_nodes, 2 )
       self.assertEqual( self.building_nodes, self.built_nodes )
       
-      bm = _addNodesToBM( builder, src_files, Node = BatchNode )
+      bm = _addNodesToBM( builder, src_files )
       try:
         self.actual_nodes = self.outdated_nodes = 0
         bm.status(); bm.selfTest()
@@ -502,7 +504,7 @@ class TestBuildManager( AqlTestCase ):
         self.assertEqual( self.outdated_nodes, 0)
         self.assertEqual( self.actual_nodes, 2 )
         
-        bm = _addNodesToBM( builder, src_files, Node = BatchNode )
+        bm = _addNodesToBM( builder, src_files )
         bm.clear(); bm.selfTest()
         
       finally:
@@ -605,17 +607,20 @@ class TestBuildManager( AqlTestCase ):
     with Tempdir() as tmp_dir:
       options = builtinOptions()
       options.build_dir = tmp_dir
+      options.batch_build = True
       
       num_src_files = 3
       src_files = self.generateSourceFiles( tmp_dir, num_src_files, 201 )
       
       builder = ChecksumBuilder( options, 0, 256 )
+      
+      options.batch_build = False
       single_builder = ChecksumSingleBuilder( options, 0, 256 )
       bm = BuildManager()
       
       self.built_nodes = 0
       
-      node = BatchNode( builder, src_files )
+      node = Node( builder, src_files )
       
       node_md5 = Node( single_builder, node.at('md5') )
       
@@ -633,7 +638,7 @@ class TestBuildManager( AqlTestCase ):
       
       self.built_nodes = 0
       
-      node = BatchNode( builder, src_files )
+      node = Node( builder, src_files )
       
       node_md5 = Node( single_builder, node.at('md5') )
       
