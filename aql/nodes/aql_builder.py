@@ -41,6 +41,88 @@ def   eventExecCmd( settings, cmd, cwd, env ):
 
 #//===========================================================================//
 
+def   _getTraceArg( entity, brief ):
+  if isinstance( entity, FileEntityBase ):
+    value = entity.get()
+    if brief:
+      value = os.path.basename( value )
+  else:
+    if isinstance( entity, EntityBase ):
+      value = entity.get()
+
+    elif isinstance( entity, FilePath ):
+      if brief:
+        value = os.path.basename( entity )
+
+    elif isString( entity ):
+      value = entity.strip()
+
+      npos = value.find('\n')
+      if npos != -1:
+        value = value[:npos]
+
+      max_len = 64 if brief else 256
+      src_len = len(value)
+      if src_len > max_len:
+        value = "%s...%s" % (value[:max_len//2], value[src_len - (max_len//2):])
+
+    else:
+      value = None
+  
+  return value
+
+#//===========================================================================//
+
+def   _joinArgs( entities, brief ):
+  
+  args = []
+  
+  for arg in toSequence(entities):
+    arg = _getTraceArg(arg, brief )
+    if arg and isString( arg ):
+      args.append( arg )
+  
+  if not brief or (len(args) < 3):
+    return ' '.join( args )
+  
+  wish_size = 128
+  
+  args_str = [ args.pop(0) ]
+  last = args.pop()
+  
+  size = len(args_str[0]) + len(last)
+  
+  for arg in args:
+    size += len(arg)
+    
+    if size > wish_size:
+      args_str.append('...')
+      break
+    
+    args_str.append( arg )
+    
+  args_str.append( last )
+  
+  return ' '.join( args_str )
+
+#//===========================================================================//
+
+def   _getTraceStr( name, sources, targets, brief ):
+    
+    name    = _joinArgs( name,    brief )
+    sources = _joinArgs( sources, brief )
+    targets = _joinArgs( targets, brief )
+    
+    build_str  = name
+    if sources:
+      build_str += " << " + sources
+    if targets:
+      build_str += " >> " + targets
+    
+    return build_str
+
+#//===========================================================================//
+
 def   _makeBuildPath( path_dir, _path_cache = set() ):
   if path_dir not in _path_cache:
     if not os.path.isdir( path_dir ):
@@ -272,11 +354,12 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   isActual( self, source_entities, target_entities ):
+  def   isActual( self, target_entities ):
     """
-    Checks that source entities are up to date. It called only if all other checks were successful.
-    :param source_entities: Building source entities 
-    :param target_entities: Previous target entities 
+    Checks that target entities are up to date. It called only if all other checks were successful.
+    It can't be used to check remote resources.
+    :param source_entities: Building source entities
+    :param target_entities: Previous target entities
     :return: True if is up to date otherwise False
     """
     return True
@@ -292,7 +375,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   depends( self, source_entities ):
+  def   depends( self, cwd, source_entities ):
     """
     Could be used to dynamically generate dependency nodes 
     Returns list of dependency nodes or None
@@ -301,7 +384,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   replace( self, source_entities ):
+  def   replace( self, cwd, source_entities ):
     """
     Could be used to dynamically replace sources
     Returns list of nodes/entities or None (if sources are not changed)
@@ -382,7 +465,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return self.__class__.__name__
   
   #//-------------------------------------------------------//
@@ -397,8 +480,7 @@ class Builder (object):
 
   #//-------------------------------------------------------//
   
-  def   getTraceArgs( self, source_entities, target_entities, brief ):
-    
+  def   getTrace( self, source_entities = None, target_entities = None, brief = False ):
     try:
       name = self.getTraceName( brief )
     except Exception:
@@ -410,11 +492,14 @@ class Builder (object):
       sources = None
 
     try:
+      if (target_entities is None) and source_entities:
+        target_entities = self.getTargetEntities( source_entities )
+        
       targets = self.getTraceTargets( target_entities, brief )
     except Exception:
       targets = None
     
-    return name, sources, targets
+    return _getTraceStr( name, sources, targets, brief )
   
   #//-------------------------------------------------------//
   

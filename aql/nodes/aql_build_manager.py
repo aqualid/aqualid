@@ -425,31 +425,6 @@ def   _buildNode( node ):
 
 #//===========================================================================//
 
-class   _NodeState( object ):
-  __slots__ = \
-  (
-    'initialized',
-    'check_depends',
-    'check_replace',
-    'check_split',
-    'check_actual',
-    'split_nodes',
-  )
-  
-  def   __init__(self ):
-    self.initialized = False
-    self.check_depends = True
-    self.check_replace = True
-    self.check_split = True
-    self.check_actual = True
-    self.split_nodes = None
-  
-  def   __str__(self):
-    return "initialized: %s, check_depends: %s, check_replace: %s, check_split: %s, check_actual: %s, split_nodes: %s" %\
-      (self.initialized, self.check_depends, self.check_replace, self.check_split, self.check_actual, self.split_nodes )
-  
-#//===========================================================================//
-
 def   _getModuleNodes( node, module_cache, node_cache ):
   try:
     return module_cache[ node ]
@@ -561,21 +536,21 @@ class _NodeLocker( object ):
   
   #//-------------------------------------------------------//
   
-  def   lock( self, node, building_nodes ):
+  def   lock( self, node ):
     
     deps = self.node2deps.get( node, None )
     if not deps:
       # node doesn't have to be synchronized
       return True
     
+    locked_nodes = self.locked_nodes
+    
     for dep in deps:
-      if dep in building_nodes:
-        try:
-          self.locked_nodes[dep].add( node )
-        except KeyError:
-          self.locked_nodes[dep] = set( (node,) )
-        
+      if dep in locked_nodes:
+        locked_nodes[dep].add( node )
         return False
+    
+    self.locked_nodes[node] = set()
     
     return True
   
@@ -583,15 +558,20 @@ class _NodeLocker( object ):
   
   def   unlock( self, node ):
     
-    for dep in self.node2deps.pop( node, tuple() ):
+    deps = self.node2deps.pop( node, () )
+    nodes = self.dep2nodes.pop( node, () )
+    if not deps and not nodes:
+      return
+    
+    for dep in deps:
       self.dep2nodes[ dep ].remove( node )
-      
-    for dep in self.dep2nodes.pop( node, tuple() ):
+    
+    for dep in nodes:
       self.node2deps[ dep ].remove( node )
     
-    unlocked_nodes = self.locked_nodes.pop(node, None)
+    unlocked_nodes = self.locked_nodes.pop( node, None)
     if not unlocked_nodes:
-      return 
+      return
     
     self.unlocked_nodes.extend( unlocked_nodes )
   
@@ -629,7 +609,6 @@ class _NodeLocker( object ):
 
 #//===========================================================================//
 
-# noinspection PyAttributeOutsideInit
 class _NodesBuilder (object):
   
   __slots__ = \
@@ -637,7 +616,6 @@ class _NodesBuilder (object):
     'vfiles',
     'build_manager',
     'task_manager',
-    'node_states',
     'building_nodes',
   )
   
@@ -645,7 +623,6 @@ class _NodesBuilder (object):
   
   def   __init__( self, build_manager, jobs = 0, keep_going = False, with_backtrace = True, force_lock = False ):
     self.vfiles         = _VFiles( force_lock = force_lock )
-    self.node_states    = {}
     self.building_nodes = {}
     self.build_manager  = build_manager
     self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going, with_backtrace = with_backtrace )
@@ -662,26 +639,7 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   _getNodeState( self, node ):
-    try:
-      state = self.node_states[ node ]
-    except KeyError:
-      state = _NodeState()
-      self.node_states[ node ] = state
-    
-    return state
-  
-  #//-------------------------------------------------------//
-  
-  def   _removeNodeState( self, node ):
-    try:
-      del self.node_states[ node ]
-    except KeyError:
-      pass
-    
-  #//-------------------------------------------------------//
-  
-  def   _addBuildingNode( self, node, state ):
+  def   _addBuildingNode( self, node ):
     conflicting_nodes = []
     building_nodes = self.building_nodes
     
@@ -700,7 +658,7 @@ class _NodesBuilder (object):
       conflicting_nodes.append( other_node )
     
     if conflicting_nodes:
-      state.check_actual = True
+      node.recheckActual()
       self.build_manager.depends( node, conflicting_nodes )
       return False
     
@@ -721,110 +679,10 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   _checkPrebuildDepends( self, node ):
-    dep_nodes = node.buildDepends()
-    if dep_nodes:
-      self.build_manager.depends( node, dep_nodes )
-      return True
-    
-    return False
-  
-  #//-------------------------------------------------------//
-  
-  def _checkPrebuildReplace( self, node ):
-    
-    if node.buildReplace():
-      new_node_sources = node.getSourceNodes()
-      if new_node_sources:
-        self.build_manager.depends( node, new_node_sources )
-        return True
-    
-    return False
-  
-  #//-------------------------------------------------------//
-  
-  def   _checkPrebuildSplit( self, node, state ):
+  def   build( self, nodes ):
     
     build_manager = self.build_manager
-    
-    if state.check_split:
-      state.check_split = False
-      
-      check_actual = True
-      
-      if node.isBatch() and state.check_actual:
-        # Check for changed sources of BatchNode
-        vfile = self.vfiles[ node.builder ]
-        actual = build_manager.isActualNode( node, vfile )
-        
-        if actual:
-          self._removeNodeState( node )
-          build_manager.actualNode( node )
-          return True
-        
-        check_actual = False
-      
-      split_nodes = node.buildSplit()
-      if not split_nodes:
-        if not check_actual:
-          state.check_actual = False
-      else:
-        state.split_nodes = split_nodes
-        for split_node in split_nodes:
-          split_state = self._getNodeState( split_node )
-          split_state.check_split = False
-          split_state.check_depends = False
-          split_state.check_replace = False
-          split_state.check_actual = check_actual
-          split_state.initialized = split_node.builder is node.builder
-        
-        self.build_manager.depends( node, split_nodes )
-        return True
-  
-    elif state.split_nodes is not None:
-      if node.isBatch():
-        node._populateTargets()
-      else:
-        node._pullTargets( state.split_nodes )
-        
-      self._removeNodeState( node )
-      
-      self.build_manager.completedSplitNode( node )
-      
-      return True
-    
-    return False
-  
-  #//-------------------------------------------------------//
-  
-  def   _prebuild( self, node, state ):
-    
-    # print( "node: %s, state: %s" % (node, state))
-    
-    if not state.initialized:
-      node.initiate()
-      state.initialized = True
-    
-    if state.check_depends:
-      state.check_depends = False
-      if self._checkPrebuildDepends( node ):
-        return True
-    
-    if state.check_replace:
-      state.check_replace = False
-      if self._checkPrebuildReplace( node ):
-        return True
-    
-    if self._checkPrebuildSplit( node, state ):
-      return True
-    
-    return False
-    
-  #//-------------------------------------------------------//
-  
-  def   build( self, nodes, node_locker ):
-    
-    build_manager = self.build_manager
+    explain = build_manager.explain
     
     vfiles = self.vfiles
     addTask = self.task_manager.addTask
@@ -834,29 +692,31 @@ class _NodesBuilder (object):
     changed = False
     
     for node in nodes:
-      if (node_locker is not None) and (not node_locker.lock( node, self.building_nodes )):
+      if not build_manager.lockNode( node ):
         continue
       
-      node_state = self._getNodeState( node )
+      node.initiate()
       
-      if self._prebuild( node, node_state ):
+      vfile = vfiles[ node.builder ]
+      
+      prebuit_nodes = node.prebuild( vfile, explain )
+      if prebuit_nodes:
+        build_manager.depends( node, prebuit_nodes )
         changed = True
         continue
       
-      if not self._addBuildingNode( node, node_state ):
+      actual = node.checkActual( vfile, explain )
+      
+      force_rebuild = build_manager.checkForceRebuild( node )
+      
+      if actual and not force_rebuild:
+        build_manager.actualNode( node )
+        changed = True
         continue
       
-      if node_state.check_actual:
-        vfile = vfiles[ node.builder ]
-        actual = build_manager.isActualNode( node, vfile )
-        
-        if actual:
-          self._removeNodeState( node )
-          self._removeBuildingNode( node )
-          build_manager.actualNode( node )
-          changed = True
-          continue
-          
+      if not self._addBuildingNode( node ):
+        continue
+      
       addTask( -node.getWeight(), node, _buildNode, node )
       
       added_tasks += 1
@@ -881,7 +741,6 @@ class _NodesBuilder (object):
       node = task.task_id
       error = task.error
       
-      self._removeNodeState( node )
       self._removeBuildingNode( node )
       
       vfile = vfiles[ node.builder ]
@@ -890,9 +749,7 @@ class _NodesBuilder (object):
         node.save( vfile )
         build_manager.completedNode( node, task.result )
       else:
-        if node.isBatch():
-          node.save( vfile )
-        
+        node.saveFailed( vfile )
         build_manager.failedNode( node, error )
     
     # return false when there are no more task processing threads
@@ -909,11 +766,7 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      node_state = self._getNodeState( node )
-      
-      node_state.check_actual = False
-      
-      if self._prebuild( node, node_state ):
+      if self._prebuild( node ):
         continue
       
       vfile = vfiles[ node.builder ]
@@ -935,10 +788,7 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      node_state = self._getNodeState( node )
-      node_state.check_actual = False
-      
-      if self._prebuild( node, node_state ):
+      if self._prebuild( node ):
         continue
       
       vfile = vfiles[ node.builder ]
@@ -1037,9 +887,18 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
+  def   lockNode( self, node ):
+    node_locker = self._node_locker
+    if node_locker is None:
+      return True
+    
+    return node_locker.lock( node )
+  
+  #//-------------------------------------------------------//
+  
   def   unlockNode( self, node ):
     node_locker = self._node_locker
-    if node_locker is not None:    
+    if node_locker is not None:
       node_locker.unlock( node )
   
   #//-------------------------------------------------------//
@@ -1082,23 +941,18 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   isActualNode( self, node, vfile ):
-    return node.checkActual( vfile, self._built_node_names, self.explain )
-  
-  #//-------------------------------------------------------//
-  
-  def   _addToBuiltNodeNames(self, node ):
+  def   checkForceRebuild( self, node ):
     built_names = self._built_node_names
-    if built_names is not None:
-      built_names.update( node.getNames() )
-  
-  #//-------------------------------------------------------//
-  
-  def   completedSplitNode(self, node ):
+    if built_names is None:
+      return False
     
-    self.unlockNode( node )
-    self._nodes.removeTail( node )
-    node.shrink()
+    names = frozenset( node.getNames() )
+    
+    result = not names.issubset( built_names )
+    
+    built_names.update( names )
+    
+    return result
   
   #//-------------------------------------------------------//
   
@@ -1115,7 +969,6 @@ class BuildManager (object):
     self._checkAlreadyBuilt( node )
     self.unlockNode( node )
     self._nodes.removeTail( node )
-    self._addToBuiltNodeNames( node )
     
     self.completed += 1
     

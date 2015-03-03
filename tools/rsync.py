@@ -213,9 +213,9 @@ class   RSyncPushBuilder( aql.FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   _getSources(self, node ):
+  def   _getSources(self, source_entities  ):
     
-    sources = list( map(_normLocalPath, node.getSources()) )
+    sources = [_normLocalPath(src.get()) for src in source_entities ]
     
     source_base = self.source_base
     if source_base:
@@ -232,14 +232,14 @@ class   RSyncPushBuilder( aql.FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   _setTargets( self, node, sources ):
+  def   _setTargets( self, source_entities, sources, targets ):
     
     remote_path = self.remote_path
     source_base = self.source_base
     
     value_type = aql.SimpleEntity if remote_path.isRemote() else self.getFileEntityType()
     
-    for src_value, src in zip( node.getSourceEntities(), sources ):
+    for src_value, src in zip( source_entities, sources ):
       
       if not source_base:
         src = os.path.basename( src )
@@ -247,12 +247,12 @@ class   RSyncPushBuilder( aql.FileBuilder ):
       target_path = remote_path.join( src )
 
       target_value = value_type( target_path.get() )
-      node.addSourceTargets( src_value, target_value )
+      targets[src_value].add( target_value )
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
-    sources = self._getSources( node )
+  def   buildBatch( self, source_entities, targets ):
+    sources = self._getSources( source_entities )
     
     cmd = list( self.cmd )
     
@@ -287,13 +287,13 @@ class   RSyncPushBuilder( aql.FileBuilder ):
       if tmp_r: os.close( tmp_r )
       if tmp_w: os.close( tmp_w )
     
-    self._setTargets( node, sources )
+    self._setTargets( source_entities, sources, targets )
     
     return out
   
   #//-------------------------------------------------------//
   
-  def   getTraceName( self, brief ):
+  def   getTraceName( self, source_entities, brief ):
     if brief:
       name = self.cmd[0]
       name = os.path.splitext( os.path.basename( name ) )[0]
@@ -356,7 +356,7 @@ class   RSyncPullBuilder( aql.Builder ):
   
   #//-------------------------------------------------------//
   
-  def   _getSourcesAndTargets( self, node ):
+  def   _getSourcesAndTargets( self, source_entities ):
     
     sources = []
     targets = []
@@ -367,7 +367,8 @@ class   RSyncPullBuilder( aql.Builder ):
 
     cygwin_path = self.rsync_cygwin
 
-    for src in node.getSources():
+    for src in source_entities:
+      src = src.get()
       remote_path = RemotePath( src, login, host )
 
       path = os.path.join( target_path, remote_path.basename() )
@@ -380,8 +381,8 @@ class   RSyncPullBuilder( aql.Builder ):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    sources, targets = self._getSourcesAndTargets( node )
+  def   build( self, source_entities, targets ):
+    sources, target_files = self._getSourcesAndTargets( source_entities )
     
     cmd = list( self.cmd )
     
@@ -396,9 +397,7 @@ class   RSyncPullBuilder( aql.Builder ):
       
     out = self.execCmd( cmd )
     
-    targets = self.makeFileEntities( targets )
-    
-    node.addTargets( targets )
+    targets.addFiles( target_files )
     
     return out
   

@@ -65,7 +65,7 @@ class ExecuteCommandBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   _getTargetsCmd( self ):
+  def   _getCmdTargets( self ):
     
     targets = self.targets
     
@@ -87,48 +87,36 @@ class ExecuteCommandBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    cmd = node.getSources()
+  def   build( self, source_entities, targets ):
+    cmd = tuple( src for src in source_entities)
     
-    targets = self._getTargetsCmd()
-    if targets:
-      cmd += targets
+    cmd_targets = self._getCmdTargets()
+    if cmd_targets:
+      cmd += cmd_targets
     
     out = self.execCmd( cmd, cwd = self.cwd )
     
-    targets = self.makeFileEntities( targets )
-    
-    node.addTargets( targets )
+    targets.addFiles( self.targets )
     
     return out
   
   #//-------------------------------------------------------//
   
   def   getTargetEntities( self, source_entities ):
-    file_type = self.file_entity_type
-    return [ file_type( target, signature = None ) for target in self.targets ]
+    return self.targets
   
   #//-------------------------------------------------------//
   
-  def   getBuildStrArgs( self, node, brief ):
-    sources = node.getSourceEntities()
-    
+  def   getTraceName(self, source_entities, brief ):
     try:
-      name = sources[0]
+      return source_entities[0]
     except Exception:
-      name = ''
-    
-    try:
-      sources = sources[1:]
-    except Exception:
-      sources = None
-    
-    try:
-      targets = self.getTraceTargets( node, brief )
-    except Exception:
-      targets = None
-    
-    return name, sources, targets
+      return self.__class__.__name__
+  
+  #//-------------------------------------------------------//
+  
+  def   getTraceSources( self, source_entities, brief ):
+    return source_entities[1:]
 
 #//===========================================================================//
 
@@ -145,8 +133,7 @@ class   ExecuteMethodBuilder (Builder):
     self.kw = kw if kw else {}
     
     if not clear_targets:
-      self.clear = lambda node: None
-      
+      self.clear = lambda target_entities, side_effect_entities: None
     
     if single:
       self.split = self.splitSingle
@@ -157,12 +144,12 @@ class   ExecuteMethodBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def build( self, node ):
-    return self.method( self, node, *self.args, **self.kw )
+  def build( self, source_entities, targets ):
+    return self.method( self, source_entities, targets, *self.args, **self.kw )
   
   #//-------------------------------------------------------//
   
-  def   getTraceName( self, brief ):
+  def   getTraceName( self, source_entities, brief ):
     name = self.method_name
     
     if not brief:
@@ -192,21 +179,21 @@ class CopyFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
+  def   buildBatch( self, source_entities, targets ):
     target = self.target
     
-    for src_entity in node.getSourceEntities():
+    for src_entity in source_entities:
       src = src_entity.get()
       
       dst = os.path.join( target, os.path.basename( src ) )
       shutil.copyfile( src, dst )
       shutil.copymode( src, dst )
       
-      node.addSourceTargets( src_entity, dst )
+      targets[src_entity].add( dst )
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "Copy files"
   
   #//-------------------------------------------------------//
@@ -226,18 +213,18 @@ class CopyFileAsBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    source = node.getSources()[0]
+  def   build( self, source_entities, targets ):
+    source = source_entities[0].get()
     target = self.target
     
     shutil.copyfile( source, target )
     shutil.copymode( source, target )
     
-    node.addTargets( target )
+    targets.add( target )
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "Copy file"
   
   #//-------------------------------------------------------//
@@ -305,12 +292,12 @@ class TarFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     target = self.target
     
     arch = tarfile.open( name = self.target, mode = self.mode )
     try:
-      for entity in node.getSourceEntities():
+      for entity in source_entities:
         if isinstance( entity, FileEntityBase ):
           self.__addFile( arch, entity.get() )
         else:
@@ -319,11 +306,11 @@ class TarFilesBuilder (FileBuilder):
     finally:
       arch.close()
       
-    node.addTargets( target )
+    targets.add( target )
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "Create Tar"
   
   #//-------------------------------------------------------//
@@ -389,10 +376,8 @@ class ZipFilesBuilder (FileBuilder):
 
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     target = self.target
-    
-    source_entities = node.getSourceEntities()
     
     arch = self.__openArch()
     
@@ -408,11 +393,11 @@ class ZipFilesBuilder (FileBuilder):
       if arch is not None:
         arch.close()
       
-    node.addTargets( target )
+    targets.add( target )
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "Create Zip"
   
   #//-------------------------------------------------------//
@@ -433,12 +418,13 @@ class WriteFileBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     target = self.target
     
     with openFile( target, write = True, binary = self.binary, encoding = self.encoding ) as f:
       f.truncate()
-      for src in node.getSources():
+      for src in source_entities:
+        src = src.get()
         if self.binary:
           if isUnicode( src ):
             src = encodeStr( src, self.encoding )
@@ -448,11 +434,11 @@ class WriteFileBuilder (Builder):
 
         f.write( src )
     
-    node.addTargets( self.makeFileEntity( target ) )
+    targets.addFiles( target )
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "Writing content"
   
   #//-------------------------------------------------------//
@@ -509,14 +495,14 @@ class DistBuilder (FileBuilder):
 
   #//-------------------------------------------------------//
 
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "distutils %s" % ' '.join(self.script_args)
 
   #//-------------------------------------------------------//
 
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
 
-    script = node.getSources()[0]
+    script = source_entities[0].get()
 
     cmd = [ sys.executable, script ]
     cmd += self.script_args
@@ -525,7 +511,6 @@ class DistBuilder (FileBuilder):
     out = self.execCmd( cmd, script_dir )
     
     # TODO: Add parsing of setup.py output "copying <filepath> -> <detination dir>"
-    node.setNoTargets()
 
     return out
 
@@ -541,14 +526,14 @@ class   InstallDistBuilder (FileBuilder):
 
   #//-------------------------------------------------------//
 
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief ):
     return "distutils install"
 
   #//-------------------------------------------------------//
 
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
 
-    script = node.getSources()[0]
+    script = source_entities[0].get()
 
     cmd = [ sys.executable, script, "install" ]
     if self.user:
@@ -558,7 +543,6 @@ class   InstallDistBuilder (FileBuilder):
     out = self.execCmd( cmd, script_dir )
     
     # TODO: Add parsing of setup.py output "copying <filepath> -> <detination dir>"
-    node.setNoTargets()
     
     return out
 

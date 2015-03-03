@@ -67,8 +67,8 @@ class GccCompiler (CommonCppCompiler):
     super(GccCompiler, self).__init__( options )
     self.cmd += ['-c', '-MMD']
   
-  def   build( self, node ):
-    src = node.getSources()[0]
+  def   build( self, source_entities, targets ):
+    src = source_entities[0].get()
     
     obj_file = self.getObjPath( src )
     
@@ -82,7 +82,10 @@ class GccCompiler (CommonCppCompiler):
       
       out = self.execCmd( cmd, cwd, file_flag = '@' )
       
-      node.addTargets( obj_file, implicit_deps = _readDeps( dep_file, self.ext_cpppath ) )
+      implicit_deps = _readDeps( dep_file, self.ext_cpppath )
+      
+      targets.add( obj_file )
+      targets.addImplicitDeps( implicit_deps )
       
       return out
 
@@ -93,23 +96,24 @@ class GccCompiler (CommonCppCompiler):
   
   #//-------------------------------------------------------//
   
-  def   _setTargets( self, node, obj_files, output ):
-    source_values = node.getSourceEntities()
+  def   _setTargets( self, source_entities, targets, obj_files, output ):
     
     failed_sources = _parseOutput( output )
     
-    for src_value, obj_file in zip( source_values, obj_files ):
+    for src_value, obj_file in zip( source_entities, obj_files ):
       if src_value.get() not in failed_sources:
         dep_file = os.path.splitext( obj_file )[0] + '.d'
         implicit_deps = _readDeps( dep_file, self.ext_cpppath )
         
-        node.addSourceTargets( src_value, obj_file, implicit_deps = implicit_deps )
+        src_targets = targets[src_value]
+        src_targets.add( obj_file )
+        src_targets.addImplicitDeps( implicit_deps )
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
+  def   buildBatch( self, source_entities, targets ):
     
-    sources = node.getSources()
+    sources = tuple( src.get() for src in source_entities )
     
     obj_files = self.getTargetsFromSourceFilePaths( sources, ext = self.ext )
     
@@ -121,7 +125,7 @@ class GccCompiler (CommonCppCompiler):
     result = self.execCmdResult( cmd, cwd, file_flag = '@' )
     
     output = result.output
-    self._setTargets( node, obj_files, output )
+    self._setTargets( source_entities, targets, obj_files, output )
     
     if result.failed():
       raise result
@@ -132,9 +136,9 @@ class GccCompiler (CommonCppCompiler):
 
 class GccResCompiler (CommonResCompiler):
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
-    src = node.getSources()[0]
+    src = source_entities[0].get()
     
     res_file = self.getObjPath( src )
     cwd = os.path.dirname( res_file )
@@ -146,7 +150,7 @@ class GccResCompiler (CommonResCompiler):
     
     # deps = _parseRes( src )
     
-    node.addTargets( res_file )
+    targets.add( res_file )
     
     return out
 
@@ -163,17 +167,17 @@ class GccCompilerMaker (object):
 
 class GccArchiver (GccCompilerMaker, CommonCppArchiver ):
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
     cmd = list(self.cmd)
     cmd.append( self.target )
-    cmd += node.getSources()
+    cmd += (src.get() for src in source_entities)
     
     cwd = os.path.dirname( self.target )
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.addTargets( self.target )
+    targets.add( self.target )
     
     return out
 
@@ -189,7 +193,7 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
     target = self.target
     import_lib = None
@@ -197,7 +201,7 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
     
     cmd = list(self.cmd)
     
-    obj_files = node.getSources()
+    obj_files = (src.get() for src in source_entities)
     
     cmd[2:2] = obj_files
     
@@ -217,13 +221,13 @@ class GccLinker( GccCompilerMaker, CommonCppLinker ):
     if shared:
       if import_lib:
         tags = ('shlib',)
-        node.addTargets( import_lib, tags = ('implib',) )
+        targets.add( import_lib, tags = ('implib',) )
       else:
         tags = ('shlib', 'implib')
     else:
       tags = None
 
-    node.addTargets( target, tags = tags )
+    targets.add( target, tags = tags )
     
     return out
 

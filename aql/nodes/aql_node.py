@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'Node', 'BatchNode',
+  'Node',
   'NodeFilter', 'NodeDirNameFilter', 'NodeBaseNameFilter',
 )
 
@@ -133,8 +133,7 @@ class NodeStaleReason (object):
   #//-------------------------------------------------------//
   
   def   getNodeName( self, brief ):
-    name = self.builder.getTraceName( brief )
-    return _getBuildStr( [ name, self.sources, self.targets ], brief )
+    return self.builder.getTrace( self.sources, self.targets, brief )
   
   #//-------------------------------------------------------//
   
@@ -171,105 +170,6 @@ class NodeStaleReason (object):
       msg = "Node's state is outdated, rebuilding the node: %s" % node_name
     
     return msg
-      
-#//===========================================================================//
-
-def   _getTraceArg( entity, brief ):
-  if isinstance( entity, FileEntityBase ):
-    value = entity.get()
-    if brief:
-      value = os.path.basename( value )
-  else:
-    if isinstance( entity, EntityBase ):
-      value = entity.get()
-
-    elif isinstance( entity, FilePath ):
-      if brief:
-        value = os.path.basename( entity )
-
-    elif isString( entity ):
-      value = entity.strip()
-
-      npos = value.find('\n')
-      if npos != -1:
-        value = value[:npos]
-
-      max_len = 64 if brief else 256
-      src_len = len(value)
-      if src_len > max_len:
-        value = "%s...%s" % (value[:max_len//2], value[src_len - (max_len//2):])
-
-    else:
-      value = None
-  
-  return value
-
-#//===========================================================================//
-
-def   _joinArgs( entities, brief ):
-  
-  args = []
-  
-  for arg in toSequence(entities):
-    arg = _getTraceArg(arg, brief )
-    if arg and isString( arg ):
-      args.append( arg )
-  
-  if not brief or (len(args) < 3):
-    return ' '.join( args )
-  
-  wish_size = 128
-  
-  args_str = [ args.pop(0) ]
-  last = args.pop()
-  
-  size = len(args_str[0]) + len(last)
-  
-  for arg in args:
-    size += len(arg)
-    
-    if size > wish_size:
-      args_str.append('...')
-      break
-    
-    args_str.append( arg )
-    
-  args_str.append( last )
-  
-  return ' '.join( args_str )
-
-#//===========================================================================//
-
-def   _getBuildStr( args, brief ):
-    
-    args = iter(args)
-    
-    name    = next(args, None)
-    sources = next(args, None)
-    targets = next(args, None)
-    
-    name    = _joinArgs( name,    brief )
-    sources = _joinArgs( sources, brief )
-    targets = _joinArgs( targets, brief )
-    
-    build_str  = name
-    if sources:
-      build_str += " << " + sources
-    if targets:
-      build_str += " >> " + targets
-    
-    return build_str
-  
-#//===========================================================================//
-  
-def   _getClearStr( args, brief = True ):
-  
-  args    = iter(args)
-  next(args, None ) # name
-  next(args, None ) # sources
-  targets = next(args, None )
-  
-  return _joinArgs( targets, brief )
 
 #//===========================================================================//
 
@@ -453,18 +353,16 @@ class   NodeEntity (EntityBase):
   
   #//-------------------------------------------------------//
   
-  def   checkActual( self, vfile, built_node_names = None, explain = False ):
+  def   checkActual( self, vfile, explain = False ):
     
-    reason = NodeStaleReason( self.builder, self.source_entities, self.target_entities ) if explain else None
+    if explain:
+      reason = NodeStaleReason( self.builder, self.source_entities, self.target_entities )
+    else:
+      reason = None
     
     self.target_entities = []
     self.itarget_entities = []
     self.idep_entities = []
-    
-    if (built_node_names is not None) and (self.name not in built_node_names):
-      if reason is not None:
-        reason.setForceRebuild()
-      return False
     
     other = vfile.findEntity( self )
     
@@ -487,10 +385,15 @@ class   NodeEntity (EntityBase):
     if not self._checkIdeps( vfile, other.idep_keys, ideps, reason ):
       return False
     
-    if not self._checkTargets( other.target_entities, reason ):
+    target_entities = other.target_entities
+    
+    if not self._checkTargets( target_entities, reason ):
       return False
     
-    self.target_entities = other.target_entities
+    if not self.builder.isActual( target_entities ):
+      return False
+    
+    self.target_entities = target_entities
     self.itarget_entities = other.itarget_entities
     self.idep_entities = ideps
     
@@ -529,11 +432,12 @@ class   NodeEntity (EntityBase):
   
   #//-------------------------------------------------------//
   
-  def   addDependencies( self, entities, tags = None ):
+  def   addImplicitDeps( self, entities, tags = None ):
     self.idep_entities.extend( self.builder.makeEntities( toSequence(entities), tags ) )
   
-  def   addDependencyFiles( self, entities, tags = None ):
+  def   addImplicitDepFiles( self, entities, tags = None ):
     self.idep_entities.extend( self.builder.makeFileEntities( toSequence(entities), tags ) )
+  
 
 #//===========================================================================//
 
@@ -802,36 +706,37 @@ class Node (object):
         self._updateDepEntities()
         
       self.initiated = True
-    
   
   #//=======================================================//
   
   def   buildDepends( self ):
     if self.depends_called:
       return None
-      
-    nodes = self.builder.depends( self.source_entities )
+    
     self.depends_called = True
+    
+    nodes = self.builder.depends( self.cwd, self.source_entities )
     return nodes
   
   #//=======================================================//
   
   def   buildReplace( self ):
-    
     if self.replace_called:
-      return False
+      return None
     
-    sources = self.builder.replace( self.source_entities )
+    self.replace_called = True
+    
+    sources = self.builder.replace( self.cwd, self.source_entities )
     if sources is None:
       return False
     
     self.sources = tuple( toSequence( sources ) )   # source_entities will be reinitialized later
     
-    return True
+    return self.getSourceNodes()
   
   #//=======================================================//
   
-  def   _splitBatch( self, vfile, built_node_names, explain ):
+  def   _splitBatch( self, vfile, explain ):
     builder = self.builder
     dep_entities = self.dep_entities
     node_entities = []
@@ -839,7 +744,7 @@ class Node (object):
     not_actual_sources = []
     for src in self.source_entities:
       node_entity = NodeEntity( builder = builder, source_entities = (src,), dep_entities = dep_entities )
-      if not node_entity.checkActual( vfile, built_node_names, explain ):
+      if not node_entity.checkActual( vfile, explain ):
         not_actual_nodes[ src ] = node_entity
         not_actual_sources.append( src )
       
@@ -851,7 +756,7 @@ class Node (object):
     if not not_actual_nodes:
       return None
     
-    groups = builder.split( not_actual_sources )
+    groups = builder.splitBatch( not_actual_sources )
     if not groups:
       groups = not_actual_sources   # this should never happen, looks like a bug in the builder
     
@@ -870,7 +775,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   buildSplit( self, vfile, built_node_names = None, explain = False ):
+  def   buildSplit( self, vfile, explain = False ):
     if self.split_called:
       return None
     
@@ -880,7 +785,7 @@ class Node (object):
     dep_entities = self.dep_entities
     
     if builder.isBatch():
-      return self._splitBatch( vfile, built_node_names, explain )
+      return self._splitBatch( vfile, explain )
     
     #//-------------------------------------------------------//
     sources = self.source_entities
@@ -892,7 +797,7 @@ class Node (object):
                                 source_entities = sources,
                                 dep_entities = dep_entities )
       
-      self.is_actual = node_entity.checkActual( vfile, built_node_names, explain )
+      self.is_actual = node_entity.checkActual( vfile, explain )
       self.node_entities = (node_entity,)
       return None
     
@@ -909,7 +814,7 @@ class Node (object):
                                 source_entities = group,
                                 dep_entities = dep_entities )
       
-      if not node_entity.checkActual( vfile, built_node_names, explain ):
+      if not node_entity.checkActual( vfile, explain ):
         node = self._split( group, (node_entity,) )
         split_nodes.append( node_entity )
       
@@ -936,6 +841,20 @@ class Node (object):
     other.is_actual       = False
     
     return other
+  
+  #//=======================================================//
+  
+  def   prebuild( self, vfile, explain = False ):
+    dep_nodes = self.buildDepends()
+    if dep_nodes:
+      return dep_nodes
+    
+    source_nodes = self.buildReplace()
+    if source_nodes:
+      return source_nodes
+    
+    split_nodes = self.buildSplit( vfile, explain )
+    return split_nodes
   
   #//=======================================================//
   
@@ -967,13 +886,25 @@ class Node (object):
   
   #//=======================================================//
   
-  def   isActual( self ):
+  def   checkActual( self, vfile, explain ):
     
-    if not self.is_actual:
+    if self.is_actual is None:
+      for node_entity in self.node_entities:
+        if not node_entity.checkActual( vfile, explain ):
+          return False
+      
+      self.is_actual = True
+    
+    elif not self.is_actual:
       return False
     
     self._populateTargets()
     return True
+  
+  #//=======================================================//
+  
+  def   recheckActual( self ):
+    self.is_actual = None
   
   #//=======================================================//
   
@@ -993,8 +924,22 @@ class Node (object):
   #//=======================================================//
   
   def   save( self, vfile ):
+    
     for node_entity in self.node_entities:
       node_entity.save( vfile )
+  
+  #//=======================================================//
+  
+  def   saveFailed( self, vfile ):
+    
+    node_entities = self.node_entities
+    if len(node_entities) < 2:            # do not save if only one node regardless targets
+      return
+    
+    for node_entity in node_entities:
+      if node_entity.target_entities:   # only nodes with targets should be saved
+                                        # nodes without targets will be rebuilt next time
+        node_entity.save( vfile )
   
   #//=======================================================//
   
@@ -1139,9 +1084,7 @@ class Node (object):
     try:
       targets = getattr( self, 'target_entities', None )
       
-      args = self.builder.getTraceArgs( self.source_entities, targets, brief )
-      
-      return _getBuildStr( args, brief )
+      return self.builder.getTrace( self.source_entities, targets, brief )
     
     except Exception as ex:
       if 'BuilderInitiator' not in str(ex):

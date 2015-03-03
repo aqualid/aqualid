@@ -51,13 +51,13 @@ class AqlPreprocess (aql.FileBuilder):
   
   split = aql.FileBuilder.splitSingle
   
-  def   getTraceTargets( self, node, brief ):
+  def   getTraceTargets( self, target_entities, brief ):
     return None
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    src_file = node.getSources()[0]
+  def   build( self, source_entities, targets ):
+    src_file = source_entities[0].get()
     
     empty_re = re.compile(r'^\s*\r*\n', re.MULTILINE)
     slash_re = re.compile(r'\\\r*\n', re.MULTILINE)
@@ -106,7 +106,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     target = aql.SimpleEntity( name = src_file, data = (std_imports, aql_imports, content) )
     
-    node.addTargets( target )
+    targets.add( target )
 
 #//===========================================================================//
 
@@ -177,7 +177,7 @@ class AqlLink (aql.Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
     file2deps = {}
     files_content = {}
@@ -186,7 +186,7 @@ class AqlLink (aql.Builder):
     
     std_modules = set()
     
-    for entity in node.getSourceEntities():
+    for entity in source_entities:
       file_name = entity.name
       mod_std_imports, mod_deps, mod_content = entity.data
       
@@ -214,10 +214,8 @@ class AqlLink (aql.Builder):
     
     aql.writeTextFile( self.target, content )
     
-    target = self.makeFileEntity( self.target )
+    targets.addFiles( self.target )
     
-    node.addTargets( target )
-
 #//===========================================================================//
 
 class AqlBuildTool( aql.Tool ):

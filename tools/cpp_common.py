@@ -4,41 +4,41 @@ import itertools
 from aql import findFileInPaths,\
   StrOptionType, BoolOptionType, VersionOptionType, ListOptionType,\
   AbsPathOptionType, EnumOptionType, SimpleOperation, Options, \
-  Builder, FileBuilder, BatchNode, Node, Tool 
+  Builder, FileBuilder, Node, Tool 
 
 #//===========================================================================//
 
 class   ErrorBatchBuildCustomExt( Exception ):
-  def   __init__( self, node, ext ):
-    msg = "Custom extension '%s' is not supported in batch building of node: %s" % (ext, node.getBuildStr( brief = False ))
+  def   __init__( self, trace, ext ):
+    msg = "Custom extension '%s' is not supported in batch building of node: %s" % (ext, trace)
     super(ErrorBatchBuildCustomExt, self).__init__(msg)
 
 #//===========================================================================//
 
 class   ErrorBatchBuildWithPrefix( Exception ):
-  def   __init__( self, node, prefix ):
-    msg = "Filename prefix '%s' is not supported in batch building of node: %s" % (prefix, node.getBuildStr( brief = False ))
+  def   __init__( self, trace, prefix ):
+    msg = "Filename prefix '%s' is not supported in batch building of node: %s" % (prefix, trace)
     super(ErrorBatchBuildWithPrefix, self).__init__(msg)
 
 #//===========================================================================//
 
 class   ErrorBatchBuildWithSuffix( Exception ):
-  def   __init__( self, node, suffix ):
-    msg = "Filename suffix '%s' is not supported in batch building of node: %s" % (suffix, node.getBuildStr( brief = False ))
+  def   __init__( self, trace, suffix ):
+    msg = "Filename suffix '%s' is not supported in batch building of node: %s" % ( suffix, trace )
     super(ErrorBatchBuildWithSuffix, self).__init__(msg)
 
 #//===========================================================================//
 
 class   ErrorBatchCompileWithCustomTarget( Exception ):
-  def   __init__( self, node, target ):
-    msg = "Explicit output target '%s' is not supported in batch building of node: %s" % (target, node.getBuildStr( brief = False ))
+  def   __init__( self, trace, target ):
+    msg = "Explicit output target '%s' is not supported in batch building of node: %s" % (target, trace )
     super(ErrorBatchCompileWithCustomTarget, self).__init__(msg)
 
 #//===========================================================================//
 
 class   ErrorCompileWithCustomTarget( Exception ):
-  def   __init__( self, node, target ):
-    msg = "Compile several source files using the same target '%s' is not supported: %s" % (target, node.getBuildStr( brief = False ))
+  def   __init__( self, trace, target ):
+    msg = "Compile several source files using the same target '%s' is not supported: %s" % (target, trace )
     super(ErrorCompileWithCustomTarget, self).__init__(msg)
 
 #//===========================================================================//
@@ -215,19 +215,19 @@ class HeaderChecker (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
     has_headers = True
     
     cpppath = self.cpppath
     
-    for header in node.getSources():
-      found = findFileInPaths( cpppath, header )
+    for header in source_entities:
+      found = findFileInPaths( cpppath, header.get() )
       if not found:
         has_headers = False
         break
     
-    node.addTargets( has_headers )
+    targets.add( has_headers )
   
 #//===========================================================================//
 
@@ -281,36 +281,36 @@ class CommonCompiler (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   checkBatchSplit( self, node ):
+  def   checkBatchSplit( self, source_entities ):
     
     default_ext = self.getDefaultObjExt()
     
     if self.ext != default_ext:
-      raise ErrorBatchBuildCustomExt( node, self.ext )
+      raise ErrorBatchBuildCustomExt( self.getTrace( source_entities ), self.ext )
     
     if self.prefix:
-      raise ErrorBatchBuildWithPrefix( node, self.prefix )
+      raise ErrorBatchBuildWithPrefix( self.getTrace( source_entities ), self.prefix )
     
     if self.suffix:
-      raise ErrorBatchBuildWithSuffix( node, self.suffix )
+      raise ErrorBatchBuildWithSuffix( self.getTrace( source_entities ), self.suffix )
     
     if self.target:
-      raise ErrorBatchCompileWithCustomTarget( node, self.target )
+      raise ErrorBatchCompileWithCustomTarget( self.getTrace( source_entities ), self.target )
     
   #//-------------------------------------------------------//
   
-  def   split( self, node ):
-    if node.isBatch():
-      self.checkBatchSplit( node )
-      source_entities = self.splitBatchByBuildDir( node )
+  def   splitBatch( self, source_entities ):
+    self.checkBatchSplit( source_entities )
+    return self.splitBatchByBuildDir( source_entities )
+  
+  #//-------------------------------------------------------//
+  
+  def   split( self, source_entities ):
     
-    else:
-      source_entities = self.splitSingle( node )
+    if self.target and (len(source_entities) > 1):
+      raise ErrorCompileWithCustomTarget( self.getTrace( source_entities ), self.target )
     
-      if self.target and (len(source_entities) > 1):
-        raise ErrorCompileWithCustomTarget( node, self.target )
-    
-    return source_entities
+    return self.splitSingle( source_entities )
   
   #//-------------------------------------------------------//
   
@@ -349,6 +349,9 @@ class CommonCppLinkerBase( FileBuilder ):
   NAME_ATTRS = ('target', )
   SIGNATURE_ATTRS = ('cmd', )
   
+  def   __init__( self, options ):
+    self.compilers = self.getSourceBuilders( options )
+  
   def   getCppExts( self, _cpp_ext = (".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c") ):
     return _cpp_ext
   
@@ -382,10 +385,9 @@ class CommonCppLinkerBase( FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   getSourceBuilders( self, node ):
+  def   getSourceBuilders( self, options ):
     builders = {}
     
-    options = node.options
     compiler = self.makeCompiler( options )
     
     self.addSourceBuilders( builders, self.getCppExts(), compiler )
@@ -397,30 +399,25 @@ class CommonCppLinkerBase( FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   replace( self, node ):
+  def   replace( self, cwd, source_entities ):
     
     def _addSources():
       if current_builder is None:
         new_sources.extend( current_sources )
         return
         
-      if current_builder.isBatch():
-        src_node = BatchNode( current_builder, current_sources, cwd )
-      else:
-        src_node = Node( current_builder, current_sources, cwd )
+      src_node = Node( current_builder, current_sources, cwd )
         
       new_sources.append( src_node )
     
     new_sources = []
     
-    builders = self.getSourceBuilders( node )
+    builders = self.compilers
     
     current_builder = None
     current_sources = []
     
-    cwd = node.cwd
-    
-    for src_file in node.getSourceEntities():
+    for src_file in source_entities:
       
       ext = os.path.splitext( src_file.get() )[1]
       builder = builders.get( ext, None )
@@ -462,6 +459,8 @@ class CommonCppArchiver( CommonCppLinkerBase ):
   
   def   __init__( self, options, target ):
     
+    super(CommonCppArchiver, self).__init__( options )
+    
     prefix = options.libprefix.get()
     ext = options.libsuffix.get()
     
@@ -471,10 +470,12 @@ class CommonCppArchiver( CommonCppLinkerBase ):
     
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
-class CommonCppLinker( CommonCppLinkerBase ):
+class   CommonCppLinker( CommonCppLinkerBase ):
   
   def   __init__( self, options, target, shared ):
+    
+    super(CommonCppLinker, self).__init__( options )
+    
     if shared:
       prefix = options.shlibprefix.get()
       ext = options.shlibsuffix.get()
@@ -488,8 +489,8 @@ class CommonCppLinker( CommonCppLinkerBase ):
   
   #//-------------------------------------------------------//
   
-  def   getWeight( self, node ):
-    return 2 * len(node.getSourceEntities())
+  def   getWeight( self, source_entities ):
+    return 2 * len(source_entities)
 
 
 #//===========================================================================//

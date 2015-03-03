@@ -34,7 +34,7 @@ from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenLi
 from aql.util_types import FilePath, ValueListType, UniqueList, toSequence, AqlException
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
 from aql.options import builtinOptions, Options, iUpdateValue
-from aql.nodes import BuildManager, Node, BatchNode, NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
+from aql.nodes import BuildManager, Node, NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
 
 from .aql_info import getAqlInfo
 from .aql_tools import getToolsManager
@@ -352,10 +352,7 @@ class BuilderWrapper( object ):
     
     builder = self.method( options, **args_kw )
     
-    if builder.isBatch() and ((len(sources) > 1) or not builder.canBuild()):
-      node = BatchNode( builder, sources )
-    else:
-      node = Node( builder, sources )
+    node = Node( builder, sources )
 
     node.depends( deps )
     

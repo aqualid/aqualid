@@ -70,9 +70,9 @@ class MsvcCompiler (CommonCppCompiler):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
-    source = node.getSources()[0]
+    source = source_entities[0].get()
     
     obj_file = self.getObjPath( source )
     cwd = os.path.dirname( obj_file )
@@ -88,7 +88,8 @@ class MsvcCompiler (CommonCppCompiler):
       result.output = out
       raise result
     
-    node.addTargets( obj_file, implicit_deps = deps[0] )
+    targets.add( obj_file )
+    targets.addImplicitDeps( deps[0] )
     
     return out
   
@@ -99,22 +100,22 @@ class MsvcCompiler (CommonCppCompiler):
   
   #//-------------------------------------------------------//
   
-  def   _setTargets( self, node, sources, obj_files, output ):
-    source_values = node.getSourceEntities()
-    
+  def   _setTargets( self, source_entities, targets, sources, obj_files, output ):
     deps, errors, out = _parseOutput( sources, output, self.ext_cpppath )
     
-    for src_value, obj_file, deps, error in zip( source_values, obj_files, deps, errors ):
+    for src_value, obj_file, deps, error in zip( source_entities, obj_files, deps, errors ):
       if not error:
-        node.addSourceTargets( src_value, obj_file, implicit_deps = deps )
+        src_targets = targets[ src_value ]
+        src_targets.add( obj_file )
+        src_targets.addImplicitDeps( deps )
     
     return out
   
   #//-------------------------------------------------------//
   
-  def   buildBatch( self, node ):
+  def   buildBatch( self, source_entities, targets ):
     
-    sources = node.getSources()
+    sources = tuple( src.get() for src in source_entities )
     
     obj_files = self.getTargetsFromSourceFilePaths( sources, ext = self.ext )
     
@@ -125,7 +126,7 @@ class MsvcCompiler (CommonCppCompiler):
     
     result = self.execCmdResult( cmd, cwd, file_flag = '@' )
     
-    out = self._setTargets( node, sources, obj_files, result.output )
+    out = self._setTargets( source_entities, targets, sources, obj_files, result.output )
     
     if result.failed():
       result.output = out
@@ -137,9 +138,9 @@ class MsvcCompiler (CommonCppCompiler):
 
 class MsvcResCompiler (CommonResCompiler):
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
-    src = node.getSources()[0]
+    src = source_entities[0].get()
     
     res_file = self.getObjPath( src )
     cwd = os.path.dirname( res_file )
@@ -151,7 +152,7 @@ class MsvcResCompiler (CommonResCompiler):
     
     # deps = _parseRes( src )
     
-    node.addTargets( res_file )
+    targets.add( res_file )
     
     return out
   
@@ -168,9 +169,9 @@ class MsvcCompilerMaker (object):
 
 class   MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
-    obj_files = node.getSources()
+    obj_files = ( src.get()  for src in source_entities )
     
     cmd = list(self.cmd)
     cmd += [ '/nologo', "/OUT:%s" % self.target ]
@@ -180,7 +181,7 @@ class   MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
     
     out = self.execCmd( cmd, cwd = cwd, file_flag = '@' )
     
-    node.addTargets( self.target )
+    targets.add( self.target )
     
     return out
 
@@ -199,9 +200,9 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
+  def   build( self, source_entities, targets ):
     
-    obj_files = node.getSources()
+    obj_files = ( src.get()  for src in source_entities )
     
     cmd = list(self.cmd)
     target = self.target
@@ -237,13 +238,14 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
     else:
       tags = 'shlib'
       if os.path.exists( import_lib ):
-        node.addTargets( import_lib, tags = 'implib' )
+        targets.add( import_lib, tags = 'implib' )
       
       exports_lib = os.path.splitext( target )[0] + '.exp'
       if os.path.exists( exports_lib ):
         itargets.append( exports_lib )
     
-    node.addTargets( target, tags = tags, side_effects = itargets )
+    targets.add( target, tags = tags )
+    targets.addSideEffects( itargets )
     
     return out
   
