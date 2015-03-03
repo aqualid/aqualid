@@ -325,13 +325,13 @@ class   RSyncPullBuilder( aql.Builder ):
     
   #//-------------------------------------------------------//
 
-  def   makeEntity(self, value, use_cache = False ):
+  def   makeEntity(self, value ):
     if aql.isString( value ):
       remote_path = RemotePath( value, self.login, self.host )
       if not remote_path.isRemote():
         return self.makeFileEntity( value )
 
-    return super( self, RSyncPullBuilder ).makeEntity( value )
+    return self.makeSimpleEntity( value )
 
   #//-------------------------------------------------------//
 
@@ -403,7 +403,7 @@ class   RSyncPullBuilder( aql.Builder ):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName( self, brief ):
+  def   getTraceName( self, source_entities, brief ):
     if brief:
       name = self.cmd[0]
       name = os.path.splitext( os.path.basename( name ) )[0]

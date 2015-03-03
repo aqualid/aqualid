@@ -40,7 +40,7 @@ class SyncValueBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, brief ):
+  def   getTraceName(self, source_entities, brief):
     name = self.__class__.__name__
     name += "(%s:%s)" % (self.name, self.number,)
     return name

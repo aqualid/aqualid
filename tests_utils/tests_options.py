@@ -66,13 +66,13 @@ class   CLIOption( object ):
     'cli_name', 'cli_long_name', 'opt_name', 'value_type', 'default', 'help', 'metavar'
   )
   
-  def   __init__( self, cli_name, cli_long_name, opt_name, value_type, default, help, metavar = None ):
+  def   __init__( self, cli_name, cli_long_name, opt_name, value_type, default, description, metavar = None ):
     self.cli_name = cli_name
     self.cli_long_name = cli_long_name
     self.opt_name = opt_name
     self.value_type = value_type
     self.default = value_type(default)
-    self.help = help
+    self.help = description
     self.metavar = metavar
   
   #//-------------------------------------------------------//

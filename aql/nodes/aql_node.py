@@ -25,10 +25,10 @@ __all__ = (
 import os
 import operator
 
-from aql.utils import simpleObjectSignature, dumpSimpleObject, newHash, Chdir, eventStatus, logDebug, logInfo
-from aql.util_types import toSequence, isString, FilePath, AqlException
+from aql.utils import newHash, Chdir, eventStatus, logDebug, logInfo
+from aql.util_types import toSequence, AqlException
 
-from aql.entity import EntityBase, FileEntityBase, SimpleEntity, pickleable
+from aql.entity import EntityBase, SimpleEntity, pickleable
 
 #//===========================================================================//
 
@@ -228,7 +228,7 @@ class   NodeEntity (EntityBase):
   
   def   getName( self ):
     
-    hash = newHash( self.builder.name )
+    hash_sum = newHash( self.builder.name )
     
     name_entities = self.target_entities
     if not name_entities:
@@ -236,9 +236,9 @@ class   NodeEntity (EntityBase):
     
     names = sorted( entity.id for entity in name_entities )
     for name in names:
-      hash.update( name )
+      hash_sum.update( name )
     
-    return hash.digest()
+    return hash_sum.digest()
   
   #//-------------------------------------------------------//
   
@@ -248,24 +248,24 @@ class   NodeEntity (EntityBase):
     if builder_signature is None:
       return None
     
-    hash = newHash( builder_signature )
+    hash_sum = newHash( builder_signature )
     
     for entity in self.dep_entities:
       ent_sign = entity.signature
       if not ent_sign:
         return None
       
-      hash.update( entity.id )
-      hash.update( ent_sign )
+      hash_sum.update( entity.id )
+      hash_sum.update( ent_sign )
     
     for entity in self.source_entities:
       entity_signature = entity.signature
       if entity_signature is None:
         return None
       
-      hash.update( entity_signature )
+      hash_sum.update( entity_signature )
     
-    return hash.digest()
+    return hash_sum.digest()
   
   #//-------------------------------------------------------//
   
@@ -816,7 +816,7 @@ class Node (object):
       
       if not node_entity.checkActual( vfile, explain ):
         node = self._split( group, (node_entity,) )
-        split_nodes.append( node_entity )
+        split_nodes.append( node )
       
       node_entities.append( node_entity )
     

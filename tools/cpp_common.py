@@ -314,7 +314,7 @@ class CommonCompiler (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName( self, brief ):
+  def   getTraceName( self, source_entities, brief ):
     if brief:
       name = self.cmd[0]
       name = os.path.splitext( os.path.basename( name ) )[0]
@@ -443,7 +443,7 @@ class CommonCppLinkerBase( FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName( self, brief ):
+  def   getTraceName( self, source_entities, brief ):
     if brief:
       name = self.cmd[0]
       name = os.path.splitext( os.path.basename( name ) )[0]

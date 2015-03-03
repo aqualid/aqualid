@@ -140,7 +140,6 @@ class   ExecuteMethodBuilder (Builder):
     
     if make_files:
       self.makeEntity = self.makeFileEntity
-      self.default_entity_type = self.file_entity_type
   
   #//-------------------------------------------------------//
   

@@ -274,7 +274,7 @@ class EntitiesFile (object):
       
       entity = self.key2entity[ key ]
       if (entity is not None) and (entity.id != entity_id):
-        raise AssertionError("key(%s) != self.entity2key[ entity_id(%) ](%s)" % (key, entity_id, self.entity2key[ entity_id ]) )
+        raise AssertionError("key(%s) != self.entity2key[ entity_id(%s) ](%s)" % (key, entity_id, self.entity2key[ entity_id ]) )
     
     size = len(self.key2entity)
     

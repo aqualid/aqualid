@@ -765,26 +765,26 @@ class Options (object):
     
     result = {}
     for option, names in options2names.items():
-      help = option.option_type.help()
+      option_help = option.option_type.help()
       
-      if help.isHidden() and not hidden:
+      if option_help.isHidden() and not hidden:
         continue
       
-      help.names = names
+      option_help.names = names
       
       try:
-        help.current_value = self.evaluate( option, {}, names )
+        option_help.current_value = self.evaluate( option, {}, names )
       except Exception:
         pass
       
-      group_name = help.group if help.group else ""
+      group_name = option_help.group if option_help.group else ""
       
       try:
         group = result[ group_name ]
       except KeyError:
         group = result[ group_name ] = OptionHelpGroup( group_name )
       
-      group.append( help )
+      group.append( option_help )
     
     return sorted( result.values(), key = operator.attrgetter('name') )
         

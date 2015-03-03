@@ -249,12 +249,12 @@ class TestCaseBase(unittest.TestCase):
           except StopIteration:
             return
           
-          self.assertTrue( False, msg )
+          raise AssertionError( msg )
         
         try:
           v2 = next(second)
         except StopIteration:
-          self.assertTrue( False, msg )
+          raise AssertionError( msg )
         
         self.assertEqual( v1, v2, msg )
   

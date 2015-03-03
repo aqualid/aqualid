@@ -57,14 +57,14 @@ for enc in [
 
 #//-------------------------------------------------------//
 
-def   encodeStr( str, encoding = None ):
+def   encodeStr( value, encoding = None ):
   if encoding:
-    return str.encode( encoding )
+    return value.encode( encoding )
 
   error = None
   for encoding in _try_encodings:
     try:
-      return str.encode( encoding )
+      return value.encode( encoding )
     except UnicodeEncodeError as ex:
       if error is None:
         error = ex

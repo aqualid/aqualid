@@ -351,9 +351,9 @@ class   OptionHelpGroup( object ):
     self.max_option_name_length = 0
     self.help_list = []
   
-  def   append( self, help ):
-    self.max_option_name_length = max( self.max_option_name_length, len(max( help.names, key = len )) )
-    self.help_list.append( help )
+  def   append( self, option_help ):
+    self.max_option_name_length = max( self.max_option_name_length, len(max( option_help.names, key = len )) )
+    self.help_list.append( option_help )
   
   def   __iter__(self):
     return iter(self.help_list)
@@ -364,7 +364,7 @@ class   OptionHelpGroup( object ):
     
     group_name = self.name
     if group_name:
-      group_name = "%s:" % (group_name)
+      group_name = "%s:" % (group_name,)
       group_border_bottom = "-" * len(group_name)
       result.extend( [ group_name, group_border_bottom ] )
     
@@ -372,8 +372,8 @@ class   OptionHelpGroup( object ):
     
     self.help_list.sort( key = operator.attrgetter('names') ) 
     
-    for help in self.help_list:
-      opt_text = help.text( brief, names_indent )
+    for option_help in self.help_list:
+      opt_text = option_help.text( brief, names_indent )
       
       if (len(opt_text) > 1) and result and result[-1]:
         result.append("")

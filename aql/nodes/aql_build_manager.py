@@ -1054,7 +1054,7 @@ class BuildManager (object):
         if not tails and not nodes_builder.isBuilding():
           break
         
-        if not nodes_builder.build( tails, node_locker ):
+        if not nodes_builder.build( tails ):
           # no more processing threads
           break
     

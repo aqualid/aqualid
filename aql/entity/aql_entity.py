@@ -21,7 +21,7 @@ __all__ = (
 )
 
 from aql.util_types import toSequence, castStr, AqlException
-from aql.utils import simpleObjectSignature, dumpSimpleObject
+from aql.utils import simpleObjectSignature
 from .aql_entity_pickler import pickleable
 
 #//===========================================================================//

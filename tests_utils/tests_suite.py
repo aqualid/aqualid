@@ -402,7 +402,7 @@ class TestsSuiteMaker(object):
   def   loadLocals( self, test_methods_prefix = 'test' ):
     test_classes = _getModuleTestCaseClasses( __import__('__main__').__dict__ )
     
-    return Tests( test_classes )
+    return Tests( test_classes, test_methods_prefix = test_methods_prefix )
   
   #//-------------------------------------------------------//
   

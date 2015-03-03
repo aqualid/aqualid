@@ -27,8 +27,8 @@ class TestNullBuilder (Builder):
   
   #//-------------------------------------------------------//
   
-  def   build( self, node ):
-    node.setNoTargets()
+  def   build( self, source_entities, targets ):
+    pass
 
 #//===========================================================================//
 
@@ -87,10 +87,10 @@ options.build_variant = "final"
     prj = Project( cfg )
     
     class TestBuilder (Builder):
-      def   __init__(self):
+      def   __init__(self, options ):
         self.signature = b''
-      def   build( self, build_manager, vfile, node ):
-        return self.nodeTargets( SimpleEntity( b"", name = "value1" ) )
+      def   build( self, source_entities, targets ):
+        targets.add( SimpleEntity( b"", name = "value1" ) )
     
     class TestTool:
       def   TestBuilder( self, prj, options ):

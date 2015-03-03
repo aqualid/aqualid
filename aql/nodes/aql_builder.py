@@ -26,10 +26,10 @@ import os
 import errno
 import operator
 
-from aql.util_types import FilePath
+from aql.util_types import FilePath, isString
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand,\
   eventDebug, logDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
-from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity, SimpleEntity
+from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity, FileEntityBase, SimpleEntity
 
 #//===========================================================================//
 
@@ -42,6 +42,9 @@ def   eventExecCmd( settings, cmd, cwd, env ):
 #//===========================================================================//
 
 def   _getTraceArg( entity, brief ):
+  
+  value = None
+  
   if isinstance( entity, FileEntityBase ):
     value = entity.get()
     if brief:
@@ -49,25 +52,22 @@ def   _getTraceArg( entity, brief ):
   else:
     if isinstance( entity, EntityBase ):
       value = entity.get()
-
+    
     elif isinstance( entity, FilePath ):
       if brief:
         value = os.path.basename( entity )
 
     elif isString( entity ):
       value = entity.strip()
-
+      
       npos = value.find('\n')
       if npos != -1:
         value = value[:npos]
-
+      
       max_len = 64 if brief else 256
       src_len = len(value)
       if src_len > max_len:
         value = "%s...%s" % (value[:max_len//2], value[src_len - (max_len//2):])
-
-    else:
-      value = None
   
   return value
 
@@ -358,7 +358,6 @@ class Builder (object):
     """
     Checks that target entities are up to date. It called only if all other checks were successful.
     It can't be used to check remote resources.
-    :param source_entities: Building source entities
     :param target_entities: Previous target entities
     :return: True if is up to date otherwise False
     """
@@ -482,7 +481,7 @@ class Builder (object):
   
   def   getTrace( self, source_entities = None, target_entities = None, brief = False ):
     try:
-      name = self.getTraceName( brief )
+      name = self.getTraceName( source_entities, brief )
     except Exception:
       name = ''
     
@@ -589,11 +588,6 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   getDefaultEntityType( self ):
-    return self.default_entity_type 
-  
-  #//-------------------------------------------------------//
-  
   def   getFileEntityType( self ):
     return self.file_entity_type 
   
@@ -658,4 +652,3 @@ class FileBuilder (Builder):
   def   _initAttrs( self, options ):
     super(FileBuilder,self)._initAttrs( options )
     self.makeEntity = self.makeFileEntity
-    self.default_entity_type = self.file_entity_type
