@@ -13,7 +13,6 @@ from aql.options import builtinOptions
 from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
 from aql.nodes import Node, Builder, FileBuilder
 
-
 #//===========================================================================//
 
 def   _splitNodes( items ):
@@ -121,33 +120,68 @@ class TestNodes( AqlTestCase ):
         value1 = SimpleEntity( "http://aql.org/download1", name = "target_url1" )
         value2 = SimpleEntity( "http://aql.org/download2", name = "target_url2" )
         value3 = SimpleEntity( "http://aql.org/download3", name = "target_url3" )
+        dep_value1 = SimpleEntity( "SOME_VALUE1", name = "dep_value" )
+        dep_value2 = SimpleEntity( "SOME_VALUE2", name = "dep_value" )
         
         options = builtinOptions()
         builder = ChecksumBuilder( options )
         
+        #//-------------------------------------------------------//
+        
         node = Node( builder, [value1, value2, value3] )
+        node.depends( dep_value1 )
         node.initiate()
+        node.buildSplit( vfile )
         
         self.assertFalse( node.checkActual( vfile ) )
-        node.build()
+        out = node.build()
         node.save( vfile )
-        self.assertTrue( node.checkActual( vfile ) )
+        
+        #//-------------------------------------------------------//
         
         node = Node( builder, [value1, value2, value3] )
+        node.depends( dep_value1 )
         node.initiate()
+        node.buildSplit( vfile )
+        self.assertTrue( node.checkActual( vfile ) )
         
-        self.assertTrue( node.checkActual( vfile ) )
-        node.build()
-        node.save( vfile )
-        self.assertTrue( node.checkActual( vfile ) )
+        #//-------------------------------------------------------//
         
         node = Node( builder, [value1, value2, value3] )
+        node.depends( dep_value2 )
+        node.initiate()
+        node.buildSplit( vfile )
+        
+        self.assertFalse( node.checkActual( vfile ) )
+        out = node.build()
+        node.save( vfile )
+        
+        #//-------------------------------------------------------//
+        
+        node = Node( builder, [value1, value2, value3] )
+        node.depends( dep_value2 )
+        node.initiate()
+        node.buildSplit( vfile )
+        self.assertTrue( node.checkActual( vfile ) )
+        
+        #//-------------------------------------------------------//
+        
+        node = Node( builder, [value1, value2, value3] )
+        node.depends( dep_value2 )
         node.depends( NullEntity() )
         node.initiate()
+        node.buildSplit( vfile )
         
         self.assertFalse( node.checkActual( vfile ) )
         node.build()
         node.save( vfile )
+        
+        node = Node( builder, [value1, value2, value3] )
+        node.depends( dep_value2 )
+        node.depends( NullEntity() )
+        node.initiate()
+        node.buildSplit( vfile )
+        
         self.assertFalse( node.checkActual( vfile ) )
       
       finally:
@@ -160,27 +194,24 @@ class TestNodes( AqlTestCase ):
     node.depends( deps )
     
     node.initiate()
+    node.buildSplit( vfile )
     
     self.assertFalse( node.checkActual( vfile ) )
     node.build()
     node.save( vfile )
-    self.assertTrue( node.checkActual( vfile ) )
+    
+    #//-------------------------------------------------------//
     
     node = Node( builder, values )
     node.depends( deps )
     
     node.initiate()
+    node.buildSplit( vfile )
     
     self.assertTrue( node.checkActual( vfile ) )
-    node.build()
-    node.save( vfile )
-    self.assertTrue( node.checkActual( vfile ) )
     
-    for tmp_file in node.getTargetEntities():
-      tmp_files.append( tmp_file.name )
-    
-    for tmp_file in node.getSideEffectEntities():
-      tmp_files.append( tmp_file.name )
+    tmp_files.extend( target.get() for target in node.getTargetEntities() )
+    tmp_files.extend( target.get() for target in node.getSideEffectEntities() )
     
     return node
 
@@ -253,19 +284,16 @@ class TestNodes( AqlTestCase ):
                   f.write( b'333' )
                   f.flush()
                 
-                FileChecksumEntity( node_tname, use_cache = False )
-                
                 node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
                 
                 with open( node.getSideEffectEntities()[0].name, 'wb' ) as f:
                   f.write( b'abc' )
                   f.flush()
-                
-                FileChecksumEntity( node.getSideEffectEntities()[0].name, use_cache = False )
-                
+                                  
                 node = Node( builder, [value1] )
                 node.depends( [node3] )
                 node.initiate()
+                node.buildSplit( vfile )
                 
                 self.assertTrue( node.checkActual( vfile ) )
                 # node = self._rebuildNode( vfile, builder, [value1], [node3], tmp_files )
@@ -283,6 +311,7 @@ class TestNodes( AqlTestCase ):
   def   _rebuildBatchNode(self, vfile, src_files, built_count ):
     options = builtinOptions()
     options.batch_build = True
+    options.batch_groups = 2
     
     builder = CopyBuilder( options, "tmp", "i" )
     
@@ -291,14 +320,18 @@ class TestNodes( AqlTestCase ):
     node.depends( dep )
     
     node.initiate()
+    split_nodes = node.buildSplit( vfile )
     
     if built_count == 0:
+      self.assertFalse( split_nodes )
       self.assertTrue( node.checkActual( vfile ) )
     else:
-      self.assertFalse( node.checkActual( vfile ) )
-      node.build()
-      node.save( vfile )
-      self.assertEqual( len(node.getSourceEntities()), built_count )
+      for split_node in split_nodes:
+        self.assertFalse( split_node.checkActual( vfile ) )
+        split_node.build()
+        split_node.save( vfile )
+      
+      self.assertEqual( len(split_nodes), 2 )
       self.assertTrue( node.checkActual( vfile ) )
   
   #//=======================================================//
@@ -320,8 +353,6 @@ class TestNodes( AqlTestCase ):
         
         writeBinFile( src_files[1], b"src_file1" )
         writeBinFile( src_files[2], b"src_file1" )
-        FileChecksumEntity( src_files[1] )   # clear cached value
-        FileChecksumEntity( src_files[2] )   # clear cached value
         
         self._rebuildBatchNode( vfile, src_files, 2 )
 
@@ -362,6 +393,7 @@ def   _testNoBuildSpeed( vfile, builder, source_values ):
   for source in source_values:
     node = Node( builder, _FileValueType( source ) )
     node.initiate()
+    node.buildSplit( vfile )
     if not node.checkActual( vfile ):
       raise AssertionError( "node is not actual" )
 
@@ -406,11 +438,12 @@ class TestNodesSpeed ( AqlTestCase ):
           for source in source_files:
             node = Node( builder, _FileValueType( source ) )
             node.initiate()
+            node.buildSplit( vfile )
             self.assertFalse( node.checkActual( vfile ) )
-            builder.build( node )
-            builder.save( vfile, node )
-            for tmp_file in node.target_values:
-              tmp_files.append( tmp_file.name )
+            node.build()
+            node.save( vfile )
+            for tmp_file in node.getTargets():
+              tmp_files.append( tmp_file )
           
           t = lambda vfile = vfile, builder = builder, source_files = source_files, testNoBuildSpeed = _testNoBuildSpeed: testNoBuildSpeed( vfile, builder, source_files )
           t = timeit.timeit( t, number = 1 )

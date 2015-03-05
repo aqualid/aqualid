@@ -216,13 +216,16 @@ class   NodeEntity (EntityBase):
   #//-------------------------------------------------------//
   
   def   __getnewargs__( self ):
-    return self.name, self.signature, self.targets, self.itargets, self.idep_keys
+    return self.name, self.signature, self.target_entities, self.itarget_entities, self.idep_keys
   
   #//-------------------------------------------------------//
   
   def   getTargets( self ):
     builder = self.builder
-    return builder.makeEntities( builder.getTargetEntities( self.source_entities ) )
+    targets = builder.getTargetEntities( self.source_entities )
+    if not targets:
+      return ()
+    return builder.makeEntities( targets )
   
   #//-------------------------------------------------------//
   
@@ -413,6 +416,43 @@ class   NodeEntity (EntityBase):
   
   #//-------------------------------------------------------//
   
+  def   clear(self, vfile ):
+    """
+    Clear produced target entities
+    """
+    
+    self.idep_entities = tuple()
+    
+    node_key = vfile.findEntityKey( self )
+    
+    if node_key is None:
+      self.itarget_entities = tuple()
+      
+    else:
+      node_entity = vfile.getEntityByKey( node_key )
+      
+      targets = node_entity.target_entities
+      itargets = node_entity.itarget_entities
+      
+      if targets:
+        self.target_entities  = targets
+      else:
+        self.target_entities  = tuple()
+      
+      if itargets:
+        self.itarget_entities = itargets
+      else:
+        self.itarget_entities = tuple()
+      
+    try:
+      self.builder.clear( self.target_entities, self.itarget_entities )
+    except Exception:
+      pass
+    
+    return (node_key,) if node_key is not None else ()
+  
+  #//-------------------------------------------------------//
+  
   def   addTargets( self, entities, tags = None ):
     self.target_entities.extend( self.builder.makeEntities( toSequence(entities), tags ) )
   
@@ -508,7 +548,7 @@ class NodeFilter (object):
   
 #//===========================================================================//
 
-class NodeTagsFilter( NodeFilter ):
+class   NodeTagsFilter( NodeFilter ):
   __slots__ = (
       'tags',
     )
@@ -832,6 +872,8 @@ class Node (object):
     other = object.__new__( self.__class__ )
     
     other.builder         = self.builder
+    other.dep_nodes       = ()
+    other.sources         = ()
     other.source_entities = source_entities
     other.node_entities   = node_entities
     other.initiated       = True
@@ -844,18 +886,14 @@ class Node (object):
   
   #//=======================================================//
   
-  def   prebuild( self, vfile, explain = False ):
+  def   prebuild( self ):
     dep_nodes = self.buildDepends()
     if dep_nodes:
       return dep_nodes
     
     source_nodes = self.buildReplace()
-    if source_nodes:
-      return source_nodes
+    return source_nodes
     
-    split_nodes = self.buildSplit( vfile, explain )
-    return split_nodes
-  
   #//=======================================================//
   
   def   _populateTargets( self ):
@@ -865,9 +903,9 @@ class Node (object):
     if len(node_entities) == 1:
       node_entity = node_entities[0]
       
-      self.target_entities  = node_entity.targets
-      self.itarget_entities = node_entity.itargets
-      self.idep_entities    = node_entity.ideps
+      self.target_entities  = node_entity.target_entities
+      self.itarget_entities = node_entity.itarget_entities
+      self.idep_entities    = node_entity.idep_entities
     
     else:
       
@@ -886,7 +924,7 @@ class Node (object):
   
   #//=======================================================//
   
-  def   checkActual( self, vfile, explain ):
+  def   checkActual( self, vfile, explain = False ):
     
     if self.is_actual is None:
       for node_entity in self.node_entities:
@@ -912,7 +950,7 @@ class Node (object):
     
     targets = self.node_entities
     if len(targets) == 1:
-      output = self.builder.build( self.source_entities, targets )
+      output = self.builder.build( self.source_entities, targets[0] )
     else:
       targets = _NodeBatchTargets( self.node_entities_map )
       output = self.builder.buildBatch( self.source_entities, targets )
@@ -943,49 +981,50 @@ class Node (object):
   
   #//=======================================================//
   
-  def   clear( self, vfile ):
-    """
-    Clear produced entities
-    """
+  def   _clearSplit( self ):
     
-    self.idep_entities = tuple()
+    builder = self.builder
+    
+    source_entities = self.source_entities
+    if builder.isBatch():
+      groups = source_entities
+    else:
+      groups = self.builder.split( source_entities )
+      if not groups:
+        groups = source_entities
+    
+    node_entities = []
+    for group in groups:
+      group = toSequence( group )
+      
+      node_entity = NodeEntity( builder = builder,
+                                source_entities = group,
+                                dep_entities = () )
+      
+      node_entities.append( node_entity )
+    
+    self.node_entities = node_entities
+  
+  #//=======================================================//
+  
+  def   clear( self, vfile ):
+    
+    self._clearSplit()
     
     node_keys = []
-    node_entity = NodeEntity( name = self.name )
     
-    node_key = vfile.findEntityKey( node_entity )
-    if node_key is None:
-      if self.target_entities is None:
-        self.target_entities = tuple()
-      
-      self.itarget_entities = tuple()
-      
-    else:
-      node_entity = vfile.getEntityByKey( node_key )
-      
-      targets = node_entity.targets
-      itargets = node_entity.itargets
-      
-      if targets is not None:
-        self.target_entities  = targets
-        self.itarget_entities = itargets
-      else:
-        self.target_entities  = tuple()
-        self.itarget_entities = tuple()
-      
-      node_keys.append( node_key )
-      
-    try:
-      self.builder.clear( self )
-    except Exception:
-      pass
+    for node_entity in self.node_entities:
+      ent_keys = node_entity.clear( vfile )
+      node_keys.extend( ent_keys )
+    
+    self._populateTargets()
     
     return node_keys
   
   #//=======================================================//
   
   def   getWeight( self ):
-    return self.builder.getWeight( self )
+    return self.builder.getWeight( self.source_entities )
   
   #//=======================================================//
   
@@ -1077,6 +1116,9 @@ class Node (object):
   
   def   getTargetEntities(self):
     return self.target_entities
+  
+  def   getSideEffectEntities(self):
+    return self.itarget_entities
   
   #//=======================================================//
   

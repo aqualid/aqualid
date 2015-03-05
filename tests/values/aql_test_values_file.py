@@ -41,7 +41,7 @@ class TestValuesFile( AqlTestCase ):
         
         #//-------------------------------------------------------//
         
-        value1_key = vfile.addEntity( value1, cache = False ); vfile.selfTest()
+        value1_key = vfile.addEntity( value1 ); vfile.selfTest()
         vfile.dropEntityCache( value1 )
         
         s_dep_value = vfile.getEntityByKey( value1_key ); vfile.selfTest()
@@ -107,7 +107,7 @@ class TestValuesFile( AqlTestCase ):
         
         value4 = SimpleEntity( "http://aql.org/download3/0", name = value4.name )
         
-        vfile.addEntity( value4, cache = False ); vfile.selfTest()
+        vfile.addEntity( value4 ); vfile.selfTest()
         
         self.assertSequenceEqual( vfile.getEntitiesByKeys( dep_keys_1 ), dep_values_1 )
         self.assertIsNone( vfile.getEntityByKey( dep_keys_2[-1] ) )

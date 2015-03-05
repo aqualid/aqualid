@@ -158,7 +158,7 @@ class ProjectConfig( object ):
   
   __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
                'verbose', 'silent', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path', 'no_tool_errors',
-               'build_always', 'clean', 'status', 'list_options', 'list_tool_options', 'list_targets',
+               'build_always', 'clean', 'list_options', 'list_tool_options', 'list_targets',
                'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
                'debug_exec',
                'force_lock', 'show_version',
@@ -183,7 +183,6 @@ class ProjectConfig( object ):
       CLIOption( "-c", "--config",            "config",             FilePath,   None,         "The configuration file used to read CLI arguments." ),
       CLIOption( "-B", "--always",            "build_always",       bool,       False,        "Unconditionally build all targets." ),
       CLIOption( "-R", "--clean",             "clean",              bool,       False,        "Cleans targets." ),
-      CLIOption( "-n", "--status",            "status",             bool,       False,        "Print status of targets." ),
       CLIOption( "-u", "--up",                "search_up",          bool,       False,        "Search up directory tree for a make file." ),
       CLIOption( "-e", "--no-tool-errors",    "no_tool_errors",     bool,       False,        "Stop on any error during initialization of tools." ),
                                                                     
@@ -263,7 +262,6 @@ class ProjectConfig( object ):
     self.keep_going         = cli_config.keep_going
     self.build_always       = cli_config.build_always
     self.clean              = cli_config.clean
-    self.status             = cli_config.status
     self.list_options       = cli_config.list_options
     self.list_tool_options  = cli_config.list_tool_options
     self.list_targets       = cli_config.list_targets
@@ -803,14 +801,6 @@ class Project( object ):
     build_nodes = self._getBuildNodes()
     
     self.build_manager.clear( nodes = build_nodes, force_lock = force_lock )
-  
-  #//=======================================================//
-  
-  def Status( self, explain = False, force_lock = False ):
-    build_nodes = self._getBuildNodes()
-    
-    is_actual = self.build_manager.status( nodes = build_nodes, explain = explain, force_lock = force_lock )
-    return is_actual
   
   #//=======================================================//
   

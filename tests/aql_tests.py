@@ -207,9 +207,6 @@ class AqlTestCase( TestCaseBase ):
   def   updateCppFile( cpp_file, new_line ):
     with open( cpp_file, 'a' ) as f:
       f.write( new_line )
-    
-    FileChecksumEntity( cpp_file, use_cache = False )
-    FileTimestampEntity( cpp_file, use_cache = False )
   
   #//===========================================================================//
   

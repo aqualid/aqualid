@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2013 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -86,6 +86,7 @@ class   EntityBase (object):
   def   getId(self):
     cls = self.__class__
     return simpleObjectSignature( (self.name, cls.__name__, cls.__module__) )
+  
   #//-------------------------------------------------------//
   
   def   getName(self):
@@ -105,8 +106,8 @@ class   EntityBase (object):
       self.name = name = self.getName()
       return name
     elif attr == 'id':
-      self.name = name = self.getName()
-      return name
+      self.id = id = self.getId()
+      return id
     
     raise AttributeError("Unknown attribute: '%s'" % (attr,))
   

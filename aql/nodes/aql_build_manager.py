@@ -30,20 +30,6 @@ from aql.entity import EntitiesFile
 
 #//===========================================================================//
 
-@eventStatus
-def   eventNodeActual( settings, node, progress ):
-  msg = "(%s) ACTUAL: %s" % (progress, node.getBuildStr( settings.brief ))
-  logInfo( msg )
-
-#//===========================================================================//
-
-@eventStatus
-def   eventNodeOutdated( settings, node, progress ):
-  msg = "(%s) OUTDATED: %s" % (progress, node.getBuildStr( settings.brief ))
-  logInfo( msg )
-
-#//===========================================================================//
-
 @eventWarning
 def   eventBuildTargetTwice( settings, entity, node1 ):
   logWarning("Target '%s' is built twice. The last time built by: '%s' " %
@@ -699,9 +685,15 @@ class _NodesBuilder (object):
       
       vfile = vfiles[ node.builder ]
       
-      prebuit_nodes = node.prebuild( vfile, explain )
+      prebuit_nodes = node.prebuild()
       if prebuit_nodes:
         build_manager.depends( node, prebuit_nodes )
+        changed = True
+        continue
+      
+      split_nodes =  node.buildSplit( vfile, explain )
+      if split_nodes:
+        build_manager.depends( node, split_nodes )
         changed = True
         continue
       
@@ -766,7 +758,11 @@ class _NodesBuilder (object):
     
     for node in nodes:
       
-      if self._prebuild( node ):
+      node.initiate()
+      
+      prebuit_nodes = node.prebuild()
+      if prebuit_nodes:
+        build_manager.depends( node, prebuit_nodes )
         continue
       
       vfile = vfiles[ node.builder ]
@@ -779,24 +775,6 @@ class _NodesBuilder (object):
     for vfile, remove_keys in remove_keys.items():
       vfile.removeEntityKeys( remove_keys )
     
-  #//-------------------------------------------------------//
-  
-  def   status( self, nodes ):
-    
-    vfiles = self.vfiles
-    build_manager = self.build_manager
-    
-    for node in nodes:
-      
-      if self._prebuild( node ):
-        continue
-      
-      vfile = vfiles[ node.builder ]
-      if build_manager.isActualNode( node, vfile ):
-        build_manager.actualNodeStatus( node )
-      else:
-        build_manager.outdatedNodeStatus( node )
-  
   #//-------------------------------------------------------//
   
   def   close( self ):
@@ -924,20 +902,6 @@ class BuildManager (object):
         return node_locker.popUnlocked()
     
     return tails
-  
-  #//-------------------------------------------------------//
-  
-  def   actualNodeStatus( self, node ):
-    eventNodeActual( node, self.getProgressStr() )
-    self.actualNode( node )
-  
-  #//-------------------------------------------------------//
-  
-  def   outdatedNodeStatus( self, node ):
-    self._failed_nodes[ node ] = None
-    
-    eventNodeOutdated( node, self.getProgressStr() )
-    node.shrink()
   
   #//-------------------------------------------------------//
   
@@ -1085,12 +1049,6 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   printStatusState(self):
-    logInfo("Outdated nodes: %s" % len(self._failed_nodes) )
-    logInfo("Actual nodes: %s" % self.actual )
-  
-  #//-------------------------------------------------------//
-  
   def   clear( self, nodes = None, force_lock = False ):
     
     self.__reset()
@@ -1106,23 +1064,3 @@ class BuildManager (object):
           break
         
         nodes_builder.clear( tails )
-  
-  #//-------------------------------------------------------//
-  
-  def   status( self, nodes = None, explain = False, force_lock = False ):
-    
-    self.__reset( explain = explain )
-    
-    self.shrink( nodes )
-    
-    with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
-      
-      while True:
-        tails = self.getNextNodes()
-        
-        if not tails:
-          break
-        
-        nodes_builder.status( tails )
-    
-    return self.isOk()

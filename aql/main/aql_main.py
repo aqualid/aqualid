@@ -198,11 +198,7 @@ def   _main( prj_cfg ):
       
       success = True
       
-      if prj_cfg.status:
-        success = prj.Status( explain = prj_cfg.debug_explain )
-        prj.build_manager.printStatusState()
-        
-      elif prj_cfg.clean:
+      if prj_cfg.clean:
         prj.Clear()
       
       elif prj_cfg.list_targets:
