@@ -52,7 +52,7 @@ class TestToolGcc( AqlTestCase ):
       self.buildPrj( prj, 0 )
       
       gcc.Compile( src_files, batch_build = False )
-      self.clearPrj( prj, num_src_files )
+      self.clearPrj( prj )
   
   def test_gcc_compiler_target(self):
     
@@ -101,7 +101,7 @@ class TestToolGcc( AqlTestCase ):
       for src,target in zip(src_files,targets):
         gcc.Compile( src, target = target )
 
-      self.clearPrj( prj, num_src_files )
+      self.clearPrj( prj )
       
       for target in targets:
         self.assertFalse( os.path.isfile( target ) )
@@ -324,7 +324,7 @@ class TestToolGcc( AqlTestCase ):
       self.buildPrj( prj, num_groups )
       
       cpp.Compile( src_files, batch_build = True, batch_groups = num_groups)
-      self.clearPrj( prj, num_groups )
+      self.clearPrj( prj )
   
   #//-------------------------------------------------------//
   

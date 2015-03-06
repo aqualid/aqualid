@@ -120,12 +120,12 @@ class AqlTestCase( TestCaseBase ):
   
   #//===========================================================================//
   
-  def   clearPrj( self, prj, num_clear_nodes ):
+  def   clearPrj( self, prj ):
     self.removed_nodes = 0
 
     prj.Clear()
     
-    self.assertEqual( self.removed_nodes, num_clear_nodes )
+    self.assertGreater( self.removed_nodes, 0 )
   
   #//===========================================================================//
   

@@ -88,7 +88,7 @@ class ExecuteCommandBuilder (Builder):
   #//-------------------------------------------------------//
   
   def   build( self, source_entities, targets ):
-    cmd = tuple( src for src in source_entities)
+    cmd = tuple( src.get() for src in source_entities)
     
     cmd_targets = self._getCmdTargets()
     if cmd_targets:
@@ -192,7 +192,7 @@ class CopyFilesBuilder (FileBuilder):
   
   #//-------------------------------------------------------//
   
-  def   getTraceName(self, source_entities, brief ):
+  def   getTraceName( self, source_entities, brief ):
     return "Copy files"
   
   #//-------------------------------------------------------//

@@ -285,14 +285,6 @@ class Builder (object):
   def   __new__(cls, options, *args, **kw):
     
     self = super(Builder, cls).__new__(cls)
-    self.makeEntity = self.makeSimpleEntity
-    
-    is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
-    self.__is_batch = is_batch
-    if is_batch:
-      self.batch_groups = options.batch_groups.get()
-      self.batch_size = options.batch_size.get()
-    
     return BuilderInitiator( self, options, args, kw )
   
   #//-------------------------------------------------------//
@@ -303,6 +295,12 @@ class Builder (object):
     self.relative_build_paths = options.relative_build_paths.get()
     self.file_entity_type = _fileSinature2Type( options.file_signature.get() )
     self.env = options.env.get()
+    
+    is_batch = (options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
+    self.__is_batch = is_batch
+    if is_batch:
+      self.batch_groups = options.batch_groups.get()
+      self.batch_size = options.batch_size.get()
   
   #//-------------------------------------------------------//
 
@@ -602,6 +600,8 @@ class Builder (object):
     
     return SimpleEntity( entity )
   
+  makeEntity = makeSimpleEntity
+  
   #//-------------------------------------------------------//
   
   def   makeFileEntity( self, entity, tags = None ):
@@ -649,6 +649,4 @@ class Builder (object):
 #//===========================================================================//
 
 class FileBuilder (Builder):
-  def   _initAttrs( self, options ):
-    super(FileBuilder,self)._initAttrs( options )
-    self.makeEntity = self.makeFileEntity
+  makeEntity = Builder.makeFileEntity

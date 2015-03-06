@@ -124,11 +124,11 @@ class TestBuiltinTools( AqlTestCase ):
 
   def test_exec_method(self):
     
-    def   CopyFileExt( builder, node, ext ):
-      src_file = node.getSources()[0]
+    def   CopyFileExt( builder, source_entities, targets, ext ):
+      src_file = source_entities[0].get()
       dst_file = os.path.splitext(src_file)[0] + ext
       shutil.copy( src_file, dst_file )
-      node.addTargets( dst_file )
+      targets.add( dst_file )
     
     with Tempdir() as tmp_dir:
       
@@ -165,7 +165,7 @@ class TestBuiltinTools( AqlTestCase ):
         self.assertTrue( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
       
       prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',) )
-      self.clearPrj( prj, len(sources) )
+      self.clearPrj( prj )
       
       for src in sources:
         self.assertFalse( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
@@ -179,7 +179,7 @@ class TestBuiltinTools( AqlTestCase ):
         self.assertTrue( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
         
       prj.tools.ExecuteMethod( sources, method = CopyFileExt, args = ('.cxx',), clear_targets = False )
-      self.clearPrj( prj, len(sources) )
+      self.clearPrj( prj )
       
       for src in sources:
         self.assertTrue( os.path.isfile( os.path.splitext(src)[0] + '.cxx') )
@@ -200,7 +200,7 @@ class TestBuiltinTools( AqlTestCase ):
         # setEventSettings( EventSettings( brief = False, with_output = True ) )
         
         cfg = ProjectConfig( args = [ "build_dir=%s" % build_dir] )
-        # cfg.debug_explain = True
+        cfg.debug_backtrace = True
         
         prj = Project( cfg )
         

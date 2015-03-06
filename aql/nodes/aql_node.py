@@ -798,8 +798,8 @@ class Node (object):
     
     groups = builder.splitBatch( not_actual_sources )
     if not groups:
-      groups = not_actual_sources   # this should never happen, looks like a bug in the builder
-    
+      groups = not_actual_sources   # this should never happen, looks like a bug in the builder or Aqualid
+          
     split_nodes = []
     
     for group in groups:
@@ -948,12 +948,13 @@ class Node (object):
   
   def   build( self ):
     
-    targets = self.node_entities
-    if len(targets) == 1:
-      output = self.builder.build( self.source_entities, targets[0] )
-    else:
+    builder = self.builder
+    if builder.isBatch():
       targets = _NodeBatchTargets( self.node_entities_map )
-      output = self.builder.buildBatch( self.source_entities, targets )
+      output = builder.buildBatch( self.source_entities, targets )
+    else:
+      targets = self.node_entities
+      output = builder.build( self.source_entities, targets[0] )
     
     self._populateTargets()
     
