@@ -9,7 +9,7 @@ sys.path[:0] = map( lambda p: os.path.abspath( os.path.join( os.path.dirname( __
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
 from aql.utils  import Tempfile, addUserHandler, removeUserHandler, enableDefaultHandlers
 from aql.util_types import FilePath
-from aql.entity import FileChecksumEntity, FileTimestampEntity
+from aql.nodes.aql_node import NodeEntity
 
 #//===========================================================================//
 
@@ -207,6 +207,8 @@ class AqlTestCase( TestCaseBase ):
   def   updateCppFile( cpp_file, new_line ):
     with open( cpp_file, 'a' ) as f:
       f.write( new_line )
+    
+    NodeEntity._ACTUAL_IDEPS_CACHE.clear()    # clear nodes cache
   
   #//===========================================================================//
   

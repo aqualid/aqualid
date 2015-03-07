@@ -232,7 +232,7 @@ class TestCaseBase(unittest.TestCase):
   
   if not hasattr( unittest.TestCase, 'assertItemsEqual' ):
     def assertSequenceEqual( self, first, second, msg = None, seq_type = None):
-      if msg is None: msg = str(first) + " != " + str(first)
+      if msg is None: msg = str(first) + " != " + str(second)
       
       if seq_type:
         self.assertEqual( type(first), type(second), msg )

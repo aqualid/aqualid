@@ -83,10 +83,10 @@ class TestValuesFile( AqlTestCase ):
         all_keys = vfile.addEntities( all_values ); vfile.selfTest()
         self.assertSequenceEqual( vfile.findEntities( all_values ), all_values )
         
-        dep_keys_1 = vfile.addEntities( dep_values_1 ); vfile.selfTest()
-        dep_keys_2 = vfile.addEntities( dep_values_2 ); vfile.selfTest()
-        dep_keys_3 = vfile.addEntities( dep_values_3 ); vfile.selfTest()
-        dep_keys_4 = vfile.addEntities( dep_values_4 ); vfile.selfTest()
+        dep_keys_1 = vfile.addCachedEntities( dep_values_1 ); vfile.selfTest()
+        dep_keys_2 = vfile.addCachedEntities( dep_values_2 ); vfile.selfTest()
+        dep_keys_3 = vfile.addCachedEntities( dep_values_3 ); vfile.selfTest()
+        dep_keys_4 = vfile.addCachedEntities( dep_values_4 ); vfile.selfTest()
         
         self.assertSequenceEqual( dep_keys_1, dep_keys_2[:-1] )
         self.assertSequenceEqual( dep_keys_2, dep_keys_3[:-1] )

@@ -227,10 +227,13 @@ class TestToolGcc( AqlTestCase ):
       cpp.LinkLibrary( src_files, target = 'foo' )
       self.buildPrj( prj, 1 )
       
+      # prj.config.debug_explain = True
+      
       cpp.LinkLibrary( src_files, target = 'foo', batch_build = False )
       self.buildPrj( prj, 0 )
       
       self.touchCppFiles( hdr_files )
+      
       cpp.LinkLibrary( src_files, target = 'foo', batch_build = False )
       self.buildPrj( prj, num_src_files )
   

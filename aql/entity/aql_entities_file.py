@@ -186,12 +186,34 @@ class EntitiesFile (object):
     
     entity_id = entity.id
     key = self.__getKeyByEntityId( entity_id )
+    data = self.pickler.dumps( entity )
+    
+    if key is None:
+      key = self.data_file.append( data )
+      
+      self.__addEntityToCache( key, entity_id, None )
+    
+    else:
+      new_key = self.data_file.replace( key, data )
+      
+      self.__updateEntityInCache( key, new_key, entity_id, None )
+      
+      return new_key
+    
+    return key
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   addCachedEntity( self, entity ):
+    
+    entity_id = entity.id
+    key = self.__getKeyByEntityId( entity_id )
     
     if key is None:
       data = self.pickler.dumps( entity )
       key = self.data_file.append( data )
       
-      self.__addEntityToCache( key, entity_id, None )
+      self.__addEntityToCache( key, entity_id, entity )
     
     else:
       val = self.getEntityByKey( key )
@@ -208,11 +230,11 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   replaceEntity(self, key, entity ):
+  def   replaceCachedEntity( self, key, entity ):
     data = self.pickler.dumps( entity )
     new_key = self.data_file.replace( key, data )
     
-    self.__updateEntityInCache( key, new_key, entity.id, None )
+    self.__updateEntityInCache( key, new_key, entity.id, entity )
     return new_key
   
   #//---------------------------------------------------------------------------//
@@ -224,6 +246,11 @@ class EntitiesFile (object):
   
   def   addEntities( self, entities ):
     return tuple( map( self.addEntity, entities ) )
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   addCachedEntities( self, entities ):
+    return tuple( map( self.addCachedEntity, entities ) )
   
   #//---------------------------------------------------------------------------//
   

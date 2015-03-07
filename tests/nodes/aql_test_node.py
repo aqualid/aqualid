@@ -206,9 +206,9 @@ class TestNodes( AqlTestCase ):
     node.depends( deps )
     
     node.initiate()
-    node.buildSplit( vfile )
+    node.buildSplit( vfile, explain = True )
     
-    self.assertTrue( node.checkActual( vfile ) )
+    self.assertTrue( node.checkActual( vfile, explain = True ) )
     
     tmp_files.extend( target.get() for target in node.getTargetEntities() )
     tmp_files.extend( target.get() for target in node.getSideEffectEntities() )

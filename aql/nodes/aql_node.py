@@ -154,8 +154,8 @@ class NodeStaleReason (object):
       # msg += "\nsources sig: %s" % ([ src.signature for src in self.sources], )
     
     elif code == NodeStaleReason.IMPLICIT_DEP_CHANGED:
-      dep = "'%s'" % self.entity if self.entity else ""
-      msg = "Node's implicit dependency %s has changed, rebuilding the node: %s" % (dep, node_name)
+      dep = (" '%s'" % self.entity) if self.entity is not None else ""
+      msg = "Node's implicit dependency%s has changed, rebuilding the node: %s" % (dep, node_name)
     
     elif code == NodeStaleReason.NO_TARGETS:
       msg = "Node's targets were not previously stored, rebuilding the node: %s" % (node_name,)
@@ -285,6 +285,7 @@ class   NodeEntity (EntityBase):
   
   @staticmethod
   def   _checkIdeps( vfile, idep_keys, idep_entities, reason, _actual_ideps_cache = _ACTUAL_IDEPS_CACHE ):
+    
     for key in idep_keys:
       entity = vfile.getEntityByKey( key )
       
@@ -295,19 +296,20 @@ class   NodeEntity (EntityBase):
       
       entity_id = entity.id
       
-      if entity_id not in _actual_ideps_cache:
+      actual_entity = _actual_ideps_cache.get( entity_id )
+      
+      if actual_entity is None:
         actual_entity = entity.getActual()
-        if entity is actual_entity:
-          _actual_ideps_cache[ entity_id ] = key, entity
-        else:
-          new_key = vfile.replaceEntity( key, actual_entity )
-          _actual_ideps_cache[ entity_id ] = new_key, actual_entity
+        _actual_ideps_cache[ entity_id ] = actual_entity
+        
+        if entity is not actual_entity:
+          vfile.replaceCachedEntity( key, actual_entity )
           
           if reason is not None:
             reason.setImplicitDepChanged( entity )
           return False
             
-      idep_entities.append( entity )
+      idep_entities.append( actual_entity )
     
     return True
   
@@ -315,24 +317,15 @@ class   NodeEntity (EntityBase):
   
   def   _saveIdeps( self, vfile, _actual_ideps_cache = _ACTUAL_IDEPS_CACHE ):
     
-    keys = []
     entities = []
-    new_entities = []
-    for entity in toSequence(self.idep_entities):
-      entity_id = entity.id
-      pair = _actual_ideps_cache.get( entity_id, None )
-      if pair is None:
-        if entity.signature is None:
-          raise ErrorUnactualEntity( entity )
+    for entity in self.idep_entities:
+      entity = _actual_ideps_cache.setdefault( entity.id, entity )
+      if entity.signature is None:
+        raise ErrorUnactualEntity( entity )
         
-        new_entities.append( entity )
-      else:
-        key, entity = pair
-        keys.append( key )
-      
       entities.append( entity )
     
-    keys[0:1] = vfile.addEntities( new_entities ) 
+    keys = vfile.addCachedEntities( entities )
     
     self.idep_entities  = entities
     self.idep_keys      = keys

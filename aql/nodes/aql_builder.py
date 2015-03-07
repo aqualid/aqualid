@@ -111,6 +111,7 @@ def   _getTraceStr( name, sources, targets, brief ):
     
     name    = _joinArgs( name,    brief )
     sources = _joinArgs( sources, brief )
+    
     targets = _joinArgs( targets, brief )
     
     build_str  = name
@@ -614,11 +615,11 @@ class Builder (object):
   
   def   makeFileEntities( self, entities, tags = None ):
     make_entity = self.makeFileEntity
-    return ( make_entity( entity, tags = tags ) for entity in entities )
+    return tuple( make_entity( entity, tags = tags ) for entity in toSequence( entities ) )
   
   def   makeEntities( self, entities, tags = None ):
     make_entity = self.makeEntity
-    return ( make_entity( entity, tags = tags ) for entity in entities )
+    return tuple( make_entity( entity, tags = tags ) for entity in toSequence(entities) )
   
   #//-------------------------------------------------------//
   
