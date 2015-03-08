@@ -51,7 +51,7 @@ try:
 except ImportError:
   import pickle
 
-from aql.util_types import uStr, isString, isUnicode, toUnicode, decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
+from aql.util_types import uStr, isString, castStr, isUnicode, toUnicode, decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
                            AqlException, SIMPLE_TYPES_SET 
 
 #//===========================================================================//
@@ -506,6 +506,9 @@ def executeCommand( cmd, cwd = None, env = None, stdin = None, file_flag = None,
   
   try:
     try:
+      if env:
+        env = dict( (castStr(key), castStr(value)) for key, value in env.items() )
+      
       p = subprocess.Popen( cmd, cwd = cwd, env = env, shell = shell,
                             stdin = stdin, stdout = subprocess.PIPE, stderr = subprocess.PIPE, universal_newlines = False )
       stdout, stderr = p.communicate()

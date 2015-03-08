@@ -44,11 +44,11 @@ except NameError:
 
 _try_encodings = []
 for enc in [
-            'utf-8',
             sys.stdout.encoding,
             locale.getpreferredencoding(False),
             sys.getfilesystemencoding(),
             sys.getdefaultencoding(),
+            'utf-8',
           ]:
   if enc:
     enc = enc.lower()

@@ -636,7 +636,7 @@ class Builder (object):
   def   execCmdResult(self, cmd, cwd = None, env = None, file_flag = None, stdin = None ):
     
     if env is None:
-      env = self.env.dump()
+      env = self.env
     
     if cwd is None:
       cwd = self.getBuildPath()

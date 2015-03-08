@@ -58,11 +58,6 @@ class   Dict (dict):
   
   #//-------------------------------------------------------//
   
-  def   dump( self ):
-    return dict( map(toString, pair) for pair in self.items() )
-  
-  #//-------------------------------------------------------//
-  
   def   copy( self, key_type = None, value_type = None ):
     
     other = Dict()
