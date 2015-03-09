@@ -283,35 +283,32 @@ class   NodeEntity (EntityBase):
   
   _ACTUAL_IDEPS_CACHE = {}
   
-  @staticmethod
-  def   _checkIdeps( vfile, idep_keys, idep_entities, reason, _actual_ideps_cache = _ACTUAL_IDEPS_CACHE ):
+  def   _getIdeps( vfile, idep_keys, reason, ideps_cache_get = _ACTUAL_IDEPS_CACHE.__getitem__, ideps_cache_set = _ACTUAL_IDEPS_CACHE.__setitem__ ):
     
-    for key in idep_keys:
-      entity = vfile.getEntityByKey( key )
-      
-      if entity is None:
-        if reason is not None:
-          reason.setImplicitDepChanged()
-        return False
-      
+    entities = vfile.getEntitiesByKeys( idep_keys )
+    if entities is None:
+      if reason is not None:
+        reason.setImplicitDepChanged()
+      return None
+    
+    for i, entity in enumerate( entities ):
       entity_id = entity.id
       
-      actual_entity = _actual_ideps_cache.get( entity_id )
-      
-      if actual_entity is None:
+      try:
+        entities[i] = ideps_cache_get( entity_id )
+      except KeyError:
         actual_entity = entity.getActual()
-        _actual_ideps_cache[ entity_id ] = actual_entity
+        ideps_cache_set( entity_id, actual_entity )
         
         if entity is not actual_entity:
-          vfile.replaceCachedEntity( key, actual_entity )
+          old_key = idep_keys[i]
+          vfile.replaceCachedEntity( old_key, actual_entity )
           
           if reason is not None:
             reason.setImplicitDepChanged( entity )
-          return False
-            
-      idep_entities.append( actual_entity )
+          return None
     
-    return True
+    return entities
   
   #//-------------------------------------------------------//
   
@@ -349,7 +346,7 @@ class   NodeEntity (EntityBase):
   
   #//-------------------------------------------------------//
   
-  def   checkActual( self, vfile, explain = False ):
+  def   checkActual( self, vfile, explain = False, _getIdeps = _getIdeps ):
     
     if explain:
       reason = NodeStaleReason( self.builder, self.source_entities, self.target_entities )
@@ -377,8 +374,8 @@ class   NodeEntity (EntityBase):
         reason.setSignatureChanged()
       return False
     
-    ideps = []
-    if not self._checkIdeps( vfile, other.idep_keys, ideps, reason ):
+    ideps = _getIdeps( vfile, other.idep_keys, reason )
+    if ideps is None:
       return False
     
     target_entities = other.target_entities

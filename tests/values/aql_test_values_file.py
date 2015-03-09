@@ -52,7 +52,7 @@ class TestValuesFile( AqlTestCase ):
         vfile.addEntity( value1 ); vfile.selfTest()
         
         s_dep_value = vfile.getEntitiesByKeys( value_keys ); vfile.selfTest()
-        self.assertIsNone( s_dep_value[0] )
+        self.assertIsNone( s_dep_value )
 
   #//===========================================================================//
 
@@ -111,8 +111,8 @@ class TestValuesFile( AqlTestCase ):
         
         self.assertSequenceEqual( vfile.getEntitiesByKeys( dep_keys_1 ), dep_values_1 )
         self.assertIsNone( vfile.getEntityByKey( dep_keys_2[-1] ) )
-        self.assertIsNone( vfile.getEntitiesByKeys( dep_keys_3 )[ len(dep_keys_2) - 1] )
-        self.assertIsNone( vfile.getEntitiesByKeys( dep_keys_4 )[ len(dep_keys_2) - 1] )
+        self.assertIsNone( vfile.getEntitiesByKeys( dep_keys_3 ) )
+        self.assertIsNone( vfile.getEntitiesByKeys( dep_keys_4 ) )
         
       finally:
         vfile.close()

@@ -62,6 +62,28 @@ class EntitiesFile (object):
     return entity
   
   #//---------------------------------------------------------------------------//
+
+  def   getEntitiesByKeys( self, keys ):
+    key2entity = self.key2entity
+    
+    entities = []
+    append = entities.append
+    
+    for key in keys:
+      try:
+        entity = key2entity[ key ]
+        if entity is None:
+          data = self.data_file[ key ]
+          entity = self.pickler.loads( data )
+          key2entity[ key ] = entity
+      except Exception:
+        return None
+      
+      append( entity )
+    
+    return entities
+  
+  #//---------------------------------------------------------------------------//
   
   def   __getKeyByEntityId(self, entity_id ):
     return self.entity2key.get( entity_id, None )
@@ -272,11 +294,6 @@ class EntitiesFile (object):
       self.__removeEntityByKey( key )
     
     self.data_file.remove( remove_keys )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   getEntitiesByKeys( self, keys ):
-    return [ self.getEntityByKey( key ) for key in keys ]
   
   #//---------------------------------------------------------------------------//
   
