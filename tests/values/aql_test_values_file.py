@@ -148,19 +148,23 @@ class TestValuesFile( AqlTestCase ):
   @skip
   def   test_value_file_speed(self):
     values = []
-    for i in range(0, 100000):
+    for i in range(0, 999):
       value = SimpleEntity( "http://aql.org/download", name = "target_url%s" % i )
       values.append( value )
     
     with Tempfile() as tmp:
+      print("Opening a database '%s' ..." % tmp )
       timer = Chrono()
       with timer:
         with EntitiesFile( tmp ) as vf:
-          vf.addEntities( values )
+          for i in range(10):
+            for entity in values:
+              keys = vf.addEntities( [entity] )
       print("save values time: %s" % timer )
       
       with timer:
         with EntitiesFile( tmp ) as vf:
+          # vf.findEntitiesById( vf.findEntityIds( keys ) )
           pass
       print("read values time: %s" % timer )
 
