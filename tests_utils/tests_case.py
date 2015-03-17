@@ -230,7 +230,7 @@ class TestCaseBase(unittest.TestCase):
       if msg is None: msg = str(a) + " <= " + str(b) + ' is False'
       self.assertTrue( a <= b, msg )
   
-  if not hasattr( unittest.TestCase, 'assertItemsEqual' ):
+  if not hasattr( unittest.TestCase, 'assertSequenceEqual' ):
     def assertSequenceEqual( self, first, second, msg = None, seq_type = None):
       if msg is None: msg = str(first) + " != " + str(second)
       

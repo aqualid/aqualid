@@ -797,6 +797,9 @@ class   Chrono (object):
     if seconds:   result.append("%s sec" % seconds)
     if milisecs:  result.append("%s ms" % milisecs)
     
+    if not minutes and not seconds and not milisecs:
+      result.append("0 ms")
+    
     return ' '.join( result )
 
 #//===========================================================================//
