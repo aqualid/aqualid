@@ -23,9 +23,9 @@ set label 3 "Aqualid successfully finished in about 9 hours" at 5,750 tc rgb "da
 
 set terminal png size 1024,600
 set output "bench100k_full.png"
-plot "mem_usage_aql_100k.txt"   using ($1/3600):($2/1024) title 'Aqualid' with lines ls 3,\
-     "mem_usage_scons_100k.txt" using ($1/3600):($2/1024) title 'SCons'   with lines ls 1,\
-     "mem_usage_waf_100k.txt"   using ($1/3600):($2/1024) title 'Waf'     with lines ls 2
+plot "mem_usage_aql_100k.txt"   using ($1/3600):($2/1024) title 'Aqualid 0.5' with lines ls 3,\
+     "mem_usage_scons_100k.txt" using ($1/3600):($2/1024) title 'SCons SCons 2.3.4'   with lines ls 1,\
+     "mem_usage_waf_100k.txt"   using ($1/3600):($2/1024) title 'Waf 1.8.4'     with lines ls 2
 
 #//-------------------------------------------------------//
 
@@ -39,4 +39,4 @@ unset label 3
 
 set terminal png size 1024,600
 set output "bench100k_nop.png"
-plot "mem_usage_aql_100k_nop.txt" using ($1/60):($2/1024) title 'Aqualid' with lines ls 3
+plot "mem_usage_aql_100k_nop.txt" using ($1/60):($2/1024) title 'Aqualid 0.5' with lines ls 3

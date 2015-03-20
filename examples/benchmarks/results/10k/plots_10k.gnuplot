@@ -23,7 +23,7 @@ set output "bench10k_full.png"
 plot "mem_usage_scons_10k.txt" using ($1/60):($2/1024) title 'SCons 2.3.4'   with lines ls 1,\
      "mem_usage_scons_ex_10k.txt" using ($1/60):($2/1024) title 'SCons 2.3.4 (__slots__ optimizations)'   with lines ls 4,\
      "mem_usage_waf_10k.txt"   using ($1/60):($2/1024) title 'Waf 1.8.4'     with lines ls 2,\
-     "mem_usage_aql_0.6_10k.txt"   using ($1/60):($2/1024) title 'Aqualid v0.6' with lines ls 3
+     "mem_usage_aql_0.6_10k.txt"   using ($1/60):($2/1024) title 'Aqualid 0.6' with lines ls 3
 
 #//-------------------------------------------------------//
 
@@ -35,7 +35,7 @@ set output "bench10k_nop.png"
 plot "mem_usage_scons_10k-nop.txt" using 1:($2/1024) title 'SCons 2.3.4'   with lines ls 1,\
      "mem_usage_scons_ex_10k-nop.txt" using 1:($2/1024) title 'SCons 2.3.4 (__slots__ optimizations)'   with lines ls 4,\
      "mem_usage_waf_10k_nop.txt"   using 1:($2/1024) title 'Waf 1.8.4'     with lines ls 2,\
-     "mem_usage_aql_0.6_10k_nop.txt"   using 1:($2/1024) title 'Aqualid v0.6' with lines ls 3
+     "mem_usage_aql_0.6_10k_nop.txt"   using 1:($2/1024) title 'Aqualid 0.6' with lines ls 3
 
 #//-------------------------------------------------------//
 
@@ -44,9 +44,9 @@ set key left top
 
 set terminal png size 1024,600
 set output "bench10k_aql_full.png"
-plot "mem_usage_aql_10k.txt"   using ($1/60):($2/1024) title 'Aqualid v0.5' with lines ls 1,\
-     "mem_usage_aql_0.6_10k.txt"   using ($1/60):($2/1024) title 'Aqualid v0.6' with lines ls 3,\
-     "mem_usage_aql_sqlite_10k.txt"   using ($1/60):($2/1024) title 'Aqualid v0.6 (use_sqlite3)' with lines ls 4
+plot "mem_usage_aql_10k.txt"   using ($1/60):($2/1024) title 'Aqualid 0.5' with lines ls 1,\
+     "mem_usage_aql_0.6_10k.txt"   using ($1/60):($2/1024) title 'Aqualid 0.6' with lines ls 3,\
+     "mem_usage_aql_sqlite_10k.txt"   using ($1/60):($2/1024) title 'Aqualid 0.6 (use_sqlite3)' with lines ls 4
 
 #//-------------------------------------------------------//
 
@@ -55,6 +55,6 @@ set xlabel "Time (seconds)"
 
 set terminal png size 1024,600
 set output "bench10k_aql_nop.png"
-plot "mem_usage_aql_10k_nop.txt"   using 1:($2/1024) title 'Aqualid v0.5' with lines ls 1,\
-     "mem_usage_aql_0.6_10k_nop.txt"   using 1:($2/1024) title 'Aqualid v0.6' with lines ls 3,\
-     "mem_usage_aql_sqlite_10k_nop.txt"   using 1:($2/1024) title 'Aqualid v0.6 (use_sqlite3)' with lines ls 4
+plot "mem_usage_aql_10k_nop.txt"   using 1:($2/1024) title 'Aqualid 0.5' with lines ls 1,\
+     "mem_usage_aql_0.6_10k_nop.txt"   using 1:($2/1024) title 'Aqualid 0.6' with lines ls 3,\
+     "mem_usage_aql_sqlite_10k_nop.txt"   using 1:($2/1024) title 'Aqualid 0.6 (use_sqlite3)' with lines ls 4
