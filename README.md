@@ -18,7 +18,7 @@ More information can be found in [Wiki](https://github.com/aqualid/aqualid/wiki)
 
 Build System Shootout [results](https://github.com/aqualid/aqualid/tree/master/examples/build-shoutout)
 
-Performance [benchmarks](https://github.com/aqualid/aqualid/wiki/Benchmark-results-for-v0.5)
+Performance [benchmarks](https://github.com/aqualid/aqualid/wiki/Benchmark-results)
 ####Memory usage of full build of a synthetic project with 10k files:
 ![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k/bench10k_full.png)
 
