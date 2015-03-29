@@ -157,9 +157,7 @@ class DataFile (object):
   # +-----------------------------------+
   # |8 bytes (next unique key)          |
   # +-----------------------------------+
-  # |4 bytes (meta end)                 |
-  # +-----------------------------------+
-  # |4 bytes (data offset)              |
+  # |4 bytes (data begin)               |
   # +-----------------------------------+
   # | meta1 (40 bytes)                  |
   # +-----------------------------------+
@@ -189,18 +187,11 @@ class DataFile (object):
   _KEY_OFFSET = _HEADER_SIZE
   _KEY_SIZE = _KEY_STRUCT.size
   
-  _META_TABLE_HEADER_STRUCT = struct.Struct(">LL") # 4 bytes (offset of meta table end), 4 bytes (offset of data area)
+  _META_TABLE_HEADER_STRUCT = struct.Struct(">L") # 4 bytes (offset of data area)
   _META_TABLE_HEADER_SIZE = _META_TABLE_HEADER_STRUCT.size
   _META_TABLE_HEADER_OFFSET = _KEY_OFFSET + _KEY_SIZE
   
   _META_TABLE_OFFSET = _META_TABLE_HEADER_OFFSET + _META_TABLE_HEADER_SIZE
-  
-  #//-------------------------------------------------------//
-  
-  def   __moveLocations( self, start_offset, shift_size ):
-    for location in self.locations.values():
-      if location.offset > start_offset:
-        location.offset += shift_size
   
   #//-------------------------------------------------------//
   
@@ -213,9 +204,9 @@ class DataFile (object):
     self.data_end = 0
     self.stream = None
     self.memmap = None
-    
+
     self.open( filename, force = force )
-  
+      
   #//-------------------------------------------------------//
   
   def   __enter__(self):
@@ -303,7 +294,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   _get_file_size( self, size ):
+  def   _get_file_size( self ):
     return self.memmap.size()
   
   #//-------------------------------------------------------//
@@ -352,10 +343,11 @@ class DataFile (object):
                         table_header_struct = _META_TABLE_HEADER_STRUCT,
                         table_header_offset = _META_TABLE_HEADER_OFFSET ):
     
-    header_dump = table_header_struct.pack( self.meta_end, self.data_end )
+    header_dump = table_header_struct.pack( self.data_begin )
     
     self._resize_file( self.data_end )
     self._write_file( table_header_offset, header_dump )
+    self._write_file( self.meta_end, b'\0' * (self.data_begin - self.meta_end) )
     self._flush_file()
   
   #//-------------------------------------------------------//
@@ -371,22 +363,31 @@ class DataFile (object):
     
     load_meta = MetaData.load
     
-    meta_offset = table_begin
+    meta_offset = 0
     while meta_offset < table_end:
-      meta_dump = items_dump[meta_offset:meta_size]
+      meta_dump = items_dump[ meta_offset : meta_offset + meta_size ]
       try:
         meta = load_meta( meta_dump )
         
-        meta.offset = meta_offset
+        data_capacity = meta.data_capacity
+        
+        if data_capacity == 0:
+          # end of meta table marker
+          break
+        
+        meta.offset = meta_offset + table_begin
         meta.data_offset = data_offset
         
         if (data_offset + meta.data_size) > data_end:
           raise ErrorDataFileChunkInvalid()
         
-        data_offset = data_offset + meta.data_capacity
+        data_offset = data_offset + data_capacity
         
       except Exception:
-        break
+        self.data_end = data_offset
+        self.meta_end = meta_offset
+        self._truncate_file()
+        return
       
       self.id2data[ meta.id ] = meta
       if meta.key:
@@ -395,10 +396,6 @@ class DataFile (object):
       meta_offset += meta_size
     
     self.data_end = data_offset
-    
-    if meta_offset < table_end:
-      self.meta_end = meta_offset
-      self._truncate_file()
         
   #//-------------------------------------------------------//
   
@@ -412,23 +409,22 @@ class DataFile (object):
     header_dump = self._read_file( table_header_offset, table_header_size )
     
     try:
-      table_end, data_begin = table_header_struct.unpack( header_dump )
+      data_begin, = table_header_struct.unpack( header_dump )
     except struct.error:
       self._reset_meta_table()
       return
     
-    self.meta_end = table_end
+    self.meta_end = data_begin
     self.data_begin = data_begin
     self.data_end = self._get_file_size()
     
-    if (table_end > data_begin) or (data_begin > self.data_end):
+    if (data_begin <= table_begin) or (data_begin > self.data_end):
       self._reset_meta_table()
       return
     
-    table_size = table_end - table_begin
-    reserved_size = data_begin - table_end
+    table_size = data_begin - table_begin
     
-    if ((table_size % meta_size) != 0) or ((reserved_size % meta_size) != 0):
+    if (table_size % meta_size) != 0:
       self._reset_meta_table()
       return
     
@@ -443,6 +439,8 @@ class DataFile (object):
   #//-------------------------------------------------------//
   
   def   _extend_meta_table( self,
+                            table_header_struct = _META_TABLE_HEADER_STRUCT,
+                            table_header_offset = _META_TABLE_HEADER_OFFSET,
                             table_begin = _META_TABLE_OFFSET ):
     
     data_begin = self.data_begin
@@ -452,6 +450,13 @@ class DataFile (object):
     new_data_begin = data_begin + table_capacity
     
     self._move_file_data( new_data_begin, data_begin, data_end - data_begin )
+    self._write_file( data_begin, b'\0' * table_capacity )
+    
+    header_dump = table_header_struct.pack( new_data_begin )
+    self._write_file( table_header_offset, header_dump )
+    
+    self.data_begin = new_data_begin
+    self.data_end += table_capacity
     
     for meta in self.id2data.values():
       meta.data_offset += table_capacity
@@ -459,13 +464,17 @@ class DataFile (object):
   #//-------------------------------------------------------//
   
   def   _extend_data( self, meta, oversize ):
-    next_data = meta.data_offset + meta.data_capacity
-    offset = self.data_end - next_data
-    self._move_file_data( next_data + oversize, next_data, offset )
+    new_next_data = meta.data_offset + meta.data_capacity
+    next_data = new_next_data - oversize
+    rest_size = self.data_end - next_data
+    if rest_size > 0:
+      self._move_file_data( new_next_data, next_data, rest_size )
     
-    for meta in self.id2data.values():
-      if meta.data_offset >= next_data: 
-        meta.data_offset += offset
+      for meta in self.id2data.values():
+        if meta.data_offset >= next_data:
+          meta.data_offset += oversize
+    
+    self.data_end += oversize
   
   #//-------------------------------------------------------//
   
@@ -501,21 +510,9 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, header_size = _HEADER_SIZE ):
+  def   clear( self ):
     
-    stream = self.stream
-    if stream is None:
-      return
-      
-    memmap = self.memmap
-    if memmap is not None:
-      memmap.close()
-    
-    stream.truncate( header_size )
-    stream.flush()
-    stream.seek( 0, os.SEEK_END )
-    
-    self.memmap = mmap.mmap( stream.fileno(), 0 )
+    self._reset_meta_table()
     
     self.id2data.clear()
     self.key2id.clear()
@@ -529,8 +526,6 @@ class DataFile (object):
     if meta_offset == self.data_begin:
       self._extend_meta_table()
     
-    self.meta_end += meta_size
-    
     data_offset = self.data_end
     
     meta = MetaData( meta_offset, key, data_id, data_offset, len(data) )
@@ -539,7 +534,7 @@ class DataFile (object):
     self._write_file( meta_offset, meta.dump() )
     
     self.data_end += meta.data_capacity
-    self.meta_end += meta_offset + meta_size
+    self.meta_end += meta_size
     
     self.id2data[ data_id ] = meta
   
@@ -562,17 +557,37 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   store( self, data_id, data ):
+  def   read( self, data_id ):
+    try:
+      meta = self.id2data[ data_id ]
+    except KeyError:
+      return None
     
-    meta = self.id2data.get( data_id )
-    if meta is None:
-      self._append( 0, data_id, data )
-    else:
-      self._update( meta, data, update_meta = False)
+    return self._read_file( meta.data_offset, meta.data_size )
   
   #//-------------------------------------------------------//
   
-  def   store_with_key( self, data_id, data ):
+  def   read_by_key( self, key ):
+    try:
+      meta = self.id2data[ self.key2id[key] ]
+    except KeyError:
+      return None
+    
+    return self._read_file( meta.data_offset, meta.data_size )
+  
+  #//-------------------------------------------------------//
+  
+  def   write( self, data_id, data ):
+    
+    try:
+      meta = self.id2data[ data_id ]
+      self._update( meta, data, update_meta = False)
+    except KeyError:
+      self._append( 0, data_id, data )
+  
+  #//-------------------------------------------------------//
+  
+  def   write_with_key( self, data_id, data ):
     
     meta = self.id2data.get( data_id )
     
@@ -596,7 +611,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   get_ids_by_keys(self, keys):
+  def   map_keys(self, keys):
     try:
       return tuple( map( self.key2id.__getitem__, keys ) )
     except KeyError:
@@ -604,22 +619,13 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   get_data( self, data_id ):
-    try:
-      meta = self.id2data[ data_id ]
-    except KeyError:
-      return None
-    
-    return self._read_file( meta.data_offset, meta.data_size )
-  
-  #//-------------------------------------------------------//
-  
-  def   __delitem__(self, key):
-    self.remove( (key,) )
+  def   __delitem__(self, data_id ):
+    self.remove( (data_id,) )
   
   #//-------------------------------------------------------//
   
   def   remove( self, data_ids ):
+    return
     
     del_keys = frozenset( del_keys )
     
@@ -647,71 +653,99 @@ class DataFile (object):
   
   def   selfTest( self ):
     
-    if self.stream is not None:
-      file_size = self.file_header.size()
-    else:
-      file_size = 0
+    if self.stream is None:
+      return
     
-    next_key = self.file_header.uid
+    file_size = self._get_file_size()
     
-    for key,location in self.locations.items():
-      
-      if key >= next_key:
-        raise AssertionError("location.key (%s) >= next key (%s)" % (key, next_key))
-      
-      if location.capacity < location.size:
-        raise AssertionError("location.capacity(%s) < location.size (%s)" % (location.capacity, location.size))
-      
-      file_size += location.space()
+    if self.data_begin > file_size:
+      raise AssertionError("data_begin(%s) > file_size(%s)" % (self.data_begin, file_size))
     
-    if file_size != self.file_size:
-      raise AssertionError("file_size (%s) != self.file_size (%s)" % (file_size, self.file_size) )
+    if self.data_begin > self.data_end:
+      raise AssertionError("data_end(%s) > data_end(%s)" % (self.data_begin, self.data_end))
     
-    ordered_location = sorted( self.locations.values(), key = lambda loc: loc.offset )
-    
-    if self.stream is not None:
-      real_file_size = self.stream.seek( 0, os.SEEK_END )
-      if ordered_location:
-        
-        last_location = ordered_location[-1]
-        last_data_offset = last_location.offset + last_location.header_size
-        
-        if real_file_size < (last_data_offset + last_location.size) or \
-           real_file_size > (last_data_offset + last_location.capacity) :
-          raise AssertionError("Invalid real_file_size(%s), last_location: %s" % (real_file_size, last_location) )
-      
-      else:
-        if (file_size != real_file_size) and (real_file_size != 0 or file_size != self.file_header.size()):
-          raise AssertionError("file_size(%s) != real_file_size(%s)" % (file_size, real_file_size))
-    
-    prev_location = None
-    for location in ordered_location:
-      if prev_location is not None:
-        if (prev_location.offset + prev_location.capacity + prev_location.header_size) != location.offset:
-          raise AssertionError("Messed locations: [%s] [%s]" % (prev_location, location))
-      
-      prev_location = location
+    if self.meta_end > self.data_begin:
+      raise AssertionError("meta_end(%s) > data_begin(%s)" % (self.meta_end, self.data_begin))
     
     #//-------------------------------------------------------//
     
-    if self.stream is not None:
-      file_header = DataFileHeader()
-      file_header.load( self.stream )
+    header_dump = self._read_file( self._META_TABLE_HEADER_OFFSET, self._META_TABLE_HEADER_SIZE )
+    
+    try:
+      data_begin, = self._META_TABLE_HEADER_STRUCT.unpack( header_dump )
+    except struct.error:
+      self._reset_meta_table()
+      return
+    
+    # if self.meta_end != meta_end:
+    #   raise AssertionError("self.meta_end(%s) != meta_end(%s)" % (self.meta_end, meta_end))
+    
+    if self.data_begin != data_begin:
+      raise AssertionError("self.data_begin(%s) != data_begin(%s)" % (self.data_begin, data_begin))
+    
+    #//-------------------------------------------------------//
+    
+    items = sorted( self.id2data.items(), key = lambda item: item[1].offset )
+    
+    last_meta_offset = self._META_TABLE_OFFSET
+    last_data_offset = self.data_begin
+    
+    for data_id, meta in items:
+      if meta.id != data_id:
+        raise AssertionError("meta.id(%s) != data_id(%s)" % (meta.id, data_id))
       
-      if self.file_header != file_header:
-        raise AssertionError("self.file_header != file_header")
+      if meta.key != 0:
+        if self.key2id[ meta.key ] != data_id:
+          raise AssertionError("self.key2id[ meta.key ](%s) != data_id(%s)" % (self.key2id[ meta.key ], data_id))
       
-      offset = file_header.size()
+      if meta.data_capacity < meta.data_size:
+        raise AssertionError("meta.data_capacity(%s) < meta.data_size (%s)" % (meta.data_capacity, meta.data_size))
       
-      while True:
-        key, location, size = DataFileChunk.load( self.stream, offset )
-        if key == -1:
-          break
-        
-        l = self.locations[key]
-
-        #noinspection PyUnresolvedReferences
-        if (l.size != location.size) or (l.capacity != location.capacity):
-          raise AssertionError("self.locations[%s] (%s) != location (%s)" % (key, l, location))
-        
-        offset += size
+      if meta.offset >= self.meta_end:
+        raise AssertionError("meta.offset(%s) >= self.meta_end(%s)" % (meta.offset, self.meta_end))
+      
+      if meta.offset != last_meta_offset:
+        raise AssertionError("meta.offset(%s) != last_meta_offset(%s)" % (meta.offset, last_meta_offset))
+      
+      if meta.data_offset != last_data_offset:
+        raise AssertionError("meta.data_offset(%s) != last_data_offset(%s)" % (meta.data_offset, last_data_offset))
+      
+      if meta.data_offset >= self.data_end:
+        raise AssertionError("meta.data_offset(%s) >= self.data_end(%s)" % (meta.data_offset, self.data_end))
+      
+      if (meta.data_offset + meta.data_size) > file_size:
+        raise AssertionError("(meta.data_offset + meta.data_size)(%s) > file_size(%s)" % ((meta.data_offset + meta.data_size), file_size))
+      
+      last_data_offset += meta.data_capacity
+      last_meta_offset += MetaData.size
+    
+    #//-------------------------------------------------------//
+    
+    if last_data_offset != self.data_end:
+      raise AssertionError("last_data_offset(%s) != self.data_end(%s)" % (last_data_offset, self.data_end))
+    
+    #//-------------------------------------------------------//
+    
+    for key, data_id in self.key2id.items():
+      if key != self.id2data[ data_id ].key:
+        raise AssertionError("key(%s) != self.id2data[ data_id ].key(%s)" % (key, self.id2data[ data_id ].key))
+    
+    #//-------------------------------------------------------//
+    
+    for data_id, meta in self.id2data.items():
+      meta_dump = self._read_file( meta.offset, MetaData.size )
+      stored_meta = MetaData.load( meta_dump )
+      
+      if meta.key != stored_meta.key:
+        raise AssertionError("meta.key(%s) != stored_meta.key(%s)" % (meta.key, stored_meta.key))
+      
+      if meta.id != stored_meta.id:
+        raise AssertionError("meta.id(%s) != stored_meta.id(%s)" % (meta.id, stored_meta.id))
+      
+      if meta.data_size != stored_meta.data_size:
+        raise AssertionError("meta.data_size(%s) != stored_meta.data_size(%s)" % (meta.data_size, stored_meta.data_size))
+      
+      if meta.data_capacity != stored_meta.data_capacity:
+        raise AssertionError("meta.data_capacity(%s) != stored_meta.data_capacity(%s)" % (meta.data_capacity, stored_meta.data_capacity))
+      
+      

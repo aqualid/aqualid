@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import uuid
 import timeit
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
@@ -12,23 +13,24 @@ from aql.utils import Tempfile, DataFile
 #//===========================================================================//
 
 def   generateData( min_size, max_size ):
-  b = bytearray()
-  
-  size = random.randint( min_size, max_size )
-  for i in range( 0, size ):
-    b.append( i % 256 )
-  
-  return b
+  return bytearray( random.randint( 0, 255 ) for i in range( random.randint( min_size, max_size ) ) )
 
 #//===========================================================================//
 
-def   generateDataList( min_list_size, max_list_size, min_data_size, max_data_size ):
-  bl = []
-  size = random.randint( min_list_size, max_list_size )
+def   generateDataMap( size, min_data_size, max_data_size ):
+  data_map = {}
   for i in range( 0, size ):
-    bl.append( generateData( min_data_size, max_data_size ) )
+    data_id = uuid.uuid4().bytes
+    data_map[ data_id ] = generateData( min_data_size, max_data_size )
   
-  return bl
+  return data_map
+
+#//===========================================================================//
+
+def   extendDataMap( data_map ):
+  for data_id in data_map:
+    data_size = len(data_map[ data_id ])
+    data_map[ data_id ] = generateData( data_size + 1, data_size * 2 )
 
 #//===========================================================================//
 
@@ -41,12 +43,11 @@ def   printFileContent( filename ):
 
 class TestDataFile( AqlTestCase ):
   
-  def test_data_file(self):
+  def test_data_file_add(self):
     with Tempfile() as tmp:
       tmp.remove()
       
-      data_list = generateDataList( 50, 50, 7, 57 )
-      data_hash = {}
+      data_map = generateDataMap( 2100, 16, 128 )
       
       df = DataFile( tmp )
       try:
@@ -56,61 +57,116 @@ class TestDataFile( AqlTestCase ):
         
         df.selfTest()
         
-        for data in data_list:
-          key = df.append( data ); df.selfTest()
-          data_hash[ key ] = data
+        for data_id, data in data_map.items():
+          df.write( data_id, data );  df.selfTest()
+          stored_data = df.read( data_id )
+          self.assertEqual( stored_data, data )
+      
+      finally:
+        df.close()
+
+  #//=======================================================//
+  
+  def test_data_file_update(self):
+    with Tempfile() as tmp:
+      tmp.remove()
+      
+      data_map = generateDataMap( 100, 16, 128 )
+      data_keys = {}
+      
+      df = DataFile( tmp )
+      try:
+        df.selfTest()
         
-        self.assertEqual( data_hash, dict( df ) )
+        df.clear()
         
-        df.selfTest(); df.close(); df.selfTest()
+        df.selfTest()
         
-        df = DataFile( tmp ); df.selfTest()
+        for data_id, data in data_map.items():
+          df.write( data_id, data );  df.selfTest()
+          stored_data = df.read( data_id )
+          self.assertEqual( stored_data, data )
         
-        self.assertEqual( len(data_hash), len( df ) )
-        self.assertEqual( data_hash, dict( df ) )
+        extendDataMap( data_map )
         
-        for key in data_hash:
-          data = bytearray( len(df[key]) )
-          new_key = df.replace(key, data )
-          df.selfTest()
-          del data_hash[key]; data_hash[new_key] = data
+        for data_id, data in data_map.items():
+          df.write( data_id, data ); df.selfTest()
+          stored_data = df.read( data_id )
+          self.assertEqual( stored_data, data )
         
-        self.assertEqual( data_hash, dict( df ) )
+        df.close(); df.selfTest()
         
-        for key in data_hash:
-          data = bytearray( len(df[key]) // 2 )
-          new_key = df.replace(key, data )
-          df.selfTest()
-          del data_hash[key]; data_hash[new_key] = data
+        df.open( tmp ); df.selfTest()
         
-        self.assertEqual( data_hash, dict( df ) )
+        for data_id, data in data_map.items():
+          stored_data = df.read( data_id )
+          self.assertEqual( stored_data, data )
         
-        for key in data_hash:
-          data = bytearray( len(df[key]) * 8 )
-          new_key = df.replace(key, data )
-          df.selfTest()
-          del data_hash[key]; data_hash[new_key] = data
+        for data_id, data in data_map.items():
+          key = df.write_with_key( data_id, data ); df.selfTest()
+          data_keys[ data_id ] = key
+          tmp_data_id = df.map_keys( [key] )[0]
+          self.assertEqual( tmp_data_id, data_id )
+          new_key = df.write_with_key( data_id, data ); df.selfTest()
+          self.assertGreater( new_key, key )
+          self.assertIsNone( df.map_keys([key]) )
+          self.assertSequenceEqual( df.map_keys([new_key]), [data_id] )
+          
+          stored_data = df.read_by_key( new_key )
+          self.assertEqual( stored_data, data )
         
-        self.assertEqual( data_hash, dict( df ) )
         
-        for key in tuple(data_hash):
-          del df[key]
-          del data_hash[key]
-          df.selfTest()
-        
-        self.assertEqual( data_hash, dict( df ) )
-        
-        #//-------------------------------------------------------//
-        
-        self.assertEqual( len( df ), 0 )
-        self.assertFalse( df )
+        # self.assertEqual( data_hash, dict( df ) )
+        # 
+        # df.selfTest(); df.close(); df.selfTest()
+        # 
+        # df = DataFile( tmp ); df.selfTest()
+        # 
+        # self.assertEqual( len(data_hash), len( df ) )
+        # self.assertEqual( data_hash, dict( df ) )
+        # 
+        # for key in data_hash:
+        #   data = bytearray( len(df[key]) )
+        #   new_key = df.replace(key, data )
+        #   df.selfTest()
+        #   del data_hash[key]; data_hash[new_key] = data
+        # 
+        # self.assertEqual( data_hash, dict( df ) )
+        # 
+        # for key in data_hash:
+        #   data = bytearray( len(df[key]) // 2 )
+        #   new_key = df.replace(key, data )
+        #   df.selfTest()
+        #   del data_hash[key]; data_hash[new_key] = data
+        # 
+        # self.assertEqual( data_hash, dict( df ) )
+        # 
+        # for key in data_hash:
+        #   data = bytearray( len(df[key]) * 8 )
+        #   new_key = df.replace(key, data )
+        #   df.selfTest()
+        #   del data_hash[key]; data_hash[new_key] = data
+        # 
+        # self.assertEqual( data_hash, dict( df ) )
+        # 
+        # for key in tuple(data_hash):
+        #   del df[key]
+        #   del data_hash[key]
+        #   df.selfTest()
+        # 
+        # self.assertEqual( data_hash, dict( df ) )
+        # 
+        # #//-------------------------------------------------------//
+        # 
+        # self.assertEqual( len( df ), 0 )
+        # self.assertFalse( df )
       
       finally:
         df.close()
 
   #//-------------------------------------------------------//
   @skip
-  def   test_data_file_update(self):
+  def   _test_data_file_update(self):
     
     with Tempfile() as tmp:
       

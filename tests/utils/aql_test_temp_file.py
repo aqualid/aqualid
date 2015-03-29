@@ -61,6 +61,7 @@ class TestTempFile( AqlTestCase ):
   
   #//=======================================================//
   
+  @skip
   def test_temp_mmap(self):
     import mmap
     
@@ -72,7 +73,8 @@ class TestTempFile( AqlTestCase ):
         f.write(b"header")
         f.flush()
         with mmap.mmap( f.fileno(), 0, access = mmap.ACCESS_WRITE ) as mem:
-          data = b'1' * 0
+          d = range( ord('0'), ord('9'))
+          data = bytearray( d )
           
           end_offset = len(data)
           
@@ -84,11 +86,16 @@ class TestTempFile( AqlTestCase ):
           mem[0:end_offset] = data
           
           buf = mem[0:end_offset]
-          print("buf: %s" % (len(buf),))
+          print("buf: %s" % (buf,))
           
           buf = mem[0:10]
-          print("buf: %s" % (len(buf),))
+          print("buf: %s" % (buf,))
+          
+          mem.move( 3, 1, 5 )
+          buf = mem[0:10]
+          print("buf: %s" % (buf,))
 
+          
 #//===========================================================================//
 
 if __name__ == "__main__":
