@@ -19,7 +19,7 @@
 
 __all__ = ( 'DataFile', )
 
-import os
+import io
 import struct
 import mmap
 
@@ -58,7 +58,6 @@ class   ErrorDataFileCorrupted( AqlException ):
 #//===========================================================================//
 
 class _MmapFile( object ):
-  #//-------------------------------------------------------//
   
   def   __init__(self, filename ):
     stream = openFile( filename, write = True, binary = True, sync = False )
@@ -110,26 +109,51 @@ class _MmapFile( object ):
       self.resize( end_offset )
     
     memmap.move( dest, src, size )
+
+#//===========================================================================//
+
+class _IOFile( object ):
+  
+  def   __init__(self, filename ):
+    stream = openFile( filename, write = True, binary = True, sync = False )
+    
+    self.stream = stream
+    self.resize = stream.truncate
+    self.flush = stream.flush
   
   #//-------------------------------------------------------//
   
-  # def   resize( self, size, page_size = mmap.ALLOCATIONGRANULARITY ):
-  #   size = ((size + (page_size -1 )) // page_size) * page_size
-  #   if size == 0:
-  #     size = page_size
-  #   self.memmap.resize( size )
+  def   close(self):
+    self.stream.close()
   
-  # #//-------------------------------------------------------//
-  # 
-  # def   size( self ):
-  #   return self.memmap.size()
-  # 
-  # #//-------------------------------------------------------//
-  # 
-  # def   flush( self ):
-  #   return self.memmap.flush()
+  #//-------------------------------------------------------//
   
-
+  def   read( self, offset, size ):
+    stream = self.stream
+    stream.seek( offset )
+    return stream.read( size )
+  
+  #//-------------------------------------------------------//
+  
+  def   write( self, offset, data ):
+    stream = self.stream
+    stream.seek( offset )
+    stream.write( data )
+  
+  #//-------------------------------------------------------//
+  
+  def   move( self, dest, src, size ):
+    stream = self.stream
+    stream.seek( src )
+    data = stream.read( size )
+    stream.seek( dest )
+    stream.write( data )
+  
+  #//-------------------------------------------------------//
+  
+  def   size( self, io_SEEK_END = io.SEEK_END ):
+    return self.stream.seek( 0, io_SEEK_END )
+  
 #//===========================================================================//
 
 class   MetaData (object):
@@ -500,6 +524,7 @@ class DataFile (object):
     self.close()
     
     self.handle = _MmapFile( filename )
+    # self.handle = _IOFile( filename )
     
     self._init_header( force )
     

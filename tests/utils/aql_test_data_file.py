@@ -315,7 +315,7 @@ class TestDataFile( AqlTestCase ):
       timer = Chrono()
       
       with timer:
-        data_map = generateDataMap( 10000, 123, 123 )
+        data_map = generateDataMap( 20000, 123, 123 )
       
       print("generate data time: %s" % timer)
       
@@ -339,6 +339,12 @@ class TestDataFile( AqlTestCase ):
             df.write_with_key( data_id, data )
         
         print("update time: %s" % timer)
+        
+        with timer:
+          for data_id in data_map:
+            df.read( data_id )
+        
+        print("read time: %s" % timer)
         
       finally:
         df.close()
