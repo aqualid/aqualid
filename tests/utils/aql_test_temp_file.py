@@ -70,6 +70,13 @@ class TestTempFile( AqlTestCase ):
       temp_file.remove()
       
       with openFile( temp_file, write = True, binary = True ) as f:
+        f.seek( 0 )
+        f.write( b'\0' )
+        f.flush()
+        mm = mmap.mmap( f.fileno(), 0, access = mmap.ACCESS_WRITE )
+        mm.close()
+
+        f.seek( 0 )
         f.write(b"header")
         f.flush()
         with mmap.mmap( f.fileno(), 0, access = mmap.ACCESS_WRITE ) as mem:

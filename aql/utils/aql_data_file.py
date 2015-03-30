@@ -57,6 +57,81 @@ class   ErrorDataFileCorrupted( AqlException ):
 
 #//===========================================================================//
 
+class _MmapFile( object ):
+  #//-------------------------------------------------------//
+  
+  def   __init__(self, filename ):
+    stream = openFile( filename, write = True, binary = True, sync = False )
+    
+    try:
+      memmap = mmap.mmap( stream.fileno(), 0, access = mmap.ACCESS_WRITE )
+    except ValueError:
+      stream.seek( 0 )
+      stream.write( b'\0' )
+      stream.flush()
+      
+      memmap = mmap.mmap( stream.fileno(), 0, access = mmap.ACCESS_WRITE )
+    
+    self.stream = stream
+    self.memmap = memmap
+    self.size = memmap.size
+    self.resize = memmap.resize
+    self.flush = memmap.flush
+  
+  #//-------------------------------------------------------//
+  
+  def   close(self):
+    self.memmap.close()
+    self.stream.close()
+  
+  #//-------------------------------------------------------//
+  
+  def   read( self, offset, size ):
+    return self.memmap[ offset : offset + size ]
+  
+  #//-------------------------------------------------------//
+  
+  def   write( self, offset, data ):
+    memmap = self.memmap
+    
+    end_offset = offset + len(data)
+    if end_offset > memmap.size():
+      self.resize( end_offset )
+    
+    memmap[ offset : end_offset ] = data
+  
+  #//-------------------------------------------------------//
+  
+  def   move( self, dest, src, size ):
+    memmap = self.memmap
+    
+    end_offset = dest + size
+    if end_offset > memmap.size():
+      self.resize( end_offset )
+    
+    memmap.move( dest, src, size )
+  
+  #//-------------------------------------------------------//
+  
+  # def   resize( self, size, page_size = mmap.ALLOCATIONGRANULARITY ):
+  #   size = ((size + (page_size -1 )) // page_size) * page_size
+  #   if size == 0:
+  #     size = page_size
+  #   self.memmap.resize( size )
+  
+  # #//-------------------------------------------------------//
+  # 
+  # def   size( self ):
+  #   return self.memmap.size()
+  # 
+  # #//-------------------------------------------------------//
+  # 
+  # def   flush( self ):
+  #   return self.memmap.flush()
+  
+
+#//===========================================================================//
+
 class   MetaData (object):
   __slots__ = (
     
@@ -146,8 +221,7 @@ class DataFile (object):
     'meta_end',
     'data_begin',
     'data_end',
-    'stream',
-    'memmap',
+    'handle',
   )
   
   # +-----------------------------------+
@@ -202,8 +276,7 @@ class DataFile (object):
     self.meta_end = 0
     self.data_begin = 0
     self.data_end = 0
-    self.stream = None
-    self.memmap = None
+    self.handle = None
 
     self.open( filename, force = force )
       
@@ -217,10 +290,9 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   _init_header( self, stream, force, header_struct = _HEADER_STRUCT ):
+  def   _init_header( self, force, header_struct = _HEADER_STRUCT ):
     
-    stream.seek(0)
-    header = stream.read( header_struct.size )
+    header = self.handle.read( 0, header_struct.size )
     
     try:
       tag, version = header_struct.unpack( header )
@@ -233,87 +305,27 @@ class DataFile (object):
         return
       
     except struct.error:
-      if header and not force:
+      if (header and header != b'\0') and not force:
         raise ErrorDataFileFormatInvalid()
     
     #//-------------------------------------------------------//
     # init the file
-    stream.truncate( 0 )
     header = header_struct.pack( self.MAGIC_TAG, self.VERSION )
-    stream.write( header )
-    stream.flush()
-    
-  #//-------------------------------------------------------//
-  
-  def   _open_file(self, filename, force ):
-    stream = openFile( filename, write = True, binary = True, sync = False )
-    
-    self._init_header( stream, force )
-    
-    self.stream = stream
-    
-    try:
-      self.memmap = mmap.mmap( stream.fileno(), 0, access = mmap.ACCESS_WRITE )
-    except Exception:
-      pass
-  
-  #//-------------------------------------------------------//
-  
-  def   _read_file( self, offset, size ):
-    return self.memmap[ offset : offset + size ]
-  
-  #//-------------------------------------------------------//
-  
-  def   _write_file( self, offset, data ):
-    memmap = self.memmap
-    
-    end_offset = offset + len(data)
-    if end_offset > memmap.size():
-      self._resize_file( end_offset )
-    
-    memmap[ offset : end_offset ] = data
-  
-  #//-------------------------------------------------------//
-  
-  def   _move_file_data( self, dest, src, size ):
-    memmap = self.memmap
-    end_offset = dest + size
-    if end_offset > memmap.size():
-      self._resize_file( end_offset )
-    
-    memmap.move( dest, src, size )
-  
-  #//-------------------------------------------------------//
-  
-  def   _resize_file( self, size ):
-    page_size = mmap.ALLOCATIONGRANULARITY
-    size = ((size + (page_size -1 )) // page_size) * page_size
-    if size == 0:
-      size = page_size
-    self.memmap.resize( size )
-  
-  #//-------------------------------------------------------//
-  
-  def   _get_file_size( self ):
-    return self.memmap.size()
-  
-  #//-------------------------------------------------------//
-  
-  def   _flush_file( self ):
-    return self.memmap.flush()
+    self.handle.resize( len(header) )
+    self.handle.write( 0, header )
   
   #//-------------------------------------------------------//
   
   def   _key_generator( self, key_offset = _KEY_OFFSET, key_struct = _KEY_STRUCT, MAX_KEY = (2 ** 64) - 1 ):
     
-    key_dump = self._read_file( key_offset, key_struct.size )
+    key_dump = self.handle.read( key_offset, key_struct.size )
     try:
       next_key, = key_struct.unpack( key_dump )
     except struct.error:
       next_key = 0
     
     key_pack = key_struct.pack
-    write_file = self._write_file
+    write_file = self.handle.write
     
     while True:
       
@@ -345,10 +357,12 @@ class DataFile (object):
     
     header_dump = table_header_struct.pack( self.data_begin )
     
-    self._resize_file( self.data_end )
-    self._write_file( table_header_offset, header_dump )
-    self._write_file( self.meta_end, b'\0' * (self.data_begin - self.meta_end) )
-    self._flush_file()
+    handle = self.handle
+    
+    handle.resize( self.data_end )
+    handle.write( table_header_offset, header_dump )
+    handle.write( self.meta_end, b'\0' * (self.data_begin - self.meta_end) )
+    handle.flush()
   
   #//-------------------------------------------------------//
   
@@ -406,7 +420,9 @@ class DataFile (object):
                          table_begin = _META_TABLE_OFFSET,
                          meta_size = MetaData.size ):
     
-    header_dump = self._read_file( table_header_offset, table_header_size )
+    handle = self.handle
+    
+    header_dump = handle.read( table_header_offset, table_header_size )
     
     try:
       data_begin, = table_header_struct.unpack( header_dump )
@@ -416,7 +432,7 @@ class DataFile (object):
     
     self.meta_end = data_begin
     self.data_begin = data_begin
-    self.data_end = self._get_file_size()
+    self.data_end = handle.size()
     
     if (data_begin <= table_begin) or (data_begin > self.data_end):
       self._reset_meta_table()
@@ -428,7 +444,7 @@ class DataFile (object):
       self._reset_meta_table()
       return
     
-    dump = self._read_file( table_begin, table_size )
+    dump = handle.read( table_begin, table_size )
     
     if len(dump) < table_size:
       self._reset_meta_table()
@@ -449,11 +465,13 @@ class DataFile (object):
     table_capacity = data_begin - table_begin
     new_data_begin = data_begin + table_capacity
     
-    self._move_file_data( new_data_begin, data_begin, data_end - data_begin )
-    self._write_file( data_begin, b'\0' * table_capacity )
+    handle = self.handle
+    
+    handle.move( new_data_begin, data_begin, data_end - data_begin )
+    handle.write( data_begin, bytearray( table_capacity ) )
     
     header_dump = table_header_struct.pack( new_data_begin )
-    self._write_file( table_header_offset, header_dump )
+    handle.write( table_header_offset, header_dump )
     
     self.data_begin = new_data_begin
     self.data_end += table_capacity
@@ -468,7 +486,7 @@ class DataFile (object):
     next_data = new_next_data - oversize
     rest_size = self.data_end - next_data
     if rest_size > 0:
-      self._move_file_data( new_next_data, next_data, rest_size )
+      self.handle.move( new_next_data, next_data, rest_size )
     
       for meta in self.id2data.values():
         if meta.data_offset >= next_data:
@@ -481,7 +499,10 @@ class DataFile (object):
   def  open( self, filename, force = False ):
     self.close()
     
-    self._open_file( filename, force )
+    self.handle = _MmapFile( filename )
+    
+    self._init_header( force )
+    
     self.next_key = self._key_generator()
     
     self._init_meta_table()
@@ -490,29 +511,24 @@ class DataFile (object):
   
   def   close(self):
     
-    mem = self.memmap
-    if mem is not None:
-      mem.flush()
-      mem.close()
-      self.memmap = None
-    
-    stream = self.stream
-    if stream is not None:
-      stream.flush()
-      stream.close()
-      self.stream = None
+    if self.handle is not None:
+      self.handle.close()
+      self.handle = None
       
       self.id2data.clear()
       self.key2id.clear()
       self.meta_end = 0
       self.data_begin = 0
       self.data_end = 0
+      self.next_key = None
   
   #//-------------------------------------------------------//
   
   def   clear( self ):
     
     self._reset_meta_table()
+    
+    self.next_key = self._key_generator()
     
     self.id2data.clear()
     self.key2id.clear()
@@ -530,8 +546,10 @@ class DataFile (object):
     
     meta = MetaData( meta_offset, key, data_id, data_offset, len(data) )
     
-    self._write_file( data_offset, data )
-    self._write_file( meta_offset, meta.dump() )
+    write = self.handle.write
+    
+    write( data_offset, data )
+    write( meta_offset, meta.dump() )
     
     self.data_end += meta.data_capacity
     self.meta_end += meta_size
@@ -550,10 +568,12 @@ class DataFile (object):
       if oversize > 0:
         self._extend_data( meta, oversize )
     
-    if update_meta:
-      self._write_file( meta.offset, meta.dump() )
+    write = self.handle.write
     
-    self._write_file( meta.data_offset, data )
+    if update_meta:
+      write( meta.offset, meta.dump() )
+    
+    write( meta.data_offset, data )
   
   #//-------------------------------------------------------//
   
@@ -563,7 +583,7 @@ class DataFile (object):
     except KeyError:
       return None
     
-    return self._read_file( meta.data_offset, meta.data_size )
+    return self.handle.read( meta.data_offset, meta.data_size )
   
   #//-------------------------------------------------------//
   
@@ -573,7 +593,7 @@ class DataFile (object):
     except KeyError:
       return None
     
-    return self._read_file( meta.data_offset, meta.data_size )
+    return self.handle.read( meta.data_offset, meta.data_size )
   
   #//-------------------------------------------------------//
   
@@ -625,7 +645,6 @@ class DataFile (object):
   #//-------------------------------------------------------//
   
   def   remove( self, data_ids ):
-    return
     
     del_keys = frozenset( del_keys )
     
@@ -653,10 +672,10 @@ class DataFile (object):
   
   def   selfTest( self ):
     
-    if self.stream is None:
+    if self.handle is None:
       return
     
-    file_size = self._get_file_size()
+    file_size = self.handle.size()
     
     if self.data_begin > file_size:
       raise AssertionError("data_begin(%s) > file_size(%s)" % (self.data_begin, file_size))
@@ -669,7 +688,7 @@ class DataFile (object):
     
     #//-------------------------------------------------------//
     
-    header_dump = self._read_file( self._META_TABLE_HEADER_OFFSET, self._META_TABLE_HEADER_SIZE )
+    header_dump = self.handle.read( self._META_TABLE_HEADER_OFFSET, self._META_TABLE_HEADER_SIZE )
     
     try:
       data_begin, = self._META_TABLE_HEADER_STRUCT.unpack( header_dump )
@@ -733,7 +752,7 @@ class DataFile (object):
     #//-------------------------------------------------------//
     
     for data_id, meta in self.id2data.items():
-      meta_dump = self._read_file( meta.offset, MetaData.size )
+      meta_dump = self.handle.read( meta.offset, MetaData.size )
       stored_meta = MetaData.load( meta_dump )
       
       if meta.key != stored_meta.key:

@@ -8,7 +8,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, DataFile
+from aql.utils import Tempfile, DataFile, Chrono
 
 #//===========================================================================//
 
@@ -312,35 +312,34 @@ class TestDataFile( AqlTestCase ):
   def   test_data_file_speed(self):
     
     with Tempfile() as tmp:
+      timer = Chrono()
       
-      data_list = generateDataList( 100000, 100000, 128, 1024 )
-      data_hash = {}
+      with timer:
+        data_map = generateDataMap( 10000, 123, 123 )
+      
+      print("generate data time: %s" % timer)
       
       df = DataFile( tmp )
       try:
         
-        key = None
-        for data in data_list:
-          key = df.append( data )
-          data_hash[ key ] = data
+        with timer:
+          for data_id, data in data_map.items():
+            df.write_with_key( data_id, data )
         
-        df2 = DataFile( tmp )
-        df2.update()
+        print("add time: %s" % timer)
         
-        def update( df, df2 ):
-          df.append( bytearray(10) )
-          df2.update()
+        df.close()
         
-        up = lambda df = df, df2 = df2, update = update: update(df,df2)
+        with timer:
+          df = DataFile( tmp )
+        print("load time: %s" % timer)
         
-        t = timeit.timeit( up, number = 10 ) / 10
+        with timer:
+          for data_id, data in data_map.items():
+            df.write_with_key( data_id, data )
         
-        print("update time: %s" % t)
+        print("update time: %s" % timer)
         
-        t = timeit.timeit( lambda df = df, data = bytearray(generateData(256,256)): df.append(data), number = 1000 ) / 1000
-        
-        print("append time: %s" % t)
-      
       finally:
         df.close()
 
