@@ -20,6 +20,7 @@
 __all__ = ( 'DataFile', )
 
 import io
+import operator
 import struct
 import mmap
 
@@ -95,7 +96,12 @@ class _MmapFile( object ):
     
     end_offset = offset + len(data)
     if end_offset > memmap.size():
-      self.resize( end_offset )
+      page_size = mmap.ALLOCATIONGRANULARITY
+      size = ((end_offset + (page_size -1 )) // page_size) * page_size
+      if size == 0:
+        size = page_size
+        
+      self.resize( size )
     
     memmap[ offset : end_offset ] = data
   
@@ -304,6 +310,48 @@ class DataFile (object):
 
     self.open( filename, force = force )
       
+  #//-------------------------------------------------------//
+  
+  def  open( self, filename, force = False ):
+    self.close()
+    
+    try:
+      self.handle = _MmapFile( filename )
+    except Exception:
+      self.handle = _IOFile( filename )
+    
+    self._init_header( force )
+    
+    self.next_key = self._key_generator()
+    
+    self._init_meta_table()
+    
+  #//-------------------------------------------------------//
+  
+  def   close(self):
+    
+    if self.handle is not None:
+      self.handle.close()
+      self.handle = None
+      
+      self.id2data.clear()
+      self.key2id.clear()
+      self.meta_end = 0
+      self.data_begin = 0
+      self.data_end = 0
+      self.next_key = None
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self ):
+    
+    self._reset_meta_table()
+    
+    self.next_key = self._key_generator()
+    
+    self.id2data.clear()
+    self.key2id.clear()
+  
   #//-------------------------------------------------------//
   
   def   __enter__(self):
@@ -520,46 +568,6 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def  open( self, filename, force = False ):
-    self.close()
-    
-    self.handle = _MmapFile( filename )
-    # self.handle = _IOFile( filename )
-    
-    self._init_header( force )
-    
-    self.next_key = self._key_generator()
-    
-    self._init_meta_table()
-    
-  #//-------------------------------------------------------//
-  
-  def   close(self):
-    
-    if self.handle is not None:
-      self.handle.close()
-      self.handle = None
-      
-      self.id2data.clear()
-      self.key2id.clear()
-      self.meta_end = 0
-      self.data_begin = 0
-      self.data_end = 0
-      self.next_key = None
-  
-  #//-------------------------------------------------------//
-  
-  def   clear( self ):
-    
-    self._reset_meta_table()
-    
-    self.next_key = self._key_generator()
-    
-    self.id2data.clear()
-    self.key2id.clear()
-  
-  #//-------------------------------------------------------//
-  
   def   _append( self, key, data_id, data,
                  meta_size = MetaData.size ):
     
@@ -671,27 +679,68 @@ class DataFile (object):
   
   def   remove( self, data_ids ):
     
-    del_keys = frozenset( del_keys )
+    move = self.handle.move
     
-    start_offset = self.__findMinOffset( del_keys )
-    if start_offset == -1:
-      return
+    remove_data_ids = frozenset( data_ids )
     
-    rest_locations = self.__findRestLocations( start_offset, del_keys )
+    metas = sorted( self.id2data.values(), key = operator.attrgetter('data_offset') )
     
-    rest_chunks = self.__readAndMoveRestLocations( rest_locations, start_offset )
+    meta_shift = 0
+    data_shift = 0
     
-    stream = self.stream
+    meta_offset = 0
+    data_offset = 0
     
-    stream.truncate( start_offset )
-    stream.seek( start_offset )
-    stream.write( rest_chunks )
+    remove_data_begin = None
+    remove_meta_begin = None
     
-    self.file_size = start_offset + len( rest_chunks )
+    move_meta_begin = None
+    move_data_begin = None
     
-    locations = self.locations
-    for key in del_keys:
-      del locations[ key ]
+    for meta in metas:
+      
+      meta_offset = meta.offset
+      data_offset = meta.data_offset
+      
+      if meta.id in remove_data_ids:
+        
+        del self.id2data[ meta.id ]
+        if meta.key:
+          del self.key2id[ meta.key ]
+        
+        if move_meta_begin is not None:
+          move( remove_meta_begin - meta_shift, move_meta_begin, meta_offset - move_meta_begin )
+          move( remove_data_begin - data_shift, move_data_begin, data_offset - move_data_begin )
+          
+          remove_meta_begin = None
+          move_meta_begin = None
+        
+        if remove_meta_begin is None:
+          remove_meta_begin = meta_offset
+          remove_data_begin = data_offset
+        
+      else:
+        if remove_meta_begin is not None:
+          if move_meta_begin is None:
+            move_meta_begin = meta_offset
+            move_data_begin = data_offset
+            
+            meta_shift += move_meta_begin - remove_meta_begin
+            data_shift += move_data_begin - remove_data_begin
+          
+        if meta_shift:
+          meta.offset -= meta_shift
+          meta.data_offset -= data_shift
+    
+    if remove_data_begin is not None:
+      if move_meta_begin is not None:
+        move( remove_meta_begin - meta_shift, move_meta_begin, meta_offset - move_meta_begin )
+        move( remove_data_begin - data_shift, move_data_begin, data_offset - move_data_begin )
+    
+    self.meta_end -= meta_shift
+    self.data_end -= data_shift
+    self.handle.write( self.meta_end, bytearray( meta_shift ) )
+    self.handle.resize( self.data_end )
     
   #//-------------------------------------------------------//
   
