@@ -2,7 +2,6 @@ import os
 import sys
 import random
 import uuid
-import timeit
 
 sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), '..') ))
 
@@ -115,6 +114,10 @@ class TestDataFile( AqlTestCase ):
           stored_data = df.read_by_key( new_key )
           self.assertEqual( stored_data, data )
         
+        
+        for data_id in data_map:
+          df.remove( (data_id,) )
+          
         
         # self.assertEqual( data_hash, dict( df ) )
         # 
@@ -265,6 +268,54 @@ class TestDataFile( AqlTestCase ):
     with Tempfile() as tmp:
       tmp.remove()
       
+      data_map = generateDataMap( 1025, 16, 128 )
+      
+      df = DataFile( tmp )
+      try:
+        df.selfTest()
+        
+        df.clear()
+        
+        df.selfTest()
+        
+        for data_id, data in data_map.items():
+          df.write( data_id, data )
+        
+        for data_id in data_map:
+          df.remove( (data_id,) ); df.selfTest()
+        
+        for data_id, data in data_map.items():
+          df.write( data_id, data )
+        
+        df.remove( data_map ); df.selfTest()
+        
+        for data_id, data in data_map.items():
+          df.write( data_id, data )
+        
+        data_ids = list(data_map)
+        random.shuffle(data_ids)
+        
+        df.remove( data_ids[:len(data_ids)//2] ); df.selfTest()
+        df.remove( data_ids[len(data_ids)//2:] ); df.selfTest()
+        
+        for data_id, data in data_map.items():
+          df.write( data_id, data )
+        
+        data_ids = list(data_map)
+        remove_data_ids1 = [ data_ids[i*2 + 0] for i in range(len(data_ids)//2) ]
+        remove_data_ids2 = [ data_ids[i*2 + 1] for i in range(len(data_ids)//2) ]
+        df.remove( remove_data_ids1 ); df.selfTest()
+        df.remove( remove_data_ids2 ); df.selfTest()
+
+      finally:
+        df.close()
+  
+  #//-------------------------------------------------------//
+  
+  def _test_data_file_remove(self):
+    with Tempfile() as tmp:
+      tmp.remove()
+      
       data_list = generateDataList( 50, 50, 7, 57 )
       data_keys = []
       
@@ -345,6 +396,15 @@ class TestDataFile( AqlTestCase ):
             df.read( data_id )
         
         print("read time: %s" % timer)
+        
+        data_ids = list(data_map)
+        remove_data_ids1 = [ data_ids[i*2 + 0] for i in range(len(data_ids)//2) ]
+        remove_data_ids2 = [ data_ids[i*2 + 1] for i in range(len(data_ids)//2) ]
+        with timer:
+          df.remove( remove_data_ids1 )
+          df.remove( remove_data_ids2 )
+        
+        print("remove time: %s" % timer)
         
       finally:
         df.close()

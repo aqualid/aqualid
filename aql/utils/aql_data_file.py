@@ -680,6 +680,7 @@ class DataFile (object):
   def   remove( self, data_ids ):
     
     move = self.handle.move
+    meta_size = MetaData.size
     
     remove_data_ids = frozenset( data_ids )
     
@@ -690,6 +691,8 @@ class DataFile (object):
     
     meta_offset = 0
     data_offset = 0
+    last_meta_end = 0
+    last_data_end = 0
     
     remove_data_begin = None
     remove_meta_begin = None
@@ -700,7 +703,9 @@ class DataFile (object):
     for meta in metas:
       
       meta_offset = meta.offset
+      last_meta_end = meta_offset + meta_size
       data_offset = meta.data_offset
+      last_data_end = data_offset + meta.data_capacity
       
       if meta.id in remove_data_ids:
         
@@ -709,15 +714,15 @@ class DataFile (object):
           del self.key2id[ meta.key ]
         
         if move_meta_begin is not None:
-          move( remove_meta_begin - meta_shift, move_meta_begin, meta_offset - move_meta_begin )
-          move( remove_data_begin - data_shift, move_data_begin, data_offset - move_data_begin )
+          move( remove_meta_begin, move_meta_begin, meta_offset - move_meta_begin )
+          move( remove_data_begin, move_data_begin, data_offset - move_data_begin )
           
           remove_meta_begin = None
           move_meta_begin = None
         
         if remove_meta_begin is None:
-          remove_meta_begin = meta_offset
-          remove_data_begin = data_offset
+          remove_meta_begin = meta_offset - meta_shift
+          remove_data_begin = data_offset - data_shift
         
       else:
         if remove_meta_begin is not None:
@@ -725,17 +730,20 @@ class DataFile (object):
             move_meta_begin = meta_offset
             move_data_begin = data_offset
             
-            meta_shift += move_meta_begin - remove_meta_begin
-            data_shift += move_data_begin - remove_data_begin
+            meta_shift = move_meta_begin - remove_meta_begin
+            data_shift = move_data_begin - remove_data_begin
           
         if meta_shift:
           meta.offset -= meta_shift
           meta.data_offset -= data_shift
     
     if remove_data_begin is not None:
-      if move_meta_begin is not None:
-        move( remove_meta_begin - meta_shift, move_meta_begin, meta_offset - move_meta_begin )
-        move( remove_data_begin - data_shift, move_data_begin, data_offset - move_data_begin )
+      if move_meta_begin is None:
+        meta_shift = last_meta_end - remove_meta_begin
+        data_shift = last_data_end - remove_data_begin
+      else:
+        move( remove_meta_begin, move_meta_begin, last_meta_end - move_meta_begin )
+        move( remove_data_begin, move_data_begin, last_data_end - move_data_begin )
     
     self.meta_end -= meta_shift
     self.data_end -= data_shift
@@ -769,9 +777,6 @@ class DataFile (object):
     except struct.error:
       self._reset_meta_table()
       return
-    
-    # if self.meta_end != meta_end:
-    #   raise AssertionError("self.meta_end(%s) != meta_end(%s)" % (self.meta_end, meta_end))
     
     if self.data_begin != data_begin:
       raise AssertionError("self.data_begin(%s) != data_begin(%s)" % (self.data_begin, data_begin))
