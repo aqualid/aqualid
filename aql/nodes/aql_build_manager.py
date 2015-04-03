@@ -754,7 +754,7 @@ class _NodesBuilder (object):
     vfiles = self.vfiles
     build_manager = self.build_manager
     
-    remove_keys = {}
+    remove_entities = {}
     
     for node in nodes:
       
@@ -766,14 +766,14 @@ class _NodesBuilder (object):
         continue
       
       vfile = vfiles[ node.builder ]
-      node_keys = node.clear( vfile )
+      node_entities = node.clear( vfile )
       
-      remove_keys.setdefault( vfile, [] ).extend( node_keys )
+      remove_entities.setdefault( vfile, [] ).extend( node_entities )
       
       build_manager.removedNode( node )
     
-    for vfile, remove_keys in remove_keys.items():
-      vfile.removeEntityKeys( remove_keys )
+    for vfile, entities in remove_entities.items():
+      vfile.removeNodeEntities( entities )
     
   #//-------------------------------------------------------//
   

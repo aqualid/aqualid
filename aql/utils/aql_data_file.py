@@ -664,7 +664,7 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   map_keys(self, keys):
+  def   get_ids(self, keys):
     try:
       return tuple( map( self.key2id.__getitem__, keys ) )
     except KeyError:
@@ -672,8 +672,8 @@ class DataFile (object):
   
   #//-------------------------------------------------------//
   
-  def   __delitem__(self, data_id ):
-    self.remove( (data_id,) )
+  def   get_keys( self, data_ids ):
+    return map( operator.attrgetter('key'), map( self.id2data.__getitem__, data_ids ) )
   
   #//-------------------------------------------------------//
   
