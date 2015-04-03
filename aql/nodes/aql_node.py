@@ -1119,7 +1119,6 @@ class Node (object):
     
     except Exception as ex:
       if 'BuilderInitiator' not in str(ex):
-        print("getBuildStr: ex: %s, %s" % (ex,ex.args))
         raise
     
     return str(self)  # TODO: return raw data

@@ -360,7 +360,9 @@ class TestBuildManager( AqlTestCase ):
       copy2_node3.depends( [node1, copy_node1] )
       return node1, node2, node3, copy_node1, copy_node3, copy2_node1, copy2_node3
     
-    with Tempdir() as tmp_dir:
+    # with Tempdir() as tmp_dir:
+    if True:
+      tmp_dir = Tempdir()
       options = builtinOptions()
       options.build_dir = tmp_dir
     

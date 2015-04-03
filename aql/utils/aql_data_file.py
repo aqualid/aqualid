@@ -81,6 +81,7 @@ class _MmapFile( object ):
   #//-------------------------------------------------------//
   
   def   close(self):
+    self.memmap.flush()
     self.memmap.close()
     self.stream.close()
   
@@ -435,53 +436,6 @@ class DataFile (object):
     handle.write( table_header_offset, header_dump )
     handle.write( self.meta_end, bytearray(self.data_begin - self.meta_end) )
     handle.flush()
-  
-  #//-------------------------------------------------------//
-  
-  def   _load_meta_table( self, items_dump,
-                     meta_size = MetaData.size,
-                     table_begin = _META_TABLE_OFFSET ):
-    
-    table_end = self.meta_end
-    
-    data_offset = self.data_begin
-    data_end = self.data_end
-    
-    load_meta = MetaData.load
-    
-    meta_offset = 0
-    while meta_offset < table_end:
-      meta_dump = items_dump[ meta_offset : meta_offset + meta_size ]
-      try:
-        meta = load_meta( meta_dump )
-        
-        data_capacity = meta.data_capacity
-        
-        if data_capacity == 0:
-          # end of meta table marker
-          break
-        
-        meta.offset = meta_offset + table_begin
-        meta.data_offset = data_offset
-        
-        if (data_offset + meta.data_size) > data_end:
-          raise ErrorDataFileChunkInvalid()
-        
-        data_offset = data_offset + data_capacity
-        
-      except Exception:
-        self.data_end = data_offset
-        self.meta_end = meta_offset
-        self._truncate_file()
-        return
-      
-      self.id2data[ meta.id ] = meta
-      if meta.key:
-        self.key2id[ meta.key ] = meta.id
-      
-      meta_offset += meta_size
-    
-    self.data_end = data_offset
         
   #//-------------------------------------------------------//
   
@@ -502,11 +456,7 @@ class DataFile (object):
       self._reset_meta_table()
       return
     
-    self.meta_end = data_begin
-    self.data_begin = data_begin
-    self.data_end = handle.size()
-    
-    if (data_begin <= table_begin) or (data_begin > self.data_end):
+    if (data_begin <= table_begin) or (data_begin > handle.size()):
       self._reset_meta_table()
       return
     
@@ -522,8 +472,55 @@ class DataFile (object):
       self._reset_meta_table()
       return
     
-    self._load_meta_table( dump )
+    self._load_meta_table( data_begin, dump )
     
+  #//-------------------------------------------------------//
+  
+  def   _load_meta_table( self, data_offset, metas_dump,
+                          meta_size = MetaData.size,
+                          table_begin = _META_TABLE_OFFSET ):
+    
+    self.data_begin = data_offset
+    
+    file_size = self.handle.size()
+    load_meta = MetaData.load
+    
+    pos = 0
+    dump_size = len(metas_dump)
+    while pos < dump_size:
+      meta_dump = metas_dump[ pos : pos + meta_size ]
+      try:
+        meta = load_meta( meta_dump )
+        
+        data_capacity = meta.data_capacity
+        
+        if data_capacity == 0:
+          # end of meta table marker
+          break
+        
+        meta.offset = pos + table_begin
+        meta.data_offset = data_offset
+        
+        if (data_offset + meta.data_size) > file_size:
+          raise ErrorDataFileChunkInvalid()
+        
+        data_offset += data_capacity
+        
+      except Exception:
+        self.data_end = data_offset
+        self.meta_end = pos + table_begin
+        self._truncate_file()
+        return
+      
+      self.id2data[ meta.id ] = meta
+      if meta.key:
+        self.key2id[ meta.key ] = meta.id
+      
+      pos += meta_size
+    
+    self.meta_end = pos + table_begin
+    self.data_end = data_offset
+  
   #//-------------------------------------------------------//
   
   def   _extend_meta_table( self,
@@ -746,6 +743,7 @@ class DataFile (object):
     
     self.meta_end -= meta_shift
     self.data_end -= data_shift
+    
     self.handle.write( self.meta_end, bytearray( meta_shift ) )
     self.handle.resize( self.data_end )
     
@@ -817,6 +815,9 @@ class DataFile (object):
       last_meta_offset += MetaData.size
     
     #//-------------------------------------------------------//
+    
+    if last_meta_offset != self.meta_end:
+      raise AssertionError("last_meta_offset(%s) != self.meta_end(%s)" % (last_meta_offset, self.meta_end))
     
     if last_data_offset != self.data_end:
       raise AssertionError("last_data_offset(%s) != self.data_end(%s)" % (last_data_offset, self.data_end))

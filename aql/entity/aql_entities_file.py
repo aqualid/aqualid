@@ -77,21 +77,24 @@ class EntitiesFile (object):
   
   def   close( self ):
     
+    self.cache.clear()
+    
     if self.data_file is not None:
+      
       self.data_file.close()
       self.data_file = None
     
     self.file_lock.releaseLock()
-    
-    self.cache.clear()
   
   #//---------------------------------------------------------------------------//
   
   def   clear(self):
+    
     if self.data_file is not None:
       self.data_file.clear()
-    
+      
     self.cache.clear()
+
 
   #//---------------------------------------------------------------------------//
   
@@ -108,6 +111,7 @@ class EntitiesFile (object):
       entity.id = entity_id
     except Exception:
       self.data_file.remove( (entity_id,) )
+      
       return None
     
     return entity
@@ -117,13 +121,13 @@ class EntitiesFile (object):
   def   addNodeEntity( self, entity ):
     dump = self.pickler.dumps( entity )
     self.data_file.write( entity.id, dump )
-  
+    
   #//---------------------------------------------------------------------------//
   
   def   removeNodeEntities( self, entities ):
     entity_ids = map( operator.attrgetter('id'), entities )
     self.data_file.remove( entity_ids )
-  
+    
   #//---------------------------------------------------------------------------//
   
   def   _findEntityById( self, entity_id ):
@@ -141,6 +145,7 @@ class EntitiesFile (object):
       entity.id = entity_id
     except Exception:
       self.data_file.remove( (entity_id,) )
+      
       raise ValueError()
     
     self.cache[ entity_id ] = entity
@@ -203,7 +208,9 @@ class EntitiesFile (object):
     
     self.cache[ entity_id ] = entity
     data = self.pickler.dumps( entity )
-    return self.data_file.write_with_key( entity_id, data )
+    key = self.data_file.write_with_key( entity_id, data )
+    
+    return key
   
   #//---------------------------------------------------------------------------//
   
@@ -217,7 +224,7 @@ class EntitiesFile (object):
         pass
     
     self.data_file.remove( remove_ids )
-  
+    
   #//---------------------------------------------------------------------------//
   
   def   selfTest(self):

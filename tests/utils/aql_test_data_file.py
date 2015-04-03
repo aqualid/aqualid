@@ -143,6 +143,8 @@ class TestDataFile( AqlTestCase ):
         for data_id in data_map:
           df.remove( (data_id,) ); df.selfTest()
         
+        df.close(); df = DataFile( tmp ); df.selfTest()
+        
         for data_id, data in data_map.items():
           df.write( data_id, data )
         
@@ -155,6 +157,9 @@ class TestDataFile( AqlTestCase ):
         random.shuffle(data_ids)
         
         df.remove( data_ids[:len(data_ids)//2] ); df.selfTest()
+        
+        df.close(); df = DataFile( tmp ); df.selfTest()
+        
         df.remove( data_ids[len(data_ids)//2:] ); df.selfTest()
         
         for data_id, data in data_map.items():
@@ -164,6 +169,8 @@ class TestDataFile( AqlTestCase ):
         remove_data_ids1 = [ data_ids[i*2 + 0] for i in range(len(data_ids)//2) ]
         remove_data_ids2 = [ data_ids[i*2 + 1] for i in range(len(data_ids)//2) ]
         df.remove( remove_data_ids1 ); df.selfTest()
+        
+        df.close(); df = DataFile( tmp ); df.selfTest()
         
         for data_id in remove_data_ids2:
           data = data_map[data_id]
