@@ -57,7 +57,7 @@ class TestDataFile( AqlTestCase ):
         df.selfTest()
         
         for data_id, data in data_map.items():
-          df.write( data_id, data );  df.selfTest()
+          df.write_with_key( data_id, data ); df.selfTest()
           stored_data = df.read( data_id )
           self.assertEqual( stored_data, data )
       
@@ -104,12 +104,12 @@ class TestDataFile( AqlTestCase ):
         for data_id, data in data_map.items():
           key = df.write_with_key( data_id, data ); df.selfTest()
           data_keys[ data_id ] = key
-          tmp_data_id = df.map_keys( [key] )[0]
+          tmp_data_id = df.get_ids( [key] )[0]
           self.assertEqual( tmp_data_id, data_id )
           new_key = df.write_with_key( data_id, data ); df.selfTest()
           self.assertGreater( new_key, key )
-          self.assertIsNone( df.map_keys([key]) )
-          self.assertSequenceEqual( df.map_keys([new_key]), [data_id] )
+          self.assertIsNone( df.get_ids([key]) )
+          self.assertSequenceEqual( df.get_ids([new_key]), [data_id] )
           
           stored_data = df.read_by_key( new_key )
           self.assertEqual( stored_data, data )

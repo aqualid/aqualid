@@ -87,6 +87,14 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
+  def   clear(self):
+    if self.data_file is not None:
+      self.data_file.clear()
+    
+    self.cache.clear()
+
+  #//---------------------------------------------------------------------------//
+  
   def   findNodeEntity( self, entity ):
     
     entity_id = entity.id
@@ -167,12 +175,9 @@ class EntitiesFile (object):
     key_append = keys.append
     entity_append = entity_ids.append
     
-    write = self.data_file.write_with_key
-    
     for entity in entities:
       
       entity_id = entity.id
-      entity_ids.append( entity_id )
       
       try:
         stored_entity = self._findEntityById( entity_id )
@@ -183,8 +188,7 @@ class EntitiesFile (object):
       except Exception:
         pass
       
-      dump = self.pickler.dumps( entity )
-      key = write( entity_id, dump )
+      key = self.updateEntity( entity )
       key_append( key )
     
     keys.extend( self.data_file.get_keys( entity_ids ) )
@@ -197,10 +201,9 @@ class EntitiesFile (object):
     
     entity_id = entity.id
     
-    data = self.pickler.dumps( entity )
-    self.data_file.write_with_key( entity_id, data )
-    
     self.cache[ entity_id ] = entity
+    data = self.pickler.dumps( entity )
+    return self.data_file.write_with_key( entity_id, data )
   
   #//---------------------------------------------------------------------------//
   
@@ -217,15 +220,7 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   clear(self):
-    if self.data_file is not None:
-      self.data_file.clear()
-    
-    self.cache.clear()
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   selfTest(self, log = False):
+  def   selfTest(self):
     if self.data_file is None:
       if self.cache:
         raise AssertionError("cache is not empty")
@@ -235,10 +230,7 @@ class EntitiesFile (object):
     self.data_file.selfTest()
     
     for entity_id, entity in self.cache.items():
-      if log:
-        print("entity_id: %s" % (entity_id,))
-      
-      if entity != entity.id:
+      if entity_id != entity.id:
         raise AssertionError("entity_id(%s) != entity.id(%s)" % (entity_id, entity.id))
       
       dump = self.data_file.read( entity_id )

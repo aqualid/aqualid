@@ -433,7 +433,7 @@ class DataFile (object):
     
     handle.resize( self.data_end )
     handle.write( table_header_offset, header_dump )
-    handle.write( self.meta_end, b'\0' * (self.data_begin - self.meta_end) )
+    handle.write( self.meta_end, bytearray(self.data_begin - self.meta_end) )
     handle.flush()
   
   #//-------------------------------------------------------//
@@ -655,10 +655,9 @@ class DataFile (object):
         pass
       
       meta.key = key
-      
       self._update( meta, data, update_meta = True )
       
-      self.key2id[ key ] = data_id
+    self.key2id[ key ] = data_id
     
     return key
   
@@ -795,7 +794,7 @@ class DataFile (object):
       if meta.key != 0:
         if self.key2id[ meta.key ] != data_id:
           raise AssertionError("self.key2id[ meta.key ](%s) != data_id(%s)" % (self.key2id[ meta.key ], data_id))
-      
+        
       if meta.data_capacity < meta.data_size:
         raise AssertionError("meta.data_capacity(%s) < meta.data_size (%s)" % (meta.data_capacity, meta.data_size))
       
