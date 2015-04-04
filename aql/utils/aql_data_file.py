@@ -434,7 +434,8 @@ class DataFile (object):
     
     handle.resize( self.data_end )
     handle.write( table_header_offset, header_dump )
-    handle.write( self.meta_end, bytearray(self.data_begin - self.meta_end) )
+    # handle.write( self.meta_end, bytearray(self.data_begin - self.meta_end) )
+    handle.write( self.meta_end, b'\0' * (self.data_begin - self.meta_end) )
     handle.flush()
         
   #//-------------------------------------------------------//
@@ -537,7 +538,8 @@ class DataFile (object):
     handle = self.handle
     
     handle.move( new_data_begin, data_begin, data_end - data_begin )
-    handle.write( data_begin, bytearray( table_capacity ) )
+    # handle.write( data_begin, bytearray( table_capacity ) )
+    handle.write( data_begin, b'\0' * table_capacity )
     
     header_dump = table_header_struct.pack( new_data_begin )
     handle.write( table_header_offset, header_dump )
@@ -744,7 +746,8 @@ class DataFile (object):
     self.meta_end -= meta_shift
     self.data_end -= data_shift
     
-    self.handle.write( self.meta_end, bytearray( meta_shift ) )
+    # self.handle.write( self.meta_end, bytearray( meta_shift ) )
+    self.handle.write( self.meta_end, b'\0' * meta_shift )
     self.handle.resize( self.data_end )
     
   #//-------------------------------------------------------//
