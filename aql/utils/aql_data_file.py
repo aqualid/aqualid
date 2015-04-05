@@ -24,34 +24,32 @@ import operator
 import struct
 import mmap
 
-from aql.util_types import AqlException
-
 from .aql_utils import openFile
 
 #//===========================================================================//
 
-class   ErrorDataFileFormatInvalid( AqlException ):
+class   ErrorDataFileFormatInvalid( Exception ):
   def   __init__( self ):
     msg = "Data file format is not valid."
     super(ErrorDataFileFormatInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileChunkInvalid( AqlException ):
+class   ErrorDataFileChunkInvalid( Exception ):
   def   __init__( self ):
     msg = "Data file chunk format is not valid."
     super(ErrorDataFileChunkInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileVersionInvalid( AqlException ):
+class   ErrorDataFileVersionInvalid( Exception ):
   def   __init__( self ):
     msg = "Data file version is changed."
     super(ErrorDataFileVersionInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileCorrupted( AqlException ):
+class   ErrorDataFileCorrupted( Exception ):
   def   __init__( self ):
     msg = "Data file is corrupted"
     super(ErrorDataFileCorrupted, self).__init__( msg )
@@ -612,16 +610,6 @@ class DataFile (object):
   def   read( self, data_id ):
     try:
       meta = self.id2data[ data_id ]
-    except KeyError:
-      return None
-    
-    return self.handle.read( meta.data_offset, meta.data_size )
-  
-  #//-------------------------------------------------------//
-  
-  def   read_by_key( self, key ):
-    try:
-      meta = self.id2data[ self.key2id[key] ]
     except KeyError:
       return None
     

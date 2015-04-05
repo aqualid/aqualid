@@ -7,7 +7,9 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, DataFile, Chrono
+from aql.utils import Tempfile, Chrono
+# from aql.utils import SqlDataFile as DataFile
+from aql.utils import DataFile
 
 from aql.util_types import encodeStr
 
@@ -113,7 +115,7 @@ class TestDataFile( AqlTestCase ):
           self.assertIsNone( df.get_ids([key]) )
           self.assertSequenceEqual( df.get_ids([new_key]), [data_id] )
           
-          stored_data = df.read_by_key( new_key )
+          stored_data = df.read( data_id )
           self.assertEqual( stored_data, data )
         
         
