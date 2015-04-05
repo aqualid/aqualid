@@ -24,7 +24,7 @@ __all__ = (
 import operator
 
 from aql.util_types import AqlException 
-from aql.utils import DataFile, FileLock
+from aql.utils import DataFile, SqlDataFile, FileLock
 
 from .aql_entity_pickler import EntityPickler
 
@@ -47,11 +47,11 @@ class EntitiesFile (object):
     'pickler',
   )
   
-  def   __init__( self, filename, force = False ):
+  def   __init__( self, filename, use_sqlite = False, force = False ):
     self.cache = {}
     self.data_file = None
     self.pickler = EntityPickler()
-    self.open( filename, force = force )
+    self.open( filename, use_sqlite = use_sqlite, force = force )
   
   #//---------------------------------------------------------------------------//
   
@@ -66,12 +66,15 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   open( self, filename, force = False ):
+  def   open( self, filename, use_sqlite = False, force = False ):
     
     self.file_lock = FileLock( filename )
     self.file_lock.writeLock( wait = False, force = force )
     
-    self.data_file = DataFile( filename, force = force )
+    if use_sqlite:
+      self.data_file = SqlDataFile( filename, force = force )
+    else:
+      self.data_file = DataFile( filename, force = force )
   
   #//---------------------------------------------------------------------------//
   

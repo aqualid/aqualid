@@ -161,7 +161,8 @@ class ProjectConfig( object ):
                'build_always', 'clean', 'list_options', 'list_tool_options', 'list_targets',
                'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
                'debug_exec',
-               'force_lock', 'show_version',
+               'use_sqlite', 'force_lock',
+               'show_version',
   )
   
   #//-------------------------------------------------------//
@@ -199,6 +200,7 @@ class ProjectConfig( object ):
       CLIOption( None, "--debug-exec",        "debug_exec",         bool,       False,        "Full trace of all executed commands." ),
       CLIOption( "--bt", "--debug-backtrace", "debug_backtrace",    bool,       False,        "Show call stack back traces for errors." ),
       CLIOption( None, "--force-lock",        "force_lock",         bool,       False,        "Forces to lock AQL DB file." ),
+      CLIOption( None, "--use-sqlite",        "use_sqlite",         bool,       False,        "Use SQLite DB." ),
       CLIOption( "-V", "--version",           "version",            bool,       False,        "Show version and exit." ),
     )
     
@@ -267,6 +269,7 @@ class ProjectConfig( object ):
     self.list_targets       = cli_config.list_targets
     self.jobs               = cli_config.jobs
     self.force_lock         = cli_config.force_lock
+    self.use_sqlite         = cli_config.use_sqlite
     self.debug_profile      = cli_config.debug_profile
     self.debug_profile_top  = cli_config.debug_profile_top
     self.debug_memory       = cli_config.debug_memory
@@ -789,18 +792,24 @@ class Project( object ):
     explain        = config.debug_explain
     with_backtrace = config.debug_backtrace
     force_lock     = config.force_lock
+    use_sqlite     = config.use_sqlite
     
     is_ok = self.build_manager.build( jobs = jobs, keep_going = bool(keep_going), nodes = build_nodes,
                                       build_always = build_always, explain = explain,
-                                      with_backtrace = with_backtrace, force_lock = force_lock )
+                                      with_backtrace = with_backtrace,
+                                      use_sqlite = use_sqlite, force_lock = force_lock )
     return is_ok
   
   #//=======================================================//
   
-  def Clear( self, force_lock = False ):
+  def Clear( self ):
+    
     build_nodes = self._getBuildNodes()
     
-    self.build_manager.clear( nodes = build_nodes, force_lock = force_lock )
+    force_lock     = self.config.force_lock
+    use_sqlite     = self.config.use_sqlite
+    
+    self.build_manager.clear( nodes = build_nodes, use_sqlite = use_sqlite, force_lock = force_lock )
   
   #//=======================================================//
   
@@ -871,5 +880,5 @@ class Project( object ):
   def   DirName( self, node ):
     return NodeDirNameFilter( node )
   
-  def   BaseName(self, node ):
+  def   BaseName( self, node ):
     return NodeBaseNameFilter( node )

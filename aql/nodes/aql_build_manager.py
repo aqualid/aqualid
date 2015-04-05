@@ -338,14 +338,16 @@ class  _VFiles( object ):
   (
     'names',
     'handles',
-    'force_lock'
+    'use_sqlite',
+    'force_lock',
   )
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, force_lock = False ):
+  def   __init__( self, use_sqlite = False, force_lock = False ):
     self.handles = {}
     self.names = {}
+    self.use_sqlite = use_sqlite
     self.force_lock = force_lock
   
   #//-------------------------------------------------------//
@@ -369,7 +371,7 @@ class  _VFiles( object ):
       return self.handles[ vfilename ]
     
     except KeyError:
-      vfile = EntitiesFile( vfilename, force = self.force_lock )
+      vfile = EntitiesFile( vfilename, use_sqlite = self.use_sqlite, force = self.force_lock )
       self.handles[ vfilename ] = vfile
       
       return vfile
@@ -607,8 +609,8 @@ class _NodesBuilder (object):
   
   #//-------------------------------------------------------//
   
-  def   __init__( self, build_manager, jobs = 0, keep_going = False, with_backtrace = True, force_lock = False ):
-    self.vfiles         = _VFiles( force_lock = force_lock )
+  def   __init__( self, build_manager, jobs = 0, keep_going = False, with_backtrace = True, use_sqlite = False, force_lock = False ):
+    self.vfiles         = _VFiles( use_sqlite = use_sqlite, force_lock = force_lock )
     self.building_nodes = {}
     self.build_manager  = build_manager
     self.task_manager   = TaskManager( num_threads = jobs, stop_on_fail = not keep_going, with_backtrace = with_backtrace )
@@ -1003,15 +1005,13 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False, with_backtrace = True, force_lock = False):
+  def   build( self, jobs, keep_going, nodes = None, build_always = False, explain = False, with_backtrace = True, use_sqlite = False, force_lock = False):
     
     self.__reset( build_always = build_always, explain = explain )
     
     self.shrink( nodes )
     
-    node_locker = self._node_locker
-    
-    with _NodesBuilder( self, jobs, keep_going, with_backtrace, force_lock = force_lock ) as nodes_builder:
+    with _NodesBuilder( self, jobs, keep_going, with_backtrace, use_sqlite = use_sqlite, force_lock = force_lock ) as nodes_builder:
       while True:
         tails = self.getNextNodes()
         
@@ -1049,13 +1049,13 @@ class BuildManager (object):
   
   #//-------------------------------------------------------//
   
-  def   clear( self, nodes = None, force_lock = False ):
+  def   clear( self, nodes = None, use_sqlite = False, force_lock = False ):
     
     self.__reset()
     
     self.shrink( nodes )
     
-    with _NodesBuilder( self, force_lock = force_lock ) as nodes_builder:
+    with _NodesBuilder( self, use_sqlite = use_sqlite, force_lock = force_lock ) as nodes_builder:
       while True:
         
         tails = self.getNextNodes()

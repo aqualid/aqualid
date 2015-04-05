@@ -155,7 +155,7 @@ class TestValuesFile( AqlTestCase ):
   #//===========================================================================//
 
   @skip
-  def   test_value_file_speed(self):
+  def   test_values_file_speed(self):
     values = []
     for i in range(20000):
       value = SimpleEntity( "http://aql.org/download", name = "target_url%s" % i )
@@ -181,6 +181,38 @@ class TestValuesFile( AqlTestCase ):
       
       with timer:
         with EntitiesFile( tmp ) as vf:
+          pass
+      print("reopen values file time: %s" % timer )
+  
+  #//===========================================================================//
+
+  @skip
+  def   test_values_file_speed_sql(self):
+    values = []
+    for i in range(20000):
+      value = SimpleEntity( "http://aql.org/download", name = "target_url%s" % i )
+      values.append( value )
+    
+    with Tempfile() as tmp:
+      print("Opening a database '%s' ..." % tmp )
+      timer = Chrono()
+      with EntitiesFile( tmp, use_sqlite = True ) as vf:
+        with timer:
+          keys = vf.addEntities( values )
+      print("add values time: %s" % (timer,) )
+      
+      with EntitiesFile( tmp, use_sqlite = True ) as vf:
+        with timer:
+          keys = vf.addEntities( values )
+      print("re-add values time: %s" % (timer,) )
+      
+      with EntitiesFile( tmp, use_sqlite = True ) as vf:
+        with timer:
+          vf.findEntitiesByKey( keys )
+      print("get values time: %s" % timer )
+      
+      with timer:
+        with EntitiesFile( tmp, use_sqlite = True ) as vf:
           pass
       print("reopen values file time: %s" % timer )
 
