@@ -8,8 +8,7 @@ sys.path.insert( 0, os.path.normpath(os.path.join( os.path.dirname( __file__ ), 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile, Chrono
-# from aql.utils import SqlDataFile as DataFile
-from aql.utils import DataFile
+from aql.utils import DataFile, SqlDataFile
 
 from aql.util_types import encodeStr
 
@@ -37,22 +36,15 @@ def   extendDataMap( data_map ):
 
 #//===========================================================================//
 
-def   printFileContent( filename ):
-  with open( filename, 'rb' ) as f:
-    b = f.read()
-    print( "%s: %s" % ( filename, b ))
-
-#//===========================================================================//
-
 class TestDataFile( AqlTestCase ):
   
-  def test_data_file_add(self):
+  def _test_data_file_add( self, DataFileType ):
     with Tempfile() as tmp:
       tmp.remove()
       
       data_map = generateDataMap( 2100, 16, 128 )
       
-      df = DataFile( tmp )
+      df = DataFileType( tmp )
       try:
         df.selfTest()
         
@@ -70,14 +62,14 @@ class TestDataFile( AqlTestCase ):
 
   #//=======================================================//
   
-  def test_data_file_update(self):
+  def _test_data_file_update(self, DataFileType ):
     with Tempfile() as tmp:
       tmp.remove()
       
       data_map = generateDataMap( 100, 16, 128 )
       data_keys = {}
       
-      df = DataFile( tmp )
+      df = DataFileType( tmp )
       try:
         df.selfTest()
         
@@ -127,13 +119,13 @@ class TestDataFile( AqlTestCase ):
 
   #//=======================================================//
   
-  def test_data_file_remove(self):
+  def _test_data_file_remove(self, DataFileType ):
     with Tempfile() as tmp:
       tmp.remove()
       
       data_map = generateDataMap( 1025, 16, 128 )
       
-      df = DataFile( tmp )
+      df = DataFileType( tmp )
       try:
         df.selfTest()
         
@@ -147,7 +139,7 @@ class TestDataFile( AqlTestCase ):
         for data_id in data_map:
           df.remove( (data_id,) ); df.selfTest()
         
-        df.close(); df = DataFile( tmp ); df.selfTest()
+        df.close(); df = DataFileType( tmp ); df.selfTest()
         
         for data_id, data in data_map.items():
           df.write( data_id, data )
@@ -162,7 +154,7 @@ class TestDataFile( AqlTestCase ):
         
         df.remove( data_ids[:len(data_ids)//2] ); df.selfTest()
         
-        df.close(); df = DataFile( tmp ); df.selfTest()
+        df.close(); df = DataFileType( tmp ); df.selfTest()
         
         df.remove( data_ids[len(data_ids)//2:] ); df.selfTest()
         
@@ -174,7 +166,7 @@ class TestDataFile( AqlTestCase ):
         remove_data_ids2 = [ data_ids[i*2 + 1] for i in range(len(data_ids)//2) ]
         df.remove( remove_data_ids1 ); df.selfTest()
         
-        df.close(); df = DataFile( tmp ); df.selfTest()
+        df.close(); df = DataFileType( tmp ); df.selfTest()
         
         for data_id in remove_data_ids2:
           data = data_map[data_id]
@@ -188,8 +180,7 @@ class TestDataFile( AqlTestCase ):
   
   #//-------------------------------------------------------//
   
-  @skip
-  def   test_data_file_speed(self):
+  def   _test_data_file_speed(self, DataFileType ):
     
     with Tempfile() as tmp:
       timer = Chrono()
@@ -199,7 +190,7 @@ class TestDataFile( AqlTestCase ):
       
       print("generate data time: %s" % timer)
       
-      df = DataFile( tmp )
+      df = DataFileType( tmp )
       try:
         
         with timer:
@@ -211,7 +202,7 @@ class TestDataFile( AqlTestCase ):
         df.close()
         
         with timer:
-          df = DataFile( tmp )
+          df = DataFileType( tmp )
         print("load time: %s" % timer)
         
         with timer:
@@ -237,7 +228,35 @@ class TestDataFile( AqlTestCase ):
         
       finally:
         df.close()
-
+  
+  @skip
+  def test_data_file_speed(self):
+    self._test_data_file_speed( DataFile )
+  
+  @skip
+  def test_data_file_speed_sql(self):
+    self._test_data_file_speed( SqlDataFile )
+  
+  def test_data_file_add(self):
+    self._test_data_file_add( DataFile )
+  
+  def test_data_file_add_sql(self):
+    self._test_data_file_add( SqlDataFile )
+  
+  def test_data_file_update(self):
+    self._test_data_file_update( DataFile )
+  
+  def test_data_file_update_sql(self):
+    self._test_data_file_update( SqlDataFile )
+  
+  def test_data_file_remove(self):
+    self._test_data_file_remove( DataFile )
+  
+  def test_data_file_remove_sql(self):
+    self._test_data_file_remove( SqlDataFile )
+  
+  
+  
 #//===========================================================================//
 
 if __name__ == "__main__":
