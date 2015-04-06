@@ -3,7 +3,6 @@ import sys
 import time
 import datetime
 import subprocess
-import Gnuplot
 
 #//===========================================================================//
 
