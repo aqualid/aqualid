@@ -21,8 +21,10 @@ __all__ = (
   'EntitiesFile',
 )
 
+import operator
+
 from aql.util_types import AqlException 
-from aql.utils import DataFile, FileLock
+from aql.utils import DataFile, SqlDataFile, FileLock
 
 from .aql_entity_pickler import EntityPickler
 
@@ -41,96 +43,15 @@ class EntitiesFile (object):
     
     'data_file',
     'file_lock',
-    'key2entity',
-    'entity2key',
+    'cache',
     'pickler',
   )
   
-  #//---------------------------------------------------------------------------//
-  
-  def   getEntityByKey( self, key ):
-    
-    try:
-      entity = self.key2entity[ key ]
-      if entity is None:
-        data = self.data_file[ key ]
-        entity = self.pickler.loads( data )
-        self.key2entity[ key ] = entity
-    except Exception:
-      return None
-    
-    return entity
-  
-  #//---------------------------------------------------------------------------//
-
-  def   getEntitiesByKeys( self, keys ):
-    key2entity = self.key2entity
-    
-    entities = []
-    append = entities.append
-    
-    for key in keys:
-      try:
-        entity = key2entity[ key ]
-        if entity is None:
-          data = self.data_file[ key ]
-          entity = self.pickler.loads( data )
-          key2entity[ key ] = entity
-      except Exception:
-        return None
-      
-      append( entity )
-    
-    return entities
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __getKeyByEntityId(self, entity_id ):
-    return self.entity2key.get( entity_id, None )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __addEntityToCache(self, key, entity_id, entity ):
-    self.entity2key[ entity_id ] = key
-    self.key2entity[ key ] = entity
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __removeEntityByKey( self, key ):
-    
-    entity = self.key2entity.pop( key, None )
-    if entity is not None:
-      del self.entity2key[ entity.id ]
-  
-  def   __removeEntityByEntityId( self, entity_id ):
-    
-    key = self.entity2key.pop( entity_id, None )
-    if key is not None:
-      del self.key2entity[ key ]
-    
-    return key
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __updateEntityInCache(self, old_key, new_key, entity_id, entity ):
-    self.entity2key[ entity_id ] = new_key
-    del self.key2entity[ old_key ]
-    self.key2entity[ new_key ] = entity
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __clearCache(self ):
-    self.entity2key.clear()
-    self.key2entity.clear()
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   __init__( self, filename, force = False ):
-    self.key2entity = {}
-    self.entity2key = {}
+  def   __init__( self, filename, use_sqlite = False, force = False ):
+    self.cache = {}
     self.data_file = None
     self.pickler = EntityPickler()
-    self.open( filename, force = force )
+    self.open( filename, use_sqlite = use_sqlite, force = force )
   
   #//---------------------------------------------------------------------------//
   
@@ -145,186 +66,185 @@ class EntitiesFile (object):
   
   #//---------------------------------------------------------------------------//
   
-  def   open( self, filename, force = False ):
-    
-    invalid_keys = []
+  def   open( self, filename, use_sqlite = False, force = False ):
     
     self.file_lock = FileLock( filename )
     self.file_lock.writeLock( wait = False, force = force )
     
-    data_file = DataFile( filename, force = force )
-    
-    self.data_file = data_file
-    
-    loads = self.pickler.loads
-    for key, data in data_file:
-      try:
-        entity = loads( data )
-      except Exception:
-        invalid_keys.append( key )
-      else:
-        self.__addEntityToCache( key, entity.id, entity )
-      
-    data_file.remove( invalid_keys )
+    if use_sqlite:
+      self.data_file = SqlDataFile( filename, force = force )
+    else:
+      self.data_file = DataFile( filename, force = force )
   
   #//---------------------------------------------------------------------------//
   
   def   close( self ):
     
+    self.cache.clear()
+    
     if self.data_file is not None:
+      
       self.data_file.close()
       self.data_file = None
     
     self.file_lock.releaseLock()
-    
-    self.__clearCache()
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   findEntityKey( self, entity ):
-    return self.__getKeyByEntityId( entity.id )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   findEntity( self, entity ):
-    key = self.__getKeyByEntityId( entity.id )
-    if key is None:
-      return None
-    
-    return self.getEntityByKey( key )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   dropEntityCache(self, entity ):
-    try:
-      key = self.entity2key[ entity.id ]
-      self.key2entity[ key ] = None
-    except KeyError:
-      pass
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   addEntity( self, entity ):
-    
-    entity_id = entity.id
-    key = self.__getKeyByEntityId( entity_id )
-    data = self.pickler.dumps( entity )
-    
-    if key is None:
-      key = self.data_file.append( data )
-      
-      self.__addEntityToCache( key, entity_id, None )
-    
-    else:
-      new_key = self.data_file.replace( key, data )
-      
-      self.__updateEntityInCache( key, new_key, entity_id, None )
-      
-      return new_key
-    
-    return key
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   addCachedEntity( self, entity ):
-    
-    entity_id = entity.id
-    key = self.__getKeyByEntityId( entity_id )
-    
-    if key is None:
-      data = self.pickler.dumps( entity )
-      key = self.data_file.append( data )
-      
-      self.__addEntityToCache( key, entity_id, entity )
-    
-    else:
-      val = self.getEntityByKey( key )
-      
-      if entity != val:
-        data = self.pickler.dumps( entity )
-        new_key = self.data_file.replace( key, data )
-        
-        self.__updateEntityInCache( key, new_key, entity_id, None )
-        
-        return new_key
-    
-    return key
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   replaceCachedEntity( self, key, entity ):
-    data = self.pickler.dumps( entity )
-    new_key = self.data_file.replace( key, data )
-    
-    self.__updateEntityInCache( key, new_key, entity.id, entity )
-    return new_key
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   findEntities(self, entities ):
-    return tuple( map( self.findEntity, entities ) )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   addEntities( self, entities ):
-    return tuple( map( self.addEntity, entities ) )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   addCachedEntities( self, entities ):
-    return tuple( map( self.addCachedEntity, entities ) )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   removeEntities( self, entities ):
-    remove_keys = []
-    
-    for entity in entities:
-      key = self.__removeEntityByEntityId( entity.id )
-      if key is not None:
-        remove_keys.append( key )
-    
-    self.data_file.remove( remove_keys )
-  
-  #//---------------------------------------------------------------------------//
-  
-  def   removeEntityKeys( self, remove_keys ):
-    
-    for key in remove_keys:
-      self.__removeEntityByKey( key )
-    
-    self.data_file.remove( remove_keys )
   
   #//---------------------------------------------------------------------------//
   
   def   clear(self):
+    
     if self.data_file is not None:
       self.data_file.clear()
+      
+    self.cache.clear()
+
+
+  #//---------------------------------------------------------------------------//
+  
+  def   findNodeEntity( self, entity ):
     
-    self.__clearCache()
+    entity_id = entity.id
+    
+    dump = self.data_file.read( entity_id )
+    if dump is None:
+      return None
+    
+    try:
+      entity = self.pickler.loads( dump )
+      entity.id = entity_id
+    except Exception:
+      self.data_file.remove( (entity_id,) )
+      
+      return None
+    
+    return entity
+    
+  #//---------------------------------------------------------------------------//
+  
+  def   addNodeEntity( self, entity ):
+    dump = self.pickler.dumps( entity )
+    self.data_file.write( entity.id, dump )
+    
+  #//---------------------------------------------------------------------------//
+  
+  def   removeNodeEntities( self, entities ):
+    entity_ids = map( operator.attrgetter('id'), entities )
+    self.data_file.remove( entity_ids )
+    
+  #//---------------------------------------------------------------------------//
+  
+  def   _findEntityById( self, entity_id ):
+    try:
+      return self.cache[ entity_id ]
+    except KeyError:
+      pass
+    
+    data = self.data_file.read( entity_id )
+    if data is None:
+      raise ValueError()
+    
+    try:
+      entity = self.pickler.loads( data )
+      entity.id = entity_id
+    except Exception:
+      self.data_file.remove( (entity_id,) )
+      
+      raise ValueError()
+    
+    self.cache[ entity_id ] = entity
+    return entity
+  
+  #//---------------------------------------------------------------------------//
+
+  def   findEntitiesByKey( self, keys ):
+    entity_ids = self.data_file.get_ids( keys )
+    if entity_ids is None:
+      return None
+    
+    try:
+      return list( map( self._findEntityById, entity_ids ) )
+    except Exception:
+      return None
+  
+  #//---------------------------------------------------------------------------//
+
+  def   findEntities( self, entities ):
+    try:
+      return list( map( self._findEntityById, map( operator.attrgetter('id'), entities ) ) )
+    except Exception:
+      return None
   
   #//---------------------------------------------------------------------------//
   
-  def   selfTest(self, log = False):
-    if self.data_file is not None:
-      self.data_file.selfTest()
+  def   addEntities( self, entities ):
     
-    for entity_id, key in self.entity2key.items():
-      if log:
-        print("key: %s, entity_id: %s" % (key, entity_id))
+    keys = []
+    entity_ids = []
+    key_append = keys.append
+    entity_append = entity_ids.append
+    
+    for entity in entities:
       
-      if key not in self.key2entity:
-        raise AssertionError("key (%s) not in key2entity" % (key,))
+      entity_id = entity.id
       
-      entity = self.key2entity[ key ]
-      if (entity is not None) and (entity.id != entity_id):
-        raise AssertionError("key(%s) != self.entity2key[ entity_id(%s) ](%s)" % (key, entity_id, self.entity2key[ entity_id ]) )
+      try:
+        stored_entity = self._findEntityById( entity_id )
+        if stored_entity == entity:
+          entity_append( entity_id )
+          continue
+        
+      except Exception:
+        pass
+      
+      key = self.updateEntity( entity )
+      key_append( key )
     
-    size = len(self.key2entity)
+    keys.extend( self.data_file.get_keys( entity_ids ) )
     
-    if size != len(self.entity2key):
-      raise AssertionError( "size(%s) != len(self.entity2key)(%s)" % (size, len(self.entity2key)) )
+    return keys
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   updateEntity( self, entity ):
     
-    data_file_size = len(self.data_file)
-    if data_file_size != size:
-      raise AssertionError("data_file_size(%s) != size(%s)" % (data_file_size, size))
+    entity_id = entity.id
+    
+    self.cache[ entity_id ] = entity
+    data = self.pickler.dumps( entity )
+    key = self.data_file.write_with_key( entity_id, data )
+    
+    return key
+  
+  #//---------------------------------------------------------------------------//
+  
+  def   removeEntities( self, entities ):
+    remove_ids = tuple( map( operator.attrgetter('id'), entities ) )
+    
+    for entity_id in remove_ids:
+      try:
+        del self.cache[ entity_id ]
+      except KeyError:
+        pass
+    
+    self.data_file.remove( remove_ids )
+    
+  #//---------------------------------------------------------------------------//
+  
+  def   selfTest(self):
+    if self.data_file is None:
+      if self.cache:
+        raise AssertionError("cache is not empty")
+      
+      return
+    
+    self.data_file.selfTest()
+    
+    for entity_id, entity in self.cache.items():
+      if entity_id != entity.id:
+        raise AssertionError("entity_id(%s) != entity.id(%s)" % (entity_id, entity.id))
+      
+      dump = self.data_file.read( entity_id )
+      stored_entity = self.pickler.loads( dump )
+      
+      if stored_entity != entity:
+        raise AssertionError("stored_entity(%s) != entity(%s)" % (stored_entity.id, entity.id) )

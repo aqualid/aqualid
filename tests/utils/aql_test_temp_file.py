@@ -58,7 +58,51 @@ class TestTempFile( AqlTestCase ):
         f.write( b'1234567890' )
     
     self.assertFalse( os.path.isfile(temp_file) )
+  
+  #//=======================================================//
+  
+  @skip
+  def test_temp_mmap(self):
+    import mmap
+    
+    with Tempfile() as temp_file:
+      
+      temp_file.remove()
+      
+      with openFile( temp_file, write = True, binary = True ) as f:
+        f.seek( 0 )
+        f.write( b'\0' )
+        f.flush()
+        mm = mmap.mmap( f.fileno(), 0, access = mmap.ACCESS_WRITE )
+        mm.close()
 
+        f.seek( 0 )
+        f.write(b"header")
+        f.flush()
+        with mmap.mmap( f.fileno(), 0, access = mmap.ACCESS_WRITE ) as mem:
+          d = range( ord('0'), ord('9'))
+          data = bytearray( d )
+          
+          end_offset = len(data)
+          
+          if end_offset > mem.size():
+            page_size = mmap.ALLOCATIONGRANULARITY
+            new_size = ((end_offset + (page_size -1 )) // page_size) * page_size
+            mem.resize( new_size )
+          
+          mem[0:end_offset] = data
+          
+          buf = mem[0:end_offset]
+          print("buf: %s" % (buf,))
+          
+          buf = mem[0:10]
+          print("buf: %s" % (buf,))
+          
+          mem.move( 3, 1, 5 )
+          buf = mem[0:10]
+          print("buf: %s" % (buf,))
+
+          
 #//===========================================================================//
 
 if __name__ == "__main__":

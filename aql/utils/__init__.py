@@ -18,6 +18,7 @@
 #
 
 from .aql_data_file import *
+from .aql_sql_data_file import *
 from .aql_event_manager import *
 from .aql_lock_file import *
 from .aql_logging import *

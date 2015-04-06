@@ -285,7 +285,7 @@ class   NodeEntity (EntityBase):
   
   def   _getIdeps( vfile, idep_keys, reason, ideps_cache_get = _ACTUAL_IDEPS_CACHE.__getitem__, ideps_cache_set = _ACTUAL_IDEPS_CACHE.__setitem__ ):
     
-    entities = vfile.getEntitiesByKeys( idep_keys )
+    entities = vfile.findEntitiesByKey( idep_keys )
     if entities is None:
       if reason is not None:
         reason.setImplicitDepChanged()
@@ -301,8 +301,7 @@ class   NodeEntity (EntityBase):
         ideps_cache_set( entity_id, actual_entity )
         
         if entity is not actual_entity:
-          old_key = idep_keys[i]
-          vfile.replaceCachedEntity( old_key, actual_entity )
+          vfile.updateEntity( actual_entity )
           
           if reason is not None:
             reason.setImplicitDepChanged( entity )
@@ -316,13 +315,16 @@ class   NodeEntity (EntityBase):
     
     entities = []
     for entity in self.idep_entities:
-      entity = _actual_ideps_cache.setdefault( entity.id, entity )
-      if entity.signature is None:
-        raise ErrorUnactualEntity( entity )
+      entity_id = entity.id
+      cached_entity = _actual_ideps_cache.setdefault( entity_id, entity )
+      
+      if cached_entity is entity:
+        if entity.signature is None:
+          raise ErrorUnactualEntity( entity )
         
-      entities.append( entity )
+      entities.append( cached_entity )
     
-    keys = vfile.addCachedEntities( entities )
+    keys = vfile.addEntities( entities )
     
     self.idep_entities  = entities
     self.idep_keys      = keys
@@ -357,7 +359,7 @@ class   NodeEntity (EntityBase):
     self.itarget_entities = []
     self.idep_entities = []
     
-    other = vfile.findEntity( self )
+    other = vfile.findNodeEntity( self )
     
     if other is None:
       if reason is not None:
@@ -402,7 +404,7 @@ class   NodeEntity (EntityBase):
     
     self._saveIdeps( vfile )
     
-    vfile.addEntity( self )
+    vfile.addNodeEntity( self )
   
   #//-------------------------------------------------------//
   
@@ -413,14 +415,12 @@ class   NodeEntity (EntityBase):
     
     self.idep_entities = tuple()
     
-    node_key = vfile.findEntityKey( self )
+    node_entity = vfile.findNodeEntity( self )
     
-    if node_key is None:
+    if node_entity is None:
       self.itarget_entities = tuple()
-      
+    
     else:
-      node_entity = vfile.getEntityByKey( node_key )
-      
       targets = node_entity.target_entities
       itargets = node_entity.itarget_entities
       
@@ -438,8 +438,6 @@ class   NodeEntity (EntityBase):
       self.builder.clear( self.target_entities, self.itarget_entities )
     except Exception:
       pass
-    
-    return (node_key,) if node_key is not None else ()
   
   #//-------------------------------------------------------//
   
@@ -1002,15 +1000,15 @@ class Node (object):
     
     self._clearSplit()
     
-    node_keys = []
+    node_entities = []
     
     for node_entity in self.node_entities:
-      ent_keys = node_entity.clear( vfile )
-      node_keys.extend( ent_keys )
+      node_entity.clear( vfile )
+      node_entities.append( node_entity )
     
     self._populateTargets()
     
-    return node_keys
+    return node_entities
   
   #//=======================================================//
   
@@ -1121,7 +1119,6 @@ class Node (object):
     
     except Exception as ex:
       if 'BuilderInitiator' not in str(ex):
-        print("getBuildStr: ex: %s, %s" % (ex,ex.args))
         raise
     
     return str(self)  # TODO: return raw data

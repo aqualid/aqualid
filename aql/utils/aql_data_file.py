@@ -19,124 +19,211 @@
 
 __all__ = ( 'DataFile', )
 
-import os
+import io
+import operator
 import struct
-
-from aql.util_types import AqlException
+import mmap
 
 from .aql_utils import openFile
 
 #//===========================================================================//
 
-class   ErrorDataFileFormatInvalid( AqlException ):
+class   ErrorDataFileFormatInvalid( Exception ):
   def   __init__( self ):
     msg = "Data file format is not valid."
     super(ErrorDataFileFormatInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileChunkInvalid( AqlException ):
+class   ErrorDataFileChunkInvalid( Exception ):
   def   __init__( self ):
     msg = "Data file chunk format is not valid."
     super(ErrorDataFileChunkInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileVersionInvalid( AqlException ):
+class   ErrorDataFileVersionInvalid( Exception ):
   def   __init__( self ):
     msg = "Data file version is changed."
     super(ErrorDataFileVersionInvalid, self).__init__( msg )
 
 #//===========================================================================//
 
-class   ErrorDataFileCorrupted( AqlException ):
+class   ErrorDataFileCorrupted( Exception ):
   def   __init__( self ):
     msg = "Data file is corrupted"
     super(ErrorDataFileCorrupted, self).__init__( msg )
 
 #//===========================================================================//
 
-class   DataFileChunk (object):
-  __slots__ = \
-  (
-    'offset',
-    'capacity',
-    'size',
-  )
+class _MmapFile( object ):
   
-  header_struct = struct.Struct(">QLL") # big-endian, 8 bytes (key), 4 bytes (capacity), 4 bytes (size)
-  header_size = header_struct.size
+  def   __init__(self, filename ):
+    stream = openFile( filename, write = True, binary = True, sync = False )
+    
+    try:
+      memmap = mmap.mmap( stream.fileno(), 0, access = mmap.ACCESS_WRITE )
+    except ValueError:
+      stream.seek( 0 )
+      stream.write( b'\0' )
+      stream.flush()
+      
+      memmap = mmap.mmap( stream.fileno(), 0, access = mmap.ACCESS_WRITE )
+    
+    self.stream = stream
+    self.memmap = memmap
+    self.size = memmap.size
+    self.resize = memmap.resize
+    self.flush = memmap.flush
   
   #//-------------------------------------------------------//
   
-  def   __init__(self, offset ):
+  def   close(self):
+    self.memmap.flush()
+    self.memmap.close()
+    self.stream.close()
+  
+  #//-------------------------------------------------------//
+  
+  def   read( self, offset, size ):
+    return self.memmap[ offset : offset + size ]
+  
+  #//-------------------------------------------------------//
+  
+  def   write( self, offset, data ):
+    memmap = self.memmap
     
-    self.offset = offset
-    self.capacity = 0
-    self.size = 0
+    end_offset = offset + len(data)
+    if end_offset > memmap.size():
+      page_size = mmap.ALLOCATIONGRANULARITY
+      size = ((end_offset + (page_size -1 )) // page_size) * page_size
+      if size == 0:
+        size = page_size
+        
+      self.resize( size )
+    
+    memmap[ offset : end_offset ] = data
+  
+  #//-------------------------------------------------------//
+  
+  def   move( self, dest, src, size ):
+    memmap = self.memmap
+    
+    end_offset = dest + size
+    if end_offset > memmap.size():
+      self.resize( end_offset )
+    
+    memmap.move( dest, src, size )
+
+#//===========================================================================//
+
+class _IOFile( object ):
+  
+  def   __init__(self, filename ):
+    stream = openFile( filename, write = True, binary = True, sync = False )
+    
+    self.stream = stream
+    self.resize = stream.truncate
+    self.flush = stream.flush
+  
+  #//-------------------------------------------------------//
+  
+  def   close(self):
+    self.stream.close()
+  
+  #//-------------------------------------------------------//
+  
+  def   read( self, offset, size ):
+    stream = self.stream
+    stream.seek( offset )
+    return stream.read( size )
+  
+  #//-------------------------------------------------------//
+  
+  def   write( self, offset, data ):
+    stream = self.stream
+    stream.seek( offset )
+    stream.write( data )
+  
+  #//-------------------------------------------------------//
+  
+  def   move( self, dest, src, size ):
+    stream = self.stream
+    stream.seek( src )
+    data = stream.read( size )
+    stream.seek( dest )
+    stream.write( data )
+  
+  #//-------------------------------------------------------//
+  
+  def   size( self, io_SEEK_END = io.SEEK_END ):
+    return self.stream.seek( 0, io_SEEK_END )
+  
+#//===========================================================================//
+
+class   MetaData (object):
+  __slots__ = (
+    
+    'offset',
+    'key',
+    'id',
+    'data_offset',
+    'data_size',
+    'data_capacity',
+  )
+  
+  _META_STRUCT = struct.Struct(">Q16sLL")   # big-endian, 8 bytes (key), 16 bytes (id), 4 bytes (size), 4 bytes (capacity)
+  size = _META_STRUCT.size
+  
+  #//-------------------------------------------------------//
+  
+  def   __init__( self, meta_offset, key, data_id, data_offset, data_size ):
+    
+    self.offset         = meta_offset
+    self.key            = key
+    self.id             = data_id
+    self.data_offset    = data_offset
+    self.data_size      = data_size
+    self.data_capacity  = data_size + 4
+  
+  #//-------------------------------------------------------//
+  
+  def   dump( self, meta_struct = _META_STRUCT ):
+    return meta_struct.pack( self.key, self.id, self.data_size, self.data_capacity )
   
   #//-------------------------------------------------------//
   
   @classmethod
-  def  load( cls, stream, offset, header_size = header_size, header_struct = header_struct ):
-    
-    stream.seek( offset )
-    header = stream.read( header_size )
-    
-    if len(header) < header_size:
-      return -1, None, 0
-    
-    key, capacity, size = header_struct.unpack( header )
-    
-    if capacity < size:
-      raise ErrorDataFileChunkInvalid()
+  def  load( cls, dump, meta_struct = _META_STRUCT ):
     
     self = cls.__new__(cls)
-    self.offset = offset
-    self.capacity = capacity
-    self.size = size
     
-    return key, self, header_size + capacity
+    try:
+      self.key, self.id, data_size, data_capacity = meta_struct.unpack( dump )
+    except struct.error:
+      raise ErrorDataFileChunkInvalid()
+    
+    if data_capacity < data_size:
+      raise ErrorDataFileChunkInvalid()
+    
+    self.data_size      = data_size
+    self.data_capacity  = data_capacity
+    
+    return self
   
   #//-------------------------------------------------------//
   
-  def   pack( self, key, data, reserve = True, header_struct = header_struct ):
+  def   resize( self, data_size ):
     
-    size = len(data)
+    self.data_size = data_size
     
-    oversize = 0
+    capacity = self.data_capacity
+    if capacity >= data_size:
+      return 0
     
-    capacity = self.capacity
-    if capacity < size:
-      self.capacity = size + (min( size // 4, 64 ) if reserve else 4)
-      
-      oversize = self.capacity - capacity
+    self.data_capacity = data_size + min( data_size // 4, 128 )
     
-    self.size = size
-    
-    header = header_struct.pack( key, self.capacity, size )
-    
-    chunk = bytearray(header)
-    chunk += data
-    
-    return chunk, oversize
-  
-  #//-------------------------------------------------------//
-  
-  def   data( self, stream, header_size = header_size ):
-    stream.seek( self.offset + header_size )
-    return stream.read( self.size )
-  
-  #//-------------------------------------------------------//
-  
-  def   chunk( self, stream, header_size = header_size ):
-    stream.seek( self.offset )
-    return stream.read( header_size + self.size ) + bytearray( self.capacity - self.size )
-  
-  #//-------------------------------------------------------//
-  
-  def   chunkSize( self, header_size = header_size ):
-    return header_size + self.capacity
+    return self.data_capacity - capacity
   
   #//-------------------------------------------------------//
   
@@ -151,477 +238,603 @@ class   DataFileChunk (object):
       s.append( "%s: %s" % (v, getattr( self, v )) ) 
     
     return ", ".join( s )
-
-#//===========================================================================//
-
-class DataFileHeader( object ):
-  
-  __slots__ = \
-  (
-    'uid',
-  )
-  
-  MAGIC_TAG = b".AQL.DB."
-  VERSION = 0
-  MAX_UID = (2 ** 64) - 1
-  
-  header_struct = struct.Struct(">8sLQ") # big-endian, 8 bytes(MAGIC TAG), 4 bytes (file version), 8 bytes (next unique ID)
-  
-  #//-------------------------------------------------------//
-  
-  def   __init__(self):
-    self.uid = 0
-  
-  #//-------------------------------------------------------//
-  def   __eq__(self, other):
-    return self.uid == other.uid
-  
-  #//-------------------------------------------------------//
-  
-  def   __ne__(self, other):
-    return self.uid != other.uid
-  
-  #//-------------------------------------------------------//
-  
-  @staticmethod
-  def   size( header_struct = header_struct ):
-    return header_struct.size
-  
-  #//-------------------------------------------------------//
-  
-  def   load(self, stream, header_struct = header_struct ):
-    stream.seek(0)
-    header = stream.read( header_struct.size )
-    
-    if header:
-      try:
-        tag, version, self.uid = header_struct.unpack( header )
-      except struct.error:
-        raise ErrorDataFileFormatInvalid()
-      
-      if tag != self.MAGIC_TAG:
-        raise ErrorDataFileFormatInvalid()
-      
-      if version != self.VERSION:
-        raise ErrorDataFileVersionInvalid()
-  
-  #//-------------------------------------------------------//
-  
-  def   save( self, stream, header_struct = header_struct ):
-    header = header_struct.pack( self.MAGIC_TAG, self.VERSION, self.uid )
-    stream.seek(0)
-    stream.write( header )
-  
-  #//-------------------------------------------------------//
-  
-  def   nextKey( self, stream, max_uid = MAX_UID ):
-    key = self.uid
-    
-    if key < max_uid:
-      self.uid += 1
-    else:
-      self.uid = 0    # it should never happen
-    
-    self.save( stream )
-    
-    return key
-    
-  #//-------------------------------------------------------//
-  
-  def   __repr__(self):
-    return self.__str__()
-  
-  #//-------------------------------------------------------//
-  
-  def   __str__(self):
-    s = []
-    for v in self.__slots__:
-      s.append( "%s: %s" % (v, getattr( self, v )) ) 
-    
-    return ", ".join( s )
-
 
 #//===========================================================================//
 
 class DataFile (object):
   
-  __slots__ = \
-  (
-    'locations',
-    'file_header',
-    'file_size',
-    'stream',
+  __slots__ = (
+    'next_key',
+    'id2data',
+    'key2id',
+    'meta_end',
+    'data_begin',
+    'data_end',
+    'handle',
   )
   
-  #//-------------------------------------------------------//
+  # +-----------------------------------+
+  # |8 bytes (MAGIC TAG)                |
+  # +-----------------------------------+
+  # |4 bytes (file version)             |
+  # +-----------------------------------+
+  # |8 bytes (next unique key)          |
+  # +-----------------------------------+
+  # |4 bytes (data begin)               |
+  # +-----------------------------------+
+  # | meta1 (40 bytes)                  |
+  # +-----------------------------------+
+  # | meta2 (40 bytes)                  |
+  # +-----------------------------------+
+  #           .......
+  # +-----------------------------------+
+  # | metaN (40 bytes)                  |
+  # +-----------------------------------+
+  # |  data1 (x bytes)                  |
+  # +-----------------------------------+
+  # |  data2 (y bytes)                  |
+  # +-----------------------------------+
+  #           .......
+  # +-----------------------------------+
+  # |  dataN (z bytes)                  |
+  # +-----------------------------------+
+
   
-  def   __moveLocations( self, start_offset, shift_size ):
-    for location in self.locations.values():
-      if location.offset > start_offset:
-        location.offset += shift_size
+  MAGIC_TAG = b".AQL.DB."
+  VERSION = 1
+  
+  _HEADER_STRUCT = struct.Struct(">8sL") # big-endian, 8 bytes(MAGIC TAG), 4 bytes (file version)
+  _HEADER_SIZE = _HEADER_STRUCT.size
+  
+  _KEY_STRUCT = struct.Struct(">Q") # 8 bytes (next unique key)
+  _KEY_OFFSET = _HEADER_SIZE
+  _KEY_SIZE = _KEY_STRUCT.size
+  
+  _META_TABLE_HEADER_STRUCT = struct.Struct(">L") # 4 bytes (offset of data area)
+  _META_TABLE_HEADER_SIZE = _META_TABLE_HEADER_STRUCT.size
+  _META_TABLE_HEADER_OFFSET = _KEY_OFFSET + _KEY_SIZE
+  
+  _META_TABLE_OFFSET = _META_TABLE_HEADER_OFFSET + _META_TABLE_HEADER_SIZE
   
   #//-------------------------------------------------------//
   
   def   __init__( self, filename, force = False ):
     
-    self.locations = {}
-    self.file_header = DataFileHeader()
-    self.file_size = 0
-    self.stream = None
-    
+    self.id2data = {}
+    self.key2id = {}
+    self.meta_end = 0
+    self.data_begin = 0
+    self.data_end = 0
+    self.handle = None
+
     self.open( filename, force = force )
+      
+  #//-------------------------------------------------------//
+  
+  def  open( self, filename, force = False ):
+    self.close()
+    
+    try:
+      self.handle = _MmapFile( filename )
+    except Exception:
+      self.handle = _IOFile( filename )
+    
+    self._init_header( force )
+    
+    self.next_key = self._key_generator()
+    
+    self._init_meta_table()
+    
+  #//-------------------------------------------------------//
+  
+  def   close(self):
+    
+    if self.handle is not None:
+      self.handle.close()
+      self.handle = None
+      
+      self.id2data.clear()
+      self.key2id.clear()
+      self.meta_end = 0
+      self.data_begin = 0
+      self.data_end = 0
+      self.next_key = None
+  
+  #//-------------------------------------------------------//
+  
+  def   clear( self ):
+    
+    self._reset_meta_table()
+    
+    self.next_key = self._key_generator()
+    
+    self.id2data.clear()
+    self.key2id.clear()
   
   #//-------------------------------------------------------//
   
   def   __enter__(self):
     return self
 
-  #noinspection PyUnusedLocal
   def   __exit__(self, exc_type, exc_value, traceback):
     self.close()
   
   #//-------------------------------------------------------//
   
-  def  open( self, filename, force = False ):
-    self.close()
+  def   _init_header( self, force, header_struct = _HEADER_STRUCT ):
     
-    stream = openFile( filename, write = True, binary = True, sync = False )
-    
-    self.stream = stream
+    header = self.handle.read( 0, header_struct.size )
     
     try:
-      self.file_header.load( stream )
-    except ErrorDataFileVersionInvalid:
-      self.clear()
-      return
-    except ErrorDataFileFormatInvalid:
-      if not force:
-        raise
+      tag, version = header_struct.unpack( header )
       
-      self.clear()
-      return
+      if tag != self.MAGIC_TAG:
+        if not force:
+          raise ErrorDataFileFormatInvalid()
+      
+      elif version == self.VERSION:
+        return
+      
+    except struct.error:
+      if (header and header != b'\0') and not force:
+        raise ErrorDataFileFormatInvalid()
     
-    offset = self.file_header.size()
-    stream = self.stream
-    locations = self.locations
+    #//-------------------------------------------------------//
+    # init the file
+    header = header_struct.pack( self.MAGIC_TAG, self.VERSION )
+    self.handle.resize( len(header) )
+    self.handle.write( 0, header )
+  
+  #//-------------------------------------------------------//
+  
+  def   _key_generator( self, key_offset = _KEY_OFFSET, key_struct = _KEY_STRUCT, MAX_KEY = (2 ** 64) - 1 ):
     
-    file_size = stream.seek( 0, os.SEEK_END )
+    key_dump = self.handle.read( key_offset, key_struct.size )
+    try:
+      next_key, = key_struct.unpack( key_dump )
+    except struct.error:
+      next_key = 0
     
-    next_key = self.file_header.uid
+    key_pack = key_struct.pack
+    write_file = self.handle.write
     
-    invalid_keys = []
+    while True:
+      
+      if next_key < MAX_KEY:
+        next_key += 1
+      else:
+        next_key = 1    # this should never happen
+      
+      write_file( key_offset, key_pack( next_key ) )
+      yield next_key
+  
+  #//-------------------------------------------------------//
+  
+  def   _reset_meta_table( self,
+                      meta_size     = MetaData.size,
+                      table_offset  = _META_TABLE_OFFSET ):
+    
+    self.meta_end = table_offset
+    self.data_begin = table_offset + meta_size * 1024
+    self.data_end = self.data_begin
+    
+    self._truncate_file()
+  
+  #//-------------------------------------------------------//
+  
+  def   _truncate_file( self,
+                        table_header_struct = _META_TABLE_HEADER_STRUCT,
+                        table_header_offset = _META_TABLE_HEADER_OFFSET ):
+    
+    header_dump = table_header_struct.pack( self.data_begin )
+    
+    handle = self.handle
+    
+    handle.resize( self.data_end )
+    handle.write( table_header_offset, header_dump )
+    # handle.write( self.meta_end, bytearray(self.data_begin - self.meta_end) )
+    handle.write( self.meta_end, b'\0' * (self.data_begin - self.meta_end) )
+    handle.flush()
+        
+  #//-------------------------------------------------------//
+  
+  def   _init_meta_table( self,
+                         table_header_struct = _META_TABLE_HEADER_STRUCT,
+                         table_header_offset = _META_TABLE_HEADER_OFFSET,
+                         table_header_size = _META_TABLE_HEADER_SIZE,
+                         table_begin = _META_TABLE_OFFSET,
+                         meta_size = MetaData.size ):
+    
+    handle = self.handle
+    
+    header_dump = handle.read( table_header_offset, table_header_size )
     
     try:
-      while True:
-        key, location, size = DataFileChunk.load( stream, offset )
+      data_begin, = table_header_struct.unpack( header_dump )
+    except struct.error:
+      self._reset_meta_table()
+      return
+    
+    if (data_begin <= table_begin) or (data_begin > handle.size()):
+      self._reset_meta_table()
+      return
+    
+    table_size = data_begin - table_begin
+    
+    if (table_size % meta_size) != 0:
+      self._reset_meta_table()
+      return
+    
+    dump = handle.read( table_begin, table_size )
+    
+    if len(dump) < table_size:
+      self._reset_meta_table()
+      return
+    
+    self._load_meta_table( data_begin, dump )
+    
+  #//-------------------------------------------------------//
+  
+  def   _load_meta_table( self, data_offset, metas_dump,
+                          meta_size = MetaData.size,
+                          table_begin = _META_TABLE_OFFSET ):
+    
+    self.data_begin = data_offset
+    
+    file_size = self.handle.size()
+    load_meta = MetaData.load
+    
+    pos = 0
+    dump_size = len(metas_dump)
+    while pos < dump_size:
+      meta_dump = metas_dump[ pos : pos + meta_size ]
+      try:
+        meta = load_meta( meta_dump )
         
-        if location is None:
+        data_capacity = meta.data_capacity
+        
+        if data_capacity == 0:
+          # end of meta table marker
           break
         
-        if (offset + location.size) > file_size:
+        meta.offset = pos + table_begin
+        meta.data_offset = data_offset
+        
+        if (data_offset + meta.data_size) > file_size:
           raise ErrorDataFileChunkInvalid()
         
-        if key >= next_key:
-          invalid_keys.append( key )
+        data_offset += data_capacity
         
-        locations[ key ] = location
-        offset += size
-    
-    except ErrorDataFileChunkInvalid:
-      stream.truncate( offset )
-      stream.flush()
-    
-    if invalid_keys:
-      self.remove( invalid_keys )
-    
-    self.file_size = offset
-  
-  #//-------------------------------------------------------//
-  
-  def   __truncate( self, size ):
-    stream = self.stream
-    if stream is not None:
-      stream.seek( size )
-      stream.truncate( size )
-      stream.flush()
-  
-  #//-------------------------------------------------------//
-  
-  def   flush(self):
-    stream = self.stream
-    if stream is not None:
-      stream.flush()
-  
-  #//-------------------------------------------------------//
-  
-  def   close(self):
-    stream = self.stream
-    if stream is not None:
-      stream.flush()
-      stream.close()
-      self.stream = None
+      except Exception:
+        self.data_end = data_offset
+        self.meta_end = pos + table_begin
+        self._truncate_file()
+        return
       
-      self.locations.clear()
-      self.file_size = 0
+      self.id2data[ meta.id ] = meta
+      if meta.key:
+        self.key2id[ meta.key ] = meta.id
+      
+      pos += meta_size
+    
+    self.meta_end = pos + table_begin
+    self.data_end = data_offset
   
   #//-------------------------------------------------------//
   
-  def   clear(self):
+  def   _extend_meta_table( self,
+                            table_header_struct = _META_TABLE_HEADER_STRUCT,
+                            table_header_offset = _META_TABLE_HEADER_OFFSET,
+                            table_begin = _META_TABLE_OFFSET ):
     
-    file_header = DataFileHeader()
+    data_begin = self.data_begin
+    data_end = self.data_end
     
-    stream = self.stream
-    if stream is not None:
-      stream.truncate( 0 )
-      file_header.save( stream )
-      stream.flush()
-          
-    self.file_header = file_header
-    self.locations.clear()
-    self.file_size = file_header.size()
-
+    table_capacity = data_begin - table_begin
+    new_data_begin = data_begin + table_capacity
     
+    handle = self.handle
+    
+    handle.move( new_data_begin, data_begin, data_end - data_begin )
+    # handle.write( data_begin, bytearray( table_capacity ) )
+    handle.write( data_begin, b'\0' * table_capacity )
+    
+    header_dump = table_header_struct.pack( new_data_begin )
+    handle.write( table_header_offset, header_dump )
+    
+    self.data_begin = new_data_begin
+    self.data_end += table_capacity
+    
+    for meta in self.id2data.values():
+      meta.data_offset += table_capacity
   
   #//-------------------------------------------------------//
   
-  def append( self, data ):
+  def   _extend_data( self, meta, oversize ):
+    new_next_data = meta.data_offset + meta.data_capacity
+    next_data = new_next_data - oversize
+    rest_size = self.data_end - next_data
+    if rest_size > 0:
+      self.handle.move( new_next_data, next_data, rest_size )
     
-    stream  = self.stream
-    key     = self.file_header.nextKey( stream )
-    offset  = self.file_size
+      for meta in self.id2data.values():
+        if meta.data_offset >= next_data:
+          meta.data_offset += oversize
     
-    location = DataFileChunk( offset )
-    
-    chunk, oversize = location.pack( key, data, reserve = False )
-    
-    stream.seek( offset )
-    stream.write( chunk )
-    
-    self.file_size += location.chunkSize()
-    self.locations[key] = location
-    
-    return key
+    self.data_end += oversize
   
   #//-------------------------------------------------------//
   
-  def   modify(self, key, data ):
+  def   _append( self, key, data_id, data,
+                 meta_size = MetaData.size ):
     
-    stream = self.stream
+    meta_offset = self.meta_end
+    if meta_offset == self.data_begin:
+      self._extend_meta_table()
     
-    locations = self.locations
-    location = locations[ key ]
+    data_offset = self.data_end
     
-    tail_offset = location.offset + location.chunkSize()
-    chunk, oversize = location.pack( key, data, reserve = True )
+    meta = MetaData( meta_offset, key, data_id, data_offset, len(data) )
     
-    if oversize > 0:
-      chunk += bytearray( location.capacity - location.size )
-      
-      stream.seek( tail_offset ); chunk += stream.read()
-      
-      self.file_size += oversize
-      self.__moveLocations( location.offset, oversize )
-      
-    stream.seek( location.offset )
-    stream.write( chunk )
+    write = self.handle.write
+    
+    write( data_offset, data )
+    write( meta_offset, meta.dump() )
+    
+    self.data_end += meta.data_capacity
+    self.meta_end += meta_size
+    
+    self.id2data[ data_id ] = meta
   
   #//-------------------------------------------------------//
   
-  def   replace(self, key, data ):
+  def   _update( self, meta, data, update_meta ):
     
-    stream = self.stream
+    data_size = len(data)
     
-    locations = self.locations
-    location = locations[ key ]
-    del locations[ key ]
+    if meta.data_size != data_size:
+      update_meta = True
+      oversize = meta.resize( data_size )
+      if oversize > 0:
+        self._extend_data( meta, oversize )
     
-    key = self.file_header.nextKey( stream )
-    locations[ key ] = location
+    write = self.handle.write
     
-    tail_offset = location.offset + location.chunkSize()
-    chunk, oversize = location.pack( key, data, reserve = True )
+    if update_meta:
+      write( meta.offset, meta.dump() )
     
-    if oversize > 0:
-      chunk += bytearray( location.capacity - location.size )
-      
-      stream.seek( tail_offset ); chunk += stream.read()
-      
-      self.file_size += oversize
-      self.__moveLocations( location.offset, oversize )
-      
-    stream.seek( location.offset )
-    stream.write( chunk )
-    
-    return key
+    write( meta.data_offset, data )
   
   #//-------------------------------------------------------//
   
-  def   __delitem__(self, key):
-    self.remove( (key,) )
+  def   read( self, data_id ):
+    try:
+      meta = self.id2data[ data_id ]
+    except KeyError:
+      return None
+    
+    return self.handle.read( meta.data_offset, meta.data_size )
   
   #//-------------------------------------------------------//
   
-  def   __findMinOffset( self, keys ):
-    start_offset = -1
+  def   write( self, data_id, data ):
     
-    locations = self.locations
+    try:
+      meta = self.id2data[ data_id ]
+      self._update( meta, data, update_meta = False)
+    except KeyError:
+      self._append( 0, data_id, data )
+  
+  #//-------------------------------------------------------//
+  
+  def   write_with_key( self, data_id, data ):
     
-    for key in keys:
+    meta = self.id2data.get( data_id )
+    
+    key = next(self.next_key)
+    
+    if meta is None:
+      self._append( key, data_id, data )
+    else:
       try:
-        location = locations[ key ]
-        if (start_offset == -1) or (start_offset > location.offset):
-          start_offset = location.offset
+        del self.key2id[ meta.key ]
       except KeyError:
         pass
       
-    return start_offset
+      meta.key = key
+      self._update( meta, data, update_meta = True )
+      
+    self.key2id[ key ] = data_id
     
-  #//-------------------------------------------------------//
-  
-  def   __findRestLocations( self, start_offset, del_keys ):
-    
-    locations = []
-    
-    for key, location in self.locations.items():
-      if key not in del_keys:
-        if location.offset > start_offset:
-          locations.append( location )
-    
-    return locations
+    return key
   
   #//-------------------------------------------------------//
   
-  def   __readAndMoveRestLocations( self, locations, start_offset ):
-    
-    chunks = bytearray()
-    
-    stream = self.stream
-    
-    for location in locations:
-      chunk = location.chunk( stream )
-      location.offset = start_offset
-      start_offset += len( chunk )
-      chunks += chunk
-    
-    return chunks
-    
-  #//-------------------------------------------------------//
-  
-  def   remove(self, del_keys ):
-    
-    del_keys = frozenset( del_keys )
-    
-    start_offset = self.__findMinOffset( del_keys )
-    if start_offset == -1:
-      return
-    
-    rest_locations = self.__findRestLocations( start_offset, del_keys )
-    
-    rest_chunks = self.__readAndMoveRestLocations( rest_locations, start_offset )
-    
-    stream = self.stream
-    
-    stream.truncate( start_offset )
-    stream.seek( start_offset )
-    stream.write( rest_chunks )
-    
-    self.file_size = start_offset + len( rest_chunks )
-    
-    locations = self.locations
-    for key in del_keys:
-      del locations[ key ]
-    
-  #//-------------------------------------------------------//
-  
-  def   __getitem__(self, key ):
-    return self.locations[ key ].data( self.stream )
+  def   get_ids(self, keys):
+    try:
+      return tuple( map( self.key2id.__getitem__, keys ) )
+    except KeyError:
+      return None
   
   #//-------------------------------------------------------//
   
-  def   __iter__(self):
-    stream = self.stream
-    for key, location in self.locations.items():
-      yield key, location.data( stream )
+  def   get_keys( self, data_ids ):
+    return map( operator.attrgetter('key'), map( self.id2data.__getitem__, data_ids ) )
   
   #//-------------------------------------------------------//
   
-  def   __len__(self):
-    return len( self.locations )
-  
-  #//-------------------------------------------------------//
-  
-  def   __bool__(self):
-    return bool(self.locations)
-  
+  def   remove( self, data_ids ):
+    
+    move = self.handle.move
+    meta_size = MetaData.size
+    
+    remove_data_ids = frozenset( data_ids )
+    
+    metas = sorted( self.id2data.values(), key = operator.attrgetter('data_offset') )
+    
+    meta_shift = 0
+    data_shift = 0
+    
+    meta_offset = 0
+    data_offset = 0
+    last_meta_end = 0
+    last_data_end = 0
+    
+    remove_data_begin = None
+    remove_meta_begin = None
+    
+    move_meta_begin = None
+    move_data_begin = None
+    
+    for meta in metas:
+      
+      meta_offset = meta.offset
+      last_meta_end = meta_offset + meta_size
+      data_offset = meta.data_offset
+      last_data_end = data_offset + meta.data_capacity
+      
+      if meta.id in remove_data_ids:
+        
+        del self.id2data[ meta.id ]
+        if meta.key:
+          del self.key2id[ meta.key ]
+        
+        if move_meta_begin is not None:
+          move( remove_meta_begin, move_meta_begin, meta_offset - move_meta_begin )
+          move( remove_data_begin, move_data_begin, data_offset - move_data_begin )
+          
+          remove_meta_begin = None
+          move_meta_begin = None
+        
+        if remove_meta_begin is None:
+          remove_meta_begin = meta_offset - meta_shift
+          remove_data_begin = data_offset - data_shift
+        
+      else:
+        if remove_meta_begin is not None:
+          if move_meta_begin is None:
+            move_meta_begin = meta_offset
+            move_data_begin = data_offset
+            
+            meta_shift = move_meta_begin - remove_meta_begin
+            data_shift = move_data_begin - remove_data_begin
+          
+        if meta_shift:
+          meta.offset -= meta_shift
+          meta.data_offset -= data_shift
+    
+    if remove_data_begin is not None:
+      if move_meta_begin is None:
+        meta_shift = last_meta_end - remove_meta_begin
+        data_shift = last_data_end - remove_data_begin
+      else:
+        move( remove_meta_begin, move_meta_begin, last_meta_end - move_meta_begin )
+        move( remove_data_begin, move_data_begin, last_data_end - move_data_begin )
+    
+    self.meta_end -= meta_shift
+    self.data_end -= data_shift
+    
+    # self.handle.write( self.meta_end, bytearray( meta_shift ) )
+    self.handle.write( self.meta_end, b'\0' * meta_shift )
+    self.handle.resize( self.data_end )
+    
   #//-------------------------------------------------------//
   
   def   selfTest( self ):
     
-    if self.stream is not None:
-      file_size = self.file_header.size()
-    else:
-      file_size = 0
+    if self.handle is None:
+      return
     
-    next_key = self.file_header.uid
+    file_size = self.handle.size()
     
-    for key,location in self.locations.items():
-      
-      if key >= next_key:
-        raise AssertionError("location.key (%s) >= next key (%s)" % (key, next_key))
-      
-      if location.capacity < location.size:
-        raise AssertionError("location.capacity(%s) < location.size (%s)" % (location.capacity, location.size))
-      
-      file_size += location.chunkSize()
+    if self.data_begin > file_size:
+      raise AssertionError("data_begin(%s) > file_size(%s)" % (self.data_begin, file_size))
     
-    if file_size != self.file_size:
-      raise AssertionError("file_size (%s) != self.file_size (%s)" % (file_size, self.file_size) )
+    if self.data_begin > self.data_end:
+      raise AssertionError("data_end(%s) > data_end(%s)" % (self.data_begin, self.data_end))
     
-    ordered_location = sorted( self.locations.values(), key = lambda loc: loc.offset )
-    
-    if self.stream is not None:
-      real_file_size = self.stream.seek( 0, os.SEEK_END )
-      if ordered_location:
-        
-        last_location = ordered_location[-1]
-        last_data_offset = last_location.offset + last_location.header_size
-        
-        if real_file_size < (last_data_offset + last_location.size) or \
-           real_file_size > (last_data_offset + last_location.capacity) :
-          raise AssertionError("Invalid real_file_size(%s), last_location: %s" % (real_file_size, last_location) )
-      
-      else:
-        if (file_size != real_file_size) and (real_file_size != 0 or file_size != self.file_header.size()):
-          raise AssertionError("file_size(%s) != real_file_size(%s)" % (file_size, real_file_size))
-    
-    prev_location = None
-    for location in ordered_location:
-      if prev_location is not None:
-        if (prev_location.offset + prev_location.capacity + prev_location.header_size) != location.offset:
-          raise AssertionError("Messed locations: [%s] [%s]" % (prev_location, location))
-      
-      prev_location = location
+    if self.meta_end > self.data_begin:
+      raise AssertionError("meta_end(%s) > data_begin(%s)" % (self.meta_end, self.data_begin))
     
     #//-------------------------------------------------------//
     
-    if self.stream is not None:
-      file_header = DataFileHeader()
-      file_header.load( self.stream )
+    header_dump = self.handle.read( self._META_TABLE_HEADER_OFFSET, self._META_TABLE_HEADER_SIZE )
+    
+    try:
+      data_begin, = self._META_TABLE_HEADER_STRUCT.unpack( header_dump )
+    except struct.error:
+      self._reset_meta_table()
+      return
+    
+    if self.data_begin != data_begin:
+      raise AssertionError("self.data_begin(%s) != data_begin(%s)" % (self.data_begin, data_begin))
+    
+    #//-------------------------------------------------------//
+    
+    items = sorted( self.id2data.items(), key = lambda item: item[1].offset )
+    
+    last_meta_offset = self._META_TABLE_OFFSET
+    last_data_offset = self.data_begin
+    
+    for data_id, meta in items:
+      if meta.id != data_id:
+        raise AssertionError("meta.id(%s) != data_id(%s)" % (meta.id, data_id))
       
-      if self.file_header != file_header:
-        raise AssertionError("self.file_header != file_header")
-      
-      offset = file_header.size()
-      
-      while True:
-        key, location, size = DataFileChunk.load( self.stream, offset )
-        if key == -1:
-          break
+      if meta.key != 0:
+        if self.key2id[ meta.key ] != data_id:
+          raise AssertionError("self.key2id[ meta.key ](%s) != data_id(%s)" % (self.key2id[ meta.key ], data_id))
         
-        l = self.locations[key]
-
-        #noinspection PyUnresolvedReferences
-        if (l.size != location.size) or (l.capacity != location.capacity):
-          raise AssertionError("self.locations[%s] (%s) != location (%s)" % (key, l, location))
-        
-        offset += size
+      if meta.data_capacity < meta.data_size:
+        raise AssertionError("meta.data_capacity(%s) < meta.data_size (%s)" % (meta.data_capacity, meta.data_size))
+      
+      if meta.offset >= self.meta_end:
+        raise AssertionError("meta.offset(%s) >= self.meta_end(%s)" % (meta.offset, self.meta_end))
+      
+      if meta.offset != last_meta_offset:
+        raise AssertionError("meta.offset(%s) != last_meta_offset(%s)" % (meta.offset, last_meta_offset))
+      
+      if meta.data_offset != last_data_offset:
+        raise AssertionError("meta.data_offset(%s) != last_data_offset(%s)" % (meta.data_offset, last_data_offset))
+      
+      if meta.data_offset >= self.data_end:
+        raise AssertionError("meta.data_offset(%s) >= self.data_end(%s)" % (meta.data_offset, self.data_end))
+      
+      if (meta.data_offset + meta.data_size) > file_size:
+        raise AssertionError("(meta.data_offset + meta.data_size)(%s) > file_size(%s)" % ((meta.data_offset + meta.data_size), file_size))
+      
+      last_data_offset += meta.data_capacity
+      last_meta_offset += MetaData.size
+    
+    #//-------------------------------------------------------//
+    
+    if last_meta_offset != self.meta_end:
+      raise AssertionError("last_meta_offset(%s) != self.meta_end(%s)" % (last_meta_offset, self.meta_end))
+    
+    if last_data_offset != self.data_end:
+      raise AssertionError("last_data_offset(%s) != self.data_end(%s)" % (last_data_offset, self.data_end))
+    
+    #//-------------------------------------------------------//
+    
+    for key, data_id in self.key2id.items():
+      if key != self.id2data[ data_id ].key:
+        raise AssertionError("key(%s) != self.id2data[ data_id ].key(%s)" % (key, self.id2data[ data_id ].key))
+    
+    #//-------------------------------------------------------//
+    
+    for data_id, meta in self.id2data.items():
+      meta_dump = self.handle.read( meta.offset, MetaData.size )
+      stored_meta = MetaData.load( meta_dump )
+      
+      if meta.key != stored_meta.key:
+        raise AssertionError("meta.key(%s) != stored_meta.key(%s)" % (meta.key, stored_meta.key))
+      
+      if meta.id != stored_meta.id:
+        raise AssertionError("meta.id(%s) != stored_meta.id(%s)" % (meta.id, stored_meta.id))
+      
+      if meta.data_size != stored_meta.data_size:
+        raise AssertionError("meta.data_size(%s) != stored_meta.data_size(%s)" % (meta.data_size, stored_meta.data_size))
+      
+      if meta.data_capacity != stored_meta.data_capacity:
+        raise AssertionError("meta.data_capacity(%s) != stored_meta.data_capacity(%s)" % (meta.data_capacity, stored_meta.data_capacity))
+      
+      
