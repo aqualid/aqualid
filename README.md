@@ -20,8 +20,8 @@ Build System Shootout [results](https://github.com/aqualid/aqualid/tree/master/e
 
 Performance [benchmarks](https://github.com/aqualid/aqualid/wiki/Benchmark-results)
 ####Memory usage of full build of a synthetic project with 10k files:
-![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k/bench10k_full.png)
+![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k_2/bench10k_full.png)
 
 ####Memory usage of up to date build of the project with 10k files:
-![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k/bench10k_nop.png)
+![](https://github.com/menify/aqualid/blob/master/examples/benchmarks/results/10k_2/bench10k_none.png)
 
