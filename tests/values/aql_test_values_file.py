@@ -154,8 +154,7 @@ class TestValuesFile( AqlTestCase ):
 
   #//===========================================================================//
 
-  @skip
-  def   test_values_file_speed(self):
+  def   _test_values_file_speed(self, use_sqlite ):
     values = []
     for i in range(20000):
       value = SimpleEntity( "http://aql.org/download", name = "target_url%s" % i )
@@ -164,57 +163,37 @@ class TestValuesFile( AqlTestCase ):
     with Tempfile() as tmp:
       print("Opening a database '%s' ..." % tmp )
       timer = Chrono()
-      with EntitiesFile( tmp ) as vf:
+      with EntitiesFile( tmp, use_sqlite = use_sqlite ) as vf:
         with timer:
           keys = vf.addEntities( values )
       print("add values time: %s" % (timer,) )
       
-      with EntitiesFile( tmp ) as vf:
+      with EntitiesFile( tmp, use_sqlite = use_sqlite ) as vf:
         with timer:
           keys = vf.addEntities( values )
       print("re-add values time: %s" % (timer,) )
       
-      with EntitiesFile( tmp ) as vf:
+      with EntitiesFile( tmp, use_sqlite = use_sqlite ) as vf:
         with timer:
           vf.findEntitiesByKey( keys )
       print("get values time: %s" % timer )
       
       with timer:
-        with EntitiesFile( tmp ) as vf:
+        with EntitiesFile( tmp, use_sqlite = use_sqlite ) as vf:
           pass
       print("reopen values file time: %s" % timer )
   
   #//===========================================================================//
 
   @skip
+  def   test_values_file_speed(self):
+    self._test_values_file_speed( use_sqlite = False )
+  
+  #//===========================================================================//
+
+  @skip
   def   test_values_file_speed_sql(self):
-    values = []
-    for i in range(20000):
-      value = SimpleEntity( "http://aql.org/download", name = "target_url%s" % i )
-      values.append( value )
-    
-    with Tempfile() as tmp:
-      print("Opening a database '%s' ..." % tmp )
-      timer = Chrono()
-      with EntitiesFile( tmp, use_sqlite = True ) as vf:
-        with timer:
-          keys = vf.addEntities( values )
-      print("add values time: %s" % (timer,) )
-      
-      with EntitiesFile( tmp, use_sqlite = True ) as vf:
-        with timer:
-          keys = vf.addEntities( values )
-      print("re-add values time: %s" % (timer,) )
-      
-      with EntitiesFile( tmp, use_sqlite = True ) as vf:
-        with timer:
-          vf.findEntitiesByKey( keys )
-      print("get values time: %s" % timer )
-      
-      with timer:
-        with EntitiesFile( tmp, use_sqlite = True ) as vf:
-          pass
-      print("reopen values file time: %s" % timer )
+    self._test_values_file_speed( use_sqlite = True )
 
 #//===========================================================================//
 
