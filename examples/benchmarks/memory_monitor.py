@@ -76,7 +76,7 @@ if __name__ == '__main__':
   
   cmd = sys.argv[1:]
   now = datetime.datetime.now().strftime( "%y-%m-%d_%H:%M:%S")
-  mem_report_filename = 'mem_usage_%s_%s.txt' % (cmd[0], now )
+  mem_report_filename = 'mem_usage_%s_%s.txt' % (os.path.basename(cmd[0]), now )
   current_time = time.time()
   
   interval = 0.25
