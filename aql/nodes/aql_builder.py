@@ -373,7 +373,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   depends( self, cwd, source_entities ):
+  def   depends( self, source_entities ):
     """
     Could be used to dynamically generate dependency nodes 
     Returns list of dependency nodes or None
@@ -382,7 +382,7 @@ class Builder (object):
   
   #//-------------------------------------------------------//
   
-  def   replace( self, cwd, source_entities ):
+  def   replace( self, source_entities ):
     """
     Could be used to dynamically replace sources
     Returns list of nodes/entities or None (if sources are not changed)

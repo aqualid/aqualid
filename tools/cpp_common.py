@@ -399,7 +399,9 @@ class CommonCppLinkerBase( FileBuilder ):
   
   #//-------------------------------------------------------//
   
-  def   replace( self, cwd, source_entities ):
+  def   replace( self, source_entities ):
+    
+    cwd = os.getcwd()
     
     def _addSources():
       if current_builder is None:

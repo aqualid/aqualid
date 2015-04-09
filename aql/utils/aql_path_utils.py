@@ -445,11 +445,10 @@ def   groupPathsByDir( file_paths, wish_groups = 1, max_group_size = -1, pathGet
 class   Chdir (object):
   __slots__ = ('previous_path', )
   
-  def   __init__(self, path = None ):
+  def   __init__( self, path ):
     self.previous_path = os.getcwd()
     
-    if path:
-      os.chdir( path )
+    os.chdir( path )
   
   def   __enter__(self):
     return self
