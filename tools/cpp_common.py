@@ -388,11 +388,11 @@ class CommonCppLinkerBase( FileBuilder ):
   def   getSourceBuilders( self, options ):
     builders = {}
     
-    compiler = self.makeCompiler( options )
+    compiler = self.tool.Compile( options )
     
     self.addSourceBuilders( builders, self.getCppExts(), compiler )
     
-    rc_compiler = self.makeResCompiler( options )
+    rc_compiler = self.tool.CompileResource( options )
     self.addSourceBuilders( builders, self.getResExts(), rc_compiler )
     
     return builders

@@ -72,7 +72,6 @@ class   ErrorToolNotFound( AqlException ):
 
 #//===========================================================================//
 
-#noinspection PyAttributeOutsideInit
 class   ToolInfo( object ):
   __slots__ = (
     'tool_class',
@@ -246,11 +245,6 @@ class ToolsManager( object ):
           return tool_obj, tool_names, tool_options
     
     raise ErrorToolNotFound( tool_name, self.loaded_paths )
-  
-  #//=======================================================//
-  
-  def   hasTool( self, tool_name ):
-    return tool_name in self.tool_classes
 
 #//===========================================================================//
 

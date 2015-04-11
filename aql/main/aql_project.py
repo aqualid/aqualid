@@ -280,10 +280,11 @@ class ProjectConfig( object ):
 #//===========================================================================//
 
 class BuilderWrapper( object ):
-  __slots__ = ( 'project', 'options', 'method', 'arg_names' )
+  __slots__ = ( 'project', 'options', 'tool', 'method', 'arg_names' )
   
-  def   __init__( self, method, project, options ):
+  def   __init__( self, tool, method, project, options ):
     self.arg_names  = self.__checkBuilderMethod( method )
+    self.tool       = tool
     self.method     = method
     self.project    = project
     self.options    = options
@@ -378,7 +379,7 @@ class ToolWrapper( object ):
     if attr.startswith('_') or not isinstance( method, types.MethodType ):
       return method
     
-    builder = BuilderWrapper( method, self.project, self.options )
+    builder = BuilderWrapper( self.tool, method, self.project, self.options )
     
     setattr( self, attr, builder )
     return builder
@@ -446,7 +447,7 @@ class ProjectTools( object ):
     tool = BuiltinTool( options )
     tool_method = getattr( tool, name, None )
     if tool_method and isinstance( tool_method, (types.FunctionType, types.MethodType) ):
-      return BuilderWrapper( tool_method, self.project, options )
+      return BuilderWrapper( tool, tool_method, self.project, options )
     
     return self.__addTool( name, options )
   

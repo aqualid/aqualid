@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012,2013 The developers of Aqualid project
+# Copyright (c) 2012-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 # associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -21,4 +21,3 @@ from .aql_dict_types import *
 from .aql_list_types import *
 from .aql_path_types import *
 from .aql_simple_types import *
-from .aql_singleton_type import *
