@@ -18,12 +18,12 @@
 #
 
 __all__ = (
-  'main', 
-  'nodes', 
-  'options', 
-  'utils', 
-  'entity',
-  'util_types',
+    'main',
+    'nodes',
+    'options',
+    'utils',
+    'entity',
+    'util_types',
 )
 
 from .utils import *
@@ -34,8 +34,9 @@ from .nodes import *
 from .main import *
 
 if __debug__:
-  # A workaround for multiprocessing module
-  import sys
-  import os.path
-  _AQL_MODULE_DIR = os.path.abspath( os.path.join( os.path.dirname(__file__), '..' ) )
-  sys.path.append( _AQL_MODULE_DIR )
+    # A workaround for multiprocessing module
+    import sys
+    import os.path
+    _AQL_MODULE_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..'))
+    sys.path.append(_AQL_MODULE_DIR)

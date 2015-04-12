@@ -27,7 +27,7 @@ from tests_case import TestCaseSuite, TestCaseBase
 
 __all__ = ('testsSuite', 'localTestsSuite', 'skip', 'runSuite', 'runTests', 'runLocalTests' )
 
-#//===========================================================================//
+# //===========================================================================//
 
 try:
   unicode("test")
@@ -48,7 +48,7 @@ def   _toSequence( value ):
   
   return ( value, )
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _isSubSequence( sub_seq, seq ):
   
@@ -69,7 +69,7 @@ def   _isSubSequence( sub_seq, seq ):
     except ValueError:
       return False
 
-#//===========================================================================//
+# //===========================================================================//
 
 def  _findTestModuleFiles( path, test_modules_prefix ):
   
@@ -84,7 +84,7 @@ def  _findTestModuleFiles( path, test_modules_prefix ):
   
   return test_case_modules
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _loadTestModule( module_file, verbose ):
   
@@ -106,7 +106,7 @@ def   _loadTestModule( module_file, verbose ):
     sys_path.insert( 0, module_dir )
     return m
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _loadTestModules( path, test_modules_prefix, verbose ):
   test_modules = []
@@ -128,7 +128,7 @@ def   _loadTestModules( path, test_modules_prefix, verbose ):
   
   return test_modules
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _getModuleTestCaseClasses( module_globals ):
   
@@ -140,7 +140,7 @@ def   _getModuleTestCaseClasses( module_globals ):
   
   return test_case_classes
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _getTestCaseClasses( test_modules ):
   test_case_classes = []
@@ -149,12 +149,12 @@ def   _getTestCaseClasses( test_modules ):
   
   return test_case_classes
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _loadTestCaseClasses( path, test_modules_prefix, verbose ):
   return _getTestCaseClasses( _loadTestModules( path, test_modules_prefix, verbose ) )
 
-#//===========================================================================//
+# //===========================================================================//
 
 class Tests(dict):
   
@@ -171,7 +171,7 @@ class Tests(dict):
     
     return test_methods
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __init__( self, test_classes = None, test_methods_prefix = 'test' ):
     
@@ -192,7 +192,7 @@ class Tests(dict):
           test_name = ( module_name, cls_name, method.__name__ )
           self[ method ] = ( test_name, test_class )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @staticmethod
   def   __normalizeNames( names ):
@@ -209,7 +209,7 @@ class Tests(dict):
     
     return norm_names
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   getTestsByMethodNames( self, method_names ):
     
@@ -227,7 +227,7 @@ class Tests(dict):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   getTestsByClassNames( self, class_names ):
     
@@ -249,7 +249,7 @@ class Tests(dict):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   getTestsByNames( self, names ):
     names = self.__normalizeNames( names )
@@ -265,7 +265,7 @@ class Tests(dict):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def getTestsByMethods( self, methods ):
     tests = Tests()
@@ -278,7 +278,7 @@ class Tests(dict):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def getTestsByClasses( self, test_classes ):
     tests = Tests()
@@ -291,7 +291,7 @@ class Tests(dict):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __isub__(self, other):
     for method in other:
@@ -302,14 +302,14 @@ class Tests(dict):
     
     return self
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __iadd__( self, other ):
     self.update( other )
     
     return self
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   copy( self ):
     other = Tests()
@@ -317,7 +317,7 @@ class Tests(dict):
     
     return other
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   sorted( self ):
     modules = {}
@@ -340,7 +340,7 @@ class Tests(dict):
     
     return sorted_tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   sortedFrom( self, start_from ):
     
@@ -368,7 +368,7 @@ class Tests(dict):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   list( self, verbose ):
     if verbose:
@@ -383,7 +383,7 @@ class Tests(dict):
     
     return test_names
   
-#//===========================================================================//
+# //===========================================================================//
 
 class TestsSuiteMaker(object):
   
@@ -392,26 +392,26 @@ class TestsSuiteMaker(object):
     'skip_test_classes',
   )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   def   __init__( self ):
     self.skip_test_methods = set()
     self.skip_test_classes = set()
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   loadLocals( self, test_methods_prefix = 'test' ):
     test_classes = _getModuleTestCaseClasses( __import__('__main__').__dict__ )
     
     return Tests( test_classes, test_methods_prefix = test_methods_prefix )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   load( self, path = None, test_modules_prefix = 'test', test_methods_prefix = 'test', verbose = False ):
     test_classes = _loadTestCaseClasses( path, test_modules_prefix, verbose )
     
     return Tests( test_classes, test_methods_prefix = test_methods_prefix )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @staticmethod
   def   __updateSkippedTests( all_tests, exec_test_names, skip_test_methods, skip_test_classes ):
@@ -422,7 +422,7 @@ class TestsSuiteMaker(object):
     skip_test_classes -= method_tests
     skip_test_classes -= class_tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   tests( self, all_tests, run_tests = None, add_tests = None, skip_tests = None, start_from_test = None ):
     
@@ -450,7 +450,7 @@ class TestsSuiteMaker(object):
     
     return tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   suite( self, tests, suite_class = TestCaseSuite, options = None ):
     
@@ -476,7 +476,7 @@ class TestsSuiteMaker(object):
     
     return main_suite
 
-#//===========================================================================//
+# //===========================================================================//
 
 _suite_maker = TestsSuiteMaker()
 
@@ -491,7 +491,7 @@ def  skip( test_case ):
   
   return test_case
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _printTestsAndExit( tests, verbose ):
   
@@ -500,7 +500,7 @@ def   _printTestsAndExit( tests, verbose ):
     print( test_name + ":\n\t\t" + "\n\t\t".join( methods ) + '\n')
   exit()
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _printOptionsAndExit( options ):
   print("\n  Options:\n==================")
@@ -511,7 +511,7 @@ def   _printOptionsAndExit( options ):
     print( '    {name:<25}:  {value}'.format(name = name, value = value) )
   exit()
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   testsSuite( path = None, test_modules_prefix = 'test_', test_methods_prefix = 'test',
              run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False, options = None ):
@@ -528,7 +528,7 @@ def   testsSuite( path = None, test_modules_prefix = 'test_', test_methods_prefi
 
   return _suite_maker.suite( tests, suite_class, options )
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   localTestsSuite( test_methods_prefix = 'test',
                   run_tests = None, add_tests = None, skip_tests = None, start_from_test = None, suite_class = TestCaseSuite, list_tests = False, options = None ):
@@ -544,7 +544,7 @@ def   localTestsSuite( test_methods_prefix = 'test',
   
   return _suite_maker.suite( tests, suite_class, options )
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   runSuite( suite ):
   """Run test suite.
@@ -565,7 +565,7 @@ def   runSuite( suite ):
     print("\nInterrupted by user")
     raise
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   runTests( suite_class = TestCaseSuite, options = None ):
   if options is None:
@@ -580,7 +580,7 @@ def   runTests( suite_class = TestCaseSuite, options = None ):
   
   runSuite( suite )
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   runLocalTests( suite_class = TestCaseSuite, options = None ):
   if options is None:
@@ -595,7 +595,7 @@ def   runLocalTests( suite_class = TestCaseSuite, options = None ):
   
   runSuite( suite )
 
-#//===========================================================================//
+# //===========================================================================//
 
 if __name__ == "__main__":
   

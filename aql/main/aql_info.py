@@ -1,56 +1,59 @@
 __all__ = (
-  'getAqlInfo',
-  'dumpAqlInfo',
+    'getAqlInfo',
+    'dumpAqlInfo',
 )
 
-#//===========================================================================//
+# //===========================================================================//
+
 
 class AqlInfo (object):
-  __slots__ = (
-    'name',
-    'module',
-    'description',
-    'version',
-    'date',
-    'url',
-    'license',
-  )
+    __slots__ = (
+        'name',
+        'module',
+        'description',
+        'version',
+        'date',
+        'url',
+        'license',
+    )
 
-  #//-------------------------------------------------------//
+    # //-------------------------------------------------------//
 
-  def   __init__(self):
-    self.name         = "Aqualid"
-    self.module       = "aqualid"
-    self.description  = "General purpose build system."
-    self.version      = "0.6.1"
-    self.date         = None
-    self.url          = 'https://github.com/aqualid'
-    self.license      = "MIT License"
+    def __init__(self):
+        self.name = "Aqualid"
+        self.module = "aqualid"
+        self.description = "General purpose build system."
+        self.version = "0.6.1"
+        self.date = None
+        self.url = 'https://github.com/aqualid'
+        self.license = "MIT License"
 
-  #//-------------------------------------------------------//
+    # //-------------------------------------------------------//
 
-  def dump(self):
-    result = "{name} {version}".format( name = self.name, version = self.version )
-    if self.date:
-      result += ' ({date})'.format( date = self.date )
+    def dump(self):
+        result = "{name} {version}".format(
+            name=self.name, version=self.version)
+        if self.date:
+            result += ' ({date})'.format(date=self.date)
 
-    result += "\n"
-    result += self.description
-    result += "\nSite: %s" % self.url
+        result += "\n"
+        result += self.description
+        result += "\nSite: %s" % self.url
 
-    return result
+        return result
 
-#//-------------------------------------------------------//
+# //-------------------------------------------------------//
 
 _AQL_VERSION_INFO = AqlInfo()
 
-#//===========================================================================//
+# //===========================================================================//
 
-def   getAqlInfo():
-  return _AQL_VERSION_INFO
 
-#//===========================================================================//
+def getAqlInfo():
+    return _AQL_VERSION_INFO
 
-def   dumpAqlInfo():
-  return _AQL_VERSION_INFO.dump()
+# //===========================================================================//
 
+
+def dumpAqlInfo():
+    return _AQL_VERSION_INFO.dump()

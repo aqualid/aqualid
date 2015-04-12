@@ -23,7 +23,7 @@ import itertools
 
 __all__ = ('TestCaseSuite', 'TestCaseBase')
 
-#//===========================================================================//
+# //===========================================================================//
 
 class _ErrorHolder(object):
   
@@ -42,7 +42,7 @@ class _ErrorHolder(object):
   def id(self):
     return self.test_id
 
-#//===========================================================================//
+# //===========================================================================//
 
 class TestCaseSuite(unittest.TestSuite):
   
@@ -50,7 +50,7 @@ class TestCaseSuite(unittest.TestSuite):
     super(TestCaseSuite, self).__init__( tests )
     self.keep_going = keep_going
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __getTestCaseClass( self ):
   
@@ -59,7 +59,7 @@ class TestCaseSuite(unittest.TestSuite):
     except StopIteration:
       return None
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __setUpTestCaseClass( self, test_case_class, result ):
     if test_case_class is not None:
@@ -77,7 +77,7 @@ class TestCaseSuite(unittest.TestSuite):
     
     return True
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __tearDownTestCaseClass( self, test_case_class, result ):
     """Method tries to call tearDownClass method from test case instance."""
@@ -94,7 +94,7 @@ class TestCaseSuite(unittest.TestSuite):
             error_name = _ErrorHolder( test_case_class, 'tearDownClass', ex )
             result.addError( error_name, sys.exc_info() )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def run( self, result, debug = False):
     
@@ -105,7 +105,7 @@ class TestCaseSuite(unittest.TestSuite):
     
     self.__tearDownTestCaseClass( test_case_class, result )
 
-#//===========================================================================//
+# //===========================================================================//
 
 class TestCaseBase(unittest.TestCase):
   
@@ -114,7 +114,7 @@ class TestCaseBase(unittest.TestCase):
     self.keep_going = keep_going
     super( TestCaseBase, self).__init__( methodName )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
 
   @classmethod
   def getOptions( cls ):
@@ -128,7 +128,7 @@ class TestCaseBase(unittest.TestCase):
     cls.options = options
     return options
 
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
 
   def __getattr__(self, attr):
 
@@ -137,7 +137,7 @@ class TestCaseBase(unittest.TestCase):
 
     raise AttributeError("Invalid attribute: '%s'" % str(attr) )
 
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
 
   def run( self, result = None ):
     self.result = result
@@ -147,25 +147,25 @@ class TestCaseBase(unittest.TestCase):
     else:
       result.stop()
 
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @classmethod
   def setUpClass(cls):
     pass
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @classmethod
   def tearDownClass(cls):
     pass
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   tearDown(self):
     if not (self.keep_going or self.result.wasSuccessful()):
       self.result.stop()
     
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   setUp(self):
     if not (self.keep_going or self.result.wasSuccessful()):
@@ -178,7 +178,7 @@ class TestCaseBase(unittest.TestCase):
     
     print( "\n*** RUN TEST: %s ***" % (test_name,) )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   if not hasattr( unittest.TestCase, 'assertIn' ):
     def assertIn( self, a, b, msg = None):
@@ -274,4 +274,4 @@ class TestCaseBase(unittest.TestCase):
       
       self.assertTrue( actual_counts == expected_counts, msg )
 
-#//===========================================================================//
+# //===========================================================================//

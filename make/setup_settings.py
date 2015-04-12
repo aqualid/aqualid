@@ -15,7 +15,7 @@ include {win_script}
 """.format( unix_script = UNIX_SCRIPT_PATH,
             win_script = WINDOWS_SCRIPT_PATH )
 
-#//===========================================================================//
+# //===========================================================================//
 
 UNIX_SCRIPT ="""#!/usr/bin/env python
 if __name__ == '__main__':
@@ -24,7 +24,7 @@ if __name__ == '__main__':
   sys.exit({module}.main())
 """.format( module = info.module ).replace('\r', '')
 
-#//===========================================================================//
+# //===========================================================================//
 
 WINDOWS_SCRIPT = """@echo off
 @echo off
@@ -49,7 +49,7 @@ ENDLOCAL & set AQL_ERRORLEVEL=%ERRORLEVEL%
 exit /B %AQL_ERRORLEVEL%
 """.format( module = info.module ).replace('\r','').replace('\n','\r\n')
 
-#//===========================================================================//
+# //===========================================================================//
 
 STANDALONE_WINDOWS_SCRIPT = """@echo off
 IF [%AQL_RUN_SCRIPT%] == [YES] (
@@ -63,14 +63,14 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
 )
 """.replace('\r','').replace('\n','\r\n')
 
-#//===========================================================================//
+# //===========================================================================//
 
 def readLongDescription( readme_path ):
   readme = readTextFile( readme_path )
   readme = '\n'.join( readme.split('\n')[2:] )
   return readme.strip()
 
-#//===========================================================================//
+# //===========================================================================//
 
 SETUP_SCRIPT = """
 import os
@@ -89,7 +89,7 @@ except LookupError:
     func = lambda name, enc=ascii: {{True: enc}}.get(name=='mbcs')
     codecs.register(func)
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _removeFile( file ):
   try:

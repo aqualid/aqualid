@@ -40,7 +40,7 @@ def   _toSequence( value ):
   
   return ( value, )
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _execFile( filename, in_context ):
   with open( filename ) as f:
@@ -51,7 +51,7 @@ def   _execFile( filename, in_context ):
   exec( code, in_context, out_context )
   return out_context
 
-#//===========================================================================//
+# //===========================================================================//
 
 def   _toBool( value ):
   if isinstance( value, StrTypes ):
@@ -59,7 +59,7 @@ def   _toBool( value ):
   
   return bool( value )
 
-#//===========================================================================//
+# //===========================================================================//
 
 class   CLIOption( object ):
   __slots__ = (
@@ -75,7 +75,7 @@ class   CLIOption( object ):
     self.help = description
     self.metavar = metavar
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   addToParser( self, parser ):
     args = []
@@ -95,7 +95,7 @@ class   CLIOption( object ):
       kw['metavar'] = self.metavar
     parser.add_option( *args, **kw )
 
-#//===========================================================================//
+# //===========================================================================//
 
 class Singleton( object ):
   
@@ -117,13 +117,13 @@ class Singleton( object ):
     
     return self
 
-#//===========================================================================//
+# //===========================================================================//
 
 class   TestsOptions( Singleton ):
   
   _instance = []
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __init__( self, args = None ):
     
@@ -153,7 +153,7 @@ class   TestsOptions( Singleton ):
     
     self.__parseArguments( CLI_USAGE, CLI_OPTIONS, args )
     
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @staticmethod
   def   __getArgsParser( cli_usage, cli_options ):
@@ -163,7 +163,7 @@ class   TestsOptions( Singleton ):
       opt.addToParser( parser )
     return parser
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __setDefaults( self, cli_options ):
     defaults = self._defaults
@@ -174,7 +174,7 @@ class   TestsOptions( Singleton ):
     
     return defaults
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __parseValues( self, args ):
     targets = []
@@ -190,7 +190,7 @@ class   TestsOptions( Singleton ):
     if targets:
       self.targets = tuple( targets )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __parseOptions( self, cli_options, args ):
     self.__setDefaults( cli_options )
@@ -210,7 +210,7 @@ class   TestsOptions( Singleton ):
       
       super(TestsOptions, self).__setattr__( name, value )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def  __parseTests( self, tests ):
     
@@ -252,7 +252,7 @@ class   TestsOptions( Singleton ):
     if skip_tests is not None:  self.skip_tests = skip_tests
     if start_from_tests is not None:  self.start_from_tests = start_from_tests
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __parseArguments( self, cli_usage, cli_options, cli_args ):
     parser = self.__getArgsParser( cli_usage, cli_options )
@@ -265,7 +265,7 @@ class   TestsOptions( Singleton ):
     for config in self.configs:
       self.readConfig( config )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   readConfig( self, config_file, exec_locals = None ):
     if exec_locals is None:
@@ -276,7 +276,7 @@ class   TestsOptions( Singleton ):
       if name not in exec_locals:
         self.setDefault( name, value )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __set( self, name, value ):
     defaults = self._defaults
@@ -291,7 +291,7 @@ class   TestsOptions( Singleton ):
     
     super(TestsOptions, self).__setattr__( name, value )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   setDefault( self, name, value ):
     if name.startswith("_"):
@@ -300,7 +300,7 @@ class   TestsOptions( Singleton ):
       if name not in self._set_options:
         self.__set( name, value )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __setattr__( self, name, value ):
     if name.startswith("_"):
@@ -309,19 +309,19 @@ class   TestsOptions( Singleton ):
       self.__set( name, value )
       self._set_options.add( name )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   __getattr__( self, name ):
     return None
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   items( self ):
     for name, value in self.__dict__.items():
       if not name.startswith("_") and (name != "targets"):
         yield (name, value)
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   dump( self ):
     values = []
@@ -331,7 +331,7 @@ class   TestsOptions( Singleton ):
     
     return values
 
-#//===========================================================================//
+# //===========================================================================//
 
 if __name__ == "__main__":
   

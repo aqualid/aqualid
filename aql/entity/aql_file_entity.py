@@ -18,7 +18,7 @@
 #
 
 __all__ = (
-  'FileEntityBase', 'FileChecksumEntity', 'FileTimestampEntity', 'DirEntity',
+    'FileEntityBase', 'FileChecksumEntity', 'FileTimestampEntity', 'DirEntity',
 )
 
 import os
@@ -30,126 +30,135 @@ from .aql_entity_pickler import pickleable
 from aql.util_types import AqlException
 from aql.utils import fileSignature, fileTimeSignature
 
-#//===========================================================================//
+# //===========================================================================//
 
-class   ErrorFileEntityNoName( AqlException ):
-  def   __init__( self ):
-    msg = "Filename is not specified"
-    super(type(self), self).__init__( msg )
 
-#//===========================================================================//
+class ErrorFileEntityNoName(AqlException):
 
-class   FileEntityBase (EntityBase):
-  
-  def   __new__( cls, name, signature = NotImplemented, tags = None ):
-    
-    if isinstance(name, FileEntityBase):
-      name = name.name
-    else:
-      if isinstance(name, EntityBase):
-        name = name.get()
-    
-    if not name:
-      raise ErrorFileEntityNoName()
-    
-    name = os.path.normcase( os.path.abspath( name ) )
-      
-    self = super(FileEntityBase, cls).__new__( cls, name, signature, tags = tags )
-    return self
+    def __init__(self):
+        msg = "Filename is not specified"
+        super(type(self), self).__init__(msg)
 
-  #//-------------------------------------------------------//
-  
-  def   get(self):
-    return self.name
+# //===========================================================================//
 
-  #//-------------------------------------------------------//
-  
-  def     __getnewargs__(self):
-    tags = self.tags
-    if not tags:
-      tags = None 
-    
-    return self.name, self.signature, tags
-  
-  #//-------------------------------------------------------//
-  
-  def   remove( self ):
+
+class FileEntityBase (EntityBase):
+
+    def __new__(cls, name, signature=NotImplemented, tags=None):
+
+        if isinstance(name, FileEntityBase):
+            name = name.name
+        else:
+            if isinstance(name, EntityBase):
+                name = name.get()
+
+        if not name:
+            raise ErrorFileEntityNoName()
+
+        name = os.path.normcase(os.path.abspath(name))
+
+        self = super(FileEntityBase, cls).__new__(
+            cls, name, signature, tags=tags)
+        return self
+
+    # //-------------------------------------------------------//
+
+    def get(self):
+        return self.name
+
+    # //-------------------------------------------------------//
+
+    def __getnewargs__(self):
+        tags = self.tags
+        if not tags:
+            tags = None
+
+        return self.name, self.signature, tags
+
+    # //-------------------------------------------------------//
+
+    def remove(self):
+        try:
+            os.remove(self.name)
+        except OSError:
+            pass
+
+    # //-------------------------------------------------------//
+
+    def getActual(self):
+        signature = self.getSignature()
+        if self.signature == signature:
+            return self
+
+        other = super(FileEntityBase, self).__new__(
+            self.__class__, self.name, signature, self.tags)
+        return other
+
+    # //-------------------------------------------------------//
+
+    def isActual(self):
+        if not self.signature:
+            return False
+
+        if self.signature == self.getSignature():
+            return True
+
+        return False
+
+# //===========================================================================//
+
+
+def _getFileChecksum(path):
     try:
-      os.remove( self.name )
-    except OSError:
-      pass
+        signature = fileSignature(path)
+    except (OSError, IOError) as err:
+        if err.errno != errno.EISDIR:
+            return None
 
-  #//-------------------------------------------------------//
+        try:
+            signature = fileTimeSignature(path)
+        except (OSError, IOError):
+            return None
 
-  def   getActual(self):
-    signature = self.getSignature()
-    if self.signature == signature:
-      return self
-    
-    other = super(FileEntityBase, self).__new__( self.__class__, self.name, signature, self.tags )
-    return other
-  
-  #//-------------------------------------------------------//
-  
-  def   isActual( self ):
-    if not self.signature:
-      return False
-    
-    if self.signature == self.getSignature():
-      return True
-    
-    return False
+    return signature
 
-#//===========================================================================//
+# //===========================================================================//
 
-def   _getFileChecksum( path ):
-  try:
-    signature = fileSignature( path )
-  except (OSError, IOError) as err:
-    if err.errno != errno.EISDIR:
-      return None
-    
+
+def _getFileTimestamp(path):
     try:
-      signature = fileTimeSignature( path )
+        signature = fileTimeSignature(path)
     except (OSError, IOError):
-      return None
-  
-  return signature
+        return None
 
-#//===========================================================================//
+    return signature
 
-def   _getFileTimestamp( path ):
-  try:
-    signature = fileTimeSignature( path )
-  except (OSError, IOError):
-    return None
-  
-  return signature
+# //===========================================================================//
 
-#//===========================================================================//
 
 @pickleable
-class FileChecksumEntity( FileEntityBase ):
-  
-  def   getSignature(self):
-    return _getFileChecksum( self.name )
+class FileChecksumEntity(FileEntityBase):
 
-#//===========================================================================//
+    def getSignature(self):
+        return _getFileChecksum(self.name)
 
-@pickleable
-class FileTimestampEntity( FileEntityBase ):
-  
-  def   getSignature(self):
-    return _getFileTimestamp( self.name )
+# //===========================================================================//
 
-#//===========================================================================//
 
 @pickleable
-class   DirEntity (FileTimestampEntity):
-  
-  def   remove( self ):
-    try:
-      os.rmdir( self.name )
-    except OSError:
-      pass
+class FileTimestampEntity(FileEntityBase):
 
+    def getSignature(self):
+        return _getFileTimestamp(self.name)
+
+# //===========================================================================//
+
+
+@pickleable
+class DirEntity (FileTimestampEntity):
+
+    def remove(self):
+        try:
+            os.rmdir(self.name)
+        except OSError:
+            pass

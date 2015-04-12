@@ -4,7 +4,7 @@ import datetime
 
 import aql
 
-#//===========================================================================//
+# //===========================================================================//
 
 info = aql.getAqlInfo()
 
@@ -30,7 +30,7 @@ HEADER = """#!/usr/bin/env python
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """.format( year = datetime.date.today().year, name = info.name, url = info.url )
 
-#//===========================================================================//
+# //===========================================================================//
 
 MAIN = """
 _AQL_VERSION_INFO.date = "{date}"
@@ -45,7 +45,7 @@ if __name__ == '__main__':
   sys.exit( main() )
 """.format( date = datetime.date.today().isoformat() )
 
-#//===========================================================================//
+# //===========================================================================//
 
 class AqlPreprocess (aql.FileBuilder):
   
@@ -54,7 +54,7 @@ class AqlPreprocess (aql.FileBuilder):
   def   getTraceTargets( self, target_entities, brief ):
     return None
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   build( self, source_entities, targets ):
     src_file = source_entities[0].get()
@@ -70,7 +70,7 @@ class AqlPreprocess (aql.FileBuilder):
     content = comments_re.sub( "", content )
     content = all_stmt_re.sub( "", content )
     
-    #//-------------------------------------------------------//
+    # //-------------------------------------------------------//
     
     import_re = re.compile(r"^import\s+(.+)$", re.MULTILINE )
     
@@ -82,7 +82,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     content = import_re.sub( importHandler, content )
     
-    #//-------------------------------------------------------//
+    # //-------------------------------------------------------//
     
     aql_import_re = re.compile(r"^\s*from\s+(\.?aql.+)\s+import\s+.+$", re.MULTILINE )
     
@@ -100,7 +100,7 @@ class AqlPreprocess (aql.FileBuilder):
     
     content = aql_import_re.sub( aqlImportHandler, content )
     
-    #//-------------------------------------------------------//
+    # //-------------------------------------------------------//
     
     content = empty_re.sub( "", content )
     
@@ -108,19 +108,19 @@ class AqlPreprocess (aql.FileBuilder):
     
     targets.add( target )
 
-#//===========================================================================//
+# //===========================================================================//
 
 class AqlLink (aql.Builder):
   
   def   __init__(self, options, target ):
     self.target = self.getTargetFilePath( target )
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   getTargetEntities( self, source_values ):
     return self.target
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @staticmethod
   def   _modToFiles( file2deps, modules ):
@@ -137,7 +137,7 @@ class AqlLink (aql.Builder):
     
     return mod2files
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @staticmethod
   def   _getDep2Files( file2deps, mod2files ):
@@ -154,7 +154,7 @@ class AqlLink (aql.Builder):
     
     return dep2files, tmp_file2deps
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   @staticmethod
   def   _getContent( files_content, dep2files, file2deps, tails ):
@@ -175,7 +175,7 @@ class AqlLink (aql.Builder):
     
     return content
   
-  #//-------------------------------------------------------//
+  # //-------------------------------------------------------//
   
   def   build( self, source_entities, targets ):
     
@@ -216,7 +216,7 @@ class AqlLink (aql.Builder):
     
     targets.addFiles( self.target )
     
-#//===========================================================================//
+# //===========================================================================//
 
 class AqlBuildTool( aql.Tool ):
   

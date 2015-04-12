@@ -18,8 +18,8 @@
 #
 
 __all__ = (
-  'setLogLevel', 'logCritical',  'logWarning',  'logError',  'logDebug',  'logInfo', 'addLogHandler',
-                 'LOG_CRITICAL', 'LOG_WARNING', 'LOG_ERROR', 'LOG_DEBUG', 'LOG_INFO',
+    'setLogLevel', 'logCritical',  'logWarning',  'logError',  'logDebug',  'logInfo', 'addLogHandler',
+    'LOG_CRITICAL', 'LOG_WARNING', 'LOG_ERROR', 'LOG_DEBUG', 'LOG_INFO',
 )
 
 import logging
@@ -30,58 +30,60 @@ LOG_WARNING = logging.WARNING
 LOG_INFO = logging.INFO
 LOG_DEBUG = logging.DEBUG
 
-#//---------------------------------------------------------------------------//
+# //---------------------------------------------------------------------------//
 
-class LogFormatter( object ):
-  
-  __slots__ = ('info', 'other')
-  
-  def   __init__(self):
-    self.info = logging.Formatter()
-    self.other = logging.Formatter("%(levelname)s: %(message)s")
-  
-  def formatTime(self, record, datefmt=None):
-    if record.levelno == logging.INFO:
-      return self.info.formatTime( record, datefmt = datefmt)
-    else:
-      return self.other.formatTime( record, datefmt = datefmt)
-  
-  def format(self, record ):
-    if record.levelno == logging.INFO:
-      return self.info.format( record )
-    else:
-      return self.other.format( record )
-    
-  def formatException(self, ei):
-    return self.other.formatException( ei )
-  
-  def usesTime(self):
-    return self.other.usesTime()
-  
-#//---------------------------------------------------------------------------//
 
-def   _makeAqlLogger():
-  logger = logging.getLogger( "AQL" )
-  handler = logging.StreamHandler()
-  
-  formatter = LogFormatter()
-  handler.setFormatter(formatter)
-  
-  logger.addHandler( handler )
-  logger.setLevel( logging.DEBUG )
-  
-  return logger
+class LogFormatter(object):
 
-#//---------------------------------------------------------------------------//
+    __slots__ = ('info', 'other')
+
+    def __init__(self):
+        self.info = logging.Formatter()
+        self.other = logging.Formatter("%(levelname)s: %(message)s")
+
+    def formatTime(self, record, datefmt=None):
+        if record.levelno == logging.INFO:
+            return self.info.formatTime(record, datefmt=datefmt)
+        else:
+            return self.other.formatTime(record, datefmt=datefmt)
+
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            return self.info.format(record)
+        else:
+            return self.other.format(record)
+
+    def formatException(self, ei):
+        return self.other.formatException(ei)
+
+    def usesTime(self):
+        return self.other.usesTime()
+
+# //---------------------------------------------------------------------------//
+
+
+def _makeAqlLogger():
+    logger = logging.getLogger("AQL")
+    handler = logging.StreamHandler()
+
+    formatter = LogFormatter()
+    handler.setFormatter(formatter)
+
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+
+    return logger
+
+# //---------------------------------------------------------------------------//
 
 _logger = _makeAqlLogger()
 
-setLogLevel   = _logger.setLevel
-logCritical   = _logger.critical
-logError      = _logger.error
-logWarning    = _logger.warning
-logInfo       = _logger.info
-logDebug      = _logger.debug
+setLogLevel = _logger.setLevel
+logCritical = _logger.critical
+logError = _logger.error
+logWarning = _logger.warning
+logInfo = _logger.info
+logDebug = _logger.debug
 addLogHandler = _logger.addHandler
 
-#//---------------------------------------------------------------------------//
+# //---------------------------------------------------------------------------//
