@@ -1,29 +1,24 @@
 #
-# Copyright (c) 2011-2015 The developers of Aqualid project
+# Copyright (c) 2014-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType', 'AbsPathOptionType', 'BoolOptionType',
-    'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
-    'autoOptionType', 'OptionHelpGroup', 'OptionHelp',
-    'ErrorOptionTypeEnumAliasIsAlreadySet', 'ErrorOptionTypeEnumValueIsAlreadySet',
-    'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues', 'ErrorOptionTypeCantDeduce',
-)
 
 import operator
 import itertools
@@ -34,15 +29,24 @@ except AttributeError:
     zip_longest = itertools.izip_longest
 
 from aql.util_types import String, uStr, isString, toString, IgnoreCaseString,\
-    Version, FilePath, AbsFilePath, toSequence, AqlException,\
+    Version, FilePath, AbsFilePath, toSequence,\
     UniqueList, List, SplitListType, ValueListType,\
     Dict, SplitDictType, ValueDictType,\
     isSimpleValue
 
+__all__ = (
+    'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType',
+    'AbsPathOptionType', 'BoolOptionType',
+    'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
+    'autoOptionType', 'OptionHelpGroup', 'OptionHelp',
+    'ErrorOptionTypeEnumAliasIsAlreadySet', 'ErrorOptionTypeEnumValueIsAlreadySet',
+    'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues',
+    'ErrorOptionTypeCantDeduce',
+)
 
 # ==============================================================================
 
-class ErrorOptionTypeEnumAliasIsAlreadySet(AqlException):
+class ErrorOptionTypeEnumAliasIsAlreadySet(Exception):
 
     def __init__(self, option, value, current_value, new_value):
         msg = "Alias '%s' of Enum Option '%s' can't be changed to '%s' from '%s'" % (
@@ -52,7 +56,7 @@ class ErrorOptionTypeEnumAliasIsAlreadySet(AqlException):
 # ==============================================================================
 
 
-class ErrorOptionTypeEnumValueIsAlreadySet(AqlException):
+class ErrorOptionTypeEnumValueIsAlreadySet(Exception):
 
     def __init__(self, option, value, new_value):
         msg = "Value '%s' of Enum Option '%s' can't be changed to alias to '%s'" % (
@@ -85,7 +89,7 @@ class ErrorOptionTypeNoEnumValues(TypeError):
         super(type(self), self).__init__(msg)
 
 
-class ErrorOptionTypeCantDeduce(AqlException):
+class ErrorOptionTypeCantDeduce(Exception):
 
     def __init__(self, value):
         msg = "Unable to deduce option type from value type: '%s." % (
