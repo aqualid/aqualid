@@ -26,7 +26,7 @@ import re
 import fnmatch
 import operator
 
-from aql.util_types import isString, toSequence, AqlException
+from aql.util_types import isString, toSequence
 
 from .aql_utils import ItemsGroups
 
@@ -42,7 +42,7 @@ __all__ = (
 # ==============================================================================
 
 
-class ErrorNoPrograms(AqlException):
+class ErrorNoPrograms(Exception):
 
     def __init__(self, prog):
         msg = "No programs were specified: %s(%s)" % (prog, type(prog))

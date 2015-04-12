@@ -23,7 +23,7 @@
 import types
 import itertools
 
-from aql.util_types import toSequence, AqlException
+from aql.util_types import toSequence
 
 from .aql_utils import equalFunctionArgs
 
@@ -48,7 +48,7 @@ EVENT_ERROR, \
 # ==============================================================================
 
 
-class ErrorEventUserHandlerWrongArgs (AqlException):
+class ErrorEventUserHandlerWrongArgs (Exception):
 
     def __init__(self, event, handler):
         msg = "Invalid arguments of event '%s' handler method: '%s'" % (
@@ -58,7 +58,7 @@ class ErrorEventUserHandlerWrongArgs (AqlException):
 # ==============================================================================
 
 
-class ErrorEventHandlerAlreadyDefined (AqlException):
+class ErrorEventHandlerAlreadyDefined (Exception):
 
     def __init__(self, event, handler, other_handler):
         msg = "Default event '%s' handler is defined twice: '%s', '%s'" % \
@@ -68,7 +68,7 @@ class ErrorEventHandlerAlreadyDefined (AqlException):
 # ==============================================================================
 
 
-class ErrorEventHandlerUnknownEvent (AqlException):
+class ErrorEventHandlerUnknownEvent (Exception):
 
     def __init__(self, event):
         msg = "Unknown event: '%s'" % (event,)

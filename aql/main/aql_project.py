@@ -1,28 +1,24 @@
 #
-# Copyright (c) 2012-2015 The developers of Aqualid project
+# Copyright (c) 2014-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = ('Project', 'ProjectConfig',
-           'ErrorProjectBuilderMethodFewArguments',
-           'ErrorProjectBuilderMethodUnbound',
-           'ErrorProjectBuilderMethodWithKW',
-           'ErrorProjectInvalidMethod',
-           )
 
 import sys
 import os.path
@@ -31,7 +27,7 @@ import types
 import itertools
 
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir, expandFilePath
-from aql.util_types import FilePath, ValueListType, UniqueList, toSequence, AqlException
+from aql.util_types import FilePath, ValueListType, UniqueList, toSequence
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
 from aql.options import builtinOptions, Options, iUpdateValue
 from aql.nodes import BuildManager, Node, NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
@@ -40,10 +36,16 @@ from .aql_info import getAqlInfo
 from .aql_tools import getToolsManager
 from .aql_builtin_tools import BuiltinTool
 
+__all__ = ('Project', 'ProjectConfig',
+           'ErrorProjectBuilderMethodFewArguments',
+           'ErrorProjectBuilderMethodUnbound',
+           'ErrorProjectBuilderMethodWithKW',
+           'ErrorProjectInvalidMethod',
+           )
 
 # ==============================================================================
 
-class ErrorProjectInvalidMethod(AqlException):
+class ErrorProjectInvalidMethod(Exception):
 
     def __init__(self, method):
         msg = "Invalid project method: '%s'" % (method,)
@@ -52,7 +54,7 @@ class ErrorProjectInvalidMethod(AqlException):
 # ==============================================================================
 
 
-class ErrorProjectUnknownTarget(AqlException):
+class ErrorProjectUnknownTarget(Exception):
 
     def __init__(self, target):
         msg = "Unknown build target: '%s'" % (target,)
@@ -61,7 +63,7 @@ class ErrorProjectUnknownTarget(AqlException):
 # ==============================================================================
 
 
-class ErrorProjectBuilderMethodWithKW(AqlException):
+class ErrorProjectBuilderMethodWithKW(Exception):
 
     def __init__(self, method):
         msg = "Keyword arguments are not allowed in builder method: '%s'" % (
@@ -71,7 +73,7 @@ class ErrorProjectBuilderMethodWithKW(AqlException):
 # ==============================================================================
 
 
-class ErrorProjectBuilderMethodUnbound(AqlException):
+class ErrorProjectBuilderMethodUnbound(Exception):
 
     def __init__(self, method):
         msg = "Unbound builder method: '%s'" % (method,)
@@ -80,7 +82,7 @@ class ErrorProjectBuilderMethodUnbound(AqlException):
 # ==============================================================================
 
 
-class ErrorProjectBuilderMethodFewArguments(AqlException):
+class ErrorProjectBuilderMethodFewArguments(Exception):
 
     def __init__(self, method):
         msg = "Too few arguments in builder method: '%s'" % (method,)
@@ -89,7 +91,7 @@ class ErrorProjectBuilderMethodFewArguments(AqlException):
 # ==============================================================================
 
 
-class ErrorProjectBuilderMethodInvalidOptions(AqlException):
+class ErrorProjectBuilderMethodInvalidOptions(Exception):
 
     def __init__(self, value):
         msg = "Type of 'options' argument must be Options, instead of : '%s'(%s)" % (

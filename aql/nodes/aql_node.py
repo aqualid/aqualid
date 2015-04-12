@@ -1,46 +1,48 @@
-
-# Copyright (c) 2011-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Copyright (c) 2014-2015 The developers of Aqualid project
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+import os
+import operator
+
+from aql.util_types import toSequence
+from aql.utils import newHash, Chdir, eventStatus, logDebug, logInfo
+from aql.entity import EntityBase, SimpleEntity, pickleable
 
 __all__ = (
     'Node',
     'NodeFilter', 'NodeDirNameFilter', 'NodeBaseNameFilter',
 )
 
-import os
-import operator
-
-from aql.utils import newHash, Chdir, eventStatus, logDebug, logInfo
-from aql.util_types import toSequence, AqlException
-
-from aql.entity import EntityBase, SimpleEntity, pickleable
-
 # ==============================================================================
 
 
-class ErrorNodeDependencyInvalid(AqlException):
+class ErrorNodeDependencyInvalid(Exception):
 
     def __init__(self, dep):
         msg = "Invalid node dependency: %s" % (dep,)
         super(ErrorNodeDependencyInvalid, self).__init__(msg)
 
 
-class ErrorNodeSplitUnknownSource(AqlException):
+class ErrorNodeSplitUnknownSource(Exception):
 
     def __init__(self, node, entity):
         msg = "Node '%s' can't be split to unknown source entity: %s" % (
@@ -55,7 +57,7 @@ class ErrorNoTargets(AttributeError):
         super(ErrorNoTargets, self).__init__(msg)
 
 
-class ErrorNoSrcTargets(AqlException):
+class ErrorNoSrcTargets(Exception):
 
     def __init__(self, node, src_entity):
         msg = "Source '%s' targets are not built or set yet: %s" % (
@@ -63,7 +65,7 @@ class ErrorNoSrcTargets(AqlException):
         super(ErrorNoSrcTargets, self).__init__(msg)
 
 
-class ErrorUnactualEntity(AqlException):
+class ErrorUnactualEntity(Exception):
 
     def __init__(self, entity):
         msg = "Target entity is not actual: %s (%s)" % (
@@ -71,7 +73,7 @@ class ErrorUnactualEntity(AqlException):
         super(ErrorUnactualEntity, self).__init__(msg)
 
 
-class ErrorNodeUnknownSource(AqlException):
+class ErrorNodeUnknownSource(Exception):
 
     def __init__(self, src_entity):
         msg = "Unknown source entity: %s (%s)" % (src_entity, type(src_entity))

@@ -1,33 +1,37 @@
 #
-# Copyright (c) 2011-2015 The developers of Aqualid project
+# Copyright (c) 2014-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+from aql.util_types import toSequence, castStr
+from aql.utils import simpleObjectSignature
+from .aql_entity_pickler import pickleable
+
 __all__ = (
     'EntityBase', 'SignatureEntity', 'SimpleEntity', 'NullEntity',
 )
 
-from aql.util_types import toSequence, castStr, AqlException
-from aql.utils import simpleObjectSignature
-from .aql_entity_pickler import pickleable
-
 # ==============================================================================
 
 
-class ErrorEntityNameEmpty(AqlException):
+class ErrorEntityNameEmpty(Exception):
 
     def __init__(self):
         msg = "Entity name is empty"
@@ -36,7 +40,7 @@ class ErrorEntityNameEmpty(AqlException):
 # ==============================================================================
 
 
-class ErrorSignatureEntityInvalidDataType(AqlException):
+class ErrorSignatureEntityInvalidDataType(Exception):
 
     def __init__(self, data):
         msg = "Signature data type must be bytes or bytearray, actual type: '%s'" % (
@@ -44,7 +48,7 @@ class ErrorSignatureEntityInvalidDataType(AqlException):
         super(type(self), self).__init__(msg)
 
 
-class ErrorTextEntityInvalidDataType(AqlException):
+class ErrorTextEntityInvalidDataType(Exception):
 
     def __init__(self, text):
         msg = "Text data type must be string, actual type: '%s'" % (

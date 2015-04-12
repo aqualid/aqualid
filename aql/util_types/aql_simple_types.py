@@ -25,7 +25,7 @@ import locale
 import operator
 
 __all__ = (
-    'AqlException', 'uStr', 'toUnicode', 'isUnicode', 'isString', 'toString',
+    'uStr', 'toUnicode', 'isUnicode', 'isString', 'toString',
     'castStr', 'encodeStr', 'decodeBytes', 'String', 'IgnoreCaseString',
     'LowerCaseString', 'UpperCaseString', 'Version',
     'SIMPLE_TYPES_SET', 'SIMPLE_TYPES', 'isSimpleValue', 'isSimpleType'
@@ -33,11 +33,6 @@ __all__ = (
 
 # ==============================================================================
 
-
-class AqlException (Exception):
-    pass
-
-# ==============================================================================
 
 try:
     uStr = unicode
