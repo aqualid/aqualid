@@ -1,30 +1,33 @@
 #
-# Copyright (c) 2015 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = ('SqlDataFile', )
 
 import os
 import sqlite3
 
 from .aql_utils import openFile
 
-# //===========================================================================//
+__all__ = ('SqlDataFile', )
+
+# ==============================================================================
 
 
 class ErrorDataFileFormatInvalid(Exception):
@@ -33,7 +36,7 @@ class ErrorDataFileFormatInvalid(Exception):
         msg = "Data file format is not valid."
         super(ErrorDataFileFormatInvalid, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class SqlDataFile (object):
@@ -44,7 +47,7 @@ class SqlDataFile (object):
         'connection',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, filename, force=False):
 
@@ -54,7 +57,7 @@ class SqlDataFile (object):
 
         self.open(filename, force=force)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def clear(self):
         with self.connection as conn:
@@ -63,7 +66,7 @@ class SqlDataFile (object):
         self.id2key.clear()
         self.key2id.clear()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __enter__(self):
         return self
@@ -71,7 +74,7 @@ class SqlDataFile (object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _load_ids(self, conn):
 
@@ -82,7 +85,7 @@ class SqlDataFile (object):
             set_key(key, data_id)
             set_id(data_id, key)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def open(self, filename, force=False):
 
@@ -111,7 +114,7 @@ class SqlDataFile (object):
 
         self.connection = conn
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
 
@@ -122,7 +125,7 @@ class SqlDataFile (object):
         self.id2key.clear()
         self.key2id.clear()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def _is_aql_db(filename):
@@ -133,7 +136,7 @@ class SqlDataFile (object):
             tag = f.read(len(MAGIC_TAG))
             return tag == MAGIC_TAG
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def _open_connection(filename):
@@ -145,7 +148,11 @@ class SqlDataFile (object):
 
             with conn:
                 conn.execute(
-                    "CREATE TABLE IF NOT EXISTS items( key INTEGER PRIMARY KEY AUTOINCREMENT, id blob UNIQUE, data blob NOT NULL)")
+                    "CREATE TABLE IF NOT EXISTS items("
+                    "key INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    "id blob UNIQUE,"
+                    "data blob NOT NULL"
+                    ")")
 
         except Exception:
             if conn is not None:
@@ -158,7 +165,7 @@ class SqlDataFile (object):
 
         return conn
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def read(self, data_id):
 
@@ -171,7 +178,7 @@ class SqlDataFile (object):
 
         return data[0]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def write_with_key(self, data_id, data):
 
@@ -181,7 +188,8 @@ class SqlDataFile (object):
 
         with self.connection as conn:
             cur = conn.execute(
-                "INSERT OR REPLACE INTO items(id, data) VALUES (?,?)", (data_id, data))
+                "INSERT OR REPLACE INTO items(id, data) VALUES (?,?)",
+                (data_id, data))
 
         key = cur.lastrowid
         self.key2id[key] = data_id
@@ -189,11 +197,11 @@ class SqlDataFile (object):
 
         return key
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     write = write_with_key
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get_ids(self, keys):
         try:
@@ -201,12 +209,12 @@ class SqlDataFile (object):
         except KeyError:
             return None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get_keys(self, data_ids):
         return map(self.id2key.__getitem__, data_ids)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def remove(self, data_ids):
         with self.connection as conn:
@@ -221,7 +229,7 @@ class SqlDataFile (object):
             del_key(key)
             del_id(data_id)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def selfTest(self):
         if self.connection is None:
@@ -236,7 +244,9 @@ class SqlDataFile (object):
         key2id = self.key2id.copy()
         id2key = self.id2key.copy()
 
-        for key, data_id in self.connection.execute("SELECT key,id FROM items"):
+        items = self.connection.execute("SELECT key,id FROM items")
+
+        for key, data_id in items:
             if key2id.pop(key, None) is None:
                 raise AssertionError("key(%s) not in self.key2id" % (key,))
 

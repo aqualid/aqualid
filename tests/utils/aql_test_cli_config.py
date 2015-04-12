@@ -61,7 +61,7 @@ class TestCLIConfig(AqlTestCase):
         config.setDefault('new_size', 30)
         self.assertTrue(config.new_size, 1)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_cli_config_file(self):
 
@@ -112,7 +112,7 @@ targets="test1 test2 test3"
 
             self.assertEqual(dict(config.items()), cli_values)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

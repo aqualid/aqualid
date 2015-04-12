@@ -30,7 +30,7 @@ from aql.util_types import toSequence, AqlException
 
 from aql.entity import EntityBase, SimpleEntity, pickleable
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorNodeDependencyInvalid(AqlException):
@@ -77,7 +77,7 @@ class ErrorNodeUnknownSource(AqlException):
         msg = "Unknown source entity: %s (%s)" % (src_entity, type(src_entity))
         super(ErrorNodeUnknownSource, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
@@ -85,7 +85,7 @@ def eventNodeStaleReason(brief, reason):
     msg = reason.getDescription(brief)
     logDebug(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class NodeStaleReason (object):
@@ -107,7 +107,7 @@ class NodeStaleReason (object):
         FORCE_REBUILD, \
         = range(8)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, builder, sources, targets):
         self.builder = builder
@@ -116,7 +116,7 @@ class NodeStaleReason (object):
         self.code = self.ACTUAL
         self.entity = None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _set(self, code, entity=None):
         self.code = code
@@ -124,7 +124,7 @@ class NodeStaleReason (object):
 
         eventNodeStaleReason(self)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setNoSignature(self, NO_SIGNATURE=NO_SIGNATURE):
         self._set(NO_SIGNATURE)
@@ -147,12 +147,12 @@ class NodeStaleReason (object):
     def setForceRebuild(self, FORCE_REBUILD=FORCE_REBUILD):
         self._set(FORCE_REBUILD)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getNodeName(self, brief):
         return self.builder.getTrace(self.sources, self.targets, brief)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getDescription(self, brief=True):
 
@@ -191,7 +191,7 @@ class NodeStaleReason (object):
 
         return msg
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @pickleable
@@ -211,7 +211,7 @@ class NodeEntity (EntityBase):
         'idep_keys',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __new__(cls, name=NotImplemented, signature=NotImplemented, targets=None, itargets=None, idep_keys=None,
                 builder=None, source_entities=None, dep_entities=None):
@@ -229,17 +229,17 @@ class NodeEntity (EntityBase):
 
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         return self.name
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         return self.name, self.signature, self.target_entities, self.itarget_entities, self.idep_keys
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargets(self):
         builder = self.builder
@@ -248,7 +248,7 @@ class NodeEntity (EntityBase):
             return ()
         return builder.makeEntities(targets)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getName(self):
 
@@ -264,7 +264,7 @@ class NodeEntity (EntityBase):
 
         return hash_sum.digest()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getSignature(self):
 
@@ -291,7 +291,7 @@ class NodeEntity (EntityBase):
 
         return hash_sum.digest()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getattr__(self, attr):
         if attr == 'target_entities':
@@ -300,7 +300,7 @@ class NodeEntity (EntityBase):
 
         return super(NodeEntity, self).__getattr__(attr)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     _ACTUAL_IDEPS_CACHE = {}
 
@@ -330,7 +330,7 @@ class NodeEntity (EntityBase):
 
         return entities
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _saveIdeps(self, vfile, _actual_ideps_cache=_ACTUAL_IDEPS_CACHE):
 
@@ -350,7 +350,7 @@ class NodeEntity (EntityBase):
         self.idep_entities = entities
         self.idep_keys = keys
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def _checkTargets(entities, reason):
@@ -367,7 +367,7 @@ class NodeEntity (EntityBase):
 
         return True
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def checkActual(self, vfile, explain=False, _getIdeps=_getIdeps):
 
@@ -416,7 +416,7 @@ class NodeEntity (EntityBase):
 
         return True
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def save(self, vfile):
 
@@ -428,7 +428,7 @@ class NodeEntity (EntityBase):
 
         vfile.addNodeEntity(self)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def clear(self, vfile):
         """
@@ -461,7 +461,7 @@ class NodeEntity (EntityBase):
         except Exception:
             pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addTargets(self, entities, tags=None):
         self.target_entities.extend(
@@ -474,7 +474,7 @@ class NodeEntity (EntityBase):
     add = addTargets
     addFiles = addTargetFiles
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addSideEffects(self, entities, tags=None):
         self.itarget_entities.extend(
@@ -484,7 +484,7 @@ class NodeEntity (EntityBase):
         self.itarget_entities.extend(
             self.builder.makeFileEntities(toSequence(entities), tags))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addImplicitDeps(self, entities, tags=None):
         self.idep_entities.extend(
@@ -495,14 +495,14 @@ class NodeEntity (EntityBase):
             self.builder.makeFileEntities(toSequence(entities), tags))
 
 
-# //===========================================================================//
+# ==============================================================================
 
 class _NodeBatchTargets (object):
 
     def __init__(self, node_entities_map):
         self.node_entities_map = node_entities_map
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getitem__(self, source):
         try:
@@ -510,7 +510,7 @@ class _NodeBatchTargets (object):
         except KeyError:
             raise ErrorNodeUnknownSource(source)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class NodeFilter (object):
@@ -524,7 +524,7 @@ class NodeFilter (object):
         self.node = node
         self.node_attribute = node_attribute
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getNode(self):
         node = self.node
@@ -534,7 +534,7 @@ class NodeFilter (object):
 
         return node
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __iter__(self):
         raise TypeError()
@@ -542,7 +542,7 @@ class NodeFilter (object):
     def __getitem__(self, item):
         return NodeIndexFilter(self, item)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
 
@@ -552,7 +552,7 @@ class NodeFilter (object):
 
         return entities
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getEntities(self):
         node = self.node
@@ -563,7 +563,7 @@ class NodeFilter (object):
 
         return entities
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class NodeTagsFilter(NodeFilter):
@@ -581,7 +581,7 @@ class NodeTagsFilter(NodeFilter):
         tags = self.tags
         return tuple(entity for entity in entities if entity.tags and (entity.tags & tags))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class NodeIndexFilter(NodeFilter):
@@ -602,7 +602,7 @@ class NodeIndexFilter(NodeFilter):
             return tuple()
 
 
-# //===========================================================================//
+# ==============================================================================
 
 class NodeDirNameFilter(NodeFilter):
 
@@ -610,7 +610,7 @@ class NodeDirNameFilter(NodeFilter):
         entities = super(NodeDirNameFilter, self).getEntities()
         return tuple(SimpleEntity(os.path.dirname(entity.get())) for entity in entities)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class NodeBaseNameFilter(NodeFilter):
@@ -619,7 +619,7 @@ class NodeBaseNameFilter(NodeFilter):
         entities = super(NodeBaseNameFilter, self).getEntities()
         return tuple(SimpleEntity(os.path.basename(entity.get())) for entity in entities)
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -651,7 +651,7 @@ class Node (object):
         'idep_entities',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, builder, sources, cwd=None):
 
@@ -673,7 +673,7 @@ class Node (object):
         self.dep_nodes = set()
         self.dep_entities = []
 
-    # //=======================================================//
+    # ==========================================================
 
     def shrink(self):
         self.cwd = None
@@ -685,7 +685,7 @@ class Node (object):
         self.builder = None
         self.options = None
 
-    # //=======================================================//
+    # ==========================================================
 
     def depends(self, dependencies):
 
@@ -705,7 +705,7 @@ class Node (object):
             else:
                 raise ErrorNodeDependencyInvalid(entity)
 
-    # //=======================================================//
+    # ==========================================================
 
     def __getattr__(self, attr):
         if attr in ['target_entities', 'itarget_entities', 'idep_entities']:
@@ -713,7 +713,7 @@ class Node (object):
 
         raise AttributeError("Node has not attribute '%s'" % (attr,))
 
-    # //=======================================================//
+    # ==========================================================
 
     def _setSourceEntities(self):
         entities = []
@@ -738,7 +738,7 @@ class Node (object):
         self.sources = None
         self.source_entities = tuple(entities)
 
-    # //=======================================================//
+    # ==========================================================
 
     def _updateDepEntities(self):
         dep_nodes = self.dep_nodes
@@ -757,7 +757,7 @@ class Node (object):
 
         dep_entities.sort(key=operator.attrgetter('id'))
 
-    # //=======================================================//
+    # ==========================================================
 
     def initiate(self):
         if self.initiated:
@@ -772,7 +772,7 @@ class Node (object):
 
             self.initiated = True
 
-    # //=======================================================//
+    # ==========================================================
 
     def buildDepends(self):
         if self.depends_called:
@@ -783,7 +783,7 @@ class Node (object):
         nodes = self.builder.depends(self.cwd, self.source_entities)
         return nodes
 
-    # //=======================================================//
+    # ==========================================================
 
     def buildReplace(self):
         if self.replace_called:
@@ -800,7 +800,7 @@ class Node (object):
 
         return self.getSourceNodes()
 
-    # //=======================================================//
+    # ==========================================================
 
     def _splitBatch(self, vfile, explain):
         builder = self.builder
@@ -843,7 +843,7 @@ class Node (object):
 
         return split_nodes
 
-    # //=======================================================//
+    # ==========================================================
 
     def buildSplit(self, vfile, explain=False):
         if self.split_called:
@@ -857,7 +857,7 @@ class Node (object):
         if builder.isBatch():
             return self._splitBatch(vfile, explain)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
         sources = self.source_entities
 
         groups = self.builder.split(sources)
@@ -872,7 +872,7 @@ class Node (object):
             self.node_entities = (node_entity,)
             return None
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
         # create split Nodes
 
         node_entities = []
@@ -897,7 +897,7 @@ class Node (object):
 
         return split_nodes
 
-    # //=======================================================//
+    # ==========================================================
 
     def _split(self, source_entities, node_entities):
 
@@ -916,7 +916,7 @@ class Node (object):
 
         return other
 
-    # //=======================================================//
+    # ==========================================================
 
     def prebuild(self):
         dep_nodes = self.buildDepends()
@@ -926,7 +926,7 @@ class Node (object):
         source_nodes = self.buildReplace()
         return source_nodes
 
-    # //=======================================================//
+    # ==========================================================
 
     def _populateTargets(self):
 
@@ -954,7 +954,7 @@ class Node (object):
             self.itarget_entities = itargets
             self.idep_entities = ideps
 
-    # //=======================================================//
+    # ==========================================================
 
     def checkActual(self, vfile, explain=False):
 
@@ -971,12 +971,12 @@ class Node (object):
         self._populateTargets()
         return True
 
-    # //=======================================================//
+    # ==========================================================
 
     def recheckActual(self):
         self.is_actual = None
 
-    # //=======================================================//
+    # ==========================================================
 
     def build(self):
 
@@ -992,14 +992,14 @@ class Node (object):
 
         return output
 
-    # //=======================================================//
+    # ==========================================================
 
     def save(self, vfile):
 
         for node_entity in self.node_entities:
             node_entity.save(vfile)
 
-    # //=======================================================//
+    # ==========================================================
 
     def saveFailed(self, vfile):
 
@@ -1015,7 +1015,7 @@ class Node (object):
                                               # rebuilt next time
                 node_entity.save(vfile)
 
-    # //=======================================================//
+    # ==========================================================
 
     def _clearSplit(self):
 
@@ -1041,7 +1041,7 @@ class Node (object):
 
         self.node_entities = node_entities
 
-    # //=======================================================//
+    # ==========================================================
 
     def clear(self, vfile):
 
@@ -1057,12 +1057,12 @@ class Node (object):
 
         return node_entities
 
-    # //=======================================================//
+    # ==========================================================
 
     def getWeight(self):
         return self.builder.getWeight(self.source_entities)
 
-    # //=======================================================//
+    # ==========================================================
 
     def getNames(self):
         return (entity.name for entity in self.node_entities)
@@ -1070,22 +1070,22 @@ class Node (object):
     def getNamesAndSignatures(self):
         return ((entity.name, entity.signature) for entity in self.node_entities)
 
-    # //=======================================================//
+    # ==========================================================
 
     def getDepNodes(self):
         return self.dep_nodes
 
-    # //=======================================================//
+    # ==========================================================
 
     def getSources(self):
         return tuple(src.get() for src in self.getSourceEntities())
 
-    # //=======================================================//
+    # ==========================================================
 
     def getSourceEntities(self):
         return self.source_entities
 
-    # //=======================================================//
+    # ==========================================================
 
     def getSourceNodes(self):
         nodes = []
@@ -1099,17 +1099,17 @@ class Node (object):
 
         return nodes
 
-    # //=======================================================//
+    # ==========================================================
 
     def isBuilt(self):
         return self.builder is None
 
-    # //=======================================================//
+    # ==========================================================
 
     def at(self, tags):
         return NodeTagsFilter(self, tags)
 
-    # //=======================================================//
+    # ==========================================================
 
     def __iter__(self):
         raise TypeError()
@@ -1117,7 +1117,7 @@ class Node (object):
     def __getitem__(self, item):
         return NodeIndexFilter(self, item)
 
-    # //=======================================================//
+    # ==========================================================
 
     def __filter(self, node_attribute, tags):
         if tags is None:
@@ -1125,7 +1125,7 @@ class Node (object):
 
         return NodeTagsFilter(self, tags, node_attribute)
 
-    # //=======================================================//
+    # ==========================================================
 
     def filterSources(self, tags=None):
         return self.__filter('source_entities', tags)
@@ -1139,7 +1139,7 @@ class Node (object):
     def filterDependencies(self, tags=None):
         return self.__filter('dep_entities', tags)
 
-    # //=======================================================//
+    # ==========================================================
 
     def get(self):
         targets = self.getTargetEntities()
@@ -1148,7 +1148,7 @@ class Node (object):
 
         return tuple(target.get() for target in targets)
 
-    # //=======================================================//
+    # ==========================================================
 
     def getTargetEntities(self):
         return self.target_entities
@@ -1156,7 +1156,7 @@ class Node (object):
     def getSideEffectEntities(self):
         return self.itarget_entities
 
-    # //=======================================================//
+    # ==========================================================
 
     def getBuildStr(self, brief=True):
         try:
@@ -1170,7 +1170,7 @@ class Node (object):
 
         return str(self)  # TODO: return raw data
 
-    # //=======================================================//
+    # ==========================================================
 
     def printSources(self):
         result = []
@@ -1207,7 +1207,7 @@ class Node (object):
 
         logInfo("node '%s' sources: %s" % (self, sources_str))
 
-    # //=======================================================//
+    # ==========================================================
 
     def printTargets(self):
         targets = [t.get() for t in getattr(self, 'target_entities', [])]

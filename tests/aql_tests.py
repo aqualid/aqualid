@@ -12,7 +12,7 @@ from aql.utils import Tempfile, addUserHandler, removeUserHandler, enableDefault
 from aql.util_types import FilePath
 from aql.nodes.aql_node import NodeEntity
 
-# //===========================================================================//
+# ==============================================================================
 
 SRC_FILE_TEMPLATE = """
 #include <cstdio>
@@ -72,7 +72,7 @@ BEGIN
 END
 """
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class AqlTestCase(TestCaseBase):
@@ -85,7 +85,7 @@ class AqlTestCase(TestCaseBase):
     def eventNodeRemoved(self, settings, node, progress):
         self.removed_nodes += 1
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def setUp(self):
         super(AqlTestCase, self).setUp()
@@ -96,7 +96,7 @@ class AqlTestCase(TestCaseBase):
         addUserHandler(self.eventNodeBuildingFinished)
         addUserHandler(self.eventNodeRemoved)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def tearDown(self):
         removeUserHandler(self.eventNodeBuildingFinished)
@@ -106,7 +106,7 @@ class AqlTestCase(TestCaseBase):
 
         super(AqlTestCase, self).tearDown()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def buildPrj(self, prj, num_built_nodes, num_failed_nodes=0, jobs=4):
         self.built_nodes = 0
@@ -120,7 +120,7 @@ class AqlTestCase(TestCaseBase):
         self.assertEqual(prj.build_manager.failsCount(), num_failed_nodes)
         self.assertEqual(self.built_nodes,               num_built_nodes)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def clearPrj(self, prj):
         self.removed_nodes = 0
@@ -129,7 +129,7 @@ class AqlTestCase(TestCaseBase):
 
         self.assertGreater(self.removed_nodes, 0)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def _testSaveLoad(self, value):
         data = pickle.dumps((value, ), protocol=pickle.HIGHEST_PROTOCOL)
@@ -139,7 +139,7 @@ class AqlTestCase(TestCaseBase):
 
         self.assertEqual(value, loaded_value)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def generateMainCppFile(self, dirname, name, content=None):
         if not content:
@@ -152,7 +152,7 @@ class AqlTestCase(TestCaseBase):
 
         return src_file
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def generateCppFile(self, dirname, name):
         src_content = SRC_FILE_TEMPLATE % (name, 'foo_' + name)
@@ -170,7 +170,7 @@ class AqlTestCase(TestCaseBase):
 
         return src_file, hdr_file
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def generateResFile(self, dirname, name):
         src_content = RES_FILE_TEMPLATE
@@ -182,7 +182,7 @@ class AqlTestCase(TestCaseBase):
 
         return src_file
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def generateCppFiles(self, dirname, name, count):
         src_files = []
@@ -194,7 +194,7 @@ class AqlTestCase(TestCaseBase):
 
         return src_files, hdr_files
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def touchCppFile(cpp_file):
@@ -204,7 +204,7 @@ class AqlTestCase(TestCaseBase):
     def addErrorToCppFile(cpp_file):
         AqlTestCase.updateCppFile(cpp_file, "\n#error TEST ERROR\n")
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def updateCppFile(cpp_file, new_line):
@@ -213,25 +213,25 @@ class AqlTestCase(TestCaseBase):
 
         NodeEntity._ACTUAL_IDEPS_CACHE.clear()    # clear nodes cache
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def touchCppFiles(cpp_files):
         for cpp_file in cpp_files:
             AqlTestCase.touchCppFile(cpp_file)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def generateFile(tmp_dir, start, stop):
-        tmp = Tempfile(dir=tmp_dir)
+        tmp = Tempfile(folder=tmp_dir)
         tmp.write(bytearray(map(lambda v: v % 256, range(start, stop))))
 
         tmp.close()
 
         return tmp
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def removeFiles(files):
@@ -241,13 +241,13 @@ class AqlTestCase(TestCaseBase):
             except (OSError, IOError):
                 pass
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def copyFile(src_file, dst_file):
         shutil.copy(src_file, dst_file)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @staticmethod
     def generateSourceFiles(tmp_dir, num, size):
@@ -268,7 +268,7 @@ class AqlTestCase(TestCaseBase):
 
         return src_files
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == '__main__':
 

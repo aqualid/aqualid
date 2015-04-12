@@ -14,7 +14,7 @@ from aql.utils import equalFunctionArgs, checkFunctionArgs, getFunctionName, \
 
 class TestUtils(AqlTestCase):
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_equalFunctionArgs(self):
         def f0(a, b, c): pass
@@ -41,7 +41,7 @@ class TestUtils(AqlTestCase):
 
         self.assertFalse(equalFunctionArgs(f6, f7))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_checkFunctionArgs(self):
         def f(): pass
@@ -95,7 +95,7 @@ class TestUtils(AqlTestCase):
 
         self.assertFalse(checkFunctionArgs(f1, args, kw))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         class Foo:
 
@@ -110,12 +110,12 @@ class TestUtils(AqlTestCase):
 
         self.assertTrue(checkFunctionArgs(Foo().test, args, kw))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_functionName(self):
         self.assertTrue(getFunctionName(), 'test_functionName')
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_exec_command(self):
         if os.name == 'nt':
@@ -125,7 +125,7 @@ class TestUtils(AqlTestCase):
 
         self.assertTrue(result.output)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_get_env(self):
 
@@ -156,7 +156,7 @@ class TestUtils(AqlTestCase):
             self.assertEqual(env['TEST_ENV_A'], '1')
             self.assertEqual(env['TEST_ENV_B'], '2')
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_flatten(self):
 
@@ -170,7 +170,7 @@ class TestUtils(AqlTestCase):
         self.assertEqual(flattenList([]), [])
         self.assertEqual(flattenList([([1, 3, 4], [2, 3])]), [1, 3, 4, 2, 3])
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_groups(self):
         items = list(range(10))
@@ -199,7 +199,7 @@ class TestUtils(AqlTestCase):
         groups = groupItems(items, wish_groups=1, max_group_size=2)
         self.assertEqual(groups, [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]])
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

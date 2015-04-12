@@ -25,14 +25,14 @@ from aql.util_types import toSequence, AqlException
 from aql.utils import logWarning, logError, loadModule, loadPackage, expandFilePath, findFiles, eventWarning,\
     findProgram, findPrograms, findOptionalProgram, findOptionalPrograms
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventWarning
 def eventToolsUnableLoadModule(settings, module, err):
     logWarning("Unable to load module: %s, error: %s" % (module, err))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventWarning
@@ -50,13 +50,13 @@ def eventToolsToolFailed(settings, ex, tool_info):
              (names, tool_class.__name__, file))
     logError(ex)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _toolSetupStub(options):
     pass
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorToolInvalid(AqlException):
@@ -81,7 +81,7 @@ class ErrorToolNotFound(AqlException):
             tool_name, loaded_paths)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -102,7 +102,7 @@ class ToolInfo(object):
         raise AttributeError(
             "%s instance has no attribute '%s'" % (type(self), attr))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ToolsManager(object):
@@ -115,7 +115,7 @@ class ToolsManager(object):
         'loaded_paths'
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self):
 
@@ -125,7 +125,7 @@ class ToolsManager(object):
         self.tool_info = {}
         self.loaded_paths = []
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def __addToMap(values_map, names, value):
@@ -140,7 +140,7 @@ class ToolsManager(object):
 
             value_list.insert(0, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addTool(self, tool_class, names):
         if not issubclass(tool_class, Tool):
@@ -151,7 +151,7 @@ class ToolsManager(object):
             self.tool_names.setdefault(tool_class, set()).update(names)
             self.__addToMap(self.tool_classes, names, tool_class)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addSetup(self, setup_method, names):
         if not hasattr(setup_method, '__call__'):
@@ -160,7 +160,7 @@ class ToolsManager(object):
         names = toSequence(names)
         self.__addToMap(self.all_setup_methods, names, setup_method)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def loadTools(self, paths):
 
@@ -189,7 +189,7 @@ class ToolsManager(object):
                 except Exception as ex:
                     eventToolsUnableLoadModule(module_file, ex)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getToolInfoList(self, name):
 
@@ -224,7 +224,7 @@ class ToolsManager(object):
 
         return tools_info
 
-    # //=======================================================//
+    # ==========================================================
 
     def getTool(self, tool_name, options, no_errors=False):
 
@@ -263,12 +263,12 @@ class ToolsManager(object):
 
         raise ErrorToolNotFound(tool_name, self.loaded_paths)
 
-    # //=======================================================//
+    # ==========================================================
 
     def hasTool(self, tool_name):
         return tool_name in self.tool_classes
 
-# //===========================================================================//
+# ==============================================================================
 
 _tools_manager = ToolsManager()
 
@@ -284,7 +284,7 @@ def tool(*tool_names):
 
     return _tool
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def toolSetup(*tool_names):
@@ -294,7 +294,7 @@ def toolSetup(*tool_names):
 
     return _tool_setup
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Tool(object):
@@ -302,19 +302,19 @@ class Tool(object):
     def __init__(self, options):
         pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def setup(cls, options):
         pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def options(cls):
         return None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def findProgram(cls, options, prog, hint_prog=None):
@@ -326,7 +326,7 @@ class Tool(object):
 
         return prog
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def findPrograms(cls, options, progs, hint_prog=None):
@@ -339,14 +339,14 @@ class Tool(object):
 
         return progs
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def findOptionalProgram(cls, options, prog, hint_prog=None):
         env = options.env.get()
         return findOptionalProgram(prog, env, hint_prog)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def findOptionalPrograms(cls, options, progs, hint_prog=None):

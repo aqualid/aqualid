@@ -8,7 +8,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.entity import SimpleEntity, SignatureEntity, NullEntity
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestValues(AqlTestCase):
@@ -30,7 +30,7 @@ class TestValues(AqlTestCase):
         value2 = SimpleEntity('http://buildsrv.com/results2.out')
         self.assertNotEqual(value1, value2)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_str_empty_value_save_load(self):
 
@@ -44,7 +44,7 @@ class TestValues(AqlTestCase):
         self._testSaveLoad(value1)
         self._testSaveLoad(value2)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_sign_value(self):
 
@@ -62,7 +62,7 @@ class TestValues(AqlTestCase):
         value2 = SignatureEntity(b'http://buildsrv.com/results2.out')
         self.assertNotEqual(value1, value2)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_sign_empty_value_save_load(self):
 
@@ -76,7 +76,7 @@ class TestValues(AqlTestCase):
         self._testSaveLoad(value1)
         self._testSaveLoad(value2)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_null_value(self):
 
@@ -88,7 +88,7 @@ class TestValues(AqlTestCase):
 
         self._testSaveLoad(value1)
 
-# //=======================================================//
+# ==========================================================
 
 if __name__ == "__main__":
     runLocalTests()

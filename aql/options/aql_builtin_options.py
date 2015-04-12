@@ -31,7 +31,7 @@ from .aql_option_value import SimpleOperation
 from .aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, \
     PathOptionType, StrOptionType, VersionOptionType, OptionType
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _build_options():
@@ -67,7 +67,7 @@ def _build_options():
                                             description="Active build variants")
     options.bvs = options.build_variants
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     file_signature = EnumOptionType(values=[('checksum', 'md5', 'sign'), ('timestamp', 'time')],
                                     default='checksum',
@@ -76,7 +76,7 @@ def _build_options():
     options.file_signature = file_signature
     options.signature = options.file_signature
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     options.batch_build = BoolOptionType(description="Prefer batch build.")
     options.batch_groups = OptionType(
@@ -84,13 +84,13 @@ def _build_options():
     options.batch_size = OptionType(
         value_type=int, default=0, description="Preferred size of a batching group.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     options.setGroup("Build")
 
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _target_options():
@@ -165,7 +165,7 @@ def _target_options():
 
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _optimization_options():
@@ -178,13 +178,13 @@ def _optimization_options():
     options.optlevel = options.optimization
     options.opt = options.optimization
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     options.inlining = EnumOptionType(values=['off', 'on', 'full'],
                                       default='off',
                                       description='Inline function expansion')
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     options.whole_optimization = BoolOptionType(
         description='Whole program optimization')
@@ -194,7 +194,7 @@ def _optimization_options():
 
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _code_gen_options():
@@ -232,7 +232,7 @@ def _code_gen_options():
     options.setGroup("Code generation")
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _diagnostic_options():
@@ -259,7 +259,7 @@ def _diagnostic_options():
     options.setGroup("Diagnostic")
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyUnresolvedReferences
 
@@ -286,12 +286,12 @@ def _env_options():
 
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _init_defaults(options):
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
         # build_dir_name set to <target OS>_<target arch>_<build variant>
 
     if_ = options.If()
@@ -303,7 +303,7 @@ def _init_defaults(options):
     options.build_path = SimpleOperation(
         os.path.join, options.build_dir, options.build_dir_name)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     bv = if_.build_variant
 
@@ -328,7 +328,7 @@ def _init_defaults(options):
     size_build_variant.debug_symbols = 'off'
     size_build_variant.runtime_debug = 'off'
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def builtinOptions():

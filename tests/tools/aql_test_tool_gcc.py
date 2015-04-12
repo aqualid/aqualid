@@ -11,12 +11,12 @@ from aql.utils import Tempfile, Tempdir, setEventSettings, EventSettings
 
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestToolGcc(AqlTestCase):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_compiler(self):
 
@@ -113,7 +113,7 @@ class TestToolGcc(AqlTestCase):
             for target in targets:
                 self.assertFalse(os.path.isfile(target))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_gcc_compiler_target_errors(self):
 
@@ -154,7 +154,7 @@ class TestToolGcc(AqlTestCase):
             self.assertEqual(
                 cm.exception.__class__.__name__, 'ErrorBatchCompileWithCustomTarget')
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_res_compiler(self):
 
@@ -204,7 +204,7 @@ class TestToolGcc(AqlTestCase):
             rc.Compile(res_file)
             self.buildPrj(prj, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_archiver(self):
         with Tempdir() as tmp_dir:
@@ -254,7 +254,7 @@ class TestToolGcc(AqlTestCase):
             cpp.LinkLibrary(src_files, target='foo', batch_build=False)
             self.buildPrj(prj, num_src_files)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_linker(self):
         with Tempdir() as tmp_dir:
@@ -306,7 +306,7 @@ class TestToolGcc(AqlTestCase):
                 src_files, main_src_file, target='foo', batch_build=False)
             self.buildPrj(prj, num_src_files)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_compiler_batch(self):
         with Tempdir() as tmp_dir:
@@ -352,7 +352,7 @@ class TestToolGcc(AqlTestCase):
             cpp.Compile(src_files, batch_build=True, batch_groups=num_groups)
             self.clearPrj(prj)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_compiler_batch_error(self):
         with Tempdir() as tmp_dir:
@@ -367,7 +367,7 @@ class TestToolGcc(AqlTestCase):
             src_files, hdr_files = self.generateCppFiles(
                 src_dir, 'foo', num_src_files)
 
-            src_file_orig = Tempfile(dir=tmp_dir)
+            src_file_orig = Tempfile(folder=tmp_dir)
             src_file_orig.close()
 
             self.copyFile(src_files[0], src_file_orig)
@@ -395,7 +395,7 @@ class TestToolGcc(AqlTestCase):
 
             self.buildPrj(prj, 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_gcc_copy_ideps(self):
 
@@ -438,7 +438,7 @@ class TestToolGcc(AqlTestCase):
             ), node.filterImplicitDependencies(), target=copy_dir, batch_groups=1)
             self.buildPrj(prj, 0)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

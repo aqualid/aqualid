@@ -13,7 +13,7 @@ from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionT
 
 from aql.util_types import Dict
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _condition(options, context, flag, opt_value=None):
@@ -29,7 +29,7 @@ def _convertValue(options, context, value):
 
 class TestOptionValue(AqlTestCase):
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value(self):
         opt_type1 = RangeOptionType(min_value=0, max_value=5)
@@ -47,7 +47,7 @@ class TestOptionValue(AqlTestCase):
 
         self.assertEqual(opt_value.get(options={}, context=None), 5)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value2(self):
         opt_value = OptionValue(OptionType(int))
@@ -95,7 +95,7 @@ class TestOptionValue(AqlTestCase):
 
         self.assertEqual(tmp_opt_value.get({}, None, _convertValue), 10)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value3(self):
         opt_value = OptionValue(OptionType(int))
@@ -112,7 +112,7 @@ class TestOptionValue(AqlTestCase):
         opt_value_list.appendValue(ConditionalValue(iAddValue(0)))
         self.assertEqual(opt_value_list.get({}, None), "1, 0")
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value4(self):
         opt_value = OptionValue(OptionType(int))
@@ -127,7 +127,7 @@ class TestOptionValue(AqlTestCase):
 
         self.assertEqual(opt_value.get({}, None), 3)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value_enum(self):
         value_type = EnumOptionType(
@@ -142,7 +142,7 @@ class TestOptionValue(AqlTestCase):
         self.assertRaises(
             ErrorOptionTypeUnableConvertValue, opt_value.get, {}, None)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value_cyclic(self):
         opt_value1 = OptionValue(OptionType(value_type=int))
@@ -170,7 +170,7 @@ class TestOptionValue(AqlTestCase):
         # opt1: 1 + opt2 + opt2 = 1 + 3 + 3
         # opt2: 2 + opt1 = 2 + 1 + 2 + 2
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value_list(self):
         opt_type1 = ListOptionType(
@@ -201,7 +201,7 @@ class TestOptionValue(AqlTestCase):
 
         self.assertIs(opt_value.option_type, opt_type1)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_option_value_dict(self):
         opt_type1 = OptionType(value_type=dict)
@@ -218,7 +218,7 @@ class TestOptionValue(AqlTestCase):
         opt_type1 = OptionType(value_type=Dict)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

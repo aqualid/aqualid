@@ -24,7 +24,7 @@ from aql.util_types import toSequence, castStr, AqlException
 from aql.utils import simpleObjectSignature
 from .aql_entity_pickler import pickleable
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorEntityNameEmpty(AqlException):
@@ -33,7 +33,7 @@ class ErrorEntityNameEmpty(AqlException):
         msg = "Entity name is empty"
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorSignatureEntityInvalidDataType(AqlException):
@@ -51,14 +51,14 @@ class ErrorTextEntityInvalidDataType(AqlException):
             type(text),)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class EntityBase (object):
 
     __slots__ = ('id', 'name', 'signature', 'tags')
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __new__(cls, name, signature, tags=None):
 
@@ -76,12 +76,12 @@ class EntityBase (object):
 
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __hash__(self):
         return hash(self.id)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         """
@@ -90,24 +90,24 @@ class EntityBase (object):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getId(self):
         cls = self.__class__
         return simpleObjectSignature((self.name, cls.__name__, cls.__module__))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getName(self):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getSignature(self):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getattr__(self, attr):
         if attr == 'signature':
@@ -122,13 +122,13 @@ class EntityBase (object):
 
         raise AttributeError("Unknown attribute: '%s'" % (attr,))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isActual(self):
         """
@@ -136,15 +136,15 @@ class EntityBase (object):
         """
         return bool(self.signature)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getActual(self):
         """
-        Returns an actual entity. If the current entity is actual then it will be simply returned 
+        Returns an actual entity. If the current entity is actual then it will be simply returned
         """
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getstate__(self):
         return {}
@@ -152,7 +152,7 @@ class EntityBase (object):
     def __setstate__(self, state):
         pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __eq__(self, other):
         return (self.id == other.id) and \
@@ -161,18 +161,18 @@ class EntityBase (object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __str__(self):
         return castStr(self.get())
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def remove(self):
         pass
 
 
-# //===========================================================================//
+# ==============================================================================
 
 @pickleable
 class SimpleEntity (EntityBase):
@@ -195,12 +195,12 @@ class SimpleEntity (EntityBase):
 
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         return self.data
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         tags = self.tags
@@ -213,7 +213,7 @@ class SimpleEntity (EntityBase):
 
         return self.data, name, self.signature, tags
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @pickleable
@@ -226,23 +226,23 @@ class NullEntity (EntityBase):
 
         return super(NullEntity, cls).__new__(cls, name, signature)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         return None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         return tuple()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isActual(self):
         return False
 
 
-# //===========================================================================//
+# ==============================================================================
 
 @pickleable
 class SignatureEntity (EntityBase):
@@ -258,12 +258,12 @@ class SignatureEntity (EntityBase):
 
         return super(SignatureEntity, cls).__new__(cls, name, data, tags)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         return self.signature
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         tags = self.tags
@@ -277,4 +277,4 @@ class SignatureEntity (EntityBase):
         return self.signature, name, tags
 
 
-# //===========================================================================//
+# ==============================================================================

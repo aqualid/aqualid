@@ -1,21 +1,23 @@
 #
-# Copyright (c) 2012 The developers of Aqualid project
+# Copyright (c) 2012-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import optparse
 
@@ -24,15 +26,29 @@ from .aql_utils import execFile
 
 __all__ = ('CLIOption', 'CLIConfig')
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CLIOption(object):
     __slots__ = (
-        'cli_name', 'cli_long_name', 'opt_name', 'value_type', 'default', 'description', 'metavar'
+        'cli_name',
+        'cli_long_name',
+        'opt_name',
+        'value_type',
+        'default',
+        'description',
+        'metavar'
     )
 
-    def __init__(self, cli_name, cli_long_name, opt_name, value_type, default, description, metavar=None):
+    def __init__(self,
+                 cli_name,
+                 cli_long_name,
+                 opt_name,
+                 value_type,
+                 default,
+                 description,
+                 metavar=None):
+
         self.cli_name = cli_name
         self.cli_long_name = cli_long_name
         self.opt_name = opt_name
@@ -41,7 +57,7 @@ class CLIOption(object):
         self.description = description
         self.metavar = metavar
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addToParser(self, parser):
         args = []
@@ -64,14 +80,14 @@ class CLIOption(object):
             kw['metavar'] = self.metavar
         parser.add_option(*args, **kw)
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyUnresolvedReferences,PyAttributeOutsideInit
 
 
 class CLIConfig(object):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, cli_usage, cli_options, args=None):
 
@@ -81,7 +97,7 @@ class CLIConfig(object):
 
         self.__parseArguments(cli_usage, cli_options, args)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def __getArgsParser(cli_usage, cli_options):
@@ -91,7 +107,7 @@ class CLIConfig(object):
             opt.addToParser(parser)
         return parser
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __setDefaults(self, cli_options):
         defaults = self._defaults
@@ -103,7 +119,7 @@ class CLIConfig(object):
 
         return defaults
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __parseValues(self, args):
         targets = []
@@ -119,7 +135,7 @@ class CLIConfig(object):
         if targets:
             self.targets = tuple(targets)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __parseOptions(self, cli_options, args):
         defaults = self.__setDefaults(cli_options)
@@ -137,7 +153,7 @@ class CLIConfig(object):
 
             super(CLIConfig, self).__setattr__(name, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __parseArguments(self, cli_usage, cli_options, cli_args):
         parser = self.__getArgsParser(cli_usage, cli_options)
@@ -146,7 +162,7 @@ class CLIConfig(object):
         self.__parseOptions(cli_options, args)
         self.__parseValues(values)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def readConfig(self, config_file, config_locals=None):
         if config_locals is None:
@@ -156,7 +172,7 @@ class CLIConfig(object):
         for name, value in exec_locals.items():
             self.setDefault(name, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __set(self, name, value):
         defaults = self._defaults
@@ -175,7 +191,7 @@ class CLIConfig(object):
 
         super(CLIConfig, self).__setattr__(name, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getDefault(self, name):
         try:
@@ -183,7 +199,7 @@ class CLIConfig(object):
         except KeyError:
             return None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setDefault(self, name, value):
         if name.startswith("_"):
@@ -192,7 +208,7 @@ class CLIConfig(object):
             if name not in self._set_options:
                 self.__set(name, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __setattr__(self, name, value):
         if name.startswith("_"):
@@ -204,7 +220,7 @@ class CLIConfig(object):
             else:
                 self._set_options.add(name)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def items(self):
         for name, value in self.__dict__.items():

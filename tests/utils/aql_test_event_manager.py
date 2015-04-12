@@ -15,12 +15,12 @@ from aql.utils import eventWarning, eventStatus, eventHandler, \
 
 from aql.utils.aql_event_manager import EventManager
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestEventManager(AqlTestCase):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_event_manager(self):
 
@@ -66,7 +66,7 @@ class TestEventManager(AqlTestCase):
         self.assertIn("default-event2", status)
         self.assertIn("user-event2", status)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_event_manager_errors(self):
 
@@ -88,7 +88,7 @@ class TestEventManager(AqlTestCase):
         em.addDefaultHandler(testEvent2, EVENT_STATUS)
         em.addUserHandler(testUserEvent1, 'testEvent1')
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         self.assertRaises(ErrorEventHandlerAlreadyDefined,
                           em.addDefaultHandler, testEvent2, EVENT_WARNING)
@@ -97,7 +97,7 @@ class TestEventManager(AqlTestCase):
         self.assertRaises(
             ErrorEventUserHandlerWrongArgs, em.addUserHandler, testUserEvent2, 'testEvent2')
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

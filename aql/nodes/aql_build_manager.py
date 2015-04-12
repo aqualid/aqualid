@@ -28,7 +28,7 @@ import itertools
 from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
 from aql.entity import EntitiesFile
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventWarning
@@ -36,7 +36,7 @@ def eventBuildTargetTwice(settings, entity, node1):
     logWarning("Target '%s' is built twice. The last time built by: '%s' " %
                (entity.name, node1.getBuildStr(settings.brief)))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventError
@@ -47,14 +47,14 @@ def eventFailedNode(settings, node, error):
 
     logError(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
 def eventNodeBuilding(settings, node):
     pass
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
@@ -71,14 +71,14 @@ def eventNodeBuildingFinished(settings, node, builder_output, progress):
 
     logInfo(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
 def eventNodeBuildingFailed(settings, node, error):
     pass
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
@@ -87,7 +87,7 @@ def eventNodeRemoved(settings, node, progress):
     if msg:
         logInfo("(%s) Removed: %s" % (progress, msg))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorNodeDependencyCyclic(Exception):
@@ -97,7 +97,7 @@ class ErrorNodeDependencyCyclic(Exception):
             node, node.getBuildStr(True), deps)
         super(ErrorNodeDependencyCyclic, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorNodeUnknown(Exception):
@@ -106,7 +106,7 @@ class ErrorNodeUnknown(Exception):
         msg = "Unknown node '%s'" % (node, )
         super(ErrorNodeUnknown, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorNodeSignatureDifferent(Exception):
@@ -116,7 +116,7 @@ class ErrorNodeSignatureDifferent(Exception):
             node.getBuildStr(brief=False), )
         super(ErrorNodeSignatureDifferent, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorNodeDependencyUnknown(Exception):
@@ -126,7 +126,7 @@ class ErrorNodeDependencyUnknown(Exception):
             node, dep_node)
         super(ErrorNodeDependencyUnknown, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class InternalErrorRemoveNonTailNode(Exception):
@@ -135,7 +135,7 @@ class InternalErrorRemoveNonTailNode(Exception):
         msg = "Removing non-tail node: %s" % (node,)
         super(InternalErrorRemoveNonTailNode, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class InternalErrorRemoveUnknownTailNode(Exception):
@@ -144,7 +144,7 @@ class InternalErrorRemoveUnknownTailNode(Exception):
         msg = "Remove unknown tail node: : %s" % (node,)
         super(InternalErrorRemoveUnknownTailNode, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _NodesTree (object):
@@ -156,14 +156,14 @@ class _NodesTree (object):
             'tail_nodes',
         )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self):
         self.node2deps = {}
         self.dep2nodes = {}
         self.tail_nodes = set()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __len__(self):
         return len(self.node2deps)
@@ -171,7 +171,7 @@ class _NodesTree (object):
     def getNodes(self):
         return frozenset(self.node2deps)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __hasCycle(self, node, new_deps):
 
@@ -193,7 +193,7 @@ class _NodesTree (object):
 
         return False
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _depends(self, node, deps):
 
@@ -214,11 +214,11 @@ class _NodesTree (object):
 
             self.tail_nodes.discard(node)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             current_node_deps.update(new_deps)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             for dep in new_deps:
                 dep2nodes[dep].add(node)
@@ -226,7 +226,7 @@ class _NodesTree (object):
         except KeyError as dep_node:
             raise ErrorNodeDependencyUnknown(node, dep_node.args[0])
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def add(self, nodes):
         for node in nodes:
@@ -247,13 +247,13 @@ class _NodesTree (object):
                 self._depends(node, node_srcnodes)
                 self._depends(node, node_depnodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def depends(self, node, deps):
         self.add(deps)
         self._depends(node, deps)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def removeTail(self, node):
         node2deps = self.node2deps
@@ -273,19 +273,19 @@ class _NodesTree (object):
             if not d:
                 tail_nodes.add(dep)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def filterUnknownDeps(self, deps):
         return [dep for dep in deps if dep in self.node2deps]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def popTails(self):
         tails = self.tail_nodes
         self.tail_nodes = set()
         return tails
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getAllNodes(self, nodes):
         nodes = set(nodes)
@@ -305,7 +305,7 @@ class _NodesTree (object):
 
         return all_nodes
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def shrinkTo(self, nodes):
 
@@ -323,7 +323,7 @@ class _NodesTree (object):
         for dep_nodes in dep2nodes.values():
             dep_nodes.difference_update(ignore_nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def selfTest(self):
         if set(self.node2deps) != set(self.dep2nodes):
@@ -357,7 +357,7 @@ class _NodesTree (object):
         if all_dep_nodes - set(self.dep2nodes):
             raise AssertionError("Not all deps are added")
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _VFiles(object):
@@ -369,7 +369,7 @@ class _VFiles(object):
             'force_lock',
         )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, use_sqlite=False, force_lock=False):
         self.handles = {}
@@ -377,12 +377,12 @@ class _VFiles(object):
         self.use_sqlite = use_sqlite
         self.force_lock = force_lock
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __iter__(self):
         raise TypeError()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getitem__(self, builder):
 
@@ -404,7 +404,7 @@ class _VFiles(object):
 
             return vfile
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
         for vfile in self.handles.values():
@@ -413,17 +413,17 @@ class _VFiles(object):
         self.handles.clear()
         self.names.clear()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __enter__(self):
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __exit__(self, exc_type, exc_value, backtrace):
         self.close()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _buildNode(node):
@@ -440,7 +440,7 @@ def _buildNode(node):
 
     return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getModuleNodes(node, module_cache, node_cache):
@@ -462,7 +462,7 @@ def _getModuleNodes(node, module_cache, node_cache):
     module_cache[node] = result
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getLeafNodes(nodes, exclude_nodes, node_cache):
@@ -473,7 +473,7 @@ def _getLeafNodes(nodes, exclude_nodes, node_cache):
 
     return leafs
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _NodeLocker(object):
@@ -490,7 +490,7 @@ class _NodeLocker(object):
         self.locked_nodes = {}
         self.unlocked_nodes = []
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def syncModules(self, nodes, module_cache=None, node_cache=None):
 
@@ -504,7 +504,7 @@ class _NodeLocker(object):
             if node1 is not node2:
                 self.__addModules(node1, node2, module_cache, node_cache)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __addModules(self, node1, node2, module_cache, node_cache):
 
@@ -524,14 +524,14 @@ class _NodeLocker(object):
         for leaf in leafs2:
             self.__add(leaf, node1_sources)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def sync(self, nodes):
         for node in nodes:
             node_deps = self.__add(node, nodes)
             node_deps.remove(node)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __add(self, node, deps):
         try:
@@ -554,7 +554,7 @@ class _NodeLocker(object):
 
         return node_set
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def lock(self, node):
 
@@ -574,7 +574,7 @@ class _NodeLocker(object):
 
         return True
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def unlock(self, node):
 
@@ -595,7 +595,7 @@ class _NodeLocker(object):
 
         self.unlocked_nodes.extend(unlocked_nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def popUnlocked(self):
         unlocked_nodes = self.unlocked_nodes
@@ -603,7 +603,7 @@ class _NodeLocker(object):
 
         return unlocked_nodes
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def selfTest(self):
         for node, deps in self.node2deps.items():
@@ -630,7 +630,7 @@ class _NodeLocker(object):
                 raise AssertionError("Unknown unlocked node %s" % (node,))
 
 
-# //===========================================================================//
+# ==============================================================================
 
 class _NodesBuilder (object):
 
@@ -642,7 +642,7 @@ class _NodesBuilder (object):
             'building_nodes',
         )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, build_manager, jobs=0, keep_going=False, with_backtrace=True, use_sqlite=False, force_lock=False):
         self.vfiles = _VFiles(use_sqlite=use_sqlite, force_lock=force_lock)
@@ -651,17 +651,17 @@ class _NodesBuilder (object):
         self.task_manager = TaskManager(
             num_threads=jobs, stop_on_fail=not keep_going, with_backtrace=with_backtrace)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __enter__(self):
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __exit__(self, exc_type, exc_value, backtrace):
         self.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _addBuildingNode(self, node):
         conflicting_nodes = []
@@ -689,19 +689,19 @@ class _NodesBuilder (object):
         building_nodes.update(node_names)
         return True
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _removeBuildingNode(self, node):
         building_nodes = self.building_nodes
         for name in node.getNames():
             del building_nodes[name]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isBuilding(self):
         return bool(self.building_nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, nodes):
 
@@ -757,7 +757,7 @@ class _NodesBuilder (object):
 
         return self._getFinishedNodes(block=not changed)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _getFinishedNodes(self, block=True):
         finished_tasks = self.task_manager.finishedTasks(block=block)
@@ -785,7 +785,7 @@ class _NodesBuilder (object):
         # return false when there are no more task processing threads
         return finished_tasks or not block
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def clear(self, nodes):
 
@@ -813,7 +813,7 @@ class _NodesBuilder (object):
         for vfile, entities in remove_entities.items():
             vfile.removeNodeEntities(entities)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
         try:
@@ -822,7 +822,7 @@ class _NodesBuilder (object):
         finally:
             self.vfiles.close()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class BuildManager (object):
@@ -840,14 +840,14 @@ class BuildManager (object):
         'explain',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self):
         self._nodes = _NodesTree()
         self._node_locker = None
         self.__reset()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __reset(self, build_always=False, explain=False):
 
@@ -861,17 +861,17 @@ class BuildManager (object):
         self.actual = 0
         self.explain = explain
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def add(self, nodes):
         self._nodes.add(nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def depends(self, node, deps):
         self._nodes.depends(node, deps)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def moduleDepends(self, node, deps):
         module_cache = self._module_cache
@@ -890,7 +890,7 @@ class BuildManager (object):
             for leaf in leafs:
                 self._nodes.depends(leaf, (dep,))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def sync(self, nodes, deep=False):
         node_locker = self._node_locker
@@ -903,7 +903,7 @@ class BuildManager (object):
         else:
             node_locker.sync(nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def lockNode(self, node):
         node_locker = self._node_locker
@@ -912,26 +912,26 @@ class BuildManager (object):
 
         return node_locker.lock(node)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def unlockNode(self, node):
         node_locker = self._node_locker
         if node_locker is not None:
             node_locker.unlock(node)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __len__(self):
         return len(self._nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def selfTest(self):
         self._nodes.selfTest()
         if self._node_locker is not None:
             self._node_locker.selfTest()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getNextNodes(self):
         tails = self._nodes.popTails()
@@ -943,7 +943,7 @@ class BuildManager (object):
 
         return tails
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def checkForceRebuild(self, node):
         built_names = self._built_node_names
@@ -958,7 +958,7 @@ class BuildManager (object):
 
         return result
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def actualNode(self, node):
         self.unlockNode(node)
@@ -967,7 +967,7 @@ class BuildManager (object):
 
         node.shrink()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def completedNode(self, node, builder_output):
         self._checkAlreadyBuilt(node)
@@ -980,7 +980,7 @@ class BuildManager (object):
 
         node.shrink()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def failedNode(self, node, error):
         self.unlockNode(node)
@@ -988,7 +988,7 @@ class BuildManager (object):
 
         eventNodeBuildingFailed(node, error)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def removedNode(self, node):
         self._nodes.removeTail(node)
@@ -998,7 +998,7 @@ class BuildManager (object):
 
         node.shrink()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getProgressStr(self):
         done = self.completed + self.actual
@@ -1009,12 +1009,12 @@ class BuildManager (object):
         progress = "%s/%s" % (processed, total)
         return progress
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
         self._nodes = _NodesTree()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _checkAlreadyBuilt(self, node):
         entities = node.getTargetEntities()
@@ -1029,7 +1029,7 @@ class BuildManager (object):
             if other_entity_sign != entity_sign:
                 eventBuildTargetTwice(entity, node)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def shrink(self, nodes):
         if not nodes:
@@ -1037,12 +1037,12 @@ class BuildManager (object):
 
         self._nodes.shrinkTo(nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getNodes(self):
         return self._nodes.getNodes()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, jobs, keep_going, nodes=None, build_always=False, explain=False, with_backtrace=True, use_sqlite=False, force_lock=False):
 
@@ -1063,30 +1063,30 @@ class BuildManager (object):
 
         return self.isOk()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isOk(self):
         return not bool(self._failed_nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def failsCount(self):
         return len(self._failed_nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def printFails(self):
         for node, error in self._failed_nodes.items():
             eventFailedNode(node, error)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def printBuildState(self):
         logInfo("Failed nodes: %s" % len(self._failed_nodes))
         logInfo("Completed nodes: %s" % self.completed)
         logInfo("Actual nodes: %s" % self.actual)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def clear(self, nodes=None, use_sqlite=False, force_lock=False):
 

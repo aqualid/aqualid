@@ -12,11 +12,11 @@ from aql.utils import findFiles, changePath, \
     relativeJoin, excludeFilesFromDirs, groupPathsByDir, \
     Chdir
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestPathUtils(AqlTestCase):
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_path_relative_join(self):
 
@@ -46,14 +46,14 @@ class TestPathUtils(AqlTestCase):
         self.assertEqual(
             relativeJoin('foo/bar', 'foo/file.txt'), os.path.normpath('foo/bar/file.txt'))
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_path_change(self):
         self.assertEqual(changePath('file0.txt', ext='.ttt'), 'file0.ttt')
         self.assertEqual(changePath('file0.txt', dirname=os.path.normpath(
             'foo/bar')), os.path.normpath('foo/bar/file0.txt'))
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_path_group_dirs(self):
         paths = list(map(os.path.normpath, [
@@ -115,7 +115,7 @@ class TestPathUtils(AqlTestCase):
         self.assertEqual(groups, _normPaths([['abc/file0.txt', 'abc/file1.txt'], [
                          'abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt'], ['abc/file6.txt']]))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_find_prog(self):
         os_env = os.environ
@@ -147,7 +147,7 @@ class TestPathUtils(AqlTestCase):
         progs = findOptionalPrograms(['route'], env={})
         self.assertTrue(progs[0].get().startswith('route'))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_find_files(self):
         path = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -158,7 +158,7 @@ class TestPathUtils(AqlTestCase):
         files2 = findFiles(path, mask='|*.pythonics|*.tdt||*.py|*.pyc')
         self.assertEqual(files2, files)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_exclude_files(self):
 
@@ -188,7 +188,7 @@ class TestPathUtils(AqlTestCase):
 
         self.assertEqual(excludeFilesFromDirs(files, dirs), result)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

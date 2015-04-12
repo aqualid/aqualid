@@ -1,33 +1,24 @@
 #
-# Copyright (c) 2011-2014 The developers of Aqualid project
+# Copyright (c) 2012-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile', 'execFile', 'removeFiles',
-    'newHash', 'dumpSimpleObject', 'simpleObjectSignature', 'objectSignature', 'dataSignature',
-    'fileSignature', 'fileTimeSignature', 'fileChecksum',
-    'loadModule', 'loadPackage',
-    'getFunctionName', 'printStacks', 'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-    'executeCommand', 'ExecCommandResult', 'getShellScriptEnv',
-    'cpuCount', 'memoryUsage',
-    'flattenList', 'simplifyValue',
-    'Chrono', 'ItemsGroups', 'groupItems'
-)
 
 import io
 import os
@@ -51,38 +42,53 @@ try:
 except ImportError:
     import pickle
 
-from aql.util_types import uStr, isString, castStr, isUnicode, toUnicode, decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
-    AqlException, SIMPLE_TYPES_SET
+from aql.util_types import uStr, isString, castStr, isUnicode, toUnicode,\
+    decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
+    SIMPLE_TYPES_SET
 
-# //===========================================================================//
+__all__ = (
+    'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile',
+    'execFile', 'removeFiles', 'newHash', 'dumpSimpleObject',
+    'simpleObjectSignature', 'objectSignature', 'dataSignature',
+    'fileSignature', 'fileTimeSignature', 'fileChecksum',
+    'loadModule', 'loadPackage',
+    'getFunctionName', 'printStacks',
+    'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
+    'executeCommand', 'ExecCommandResult', 'getShellScriptEnv',
+    'cpuCount', 'memoryUsage',
+    'flattenList', 'simplifyValue',
+    'Chrono', 'ItemsGroups', 'groupItems'
+)
+
+# ==============================================================================
 
 # noinspection PyUnusedLocal
 
 
-class ErrorInvalidExecCommand(AqlException):
+class ErrorInvalidExecCommand(Exception):
 
     def __init__(self, arg):
         msg = "Invalid type of command argument: %s(%s)" % (arg, type(arg))
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
-class ErrorFileName(AqlException):
+class ErrorFileName(Exception):
 
     def __init__(self, filename):
         msg = "Invalid file name: %s(%s)" % (filename, type(filename))
         super(type(self), self).__init__(msg)
-# //===========================================================================//
+# ==============================================================================
 
 
-class ErrorUnmarshallableObject(AqlException):
+class ErrorUnmarshallableObject(Exception):
 
     def __init__(self, obj):
         msg = "Unmarshallable object: '%s'" % (obj, )
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 if hasattr(os, 'O_NOINHERIT'):
     _O_NOINHERIT = os.O_NOINHERIT
@@ -99,10 +105,15 @@ if hasattr(os, 'O_BINARY'):
 else:
     _O_BINARY = 0
 
-# //---------------------------------------------------------------------------//
+# -------------------------------------------------------------------------------
 
 
-def openFile(filename, read=True, write=False, binary=False, sync=False, encoding=None):
+def openFile(filename,
+             read=True,
+             write=False,
+             binary=False,
+             sync=False,
+             encoding=None):
 
     if not isString(filename):
         raise ErrorFileName(filename)
@@ -140,7 +151,7 @@ def openFile(filename, read=True, write=False, binary=False, sync=False, encodin
         os.close(fd)
         raise
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def readTextFile(filename, encoding='utf-8'):
@@ -169,7 +180,7 @@ def writeBinFile(filename, data, encoding=None):
 
         f.write(data)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def execFile(filename, file_locals):
@@ -193,7 +204,7 @@ def execFile(filename, file_locals):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def dumpSimpleObject(obj):
@@ -212,33 +223,33 @@ def dumpSimpleObject(obj):
 
     return data
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def dumpObject(obj):
     return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def simpleObjectSignature(obj, common_hash=None):
     data = dumpSimpleObject(obj)
     return dataSignature(data, common_hash)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def objectSignature(obj, common_hash=None):
     data = dumpObject(obj)
     return dataSignature(data, common_hash)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def newHash(data=b''):
     return hashlib.md5(data)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def dataSignature(data, common_hash=None):
@@ -250,7 +261,7 @@ def dataSignature(data, common_hash=None):
 
     return obj_hash.digest()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def fileSignature(filename):
@@ -271,15 +282,16 @@ def fileSignature(filename):
     # print("fileSignature: %s: %s" % (filename, checksum.hexdigest()) )
     return checksum.digest()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def fileTimeSignature(filename):
     stat = os.stat(filename)
-    # print("fileTimeSignature: %s: %s" % (filename, (stat.st_size, stat.st_mtime)) )
+    # print("fileTimeSignature: %s: %s" %
+    #                           (filename, (stat.st_size, stat.st_mtime)) )
     return simpleObjectSignature((stat.st_size, stat.st_mtime))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def fileChecksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
@@ -306,7 +318,7 @@ def fileChecksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
 
     return checksum
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def getFunctionName(currentframe=inspect.currentframe):
@@ -317,12 +329,7 @@ def getFunctionName(currentframe=inspect.currentframe):
 
     return "__not_available__"
 
-    #~ try:
-    #~ raise Exception()
-    #~ except Exception as err:
-    #~ return err.__traceback__.tb_frame.f_back.f_code.co_name
-
-# //===========================================================================//
+# ==============================================================================
 
 
 def printStacks():
@@ -335,7 +342,7 @@ def printStacks():
         traceback.print_stack(stack)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 try:
     # noinspection PyUnresolvedReferences
@@ -343,20 +350,20 @@ try:
 except AttributeError:
     _getargspec = inspect.getargspec
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def getFunctionArgs(function, getargspec=_getargspec):
 
     args = getargspec(function)[:4]
 
-    if type(function) is types.MethodType:
+    if isinstance(function, types.MethodType):
         if function.__self__:
             args = tuple([args[0][1:]] + list(args[1:]))
 
     return args
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def equalFunctionArgs(function1, function2):
@@ -365,7 +372,7 @@ def equalFunctionArgs(function1, function2):
 
     return getFunctionArgs(function1)[0:3] == getFunctionArgs(function2)[0:3]
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def checkFunctionArgs(function, args, kw, getargspec=_getargspec):
@@ -408,7 +415,7 @@ def checkFunctionArgs(function, args, kw, getargspec=_getargspec):
 
     return True
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def removeFiles(files):
@@ -420,7 +427,7 @@ def removeFiles(files):
             if ex.errno != errno.ENOENT:
                 raise
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _decodeData(data):
@@ -434,10 +441,10 @@ def _decodeData(data):
 
     return data
 
-# //===========================================================================//
+# ==============================================================================
 
 
-class ExecCommandException(AqlException):
+class ExecCommandException(Exception):
     __slots__ = ('exception',)
 
     def __init__(self, cmd, exception):
@@ -449,7 +456,8 @@ class ExecCommandException(AqlException):
 
         super(type(self), self).__init__(msg)
 
-    def failed(self):
+    @staticmethod
+    def failed():
         return True
 
     def __bool__(self):
@@ -459,7 +467,7 @@ class ExecCommandException(AqlException):
         return self.failed()
 
 
-class ExecCommandResult(AqlException):
+class ExecCommandResult(Exception):
     __slots__ = ('cmd', 'status', 'output')
 
     def __init__(self, cmd, status=None, stdout=None, stderr=None):
@@ -477,7 +485,7 @@ class ExecCommandResult(AqlException):
 
         super(type(self), self).__init__()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __str__(self):
         msg = ' '.join(self.cmd)
@@ -490,7 +498,7 @@ class ExecCommandResult(AqlException):
 
         return msg
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def failed(self):
         return self.status != 0
@@ -507,10 +515,15 @@ try:
 except AttributeError:
     _MAX_CMD_LENGTH = 32000  # 32768 default for windows
 
-# //===========================================================================//
+# ==============================================================================
 
 
-def executeCommand(cmd, cwd=None, env=None, stdin=None, file_flag=None, max_cmd_length=_MAX_CMD_LENGTH):
+def executeCommand(cmd,
+                   cwd=None,
+                   env=None,
+                   stdin=None,
+                   file_flag=None,
+                   max_cmd_length=_MAX_CMD_LENGTH):
 
     cmd_file = None
     if isString(cmd):
@@ -544,23 +557,28 @@ def executeCommand(cmd, cwd=None, env=None, stdin=None, file_flag=None, max_cmd_
                            for key, value in env.items())
 
             p = subprocess.Popen(cmd, cwd=cwd, env=env, shell=shell,
-                                 stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=False)
+                                 stdin=stdin, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE,
+                                 universal_newlines=False)
+
             stdout, stderr = p.communicate()
             returncode = p.poll()
+
         except Exception as ex:
             raise ExecCommandException(cmd, exception=ex)
 
         stdout = _decodeData(stdout)
         stderr = _decodeData(stderr)
 
-        return ExecCommandResult(cmd, status=returncode, stdout=stdout, stderr=stderr)
+        return ExecCommandResult(cmd, status=returncode,
+                                 stdout=stdout, stderr=stderr)
 
     finally:
         if cmd_file is not None:
             cmd_file.close()
             removeFiles(cmd_file.name)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def getShellScriptEnv(script, args=None, _var_re=re.compile(r'^\w+=')):
@@ -587,9 +605,12 @@ def getShellScriptEnv(script, args=None, _var_re=re.compile(r'^\w+=')):
 
     try:
         p = subprocess.Popen(cmd, cwd=cwd, shell=True, env=os_env,
-                             stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=False)
+                             stdin=None, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, universal_newlines=False)
+
         stdout, stderr = p.communicate()
         status = p.poll()
+
     except Exception as ex:
         raise ExecCommandException(cmd, exception=ex)
 
@@ -614,7 +635,7 @@ def getShellScriptEnv(script, args=None, _var_re=re.compile(r'^\w+=')):
 
     return script_env
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def cpuCount():
@@ -643,7 +664,7 @@ def cpuCount():
 
     return cpu_count
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _memoryUsageSmaps():
@@ -656,7 +677,7 @@ def _memoryUsageSmaps():
 
     return private
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _memoryUsageStatm():
@@ -671,7 +692,7 @@ def _memoryUsageStatm():
 
     return private // 1024
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def memoryUsageLinux():
@@ -683,14 +704,14 @@ def memoryUsageLinux():
         except IOError:
             return memoryUsageUnix()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def memoryUsageUnix():
     res = resource.getrusage(resource.RUSAGE_SELF)
     return res.ru_maxrss
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def memoryUsageWindows():
@@ -717,7 +738,7 @@ except ImportError:
         def memoryUsage():
             return 0
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def loadModule(module_file, package_name=None):
@@ -734,7 +755,7 @@ def loadModule(module_file, package_name=None):
     module = imp.load_module(module_name, fp, pathname, description)
     return module
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def loadPackage(path, name=None, generate_name=False):
@@ -751,7 +772,7 @@ def loadPackage(path, name=None, generate_name=False):
     package = imp.load_module(name, fp, pathname, description)
     return package
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def flattenList(seq):
@@ -776,12 +797,14 @@ def flattenList(seq):
 
     return out_list
 
-# //===========================================================================//
+# ==============================================================================
 
 _SIMPLE_SEQUENCES = (list, tuple, UniqueList, set, frozenset)
 
 
-def simplifyValue(value, simple_types=SIMPLE_TYPES_SET, simple_lists=_SIMPLE_SEQUENCES):
+def simplifyValue(value,
+                  simple_types=SIMPLE_TYPES_SET,
+                  simple_lists=_SIMPLE_SEQUENCES):
 
     if value is None:
         return None
@@ -808,7 +831,7 @@ def simplifyValue(value, simple_types=SIMPLE_TYPES_SET, simple_lists=_SIMPLE_SEQ
 
     return value
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Chrono (object):
@@ -851,7 +874,7 @@ class Chrono (object):
 
         return ' '.join(result)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ItemsGroups(object):
@@ -881,7 +904,7 @@ class ItemsGroups(object):
         self.tail_size = size
         self.groups = [[]]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addGroup(self):
 
@@ -897,7 +920,7 @@ class ItemsGroups(object):
         self.groups.append(group_files)
         return group_files
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def add(self, item):
         group_files = self.groups[-1]
@@ -907,7 +930,7 @@ class ItemsGroups(object):
         group_files.append(item)
         self.tail_size -= 1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         groups = self.groups
@@ -916,7 +939,7 @@ class ItemsGroups(object):
 
         return groups
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def groupItems(items, wish_groups=1, max_group_size=-1):

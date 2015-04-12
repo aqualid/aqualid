@@ -28,7 +28,7 @@ from aql.utils import DataFile, SqlDataFile, FileLock
 
 from .aql_entity_pickler import EntityPickler
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorEntitiesFileUnknownEntity(AqlException):
@@ -37,7 +37,7 @@ class ErrorEntitiesFileUnknownEntity(AqlException):
         msg = "Unknown entity: %s" % (entity, )
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class EntitiesFile (object):
@@ -56,18 +56,18 @@ class EntitiesFile (object):
         self.pickler = EntityPickler()
         self.open(filename, use_sqlite=use_sqlite, force=force)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def __enter__(self):
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_entity, traceback):
         self.close()
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def open(self, filename, use_sqlite=False, force=False):
 
@@ -79,7 +79,7 @@ class EntitiesFile (object):
         else:
             self.data_file = DataFile(filename, force=force)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def close(self):
 
@@ -92,7 +92,7 @@ class EntitiesFile (object):
 
         self.file_lock.releaseLock()
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def clear(self):
 
@@ -101,7 +101,7 @@ class EntitiesFile (object):
 
         self.cache.clear()
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def findNodeEntity(self, entity):
 
@@ -121,19 +121,19 @@ class EntitiesFile (object):
 
         return entity
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def addNodeEntity(self, entity):
         dump = self.pickler.dumps(entity)
         self.data_file.write(entity.id, dump)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def removeNodeEntities(self, entities):
         entity_ids = map(operator.attrgetter('id'), entities)
         self.data_file.remove(entity_ids)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def _findEntityById(self, entity_id):
         try:
@@ -156,7 +156,7 @@ class EntitiesFile (object):
         self.cache[entity_id] = entity
         return entity
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def findEntitiesByKey(self, keys):
         entity_ids = self.data_file.get_ids(keys)
@@ -168,7 +168,7 @@ class EntitiesFile (object):
         except Exception:
             return None
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def findEntities(self, entities):
         try:
@@ -176,7 +176,7 @@ class EntitiesFile (object):
         except Exception:
             return None
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def addEntities(self, entities):
 
@@ -205,7 +205,7 @@ class EntitiesFile (object):
 
         return keys
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def updateEntity(self, entity):
 
@@ -217,7 +217,7 @@ class EntitiesFile (object):
 
         return key
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def removeEntities(self, entities):
         remove_ids = tuple(map(operator.attrgetter('id'), entities))
@@ -230,7 +230,7 @@ class EntitiesFile (object):
 
         self.data_file.remove(remove_ids)
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def selfTest(self):
         if self.data_file is None:

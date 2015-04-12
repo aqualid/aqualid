@@ -33,7 +33,7 @@ from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, 
 from .aql_project import Project, ProjectConfig
 from .aql_info import getAqlInfo, dumpAqlInfo
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
@@ -50,7 +50,7 @@ def eventReadingScriptsDone(settings, elapsed):
 def eventAqlError(settings, error):
     logError(error)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
@@ -63,14 +63,14 @@ def eventBuildingDone(settings, success, elapsed):
     status = "finished" if success else "failed"
     logInfo("Building targets %s (%s)" % (status, elapsed))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @eventStatus
 def eventBuildSummary(settings, elapsed):
     logInfo("Total time: %s" % elapsed)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _findMakeScript(script):
@@ -90,7 +90,7 @@ def _findMakeScript(script):
 
     return script
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _startMemoryTracing():
@@ -101,7 +101,7 @@ def _startMemoryTracing():
 
     tracemalloc.start()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _stopMemoryTracing():
@@ -116,7 +116,7 @@ def _stopMemoryTracing():
 
     tracemalloc.stop()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _logMemoryTop(snapshot, group_by='lineno', limit=30):
@@ -152,7 +152,7 @@ def _logMemoryTop(snapshot, group_by='lineno', limit=30):
     total = sum(stat.size for stat in top_stats)
     logInfo("Total allocated size: %.1f KiB" % (total / 1024))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _printMemoryStatus():
@@ -167,7 +167,7 @@ def _printMemoryStatus():
     logInfo("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb" %
             (num_objects, obj_mem_usage / 1024, mem_usage))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _setBuildDir(options, makefile):
@@ -178,7 +178,7 @@ def _setBuildDir(options, makefile):
     makefile_dir = os.path.abspath(os.path.dirname(makefile))
     options.build_dir = os.path.join(makefile_dir, build_dir)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _main(prj_cfg):
@@ -250,7 +250,7 @@ def _main(prj_cfg):
 
     return status
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _patchSysModules():
@@ -262,7 +262,7 @@ def _patchSysModules():
         if aql_module is not None:
             sys.modules.setdefault('aql', aql_module)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def main():
@@ -310,4 +310,4 @@ def main():
 
     return status
 
-# //===========================================================================//
+# ==============================================================================

@@ -8,21 +8,21 @@ sys.path.insert(
 from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import TaskManager, TaskResult
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _doAppend(arg, results, delay=0):
     time.sleep(delay)
     results.add(arg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _doFail(delay=0):
     time.sleep(delay)
     raise Exception()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestTaskManager(AqlTestCase):
@@ -49,7 +49,7 @@ class TestTaskManager(AqlTestCase):
         self.assertEqual(done_tasks, expected_tasks)
         self.assertEqual(results, set(range(num_of_tasks)))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_task_manager_fail(self):
 
@@ -74,7 +74,7 @@ class TestTaskManager(AqlTestCase):
             self.assertEqual(t.task_id, i)
             self.assertIsNotNone(t.error)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_task_manager_stop(self):
 
@@ -98,7 +98,7 @@ class TestTaskManager(AqlTestCase):
         self.assertEqual(len(done_tasks), jobs)
         self.assertEqual(results, set(done_tasks))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_task_manager_one_fail(self):
         tm = TaskManager(4)
@@ -128,7 +128,7 @@ class TestTaskManager(AqlTestCase):
 
         self.assertEqual(done_tasks[2], expected_tasks[2])
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_task_manager_stop_on_fail(self):
         num_tasks = 8
@@ -162,7 +162,7 @@ class TestTaskManager(AqlTestCase):
         self.assertEqual(done_tasks[3].task_id, 3)
         self.assertIsNotNone(done_tasks[3].error)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

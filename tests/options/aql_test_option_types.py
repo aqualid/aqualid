@@ -12,12 +12,12 @@ from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionT
     ErrorOptionTypeUnableConvertValue, ErrorOptionTypeNoEnumValues
 from aql.util_types import IgnoreCaseString, UpperCaseString, Dict, FilePath
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestOptionTypes(AqlTestCase):
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_bool_option(self):
         debug_symbols = BoolOptionType(
@@ -103,7 +103,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(str(bt(1)), 'True')
         self.assertEqual(str(bt('disabled')), 'False')
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_enum_option(self):
         optimization = EnumOptionType(values=(('off', 0), ('size', 1), ('speed', 2)),
@@ -139,7 +139,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(sorted(optimization.range()), sorted(
             ['slow', 'off', 'ultra', 'speed', 'final', 'size']))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_enum_option_int(self):
         optimization = EnumOptionType(values=((0, 10), (1, 100), (2, 1000)),
@@ -161,7 +161,7 @@ class TestOptionTypes(AqlTestCase):
         et = EnumOptionType(values=[])
         self.assertRaises(ErrorOptionTypeNoEnumValues, et)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_enum_option_strict(self):
         optimization = EnumOptionType(values=((0, 10), (1, 100), (2, 1000)),
@@ -179,7 +179,7 @@ class TestOptionTypes(AqlTestCase):
         et = EnumOptionType(values=[], strict=False)
         self.assertEqual(et(), '')
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_range_option(self):
         warn_level = RangeOptionType(min_value=0, max_value=5, coerce=False,
@@ -219,7 +219,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertRaises(ErrorOptionTypeUnableConvertValue,
                           warn_level.setRange, min_value=None, max_value="efg")
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_str_option(self):
         range_help = "<Case-insensitive string>"
@@ -234,7 +234,7 @@ class TestOptionTypes(AqlTestCase):
 
         self.assertEqual(opt1.helpRange(), [range_help])
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_int_option(self):
         opt1 = OptionType(
@@ -292,7 +292,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(
             set([opt1(7), opt1(5)]), set([opt1(5), opt1(7), opt1(5)]))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_path_option(self):
         opt1 = OptionType(
@@ -304,7 +304,7 @@ class TestOptionTypes(AqlTestCase):
 
         self.assertEqual(opt1.helpRange(), [])
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_list_option(self):
         opt1 = ListOptionType(
@@ -338,7 +338,7 @@ class TestOptionTypes(AqlTestCase):
         on = ListOptionType(value_type=int)
         self.assertEqual(on.helpRange(), [])
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_dict_option(self):
         opt1 = OptionType(value_type=dict)
@@ -382,7 +382,7 @@ class TestOptionTypes(AqlTestCase):
             map(os.path.normpath, ['/work/bin', '/usr/bin', '/usr/local/bin'])))
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

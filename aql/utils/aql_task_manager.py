@@ -1,37 +1,40 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'TaskManager', 'TaskResult'
-)
 
 import threading
 import traceback
-
-from .aql_logging import logWarning
 
 try:
     import queue
 except ImportError:
     import Queue as queue  # python 2
 
-# //===========================================================================//
+from .aql_logging import logWarning
+
+__all__ = (
+    'TaskManager', 'TaskResult'
+)
+
+# ==============================================================================
 
 
 class _StopException(Exception):
@@ -55,7 +58,7 @@ class _StopTask(object):
 
 _stop_task = _StopTask()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _Task(object):
@@ -68,7 +71,8 @@ class _Task(object):
     )
 
     def __init__(self, priority, task_id, func, args, kw):
-        self.priority, self.task_id, self.func, self.args, self.kw = priority, task_id, func, args, kw
+        self.priority, self.task_id, self.func, self.args, self.kw =\
+            priority, task_id, func, args, kw
 
     def __lt__(self, other):
         if isinstance(other, _StopTask):
@@ -79,7 +83,7 @@ class _Task(object):
     def __call__(self):
         return self.func(*self.args, **self.kw)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TaskResult (object):
@@ -91,23 +95,31 @@ class TaskResult (object):
         self.error = error
 
     def __lt__(self, other):
-        return (self.task_id, self.result, self.error) < (other.task_id, other.result, other.error)
+        return (self.task_id, self.result, self.error) < \
+               (other.task_id, other.result, other.error)
 
     def __eq__(self, other):
-        return (self.task_id, self.result, self.error) == (other.task_id, other.result, other.error)
+        return (self.task_id, self.result, self.error) == \
+               (other.task_id, other.result, other.error)
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __str__(self):
-        return "task_id: %s, result: %s, error: %s" % (self.task_id, self.result, self.error)
+        return "task_id: %s, result: %s, error: %s" %\
+               (self.task_id, self.result, self.error)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _TaskExecutor(threading.Thread):
 
-    def __init__(self, tasks, finished_tasks, stop_on_error, stop_event, with_backtrace):
+    def __init__(self,
+                 tasks,
+                 finished_tasks,
+                 stop_on_error,
+                 stop_event,
+                 with_backtrace):
 
         super(_TaskExecutor, self).__init__()
 
@@ -121,7 +133,7 @@ class _TaskExecutor(threading.Thread):
 
         self.start()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def run(self):
 
@@ -170,7 +182,7 @@ class _TaskExecutor(threading.Thread):
 
                 tasks.task_done()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TaskManager (object):
@@ -186,7 +198,7 @@ class TaskManager (object):
         'with_backtrace',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, num_threads, stop_on_fail=False, with_backtrace=True):
         self.tasks = queue.PriorityQueue()
@@ -200,7 +212,7 @@ class TaskManager (object):
 
         self.start(num_threads)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def start(self, num_threads):
         with self.lock:
@@ -213,11 +225,14 @@ class TaskManager (object):
 
             while num_threads > 0:
                 num_threads -= 1
-                t = _TaskExecutor(
-                    self.tasks, self.finished_tasks, self.stop_on_error, self.stop_event, self.with_backtrace)
+                t = _TaskExecutor(self.tasks,
+                                  self.finished_tasks,
+                                  self.stop_on_error,
+                                  self.stop_event,
+                                  self.with_backtrace)
                 threads.append(t)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __stop(self):
         threads = self.threads
@@ -234,14 +249,14 @@ class TaskManager (object):
         self.tasks = queue.PriorityQueue()
         self.stop_event.clear()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def stop(self):
         self.stop_event.set()
         with self.lock:
             self.__stop()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addTask(self, priority, task_id, function, *args, **kw):
         with self.lock:
@@ -250,7 +265,7 @@ class TaskManager (object):
             if task_id is not None:
                 self.unfinished_tasks += 1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def finishedTasks(self, block=True):
         result = []

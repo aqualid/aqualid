@@ -1,29 +1,24 @@
 #
-# Copyright (c) 2011-2014 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
-    'eventWarning',  'eventStatus',  'eventDebug', 'eventError',
-    'eventHandler', 'disableEvents', 'enableEvents', 'EventSettings', 'setEventSettings',
-    'disableDefaultHandlers', 'enableDefaultHandlers', 'addUserHandler', 'removeUserHandler',
-    'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined', 'ErrorEventHandlerUnknownEvent',
-)
 
 import types
 import itertools
@@ -32,7 +27,17 @@ from aql.util_types import toSequence, AqlException
 
 from .aql_utils import equalFunctionArgs
 
-# //===========================================================================//
+__all__ = (
+    'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
+    'eventWarning',  'eventStatus',  'eventDebug', 'eventError',
+    'eventHandler', 'disableEvents', 'enableEvents', 'EventSettings',
+    'setEventSettings', 'disableDefaultHandlers', 'enableDefaultHandlers',
+    'addUserHandler', 'removeUserHandler',
+    'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined',
+    'ErrorEventHandlerUnknownEvent',
+)
+
+# ==============================================================================
 
 EVENT_ERROR, \
     EVENT_WARNING, \
@@ -40,7 +45,7 @@ EVENT_ERROR, \
     EVENT_DEBUG, \
     = EVENT_ALL = tuple(range(4))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorEventUserHandlerWrongArgs (AqlException):
@@ -50,17 +55,17 @@ class ErrorEventUserHandlerWrongArgs (AqlException):
             event, handler)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorEventHandlerAlreadyDefined (AqlException):
 
     def __init__(self, event, handler, other_handler):
-        msg = "Duplicate event '%s' definition to default handlers: '%s', '%s'" % (
-            event, handler, other_handler)
+        msg = "Default event '%s' handler is defined twice: '%s', '%s'" % \
+              (event, handler, other_handler)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorEventHandlerUnknownEvent (AqlException):
@@ -69,7 +74,7 @@ class ErrorEventHandlerUnknownEvent (AqlException):
         msg = "Unknown event: '%s'" % (event,)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class EventSettings(object):
@@ -84,7 +89,7 @@ class EventSettings(object):
         self.with_output = with_output
         self.trace_exec = trace_exec
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class EventManager(object):
@@ -97,7 +102,7 @@ class EventManager(object):
         'settings',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self):
         self.default_handlers = {}
@@ -106,7 +111,7 @@ class EventManager(object):
         self.disable_defaults = False
         self.settings = EventSettings()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addDefaultHandler(self, handler, importance_level, event=None):
         if not event:
@@ -117,7 +122,7 @@ class EventManager(object):
         if other != pair:
             raise ErrorEventHandlerAlreadyDefined(event, other[0], handler)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addUserHandler(self, user_handler, event=None):
 
@@ -134,7 +139,7 @@ class EventManager(object):
 
         self.user_handlers.setdefault(event, []).append(user_handler)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def removeUserHandler(self, user_handlers):
 
@@ -145,7 +150,7 @@ class EventManager(object):
                 except ValueError:
                     pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def sendEvent(self, event, *args, **kw):
 
@@ -163,7 +168,7 @@ class EventManager(object):
         for handler in itertools.chain(user_handlers, default_handlers):
             handler(*args, **kw)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getEvents(self, event_filters):
         events = set()
@@ -179,7 +184,7 @@ class EventManager(object):
 
         return events
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def enableEvents(self, event_filters, enable):
 
@@ -190,19 +195,19 @@ class EventManager(object):
         else:
             self.ignored_events.update(events)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def enableDefaultHandlers(self, enable):
         self.disable_defaults = not enable
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setSettings(self, settings):
         self.settings = settings
 
 _event_manager = EventManager()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _eventImpl(handler, importance_level, event=None):
@@ -217,21 +222,25 @@ def _eventImpl(handler, importance_level, event=None):
 
     return _sendEvent
 
-# //===========================================================================//
+# ==============================================================================
 
 
-def eventError(handler): return _eventImpl(handler, EVENT_ERROR)
+def eventError(handler):
+    return _eventImpl(handler, EVENT_ERROR)
 
 
-def eventWarning(handler): return _eventImpl(handler, EVENT_WARNING)
+def eventWarning(handler):
+    return _eventImpl(handler, EVENT_WARNING)
 
 
-def eventStatus(handler): return _eventImpl(handler, EVENT_STATUS)
+def eventStatus(handler):
+    return _eventImpl(handler, EVENT_STATUS)
 
 
-def eventDebug(handler): return _eventImpl(handler, EVENT_DEBUG)
+def eventDebug(handler):
+    return _eventImpl(handler, EVENT_DEBUG)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def eventHandler(event=None):
@@ -246,46 +255,46 @@ def eventHandler(event=None):
 
     return _eventHandlerImpl
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def setEventSettings(settings):
     _event_manager.setSettings(settings)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def enableEvents(event_filters):
     _event_manager.enableEvents(event_filters, True)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def disableEvents(event_filters):
     _event_manager.enableEvents(event_filters, False)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def disableDefaultHandlers():
     _event_manager.enableDefaultHandlers(False)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def enableDefaultHandlers():
     _event_manager.enableDefaultHandlers(True)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def addUserHandler(handler, event=None):
     _event_manager.addUserHandler(handler, event)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def removeUserHandler(handler):
     _event_manager.removeUserHandler(handler)
 
-# //===========================================================================//
+# ==============================================================================

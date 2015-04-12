@@ -19,7 +19,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = ('DataFile', )
 
 import io
 import operator
@@ -28,7 +27,9 @@ import mmap
 
 from .aql_utils import openFile
 
-# //===========================================================================//
+__all__ = ('DataFile', )
+
+# ==============================================================================
 
 
 class ErrorDataFileFormatInvalid(Exception):
@@ -37,7 +38,7 @@ class ErrorDataFileFormatInvalid(Exception):
         msg = "Data file format is not valid."
         super(ErrorDataFileFormatInvalid, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorDataFileChunkInvalid(Exception):
@@ -46,7 +47,7 @@ class ErrorDataFileChunkInvalid(Exception):
         msg = "Data file chunk format is not valid."
         super(ErrorDataFileChunkInvalid, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorDataFileVersionInvalid(Exception):
@@ -55,7 +56,7 @@ class ErrorDataFileVersionInvalid(Exception):
         msg = "Data file version is changed."
         super(ErrorDataFileVersionInvalid, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorDataFileCorrupted(Exception):
@@ -64,7 +65,7 @@ class ErrorDataFileCorrupted(Exception):
         msg = "Data file is corrupted"
         super(ErrorDataFileCorrupted, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _MmapFile(object):
@@ -87,19 +88,19 @@ class _MmapFile(object):
         self.resize = memmap.resize
         self.flush = memmap.flush
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
         self.memmap.flush()
         self.memmap.close()
         self.stream.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def read(self, offset, size):
         return self.memmap[offset: offset + size]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def write(self, offset, data):
         memmap = self.memmap
@@ -115,7 +116,7 @@ class _MmapFile(object):
 
         memmap[offset: end_offset] = data
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def move(self, dest, src, size):
         memmap = self.memmap
@@ -126,7 +127,7 @@ class _MmapFile(object):
 
         memmap.move(dest, src, size)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _IOFile(object):
@@ -138,26 +139,26 @@ class _IOFile(object):
         self.resize = stream.truncate
         self.flush = stream.flush
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
         self.stream.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def read(self, offset, size):
         stream = self.stream
         stream.seek(offset)
         return stream.read(size)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def write(self, offset, data):
         stream = self.stream
         stream.seek(offset)
         stream.write(data)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def move(self, dest, src, size):
         stream = self.stream
@@ -166,12 +167,12 @@ class _IOFile(object):
         stream.seek(dest)
         stream.write(data)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def size(self, io_SEEK_END=io.SEEK_END):
         return self.stream.seek(0, io_SEEK_END)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class MetaData (object):
@@ -190,7 +191,7 @@ class MetaData (object):
     _META_STRUCT = struct.Struct(">Q16sLL")
     size = _META_STRUCT.size
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, meta_offset, key, data_id, data_offset, data_size):
 
@@ -201,13 +202,13 @@ class MetaData (object):
         self.data_size = data_size
         self.data_capacity = data_size + 4
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def dump(self, meta_struct=_META_STRUCT):
         return meta_struct.pack(self.key, self.id,
                                 self.data_size, self.data_capacity)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def load(cls, dump, meta_struct=_META_STRUCT):
@@ -228,7 +229,7 @@ class MetaData (object):
 
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def resize(self, data_size):
 
@@ -242,12 +243,12 @@ class MetaData (object):
 
         return self.data_capacity - capacity
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __repr__(self):
         return self.__str__()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __str__(self):
         s = []
@@ -256,7 +257,7 @@ class MetaData (object):
 
         return ", ".join(s)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class DataFile (object):
@@ -315,7 +316,7 @@ class DataFile (object):
 
     _META_TABLE_OFFSET = _META_TABLE_HEADER_OFFSET + _META_TABLE_HEADER_SIZE
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, filename, force=False):
 
@@ -325,10 +326,11 @@ class DataFile (object):
         self.data_begin = 0
         self.data_end = 0
         self.handle = None
+        self.next_key = None
 
         self.open(filename, force=force)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def open(self, filename, force=False):
         self.close()
@@ -344,7 +346,7 @@ class DataFile (object):
 
         self._init_meta_table()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def close(self):
 
@@ -359,7 +361,7 @@ class DataFile (object):
             self.data_end = 0
             self.next_key = None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def clear(self):
 
@@ -370,7 +372,7 @@ class DataFile (object):
         self.id2data.clear()
         self.key2id.clear()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __enter__(self):
         return self
@@ -378,7 +380,7 @@ class DataFile (object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _init_header(self, force, header_struct=_HEADER_STRUCT):
 
@@ -398,15 +400,18 @@ class DataFile (object):
             if (header and header != b'\0') and not force:
                 raise ErrorDataFileFormatInvalid()
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
         # init the file
         header = header_struct.pack(self.MAGIC_TAG, self.VERSION)
         self.handle.resize(len(header))
         self.handle.write(0, header)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
-    def _key_generator(self, key_offset=_KEY_OFFSET, key_struct=_KEY_STRUCT, MAX_KEY=(2 ** 64) - 1):
+    def _key_generator(self,
+                       key_offset=_KEY_OFFSET,
+                       key_struct=_KEY_STRUCT,
+                       MAX_KEY=(2 ** 64) - 1):
 
         key_dump = self.handle.read(key_offset, key_struct.size)
         try:
@@ -427,7 +432,7 @@ class DataFile (object):
             write_file(key_offset, key_pack(next_key))
             yield next_key
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _reset_meta_table(self,
                           meta_size=MetaData.size,
@@ -439,7 +444,7 @@ class DataFile (object):
 
         self._truncate_file()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _truncate_file(self,
                        table_header_struct=_META_TABLE_HEADER_STRUCT,
@@ -451,11 +456,13 @@ class DataFile (object):
 
         handle.resize(self.data_end)
         handle.write(table_header_offset, header_dump)
-        # handle.write( self.meta_end, bytearray(self.data_begin - self.meta_end) )
+
+        # handle.write( self.meta_end,
+        #               bytearray(self.data_begin - self.meta_end) )
         handle.write(self.meta_end, b'\0' * (self.data_begin - self.meta_end))
         handle.flush()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _init_meta_table(self,
                          table_header_struct=_META_TABLE_HEADER_STRUCT,
@@ -492,7 +499,7 @@ class DataFile (object):
 
         self._load_meta_table(data_begin, dump)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _load_meta_table(self, data_offset, metas_dump,
                          meta_size=MetaData.size,
@@ -539,7 +546,7 @@ class DataFile (object):
         self.meta_end = pos + table_begin
         self.data_end = data_offset
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _extend_meta_table(self,
                            table_header_struct=_META_TABLE_HEADER_STRUCT,
@@ -567,7 +574,7 @@ class DataFile (object):
         for meta in self.id2data.values():
             meta.data_offset += table_capacity
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _extend_data(self, meta, oversize):
         new_next_data = meta.data_offset + meta.data_capacity
@@ -582,7 +589,7 @@ class DataFile (object):
 
         self.data_end += oversize
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _append(self, key, data_id, data,
                 meta_size=MetaData.size):
@@ -605,7 +612,7 @@ class DataFile (object):
 
         self.id2data[data_id] = meta
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _update(self, meta, data, update_meta):
 
@@ -624,7 +631,7 @@ class DataFile (object):
 
         write(meta.data_offset, data)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def read(self, data_id):
         try:
@@ -634,7 +641,7 @@ class DataFile (object):
 
         return self.handle.read(meta.data_offset, meta.data_size)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def write(self, data_id, data):
 
@@ -644,7 +651,7 @@ class DataFile (object):
         except KeyError:
             self._append(0, data_id, data)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def write_with_key(self, data_id, data):
 
@@ -667,7 +674,7 @@ class DataFile (object):
 
         return key
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get_ids(self, keys):
         try:
@@ -675,13 +682,13 @@ class DataFile (object):
         except KeyError:
             return None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get_keys(self, data_ids):
         return map(operator.attrgetter('key'),
                    map(self.id2data.__getitem__, data_ids))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def remove(self, data_ids):
 
@@ -763,7 +770,7 @@ class DataFile (object):
         self.handle.write(self.meta_end, b'\0' * meta_shift)
         self.handle.resize(self.data_end)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def selfTest(self):
 
@@ -773,18 +780,18 @@ class DataFile (object):
         file_size = self.handle.size()
 
         if self.data_begin > file_size:
-            raise AssertionError(
-                "data_begin(%s) > file_size(%s)" % (self.data_begin, file_size))
+            raise AssertionError("data_begin(%s) > file_size(%s)" %
+                                 (self.data_begin, file_size))
 
         if self.data_begin > self.data_end:
-            raise AssertionError(
-                "data_end(%s) > data_end(%s)" % (self.data_begin, self.data_end))
+            raise AssertionError("data_end(%s) > data_end(%s)" %
+                                 (self.data_begin, self.data_end))
 
         if self.meta_end > self.data_begin:
-            raise AssertionError(
-                "meta_end(%s) > data_begin(%s)" % (self.meta_end, self.data_begin))
+            raise AssertionError("meta_end(%s) > data_begin(%s)" %
+                                 (self.meta_end, self.data_begin))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         header_dump = self.handle.read(
             self._META_TABLE_HEADER_OFFSET, self._META_TABLE_HEADER_SIZE)
@@ -796,10 +803,10 @@ class DataFile (object):
             return
 
         if self.data_begin != data_begin:
-            raise AssertionError(
-                "self.data_begin(%s) != data_begin(%s)" % (self.data_begin, data_begin))
+            raise AssertionError("self.data_begin(%s) != data_begin(%s)" %
+                                 (self.data_begin, data_begin))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         items = sorted(self.id2data.items(), key=lambda item: item[1].offset)
 
@@ -814,70 +821,79 @@ class DataFile (object):
             if meta.key != 0:
                 if self.key2id[meta.key] != data_id:
                     raise AssertionError(
-                        "self.key2id[ meta.key ](%s) != data_id(%s)" % (self.key2id[meta.key], data_id))
+                        "self.key2id[ meta.key ](%s) != data_id(%s)" %
+                        (self.key2id[meta.key], data_id))
 
             if meta.data_capacity < meta.data_size:
-                raise AssertionError("meta.data_capacity(%s) < meta.data_size (%s)" % (
-                    meta.data_capacity, meta.data_size))
+                raise AssertionError(
+                    "meta.data_capacity(%s) < meta.data_size (%s)" %
+                    (meta.data_capacity, meta.data_size))
 
             if meta.offset >= self.meta_end:
-                raise AssertionError(
-                    "meta.offset(%s) >= self.meta_end(%s)" % (meta.offset, self.meta_end))
+                raise AssertionError("meta.offset(%s) >= self.meta_end(%s)" %
+                                     (meta.offset, self.meta_end))
 
             if meta.offset != last_meta_offset:
                 raise AssertionError(
-                    "meta.offset(%s) != last_meta_offset(%s)" % (meta.offset, last_meta_offset))
+                    "meta.offset(%s) != last_meta_offset(%s)" %
+                    (meta.offset, last_meta_offset))
 
             if meta.data_offset != last_data_offset:
-                raise AssertionError("meta.data_offset(%s) != last_data_offset(%s)" % (
-                    meta.data_offset, last_data_offset))
+                raise AssertionError(
+                    "meta.data_offset(%s) != last_data_offset(%s)" %
+                    (meta.data_offset, last_data_offset))
 
             if meta.data_offset >= self.data_end:
                 raise AssertionError(
-                    "meta.data_offset(%s) >= self.data_end(%s)" % (meta.data_offset, self.data_end))
+                    "meta.data_offset(%s) >= self.data_end(%s)" %
+                    (meta.data_offset, self.data_end))
 
             if (meta.data_offset + meta.data_size) > file_size:
-                raise AssertionError("(meta.data_offset + meta.data_size)(%s) > file_size(%s)" % (
-                    (meta.data_offset + meta.data_size), file_size))
+                raise AssertionError(
+                    "(meta.data_offset + meta.data_size)(%s) > file_size(%s)" %
+                    ((meta.data_offset + meta.data_size), file_size))
 
             last_data_offset += meta.data_capacity
             last_meta_offset += MetaData.size
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         if last_meta_offset != self.meta_end:
-            raise AssertionError(
-                "last_meta_offset(%s) != self.meta_end(%s)" % (last_meta_offset, self.meta_end))
+            raise AssertionError("last_meta_offset(%s) != self.meta_end(%s)" %
+                                 (last_meta_offset, self.meta_end))
 
         if last_data_offset != self.data_end:
-            raise AssertionError(
-                "last_data_offset(%s) != self.data_end(%s)" % (last_data_offset, self.data_end))
+            raise AssertionError("last_data_offset(%s) != self.data_end(%s)" %
+                                 (last_data_offset, self.data_end))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         for key, data_id in self.key2id.items():
             if key != self.id2data[data_id].key:
                 raise AssertionError(
-                    "key(%s) != self.id2data[ data_id ].key(%s)" % (key, self.id2data[data_id].key))
+                    "key(%s) != self.id2data[ data_id ].key(%s)" %
+                    (key, self.id2data[data_id].key))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         for data_id, meta in self.id2data.items():
             meta_dump = self.handle.read(meta.offset, MetaData.size)
             stored_meta = MetaData.load(meta_dump)
 
             if meta.key != stored_meta.key:
-                raise AssertionError(
-                    "meta.key(%s) != stored_meta.key(%s)" % (meta.key, stored_meta.key))
+                raise AssertionError("meta.key(%s) != stored_meta.key(%s)" %
+                                     (meta.key, stored_meta.key))
 
             if meta.id != stored_meta.id:
-                raise AssertionError(
-                    "meta.id(%s) != stored_meta.id(%s)" % (meta.id, stored_meta.id))
+                raise AssertionError("meta.id(%s) != stored_meta.id(%s)" %
+                                     (meta.id, stored_meta.id))
 
             if meta.data_size != stored_meta.data_size:
-                raise AssertionError("meta.data_size(%s) != stored_meta.data_size(%s)" % (
-                    meta.data_size, stored_meta.data_size))
+                raise AssertionError(
+                    "meta.data_size(%s) != stored_meta.data_size(%s)" %
+                    (meta.data_size, stored_meta.data_size))
 
             if meta.data_capacity != stored_meta.data_capacity:
-                raise AssertionError("meta.data_capacity(%s) != stored_meta.data_capacity(%s)" % (
-                    meta.data_capacity, stored_meta.data_capacity))
+                raise AssertionError(
+                    "meta.data_capacity(%s) != stored_meta.data_capacity(%s)" %
+                    (meta.data_capacity, stored_meta.data_capacity))

@@ -15,18 +15,18 @@ from aql.options import builtinOptions
 from aql.main import Project, ProjectConfig
 from aql.main.aql_builtin_tools import ExecuteCommandBuilder
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestBuiltinTools(AqlTestCase):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     # noinspection PyUnusedLocal
     def eventNodeBuilding(self, settings, node):
         self.building_started += 1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setUp(self):
         super(TestBuiltinTools, self).setUp()
@@ -35,14 +35,14 @@ class TestBuiltinTools(AqlTestCase):
         self.building_started = 0
         addUserHandler(self.eventNodeBuilding)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def tearDown(self):
         removeUserHandler(self.eventNodeBuilding)
 
         super(TestBuiltinTools, self).tearDown()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _build(self, bm, **kw):
         is_ok = bm.build(**kw)
@@ -51,7 +51,7 @@ class TestBuiltinTools(AqlTestCase):
 
         self.assertTrue(is_ok)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_exec(self):
 
@@ -94,7 +94,7 @@ class TestBuiltinTools(AqlTestCase):
             finally:
                 bm.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_copy_files(self):
 
@@ -122,7 +122,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 self.buildPrj(prj, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_exec_method(self):
 
@@ -168,7 +168,7 @@ class TestBuiltinTools(AqlTestCase):
                 sources, method=CopyFileExt, args=('.cxx',))
             self.buildPrj(prj, len(sources))
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             for src in sources:
                 self.assertTrue(
@@ -182,7 +182,7 @@ class TestBuiltinTools(AqlTestCase):
                 self.assertFalse(
                     os.path.isfile(os.path.splitext(src)[0] + '.cxx'))
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             prj.tools.ExecuteMethod(
                 sources, method=CopyFileExt, args=('.cxx',))
@@ -200,7 +200,7 @@ class TestBuiltinTools(AqlTestCase):
                 self.assertTrue(
                     os.path.isfile(os.path.splitext(src)[0] + '.cxx'))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_node_filter_dirname(self):
 
@@ -234,7 +234,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 self.buildPrj(prj, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_copy_file_as(self):
 
@@ -260,7 +260,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 self.buildPrj(prj, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_write_file(self):
 
@@ -286,7 +286,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 self.buildPrj(prj, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_zip_files(self):
 
@@ -326,7 +326,7 @@ class TestBuiltinTools(AqlTestCase):
                 self.buildPrj(prj, 1)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

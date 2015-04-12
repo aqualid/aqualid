@@ -14,7 +14,7 @@ from aql.options import builtinOptions
 from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
 from aql.nodes import Node, Builder, FileBuilder
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _splitNodes(items):
@@ -28,12 +28,12 @@ def _splitNodes(items):
 
     return nodes, values
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ChecksumBuilder (Builder):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, options):
         self.signature = b''
@@ -49,7 +49,7 @@ class ChecksumBuilder (Builder):
             targets.add(chcksum.digest())
             targets.addSideEffects(chcksum_sha512.digest())
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CopyBuilder (FileBuilder):
@@ -60,7 +60,7 @@ class CopyBuilder (FileBuilder):
         self.ext = ext
         self.iext = iext
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         target_values = []
@@ -83,7 +83,7 @@ class CopyBuilder (FileBuilder):
         targets.addSideEffects(itarget_values)
         targets.addImplicitDeps(idep)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def buildBatch(self, source_entities, targets):
 
@@ -103,7 +103,7 @@ class CopyBuilder (FileBuilder):
             src_targets.addSideEffects(new_iname)
             src_targets.addImplicitDeps(idep)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestNodes(AqlTestCase):
@@ -134,7 +134,7 @@ class TestNodes(AqlTestCase):
                 options = builtinOptions()
                 builder = ChecksumBuilder(options)
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value1)
@@ -145,7 +145,7 @@ class TestNodes(AqlTestCase):
                 out = node.build()
                 node.save(vfile)
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value1)
@@ -153,7 +153,7 @@ class TestNodes(AqlTestCase):
                 node.buildSplit(vfile)
                 self.assertTrue(node.checkActual(vfile))
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value2)
@@ -164,7 +164,7 @@ class TestNodes(AqlTestCase):
                 out = node.build()
                 node.save(vfile)
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value2)
@@ -172,7 +172,7 @@ class TestNodes(AqlTestCase):
                 node.buildSplit(vfile)
                 self.assertTrue(node.checkActual(vfile))
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value2)
@@ -195,7 +195,7 @@ class TestNodes(AqlTestCase):
             finally:
                 vfile.close()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def _rebuildNode(self, vfile, builder, values, deps, tmp_files):
         node = Node(builder, values)
@@ -208,7 +208,7 @@ class TestNodes(AqlTestCase):
         node.build()
         node.save(vfile)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         node = Node(builder, values)
         node.depends(deps)
@@ -224,7 +224,7 @@ class TestNodes(AqlTestCase):
 
         return node
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_node_file(self):
 
@@ -334,7 +334,7 @@ class TestNodes(AqlTestCase):
                 except OSError:
                     pass
 
-    # //=======================================================//
+    # ==========================================================
 
     def _rebuildBatchNode(self, vfile, src_files, built_count):
         options = builtinOptions()
@@ -362,12 +362,12 @@ class TestNodes(AqlTestCase):
             self.assertEqual(len(split_nodes), 2)
             self.assertTrue(node.checkActual(vfile))
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_node_batch(self):
 
         with Tempdir() as tmp_dir:
-            vfile_name = Tempfile(dir=tmp_dir)
+            vfile_name = Tempfile(folder=tmp_dir)
             vfile_name.close()
             with EntitiesFile(vfile_name) as vfile:
                 src_files = self.generateSourceFiles(tmp_dir, 5, 100)
@@ -377,14 +377,14 @@ class TestNodes(AqlTestCase):
                 self._rebuildBatchNode(vfile, src_files[:-2], 0)
                 self._rebuildBatchNode(vfile, src_files[0:1], 0)
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 writeBinFile(src_files[1], b"src_file1")
                 writeBinFile(src_files[2], b"src_file1")
 
                 self._rebuildBatchNode(vfile, src_files, 2)
 
-# //===========================================================================//
+# ==============================================================================
 
 _FileValueType = FileChecksumEntity
 
@@ -399,7 +399,7 @@ class TestSpeedBuilder (Builder):
         self.idep = idep
         self.signature = str(ext + '|' + idep).encode('utf-8')
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         for source_value in source_entities:
@@ -411,12 +411,12 @@ class TestSpeedBuilder (Builder):
             targets.addFiles(new_name)
             targets.addImplicitDepFiles(idep_name)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __str__(self):
         return ' '.join(self.name)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _testNoBuildSpeed(vfile, builder, source_values):
@@ -492,7 +492,7 @@ class TestNodesSpeed (AqlTestCase):
                 except OSError:
                     pass
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempfile, Chrono
 from aql.entity import SimpleEntity, SignatureEntity, EntitiesFile, EntityPickler, EntityBase
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestValuesFile(AqlTestCase):
@@ -45,7 +45,7 @@ class TestValuesFile(AqlTestCase):
                 vfile.clear()
                 vfile.selfTest()
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 value_keys = vfile.addEntities(values)
                 vfile.selfTest()
@@ -57,7 +57,7 @@ class TestValuesFile(AqlTestCase):
 
                 self.assertItemsEqual(s_values, dep_values)
 
-                # //-------------------------------------------------------//
+                # -----------------------------------------------------------
 
                 value1_key = vfile.addEntities([value1])[0]
                 vfile.selfTest()
@@ -76,7 +76,7 @@ class TestValuesFile(AqlTestCase):
             finally:
                 vfile.close()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_values_file_2(self):
         with Tempfile() as tmp:
@@ -162,7 +162,7 @@ class TestValuesFile(AqlTestCase):
             finally:
                 vfile.close()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_values_file_same_name(self):
         with Tempfile() as tmp:
@@ -187,7 +187,7 @@ class TestValuesFile(AqlTestCase):
             finally:
                 vfile.close()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def _test_values_file_speed(self, use_sqlite):
         values = []
@@ -219,19 +219,19 @@ class TestValuesFile(AqlTestCase):
                     pass
             print("reopen values file time: %s" % timer)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @skip
     def test_values_file_speed(self):
         self._test_values_file_speed(use_sqlite=False)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @skip
     def test_values_file_speed_sql(self):
         self._test_values_file_speed(use_sqlite=True)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

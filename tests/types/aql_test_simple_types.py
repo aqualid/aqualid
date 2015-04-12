@@ -9,7 +9,7 @@ from aql_tests import AqlTestCase, runLocalTests
 from aql.util_types import IgnoreCaseString, LowerCaseString, UpperCaseString,\
     Version
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestSimpleTypes(AqlTestCase):
@@ -35,7 +35,7 @@ class TestSimpleTypes(AqlTestCase):
 
         self.assertIs(s1, IgnoreCaseString(s1))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_lowerstr(self):
         s1 = LowerCaseString('ABC')
@@ -58,7 +58,7 @@ class TestSimpleTypes(AqlTestCase):
 
         self.assertIs(s1, LowerCaseString(s1))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_upperstr(self):
         s1 = UpperCaseString('ABC')
@@ -81,7 +81,7 @@ class TestSimpleTypes(AqlTestCase):
 
         self.assertIs(s1, UpperCaseString(s1))
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_version(self):
         v1 = Version('1.2.100')
@@ -111,7 +111,7 @@ class TestSimpleTypes(AqlTestCase):
         self.assertEqual(v, v1)
         self.assertEqual(Version('1.2.100.12.a'), v1)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

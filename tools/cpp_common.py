@@ -6,7 +6,7 @@ from aql import findFileInPaths,\
     AbsPathOptionType, EnumOptionType, SimpleOperation, Options, \
     Builder, FileBuilder, Node, Tool
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorBatchBuildCustomExt(Exception):
@@ -16,7 +16,7 @@ class ErrorBatchBuildCustomExt(Exception):
             ext, trace)
         super(ErrorBatchBuildCustomExt, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorBatchBuildWithPrefix(Exception):
@@ -26,7 +26,7 @@ class ErrorBatchBuildWithPrefix(Exception):
             prefix, trace)
         super(ErrorBatchBuildWithPrefix, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorBatchBuildWithSuffix(Exception):
@@ -36,7 +36,7 @@ class ErrorBatchBuildWithSuffix(Exception):
             suffix, trace)
         super(ErrorBatchBuildWithSuffix, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorBatchCompileWithCustomTarget(Exception):
@@ -46,7 +46,7 @@ class ErrorBatchCompileWithCustomTarget(Exception):
             target, trace)
         super(ErrorBatchCompileWithCustomTarget, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorCompileWithCustomTarget(Exception):
@@ -56,9 +56,9 @@ class ErrorCompileWithCustomTarget(Exception):
             target, trace)
         super(ErrorCompileWithCustomTarget, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 #// BUILDERS IMPLEMENTATION
-# //===========================================================================//
+# ==============================================================================
 
 
 def _addPrefix(prefix, values):
@@ -73,7 +73,7 @@ def _addPrefix(prefix, values):
 
     return tuple("%s%s" % (prefix, value) for value in values)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _addIxes(prefix, suffix, values):
@@ -95,7 +95,7 @@ def _addIxes(prefix, suffix, values):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _preprocessorOptions(options):
@@ -133,7 +133,7 @@ def _preprocessorOptions(options):
     options.sys_cpppath = ListOptionType(value_type=AbsPathOptionType(
     ), description="C/C++ preprocessor path to standard headers", separators=None)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _compilerOptions(options):
@@ -173,7 +173,7 @@ def _compilerOptions(options):
     options.cxxstd = EnumOptionType(values=['default', ('c++98', 'c++03'), ('c++11', 'c++0x'), ('c++14', 'c++1y')],
                                     default='default', description='C++ language standard.')
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _resourceCompilerOptions(options):
@@ -190,7 +190,7 @@ def _resourceCompilerOptions(options):
     options.rc_cmd = [options.rc] + options.rcflags + \
         options.cppdefines_flags + options.cpppath_flags
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _linkerOptions(options):
@@ -244,7 +244,7 @@ def _linkerOptions(options):
     options.link_cmd = [options.link] + options.linkflags + \
         options.olinkflags + options.libpath_flags + options.libs_flags
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getCppOptions():
@@ -256,7 +256,7 @@ def _getCppOptions():
 
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getResOptions():
@@ -266,7 +266,7 @@ def _getResOptions():
 
     return options
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class HeaderChecker (Builder):
@@ -281,7 +281,7 @@ class HeaderChecker (Builder):
 
         self.cpppath = cpppath
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -297,7 +297,7 @@ class HeaderChecker (Builder):
 
         targets.add(has_headers)
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -307,7 +307,7 @@ class CommonCompiler (FileBuilder):
     NAME_ATTRS = ('prefix', 'suffix', 'ext')
     SIGNATURE_ATTRS = ('cmd', )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     # noinspection PyUnusedLocal
     def __init__(self, options, ext, cmd):
@@ -329,12 +329,12 @@ class CommonCompiler (FileBuilder):
         self.ext_cpppath = tuple(set(os.path.normcase(
             os.path.abspath(folder)) + os.path.sep for folder in ext_cpppath))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_values):
         return self.getObjPath(source_values[0].get())
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getObjPath(self, source):
         if self.target:
@@ -342,7 +342,7 @@ class CommonCompiler (FileBuilder):
 
         return self.getTargetFromSourceFilePath(source, ext=self.ext, prefix=self.prefix, suffix=self.suffix)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getDefaultObjExt(self):
         """
@@ -351,7 +351,7 @@ class CommonCompiler (FileBuilder):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def checkBatchSplit(self, source_entities):
 
@@ -373,13 +373,13 @@ class CommonCompiler (FileBuilder):
             raise ErrorBatchCompileWithCustomTarget(
                 self.getTrace(source_entities), self.target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def splitBatch(self, source_entities):
         self.checkBatchSplit(source_entities)
         return self.splitBatchByBuildDir(source_entities)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def split(self, source_entities):
 
@@ -389,7 +389,7 @@ class CommonCompiler (FileBuilder):
 
         return self.splitSingle(source_entities)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         if brief:
@@ -400,7 +400,7 @@ class CommonCompiler (FileBuilder):
 
         return name
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CommonCppCompiler (CommonCompiler):
@@ -410,7 +410,7 @@ class CommonCppCompiler (CommonCompiler):
                                                 ext=options.objsuffix.get(),
                                                 cmd=options.cc_cmd.get())
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -422,7 +422,7 @@ class CommonResCompiler (CommonCompiler):
                                                 ext=options.ressuffix.get(),
                                                 cmd=options.rc_cmd.get())
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -438,12 +438,12 @@ class CommonCppLinkerBase(FileBuilder):
     def getCppExts(self, _cpp_ext=(".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c")):
         return _cpp_ext
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getResExts(self):
         return ('.rc',)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def makeCompiler(self, options):
         """
@@ -452,7 +452,7 @@ class CommonCppLinkerBase(FileBuilder):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def makeResCompiler(self, options):
         """
@@ -461,14 +461,14 @@ class CommonCppLinkerBase(FileBuilder):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addSourceBuilders(self, builders, exts, builder):
         if builder:
             for ext in exts:
                 builders[ext] = builder
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getSourceBuilders(self, options):
         builders = {}
@@ -482,7 +482,7 @@ class CommonCppLinkerBase(FileBuilder):
 
         return builders
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def replace(self, cwd, source_entities):
 
@@ -521,12 +521,12 @@ class CommonCppLinkerBase(FileBuilder):
 
         return new_sources
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_values):
         return self.target
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         if brief:
@@ -537,7 +537,7 @@ class CommonCppLinkerBase(FileBuilder):
 
         return name
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -555,7 +555,7 @@ class CommonCppArchiver(CommonCppLinkerBase):
         self.cmd = options.lib_cmd.get()
         self.shared = False
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CommonCppLinker(CommonCppLinkerBase):
@@ -575,15 +575,15 @@ class CommonCppLinker(CommonCppLinkerBase):
         self.cmd = options.link_cmd.get()
         self.shared = shared
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getWeight(self, source_entities):
         return 2 * len(source_entities)
 
 
-# //===========================================================================//
+# ==============================================================================
 #// TOOL IMPLEMENTATION
-# //===========================================================================//
+# ==============================================================================
 
 class ToolCommonCpp(Tool):
 
@@ -592,7 +592,7 @@ class ToolCommonCpp(Tool):
             options.cc_name + '_' + options.cc_ver
         self.LinkLibrary = self.LinkStaticLibrary
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def options(cls):
@@ -624,7 +624,7 @@ class ToolCommonCpp(Tool):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ToolCommonRes(Tool):
@@ -636,7 +636,7 @@ class ToolCommonRes(Tool):
 
         return options
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def Compile(self, options):
         """

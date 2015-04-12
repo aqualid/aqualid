@@ -6,9 +6,9 @@ from aql import executeCommand, ListOptionType, PathOptionType, tool
 from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
     ToolCommonRes, CommonResCompiler
 
-# //===========================================================================//
+# ==============================================================================
 #// BUILDERS IMPLEMENTATION
-# //===========================================================================//
+# ==============================================================================
 
 #(3) : fatal error C1189:
 #(3) : fatal error C1189: #error :  TEST ERROR
@@ -62,7 +62,7 @@ def _parseOutput(source_paths, output, exclude_dirs,
 
     return sources_deps, sources_errors, output
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class MsvcCompiler (CommonCppCompiler):
@@ -71,7 +71,7 @@ class MsvcCompiler (CommonCppCompiler):
         super(MsvcCompiler, self).__init__(options)
         self.cmd += ['/nologo', '/c', '/showIncludes']
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -97,12 +97,12 @@ class MsvcCompiler (CommonCppCompiler):
 
         return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getDefaultObjExt(self):
         return '.obj'
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _setTargets(self, source_entities, targets, sources, obj_files, output):
         deps, errors, out = _parseOutput(sources, output, self.ext_cpppath)
@@ -115,7 +115,7 @@ class MsvcCompiler (CommonCppCompiler):
 
         return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def buildBatch(self, source_entities, targets):
 
@@ -139,7 +139,7 @@ class MsvcCompiler (CommonCppCompiler):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class MsvcResCompiler (CommonResCompiler):
@@ -162,7 +162,7 @@ class MsvcResCompiler (CommonResCompiler):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class MsvcCompilerMaker (object):
@@ -173,7 +173,7 @@ class MsvcCompilerMaker (object):
     def makeResCompiler(self, options):
         return MsvcResCompiler(options)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
@@ -194,7 +194,7 @@ class MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -209,7 +209,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
         if shared:
             self.def_file = def_file
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -241,7 +241,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
 
         out = self.execCmd(cmd, cwd=cwd, file_flag='@')
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
         #//  SET TARGETS
 
         if not self.shared:
@@ -260,11 +260,11 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
 
         return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
-# //===========================================================================//
+# ==============================================================================
 #// TOOL IMPLEMENTATION
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getMsvcSpecs(cl):
@@ -295,7 +295,7 @@ def _getMsvcSpecs(cl):
 
     return specs
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ToolMsvcCommon(ToolCommonCpp):
@@ -319,7 +319,7 @@ class ToolMsvcCommon(ToolCommonCpp):
         options.lib = lib
         options.rc = rc
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, options):
         super(ToolMsvcCommon, self).__init__(options)
@@ -419,7 +419,7 @@ class ToolMsvcCommon(ToolCommonCpp):
         if_.whole_optimization.isTrue().ccflags += '/GL'
         if_.whole_optimization.isTrue().linkflags += '/LTCG'
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def Compile(self, options):
         return MsvcCompiler(options)
@@ -442,21 +442,21 @@ class ToolMsvcCommon(ToolCommonCpp):
     SharedLibrary = LinkSharedLibrary
     Program = LinkProgram
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @tool('c++', 'msvcpp', 'msvc++', 'cpp', 'cxx')
 class ToolMsVCpp(ToolMsvcCommon):
     language = "c++"
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @tool('c', 'msvc', 'cc')
 class ToolMsvc(ToolMsvcCommon):
     language = "c"
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @tool('rc', 'msrc')

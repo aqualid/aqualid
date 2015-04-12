@@ -8,7 +8,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import Tempfile, Tempdir, openFile
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestTempFile(AqlTestCase):
@@ -23,7 +23,7 @@ class TestTempFile(AqlTestCase):
 
         self.assertFalse(os.path.isfile(temp_file))
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_temp_file_rw(self):
         temp_file_name = None
@@ -39,18 +39,18 @@ class TestTempFile(AqlTestCase):
                 test_string_read = temp_file_rh.read()
                 self.assertEqual(test_string, test_string_read)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_temp_dir(self):
         with Tempdir() as tmp_dir:
-            tmp_dir = Tempdir(dir=tmp_dir)
+            tmp_dir = Tempdir(folder=tmp_dir)
 
             for i in range(10):
-                Tempfile(dir=tmp_dir, suffix='.tmp').close()
+                Tempfile(folder=tmp_dir, suffix='.tmp').close()
 
         self.assertFalse(os.path.exists(tmp_dir))
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_temp_file_in_use(self):
         with Tempfile() as temp_file:
@@ -62,7 +62,7 @@ class TestTempFile(AqlTestCase):
 
         self.assertFalse(os.path.isfile(temp_file))
 
-    # //=======================================================//
+    # ==========================================================
 
     @skip
     def test_temp_mmap(self):
@@ -107,7 +107,7 @@ class TestTempFile(AqlTestCase):
                     print("buf: %s" % (buf,))
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

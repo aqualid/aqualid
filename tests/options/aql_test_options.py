@@ -15,12 +15,12 @@ from aql.options import BoolOptionType, EnumOptionType, RangeOptionType, ListOpt
     ErrorOptionsCyclicallyDependent, \
     ErrorOptionsMergeNonOptions, ErrorOptionsNoIteration
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestOptions(AqlTestCase):
 
-    # //---------------------------------------------------------------------------//
+    # -------------------------------------------------------------------------------
 
     def test_options(self):
         options = Options()
@@ -81,7 +81,7 @@ class TestOptions(AqlTestCase):
         self.assertEqual(over_opts.warn_level, 4)
         self.assertEqual(over_opts.warning_level, 4)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_2(self):
         options = Options()
@@ -114,7 +114,7 @@ class TestOptions(AqlTestCase):
         self.assertIn(1, options.warn_levels)
         self.assertNotIn(5, options.warn_levels)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_conditions(self):
         options = Options()
@@ -150,7 +150,7 @@ class TestOptions(AqlTestCase):
         # wl: 0, opt == debug: +1, opt == release: +2
         # opt: release, debug, release, wl == 2: debug
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_conditions2(self):
         options = Options()
@@ -171,7 +171,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.warning_level, 5)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_conditions3(self):
         options = Options()
@@ -203,7 +203,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.opt, 30)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_conditions4(self):
         options = Options()
@@ -253,7 +253,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.opt, 50)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_refs(self):
         options = Options()
@@ -294,7 +294,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.opt, 4)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_parent_refs(self):
         options = Options()
@@ -319,7 +319,7 @@ class TestOptions(AqlTestCase):
         options2.opt1 = 1
         self.assertEqual(options2.opt2, 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_errors(self):
         options = Options()
@@ -351,7 +351,7 @@ class TestOptions(AqlTestCase):
         self.assertNotIn('debug_on', options)
         self.assertRaises(ErrorOptionsNoIteration, iter, options)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_update(self):
         options = Options()
@@ -388,7 +388,7 @@ class TestOptions(AqlTestCase):
         self.assertEqual(options.debug_on, options2.debug_on)
         self.assertEqual(options2.bv, options2.build_variant)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_builtin_options(self):
         options = builtinOptions()
@@ -406,7 +406,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.build_variant.optionType().group, "Build")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_options_dict(self):
         options = Options()
@@ -451,7 +451,7 @@ class TestOptions(AqlTestCase):
         options.debug_on = True
         self.assertEqual(options.defines['OPTS'], 'TRUE')
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_merge(self):
         options = Options()
@@ -519,7 +519,7 @@ class TestOptions(AqlTestCase):
         self.assertIsNot(
             child_options2.opt21.option_value, options2.opt21.option_value)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_join_2(self):
 
@@ -546,7 +546,7 @@ class TestOptions(AqlTestCase):
         self.assertIsNot(options.arg1.option_value, options2.arg1.option_value)
         self.assertIs(options.arg2.option_value, options2.arg2.option_value)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_clear(self):
         options = Options()
@@ -555,7 +555,7 @@ class TestOptions(AqlTestCase):
 
         child.clear()
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_build_dir_name(self):
 
@@ -571,7 +571,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.build_dir_name, 'windows_x86-32_debug')
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_join(self):
 
@@ -592,7 +592,7 @@ class TestOptions(AqlTestCase):
         options2.join()
         self.assertEqual(options.build_dir_name.get(), 'windows_x86-32_debug')
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_radd(self):
 
@@ -628,7 +628,7 @@ class TestOptions(AqlTestCase):
         options.level = 10 - (options.min_level - 2)
         self.assertEqual(options.level, 7)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_add_list(self):
 
@@ -646,7 +646,7 @@ class TestOptions(AqlTestCase):
 
         self.assertEqual(options.cc_cmd.get(), ['gcc', '-c', '-O2'])
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_options_tool_keys(self):
 
@@ -704,7 +704,7 @@ class TestOptions(AqlTestCase):
         print(options.debug_symbols)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

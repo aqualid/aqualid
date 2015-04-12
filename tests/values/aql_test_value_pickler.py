@@ -14,7 +14,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempfile
 from aql.entity import FileChecksumEntity, FileTimestampEntity, SimpleEntity, EntityPickler, pickleable
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestValuePickler(AqlTestCase):
@@ -56,7 +56,7 @@ class TestValuePickler(AqlTestCase):
         #v = vpick.loads( vpick.dumps( value ) )
         #self.assertEqual( value, v )
 
-    # //===========================================================================//
+    # ==============================================================================
 
     @skip
     def test_value_pickler_speed(self):
@@ -82,7 +82,7 @@ class TestValuePickler(AqlTestCase):
         pl = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
         print("pl: %s" % len(pl))
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

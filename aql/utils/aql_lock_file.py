@@ -1,40 +1,43 @@
 #
 # Copyright (c) 2011-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = ('FileLock', 'ErrorFileLocked')
 
 import os
 import time
 import errno
 
-from aql.util_types import AqlException
+__all__ = ('FileLock', 'ErrorFileLocked')
+
+# ==============================================================================
 
 
-class ErrorFileLocked(AqlException):
+class ErrorFileLocked(Exception):
 
     def __init__(self, filename):
         msg = 'File "%s" is locked.' % (filename,)
         super(ErrorFileLocked, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 #   General implementation
-# //===========================================================================//
+# ==============================================================================
 
 
 class GeneralFileLock (object):
@@ -96,9 +99,9 @@ class GeneralFileLock (object):
                 raise
 
 try:
-    # //===========================================================================//
+    # ==============================================================================
     #   Unix implementation
-    # //===========================================================================//
+    # ==============================================================================
 
     import fcntl
 
@@ -123,7 +126,7 @@ try:
             if self.fd is None:
                 self.fd = os.open(self.filename, os.O_CREAT | os.O_RDWR)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __close(self):
             os.close(self.fd)
@@ -175,7 +178,9 @@ except ImportError:
                 self.LOCKFILE_EXCLUSIVE_LOCK = 0x2
 
                 # is 64 bit
-                if ctypes.sizeof(ctypes.c_ulong) != ctypes.sizeof(ctypes.c_void_p):
+                if ctypes.sizeof(ctypes.c_ulong) !=\
+                   ctypes.sizeof(ctypes.c_void_p):
+
                     ULONG_PTR = ctypes.c_int64
                 else:
                     ULONG_PTR = ctypes.c_ulong
@@ -216,7 +221,7 @@ except ImportError:
                 self.LockFileEx = ctypes.windll.kernel32.LockFileEx
                 self.UnlockFileEx = ctypes.windll.kernel32.UnlockFileEx
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             def __init__(self, filename):
 
@@ -226,7 +231,7 @@ except ImportError:
                 self.fd = None
                 self.handle = None
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             def __enter__(self):
                 return self
@@ -235,7 +240,7 @@ except ImportError:
             def __exit__(self, exc_type, exc_value, traceback):
                 self.releaseLock()
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             def __open(self):
 
@@ -245,14 +250,14 @@ except ImportError:
                         lockfilename, os.O_CREAT | os.O_RDWR | os.O_NOINHERIT)
                     self.handle = msvcrt.get_osfhandle(self.fd)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             def __close(self):
                 os.close(self.fd)
                 self.fd = None
                 self.handle = None
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             def __lock(self, write, wait):
                 self.__open()
@@ -270,7 +275,7 @@ except ImportError:
                 if not result:
                     raise ErrorFileLocked(self.filename)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             def readLock(self, wait=True, force=False):
                 self.__lock(write=False, wait=wait)

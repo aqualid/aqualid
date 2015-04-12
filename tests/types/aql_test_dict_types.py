@@ -8,7 +8,7 @@ from aql_tests import AqlTestCase, runLocalTests
 
 from aql.util_types import Dict, SplitDictType, ValueDictType
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestDictTypes(AqlTestCase):
@@ -36,7 +36,7 @@ class TestDictTypes(AqlTestCase):
         self.assertEqual(Dict(None), {})
         self.assertEqual(Dict(NotImplemented), {})
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_splitdict(self):
 
@@ -52,7 +52,7 @@ class TestDictTypes(AqlTestCase):
         self.assertEqual(d, v)
         self.assertEqual(str(d), "1=2,3=4,a=7,c=9")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_value_dict_type(self):
 
@@ -83,7 +83,7 @@ class TestDictTypes(AqlTestCase):
         self.assertEqual(ds[7], 8)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

@@ -25,7 +25,7 @@ class ErrorDistCommandInvalid(Exception):
         msg = "distutils command '%s' is not supported" % (command,)
         super(ErrorDistCommandInvalid, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getMethodFullName(m):
@@ -50,7 +50,7 @@ def _getMethodFullName(m):
 
     return '.'.join(full_name)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ExecuteCommandBuilder (Builder):
@@ -68,7 +68,7 @@ class ExecuteCommandBuilder (Builder):
 
         self.cwd = cwd
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _getCmdTargets(self):
 
@@ -90,7 +90,7 @@ class ExecuteCommandBuilder (Builder):
 
         return tuple("%s%s" % (prefix, target) for target in targets)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         cmd = tuple(src.get() for src in source_entities)
@@ -105,12 +105,12 @@ class ExecuteCommandBuilder (Builder):
 
         return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_entities):
         return self.targets
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         try:
@@ -118,12 +118,12 @@ class ExecuteCommandBuilder (Builder):
         except Exception:
             return self.__class__.__name__
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceSources(self, source_entities, brief):
         return source_entities[1:]
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ExecuteMethodBuilder (Builder):
@@ -147,12 +147,12 @@ class ExecuteMethodBuilder (Builder):
         if make_files:
             self.makeEntity = self.makeFileEntity
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         return self.method(self, source_entities, targets, *self.args, **self.kw)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         name = self.method_name
@@ -172,7 +172,7 @@ class ExecuteMethodBuilder (Builder):
 
         return name
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CopyFilesBuilder (FileBuilder):
@@ -183,7 +183,7 @@ class CopyFilesBuilder (FileBuilder):
         self.target = self.getTargetDirPath(target)
         self.split = self.splitBatch
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def buildBatch(self, source_entities, targets):
         target = self.target
@@ -197,18 +197,18 @@ class CopyFilesBuilder (FileBuilder):
 
             targets[src_entity].add(dst)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "Copy files"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_entities):
         src = source_entities[0].get()
         return (os.path.join(self.target, os.path.basename(src)), )
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CopyFileAsBuilder (FileBuilder):
@@ -218,7 +218,7 @@ class CopyFileAsBuilder (FileBuilder):
     def __init__(self, options, target):
         self.target = self.getTargetFilePath(target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         source = source_entities[0].get()
@@ -229,17 +229,17 @@ class CopyFileAsBuilder (FileBuilder):
 
         targets.add(target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "Copy file"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_entities):
         return self.target
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TarFilesBuilder (FileBuilder):
@@ -266,7 +266,7 @@ class TarFilesBuilder (FileBuilder):
         self.basedir = os.path.normcase(
             os.path.normpath(basedir)) if basedir else None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getArcname(self, file_path):
         for arc_name, path in self.rename:
@@ -280,13 +280,13 @@ class TarFilesBuilder (FileBuilder):
 
         return os.path.basename(file_path)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __addFile(self, arch, filepath):
         arcname = self.__getArcname(filepath)
         arch.add(filepath, arcname)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def __addEntity(arch, entity):
@@ -299,7 +299,7 @@ class TarFilesBuilder (FileBuilder):
         tinfo.size = len(data)
         arch.addfile(tinfo, io.BytesIO(data))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         target = self.target
@@ -317,17 +317,17 @@ class TarFilesBuilder (FileBuilder):
 
         targets.add(target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "Create Tar"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_entities):
         return self.target
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ZipFilesBuilder (FileBuilder):
@@ -345,7 +345,7 @@ class ZipFilesBuilder (FileBuilder):
         self.basedir = os.path.normcase(
             os.path.normpath(basedir)) if basedir else None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __openArch(self, large=False):
         try:
@@ -355,7 +355,7 @@ class ZipFilesBuilder (FileBuilder):
 
         return zipfile.ZipFile(self.target, "w", zipfile.ZIP_STORED, large)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getArcname(self, file_path):
         for arc_name, path in self.rename:
@@ -369,7 +369,7 @@ class ZipFilesBuilder (FileBuilder):
 
         return os.path.basename(file_path)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __addFiles(self, arch, source_entities):
         for entity in source_entities:
@@ -385,7 +385,7 @@ class ZipFilesBuilder (FileBuilder):
 
                 arch.writestr(arcname, data)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         target = self.target
@@ -406,17 +406,17 @@ class ZipFilesBuilder (FileBuilder):
 
         targets.add(target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "Create Zip"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_entities):
         return self.target
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class WriteFileBuilder (Builder):
@@ -428,7 +428,7 @@ class WriteFileBuilder (Builder):
         self.encoding = encoding
         self.target = self.getTargetFilePath(target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         target = self.target
@@ -448,17 +448,17 @@ class WriteFileBuilder (Builder):
 
         targets.addFiles(target)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "Writing content"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTargetEntities(self, source_entities):
         return self.target
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class DistBuilder (FileBuilder):
@@ -506,12 +506,12 @@ class DistBuilder (FileBuilder):
         self.script_args = script_args
         self.formats = formats
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "distutils %s" % ' '.join(self.script_args)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -528,7 +528,7 @@ class DistBuilder (FileBuilder):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class InstallDistBuilder (FileBuilder):
@@ -539,12 +539,12 @@ class InstallDistBuilder (FileBuilder):
 
         self.user = user
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         return "distutils install"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -562,7 +562,7 @@ class InstallDistBuilder (FileBuilder):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class BuiltinTool(Tool):

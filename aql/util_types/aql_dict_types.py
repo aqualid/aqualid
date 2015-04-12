@@ -25,7 +25,7 @@ from .aql_list_types import List
 
 __all__ = ('Dict', 'ValueDictType', 'SplitDictType')
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Dict (dict):
@@ -42,12 +42,12 @@ class Dict (dict):
 
         return items()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, items=None):
         super(Dict, self).__init__(self.toItems(items))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __iadd__(self, items):
         for key, value in self.toItems(items):
@@ -58,7 +58,7 @@ class Dict (dict):
 
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def copy(self, key_type=None, value_type=None):
 
@@ -73,7 +73,7 @@ class Dict (dict):
 
         return other
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def SplitDictType(dict_type, separators):
@@ -83,7 +83,7 @@ def SplitDictType(dict_type, separators):
 
     class SplitDict (dict_type):
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def __toItems(items_str, sep=separator, other_seps=other_separators):
@@ -102,7 +102,7 @@ def SplitDictType(dict_type, separators):
 
             return items
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def __toSplitDict(items):
@@ -111,17 +111,17 @@ def SplitDictType(dict_type, separators):
 
             return SplitDict(items)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __init__(self, items=None):
             super(SplitDict, self).__init__(self.__toItems(items))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __iadd__(self, items):
             return super(SplitDict, self).__iadd__(self.__toItems(items))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def update(self, other=None, **kwargs):
 
@@ -133,7 +133,7 @@ def SplitDictType(dict_type, separators):
 
             super(SplitDict, self).update(items)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __eq__(self, other):
             return super(SplitDict, self).__eq__(self.__toSplitDict(other))
@@ -153,17 +153,17 @@ def SplitDictType(dict_type, separators):
         def __ge__(self, other):
             return super(SplitDict, self).__ge__(self.__toSplitDict(other))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __str__(self):
             return separator.join(
                 sorted("%s=%s" % (key, value) for key, value in self.items()))
 
-    # //=======================================================//
+    # ==========================================================
 
     return SplitDict
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def ValueDictType(dict_type, key_type, default_value_type=None):
@@ -172,7 +172,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
         __VALUE_TYPES = {}
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def getKeyType():
@@ -182,7 +182,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         def getValueType():
             return default_value_type
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def _toValue(key, value,
@@ -199,7 +199,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
             _ValueDict.setValueType(key, type(value))
             return value
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def setValueType(key, value_type,
@@ -216,7 +216,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
                 value_types[key] = value_type
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def __toItems(items, _key_type=key_type):
@@ -235,7 +235,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
             except ValueError:
                 raise
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         @staticmethod
         def __toValueDict(items):
@@ -244,7 +244,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
             return _ValueDict(items)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __init__(self, values=None):
             super(_ValueDict, self).__init__(self.__toItems(values))
@@ -269,7 +269,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         def pop(self, key, *args):
             return super(_ValueDict, self).pop(key_type(key), *args)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def setdefault(self, key, default):
             key = key_type(key)
@@ -277,7 +277,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
             return super(_ValueDict, self).setdefault(key, default)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def update(self, other=None, **kwargs):
 
@@ -289,7 +289,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
             super(_ValueDict, self).update(items)
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __eq__(self, other):
             return super(_ValueDict, self).__eq__(self.__toValueDict(other))
@@ -309,11 +309,11 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         def __ge__(self, other):
             return super(_ValueDict, self).__ge__(self.__toValueDict(other))
 
-        # //-------------------------------------------------------//
+        # -----------------------------------------------------------
 
         def __contains__(self, key):
             return super(_ValueDict, self).__contains__(key_type(key))
 
-    # //=======================================================//
+    # ==========================================================
 
     return _ValueDict

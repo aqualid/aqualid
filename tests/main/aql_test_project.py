@@ -17,7 +17,7 @@ from aql.main import Project, ProjectConfig, Tool, \
     ErrorProjectBuilderMethodUnbound, \
     ErrorProjectInvalidMethod
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestNullBuilder (Builder):
@@ -27,12 +27,12 @@ class TestNullBuilder (Builder):
         self.v2 = v2
         self.v3 = v3
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         pass
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestTool(Tool):
@@ -40,7 +40,7 @@ class TestTool(Tool):
     def Noop(self, options, v1, v2, v3):
         return TestNullBuilder(options, v1, v2, v3)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestProject(AqlTestCase):
@@ -49,7 +49,7 @@ class TestProject(AqlTestCase):
     def eventNodeBuilding(self, settings, node):
         self.building_started += 1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setUp(self):
         super(TestProject, self).setUp()
@@ -57,14 +57,14 @@ class TestProject(AqlTestCase):
         self.building_started = 0
         addUserHandler(self.eventNodeBuilding)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def tearDown(self):
         removeUserHandler(self.eventNodeBuilding)
 
         super(TestProject, self).tearDown()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_prj_config(self):
 
@@ -84,7 +84,7 @@ options.build_variant = "final"
             self.assertEqual(cfg.jobs, 5)
             self.assertTrue(cfg.verbose)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @skip
     def test_prj_add_builder(self):
@@ -131,7 +131,7 @@ options.build_variant = "final"
         node = prj.TestBuildNode('a')
         #~ self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_prj_builtin_tools(self):
 
@@ -155,7 +155,7 @@ options.build_variant = "final"
 
             self.assertEqual(self.building_started, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_prj_targets(self):
 
@@ -177,7 +177,7 @@ options.build_variant = "final"
 
             self.assertEqual(self.built_nodes, 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_prj_default_targets(self):
 
@@ -199,7 +199,7 @@ options.build_variant = "final"
 
             self.assertEqual(self.built_nodes, 2)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_prj_implicit_value_args(self):
 
@@ -216,7 +216,7 @@ options.build_variant = "final"
 
             self.assertEqual(self.built_nodes, 1)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.built_nodes = 0
 
@@ -224,7 +224,7 @@ options.build_variant = "final"
             prj.Build()
             self.assertEqual(self.built_nodes, 0)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.built_nodes = 0
 
@@ -234,7 +234,7 @@ options.build_variant = "final"
             prj.Build()
             self.assertEqual(self.built_nodes, 1)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.built_nodes = 0
 
@@ -244,7 +244,7 @@ options.build_variant = "final"
             prj.Build()
             self.assertEqual(self.built_nodes, 1)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.built_nodes = 0
 
@@ -254,7 +254,7 @@ options.build_variant = "final"
             prj.Build()
             self.assertEqual(self.built_nodes, 0)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

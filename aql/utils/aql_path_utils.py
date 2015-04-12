@@ -1,28 +1,24 @@
 #
-# Copyright (c) 2014 The developers of Aqualid project
+# Copyright (c) 2014-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'findFiles', 'findFileInPaths', 'absFilePath', 'expandFilePath', 'changePath', 'splitPath',
-    'findProgram', 'findPrograms', 'findOptionalProgram', 'findOptionalPrograms',
-    'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive', 'groupPathsByDir',
-    'Chdir',
-)
 
 import os
 import sys
@@ -30,11 +26,20 @@ import re
 import fnmatch
 import operator
 
-from aql.util_types import isString, toString, toSequence, AqlException
+from aql.util_types import isString, toSequence, AqlException
 
 from .aql_utils import ItemsGroups
 
-# //===========================================================================//
+__all__ = (
+    'findFiles', 'findFileInPaths', 'absFilePath', 'expandFilePath',
+    'changePath', 'splitPath',
+    'findProgram', 'findPrograms', 'findOptionalProgram',
+    'findOptionalPrograms',
+    'relativeJoin', 'relativeJoinList', 'excludeFilesFromDirs', 'splitDrive',
+    'groupPathsByDir', 'Chdir',
+)
+
+# ==============================================================================
 
 
 class ErrorNoPrograms(AqlException):
@@ -43,7 +48,7 @@ class ErrorNoPrograms(AqlException):
         msg = "No programs were specified: %s(%s)" % (prog, type(prog))
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def absFilePath(file_path, path_sep=os.path.sep,
@@ -60,13 +65,17 @@ def absFilePath(file_path, path_sep=os.path.sep,
 
     return _normcase(_abspath(file_path)) + last_sep
 
-# //===========================================================================//
+# ==============================================================================
 
 
-def expandFilePath(path, _normpath=os.path.normpath, _expanduser=os.path.expanduser, _expandvars=os.path.expandvars):
+def expandFilePath(path,
+                   _normpath=os.path.normpath,
+                   _expanduser=os.path.expanduser,
+                   _expandvars=os.path.expandvars):
+
     return _normpath(_expanduser(_expandvars(path)))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def excludeFilesFromDirs(files, dirs):
@@ -81,7 +90,7 @@ def excludeFilesFromDirs(files, dirs):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _masksToMatch(masks, _null_match=lambda name: False):
@@ -100,10 +109,13 @@ def _masksToMatch(masks, _null_match=lambda name: False):
 
     return re.compile(re_str).match
 
-# //===========================================================================//
+# ==============================================================================
 
 
-def findFiles(paths=".", mask=("*", ), exclude_mask=tuple(), exclude_subdir_mask=('__*', '.*')):
+def findFiles(paths=".",
+              mask=("*", ),
+              exclude_mask=tuple(),
+              exclude_subdir_mask=('__*', '.*')):
 
     found_files = []
 
@@ -117,16 +129,18 @@ def findFiles(paths=".", mask=("*", ), exclude_mask=tuple(), exclude_subdir_mask
         for root, folders, files in os.walk(os.path.abspath(path)):
             for file_name in files:
                 file_name_nocase = os.path.normcase(file_name)
-                if (not match_exclude_mask(file_name_nocase)) and match_mask(file_name_nocase):
+                if (not match_exclude_mask(file_name_nocase)) and\
+                   match_mask(file_name_nocase):
+
                     found_files.append(os.path.join(root, file_name))
 
-            folders[:] = (
-                folder for folder in folders if not match_exclude_subdir_mask(folder))
+            folders[:] = (folder for folder in folders
+                          if not match_exclude_subdir_mask(folder))
 
     found_files.sort()
     return found_files
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def findFileInPaths(paths, filename):
@@ -138,7 +152,7 @@ def findFileInPaths(paths, filename):
 
     return None
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getEnvPath(env, hint_prog=None):
@@ -155,17 +169,19 @@ def _getEnvPath(env, hint_prog=None):
 
     return paths
 
-# //===========================================================================//
+# ==============================================================================
 
 
-def _getEnvPathExt(env, hint_prog=None, is_windows=(os.name == 'nt'), is_cygwin=(sys.platform == 'cygwin')):
+def _getEnvPathExt(env, hint_prog=None,
+                   is_windows=(os.name == 'nt'),
+                   is_cygwin=(sys.platform == 'cygwin')):
 
     if not is_windows and not is_cygwin:
         return tuple()
 
     if hint_prog:
         hint_ext = os.path.splitext(hint_prog)[1]
-        return (hint_ext,)
+        return hint_ext,
 
     path_exts = env.get('PATHEXT', None)
     if path_exts is None:
@@ -184,7 +200,7 @@ def _getEnvPathExt(env, hint_prog=None, is_windows=(os.name == 'nt'), is_cygwin=
 
     return path_exts
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _addProgramExts(progs, exts):
@@ -205,7 +221,7 @@ def _addProgramExts(progs, exts):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _findProgram(progs, paths):
@@ -217,7 +233,7 @@ def _findProgram(progs, paths):
 
     return None
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def findProgram(prog, env, hint_prog=None):
@@ -228,7 +244,7 @@ def findProgram(prog, env, hint_prog=None):
 
     return _findProgram(progs, paths)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def findPrograms(progs, env, hint_prog=None):
@@ -243,7 +259,7 @@ def findPrograms(progs, env, hint_prog=None):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def findOptionalProgram(prog, env, hint_prog=None):
@@ -253,7 +269,7 @@ def findOptionalProgram(prog, env, hint_prog=None):
 
     return _OptionalProgramFinder(progs, paths)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def findOptionalPrograms(progs, env, hint_prog=None):
@@ -268,7 +284,7 @@ def findOptionalPrograms(progs, env, hint_prog=None):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class _OptionalProgramFinder(object):
@@ -311,7 +327,7 @@ class _OptionalProgramFinder(object):
         self.result = self.progs[0]
         return self.result
 
-# //=======================================================//
+# ==========================================================
 
 
 def _normLocalPath(path):
@@ -330,7 +346,7 @@ def _normLocalPath(path):
 
     return path + last_sep
 
-# //===========================================================================//
+# ==============================================================================
 
 try:
     _splitunc = os.path.splitunc
@@ -346,7 +362,7 @@ def splitDrive(path):
 
     return drive, path
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _splitPath(path):
@@ -357,7 +373,7 @@ def _splitPath(path):
 
     return path
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def splitPath(path):
@@ -367,7 +383,7 @@ def splitPath(path):
     path = [p for p in path if p]
     return path
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _commonPrefixSize(*paths):
@@ -380,7 +396,7 @@ def _commonPrefixSize(*paths):
             return i
     return i + 1
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _relativeJoin(base_path, base_path_seq, path, sep=os.path.sep):
@@ -402,15 +418,16 @@ def _relativeJoin(base_path, base_path_seq, path, sep=os.path.sep):
 
     return sep.join(path)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def relativeJoinList(base_path, paths):
     base_path = _normLocalPath(base_path)
     base_path_seq = _splitPath(base_path)
-    return [_relativeJoin(base_path, base_path_seq, path) for path in toSequence(paths)]
+    return [_relativeJoin(base_path, base_path_seq, path)
+            for path in toSequence(paths)]
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def relativeJoin(base_path, path):
@@ -418,7 +435,7 @@ def relativeJoin(base_path, path):
     base_path_seq = _splitPath(base_path)
     return _relativeJoin(base_path, base_path_seq, path)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def changePath(path, dirname=None, name=None, ext=None, prefix=None):
@@ -441,15 +458,24 @@ def changePath(path, dirname=None, name=None, ext=None, prefix=None):
 
     return path + name + ext
 
-# //===========================================================================//
+# ==============================================================================
 
 
-def groupPathsByDir(file_paths, wish_groups=1, max_group_size=-1, pathGetter=None):
+def _simple_path_getter(path):
+    return path
+
+# ==============================================================================
+
+
+def groupPathsByDir(file_paths,
+                    wish_groups=1,
+                    max_group_size=-1,
+                    pathGetter=None):
 
     groups = ItemsGroups(len(file_paths), wish_groups, max_group_size)
 
     if pathGetter is None:
-        pathGetter = lambda path: path
+        pathGetter = _simple_path_getter
 
     files = []
     for file_path in file_paths:
@@ -474,7 +500,7 @@ def groupPathsByDir(file_paths, wish_groups=1, max_group_size=-1, pathGetter=Non
 
     return groups.get()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Chdir (object):

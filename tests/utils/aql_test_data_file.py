@@ -13,13 +13,13 @@ from aql.utils import DataFile, SqlDataFile
 
 from aql.util_types import encodeStr
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def generateData(min_size, max_size):
     return encodeStr(''.join(chr(random.randint(32, 127)) for i in range(random.randint(min_size, max_size))))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def generateDataMap(size, min_data_size, max_data_size):
@@ -30,7 +30,7 @@ def generateDataMap(size, min_data_size, max_data_size):
 
     return data_map
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def extendDataMap(data_map):
@@ -38,7 +38,7 @@ def extendDataMap(data_map):
         data_size = len(data_map[data_id])
         data_map[data_id] = generateData(data_size + 1, data_size * 2)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestDataFile(AqlTestCase):
@@ -66,7 +66,7 @@ class TestDataFile(AqlTestCase):
             finally:
                 df.close()
 
-    # //=======================================================//
+    # ==========================================================
 
     def _test_data_file_update(self, DataFileType):
         with Tempfile() as tmp:
@@ -128,7 +128,7 @@ class TestDataFile(AqlTestCase):
             finally:
                 df.close()
 
-    # //=======================================================//
+    # ==========================================================
 
     def _test_data_file_remove(self, DataFileType):
         with Tempfile() as tmp:
@@ -203,7 +203,7 @@ class TestDataFile(AqlTestCase):
             finally:
                 df.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _test_data_file_speed(self, DataFileType):
 
@@ -283,7 +283,7 @@ class TestDataFile(AqlTestCase):
         self._test_data_file_remove(SqlDataFile)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

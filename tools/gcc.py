@@ -7,9 +7,9 @@ from aql import readTextFile, Tempfile, executeCommand, StrOptionType, ListOptio
 from .cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
     ToolCommonRes, CommonResCompiler
 
-# //===========================================================================//
+# ==============================================================================
 #// BUILDERS IMPLEMENTATION
-# //===========================================================================//
+# ==============================================================================
 
 
 def _readDeps(dep_file, exclude_dirs, _space_splitter_re=re.compile(r'(?<!\\)\s+')):
@@ -42,7 +42,7 @@ def _readDeps(dep_file, exclude_dirs, _space_splitter_re=re.compile(r'(?<!\\)\s+
 
     return dep_files
 
-# //===========================================================================//
+# ==============================================================================
 
 # t.c:3:10: error: called object is not a function or function pointer
 # t.c:1:17: note: declared here
@@ -62,7 +62,7 @@ def _parseOutput(output,
 
     return failed_sources
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -80,7 +80,7 @@ class GccCompiler (CommonCppCompiler):
 
         cwd = os.path.dirname(obj_file)
 
-        with Tempfile(prefix=obj_file, suffix='.d', dir=cwd) as dep_file:
+        with Tempfile(prefix=obj_file, suffix='.d', folder=cwd) as dep_file:
 
             cmd = list(self.cmd)
 
@@ -95,12 +95,12 @@ class GccCompiler (CommonCppCompiler):
 
             return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getDefaultObjExt(self):
         return '.o'
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _setTargets(self, source_entities, targets, obj_files, output):
 
@@ -115,7 +115,7 @@ class GccCompiler (CommonCppCompiler):
                 src_targets.add(obj_file)
                 src_targets.addImplicitDeps(implicit_deps)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def buildBatch(self, source_entities, targets):
 
@@ -138,7 +138,7 @@ class GccCompiler (CommonCppCompiler):
 
         return output
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class GccResCompiler (CommonResCompiler):
@@ -161,7 +161,7 @@ class GccResCompiler (CommonResCompiler):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class GccCompilerMaker (object):
@@ -172,7 +172,7 @@ class GccCompilerMaker (object):
     def makeResCompiler(self, options):
         return GccResCompiler(options)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class GccArchiver (GccCompilerMaker, CommonCppArchiver):
@@ -191,7 +191,7 @@ class GccArchiver (GccCompilerMaker, CommonCppArchiver):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class GccLinker(GccCompilerMaker, CommonCppLinker):
@@ -202,7 +202,7 @@ class GccLinker(GccCompilerMaker, CommonCppLinker):
         self.is_windows = options.target_os == 'windows'
         self.libsuffix = options.libsuffix.get()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -242,9 +242,9 @@ class GccLinker(GccCompilerMaker, CommonCppLinker):
 
         return out
 
-# //===========================================================================//
+# ==============================================================================
 #// TOOL IMPLEMENTATION
-# //===========================================================================//
+# ==============================================================================
 
 _OS_PREFIXES = (
 
@@ -271,7 +271,7 @@ def _getTargetOs(target_os):
 
     return target_os
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getGccSpecs(gcc):
@@ -308,7 +308,7 @@ def _getGccSpecs(gcc):
 
     return specs
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _generateProgNames(prog, prefix, suffix):
@@ -317,7 +317,7 @@ def _generateProgNames(prog, prefix, suffix):
 
     return tuple(prefix + prog + suffix for prefix, suffix in itertools.product(prefixes, suffixes))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ToolGccCommon(ToolCommonCpp):
@@ -353,7 +353,7 @@ class ToolGccCommon(ToolCommonCpp):
         options.lib = lib
         options.rc = rc
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def options(cls):
@@ -366,7 +366,7 @@ class ToolGccCommon(ToolCommonCpp):
 
         return options
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, options):
         super(ToolGccCommon, self).__init__(options)
@@ -444,7 +444,7 @@ class ToolGccCommon(ToolCommonCpp):
         if_.warning_level.eq(4).ccflags += ['-Wall', '-Wextra', '-Wfloat-equal',
                                             '-Wundef', '-Wshadow',
                                             '-Wredundant-decls']
-        
+
         if_.warning_as_error.isTrue().ccflags += '-Werror'
 
         if_profiling_true = if_.profile.isTrue()
@@ -464,7 +464,7 @@ class ToolGccCommon(ToolCommonCpp):
         if_.pic.isTrue().target_os.notIn(
             ['windows', 'cygwin']).ccflags += '-fPIC'
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def Compile(self, options):
         return GccCompiler(options)
@@ -487,27 +487,27 @@ class ToolGccCommon(ToolCommonCpp):
     SharedLibrary = LinkSharedLibrary
     Program = LinkProgram
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @tool('c++', 'g++', 'gxx', 'cpp', 'cxx')
 class ToolGxx(ToolGccCommon):
     language = "c++"
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @tool('c', 'gcc', 'cc')
 class ToolGcc(ToolGccCommon):
     language = "c"
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @tool('rc', 'windres')
 class ToolWindRes(ToolCommonRes):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def options(cls):
@@ -520,7 +520,7 @@ class ToolWindRes(ToolCommonRes):
 
         return options
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def setup(cls, options):

@@ -30,7 +30,7 @@ from .aql_entity_pickler import pickleable
 from aql.util_types import AqlException
 from aql.utils import fileSignature, fileTimeSignature
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorFileEntityNoName(AqlException):
@@ -39,7 +39,7 @@ class ErrorFileEntityNoName(AqlException):
         msg = "Filename is not specified"
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class FileEntityBase (EntityBase):
@@ -61,12 +61,12 @@ class FileEntityBase (EntityBase):
             cls, name, signature, tags=tags)
         return self
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self):
         return self.name
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         tags = self.tags
@@ -75,7 +75,7 @@ class FileEntityBase (EntityBase):
 
         return self.name, self.signature, tags
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def remove(self):
         try:
@@ -83,7 +83,7 @@ class FileEntityBase (EntityBase):
         except OSError:
             pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getActual(self):
         signature = self.getSignature()
@@ -94,7 +94,7 @@ class FileEntityBase (EntityBase):
             self.__class__, self.name, signature, self.tags)
         return other
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isActual(self):
         if not self.signature:
@@ -105,7 +105,7 @@ class FileEntityBase (EntityBase):
 
         return False
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getFileChecksum(path):
@@ -122,7 +122,7 @@ def _getFileChecksum(path):
 
     return signature
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getFileTimestamp(path):
@@ -133,7 +133,7 @@ def _getFileTimestamp(path):
 
     return signature
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @pickleable
@@ -142,7 +142,7 @@ class FileChecksumEntity(FileEntityBase):
     def getSignature(self):
         return _getFileChecksum(self.name)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @pickleable
@@ -151,7 +151,7 @@ class FileTimestampEntity(FileEntityBase):
     def getSignature(self):
         return _getFileTimestamp(self.name)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @pickleable

@@ -9,7 +9,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempdir, Tempfile
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestToolMsvc(AqlTestCase):
@@ -55,7 +55,7 @@ class TestToolMsvc(AqlTestCase):
             cpp.Compile(src_files)
             self.buildPrj(prj, 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_msvc_compiler_batch(self):
         with Tempdir() as tmp_dir:
@@ -98,7 +98,7 @@ class TestToolMsvc(AqlTestCase):
             cpp.Compile(src_files, batch_build=True, batch_groups=num_groups)
             self.buildPrj(prj, num_groups)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_msvc_compiler_batch_error(self):
         with Tempdir() as tmp_dir:
@@ -113,7 +113,7 @@ class TestToolMsvc(AqlTestCase):
             src_files, hdr_files = self.generateCppFiles(
                 src_dir, 'foo', num_src_files)
 
-            src_file_orig = Tempfile(dir=tmp_dir)
+            src_file_orig = Tempfile(folder=tmp_dir)
             src_file_orig.close()
 
             self.copyFile(src_files[0], src_file_orig)
@@ -141,7 +141,7 @@ class TestToolMsvc(AqlTestCase):
 
             self.buildPrj(prj, 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_msvc_archiver(self):
         with Tempdir() as tmp_dir:
@@ -192,7 +192,7 @@ class TestToolMsvc(AqlTestCase):
                 src_files, res_file, target='foo', batch_build=True, batch_groups=num_groups)
             self.buildPrj(prj, num_groups + 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_msvc_linker(self):
         with Tempdir() as tmp_dir:
@@ -247,7 +247,7 @@ class TestToolMsvc(AqlTestCase):
                             target='foo', batch_build=True, batch_groups=num_groups)
             self.buildPrj(prj, num_groups + 2, jobs=1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_msvc_res_compiler(self):
 
@@ -296,7 +296,7 @@ class TestToolMsvc(AqlTestCase):
             rc.Compile(res_file)
             self.buildPrj(prj, 0)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

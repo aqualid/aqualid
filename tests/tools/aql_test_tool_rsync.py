@@ -9,7 +9,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempdir
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _build(prj):
@@ -17,7 +17,7 @@ def _build(prj):
         prj.build_manager.printFails()
         assert False, "Build failed"
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestToolRsync(AqlTestCase):
@@ -48,7 +48,7 @@ class TestToolRsync(AqlTestCase):
 
                     _build(prj)
 
-    # //=======================================================//
+    # ==========================================================
 
     @skip
     def test_rsync_push_remote(self):
@@ -70,7 +70,7 @@ class TestToolRsync(AqlTestCase):
                 remote_files.options.rsync_flags += ['--delete-excluded']
                 _build(prj)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_rsync_pull(self):
         with Tempdir() as tmp_dir:
@@ -98,7 +98,7 @@ class TestToolRsync(AqlTestCase):
 
                     _build(prj)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

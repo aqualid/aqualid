@@ -17,7 +17,7 @@ from aql.options import builtinOptions
 from aql.nodes import Node, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class FailedBuilder (Builder):
@@ -25,7 +25,7 @@ class FailedBuilder (Builder):
     def build(self, source_entities, targets):
         raise Exception("Builder always fail.")
 
-# //===========================================================================//
+# ==============================================================================
 
 _sync_lock = threading.Lock()
 _sync_value = 0
@@ -43,14 +43,14 @@ class SyncValueBuilder (Builder):
 
         # self.initLocks( lock_names )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         name = self.__class__.__name__
         name += "(%s:%s)" % (self.name, self.number,)
         return name
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def initLocks(self, lock_names, sync_locks):
         self.locks = locks = []
@@ -64,7 +64,7 @@ class SyncValueBuilder (Builder):
 
             locks.append(lock)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def acquireLocks(self):
         locks = []
@@ -82,14 +82,14 @@ class SyncValueBuilder (Builder):
 
         return locks
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @staticmethod
     def releaseLocks(locks):
         for lock in locks:
             lock.release()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
 
@@ -120,7 +120,7 @@ class SyncValueBuilder (Builder):
 
         targets.add(target)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class CopyValueBuilder (Builder):
@@ -145,7 +145,7 @@ class CopyValueBuilder (Builder):
         return tuple(value.name for value in source_entities)
 
 
-# //===========================================================================//
+# ==============================================================================
 
 class ChecksumBuilder (FileBuilder):
 
@@ -158,7 +158,7 @@ class ChecksumBuilder (FileBuilder):
         self.length = length
         self.replace_ext = replace_ext
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _buildSrc(self, src, alg):
         chcksum = fileChecksum(src, self.offset, self.length, alg)
@@ -176,7 +176,7 @@ class ChecksumBuilder (FileBuilder):
 
         return self.makeFileEntity(chcksum_filename, tags=alg)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         target_entities = []
@@ -188,7 +188,7 @@ class ChecksumBuilder (FileBuilder):
 
         targets.add(target_entities)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def buildBatch(self, source_entities, targets):
         for src_value in source_entities:
@@ -197,14 +197,14 @@ class ChecksumBuilder (FileBuilder):
 
             targets[src_value].add(target_files)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ChecksumSingleBuilder (ChecksumBuilder):
 
     split = ChecksumBuilder.splitSingle
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _addNodesToBM(builder, src_files):
@@ -223,7 +223,7 @@ def _addNodesToBM(builder, src_files):
 
     return bm
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _build(bm, jobs=1, keep_going=False, explain=False):
@@ -239,7 +239,7 @@ def _build(bm, jobs=1, keep_going=False, explain=False):
         bm.close()
         bm.selfTest()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _buildChecksums(builder, src_files):
@@ -247,7 +247,7 @@ def _buildChecksums(builder, src_files):
     bm = _addNodesToBM(builder, src_files)
     _build(bm)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestBuildManager(AqlTestCase):
@@ -255,12 +255,12 @@ class TestBuildManager(AqlTestCase):
     def eventNodeBuilding(self, settings, node):
         self.building_nodes += 1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def eventNodeRemoved(self, settings, node, progress):
         self.removed_nodes += 1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setUp(self):
         super(TestBuildManager, self).setUp()
@@ -268,14 +268,14 @@ class TestBuildManager(AqlTestCase):
         self.building_nodes = 0
         addUserHandler(self.eventNodeBuilding)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def tearDown(self):
         removeUserHandler([self.eventNodeBuilding, ])
 
         super(TestBuildManager, self).tearDown()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_deps(self):
 
@@ -346,7 +346,7 @@ class TestBuildManager(AqlTestCase):
 
         self.assertRaises(ErrorNodeDependencyCyclic, _cyclicDeps, node4, node3)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_build(self):
 
@@ -364,14 +364,14 @@ class TestBuildManager(AqlTestCase):
             self.assertEqual(self.building_nodes, 2)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.building_nodes = self.built_nodes = 0
             _buildChecksums(builder, src_files)
             self.assertEqual(self.building_nodes, 0)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             builder = ChecksumBuilder(options, 32, 1024)
 
@@ -380,14 +380,14 @@ class TestBuildManager(AqlTestCase):
             self.assertEqual(self.building_nodes, 2)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.building_nodes = self.built_nodes = 0
             _buildChecksums(builder, src_files)
             self.assertEqual(self.building_nodes, 0)
             self.assertEqual(self.building_nodes, self.building_nodes)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_nodes(self):
 
@@ -470,7 +470,7 @@ class TestBuildManager(AqlTestCase):
 
             #// --------- //
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_check(self):
 
@@ -498,7 +498,7 @@ class TestBuildManager(AqlTestCase):
             finally:
                 bm.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_batch(self):
 
@@ -527,7 +527,7 @@ class TestBuildManager(AqlTestCase):
             finally:
                 bm.close()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_rebuild(self):
 
@@ -557,7 +557,7 @@ class TestBuildManager(AqlTestCase):
 
             self.assertEqual(self.building_nodes, num_src_files * 7)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.building_nodes = 0
 
@@ -571,7 +571,7 @@ class TestBuildManager(AqlTestCase):
 
             self.assertEqual(self.building_nodes, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_tags(self):
 
@@ -598,7 +598,7 @@ class TestBuildManager(AqlTestCase):
 
             self.assertEqual(self.built_nodes, num_src_files * 2)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.touchCppFile(src_files[0])
 
@@ -616,7 +616,7 @@ class TestBuildManager(AqlTestCase):
 
             self.assertEqual(self.built_nodes, 2)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_tags_batch(self):
 
@@ -646,7 +646,7 @@ class TestBuildManager(AqlTestCase):
 
             self.assertEqual(self.built_nodes, num_src_files + 1)
 
-            # //-------------------------------------------------------//
+            # -----------------------------------------------------------
 
             self.touchCppFile(src_files[0])
 
@@ -664,7 +664,7 @@ class TestBuildManager(AqlTestCase):
 
             self.assertEqual(self.built_nodes, 2)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_conflicts(self):
 
@@ -690,7 +690,7 @@ class TestBuildManager(AqlTestCase):
             bm.add([node1, node2])
             self.assertRaises(ErrorNodeSignatureDifferent, _build, bm)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_no_conflicts(self):
 
@@ -719,7 +719,7 @@ class TestBuildManager(AqlTestCase):
             self.assertEqual(
                 self.built_nodes, num_src_files + num_src_files * 2)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_node_index(self):
 
@@ -748,7 +748,7 @@ class TestBuildManager(AqlTestCase):
             self.assertEqual(
                 self.built_nodes, num_src_files + num_src_files + 1 + 1)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_node_build_fail(self):
 
@@ -769,7 +769,7 @@ class TestBuildManager(AqlTestCase):
             self.assertRaises(Exception, _build, bm)
             self.assertEqual(self.built_nodes, 0)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_sync_nodes(self):
 
@@ -788,7 +788,7 @@ class TestBuildManager(AqlTestCase):
 
             _build(bm, jobs=4)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @skip
     def test_bm_sync_modules(self):
@@ -853,7 +853,7 @@ class TestBuildManager(AqlTestCase):
 
             _build(bm, jobs=4)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def test_bm_require_modules(self):
 
@@ -917,7 +917,7 @@ class TestBuildManager(AqlTestCase):
 
             _build(bm, jobs=4)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @skip
     def test_bm_node_names(self):
@@ -953,7 +953,7 @@ class TestBuildManager(AqlTestCase):
             finally:
                 bm.close()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _generateNodeTree(bm, builder, node, depth):
@@ -962,7 +962,7 @@ def _generateNodeTree(bm, builder, node, depth):
         bm.add([node])
         depth -= 1
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @skip
@@ -980,7 +980,7 @@ class TestBuildManagerSpeed(AqlTestCase):
 
         _generateNodeTree(bm, builder, node, 5000)
 
-# //===========================================================================//
+# ==============================================================================
 
 if __name__ == "__main__":
     runLocalTests()

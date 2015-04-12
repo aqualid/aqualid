@@ -4,7 +4,7 @@ import itertools
 
 import aql
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorNoCommonSourcesDir(Exception):
@@ -13,7 +13,7 @@ class ErrorNoCommonSourcesDir(Exception):
         msg = "Can't rsync disjoined files: %s" % (sources,)
         super(ErrorNoCommonSourcesDir, self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _toCygwinPath(path):
@@ -37,7 +37,7 @@ def _toCygwinPath(path):
     return path + last_sep
 
 
-# //===========================================================================//
+# ==============================================================================
 
 def _normLocalPath(path):
 
@@ -57,7 +57,7 @@ def _normLocalPath(path):
 
     return path + last_sep
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _normRemotePath(path):
@@ -76,7 +76,7 @@ def _normRemotePath(path):
 
     return path + last_sep
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _splitRemotePath(remote_path):
@@ -104,7 +104,7 @@ def _splitRemotePath(remote_path):
 
     return user, host, remote_path
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class RemotePath(object):
@@ -124,17 +124,17 @@ class RemotePath(object):
         self.host = host
         self.user = user
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isRemote(self):
         return bool(self.host)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __str__(self):
         return self.get()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def join(self, other):
         if self.host:
@@ -144,7 +144,7 @@ class RemotePath(object):
 
         return RemotePath(path, self.user, self.host)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def basename(self):
         if self.host:
@@ -153,7 +153,7 @@ class RemotePath(object):
         else:
             return os.path.basename(self.path)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self, cygwin_path=False):
         if self.host:
@@ -167,7 +167,7 @@ class RemotePath(object):
 
             return self.path
 
-# //===========================================================================//
+# ==============================================================================
 
 """
 env.RsyncGet( remote_path = '/work/cp/kh', local_path = src_dir )
@@ -199,7 +199,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
         self.file_value_type = aql.FileTimestampEntity
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getCmd(self, options, key_file, excludes):
         cmd = [options.rsync.get()]
@@ -221,7 +221,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
         return cmd
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _getSources(self, source_entities):
 
@@ -240,7 +240,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
         return sources
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _setTargets(self, source_entities, sources, targets):
 
@@ -260,7 +260,7 @@ class RSyncPushBuilder(aql.FileBuilder):
             target_value = value_type(target_path.get())
             targets[src_value].add(target_value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def buildBatch(self, source_entities, targets):
         sources = self._getSources(source_entities)
@@ -304,7 +304,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
         return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         if brief:
@@ -315,7 +315,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
         return name
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class RSyncPullBuilder(aql.Builder):
@@ -339,7 +339,7 @@ class RSyncPullBuilder(aql.Builder):
 
         self.file_value_type = aql.FileTimestampEntity
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def makeEntity(self, value):
         if aql.isString(value):
@@ -349,7 +349,7 @@ class RSyncPullBuilder(aql.Builder):
 
         return self.makeSimpleEntity(value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getCmd(self, options, key_file, excludes):
         cmd = [options.rsync.get()]
@@ -371,7 +371,7 @@ class RSyncPullBuilder(aql.Builder):
 
         return cmd
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _getSourcesAndTargets(self, source_entities):
 
@@ -396,7 +396,7 @@ class RSyncPullBuilder(aql.Builder):
 
         return sources, targets
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         sources, target_files = self._getSourcesAndTargets(source_entities)
@@ -418,7 +418,7 @@ class RSyncPullBuilder(aql.Builder):
 
         return out
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def getTraceName(self, source_entities, brief):
         if brief:
@@ -429,7 +429,7 @@ class RSyncPullBuilder(aql.Builder):
 
         return name
 
-# //===========================================================================//
+# ==============================================================================
 
 
 @aql.tool('rsync')
@@ -444,7 +444,7 @@ class ToolRsync(aql.Tool):
         if not options.rsync_cygwin.isSet():
             options.rsync_cygwin = rsync.find('cygwin') != -1
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @classmethod
     def options(cls):
@@ -462,7 +462,7 @@ class ToolRsync(aql.Tool):
 
         return options
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, options):
         super(ToolRsync, self).__init__(options)
@@ -473,7 +473,7 @@ class ToolRsync(aql.Tool):
 
         options.setGroup("rsync")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def Pull(self, options, target, host=None, login=None, key_file=None, exclude=None):
         return RSyncPullBuilder(options, target,

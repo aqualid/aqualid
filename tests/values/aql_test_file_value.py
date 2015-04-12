@@ -40,7 +40,7 @@ class TestFileValue(AqlTestCase):
             self.assertEqual(temp_file_value1.name, temp_file_value2.name)
             self.assertNotEqual(temp_file_value1, temp_file_value2)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_file_value_save_load(self):
 
@@ -59,7 +59,7 @@ class TestFileValue(AqlTestCase):
         self.assertNotEqual(temp_file_value, file_value)
         self.assertFalse(file_value.isActual())
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_file_value_time(self):
         with Tempfile() as temp_file:
@@ -85,7 +85,7 @@ class TestFileValue(AqlTestCase):
             self.assertEqual(temp_file_value1.name, temp_file_value2.name)
             self.assertNotEqual(temp_file_value1, temp_file_value2)
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_file_value_time_save_load(self):
 
@@ -104,7 +104,7 @@ class TestFileValue(AqlTestCase):
         self.assertNotEqual(temp_file_value, file_value)
         self.assertFalse(file_value.isActual())
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_file_empty_value_save_load(self):
 
@@ -117,7 +117,7 @@ class TestFileValue(AqlTestCase):
         self._testSaveLoad(value1)
         self._testSaveLoad(value2)
 
-# //=======================================================//
+# ==========================================================
 
 if __name__ == "__main__":
     runLocalTests()

@@ -1,37 +1,42 @@
 #
-# Copyright (c) 2011,2012 The developers of Aqualid project
+# Copyright (c) 2014-2015 The developers of Aqualid project
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom
 # the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+#  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'Tempfile', 'Tempdir',
-)
 
 import os
 import tempfile
 import errno
 import shutil
 
+__all__ = (
+    'Tempfile', 'Tempdir',
+)
+
+# ==============================================================================
+
 
 class Tempfile (str):
 
-    def __new__(cls, prefix='tmp', suffix='', dir=None, mode='w+b'):
+    def __new__(cls, prefix='tmp', suffix='', folder=None, mode='w+b'):
         handle = tempfile.NamedTemporaryFile(
-            mode=mode, suffix=suffix, prefix=prefix, dir=dir, delete=False)
+            mode=mode, suffix=suffix, prefix=prefix, dir=folder, delete=False)
 
         self = super(Tempfile, cls).__new__(cls, handle.name)
         self.__handle = handle
@@ -76,22 +81,22 @@ class Tempfile (str):
 
         return self
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Tempdir(str):
 
-    def __new__(cls, prefix='tmp', suffix='', dir=None, name=None):
+    def __new__(cls, prefix='tmp', suffix='', folder=None, name=None):
 
-        if dir is not None:
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
+        if folder is not None:
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
 
         if name is None:
-            path = tempfile.mkdtemp(prefix=prefix, suffix=suffix, dir=dir)
+            path = tempfile.mkdtemp(prefix=prefix, suffix=suffix, dir=folder)
         else:
-            if dir is not None:
-                name = os.path.join(dir, name)
+            if folder is not None:
+                name = os.path.join(folder, name)
 
             path = os.path.abspath(name)
 

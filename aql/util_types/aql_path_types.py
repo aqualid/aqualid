@@ -29,7 +29,7 @@ __all__ = (
     'AbsFilePath',
 )
 
-# //===========================================================================//
+# ==============================================================================
 
 if os.path.normcase('ABC') == os.path.normcase('abc'):
     FilePathBase = IgnoreCaseString
@@ -42,14 +42,14 @@ except AttributeError:
     def _splitunc(path):
         return str(), path
 
-# //===========================================================================//
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
 
 class FilePath (FilePathBase):
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __getnewargs__(self):
         # noinspection PyRedundantParentheses
@@ -61,7 +61,7 @@ class FilePath (FilePathBase):
     def __setstate__(self, state):
         pass
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __add__(self, other):
         return FilePath(super(FilePath, self).__add__(other))
@@ -69,12 +69,12 @@ class FilePath (FilePathBase):
     def __iadd__(self, other):
         return FilePath(super(FilePath, self).__add__(other))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __hash__(self):
         return super(FilePath, self).__hash__()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def abspath(self):
         return FilePath(os.path.abspath(self))
@@ -101,7 +101,7 @@ class FilePath (FilePathBase):
 
         return FilePathBase(drive)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def change(self, dirname=None, name=None, ext=None, prefix=None):
 
@@ -119,12 +119,12 @@ class FilePath (FilePathBase):
 
         return FilePath(os.path.join(dirname, name + ext))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def joinPath(self, *paths):
         return FilePath(os.path.join(self, *paths))
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class AbsFilePath (FilePath):

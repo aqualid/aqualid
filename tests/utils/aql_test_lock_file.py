@@ -11,7 +11,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempfile, FileLock, ErrorFileLocked
 from aql.utils.aql_lock_file import GeneralFileLock
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def writeProcess(filename, event, LockType, **lock_flags):
@@ -27,7 +27,7 @@ def writeProcess(filename, event, LockType, **lock_flags):
             file.write(b"123")
             file.flush()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def readProcess(filename, event, LockType, **lock_flags):
@@ -42,7 +42,7 @@ def readProcess(filename, event, LockType, **lock_flags):
         with open(filename, 'r+b') as file:
             file.read()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class TestFileLock(AqlTestCase):
@@ -72,7 +72,7 @@ class TestFileLock(AqlTestCase):
 
             p.join()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_file_lock(self):
 
@@ -81,7 +81,7 @@ class TestFileLock(AqlTestCase):
         if FileLock is not GeneralFileLock:
             self.__test_file_lock_type(FileLock)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_general_file_lock_timeout(self):
 
@@ -95,7 +95,7 @@ class TestFileLock(AqlTestCase):
                 self.assertRaises(ErrorFileLocked, flock2.writeLock)
                 self.assertGreaterEqual(time.time() - start_time, 3)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_read_file_lock(self):
 
@@ -115,7 +115,7 @@ class TestFileLock(AqlTestCase):
                     with open(temp_file, 'r+b') as file:
                         file.read()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_file_wrlock(self):
 
@@ -146,7 +146,7 @@ class TestFileLock(AqlTestCase):
 
             p.join()
 
-    # //=======================================================//
+    # ==========================================================
 
     def test_file_rwlock(self):
 
@@ -177,7 +177,7 @@ class TestFileLock(AqlTestCase):
 
             p.join()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def _test_file_lock_no_wait(self, lock_type):
 
@@ -198,12 +198,12 @@ class TestFileLock(AqlTestCase):
 
             p.join()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_file_lock_no_wait(self):
         self._test_file_lock_no_wait(FileLock)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_general_file_lock_no_wait(self):
 
@@ -212,7 +212,7 @@ class TestFileLock(AqlTestCase):
 
         self._test_file_lock_no_wait(GeneralFileLock)
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_file_lock_force(self):
 
@@ -238,7 +238,7 @@ class TestFileLock(AqlTestCase):
 
             p.join()
 
-    # //===========================================================================//
+    # ==============================================================================
 
     def test_general_file_lock_force(self):
 
@@ -261,7 +261,7 @@ class TestFileLock(AqlTestCase):
             p.join()
 
 
-# //=======================================================//
+# ==========================================================
 
 if __name__ == "__main__":
     runLocalTests()

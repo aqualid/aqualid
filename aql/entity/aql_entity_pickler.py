@@ -31,12 +31,12 @@ except ImportError:
 
 from aql.util_types import AqlException
 
-# //===========================================================================//
+# ==============================================================================
 
 _known_type_names = {}
 _known_type_ids = {}
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class EntityPickler (object):
@@ -59,7 +59,7 @@ class EntityPickler (object):
         self.unpickler = unpickler
         self.buffer = membuf
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
     @staticmethod
     def persistent_id(entity, known_type_names=_known_type_names):
 
@@ -73,7 +73,7 @@ class EntityPickler (object):
         except KeyError:
             return None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
     @staticmethod
     def persistent_load(pid, known_type_ids=_known_type_ids):
 
@@ -86,7 +86,7 @@ class EntityPickler (object):
         except KeyError:
             raise pickle.UnpicklingError("Unsupported persistent object")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def dumps(self, entity):
         buf = self.buffer
@@ -96,7 +96,7 @@ class EntityPickler (object):
 
         return buf.getvalue()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def loads(self, bytes_object):
         buf = self.buffer
@@ -107,13 +107,13 @@ class EntityPickler (object):
 
         return self.unpickler.load()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _typeName(entity_type):
     return entity_type.__module__ + '.' + entity_type.__name__
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def pickleable(entity_type, known_type_names=_known_type_names, known_type_ids=_known_type_ids):

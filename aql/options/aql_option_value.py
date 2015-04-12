@@ -27,7 +27,7 @@ import operator
 
 from aql.util_types import toSequence, UniqueList, Dict
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorOptionValueMergeNonOptionValue(TypeError):
@@ -37,7 +37,7 @@ class ErrorOptionValueMergeNonOptionValue(TypeError):
             type(value),)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorOptionValueOperationFailed(TypeError):
@@ -56,7 +56,7 @@ class ErrorOptionValueOperationFailed(TypeError):
         msg = "Operation %s( %s ) failed with error: %s" % (op, args_str, err)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _setOperator(dest_value, value):
@@ -72,7 +72,7 @@ def _iSubKeyOperator(dest_value, key, value):
     dest_value[key] -= value
     return dest_value
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _updateOperator(dest_value, value):
@@ -85,7 +85,7 @@ def _updateOperator(dest_value, value):
     else:
         return value
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def SetValue(value):
@@ -119,7 +119,7 @@ def iSubValue(value):
 def iUpdateValue(value):
     return SimpleInplaceOperation(_updateOperator, value)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _convertArgs(args, kw, options, converter):
@@ -143,7 +143,7 @@ def _convertArgs(args, kw, options, converter):
 
     return tmp_args, tmp_kw
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _unconvertArgs(args, kw, options, context, unconverter):
@@ -168,7 +168,7 @@ def _unconvertArgs(args, kw, options, context, unconverter):
 
     return tmp_args, tmp_kw
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Condition(object):
@@ -186,7 +186,7 @@ class Condition(object):
         self.args = args
         self.kw = kw
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def convert(self, options, converter):
         self.args, self.kw = _convertArgs(
@@ -196,7 +196,7 @@ class Condition(object):
         if cond is not None:
             cond.convert(options, converter)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, options, context, unconverter):
         if self.condition is not None:
@@ -208,7 +208,7 @@ class Condition(object):
 
         return self.predicate(options, context, *args, **kw)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class Operation(object):
@@ -223,18 +223,18 @@ class Operation(object):
         self.args = args
         self.kw = kw
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def convert(self, options, converter):
         self.args, self.kw = _convertArgs(
             self.args, self.kw, options, converter)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _callAction(self, options, context, args, kw):
         return self.action(options, context, *args, **kw)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, options, context, unconverter):
         args, kw = _unconvertArgs(
@@ -247,27 +247,27 @@ class Operation(object):
 
         return result
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __add__(self, other):
         return SimpleOperation(operator.add, self, other)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __radd__(self, other):
         return SimpleOperation(operator.add, other, self)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __sub__(self, other):
         return SimpleOperation(operator.sub, self, other)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __rsub__(self, other):
         return SimpleOperation(operator.sub, other, self)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class SimpleOperation(Operation):
@@ -275,7 +275,7 @@ class SimpleOperation(Operation):
     def _callAction(self, options, context, args, kw):
         return self.action(*args, **kw)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class InplaceOperation(object):
@@ -316,7 +316,7 @@ class InplaceOperation(object):
         dest_value = value_type(result)
         return dest_value
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class SimpleInplaceOperation(InplaceOperation):
@@ -324,7 +324,7 @@ class SimpleInplaceOperation(InplaceOperation):
     def _callAction(self, options, context, dest_value, args, kw):
         return self.action(dest_value, *args, **kw)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ConditionalValue (object):
@@ -338,7 +338,7 @@ class ConditionalValue (object):
         self.ioperation = ioperation
         self.condition = condition
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def convert(self, options, converter):
         condition = self.condition
@@ -349,7 +349,7 @@ class ConditionalValue (object):
         if isinstance(ioperation, InplaceOperation):
             ioperation.convert(options, converter)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def evaluate(self, value, value_type, options, context, unconverter):
         condition = self.condition
@@ -360,7 +360,7 @@ class ConditionalValue (object):
 
         return value
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class OptionValue (object):
@@ -374,27 +374,27 @@ class OptionValue (object):
         self.option_type = option_type
         self.conditional_values = list(toSequence(conditional_values))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isSet(self):
         return bool(self.conditional_values)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isToolKey(self):
         return self.option_type.is_tool_key
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def appendValue(self, conditional_value):
         self.conditional_values.append(conditional_value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def prependValue(self, conditional_value):
         self.conditional_values[:0] = [conditional_value]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def merge(self, other):
         if self is other:
@@ -418,22 +418,22 @@ class OptionValue (object):
 
         self.conditional_values += other_values[diff_index:]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def reset(self):
         self.conditional_values = []
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def copy(self):
         return OptionValue(self.option_type, self.conditional_values)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __copy__(self):
         return self.copy()
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def get(self, options, context, evaluator=None):
 

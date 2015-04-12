@@ -40,7 +40,7 @@ from aql.util_types import String, uStr, isString, toString, IgnoreCaseString,\
     isSimpleValue
 
 
-# //===========================================================================//
+# ==============================================================================
 
 class ErrorOptionTypeEnumAliasIsAlreadySet(AqlException):
 
@@ -49,7 +49,7 @@ class ErrorOptionTypeEnumAliasIsAlreadySet(AqlException):
             value, option, new_value, current_value)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorOptionTypeEnumValueIsAlreadySet(AqlException):
@@ -59,7 +59,7 @@ class ErrorOptionTypeEnumValueIsAlreadySet(AqlException):
             value, option, new_value)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorOptionTypeUnableConvertValue(TypeError):
@@ -75,7 +75,7 @@ class ErrorOptionTypeUnableConvertValue(TypeError):
             invalid_value, type(invalid_value), option_help.errorText())
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class ErrorOptionTypeNoEnumValues(TypeError):
@@ -92,7 +92,7 @@ class ErrorOptionTypeCantDeduce(AqlException):
             type(value),)
         super(type(self), self).__init__(msg)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def autoOptionType(value):
@@ -143,7 +143,7 @@ def autoOptionType(value):
 
     return opt_type
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _getTypeName(value_type):
@@ -164,7 +164,7 @@ def _getTypeName(value_type):
 
     return name.title()
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _joinToLength(values, max_length=0, separator="", prefix="", suffix=""):
@@ -191,7 +191,7 @@ def _joinToLength(values, max_length=0, separator="", prefix="", suffix=""):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _indentItems(indent_value, values):
@@ -211,7 +211,7 @@ def _indentItems(indent_value, values):
 
     return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 def _mergeLists(values1, values2, indent_size):
@@ -233,7 +233,7 @@ def _mergeLists(values1, values2, indent_size):
     return result
 
 
-# //===========================================================================//
+# ==============================================================================
 
 class OptionHelp(object):
     __slots__ = (
@@ -256,7 +256,7 @@ class OptionHelp(object):
         self._names = []
         self.current_value = None
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     @property
     def is_key(self):
@@ -278,12 +278,12 @@ class OptionHelp(object):
     def names(self, names):
         self._names = sorted(names, key=str.lower)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def isHidden(self):
         return not bool(self.description) or self.option_type.is_hidden
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def _currentValue(self, details):
         if self.current_value is not None:
@@ -306,7 +306,7 @@ class OptionHelp(object):
         else:
             details.append("N/A")
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def text(self, brief=False, names_indent=0):
 
@@ -340,7 +340,7 @@ class OptionHelp(object):
 
         return result
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def errorText(self):
 
@@ -358,7 +358,7 @@ class OptionHelp(object):
 
         return '. '.join(result)
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class OptionHelpGroup(object):
@@ -411,7 +411,7 @@ class OptionHelpGroup(object):
 
         return result
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class OptionType (object):
@@ -427,7 +427,7 @@ class OptionType (object):
         'is_hidden',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, value_type=str, description=None, group=None, range_help=None, default=NotImplemented,
                  is_tool_key=False, is_hidden=False):
@@ -447,7 +447,7 @@ class OptionType (object):
         else:
             self.default = value_type(default)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, value=NotImplemented):
         """
@@ -464,7 +464,7 @@ class OptionType (object):
         except (TypeError, ValueError):
             raise ErrorOptionTypeUnableConvertValue(self, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def toStr(self, value):
         """
@@ -472,17 +472,17 @@ class OptionType (object):
         """
         return toString(value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def help(self):
         return OptionHelp(self)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpType(self):
         return _getTypeName(self.value_type)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpRange(self):
         """
@@ -493,8 +493,8 @@ class OptionType (object):
 
         return []
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class StrOptionType (OptionType):
@@ -505,8 +505,8 @@ class StrOptionType (OptionType):
         super(StrOptionType, self).__init__(value_type, description,
                                             group, range_help, is_tool_key=is_tool_key, is_hidden=is_hidden)
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class VersionOptionType (OptionType):
@@ -518,8 +518,8 @@ class VersionOptionType (OptionType):
     def helpType(self):
         return "Version String"
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class PathOptionType (OptionType):
@@ -531,8 +531,8 @@ class PathOptionType (OptionType):
     def helpType(self):
         return "File System Path"
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class AbsPathOptionType (OptionType):
@@ -544,8 +544,8 @@ class AbsPathOptionType (OptionType):
     def helpType(self):
         return "File System Path"
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class BoolOptionType (OptionType):
@@ -558,12 +558,12 @@ class BoolOptionType (OptionType):
         'aliases',
     )
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     __true_values = ('yes', 'true', 'on', 'enabled', 'y', '1', 't')
     __false_values = ('no', 'false', 'off', 'disabled', 'n', '0', 'f')
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __init__(self, description=None, group=None, style=None, true_values=None, false_values=None,
                  default=False, is_tool_key=False, is_hidden=False):
@@ -594,7 +594,7 @@ class BoolOptionType (OptionType):
         self.addValues(true_values, false_values)
         self.addValues(self.true_value, self.false_value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, value=NotImplemented):
 
@@ -613,12 +613,12 @@ class BoolOptionType (OptionType):
 
         return True if value else False
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def toStr(self, value):
         return self.true_value if value else self.false_value
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addValues(self, true_values, false_values):
         true_values = toSequence(true_values)
@@ -627,7 +627,7 @@ class BoolOptionType (OptionType):
         self.true_values.update(map(IgnoreCaseString,  true_values))
         self.false_values.update(map(IgnoreCaseString, false_values))
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpRange(self):
 
@@ -644,8 +644,8 @@ class BoolOptionType (OptionType):
         return [_makeHelp(self.true_value, self.true_values),
                 _makeHelp(self.false_value, self.false_values), ]
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class EnumOptionType (OptionType):
@@ -672,7 +672,7 @@ class EnumOptionType (OptionType):
 
         self.strict = strict
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def addValues(self, values):
         try:
@@ -703,7 +703,7 @@ class EnumOptionType (OptionType):
                         raise ErrorOptionTypeEnumAliasIsAlreadySet(
                             self, alias, v, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, value=NotImplemented):
 
@@ -735,7 +735,7 @@ class EnumOptionType (OptionType):
 
         return result
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpRange(self):
 
@@ -758,7 +758,7 @@ class EnumOptionType (OptionType):
 
         return help_str
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def range(self):
         values = []
@@ -769,8 +769,8 @@ class EnumOptionType (OptionType):
 
         return values
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 # noinspection PyAttributeOutsideInit
 
@@ -794,7 +794,7 @@ class RangeOptionType (OptionType):
         if default is not NotImplemented:
             self.default = self(default)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setRange(self, min_value, max_value, coerce=True):
 
@@ -820,7 +820,7 @@ class RangeOptionType (OptionType):
         if coerce is not None:
             self.coerce = coerce
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, value=NotImplemented):
         try:
@@ -852,25 +852,25 @@ class RangeOptionType (OptionType):
         except TypeError:
             raise ErrorOptionTypeUnableConvertValue(self, value)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpRange(self):
         return ["%s ... %s" % (self.min_value, self.max_value)]
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def range(self):
         return [self.min_value, self.max_value]
 
-# //===========================================================================//
-# //===========================================================================//
+# ==============================================================================
+# ==============================================================================
 
 
 class ListOptionType (OptionType):
 
     __slots__ = ('item_type',)
 
-    # //=======================================================//
+    # ==========================================================
 
     def __init__(self, value_type=str, unique=False, separators=', ', description=None, group=None,
                  range_help=None, is_tool_key=False, is_hidden=False):
@@ -901,7 +901,7 @@ class ListOptionType (OptionType):
                                              group, range_help, is_tool_key=is_tool_key, is_hidden=is_hidden)
         self.item_type = value_type
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, values=None):
         try:
@@ -913,7 +913,7 @@ class ListOptionType (OptionType):
         except (TypeError, ValueError):
             raise ErrorOptionTypeUnableConvertValue(self, values)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpType(self):
 
@@ -924,7 +924,7 @@ class ListOptionType (OptionType):
 
         return "List of %s" % item_type
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpRange(self):
 
@@ -936,12 +936,12 @@ class ListOptionType (OptionType):
 
         return []
 
-# //===========================================================================//
+# ==============================================================================
 
 
 class DictOptionType (OptionType):
 
-    # //=======================================================//
+    # ==========================================================
 
     def __init__(self, key_type=str, value_type=None, separators=', ', description=None, group=None,
                  range_help=None, is_tool_key=False, is_hidden=False):
@@ -966,14 +966,14 @@ class DictOptionType (OptionType):
         super(DictOptionType, self).__init__(dict_type, description, group, range_help,
                                              is_tool_key=is_tool_key, is_hidden=is_hidden)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def setValueType(self, key, value_type):
         if isinstance(value_type, OptionType):
             value_type = value_type.value_type
         self.value_type.setValueType(key, value_type)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def __call__(self, values=None):
         try:
@@ -985,7 +985,7 @@ class DictOptionType (OptionType):
         except (TypeError, ValueError):
             raise ErrorOptionTypeUnableConvertValue(self, values)
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpType(self):
 
@@ -1000,7 +1000,7 @@ class DictOptionType (OptionType):
 
         return "Dictionary"
 
-    # //-------------------------------------------------------//
+    # -----------------------------------------------------------
 
     def helpRange(self):
 
