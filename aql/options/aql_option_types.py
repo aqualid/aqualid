@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014-2015 The developers of Aqualid project
+# Copyright (c) 2011-2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -39,18 +39,21 @@ __all__ = (
     'AbsPathOptionType', 'BoolOptionType',
     'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
     'autoOptionType', 'OptionHelpGroup', 'OptionHelp',
-    'ErrorOptionTypeEnumAliasIsAlreadySet', 'ErrorOptionTypeEnumValueIsAlreadySet',
+    'ErrorOptionTypeEnumAliasIsAlreadySet',
+    'ErrorOptionTypeEnumValueIsAlreadySet',
     'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues',
     'ErrorOptionTypeCantDeduce',
 )
 
 # ==============================================================================
 
+
 class ErrorOptionTypeEnumAliasIsAlreadySet(Exception):
 
     def __init__(self, option, value, current_value, new_value):
-        msg = "Alias '%s' of Enum Option '%s' can't be changed to '%s' from '%s'" % (
-            value, option, new_value, current_value)
+        msg = "Alias '%s' of Enum Option '%s' can't be changed to " \
+              "'%s' from '%s'" %\
+              (value, option, new_value, current_value)
         super(type(self), self).__init__(msg)
 
 # ==============================================================================
@@ -59,8 +62,8 @@ class ErrorOptionTypeEnumAliasIsAlreadySet(Exception):
 class ErrorOptionTypeEnumValueIsAlreadySet(Exception):
 
     def __init__(self, option, value, new_value):
-        msg = "Value '%s' of Enum Option '%s' can't be changed to alias to '%s'" % (
-            value, option, new_value)
+        msg = "Value '%s' of Enum Option '%s' can't be changed to alias " \
+              "to '%s'" % (value, option, new_value)
         super(type(self), self).__init__(msg)
 
 # ==============================================================================
@@ -295,7 +298,12 @@ class OptionHelp(object):
                 current_value = [toString(v) for v in self.current_value]
                 if current_value:
                     current_value = _joinToLength(
-                        current_value, 64, separator=",", prefix="'", suffix="'")
+                        current_value,
+                        64,
+                        separator=",",
+                        prefix="'",
+                        suffix="'")
+
                     current_value = _indentItems("[ ", current_value)
                     current_value[-1] += " ]"
                     details.extend(current_value)
@@ -433,8 +441,15 @@ class OptionType (object):
 
     # -----------------------------------------------------------
 
-    def __init__(self, value_type=str, description=None, group=None, range_help=None, default=NotImplemented,
-                 is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 value_type=str,
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 default=NotImplemented,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
 
         if issubclass(value_type, OptionType):
             value_type = value_type()
@@ -503,11 +518,22 @@ class OptionType (object):
 
 class StrOptionType (OptionType):
 
-    def __init__(self, ignore_case=False, description=None, group=None, range_help=None,
-                 is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 ignore_case=False,
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
+
         value_type = IgnoreCaseString if ignore_case else String
-        super(StrOptionType, self).__init__(value_type, description,
-                                            group, range_help, is_tool_key=is_tool_key, is_hidden=is_hidden)
+        super(StrOptionType, self).__init__(value_type,
+                                            description,
+                                            group,
+                                            range_help,
+                                            is_tool_key=is_tool_key,
+                                            is_hidden=is_hidden)
 
 # ==============================================================================
 # ==============================================================================
@@ -515,9 +541,19 @@ class StrOptionType (OptionType):
 
 class VersionOptionType (OptionType):
 
-    def __init__(self, description=None, group=None, range_help=None, is_tool_key=False, is_hidden=False):
-        super(VersionOptionType, self).__init__(Version, description,
-                                                group, range_help, is_tool_key=is_tool_key, is_hidden=is_hidden)
+    def __init__(self,
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 is_tool_key=False,
+                 is_hidden=False):
+
+        super(VersionOptionType, self).__init__(Version,
+                                                description,
+                                                group,
+                                                range_help,
+                                                is_tool_key=is_tool_key,
+                                                is_hidden=is_hidden)
 
     def helpType(self):
         return "Version String"
@@ -528,9 +564,22 @@ class VersionOptionType (OptionType):
 
 class PathOptionType (OptionType):
 
-    def __init__(self, description=None, group=None, range_help=None, is_tool_key=False, is_hidden=False, default=NotImplemented):
-        super(PathOptionType, self).__init__(FilePath, description, group, range_help,
-                                             is_tool_key=is_tool_key, is_hidden=is_hidden, default=default)
+    def __init__(self,
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 is_tool_key=False,
+                 is_hidden=False,
+                 default=NotImplemented
+                 ):
+
+        super(PathOptionType, self).__init__(FilePath,
+                                             description,
+                                             group,
+                                             range_help,
+                                             is_tool_key=is_tool_key,
+                                             is_hidden=is_hidden,
+                                             default=default)
 
     def helpType(self):
         return "File System Path"
@@ -541,9 +590,22 @@ class PathOptionType (OptionType):
 
 class AbsPathOptionType (OptionType):
 
-    def __init__(self, description=None, group=None, range_help=None, is_tool_key=False, is_hidden=False, default=NotImplemented):
-        super(AbsPathOptionType, self).__init__(AbsFilePath, description, group, range_help,
-                                                is_tool_key=is_tool_key, is_hidden=is_hidden, default=default)
+    def __init__(self,
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 is_tool_key=False,
+                 is_hidden=False,
+                 default=NotImplemented
+                 ):
+
+        super(AbsPathOptionType, self).__init__(AbsFilePath,
+                                                description,
+                                                group,
+                                                range_help,
+                                                is_tool_key=is_tool_key,
+                                                is_hidden=is_hidden,
+                                                default=default)
 
     def helpType(self):
         return "File System Path"
@@ -569,12 +631,22 @@ class BoolOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def __init__(self, description=None, group=None, style=None, true_values=None, false_values=None,
-                 default=False, is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 description=None,
+                 group=None,
+                 style=None,
+                 true_values=None,
+                 false_values=None,
+                 default=False,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
 
         # noinspection PyTypeChecker
         super(BoolOptionType, self).__init__(bool, description, group,
-                                             default=default, is_tool_key=is_tool_key, is_hidden=is_hidden)
+                                             default=default,
+                                             is_tool_key=is_tool_key,
+                                             is_hidden=is_hidden)
 
         if style is None:
             style = ('true', 'false')
@@ -660,12 +732,21 @@ class EnumOptionType (OptionType):
 
     )
 
-    def __init__(self, values, description=None, group=None, value_type=IgnoreCaseString,
-                 default=NotImplemented, strict=True,
-                 is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 values,
+                 description=None,
+                 group=None,
+                 value_type=IgnoreCaseString,
+                 default=NotImplemented,
+                 strict=True,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
 
-        super(EnumOptionType, self).__init__(value_type, description, group, default=default,
-                                             is_tool_key=is_tool_key, is_hidden=is_hidden)
+        super(EnumOptionType, self).__init__(value_type, description, group,
+                                             default=default,
+                                             is_tool_key=is_tool_key,
+                                             is_hidden=is_hidden)
 
         self.__values = {}
 
@@ -787,12 +868,23 @@ class RangeOptionType (OptionType):
         'coerce',
     )
 
-    def __init__(self, min_value, max_value, description=None, group=None, value_type=int, coerce=True,
-                 default=NotImplemented, is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 min_value,
+                 max_value,
+                 description=None,
+                 group=None,
+                 value_type=int,
+                 coerce=True,
+                 default=NotImplemented,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
 
         # noinspection PyTypeChecker
-        super(RangeOptionType, self).__init__(value_type, description, group, default=default,
-                                              is_tool_key=is_tool_key, is_hidden=is_hidden)
+        super(RangeOptionType, self).__init__(value_type, description, group,
+                                              default=default,
+                                              is_tool_key=is_tool_key,
+                                              is_hidden=is_hidden)
 
         self.setRange(min_value, max_value, coerce)
         if default is not NotImplemented:
@@ -876,8 +968,16 @@ class ListOptionType (OptionType):
 
     # ==========================================================
 
-    def __init__(self, value_type=str, unique=False, separators=', ', description=None, group=None,
-                 range_help=None, is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 value_type=str,
+                 unique=False,
+                 separators=', ',
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
 
         if isinstance(value_type, OptionType):
             if description is None:
@@ -902,7 +1002,9 @@ class ListOptionType (OptionType):
             list_type = SplitListType(list_type, separators)
 
         super(ListOptionType, self).__init__(list_type, description,
-                                             group, range_help, is_tool_key=is_tool_key, is_hidden=is_hidden)
+                                             group, range_help,
+                                             is_tool_key=is_tool_key,
+                                             is_hidden=is_hidden)
         self.item_type = value_type
 
     # -----------------------------------------------------------
@@ -947,8 +1049,16 @@ class DictOptionType (OptionType):
 
     # ==========================================================
 
-    def __init__(self, key_type=str, value_type=None, separators=', ', description=None, group=None,
-                 range_help=None, is_tool_key=False, is_hidden=False):
+    def __init__(self,
+                 key_type=str,
+                 value_type=None,
+                 separators=', ',
+                 description=None,
+                 group=None,
+                 range_help=None,
+                 is_tool_key=False,
+                 is_hidden=False
+                 ):
 
         if isinstance(value_type, OptionType):
             if description is None:
@@ -967,8 +1077,10 @@ class DictOptionType (OptionType):
         if separators:
             dict_type = SplitDictType(dict_type, separators)
 
-        super(DictOptionType, self).__init__(dict_type, description, group, range_help,
-                                             is_tool_key=is_tool_key, is_hidden=is_hidden)
+        super(DictOptionType, self).__init__(dict_type, description, group,
+                                             range_help,
+                                             is_tool_key=is_tool_key,
+                                             is_hidden=is_hidden)
 
     # -----------------------------------------------------------
 

@@ -27,8 +27,9 @@ from aql.util_types import String, IgnoreCaseString, UpperCaseString
 from .aql_options import Options
 from .aql_option_value import SimpleOperation
 
-from .aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, DictOptionType, \
-    PathOptionType, StrOptionType, VersionOptionType, OptionType
+from .aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType,\
+    ListOptionType, DictOptionType, PathOptionType, StrOptionType, \
+    VersionOptionType, OptionType
 
 __all__ = (
     'builtinOptions',
@@ -66,15 +67,21 @@ def _build_options():
     options.build_variant = build_variant
     options.bv = options.build_variant
 
-    options.build_variants = ListOptionType(value_type=build_variant, unique=True,
-                                            description="Active build variants")
+    options.build_variants = ListOptionType(
+        value_type=build_variant,
+        unique=True,
+        description="Active build variants"
+    )
+
     options.bvs = options.build_variants
 
     # -----------------------------------------------------------
 
-    file_signature = EnumOptionType(values=[('checksum', 'md5', 'sign'), ('timestamp', 'time')],
-                                    default='checksum',
-                                    description="Type used to detect changes in dependency files")
+    file_signature = EnumOptionType(
+        values=[('checksum', 'md5', 'sign'), ('timestamp', 'time')],
+        default='checksum',
+        description="Type used to detect changes in dependency files"
+    )
 
     options.file_signature = file_signature
     options.signature = options.file_signature
@@ -83,9 +90,14 @@ def _build_options():
 
     options.batch_build = BoolOptionType(description="Prefer batch build.")
     options.batch_groups = OptionType(
-        value_type=int, default=1, description="Preferred number of batching groups.")
+        value_type=int,
+        default=1,
+        description="Preferred number of batching groups."
+    )
     options.batch_size = OptionType(
-        value_type=int, default=0, description="Preferred size of a batching group.")
+        value_type=int,
+        default=0,
+        description="Preferred size of a batching group.")
 
     # -----------------------------------------------------------
 
@@ -99,70 +111,81 @@ def _build_options():
 def _target_options():
     options = Options()
 
-    options.target_os = EnumOptionType(values=['native', 'unknown',
-                                               ('windows',
-                                                'win32', 'win64'),
-                                               ('linux', 'linux-gnu'),
-                                               'uclinux',
-                                               'cygwin',
-                                               'interix',
-                                               'freebsd',
-                                               'openbsd',
-                                               'netbsd',
-                                               ('OS-X', 'osx', 'darwin'),
-                                               'java',
-                                               'sunos',
-                                               'hpux',
-                                               'vxworks',
-                                               'solaris',
-                                               'elf'],
-                                       default='native',
-                                       strict=False,
-                                       is_tool_key=True,
-                                       description="The target system/OS name, e.g. 'Linux', 'Windows', or 'Java'.")
+    options.target_os = EnumOptionType(
+        values=['native', 'unknown',
+                ('windows',
+                 'win32', 'win64'),
+                ('linux', 'linux-gnu'),
+                'uclinux',
+                'cygwin',
+                'interix',
+                'freebsd',
+                'openbsd',
+                'netbsd',
+                ('OS-X', 'osx', 'darwin'),
+                'java',
+                'sunos',
+                'hpux',
+                'vxworks',
+                'solaris',
+                'elf'],
+        default='native',
+        strict=False,
+        is_tool_key=True,
+        description="The target system/OS name, e.g. 'Linux', 'Windows' etc.")
 
     options.os = options.target_os
 
-    options.target_arch = EnumOptionType(values=['native', 'unknown',
-                                                 ('x86-32', 'x86_32', 'x86', '80x86',
-                                                  'i386', 'i486', 'i586', 'i686'),
-                                                 ('x86-64', 'x86_64',
-                                                  'amd64', 'x64'),
-                                                 'arm', 'arm64',
-                                                 'alpha',
-                                                 'mips',
-                                                 'ia64',
-                                                 'm68k',
-                                                 'sparc',
-                                                 'sparc64',
-                                                 'sparcv9',
-                                                 'powerpc',
-                                                 ],
-                                         default='native',
-                                         strict=False,
-                                         is_tool_key=True,
-                                         description="The target machine type, e.g. 'i386'")
+    options.target_arch = EnumOptionType(
+        values=['native', 'unknown',
+                ('x86-32', 'x86_32', 'x86', '80x86', 'i386', 'i486', 'i586',
+                 'i686'),
+                ('x86-64', 'x86_64', 'amd64', 'x64'),
+                'arm', 'arm64',
+                'alpha',
+                'mips',
+                'ia64',
+                'm68k',
+                'sparc',
+                'sparc64',
+                'sparcv9',
+                'powerpc',
+                ],
+        default='native',
+        strict=False,
+        is_tool_key=True,
+        description="The target machine type, e.g. 'i386'")
 
     options.arch = options.target_arch
 
-    options.target_subsystem = EnumOptionType(values=['console', 'windows'],
-                                              default='console',
-                                              description="The target subsystem.")
+    options.target_subsystem = EnumOptionType(
+        values=['console', 'windows'],
+        default='console',
+        description="The target subsystem."
+    )
 
-    options.target_platform = StrOptionType(ignore_case=True,
-                                            description="The target system's distribution, e.g. 'win32', 'Linux'")
+    options.target_platform = StrOptionType(
+        ignore_case=True,
+        description="The target system's distribution, e.g. 'win32', 'Linux'"
+    )
 
-    options.target_os_release = StrOptionType(ignore_case=True,
-                                              description="The target system's release, e.g. '2.2.0' or 'XP'")
+    options.target_os_release = StrOptionType(
+        ignore_case=True,
+        description="The target system's release, e.g. '2.2.0' or 'XP'"
+    )
 
     options.target_os_version = VersionOptionType(
-        description="The target system's release version, e.g. '2.2.0' or '5.1.2600'")
+        description="The target system's release version, "
+                    "e.g. '2.2.0' or '5.1.2600'"
+    )
 
-    options.target_cpu = StrOptionType(ignore_case=True,
-                                       description="The target real processor name, e.g. 'amdk6'.")
+    options.target_cpu = StrOptionType(
+        ignore_case=True,
+        description="The target real processor name, e.g. 'amdk6'.")
 
-    options.target_cpu_flags = ListOptionType(value_type=IgnoreCaseString,
-                                              description="The target CPU flags, e.g. 'mmx', 'sse2'.")
+    options.target_cpu_flags = ListOptionType(
+        value_type=IgnoreCaseString,
+        description="The target CPU flags, e.g. 'mmx', 'sse2'.")
 
     options.setGroup("Target system")
 
@@ -175,9 +198,12 @@ def _optimization_options():
 
     options = Options()
 
-    options.optimization = EnumOptionType(values=[('off', 0), ('size', 1), ('speed', 2)],
-                                          default='off',
-                                          description='Optimization level')
+    options.optimization = EnumOptionType(
+        values=[('off', 0), ('size', 1), ('speed', 2)],
+        default='off',
+        description='Optimization level'
+    )
+
     options.optlevel = options.optimization
     options.opt = options.optimization
 
@@ -213,13 +239,18 @@ def _code_gen_options():
     options.keep_asm = BoolOptionType(
         description='Keep generated assemblers files')
 
-    options.runtime_link = EnumOptionType(values=['default', 'static', ('shared', 'dynamic')],
-                                          default='default',
-                                          description='Linkage type of runtime library')
+    options.runtime_link = EnumOptionType(
+        values=['default', 'static', ('shared', 'dynamic')],
+        default='default',
+        description='Linkage type of runtime library')
+
     options.rt_link = options.runtime_link
 
     options.runtime_debug = BoolOptionType(
-        description='Use debug version of runtime library', style=('on', 'off'))
+        style=('on', 'off'),
+        description='Use debug version of runtime library'
+    )
+
     options.rt_debug = options.runtime_debug
 
     options.rtti = BoolOptionType(
@@ -227,9 +258,12 @@ def _code_gen_options():
     options.exceptions = BoolOptionType(
         description='Allow to throw exceptions', default=True)
 
-    options.runtime_thread = EnumOptionType(values=['default', 'single', 'multi'],
-                                            default='default',
-                                            description='Threading mode of runtime library')
+    options.runtime_thread = EnumOptionType(
+        values=['default', 'single', 'multi'],
+        default='default',
+        description='Threading mode of runtime library'
+    )
+
     options.rt_thread = options.runtime_thread
 
     options.setGroup("Code generation")
@@ -251,13 +285,15 @@ def _diagnostic_options():
     options.werror = options.warning_as_error
     options.warnings_as_errors = options.warning_as_error
 
-    options.lint = EnumOptionType(values=[('off', 0), ('on', 1), ('global', 2)],
-                                  default='off',
-                                  description='Lint source code.',
-                                  is_hidden=True)
+    options.lint = EnumOptionType(
+        values=[('off', 0), ('on', 1), ('global', 2)],
+        default='off',
+        description='Lint source code.',
+        is_hidden=True
+    )
 
-    options.lint_flags = ListOptionType(
-        description="Lint tool options", is_hidden=True)
+    options.lint_flags = ListOptionType(description="Lint tool options",
+                                        is_hidden=True)
 
     options.setGroup("Diagnostic")
     return options
@@ -276,10 +312,17 @@ def _env_options():
 
     options = Options()
     options.env = DictOptionType(key_type=env_key_type)
+
     options.env['PATH'] = ListOptionType(
-        value_type=PathOptionType(), separators=os.pathsep)
+        value_type=PathOptionType(),
+        separators=os.pathsep
+    )
+
     options.env['PATHEXT'] = ListOptionType(
-        value_type=PathOptionType(), separators=os.pathsep)
+        value_type=PathOptionType(),
+        separators=os.pathsep
+    )
+
     options.env['TEMP'] = PathOptionType()
     options.env['TMP'] = PathOptionType()
     options.env['HOME'] = PathOptionType()

@@ -26,253 +26,273 @@ __all__ = ('TestCaseSuite', 'TestCaseBase')
 
 # ==============================================================================
 
+
 class _ErrorHolder(object):
 
-  def __init__(self, test_class, description, exception ):
-    self.description = "%s (%s)" % (description, test_class.__name__)
-    self.failureException = exception   # attribute used by TestResult._exc_info_to_string
-    self.test_id = test_class.__module__ + '.' + test_class.__name__
-    self.__name__ = test_class.__name__
+    def __init__(self, test_class, description, exception):
+        self.description = "%s (%s)" % (description, test_class.__name__)
+        # attribute used by TestResult._exc_info_to_string
+        self.failureException = exception
+        self.test_id = test_class.__module__ + '.' + test_class.__name__
+        self.__name__ = test_class.__name__
 
-  def shortDescription(self):
-    return None
+    def shortDescription(self):
+        return None
 
-  def   __str__(self):
-    return self.description
+    def __str__(self):
+        return self.description
 
-  def id(self):
-    return self.test_id
+    def id(self):
+        return self.test_id
 
 # ==============================================================================
+
 
 class TestCaseSuite(unittest.TestSuite):
 
-  def __init__(self, tests=(), keep_going = False ):
-    super(TestCaseSuite, self).__init__( tests )
-    self.keep_going = keep_going
+    def __init__(self, tests=(), keep_going=False):
+        super(TestCaseSuite, self).__init__(tests)
+        self.keep_going = keep_going
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def   __getTestCaseClass( self ):
+    def __getTestCaseClass(self):
 
-    try:
-      return next( iter(self) ).__class__
-    except StopIteration:
-      return None
+        try:
+            return next(iter(self)).__class__
+        except StopIteration:
+            return None
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def   __setUpTestCaseClass( self, test_case_class, result ):
-    if test_case_class is not None:
-      if not hasattr(unittest.TestCase, 'setUpClass' ):   # call setUpClass only if it's not supported
-        setUpClass = getattr(test_case_class, 'setUpClass', None)
-        if setUpClass is not None:
-          try:
-            setUpClass()
-          except Exception as ex:
-            if not self.keep_going:
-              result.stop()
-            error_name = _ErrorHolder( test_case_class, 'setUpClass', ex )
-            result.addError( error_name, sys.exc_info() )
-            return False
+    def __setUpTestCaseClass(self, test_case_class, result):
+        if test_case_class is not None:
+            # call setUpClass only if it's not supported
+            if not hasattr(unittest.TestCase, 'setUpClass'):
+                setUpClass = getattr(test_case_class, 'setUpClass', None)
+                if setUpClass is not None:
+                    try:
+                        setUpClass()
+                    except Exception as ex:
+                        if not self.keep_going:
+                            result.stop()
+                        error_name = _ErrorHolder(
+                            test_case_class, 'setUpClass', ex)
+                        result.addError(error_name, sys.exc_info())
+                        return False
 
-    return True
+        return True
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def   __tearDownTestCaseClass( self, test_case_class, result ):
-    """Method tries to call tearDownClass method from test case instance."""
+    def __tearDownTestCaseClass(self, test_case_class, result):
+        """Method tries to call tearDownClass method from test case instance."""
 
-    if test_case_class is not None:
-      if not hasattr(unittest.TestCase, 'tearDownClass' ):  # call tearDownClass only if it's not supported
-        tearDownClass = getattr(test_case_class, 'tearDownClass', None)
-        if tearDownClass is not None:
-          try:
-            tearDownClass()
-          except Exception as ex:
-            if not self.keep_going:
-              result.stop()
-            error_name = _ErrorHolder( test_case_class, 'tearDownClass', ex )
-            result.addError( error_name, sys.exc_info() )
+        if test_case_class is not None:
+            # call tearDownClass only if it's not supported
+            if not hasattr(unittest.TestCase, 'tearDownClass'):
+                tearDownClass = getattr(test_case_class, 'tearDownClass', None)
+                if tearDownClass is not None:
+                    try:
+                        tearDownClass()
+                    except Exception as ex:
+                        if not self.keep_going:
+                            result.stop()
+                        error_name = _ErrorHolder(
+                            test_case_class, 'tearDownClass', ex)
+                        result.addError(error_name, sys.exc_info())
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def run( self, result, debug = False):
+    def run(self, result, debug=False):
 
-    test_case_class = self.__getTestCaseClass()
+        test_case_class = self.__getTestCaseClass()
 
-    if self.__setUpTestCaseClass( test_case_class, result ):
-      super(TestCaseSuite, self).run( result )
+        if self.__setUpTestCaseClass(test_case_class, result):
+            super(TestCaseSuite, self).run(result)
 
-    self.__tearDownTestCaseClass( test_case_class, result )
+        self.__tearDownTestCaseClass(test_case_class, result)
 
 # ==============================================================================
 
+
 class TestCaseBase(unittest.TestCase):
 
-  def __init__(self, methodName = 'runTest', keep_going = False ):
+    def __init__(self, methodName='runTest', keep_going=False):
 
-    self.keep_going = keep_going
-    super( TestCaseBase, self).__init__( methodName )
+        self.keep_going = keep_going
+        super(TestCaseBase, self).__init__(methodName)
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  @classmethod
-  def getOptions( cls ):
-    options = getattr( cls, 'options', None )
+    @classmethod
+    def getOptions(cls):
+        options = getattr(cls, 'options', None)
 
-    if options:
-      return options
+        if options:
+            return options
 
-    from tests_options import TestsOptions
-    options = TestsOptions()
-    cls.options = options
-    return options
+        from tests_options import TestsOptions
+        options = TestsOptions()
+        cls.options = options
+        return options
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def __getattr__(self, attr):
+    def __getattr__(self, attr):
 
-    if attr == 'options':
-      return self.getOptions()
+        if attr == 'options':
+            return self.getOptions()
 
-    raise AttributeError("Invalid attribute: '%s'" % str(attr) )
+        raise AttributeError("Invalid attribute: '%s'" % str(attr))
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def run( self, result = None ):
-    self.result = result
+    def run(self, result=None):
+        self.result = result
 
-    if self.keep_going or result.wasSuccessful():
-      super(TestCaseBase, self).run( result )
-    else:
-      result.stop()
+        if self.keep_going or result.wasSuccessful():
+            super(TestCaseBase, self).run(result)
+        else:
+            result.stop()
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  @classmethod
-  def setUpClass(cls):
-    pass
+    @classmethod
+    def setUpClass(cls):
+        pass
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  @classmethod
-  def tearDownClass(cls):
-    pass
+    @classmethod
+    def tearDownClass(cls):
+        pass
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def   tearDown(self):
-    if not (self.keep_going or self.result.wasSuccessful()):
-      self.result.stop()
+    def tearDown(self):
+        if not (self.keep_going or self.result.wasSuccessful()):
+            self.result.stop()
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  def   setUp(self):
-    if not (self.keep_going or self.result.wasSuccessful()):
-      self.result.stop()
+    def setUp(self):
+        if not (self.keep_going or self.result.wasSuccessful()):
+            self.result.stop()
 
-    test_name = self.id()
-    description = self.shortDescription()
-    if description:
-      test_name += " (%s)" % description
+        test_name = self.id()
+        description = self.shortDescription()
+        if description:
+            test_name += " (%s)" % description
 
-    print( "\n*** RUN TEST: %s ***" % (test_name,) )
+        print("\n*** RUN TEST: %s ***" % (test_name,))
 
-  # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-  if not hasattr( unittest.TestCase, 'assertIn' ):
-    def assertIn( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " in " + str(b) + ' is False'
-      self.assertTrue( a in b, msg )
+    if not hasattr(unittest.TestCase, 'assertIn'):
+        def assertIn(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " in " + str(b) + ' is False'
+            self.assertTrue(a in b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertNotIn' ):
-    def assertNotIn( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " not in " + str(b) + ' is False'
-      self.assertTrue( a not in b, msg)
+    if not hasattr(unittest.TestCase, 'assertNotIn'):
+        def assertNotIn(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " not in " + str(b) + ' is False'
+            self.assertTrue(a not in b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertIsNone' ):
-    def assertIsNone( self, a, msg = None):
-      if msg is None: msg = str(a) + " is " + str(None) + ' is False'
-      self.assertTrue( a is None, msg )
+    if not hasattr(unittest.TestCase, 'assertIsNone'):
+        def assertIsNone(self, a, msg=None):
+            if msg is None:
+                msg = str(a) + " is " + str(None) + ' is False'
+            self.assertTrue(a is None, msg)
 
-  if not hasattr( unittest.TestCase, 'assertIs' ):
-    def assertIs( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " is not " + str(b)
-      self.assertTrue( a is b, msg )
+    if not hasattr(unittest.TestCase, 'assertIs'):
+        def assertIs(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " is not " + str(b)
+            self.assertTrue(a is b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertIsNot' ):
-    def assertIsNot( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " is " + str(b)
-      self.assertTrue( a is not b, msg )
+    if not hasattr(unittest.TestCase, 'assertIsNot'):
+        def assertIsNot(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " is " + str(b)
+            self.assertTrue(a is not b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertIsNotNone' ):
-    def assertIsNotNone( self, a, msg = None):
-      if msg is None: msg = str(a) + " is not " + str(None) + ' is False'
-      self.assertTrue( a is not None, msg )
+    if not hasattr(unittest.TestCase, 'assertIsNotNone'):
+        def assertIsNotNone(self, a, msg=None):
+            if msg is None:
+                msg = str(a) + " is not " + str(None) + ' is False'
+            self.assertTrue(a is not None, msg)
 
-  if not hasattr( unittest.TestCase, 'assertGreater' ):
-    def assertGreater( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " > " + str(b) + ' is False'
-      self.assertTrue( a > b, msg )
+    if not hasattr(unittest.TestCase, 'assertGreater'):
+        def assertGreater(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " > " + str(b) + ' is False'
+            self.assertTrue(a > b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertGreaterEqual' ):
-    def assertGreaterEqual( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " >= " + str(b) + ' is False'
-      self.assertTrue( a >= b, msg )
+    if not hasattr(unittest.TestCase, 'assertGreaterEqual'):
+        def assertGreaterEqual(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " >= " + str(b) + ' is False'
+            self.assertTrue(a >= b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertLess' ):
-    def assertLess( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " < " + str(b) + ' is False'
-      self.assertTrue( a < b, msg )
+    if not hasattr(unittest.TestCase, 'assertLess'):
+        def assertLess(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " < " + str(b) + ' is False'
+            self.assertTrue(a < b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertLessEqual' ):
-    def assertLessEqual( self, a, b, msg = None):
-      if msg is None: msg = str(a) + " <= " + str(b) + ' is False'
-      self.assertTrue( a <= b, msg )
+    if not hasattr(unittest.TestCase, 'assertLessEqual'):
+        def assertLessEqual(self, a, b, msg=None):
+            if msg is None:
+                msg = str(a) + " <= " + str(b) + ' is False'
+            self.assertTrue(a <= b, msg)
 
-  if not hasattr( unittest.TestCase, 'assertSequenceEqual' ):
-    def assertSequenceEqual( self, first, second, msg = None, seq_type = None):
-      if msg is None: msg = str(first) + " != " + str(second)
+    if not hasattr(unittest.TestCase, 'assertSequenceEqual'):
+        def assertSequenceEqual(self, first, second, msg=None, seq_type=None):
+            if msg is None:
+                msg = str(first) + " != " + str(second)
 
-      if seq_type:
-        self.assertEqual( type(first), type(second), msg )
+            if seq_type:
+                self.assertEqual(type(first), type(second), msg)
 
-      first = iter(first)
-      second = iter(second)
+            first = iter(first)
+            second = iter(second)
 
-      while True:
-        try:
-          v1 = next(first)
-        except StopIteration:
-          try:
-            v2 = next(second)
-          except StopIteration:
-            return
+            while True:
+                try:
+                    v1 = next(first)
+                except StopIteration:
+                    try:
+                        v2 = next(second)
+                    except StopIteration:
+                        return
 
-          raise AssertionError( msg )
+                    raise AssertionError(msg)
 
-        try:
-          v2 = next(second)
-        except StopIteration:
-          raise AssertionError( msg )
+                try:
+                    v2 = next(second)
+                except StopIteration:
+                    raise AssertionError(msg)
 
-        self.assertEqual( v1, v2, msg )
+                self.assertEqual(v1, v2, msg)
 
-  if not hasattr( unittest.TestCase, 'assertItemsEqual' ):
-    def assertItemsEqual( self, actual, expected, msg = None):
-      def _valueCounts( seq ):
-        counts = dict()
-        for value in seq:
-          counts.setdefault( value, 0 )
-          counts[ value ] += 1
-        return counts
+    if not hasattr(unittest.TestCase, 'assertItemsEqual'):
+        def assertItemsEqual(self, actual, expected, msg=None):
+            def _valueCounts(seq):
+                counts = dict()
+                for value in seq:
+                    counts.setdefault(value, 0)
+                    counts[value] += 1
+                return counts
 
-      actual_counts = _valueCounts( actual )
-      expected_counts = _valueCounts( expected )
+            actual_counts = _valueCounts(actual)
+            expected_counts = _valueCounts(expected)
 
-      if msg is None: msg = str(actual) + " != " + str(expected)
+            if msg is None:
+                msg = str(actual) + " != " + str(expected)
 
-      self.assertTrue( actual_counts == expected_counts, msg )
+            self.assertTrue(actual_counts == expected_counts, msg)
 
 # ==============================================================================

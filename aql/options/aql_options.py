@@ -26,9 +26,11 @@ import weakref
 from aql.util_types import toSequence, UniqueList, List, Dict
 from aql.utils import simplifyValue
 
-from .aql_option_types import OptionType, DictOptionType, autoOptionType, OptionHelpGroup,\
+from .aql_option_types import OptionType, DictOptionType, autoOptionType,\
+    OptionHelpGroup,\
     ErrorOptionTypeCantDeduce, ErrorOptionTypeUnableConvertValue
-from .aql_option_value import OptionValue, Operation, InplaceOperation, ConditionalValue, Condition,\
+from .aql_option_value import OptionValue, Operation, InplaceOperation,\
+    ConditionalValue, Condition,\
     SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation,\
     SetKey, iAddKey, iSubKey
 
@@ -58,15 +60,16 @@ class ErrorOptionsMergeNonOptions(TypeError):
 class ErrorOptionsMergeDifferentOptions(TypeError):
 
     def __init__(self, name1, name2):
-        msg = "Can't merge one an optional value into two different options '%s' and '%s' " % (
-            name1, name2)
+        msg = "Can't merge one an optional value into two different options " \
+              "'%s' and '%s' " % (name1, name2)
         super(type(self), self).__init__(msg)
 
 
 class ErrorOptionsMergeChild(TypeError):
 
     def __init__(self):
-        msg = "Can't merge child options into the parent options. Use join() to move child options into its parent."
+        msg = "Can't merge child options into the parent options. " \
+              "Use join() to move child options into its parent."
         super(type(self), self).__init__(msg)
 
 
@@ -119,7 +122,9 @@ class _OpValueRef(tuple):
 class _OpValueExRef(tuple):
 
     def __new__(cls, value):
-        return super(_OpValueExRef, cls).__new__(cls, (value.name, value.key, value.options))
+        return super(_OpValueExRef, cls).__new__(cls, (value.name,
+                                                       value.key,
+                                                       value.options))
 
     def get(self):
         name, key, options = self
@@ -196,7 +201,13 @@ def _evalCmpValue(value):
 
 class OptionValueProxy (object):
 
-    def __init__(self, option_value, from_parent, name, options, key=NotImplemented):
+    def __init__(self,
+                 option_value,
+                 from_parent,
+                 name,
+                 options,
+                 key=NotImplemented):
+
         self.option_value = option_value
         self.from_parent = from_parent
         self.name = name
@@ -345,31 +356,44 @@ class OptionValueProxy (object):
 
     # -----------------------------------------------------------
 
-    def eq(self, context, other): return self.cmp(context, operator.eq, other)
+    def eq(self, context, other):
+        return self.cmp(context, operator.eq, other)
 
-    def ne(self, context, other): return self.cmp(context, operator.ne, other)
+    def ne(self, context, other):
+        return self.cmp(context, operator.ne, other)
 
-    def lt(self, context, other): return self.cmp(context, operator.lt, other)
+    def lt(self, context, other):
+        return self.cmp(context, operator.lt, other)
 
-    def le(self, context, other): return self.cmp(context, operator.le, other)
+    def le(self, context, other):
+        return self.cmp(context, operator.le, other)
 
-    def gt(self, context, other): return self.cmp(context, operator.gt, other)
+    def gt(self, context, other):
+        return self.cmp(context, operator.gt, other)
 
-    def ge(self, context, other): return self.cmp(context, operator.ge, other)
+    def ge(self, context, other):
+        return self.cmp(context, operator.ge, other)
 
-    def __eq__(self, other): return self.eq(None,   _evalCmpValue(other))
+    def __eq__(self, other):
+        return self.eq(None,   _evalCmpValue(other))
 
-    def __ne__(self, other): return self.ne(None,   _evalCmpValue(other))
+    def __ne__(self, other):
+        return self.ne(None,   _evalCmpValue(other))
 
-    def __lt__(self, other): return self.lt(None,   _evalCmpValue(other))
+    def __lt__(self, other):
+        return self.lt(None,   _evalCmpValue(other))
 
-    def __le__(self, other): return self.le(None,   _evalCmpValue(other))
+    def __le__(self, other):
+        return self.le(None,   _evalCmpValue(other))
 
-    def __gt__(self, other): return self.gt(None,   _evalCmpValue(other))
+    def __gt__(self, other):
+        return self.gt(None,   _evalCmpValue(other))
 
-    def __ge__(self, other): return self.ge(None,   _evalCmpValue(other))
+    def __ge__(self, other):
+        return self.ge(None,   _evalCmpValue(other))
 
-    def __contains__(self, other): return self.has(None,  _evalCmpValue(other))
+    def __contains__(self, other):
+        return self.has(None,  _evalCmpValue(other))
 
     # -----------------------------------------------------------
 
@@ -378,7 +402,9 @@ class OptionValueProxy (object):
 
         value = self.get(context)
 
-        if not isinstance(value, (Dict, List)) and (self.key is NotImplemented):
+        if not isinstance(value, (Dict, List)) and\
+           (self.key is NotImplemented):
+
             other = self.option_value.option_type(other)
 
         return cmp_operator(value, other)
@@ -462,7 +488,12 @@ class ConditionGeneratorHelper(object):
 
     @staticmethod
     def __makeCmpCondition(condition, cmp_method, name, key, *args):
-        return Condition(condition, ConditionGeneratorHelper.__cmpValue, cmp_method, name, key, *args)
+        return Condition(condition,
+                         ConditionGeneratorHelper.__cmpValue,
+                         cmp_method,
+                         name,
+                         key,
+                         *args)
 
     # -----------------------------------------------------------
 
@@ -482,7 +513,10 @@ class ConditionGeneratorHelper(object):
         if self.key is not NotImplemented:
             raise KeyError(key)
 
-        return ConditionGeneratorHelper(self.name, self.options, self.condition, key)
+        return ConditionGeneratorHelper(self.name,
+                                        self.options,
+                                        self.condition,
+                                        key)
 
     # -----------------------------------------------------------
 
@@ -496,31 +530,44 @@ class ConditionGeneratorHelper(object):
 
     # -----------------------------------------------------------
 
-    def eq(self, other): return self.cmp('eq',      other)
+    def eq(self, other):
+        return self.cmp('eq',      other)
 
-    def ne(self, other): return self.cmp('ne',      other)
+    def ne(self, other):
+        return self.cmp('ne',      other)
 
-    def gt(self, other): return self.cmp('gt',      other)
+    def gt(self, other):
+        return self.cmp('gt',      other)
 
-    def ge(self, other): return self.cmp('ge',      other)
+    def ge(self, other):
+        return self.cmp('ge',      other)
 
-    def lt(self, other): return self.cmp('lt',      other)
+    def lt(self, other):
+        return self.cmp('lt',      other)
 
-    def le(self, other): return self.cmp('le',      other)
+    def le(self, other):
+        return self.cmp('le',      other)
 
-    def has(self, value): return self.cmp('has',     value)
+    def has(self, value):
+        return self.cmp('has',     value)
 
-    def hasAny(self, values): return self.cmp('hasAny',  values)
+    def hasAny(self, values):
+        return self.cmp('hasAny',  values)
 
-    def hasAll(self, values): return self.cmp('hasAll',  values)
+    def hasAll(self, values):
+        return self.cmp('hasAll',  values)
 
-    def oneOf(self, values): return self.cmp('oneOf',   values)
+    def oneOf(self, values):
+        return self.cmp('oneOf',   values)
 
-    def notIn(self, values): return self.cmp('notIn',   values)
+    def notIn(self, values):
+        return self.cmp('notIn',   values)
 
-    def isTrue(self): return self.cmp('isTrue')
+    def isTrue(self):
+        return self.cmp('isTrue')
 
-    def isFalse(self): return self.cmp('isFalse')
+    def isFalse(self):
+        return self.cmp('isFalse')
 
     # -----------------------------------------------------------
 
@@ -552,7 +599,9 @@ class ConditionGenerator(object):
     # -----------------------------------------------------------
 
     def __getattr__(self, name):
-        return ConditionGeneratorHelper(name, self.__dict__['__options'], self.__dict__['__condition'])
+        return ConditionGeneratorHelper(name,
+                                        self.__dict__['__options'],
+                                        self.__dict__['__condition'])
 
     # -----------------------------------------------------------
 
@@ -776,7 +825,8 @@ class Options (object):
 
             if raise_ex:
                 raise AttributeError(
-                    "Options '%s' instance has no option '%s'" % (type(self), name))
+                    "Options '%s' instance has no option '%s'" %
+                    (type(self), name))
 
             return None, False
 
@@ -887,10 +937,12 @@ class Options (object):
     # -----------------------------------------------------------
 
     def __nonzero__(self):
-        return bool(self.__dict__['__opt_values']) or bool(self.__dict__['__parent'])
+        return bool(self.__dict__['__opt_values']) or \
+            bool(self.__dict__['__parent'])
 
     def __bool__(self):
-        return bool(self.__dict__['__opt_values']) or bool(self.__dict__['__parent'])
+        return bool(self.__dict__['__opt_values']) or \
+            bool(self.__dict__['__parent'])
 
     # -----------------------------------------------------------
 
@@ -905,8 +957,12 @@ class Options (object):
             self.merge(other)
 
         else:
+            ignore_types = (ConditionGeneratorHelper,
+                            ConditionGenerator,
+                            Options)
+
             for name, value in other.items():
-                if isinstance(value, (ConditionGeneratorHelper, ConditionGenerator, Options)):
+                if isinstance(value, ignore_types):
                     continue
 
                 try:
@@ -1026,7 +1082,8 @@ class Options (object):
 
         def _filterChild(child_ref, removed_child=child):
             filter_child = child_ref()
-            return (filter_child is not None) and (filter_child is not removed_child)
+            return (filter_child is not None) and \
+                   (filter_child is not removed_child)
 
         self.__dict__['__children'] = list(
             filter(_filterChild, self.__dict__['__children']))
@@ -1155,7 +1212,12 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def _appendValue(self, opt_value, from_parent, value, operation_type, condition=None):
+    def _appendValue(self,
+                     opt_value,
+                     from_parent,
+                     value,
+                     operation_type,
+                     condition=None):
 
         value = self._makeCondValue(value, operation_type, condition)
 
