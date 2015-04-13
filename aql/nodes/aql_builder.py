@@ -20,15 +20,17 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-
 import os
 import errno
 import operator
 
 from aql.util_types import FilePath, isString, toSequence
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand,\
-    eventDebug, logDebug, groupPathsByDir, groupItems, relativeJoin, relativeJoinList
-from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity, FileEntityBase, SimpleEntity
+    eventDebug, logDebug, groupPathsByDir, groupItems, relativeJoin,\
+    relativeJoinList
+
+from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity,\
+    FileEntityBase, SimpleEntity
 
 __all__ = (
     'Builder', 'FileBuilder'
@@ -154,7 +156,13 @@ def _makeBuildPaths(dirnames):
 # ==============================================================================
 
 
-def _splitFileName(file_path, ext=None, prefix=None, suffix=None, replace_ext=False):
+def _splitFileName(file_path,
+                   ext=None,
+                   prefix=None,
+                   suffix=None,
+                   replace_ext=False
+                   ):
+
     if isinstance(file_path, EntityBase):
         file_path = file_path.get()
 
@@ -188,12 +196,18 @@ def _splitFileName(file_path, ext=None, prefix=None, suffix=None, replace_ext=Fa
 # ==============================================================================
 
 
-def _splitFileNames(file_paths, ext=None, prefix=None, suffix=None, replace_ext=False):
+def _splitFileNames(file_paths,
+                    ext=None,
+                    prefix=None,
+                    suffix=None,
+                    replace_ext=False):
+
     dirnames = []
     filenames = []
     for file_path in file_paths:
         dirname, filename = _splitFileName(
-            file_path, ext=ext, prefix=prefix, suffix=suffix, replace_ext=replace_ext)
+            file_path, ext=ext, prefix=prefix,
+            suffix=suffix, replace_ext=replace_ext)
         dirnames.append(dirname)
         filenames.append(filename)
 
@@ -203,7 +217,8 @@ def _splitFileNames(file_paths, ext=None, prefix=None, suffix=None, replace_ext=
 
 
 def _fileSinature2Type(file_signature_type):
-    return FileTimestampEntity if file_signature_type == 'timestamp' else FileChecksumEntity
+    return FileTimestampEntity if file_signature_type == 'timestamp'\
+        else FileChecksumEntity
 
 # ==============================================================================
 
@@ -240,7 +255,8 @@ class BuilderInitiator(object):
 
     def __loadKw(self):
         loadValue = self.options._loadValue
-        return dict((name, loadValue(value)) for name, value in self.kw.items())
+        return dict((name, loadValue(value))
+                    for name, value in self.kw.items())
 
     # ==========================================================
 
@@ -316,8 +332,9 @@ class Builder (object):
             options.file_signature.get())
         self.env = options.env.get()
 
-        is_batch = (
-            options.batch_build.get() or not self.canBuild()) and self.canBuildBatch()
+        is_batch = (options.batch_build.get() or not self.canBuild()) and \
+            self.canBuildBatch()
+
         self.__is_batch = is_batch
         if is_batch:
             self.batch_groups = options.batch_groups.get()
@@ -348,8 +365,10 @@ class Builder (object):
     def setName(self):
 
         cls = self.__class__
-        name = [cls.__module__, cls.__name__, simplifyValue(
-            self.build_path), bool(self.relative_build_paths)]
+        name = [cls.__module__,
+                cls.__name__,
+                simplifyValue(self.build_path),
+                bool(self.relative_build_paths)]
 
         if self.NAME_ATTRS:
             for attr_name in self.NAME_ATTRS:
@@ -376,7 +395,8 @@ class Builder (object):
 
     def isActual(self, target_entities):
         """
-        Checks that target entities are up to date. It called only if all other checks were successful.
+        Checks that target entities are up to date.
+        It called only if all other checks were successful.
         It can't be used to check remote resources.
         :param target_entities: Previous target entities
         :return: True if is up to date otherwise False
@@ -445,8 +465,8 @@ class Builder (object):
         group_size = self.batch_size
 
         if self.relative_build_paths:
-            groups = groupPathsByDir(
-                source_entities, num_groups, group_size, pathGetter=operator.methodcaller('get'))
+            groups = groupPathsByDir(source_entities, num_groups, group_size,
+                                     pathGetter=operator.methodcaller('get'))
         else:
             groups = groupItems(source_entities, num_groups, group_size)
 
@@ -502,7 +522,10 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getTrace(self, source_entities=None, target_entities=None, brief=False):
+    def getTrace(self,
+                 source_entities=None,
+                 target_entities=None,
+                 brief=False):
         try:
             name = self.getTraceName(source_entities, brief)
         except Exception:
@@ -577,11 +600,20 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getTargetFromSourceFilePath(self, file_path, ext=None, prefix=None, suffix=None, replace_ext=True):
+    def getTargetFromSourceFilePath(self,
+                                    file_path,
+                                    ext=None,
+                                    prefix=None,
+                                    suffix=None,
+                                    replace_ext=True):
+
         build_path = self.build_path
 
-        dirname, filename = _splitFileName(
-            file_path, ext=ext, prefix=prefix, suffix=suffix, replace_ext=replace_ext)
+        dirname, filename = _splitFileName(file_path,
+                                           ext=ext,
+                                           prefix=prefix,
+                                           suffix=suffix,
+                                           replace_ext=replace_ext)
 
         if self.relative_build_paths:
             build_path = relativeJoin(build_path, dirname)
@@ -594,11 +626,20 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getTargetsFromSourceFilePaths(self, file_paths, ext=None, prefix=None, suffix=None, replace_ext=True):
+    def getTargetsFromSourceFilePaths(self,
+                                      file_paths,
+                                      ext=None,
+                                      prefix=None,
+                                      suffix=None,
+                                      replace_ext=True):
+
         build_path = self.build_path
 
-        dirnames, filenames = _splitFileNames(
-            file_paths, ext=ext, prefix=prefix, suffix=suffix, replace_ext=replace_ext)
+        dirnames, filenames = _splitFileNames(file_paths,
+                                              ext=ext,
+                                              prefix=prefix,
+                                              suffix=suffix,
+                                              replace_ext=replace_ext)
 
         if self.relative_build_paths:
             dirnames = relativeJoinList(build_path, dirnames)
@@ -645,11 +686,13 @@ class Builder (object):
 
     def makeFileEntities(self, entities, tags=None):
         make_entity = self.makeFileEntity
-        return tuple(make_entity(entity, tags=tags) for entity in toSequence(entities))
+        return tuple(make_entity(entity, tags=tags)
+                     for entity in toSequence(entities))
 
     def makeEntities(self, entities, tags=None):
         make_entity = self.makeEntity
-        return tuple(make_entity(entity, tags=tags) for entity in toSequence(entities))
+        return tuple(make_entity(entity, tags=tags)
+                     for entity in toSequence(entities))
 
     # -----------------------------------------------------------
 
@@ -664,7 +707,12 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def execCmdResult(self, cmd, cwd=None, env=None, file_flag=None, stdin=None):
+    def execCmdResult(self,
+                      cmd,
+                      cwd=None,
+                      env=None,
+                      file_flag=None,
+                      stdin=None):
 
         if env is None:
             env = self.env

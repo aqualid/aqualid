@@ -23,7 +23,8 @@
 import os.path
 import itertools
 
-from aql.utils import eventStatus, eventWarning, eventError, logInfo, logError, logWarning, TaskManager
+from aql.utils import eventStatus, eventWarning, eventError,\
+    logInfo, logError, logWarning, TaskManager
 from aql.entity import EntitiesFile
 
 __all__ = (
@@ -115,8 +116,9 @@ class ErrorNodeUnknown(Exception):
 class ErrorNodeSignatureDifferent(Exception):
 
     def __init__(self, node):
-        msg = "Two similar nodes have different signatures (sources, builder parameters or dependencies): %s" % (
-            node.getBuildStr(brief=False), )
+        msg = "Two similar nodes have different signatures" \
+              "(sources, builder parameters or dependencies): %s" % \
+              (node.getBuildStr(brief=False), )
         super(ErrorNodeSignatureDifferent, self).__init__(msg)
 
 # ==============================================================================
@@ -152,12 +154,11 @@ class InternalErrorRemoveUnknownTailNode(Exception):
 
 class _NodesTree (object):
 
-    __slots__ = \
-        (
-            'node2deps',
-            'dep2nodes',
-            'tail_nodes',
-        )
+    __slots__ = (
+        'node2deps',
+        'dep2nodes',
+        'tail_nodes',
+    )
 
     # -----------------------------------------------------------
 
@@ -343,19 +344,14 @@ class _NodesTree (object):
             if node_deps:
                 if node in self.tail_nodes:
                     raise AssertionError("Invalid tail node: %s" % (node,))
-            # if not node_deps:
-            #   if node not in self.tail_nodes:
-            #     raise AssertionError("Missed tail node: %s, tail_nodes: %s"  % (node, self.tail_nodes) )
-            # else:
-            #   if node in self.tail_nodes:
-            #     raise AssertionError("Invalid tail node: %s"  % (node,) )
 
             all_dep_nodes |= node_deps
 
             for dep in node_deps:
                 if node not in self.dep2nodes[dep]:
                     raise AssertionError(
-                        "node not in self.dep2nodes[dep]: dep: %s, node: %s" % (dep, node))
+                        "node not in self.dep2nodes[dep]: "
+                        "dep: %s, node: %s" % (dep, node))
 
         if all_dep_nodes - set(self.dep2nodes):
             raise AssertionError("Not all deps are added")
@@ -364,13 +360,12 @@ class _NodesTree (object):
 
 
 class _VFiles(object):
-    __slots__ = \
-        (
-            'names',
-            'handles',
-            'use_sqlite',
-            'force_lock',
-        )
+    __slots__ = (
+        'names',
+        'handles',
+        'use_sqlite',
+        'force_lock',
+    )
 
     # -----------------------------------------------------------
 
@@ -616,13 +611,15 @@ class _NodeLocker(object):
             for dep in deps:
                 if node not in self.dep2nodes[dep]:
                     raise AssertionError(
-                        "Dependency '%s' doesn't have node '%s'" % (dep, node,))
+                        "Dependency '%s' doesn't have node '%s'" %
+                        (dep, node,))
 
         for node, deps in self.locked_nodes.items():
             for dep in deps:
                 if node not in self.node2deps[dep]:
                     raise AssertionError(
-                        "Locked node %s does't actually depend from node %s" % (dep, node))
+                        "Locked node %s doesn't actually depend from node %s" %
+                        (dep, node))
 
                 if dep in self.unlocked_nodes:
                     raise AssertionError(
@@ -637,22 +634,30 @@ class _NodeLocker(object):
 
 class _NodesBuilder (object):
 
-    __slots__ = \
-        (
-            'vfiles',
-            'build_manager',
-            'task_manager',
-            'building_nodes',
-        )
+    __slots__ = (
+        'vfiles',
+        'build_manager',
+        'task_manager',
+        'building_nodes',
+    )
 
     # -----------------------------------------------------------
 
-    def __init__(self, build_manager, jobs=0, keep_going=False, with_backtrace=True, use_sqlite=False, force_lock=False):
+    def __init__(self,
+                 build_manager,
+                 jobs=0,
+                 keep_going=False,
+                 with_backtrace=True,
+                 use_sqlite=False,
+                 force_lock=False
+                 ):
+
         self.vfiles = _VFiles(use_sqlite=use_sqlite, force_lock=force_lock)
         self.building_nodes = {}
         self.build_manager = build_manager
-        self.task_manager = TaskManager(
-            num_threads=jobs, stop_on_fail=not keep_going, with_backtrace=with_backtrace)
+        self.task_manager = TaskManager(num_threads=jobs,
+                                        stop_on_fail=not keep_going,
+                                        with_backtrace=with_backtrace)
 
     # -----------------------------------------------------------
 
@@ -1047,13 +1052,27 @@ class BuildManager (object):
 
     # -----------------------------------------------------------
 
-    def build(self, jobs, keep_going, nodes=None, build_always=False, explain=False, with_backtrace=True, use_sqlite=False, force_lock=False):
+    def build(self,
+              jobs,
+              keep_going,
+              nodes=None,
+              build_always=False,
+              explain=False,
+              with_backtrace=True,
+              use_sqlite=False,
+              force_lock=False
+              ):
 
         self.__reset(build_always=build_always, explain=explain)
 
         self.shrink(nodes)
 
-        with _NodesBuilder(self, jobs, keep_going, with_backtrace, use_sqlite=use_sqlite, force_lock=force_lock) as nodes_builder:
+        with _NodesBuilder(self,
+                           jobs,
+                           keep_going,
+                           with_backtrace,
+                           use_sqlite=use_sqlite,
+                           force_lock=force_lock) as nodes_builder:
             while True:
                 tails = self.getNextNodes()
 
@@ -1097,7 +1116,9 @@ class BuildManager (object):
 
         self.shrink(nodes)
 
-        with _NodesBuilder(self, use_sqlite=use_sqlite, force_lock=force_lock) as nodes_builder:
+        with _NodesBuilder(self,
+                           use_sqlite=use_sqlite,
+                           force_lock=force_lock) as nodes_builder:
             while True:
 
                 tails = self.getNextNodes()

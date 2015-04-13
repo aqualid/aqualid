@@ -137,7 +137,9 @@ class NodeStaleReason (object):
     def setSignatureChanged(self, SIGNATURE_CHANGED=SIGNATURE_CHANGED):
         self._set(SIGNATURE_CHANGED)
 
-    def setImplicitDepChanged(self, entity=None, IMPLICIT_DEP_CHANGED=IMPLICIT_DEP_CHANGED):
+    def setImplicitDepChanged(self,
+                              entity=None,
+                              IMPLICIT_DEP_CHANGED=IMPLICIT_DEP_CHANGED):
         self._set(IMPLICIT_DEP_CHANGED, entity)
 
     def setNoTargets(self, NO_TARGETS=NO_TARGETS):
@@ -162,34 +164,38 @@ class NodeStaleReason (object):
         code = self.code
 
         if code == NodeStaleReason.NO_SIGNATURE:
-            msg = "Node`s is marked to rebuild always, rebuilding the node: %s" % node_name
+            msg = "Node`s is marked to rebuild always, " \
+                  "rebuilding the node: %s" % node_name
 
         elif code == NodeStaleReason.SIGNATURE_CHANGED:
-            msg = "Node`s signature has been changed (sources, builder parameters or dependencies were changed), rebuilding the node: %s" % node_name
+            msg = "Node`s signature has been changed " \
+                  "(sources, builder parameters or " \
+                  "dependencies were changed), " \
+                  "rebuilding the node: %s" % node_name
 
         elif code == NodeStaleReason.NEW:
-            msg = "Node's previous state has not been found, building the new node: %s" % node_name
-            # msg += "\nbuilder sig: %s" % (self.builder.signature)
-            # msg += "\nsources sig: %s" % ([ src.signature for src in self.sources], )
+            msg = "Node's previous state has not been found, " \
+                  "building the new node: %s" % node_name
 
         elif code == NodeStaleReason.IMPLICIT_DEP_CHANGED:
             dep = (" '%s'" % self.entity) if self.entity is not None else ""
-            msg = "Node's implicit dependency%s has changed, rebuilding the node: %s" % (
-                dep, node_name)
+            msg = "Node's implicit dependency%s has changed, " \
+                  "rebuilding the node: %s" % (dep, node_name)
 
         elif code == NodeStaleReason.NO_TARGETS:
-            msg = "Node's targets were not previously stored, rebuilding the node: %s" % (
-                node_name,)
+            msg = "Node's targets were not previously stored, " \
+                  "rebuilding the node: %s" % (node_name,)
 
         elif code == NodeStaleReason.TARGET_CHANGED:
-            msg = "Node's target '%s' has changed, rebuilding the node: %s" % (
-                self.entity, node_name)
+            msg = "Node's target '%s' has changed, rebuilding the node: %s" %\
+                  (self.entity, node_name)
 
         elif code == NodeStaleReason.FORCE_REBUILD:
             msg = "Forced rebuild, rebuilding the node: %s" % (node_name,)
 
         else:
-            msg = "Node's state is outdated, rebuilding the node: %s" % node_name
+            msg = "Node's state is outdated, rebuilding the node: %s" %\
+                  (node_name,)
 
         return msg
 
@@ -215,8 +221,15 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def __new__(cls, name=NotImplemented, signature=NotImplemented, targets=None, itargets=None, idep_keys=None,
-                builder=None, source_entities=None, dep_entities=None):
+    def __new__(cls,
+                name=NotImplemented,
+                signature=NotImplemented,
+                targets=None,
+                itargets=None,
+                idep_keys=None,
+                builder=None,
+                source_entities=None,
+                dep_entities=None):
 
         self = super(NodeEntity, cls).__new__(cls, name, signature)
 
@@ -239,7 +252,11 @@ class NodeEntity (EntityBase):
     # -----------------------------------------------------------
 
     def __getnewargs__(self):
-        return self.name, self.signature, self.target_entities, self.itarget_entities, self.idep_keys
+        return (self.name,
+                self.signature,
+                self.target_entities,
+                self.itarget_entities,
+                self.idep_keys)
 
     # -----------------------------------------------------------
 
@@ -306,7 +323,12 @@ class NodeEntity (EntityBase):
 
     _ACTUAL_IDEPS_CACHE = {}
 
-    def _getIdeps(vfile, idep_keys, reason, ideps_cache_get=_ACTUAL_IDEPS_CACHE.__getitem__, ideps_cache_set=_ACTUAL_IDEPS_CACHE.__setitem__):
+    def _getIdeps(vfile,
+                  idep_keys,
+                  reason,
+                  ideps_cache_get=_ACTUAL_IDEPS_CACHE.__getitem__,
+                  ideps_cache_set=_ACTUAL_IDEPS_CACHE.__setitem__
+                  ):
 
         entities = vfile.findEntitiesByKey(idep_keys)
         if entities is None:
@@ -334,7 +356,10 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def _saveIdeps(self, vfile, _actual_ideps_cache=_ACTUAL_IDEPS_CACHE):
+    def _saveIdeps(self,
+                   vfile,
+                   _actual_ideps_cache=_ACTUAL_IDEPS_CACHE
+                   ):
 
         entities = []
         for entity in self.idep_entities:
@@ -581,7 +606,8 @@ class NodeTagsFilter(NodeFilter):
         entities = super(NodeTagsFilter, self).getEntities()
 
         tags = self.tags
-        return tuple(entity for entity in entities if entity.tags and (entity.tags & tags))
+        return tuple(entity for entity in entities
+                     if entity.tags and (entity.tags & tags))
 
 # ==============================================================================
 
@@ -610,7 +636,8 @@ class NodeDirNameFilter(NodeFilter):
 
     def getEntities(self):
         entities = super(NodeDirNameFilter, self).getEntities()
-        return tuple(SimpleEntity(os.path.dirname(entity.get())) for entity in entities)
+        return tuple(SimpleEntity(os.path.dirname(entity.get()))
+                     for entity in entities)
 
 # ==============================================================================
 
@@ -619,7 +646,8 @@ class NodeBaseNameFilter(NodeFilter):
 
     def getEntities(self):
         entities = super(NodeBaseNameFilter, self).getEntities()
-        return tuple(SimpleEntity(os.path.basename(entity.get())) for entity in entities)
+        return tuple(SimpleEntity(os.path.basename(entity.get()))
+                     for entity in entities)
 
 # ==============================================================================
 
@@ -811,8 +839,10 @@ class Node (object):
         not_actual_nodes = {}
         not_actual_sources = []
         for src in self.source_entities:
-            node_entity = NodeEntity(
-                builder=builder, source_entities=(src,), dep_entities=dep_entities)
+            node_entity = NodeEntity(builder=builder,
+                                     source_entities=(src,),
+                                     dep_entities=dep_entities)
+
             if not node_entity.checkActual(vfile, explain):
                 not_actual_nodes[src] = node_entity
                 not_actual_sources.append(src)
@@ -942,7 +972,6 @@ class Node (object):
             self.idep_entities = node_entity.idep_entities
 
         else:
-
             targets = []
             itargets = []
             ideps = []
@@ -1013,8 +1042,7 @@ class Node (object):
         for node_entity in node_entities:
             # only nodes with targets should be saved
             if node_entity.target_entities:
-                                              # nodes without targets will be
-                                              # rebuilt next time
+                # nodes without targets will be rebuilt next time
                 node_entity.save(vfile)
 
     # ==========================================================
@@ -1070,7 +1098,8 @@ class Node (object):
         return (entity.name for entity in self.node_entities)
 
     def getNamesAndSignatures(self):
-        return ((entity.name, entity.signature) for entity in self.node_entities)
+        return ((entity.name, entity.signature)
+                for entity in self.node_entities)
 
     # ==========================================================
 
