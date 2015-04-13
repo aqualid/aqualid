@@ -8,7 +8,8 @@ import zipfile
 import tarfile
 import itertools
 
-from aql.util_types import isUnicode, encodeStr, decodeBytes, isString, toSequence
+from aql.util_types import isUnicode, encodeStr, decodeBytes,\
+    isString, toSequence
 from aql.utils import openFile
 from aql.entity import FileEntityBase
 from aql.nodes import Builder, FileBuilder
@@ -86,7 +87,8 @@ class ExecuteCommandBuilder (Builder):
         rprefix = prefix.rstrip()
 
         if prefix != rprefix:
-            return tuple(itertools.chain(*((rprefix, target) for target in targets)))
+            return tuple(itertools.chain(*((rprefix, target)
+                                           for target in targets)))
 
         return tuple("%s%s" % (prefix, target) for target in targets)
 
@@ -131,7 +133,14 @@ class ExecuteMethodBuilder (Builder):
     NAME_ATTRS = ('method_name',)
     SIGNATURE_ATTRS = ('args', 'kw')
 
-    def __init__(self, options, method, args, kw, single, make_files, clear_targets):
+    def __init__(self,
+                 options,
+                 method,
+                 args,
+                 kw,
+                 single,
+                 make_files,
+                 clear_targets):
 
         self.method_name = _getMethodFullName(method)
         self.method = method
@@ -150,7 +159,8 @@ class ExecuteMethodBuilder (Builder):
     # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
-        return self.method(self, source_entities, targets, *self.args, **self.kw)
+        return self.method(self, source_entities, targets,
+                           *self.args, **self.kw)
 
     # -----------------------------------------------------------
 
@@ -206,7 +216,7 @@ class CopyFilesBuilder (FileBuilder):
 
     def getTargetEntities(self, source_entities):
         src = source_entities[0].get()
-        return (os.path.join(self.target, os.path.basename(src)), )
+        return os.path.join(self.target, os.path.basename(src)),
 
 # ==============================================================================
 
@@ -349,7 +359,10 @@ class ZipFilesBuilder (FileBuilder):
 
     def __openArch(self, large=False):
         try:
-            return zipfile.ZipFile(self.target, "w", zipfile.ZIP_DEFLATED, large)
+            return zipfile.ZipFile(self.target,
+                                   "w",
+                                   zipfile.ZIP_DEFLATED,
+                                   large)
         except RuntimeError:
             pass
 
@@ -433,7 +446,10 @@ class WriteFileBuilder (Builder):
     def build(self, source_entities, targets):
         target = self.target
 
-        with openFile(target, write=True, binary=self.binary, encoding=self.encoding) as f:
+        with openFile(target,
+                      write=True,
+                      binary=self.binary,
+                      encoding=self.encoding) as f:
             f.truncate()
             for src in source_entities:
                 src = src.get()
@@ -523,8 +539,8 @@ class DistBuilder (FileBuilder):
         script_dir = os.path.dirname(script)
         out = self.execCmd(cmd, script_dir)
 
-        # TODO: Add parsing of setup.py output "copying <filepath> ->
-        # <detination dir>"
+        # TODO: Add parsing of setup.py output
+        # "copying <filepath> -> <detination dir>"
 
         return out
 
@@ -557,8 +573,8 @@ class InstallDistBuilder (FileBuilder):
         script_dir = os.path.dirname(script)
         out = self.execCmd(cmd, script_dir)
 
-        # TODO: Add parsing of setup.py output "copying <filepath> ->
-        # <detination dir>"
+        # TODO: Add parsing of setup.py output
+        # "copying <filepath> -> <detination dir>"
 
         return out
 
@@ -568,12 +584,16 @@ class InstallDistBuilder (FileBuilder):
 class BuiltinTool(Tool):
 
     def ExecuteCommand(self, options, target=None, target_flag=None, cwd=None):
-        return ExecuteCommandBuilder(options, target=target, target_flag=target_flag, cwd=cwd)
+        return ExecuteCommandBuilder(options, target=target,
+                                     target_flag=target_flag, cwd=cwd)
 
     Command = ExecuteCommand
 
-    def ExecuteMethod(self, options, method, args=None, kw=None, single=True, make_files=True, clear_targets=True):
-        return ExecuteMethodBuilder(options, method=method, args=args, kw=kw, single=single, make_files=make_files, clear_targets=clear_targets)
+    def ExecuteMethod(self, options, method, args=None, kw=None, single=True,
+                      make_files=True, clear_targets=True):
+        return ExecuteMethodBuilder(options, method=method, args=args, kw=kw,
+                                    single=single, make_files=make_files,
+                                    clear_targets=clear_targets)
 
     Method = ExecuteMethod
 
@@ -584,7 +604,8 @@ class BuiltinTool(Tool):
         return CopyFileAsBuilder(options, target)
 
     def WriteFile(self, options, target, binary=False, encoding=None):
-        return WriteFileBuilder(options, target, binary=binary, encoding=encoding)
+        return WriteFileBuilder(options, target,
+                                binary=binary, encoding=encoding)
 
     def CreateDist(self, options, target, command, args=None):
         return DistBuilder(options, target=target, command=command, args=args)
@@ -593,7 +614,11 @@ class BuiltinTool(Tool):
         return InstallDistBuilder(options, user=user)
 
     def CreateZip(self, options, target, rename=None, basedir=None, ext=None):
-        return ZipFilesBuilder(options, target=target, rename=rename, basedir=basedir, ext=ext)
+        return ZipFilesBuilder(options, target=target, rename=rename,
+                               basedir=basedir, ext=ext)
 
-    def CreateTar(self, options, target, mode=None, rename=None, basedir=None, ext=None):
-        return TarFilesBuilder(options, target=target, mode=mode, rename=rename, basedir=basedir, ext=ext)
+    def CreateTar(self, options, target, mode=None, rename=None,
+                  basedir=None, ext=None):
+
+        return TarFilesBuilder(options, target=target, mode=mode,
+                               rename=rename, basedir=basedir, ext=ext)

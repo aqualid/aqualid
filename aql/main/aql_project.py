@@ -26,11 +26,18 @@ import site
 import types
 import itertools
 
-from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile, flattenList, findFiles, cpuCount, Chdir, expandFilePath
+from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile,\
+    flattenList, findFiles, cpuCount, Chdir, expandFilePath
+
 from aql.util_types import FilePath, ValueListType, UniqueList, toSequence
-from aql.entity import NullEntity, EntityBase, FileTimestampEntity, FileChecksumEntity, DirEntity, SimpleEntity
+
+from aql.entity import NullEntity, EntityBase, FileTimestampEntity,\
+    FileChecksumEntity, DirEntity, SimpleEntity
+
 from aql.options import builtinOptions, Options, iUpdateValue
-from aql.nodes import BuildManager, Node, NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
+
+from aql.nodes import BuildManager, Node,\
+    NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
 
 from .aql_info import getAqlInfo
 from .aql_tools import getToolsManager
@@ -44,6 +51,7 @@ __all__ = ('Project', 'ProjectConfig',
            )
 
 # ==============================================================================
+
 
 class ErrorProjectInvalidMethod(Exception):
 
@@ -94,8 +102,8 @@ class ErrorProjectBuilderMethodFewArguments(Exception):
 class ErrorProjectBuilderMethodInvalidOptions(Exception):
 
     def __init__(self, value):
-        msg = "Type of 'options' argument must be Options, instead of : '%s'(%s)" % (
-            type(value), value)
+        msg = "Type of 'options' argument must be Options, instead of: " \
+              "'%s'(%s)" % (type(value), value)
         super(type(self), self).__init__(msg)
 
 # ==============================================================================
@@ -178,9 +186,12 @@ def _readConfig(config_file, cli_config, options, tools_path):
 class ProjectConfig(object):
 
     __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
-                 'verbose', 'silent', 'no_output', 'jobs', 'keep_going', 'search_up', 'tools_path', 'no_tool_errors',
-                 'build_always', 'clean', 'list_options', 'list_tool_options', 'list_targets',
-                 'debug_profile', 'debug_profile_top', 'debug_memory', 'debug_explain', 'debug_backtrace',
+                 'verbose', 'silent', 'no_output', 'jobs', 'keep_going',
+                 'search_up', 'tools_path', 'no_tool_errors',
+                 'build_always', 'clean', 'list_options', 'list_tool_options',
+                 'list_targets',
+                 'debug_profile', 'debug_profile_top', 'debug_memory',
+                 'debug_explain', 'debug_backtrace',
                  'debug_exec',
                  'use_sqlite', 'force_lock',
                  'show_version',
@@ -197,57 +208,87 @@ class ProjectConfig(object):
 
         CLI_OPTIONS = (
 
-            CLIOption("-C", "--directory",         "directory",          FilePath,   '',
-                      "Change directory before reading the make files.", 'FILE PATH'),
-            CLIOption("-f", "--makefile",          "makefile",
-                      FilePath,   'make.aql',   "Path to a make file.", 'FILE PATH'),
-            CLIOption("-l", "--list-options",      "list_options",
-                      bool,       False,        "List current options and exit."),
-            CLIOption("-L", "--list-tool-options", "list_tool_options",  Strings,
-                      [],           "List tool options and exit.", "TOOL_NAME"),
-            CLIOption("-t", "--list-targets",      "list_targets",       bool,
-                      False,        "List all available targets and exit."),
-            CLIOption("-c", "--config",            "config",             FilePath,
-                      None,         "The configuration file used to read CLI arguments."),
-            CLIOption("-B", "--always",            "build_always",
-                      bool,       False,        "Unconditionally build all targets."),
-            CLIOption("-R", "--clean",             "clean",
-                      bool,       False,        "Cleans targets."),
-            CLIOption("-u", "--up",                "search_up",          bool,
-                      False,        "Search up directory tree for a make file."),
-            CLIOption("-e", "--no-tool-errors",    "no_tool_errors",     bool,
-                      False,        "Stop on any error during initialization of tools."),
+            CLIOption("-C", "--directory",  "directory",  FilePath, '',
+                      "Change directory before reading the make files.",
+                      'FILE PATH'),
 
-            CLIOption("-I", "--tools-path",        "tools_path",         Paths,
-                      [],           "Path to tools and setup scripts.", 'FILE PATH, ...'),
-            CLIOption("-k", "--keep-going",        "keep_going",         bool,
-                      False,        "Keep going when some targets can't be built."),
-            CLIOption("-j", "--jobs",              "jobs",               int,
-                      None,         "Number of parallel jobs to process targets.", 'NUMBER'),
-            CLIOption("-v", "--verbose",           "verbose",
-                      bool,       False,        "Verbose mode."),
-            CLIOption("-s", "--silent",            "silent",             bool,
-                      False,        "Don't print any messages except warnings and errors."),
-            CLIOption(None, "--no-output",         "no_output",          bool,
-                      False,        "Don't print builder's output messages."),
-            CLIOption(None, "--debug-memory",      "debug_memory",
-                      bool,       False,        "Display memory usage."),
-            CLIOption("-P", "--debug-profile",     "debug_profile",      FilePath,   None,
-                      "Run under profiler and save the results in the specified file.", 'FILE PATH'),
-            CLIOption("-T", "--debug-profile-top", "debug_profile_top",  int,        30,
-                      "Show the specified number of top functions from profiler report.", 'FILE PATH'),
-            CLIOption(None, "--debug-explain",     "debug_explain",      bool,
-                      False,        "Show the reasons why targets are being rebuilt"),
-            CLIOption(None, "--debug-exec",        "debug_exec",         bool,
-                      False,        "Full trace of all executed commands."),
-            CLIOption("--bt", "--debug-backtrace", "debug_backtrace",    bool,
-                      False,        "Show call stack back traces for errors."),
-            CLIOption(None, "--force-lock",        "force_lock",
-                      bool,       False,        "Forces to lock AQL DB file."),
-            CLIOption(None, "--use-sqlite",        "use_sqlite",
-                      bool,       False,        "Use SQLite DB."),
-            CLIOption("-V", "--version",           "version",
-                      bool,       False,        "Show version and exit."),
+            CLIOption("-f", "--makefile", "makefile", FilePath, 'make.aql',
+                      "Path to a make file.",
+                      'FILE PATH'),
+
+            CLIOption("-l", "--list-options", "list_options", bool, False,
+                      "List current options and exit."),
+
+            CLIOption("-L", "--list-tool-options", "list_tool_options",
+                      Strings, [], "List tool options and exit.", "TOOL_NAME"),
+
+            CLIOption("-t", "--list-targets", "list_targets", bool, False,
+                      "List all available targets and exit."),
+
+            CLIOption("-c", "--config", "config", FilePath, None,
+                      "The configuration file used to read CLI arguments."),
+
+            CLIOption("-B", "--always", "build_always", bool, False,
+                      "Unconditionally build all targets."),
+
+            CLIOption("-R", "--clean", "clean", bool, False,
+                      "Cleans targets."),
+
+            CLIOption("-u", "--up", "search_up", bool, False,
+                      "Search up directory tree for a make file."),
+
+            CLIOption("-e", "--no-tool-errors", "no_tool_errors", bool, False,
+                      "Stop on any error during initialization of tools."),
+
+            CLIOption("-I", "--tools-path", "tools_path", Paths, [],
+                      "Path to tools and setup scripts.", 'FILE PATH, ...'),
+
+            CLIOption("-k", "--keep-going", "keep_going", bool, False,
+                      "Keep going when some targets can't be built."),
+
+            CLIOption("-j", "--jobs", "jobs", int, None,
+                      "Number of parallel jobs to process targets.", 'NUMBER'),
+
+            CLIOption("-v", "--verbose", "verbose", bool, False,
+                      "Verbose mode."),
+
+            CLIOption("-s", "--silent", "silent", bool, False,
+                      "Don't print any messages except warnings and errors."),
+
+            CLIOption(None, "--no-output", "no_output", bool, False,
+                      "Don't print builder's output messages."),
+
+            CLIOption(None, "--debug-memory", "debug_memory", bool, False,
+                      "Display memory usage."),
+
+            CLIOption("-P", "--debug-profile", "debug_profile", FilePath, None,
+                      "Run under profiler and save the results "
+                      "in the specified file.",
+                      'FILE PATH'),
+
+            CLIOption("-T", "--debug-profile-top", "debug_profile_top",
+                      int, 30,
+                      "Show the specified number of top functions "
+                      "from profiler report.",
+                      'FILE PATH'),
+
+            CLIOption(None, "--debug-explain", "debug_explain", bool, False,
+                      "Show the reasons why targets are being rebuilt"),
+
+            CLIOption(None, "--debug-exec", "debug_exec", bool, False,
+                      "Full trace of all executed commands."),
+
+            CLIOption("--bt", "--debug-backtrace", "debug_backtrace",
+                      bool, False, "Show call stack back traces for errors."),
+
+            CLIOption(None, "--force-lock", "force_lock", bool, False,
+                      "Forces to lock AQL DB file."),
+
+            CLIOption(None, "--use-sqlite",  "use_sqlite", bool, False,
+                      "Use SQLite DB."),
+
+            CLIOption("-V", "--version", "version", bool, False,
+                      "Show version and exit."),
         )
 
         cli_config = CLIConfig(CLI_USAGE, CLI_OPTIONS, args)
@@ -490,13 +531,14 @@ class ProjectTools(object):
 
     # -----------------------------------------------------------
 
-    def __getattr__(self, name):
+    def __getattr__(self, name,
+                    _func_types=(types.FunctionType, types.MethodType)):
 
         options = self.project.options
 
         tool = BuiltinTool(options)
         tool_method = getattr(tool, name, None)
-        if tool_method and isinstance(tool_method, (types.FunctionType, types.MethodType)):
+        if tool_method and isinstance(tool_method, _func_types):
             return BuilderWrapper(tool_method, self.project, options)
 
         return self.__addTool(name, options)
@@ -594,14 +636,14 @@ class Project(object):
 
     def __getattr__(self, attr):
         if attr == 'script_locals':
-            self.script_locals = self.__getSciptLocals()
+            self.script_locals = self.__getScriptLocals()
             return self.script_locals
 
         raise AttributeError("No attribute '%s'" % (attr,))
 
     # -----------------------------------------------------------
 
-    def __getSciptLocals(self):
+    def __getScriptLocals(self):
 
         script_locals = {
             'options': self.options,
@@ -638,7 +680,10 @@ class Project(object):
     def File(self, filepath, options=None):
         if options is None:
             options = self.options
-        file_type = FileTimestampEntity if options.file_signature == 'timestamp' else FileChecksumEntity
+
+        file_type = FileTimestampEntity \
+            if options.file_signature == 'timestamp' \
+            else FileChecksumEntity
 
         return file_type(filepath)
 
@@ -750,7 +795,8 @@ class Project(object):
 
     # TODO: It works not fully correctly yet. See test aq_test_sync_modules
     # def   SyncModules( self, nodes ):
-    #   nodes = tuple( node for node in toSequence( nodes ) if isinstance( node, Node ) )
+    #   nodes = tuple( node for node in toSequence( nodes )
+    #                  if isinstance( node, Node ) )
     #   self.build_manager.sync( nodes, deep = True)
 
     # -----------------------------------------------------------
@@ -764,7 +810,9 @@ class Project(object):
     # -----------------------------------------------------------
 
     def Alias(self, alias, nodes, description=None):
-        for alias, node in itertools.product(toSequence(alias), toSequence(nodes)):
+        for alias, node in itertools.product(toSequence(alias),
+                                             toSequence(nodes)):
+
             self.aliases.setdefault(alias, set()).add(node)
 
             if description:
@@ -850,10 +898,14 @@ class Project(object):
         force_lock = config.force_lock
         use_sqlite = config.use_sqlite
 
-        is_ok = self.build_manager.build(jobs=jobs, keep_going=bool(keep_going), nodes=build_nodes,
-                                         build_always=build_always, explain=explain,
+        is_ok = self.build_manager.build(jobs=jobs,
+                                         keep_going=bool(keep_going),
+                                         nodes=build_nodes,
+                                         build_always=build_always,
+                                         explain=explain,
                                          with_backtrace=with_backtrace,
-                                         use_sqlite=use_sqlite, force_lock=force_lock)
+                                         use_sqlite=use_sqlite,
+                                         force_lock=force_lock)
         return is_ok
 
     # ==========================================================
@@ -900,7 +952,7 @@ class Project(object):
             targets.append((tuple(aliases), is_built, description))
 
         # sorted list in format: [ (target_names, is_built, description), ... ]
-        targets.sort(key=lambda aliases: aliases[0][0].lower())
+        targets.sort(key=lambda names: names[0][0].lower())
 
         return _textTargets(targets)
 

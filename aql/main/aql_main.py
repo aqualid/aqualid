@@ -27,7 +27,8 @@ import pstats
 import traceback
 
 from aql.util_types import toUnicode
-from aql.utils import eventStatus, eventError, EventSettings, setEventSettings, Chrono, Chdir, memoryUsage,\
+from aql.utils import eventStatus, eventError, EventSettings,\
+    setEventSettings, Chrono, Chdir, memoryUsage,\
     splitPath, expandFilePath,\
     logInfo, logError, setLogLevel, LOG_WARNING
 
