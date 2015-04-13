@@ -43,8 +43,9 @@ class ErrorEntityNameEmpty(Exception):
 class ErrorSignatureEntityInvalidDataType(Exception):
 
     def __init__(self, data):
-        msg = "Signature data type must be bytes or bytearray, actual type: '%s'" % (
-            type(data),)
+        msg = "Signature data type must be bytes or bytearray, " \
+              "actual type: '%s'" % (type(data),)
+
         super(type(self), self).__init__(msg)
 
 
@@ -121,8 +122,8 @@ class EntityBase (object):
             self.name = name = self.getName()
             return name
         elif attr == 'id':
-            self.id = id = self.getId()
-            return id
+            self.id = entity_id = self.getId()
+            return entity_id
 
         raise AttributeError("Unknown attribute: '%s'" % (attr,))
 
@@ -144,7 +145,8 @@ class EntityBase (object):
 
     def getActual(self):
         """
-        Returns an actual entity. If the current entity is actual then it will be simply returned
+        Returns an actual entity.
+        If the current entity is actual then it will be simply returned.
         """
         return self
 

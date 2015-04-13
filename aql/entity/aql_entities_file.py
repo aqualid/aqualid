@@ -174,7 +174,8 @@ class EntitiesFile (object):
 
     def findEntities(self, entities):
         try:
-            return list(map(self._findEntityById, map(operator.attrgetter('id'), entities)))
+            return list(map(self._findEntityById,
+                            map(operator.attrgetter('id'), entities)))
         except Exception:
             return None
 
@@ -252,5 +253,5 @@ class EntitiesFile (object):
             stored_entity = self.pickler.loads(dump)
 
             if stored_entity != entity:
-                raise AssertionError(
-                    "stored_entity(%s) != entity(%s)" % (stored_entity.id, entity.id))
+                raise AssertionError("stored_entity(%s) != entity(%s)" %
+                                     (stored_entity.id, entity.id))

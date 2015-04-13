@@ -19,9 +19,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__all__ = (
-    'pickleable', 'EntityPickler',
-)
 
 import binascii
 import io
@@ -31,10 +28,14 @@ try:
 except ImportError:
     import pickle
 
+__all__ = (
+    'pickleable', 'EntityPickler',
+)
+
 # ==============================================================================
 
-_known_type_names = {}
-_known_type_ids = {}
+_KNOWN_TYPE_NAMES = {}
+_KNOWN_TYPE_IDS = {}
 
 # ==============================================================================
 
@@ -61,7 +62,7 @@ class EntityPickler (object):
 
     # -----------------------------------------------------------
     @staticmethod
-    def persistent_id(entity, known_type_names=_known_type_names):
+    def persistent_id(entity, known_type_names=_KNOWN_TYPE_NAMES):
 
         entity_type = type(entity)
         type_name = _typeName(entity_type)
@@ -75,7 +76,7 @@ class EntityPickler (object):
 
     # -----------------------------------------------------------
     @staticmethod
-    def persistent_load(pid, known_type_ids=_known_type_ids):
+    def persistent_load(pid, known_type_ids=_KNOWN_TYPE_IDS):
 
         type_id, new_args = pid
 
@@ -116,7 +117,10 @@ def _typeName(entity_type):
 # ==============================================================================
 
 
-def pickleable(entity_type, known_type_names=_known_type_names, known_type_ids=_known_type_ids):
+def pickleable(entity_type,
+               known_type_names=_KNOWN_TYPE_NAMES,
+               known_type_ids=_KNOWN_TYPE_IDS):
+
     if type(entity_type) is type:
         type_name = _typeName(entity_type)
         type_id = binascii.crc32(type_name.encode("utf-8")) & 0xFFFFFFFF
