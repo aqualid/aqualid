@@ -13,7 +13,7 @@ from setup_settings import  UNIX_SCRIPT_PATH, \
                             AQL_MODULE_PATH, \
                             SETUP_SCRIPT
 
-#//===========================================================================//
+# ==============================================================================
 
 src_dir = os.path.abspath('../aql')
 tool_dir = os.path.abspath('../tools')
@@ -32,7 +32,7 @@ linked_file = aql_tool.Link( pre_files, target = "aql.py" )
 Alias('link', linked_file, "Merge aql source files into one Python script.")
 Default( linked_file )
 
-#//-------------------------------------------------------//
+# -----------------------------------------------------------
 
 info = aql.getAqlInfo()
 standalone_name = dist_dir + "/{name}-{version}.local".format( name = info.name, version = info.version )
@@ -47,7 +47,7 @@ standalone_tar = tools.CreateTar( linked_file,
 
 Alias( 'local', [standalone_zip, standalone_tar], "Create standalone distributions." )
 
-#//-------------------------------------------------------//
+# -----------------------------------------------------------
 
 setup_dir = 'setup/'
 module_dir = setup_dir + AQL_MODULE_PATH
@@ -80,7 +80,7 @@ Alias('rpm', rpm_dist, "Build RPM distribution." )
 Alias('install', install_user, "Install distribution for the current user only." )
 Alias('install_system', install_system, "Install distribution for all users." )
 
-#//-------------------------------------------------------//
+# -----------------------------------------------------------
 #// Examples
 
 examples_name = dist_dir + "/{name}-{version}-examples".format( name = info.name, version = info.version )
