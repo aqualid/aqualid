@@ -26,6 +26,7 @@ import struct
 import mmap
 
 from .aql_utils import openFile
+from .aql_logging import logInfo
 
 __all__ = ('DataFile', )
 
@@ -71,6 +72,8 @@ class ErrorDataFileCorrupted(Exception):
 class _MmapFile(object):
 
     def __init__(self, filename):
+        self.check_resize_available()
+
         stream = openFile(filename, write=True, binary=True, sync=False)
 
         try:
@@ -87,6 +90,15 @@ class _MmapFile(object):
         self.size = memmap.size
         self.resize = memmap.resize
         self.flush = memmap.flush
+
+    # -----------------------------------------------------------
+
+    def check_resize_available(self):
+        mm = mmap.mmap(-1, 1)
+        try:
+            mm.resize(1)
+        finally:
+            mm.close()
 
     # -----------------------------------------------------------
 
@@ -337,7 +349,8 @@ class DataFile (object):
 
         try:
             self.handle = _MmapFile(filename)
-        except Exception:
+        except Exception as e:
+            logInfo("Default handler _IOFile, mmap not supported: {}".format(e))
             self.handle = _IOFile(filename)
 
         self._init_header(force)
