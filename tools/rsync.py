@@ -169,24 +169,14 @@ class RemotePath(object):
 
 # ==============================================================================
 
-"""
-env.RsyncGet( remote_path = '/work/cp/kh', local_path = src_dir )
-
-prog = env.LinkProgram( target = 'test', obj_files )
-
-env.RsyncPut( prog, local_path = '', remote_path = '/work/cp/bin/' )
-
-"""
-
 
 class RSyncPushBuilder(aql.FileBuilder):
-    # rsync -avzub --exclude-from=files.flt --delete-excluded -e "ssh -i
-    # dev.key" c4dev@dev:/work/cp/bp2_int/components .
 
     NAME_ATTRS = ('remote_path', 'source_base')
     SIGNATURE_ATTRS = ('cmd', )
 
-    def __init__(self, options, remote_path, source_base=None, host=None, login=None, key_file=None, exclude=None):
+    def __init__(self, options, remote_path, source_base=None,
+                 host=None, login=None, key_file=None, exclude=None):
 
         self.rsync_cygwin = (
             sys.platform != 'cygwin') and options.rsync_cygwin.get()
@@ -207,8 +197,8 @@ class RSyncPushBuilder(aql.FileBuilder):
         cmd += options.rsync_flags.get()
 
         if excludes:
-            cmd += itertools.chain(*
-                                   itertools.product(['--exclude'], aql.toSequence(excludes)))
+            excludes = aql.toSequence(excludes)
+            cmd += itertools.chain(*itertools.product(['--exclude'], excludes))
 
         if self.remote_path.isRemote():
             ssh_flags = options.rsync_ssh_flags.get()
@@ -325,7 +315,8 @@ class RSyncPullBuilder(aql.Builder):
     NAME_ATTRS = ('target_path', )
     SIGNATURE_ATTRS = ('cmd', )
 
-    def __init__(self, options, target, host=None, login=None, key_file=None, exclude=None):
+    def __init__(self, options, target, host=None,
+                 login=None, key_file=None, exclude=None):
 
         self.rsync_cygwin = (
             sys.platform != 'cygwin') and options.rsync_cygwin.get()
@@ -357,8 +348,8 @@ class RSyncPullBuilder(aql.Builder):
         cmd += options.rsync_flags.get()
 
         if excludes:
-            cmd += itertools.chain(*
-                                   itertools.product(['--exclude'], aql.toSequence(excludes)))
+            excludes = aql.toSequence(excludes)
+            cmd += itertools.chain(*itertools.product(['--exclude'], excludes))
 
         if self.host:
             ssh_flags = options.rsync_ssh_flags.get()
@@ -475,12 +466,15 @@ class ToolRsync(aql.Tool):
 
     # -----------------------------------------------------------
 
-    def Pull(self, options, target, host=None, login=None, key_file=None, exclude=None):
+    def Pull(self, options, target, host=None,
+             login=None, key_file=None, exclude=None):
+
         return RSyncPullBuilder(options, target,
                                 host=host, login=login,
                                 key_file=key_file, exclude=exclude)
 
-    def Push(self, options, target, source_base=None, host=None, login=None, key_file=None, exclude=None):
+    def Push(self, options, target, source_base=None,
+             host=None, login=None, key_file=None, exclude=None):
 
         builder = RSyncPushBuilder(options, target,
                                    source_base=source_base,

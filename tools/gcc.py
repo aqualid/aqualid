@@ -2,17 +2,20 @@ import os
 import re
 import itertools
 
-from aql import readTextFile, Tempfile, executeCommand, StrOptionType, ListOptionType, PathOptionType, tool
+from aql import readTextFile, Tempfile, executeCommand, StrOptionType,\
+    ListOptionType, PathOptionType, tool
 
-from .cpp_common import  ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker,\
-    ToolCommonRes, CommonResCompiler
+from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
+    CommonCppLinker, ToolCommonRes, CommonResCompiler
 
 # ==============================================================================
-#// BUILDERS IMPLEMENTATION
+#  BUILDERS IMPLEMENTATION
 # ==============================================================================
 
 
-def _readDeps(dep_file, exclude_dirs, _space_splitter_re=re.compile(r'(?<!\\)\s+')):
+def _readDeps(dep_file,
+              exclude_dirs,
+              _space_splitter_re=re.compile(r'(?<!\\)\s+')):
 
     deps = readTextFile(dep_file)
 
@@ -29,16 +32,17 @@ def _readDeps(dep_file, exclude_dirs, _space_splitter_re=re.compile(r'(?<!\\)\s+
         line = line.rstrip('\\ ').strip()
 
         tmp_dep_files = _space_splitter_re.split(line)
-        tmp_dep_files = [
-            dep_file.replace('\\ ', ' ') for dep_file in tmp_dep_files if dep_file]
+        tmp_dep_files = [dep_file.replace('\\ ', ' ')
+                         for dep_file in tmp_dep_files if dep_file]
 
         dep_files += map(os.path.abspath, tmp_dep_files)
 
     dep_files = iter(dep_files)
     next(dep_files)  # skip the source file
 
-    dep_files = tuple(
-        dep_file for dep_file in dep_files if not dep_file.startswith(exclude_dirs))
+    dep_files = tuple(dep_file
+                      for dep_file in dep_files
+                      if not dep_file.startswith(exclude_dirs))
 
     return dep_files
 
@@ -243,7 +247,7 @@ class GccLinker(GccCompilerMaker, CommonCppLinker):
         return out
 
 # ==============================================================================
-#// TOOL IMPLEMENTATION
+#  TOOL IMPLEMENTATION
 # ==============================================================================
 
 _OS_PREFIXES = (
@@ -315,7 +319,8 @@ def _generateProgNames(prog, prefix, suffix):
     prefixes = [prefix, ''] if prefix else ['']
     suffixes = [suffix, ''] if suffix else ['']
 
-    return tuple(prefix + prog + suffix for prefix, suffix in itertools.product(prefixes, suffixes))
+    return tuple(prefix + prog + suffix
+                 for prefix, suffix in itertools.product(prefixes, suffixes))
 
 # ==============================================================================
 
@@ -371,17 +376,24 @@ class ToolGccCommon(ToolCommonCpp):
     def __init__(self, options):
         super(ToolGccCommon, self).__init__(options)
 
-        options.env['CPATH'] = ListOptionType(
-            value_type=PathOptionType(), separators=os.pathsep)
+        options.env['CPATH'] = ListOptionType(value_type=PathOptionType(),
+                                              separators=os.pathsep)
         if self.language == 'c':
             options.env['C_INCLUDE_PATH'] = ListOptionType(
-                value_type=PathOptionType(), separators=os.pathsep)
+                value_type=PathOptionType(),
+                separators=os.pathsep
+            )
+
         else:
             options.env['CPLUS_INCLUDE_PATH'] = ListOptionType(
-                value_type=PathOptionType(), separators=os.pathsep)
+                value_type=PathOptionType(),
+                separators=os.pathsep
+            )
 
         options.env['LIBRARY_PATH'] = ListOptionType(
-            value_type=PathOptionType(), separators=os.pathsep)
+            value_type=PathOptionType(),
+            separators=os.pathsep
+        )
 
         if_ = options.If()
         if_windows = if_.target_os.eq('windows')
@@ -441,7 +453,8 @@ class ToolGccCommon(ToolCommonCpp):
 
         if_.warning_level.eq(0).ccflags += '-w'
         if_.warning_level.eq(3).ccflags += '-Wall'
-        if_.warning_level.eq(4).ccflags += ['-Wall', '-Wextra', '-Wfloat-equal',
+        if_.warning_level.eq(4).ccflags += ['-Wall', '-Wextra',
+                                            '-Wfloat-equal',
                                             '-Wundef', '-Wshadow',
                                             '-Wredundant-decls']
 
@@ -515,6 +528,7 @@ class ToolWindRes(ToolCommonRes):
 
         options.gcc_prefix = StrOptionType(
             description="GCC C/C++ compiler prefix")
+
         options.gcc_suffix = StrOptionType(
             description="GCC C/C++ compiler suffix")
 

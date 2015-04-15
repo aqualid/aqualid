@@ -3,15 +3,12 @@ import re
 
 from aql import executeCommand, ListOptionType, PathOptionType, tool
 
-from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, CommonCppLinker, \
-    ToolCommonRes, CommonResCompiler
+from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
+    CommonCppLinker, ToolCommonRes, CommonResCompiler
 
 # ==============================================================================
-#// BUILDERS IMPLEMENTATION
+#  BUILDERS IMPLEMENTATION
 # ==============================================================================
-
-#(3) : fatal error C1189:
-#(3) : fatal error C1189: #error :  TEST ERROR
 
 
 def _parseOutput(source_paths, output, exclude_dirs,
@@ -104,10 +101,18 @@ class MsvcCompiler (CommonCppCompiler):
 
     # -----------------------------------------------------------
 
-    def _setTargets(self, source_entities, targets, sources, obj_files, output):
+    def _setTargets(self,
+                    source_entities,
+                    targets,
+                    sources,
+                    obj_files,
+                    output):
+
         deps, errors, out = _parseOutput(sources, output, self.ext_cpppath)
 
-        for src_value, obj_file, deps, error in zip(source_entities, obj_files, deps, errors):
+        items = zip(source_entities, obj_files, deps, errors)
+
+        for src_value, obj_file, deps, error in items:
             if not error:
                 src_targets = targets[src_value]
                 src_targets.add(obj_file)
@@ -196,8 +201,6 @@ class MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
 
 # ==============================================================================
 
-# noinspection PyAttributeOutsideInit
-
 
 class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
 
@@ -242,7 +245,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
         out = self.execCmd(cmd, cwd=cwd, file_flag='@')
 
         # -----------------------------------------------------------
-        #//  SET TARGETS
+        #  SET TARGETS
 
         if not self.shared:
             tags = None
@@ -263,7 +266,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
     # -----------------------------------------------------------
 
 # ==============================================================================
-#// TOOL IMPLEMENTATION
+# TOOL IMPLEMENTATION
 # ==============================================================================
 
 
@@ -271,8 +274,9 @@ def _getMsvcSpecs(cl):
 
     result = executeCommand(cl)
 
-    specs_re = re.compile(
-        r'Compiler Version (?P<version>[0-9.]+) for (?P<machine>[a-zA-Z0-9_-]+)', re.MULTILINE)
+    specs_re = re.compile(r'Compiler Version (?P<version>[0-9.]+) '
+                          r'for (?P<machine>[a-zA-Z0-9_-]+)',
+                          re.MULTILINE)
 
     out = result.output
 
@@ -324,12 +328,14 @@ class ToolMsvcCommon(ToolCommonCpp):
     def __init__(self, options):
         super(ToolMsvcCommon, self).__init__(options)
 
-        options.env['INCLUDE'] = ListOptionType(
-            value_type=PathOptionType(), separators=os.pathsep)
-        options.env['LIB'] = ListOptionType(
-            value_type=PathOptionType(), separators=os.pathsep)
-        options.env['LIBPATH'] = ListOptionType(
-            value_type=PathOptionType(), separators=os.pathsep)
+        options.env['INCLUDE'] = ListOptionType(value_type=PathOptionType(),
+                                                separators=os.pathsep)
+
+        options.env['LIB'] = ListOptionType(value_type=PathOptionType(),
+                                            separators=os.pathsep)
+
+        options.env['LIBPATH'] = ListOptionType(value_type=PathOptionType(),
+                                                separators=os.pathsep)
 
         options.objsuffix = '.obj'
         options.ressuffix = '.res'

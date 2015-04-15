@@ -789,39 +789,42 @@ class Node (object):
 
     # ==========================================================
 
-    def initiate(self):
+    def initiate(self, chdir=os.chdir):
         if self.initiated:
             # reinitialize the replaced source entities
             if self.sources:
                 self._setSourceEntities()
         else:
-            with Chdir(self.cwd):
-                self.builder = self.builder.initiate()
-                self._setSourceEntities()
-                self._updateDepEntities()
+            chdir( self.cwd )
+
+            self.builder = self.builder.initiate()
+            self._setSourceEntities()
+            self._updateDepEntities()
 
             self.initiated = True
 
     # ==========================================================
 
-    def buildDepends(self):
+    def buildDepends(self, chdir=os.chdir):
         if self.depends_called:
             return None
 
         self.depends_called = True
 
-        nodes = self.builder.depends(self.cwd, self.source_entities)
+        chdir(self.cwd)
+        nodes = self.builder.depends(self.source_entities)
         return nodes
 
     # ==========================================================
 
-    def buildReplace(self):
+    def buildReplace(self, chdir=os.chdir):
         if self.replace_called:
             return None
 
         self.replace_called = True
 
-        sources = self.builder.replace(self.cwd, self.source_entities)
+        chdir(self.cwd)
+        sources = self.builder.replace(self.source_entities)
         if sources is None:
             return False
 

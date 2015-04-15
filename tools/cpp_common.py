@@ -12,8 +12,8 @@ from aql import findFileInPaths,\
 class ErrorBatchBuildCustomExt(Exception):
 
     def __init__(self, trace, ext):
-        msg = "Custom extension '%s' is not supported in batch building of node: %s" % (
-            ext, trace)
+        msg = "Custom extension '%s' is not supported " \
+              "in batch building of node: %s" % (ext, trace)
         super(ErrorBatchBuildCustomExt, self).__init__(msg)
 
 # ==============================================================================
@@ -22,8 +22,8 @@ class ErrorBatchBuildCustomExt(Exception):
 class ErrorBatchBuildWithPrefix(Exception):
 
     def __init__(self, trace, prefix):
-        msg = "Filename prefix '%s' is not supported in batch building of node: %s" % (
-            prefix, trace)
+        msg = "Filename prefix '%s' is not supported " \
+              "in batch building of node: %s" % (prefix, trace)
         super(ErrorBatchBuildWithPrefix, self).__init__(msg)
 
 # ==============================================================================
@@ -32,8 +32,8 @@ class ErrorBatchBuildWithPrefix(Exception):
 class ErrorBatchBuildWithSuffix(Exception):
 
     def __init__(self, trace, suffix):
-        msg = "Filename suffix '%s' is not supported in batch building of node: %s" % (
-            suffix, trace)
+        msg = "Filename suffix '%s' is not supported " \
+              "in batch building of node: %s" % (suffix, trace)
         super(ErrorBatchBuildWithSuffix, self).__init__(msg)
 
 # ==============================================================================
@@ -42,8 +42,8 @@ class ErrorBatchBuildWithSuffix(Exception):
 class ErrorBatchCompileWithCustomTarget(Exception):
 
     def __init__(self, trace, target):
-        msg = "Explicit output target '%s' is not supported in batch building of node: %s" % (
-            target, trace)
+        msg = "Explicit output target '%s' is not supported " \
+              "in batch building of node: %s" % (target, trace)
         super(ErrorBatchCompileWithCustomTarget, self).__init__(msg)
 
 # ==============================================================================
@@ -52,12 +52,12 @@ class ErrorBatchCompileWithCustomTarget(Exception):
 class ErrorCompileWithCustomTarget(Exception):
 
     def __init__(self, trace, target):
-        msg = "Compile several source files using the same target '%s' is not supported: %s" % (
-            target, trace)
+        msg = "Compile several source files using " \
+              "the same target '%s' is not supported: %s" % (target, trace)
         super(ErrorCompileWithCustomTarget, self).__init__(msg)
 
 # ==============================================================================
-#// BUILDERS IMPLEMENTATION
+#  BUILDERS IMPLEMENTATION
 # ==============================================================================
 
 
@@ -101,45 +101,74 @@ def _addIxes(prefix, suffix, values):
 def _preprocessorOptions(options):
 
     options.cppdefines = ListOptionType(
-        unique=True, description="C/C++ preprocessor defines", separators=None)
+        description="C/C++ preprocessor defines",
+        unique=True,
+        separators=None)
+
     options.defines = options.cppdefines
+
     options.cppdefines_prefix = StrOptionType(
         description="Flag for C/C++ preprocessor defines.", is_hidden=True)
+
     options.cppdefines_flags = ListOptionType(separators=None)
-    options.cppdefines_flags += SimpleOperation(
-        _addPrefix, options.cppdefines_prefix, options.cppdefines)
+
+    options.cppdefines_flags += SimpleOperation(_addPrefix,
+                                                options.cppdefines_prefix,
+                                                options.cppdefines)
 
     options.cpppath_flags = ListOptionType(separators=None)
+
     options.cpppath_prefix = StrOptionType(
-        description="Flag for C/C++ preprocessor paths.", is_hidden=True)
+        description="Flag for C/C++ preprocessor paths.",
+        is_hidden=True)
 
-    options.cpppath = ListOptionType(value_type=AbsPathOptionType(
-    ), unique=True, description="C/C++ preprocessor paths to headers", separators=None)
+    options.cpppath = ListOptionType(
+        description="C/C++ preprocessor paths to headers",
+        value_type=AbsPathOptionType(),
+        unique=True,
+        separators=None)
+
     options.include = options.cpppath
-    options.cpppath_flags = SimpleOperation(
-        _addPrefix, options.cpppath_prefix, options.cpppath)
 
-    options.api_cpppath = ListOptionType(value_type=AbsPathOptionType(
-    ), unique=True, description="C/C++ preprocessor paths to API headers", separators=None)
-    options.cpppath_flags += SimpleOperation(
-        _addPrefix, options.cpppath_prefix, options.api_cpppath)
+    options.cpppath_flags = SimpleOperation(_addPrefix,
+                                            options.cpppath_prefix,
+                                            options.cpppath)
 
-    options.ext_cpppath = ListOptionType(value_type=AbsPathOptionType(
-    ), unique=True, description="C/C++ preprocessor path to external headers", separators=None)
+    options.api_cpppath = ListOptionType(
+        value_type=AbsPathOptionType(),
+        unique=True,
+        description="C/C++ preprocessor paths to API headers",
+        separators=None)
+
+    options.cpppath_flags += SimpleOperation(_addPrefix,
+                                             options.cpppath_prefix,
+                                             options.api_cpppath)
+
+    options.ext_cpppath = ListOptionType(
+        value_type=AbsPathOptionType(),
+        unique=True,
+        description="C/C++ preprocessor path to external headers",
+        separators=None)
+
     options.ext_include = options.ext_cpppath
-    options.cpppath_flags += SimpleOperation(
-        _addPrefix, options.cpppath_prefix, options.ext_cpppath)
+    options.cpppath_flags += SimpleOperation(_addPrefix,
+                                             options.cpppath_prefix,
+                                             options.ext_cpppath)
 
-    options.sys_cpppath = ListOptionType(value_type=AbsPathOptionType(
-    ), description="C/C++ preprocessor path to standard headers", separators=None)
+    options.sys_cpppath = ListOptionType(
+        value_type=AbsPathOptionType(),
+        description="C/C++ preprocessor path to standard headers",
+        separators=None)
 
 # ==============================================================================
 
 
 def _compilerOptions(options):
 
-    options.language = EnumOptionType(values=[('c++', 'cpp'), 'c'], default='c++',
-                                      description='Current language', is_hidden=True)
+    options.language = EnumOptionType(values=[('c++', 'cpp'), 'c'],
+                                      default='c++',
+                                      description='Current language',
+                                      is_hidden=True)
 
     options.pic = BoolOptionType(
         description="Generate position-independent code.", default=True)
@@ -149,20 +178,29 @@ def _compilerOptions(options):
 
     options.cxxflags = ListOptionType(
         description="C++ compiler flags", separators=None)
+
     options.cflags = ListOptionType(
         description="C++ compiler flags", separators=None)
+
     options.ccflags = ListOptionType(
         description="Common C/C++ compiler flags", separators=None)
+
     options.occflags = ListOptionType(
-        description="Common C/C++ compiler optimization flags", separators=None)
+        description="Common C/C++ compiler optimization flags",
+        separators=None)
 
     options.cc = AbsPathOptionType(description="C/C++ compiler program")
-    options.cc_name = StrOptionType(
-        is_tool_key=True, ignore_case=True, description="C/C++ compiler name")
-    options.cc_ver = VersionOptionType(
-        is_tool_key=True, description="C/C++ compiler version")
-    options.cc_cmd = ListOptionType(
-        separators=None, description="C/C++ compiler full command", is_hidden=True)
+
+    options.cc_name = StrOptionType(is_tool_key=True,
+                                    ignore_case=True,
+                                    description="C/C++ compiler name")
+
+    options.cc_ver = VersionOptionType(is_tool_key=True,
+                                       description="C/C++ compiler version")
+
+    options.cc_cmd = ListOptionType(separators=None,
+                                    description="C/C++ compiler full command",
+                                    is_hidden=True)
 
     options.cc_cmd = options.cc
     options.If().language.eq('c++').cc_cmd += options.cxxflags
@@ -170,22 +208,33 @@ def _compilerOptions(options):
     options.cc_cmd += options.ccflags + options.occflags + \
         options.cppdefines_flags + options.cpppath_flags
 
-    options.cxxstd = EnumOptionType(values=['default', ('c++98', 'c++03'), ('c++11', 'c++0x'), ('c++14', 'c++1y')],
-                                    default='default', description='C++ language standard.')
+    options.cxxstd = EnumOptionType(values=['default',
+                                            ('c++98', 'c++03'),
+                                            ('c++11', 'c++0x'),
+                                            ('c++14', 'c++1y')],
+                                    default='default',
+                                    description='C++ language standard.')
 
 # ==============================================================================
 
 
 def _resourceCompilerOptions(options):
+
     options.rc = AbsPathOptionType(
         description="C/C++ resource compiler program")
+
     options.ressuffix = StrOptionType(
-        description="Compiled resource file suffix.", is_hidden=True)
+        description="Compiled resource file suffix.",
+        is_hidden=True)
 
     options.rcflags = ListOptionType(
-        description="C/C++ resource compiler flags", separators=None)
+        description="C/C++ resource compiler flags",
+        separators=None)
+
     options.rc_cmd = ListOptionType(
-        separators=None, description="C/C++ resource resource compiler full command", is_hidden=True)
+        description="C/C++ resource resource compiler full command",
+        separators=None,
+        is_hidden=True)
 
     options.rc_cmd = [options.rc] + options.rcflags + \
         options.cppdefines_flags + options.cpppath_flags
@@ -197,50 +246,81 @@ def _linkerOptions(options):
 
     options.libprefix = StrOptionType(
         description="Static library archiver prefix.", is_hidden=True)
+
     options.libsuffix = StrOptionType(
         description="Static library archiver suffix.", is_hidden=True)
+
     options.libflags = ListOptionType(
         description="Static library archiver flags", separators=None)
+
     options.olibflags = ListOptionType(
-        description="Static library archiver optimization flags", separators=None)
+        description="Static library archiver optimization flags",
+        separators=None)
+
     options.lib = AbsPathOptionType(
         description="Static library archiver program")
+
     options.lib_cmd = ListOptionType(
-        separators=None, description="Static library archiver full command", is_hidden=True)
+        description="Static library archiver full command",
+        separators=None,
+        is_hidden=True)
+
     options.lib_cmd = [options.lib] + options.libflags + options.olibflags
 
-    options.shlibprefix = StrOptionType(
-        description="Shared library prefix.", is_hidden=True)
-    options.shlibsuffix = StrOptionType(
-        description="Shared library suffix.", is_hidden=True)
+    options.shlibprefix = StrOptionType(description="Shared library prefix.",
+                                        is_hidden=True)
 
-    options.libpath = ListOptionType(value_type=AbsPathOptionType(), unique=True,
-                                     description="Paths to external libraries", separators=None)
+    options.shlibsuffix = StrOptionType(description="Shared library suffix.",
+                                        is_hidden=True)
+
+    options.libpath = ListOptionType(value_type=AbsPathOptionType(),
+                                     description="Paths to external libraries",
+                                     unique=True,
+                                     separators=None)
+
     options.libpath_prefix = StrOptionType(
-        description="Flag for library paths.", is_hidden=True)
-    options.libpath_flags = ListOptionType(separators=None)
-    options.libpath_flags = SimpleOperation(
-        _addPrefix, options.libpath_prefix, options.libpath)
+        description="Flag for library paths.",
+        is_hidden=True)
 
-    options.libs = ListOptionType(value_type=StrOptionType(), unique=True,
-                                  description="Linking external libraries", separators=None)
+    options.libpath_flags = ListOptionType(separators=None)
+
+    options.libpath_flags = SimpleOperation(_addPrefix,
+                                            options.libpath_prefix,
+                                            options.libpath)
+
+    options.libs = ListOptionType(value_type=StrOptionType(),
+                                  description="Linking external libraries",
+                                  unique=True,
+                                  separators=None)
+
     options.libs_prefix = StrOptionType(
         description="Prefix flag for libraries.", is_hidden=True)
+
     options.libs_suffix = StrOptionType(
         description="Suffix flag for libraries.", is_hidden=True)
+
     options.libs_flags = ListOptionType(separators=None)
-    options.libs_flags = SimpleOperation(
-        _addIxes, options.libs_prefix, options.libs_suffix, options.libs)
+
+    options.libs_flags = SimpleOperation(_addIxes,
+                                         options.libs_prefix,
+                                         options.libs_suffix,
+                                         options.libs)
 
     options.progsuffix = StrOptionType(
         description="Program suffix.", is_hidden=True)
+
     options.linkflags = ListOptionType(
         description="Linker flags", separators=None)
+
     options.olinkflags = ListOptionType(
         description="Linker optimization flags", separators=None)
+
     options.link = AbsPathOptionType(description="Linker program")
-    options.link_cmd = ListOptionType(
-        separators=None, description="Linker full command", is_hidden=True)
+
+    options.link_cmd = ListOptionType(description="Linker full command",
+                                      separators=None,
+                                      is_hidden=True)
+
     options.link_cmd = [options.link] + options.linkflags + \
         options.olinkflags + options.libpath_flags + options.libs_flags
 
@@ -340,7 +420,10 @@ class CommonCompiler (FileBuilder):
         if self.target:
             return self.target
 
-        return self.getTargetFromSourceFilePath(source, ext=self.ext, prefix=self.prefix, suffix=self.suffix)
+        return self.getTargetFromSourceFilePath(source,
+                                                ext=self.ext,
+                                                prefix=self.prefix,
+                                                suffix=self.suffix)
 
     # -----------------------------------------------------------
 
@@ -429,19 +512,21 @@ class CommonResCompiler (CommonCompiler):
 
 class CommonCppLinkerBase(FileBuilder):
 
+    CPP_EXT = (".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c")
+
     NAME_ATTRS = ('target', )
     SIGNATURE_ATTRS = ('cmd', )
 
     def __init__(self, options):
         self.compilers = self.getSourceBuilders(options)
 
-    def getCppExts(self, _cpp_ext=(".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c")):
+    def getCppExts(self, _cpp_ext=CPP_EXT):
         return _cpp_ext
 
     # -----------------------------------------------------------
 
     def getResExts(self):
-        return ('.rc',)
+        return '.rc',
 
     # -----------------------------------------------------------
 
@@ -484,7 +569,9 @@ class CommonCppLinkerBase(FileBuilder):
 
     # -----------------------------------------------------------
 
-    def replace(self, cwd, source_entities):
+    def replace(self, source_entities):
+
+        cwd = os.getcwd()
 
         def _addSources():
             if current_builder is None:
@@ -539,8 +626,6 @@ class CommonCppLinkerBase(FileBuilder):
 
 # ==============================================================================
 
-# noinspection PyAttributeOutsideInit
-
 
 class CommonCppArchiver(CommonCppLinkerBase):
 
@@ -582,7 +667,7 @@ class CommonCppLinker(CommonCppLinkerBase):
 
 
 # ==============================================================================
-#// TOOL IMPLEMENTATION
+# TOOL IMPLEMENTATION
 # ==============================================================================
 
 class ToolCommonCpp(Tool):
@@ -590,6 +675,7 @@ class ToolCommonCpp(Tool):
     def __init__(self, options):
         options.If().cc_name.isTrue().build_dir_name += '_' + \
             options.cc_name + '_' + options.cc_ver
+
         self.LinkLibrary = self.LinkStaticLibrary
 
     # -----------------------------------------------------------
