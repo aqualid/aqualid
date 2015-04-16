@@ -20,6 +20,7 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+import os
 import io
 import operator
 import struct
@@ -180,8 +181,8 @@ class _IOFile(object):
 
     # -----------------------------------------------------------
 
-    def size(self, io_SEEK_END=io.SEEK_END):
-        return self.stream.seek(0, io_SEEK_END)
+    def size(self, _end=os.SEEK_END):
+        return self.stream.seek(0, _end)
 
 # ==============================================================================
 
@@ -349,7 +350,7 @@ class DataFile (object):
         try:
             self.handle = _MmapFile(filename)
         except Exception as e:
-            logDebug("Default handler _IOFile, mmap not supported: {}".format(e))
+            logDebug("mmap is not supported: {}".format(e))
             self.handle = _IOFile(filename)
 
         self._init_header(force)
