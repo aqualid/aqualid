@@ -28,11 +28,11 @@ try:
 except AttributeError:
     zip_longest = itertools.izip_longest
 
-from aql.util_types import String, uStr, isString, toString, IgnoreCaseString,\
+from aql.util_types import String, uStr, is_string, to_string, IgnoreCaseString,\
     Version, FilePath, AbsFilePath, toSequence,\
     UniqueList, List, SplitListType, ValueListType,\
     Dict, SplitDictType, ValueDictType,\
-    isSimpleValue
+    is_simple_value
 
 __all__ = (
     'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType',
@@ -131,7 +131,7 @@ def autoOptionType(value):
     elif isinstance(value, IgnoreCaseString):
         opt_type = StrOptionType(ignore_case=True)
 
-    elif isString(value):
+    elif is_string(value):
         opt_type = StrOptionType()
 
     elif isinstance(value, Version):
@@ -140,7 +140,7 @@ def autoOptionType(value):
     elif isinstance(value, FilePath):
         opt_type = PathOptionType()
 
-    elif isSimpleValue(value):
+    elif is_simple_value(value):
         opt_type = OptionType(value_type=type(value))
 
     else:
@@ -295,7 +295,7 @@ class OptionHelp(object):
     def _currentValue(self, details):
         if self.current_value is not None:
             if isinstance(self.current_value, (list, tuple, UniqueList)):
-                current_value = [toString(v) for v in self.current_value]
+                current_value = [to_string(v) for v in self.current_value]
                 if current_value:
                     current_value = _joinToLength(
                         current_value,
@@ -489,7 +489,7 @@ class OptionType (object):
         """
         Converts a value to options' value string
         """
-        return toString(value)
+        return to_string(value)
 
     # -----------------------------------------------------------
 
@@ -835,9 +835,9 @@ class EnumOptionType (OptionType):
         help_str = []
 
         for value, aliases in values.items():
-            s = toString(value)
+            s = to_string(value)
             if aliases:
-                s += ' (or ' + ', '.join(map(toString, aliases)) + ')'
+                s += ' (or ' + ', '.join(map(to_string, aliases)) + ')'
 
             help_str.append(s)
 

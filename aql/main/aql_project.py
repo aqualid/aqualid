@@ -469,7 +469,7 @@ class ToolWrapper(object):
         if attr.startswith('_') or not isinstance(method, types.MethodType):
             return method
 
-        builder = BuilderWrapper( self.tool, method, self.project, self.options)
+        builder = BuilderWrapper(self.tool, method, self.project, self.options)
 
         setattr(self, attr, builder)
         return builder

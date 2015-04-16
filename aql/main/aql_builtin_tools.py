@@ -8,8 +8,8 @@ import zipfile
 import tarfile
 import itertools
 
-from aql.util_types import isUnicode, encodeStr, decodeBytes,\
-    isString, toSequence
+from aql.util_types import is_unicode, encode_str, decode_bytes,\
+    is_string, toSequence
 from aql.utils import openFile
 from aql.entity import FileEntityBase
 from aql.nodes import Builder, FileBuilder
@@ -302,8 +302,8 @@ class TarFilesBuilder (FileBuilder):
     def __addEntity(arch, entity):
         arcname = entity.name
         data = entity.get()
-        if isUnicode(data):
-            data = encodeStr(data)
+        if is_unicode(data):
+            data = encode_str(data)
 
         tinfo = tarfile.TarInfo(arcname)
         tinfo.size = len(data)
@@ -393,8 +393,8 @@ class ZipFilesBuilder (FileBuilder):
             else:
                 arcname = entity.name
                 data = entity.get()
-                if isUnicode(data):
-                    data = encodeStr(data)
+                if is_unicode(data):
+                    data = encode_str(data)
 
                 arch.writestr(arcname, data)
 
@@ -454,11 +454,11 @@ class WriteFileBuilder (Builder):
             for src in source_entities:
                 src = src.get()
                 if self.binary:
-                    if isUnicode(src):
-                        src = encodeStr(src, self.encoding)
+                    if is_unicode(src):
+                        src = encode_str(src, self.encoding)
                 else:
                     if isinstance(src, (bytearray, bytes)):
-                        src = decodeBytes(src, self.encoding)
+                        src = decode_bytes(src, self.encoding)
 
                 f.write(src)
 
@@ -498,7 +498,7 @@ class DistBuilder (FileBuilder):
         formats = set()
 
         if args:
-            if isString(args):
+            if is_string(args):
                 args = args.split()
             else:
                 args = toSequence(args)

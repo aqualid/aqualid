@@ -25,10 +25,10 @@ import locale
 import operator
 
 __all__ = (
-    'uStr', 'toUnicode', 'isUnicode', 'isString', 'toString',
-    'castStr', 'encodeStr', 'decodeBytes', 'String', 'IgnoreCaseString',
+    'uStr', 'to_unicode', 'is_unicode', 'is_string', 'to_string',
+    'cast_str', 'encode_str', 'decode_bytes', 'String', 'IgnoreCaseString',
     'LowerCaseString', 'UpperCaseString', 'Version',
-    'SIMPLE_TYPES_SET', 'SIMPLE_TYPES', 'isSimpleValue', 'isSimpleType'
+    'SIMPLE_TYPES_SET', 'SIMPLE_TYPES', 'is_simple_value', 'is_simple_type'
 )
 
 # ==============================================================================
@@ -57,7 +57,7 @@ for enc in [
 # -----------------------------------------------------------
 
 
-def encodeStr(value, encoding=None, _try_encodings=_TRY_ENCODINGS):
+def encode_str(value, encoding=None, _try_encodings=_TRY_ENCODINGS):
     if encoding:
         return value.encode(encoding)
 
@@ -74,7 +74,7 @@ def encodeStr(value, encoding=None, _try_encodings=_TRY_ENCODINGS):
 # ==============================================================================
 
 
-def decodeBytes(obj, encoding=None, _try_encodings=_TRY_ENCODINGS):
+def decode_bytes(obj, encoding=None, _try_encodings=_TRY_ENCODINGS):
     if encoding:
         return uStr(obj, encoding)
 
@@ -91,42 +91,42 @@ def decodeBytes(obj, encoding=None, _try_encodings=_TRY_ENCODINGS):
 # ==============================================================================
 
 
-def toUnicode(obj, encoding=None):
+def to_unicode(obj, encoding=None):
     if isinstance(obj, (bytearray, bytes)):
-        return decodeBytes(obj, encoding)
+        return decode_bytes(obj, encoding)
 
     return uStr(obj)
 
 # ==============================================================================
 
 if uStr is not str:
-    def isUnicode(value, _uStr=uStr, _isinstance=isinstance):
-        return _isinstance(value, _uStr)
+    def is_unicode(value, _ustr=uStr, _isinstance=isinstance):
+        return _isinstance(value, _ustr)
 
-    def isString(value, _uStr=uStr, _str=str, _isinstance=isinstance):
-        return _isinstance(value, (_uStr, _str))
+    def is_string(value, _ustr=uStr, _str=str, _isinstance=isinstance):
+        return _isinstance(value, (_ustr, _str))
 
-    def toString(value, _uStr=uStr, _str=str, _isinstance=isinstance):
-        if _isinstance(value, (_uStr, _str)):
+    def to_string(value, _ustr=uStr, _str=str, _isinstance=isinstance):
+        if _isinstance(value, (_ustr, _str)):
             return value
         return _str(value)
 
     # -----------------------------------------------------------
 
-    def castStr(obj, encoding=None, _uStr=uStr):
-        if isinstance(obj, _uStr):
-            return encodeStr(obj, encoding)
+    def cast_str(obj, encoding=None, _ustr=uStr):
+        if isinstance(obj, _ustr):
+            return encode_str(obj, encoding)
 
         return str(obj)
 
 else:
-    toString = toUnicode
-    castStr = str
+    to_string = to_unicode
+    cast_str = str
 
-    def isString(value, _str=str, _isinstance=isinstance):
+    def is_string(value, _str=str, _isinstance=isinstance):
         return _isinstance(value, _str)
 
-    isUnicode = isString
+    is_unicode = is_string
 
 # ==============================================================================
 
@@ -301,9 +301,9 @@ SIMPLE_TYPES_SET = frozenset(
 SIMPLE_TYPES = tuple(SIMPLE_TYPES_SET)
 
 
-def isSimpleValue(value, _simple_types=SIMPLE_TYPES):
+def is_simple_value(value, _simple_types=SIMPLE_TYPES):
     return isinstance(value, _simple_types)
 
 
-def isSimpleType(value_type, _simple_types=SIMPLE_TYPES):
+def is_simple_type(value_type, _simple_types=SIMPLE_TYPES):
     return issubclass(value_type, _simple_types)

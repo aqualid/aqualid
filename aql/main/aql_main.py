@@ -26,7 +26,7 @@ import cProfile
 import pstats
 import traceback
 
-from aql.util_types import toUnicode
+from aql.util_types import to_unicode
 from aql.utils import eventStatus, eventError, EventSettings,\
     setEventSettings, Chrono, Chdir, memoryUsage,\
     splitPath, expandFilePath,\
@@ -307,7 +307,7 @@ def main():
             if isinstance(ex, KeyboardInterrupt):
                 err = "Keyboard Interrupt"
             else:
-                err = toUnicode(ex)
+                err = to_unicode(ex)
 
         eventAqlError(err)
         status = 1

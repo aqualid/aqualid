@@ -8,7 +8,7 @@ sys.path.insert(
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.util_types import encodeStr
+from aql.util_types import encode_str
 from aql.utils import fileChecksum, Tempdir, \
     disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
 
@@ -37,7 +37,7 @@ class SyncValueBuilder (Builder):
     def __init__(self, options, name, number, sleep_interval=1):
         self.signature = b''
 
-        self.name = encodeStr(name)
+        self.name = encode_str(name)
         self.sleep_interval = sleep_interval
         self.number = number
 

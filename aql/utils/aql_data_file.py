@@ -72,8 +72,6 @@ class ErrorDataFileCorrupted(Exception):
 class _MmapFile(object):
 
     def __init__(self, filename):
-        self.check_resize_available()
-
         stream = openFile(filename, write=True, binary=True, sync=False)
 
         try:
@@ -85,6 +83,8 @@ class _MmapFile(object):
 
             memmap = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_WRITE)
 
+        self._check_resize_available(memmap)
+
         self.stream = stream
         self.memmap = memmap
         self.size = memmap.size
@@ -93,12 +93,11 @@ class _MmapFile(object):
 
     # -----------------------------------------------------------
 
-    def check_resize_available(self):
-        mm = mmap.mmap(-1, 1)
-        try:
-            mm.resize(1)
-        finally:
-            mm.close()
+    @staticmethod
+    def _check_resize_available(mem):
+        size = mem.size()
+        mem.resize(size + mmap.ALLOCATIONGRANULARITY)
+        mem.resize(size)
 
     # -----------------------------------------------------------
 

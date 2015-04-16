@@ -333,7 +333,7 @@ class RSyncPullBuilder(aql.Builder):
     # -----------------------------------------------------------
 
     def makeEntity(self, value):
-        if aql.isString(value):
+        if aql.is_string(value):
             remote_path = RemotePath(value, self.login, self.host)
             if not remote_path.isRemote():
                 return self.makeFileEntity(value)

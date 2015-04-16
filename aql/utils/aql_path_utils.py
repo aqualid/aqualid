@@ -26,7 +26,7 @@ import re
 import fnmatch
 import operator
 
-from aql.util_types import isString, toSequence
+from aql.util_types import is_string, toSequence
 
 from .aql_utils import ItemsGroups
 
@@ -97,7 +97,7 @@ def _masksToMatch(masks, _null_match=lambda name: False):
     if not masks:
         return _null_match
 
-    if isString(masks):
+    if is_string(masks):
         masks = masks.split('|')
 
     re_list = []
@@ -158,7 +158,7 @@ def findFileInPaths(paths, filename):
 def _getEnvPath(env, hint_prog=None):
 
     paths = env.get('PATH', tuple())
-    if isString(paths):
+    if is_string(paths):
         paths = paths.split(os.pathsep)
 
     paths = [os.path.expanduser(path) for path in paths]
@@ -187,7 +187,7 @@ def _getEnvPathExt(env, hint_prog=None,
     if path_exts is None:
         path_exts = os.environ.get('PATHEXT', None)
 
-    if isString(path_exts):
+    if is_string(path_exts):
         path_sep = ';' if is_cygwin else os.pathsep
         path_exts = path_exts.split(path_sep)
 

@@ -20,7 +20,7 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-from aql.util_types import toSequence, castStr
+from aql.util_types import toSequence, cast_str
 from aql.utils import simpleObjectSignature
 from .aql_entity_pickler import pickleable
 
@@ -170,7 +170,7 @@ class EntityBase (object):
     # -----------------------------------------------------------
 
     def __str__(self):
-        return castStr(self.get())
+        return cast_str(self.get())
 
     # -----------------------------------------------------------
 
