@@ -26,7 +26,7 @@ import struct
 import mmap
 
 from .aql_utils import openFile
-from .aql_logging import logInfo
+from .aql_logging import logDebug
 
 __all__ = ('DataFile', )
 
@@ -293,13 +293,13 @@ class DataFile (object):
     # +-----------------------------------+
     # |4 bytes (data begin)               |
     # +-----------------------------------+
-    # | meta1 (40 bytes)                  |
+    # | meta1 (32 bytes)                  |
     # +-----------------------------------+
-    # | meta2 (40 bytes)                  |
+    # | meta2 (32 bytes)                  |
     # +-----------------------------------+
     #           .......
     # +-----------------------------------+
-    # | metaN (40 bytes)                  |
+    # | metaN (32 bytes)                  |
     # +-----------------------------------+
     # |  data1 (x bytes)                  |
     # +-----------------------------------+
@@ -350,7 +350,7 @@ class DataFile (object):
         try:
             self.handle = _MmapFile(filename)
         except Exception as e:
-            logInfo("Default handler _IOFile, mmap not supported: {}".format(e))
+            logDebug("Default handler _IOFile, mmap not supported: {}".format(e))
             self.handle = _IOFile(filename)
 
         self._init_header(force)
