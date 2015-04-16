@@ -1,6 +1,8 @@
 Aqualid
 =======
 
+![](https://travis-ci.org/aqualid/aqualid.svg)
+
 General purpose build tool.
 
 Key features:
