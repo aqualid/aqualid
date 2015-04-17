@@ -11,13 +11,13 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 from aql.utils import Tempfile, Chrono
 from aql.utils import DataFile, SqlDataFile
 
-from aql.util_types import encodeStr
+from aql.util_types import encode_str
 
 # ==============================================================================
 
 
 def generateData(min_size, max_size):
-    return encodeStr(''.join(chr(random.randint(32, 127)) for i in range(random.randint(min_size, max_size))))
+    return encode_str(''.join(chr(random.randint(32, 127)) for i in range(random.randint(min_size, max_size))))
 
 # ==============================================================================
 

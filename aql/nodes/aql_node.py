@@ -795,7 +795,7 @@ class Node (object):
             if self.sources:
                 self._setSourceEntities()
         else:
-            chdir( self.cwd )
+            chdir(self.cwd)
 
             self.builder = self.builder.initiate()
             self._setSourceEntities()

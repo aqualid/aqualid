@@ -20,7 +20,7 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-from .aql_simple_types import isString
+from .aql_simple_types import is_string
 from .aql_list_types import List
 
 __all__ = ('Dict', 'ValueDictType', 'SplitDictType')
@@ -88,7 +88,7 @@ def SplitDictType(dict_type, separators):
         @staticmethod
         def __toItems(items_str, sep=separator, other_seps=other_separators):
 
-            if not isString(items_str):
+            if not is_string(items_str):
                 return items_str
 
             for s in other_seps:

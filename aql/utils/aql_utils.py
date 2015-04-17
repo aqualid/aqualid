@@ -42,8 +42,8 @@ try:
 except ImportError:
     import pickle
 
-from aql.util_types import uStr, isString, castStr, isUnicode, toUnicode,\
-    decodeBytes, encodeStr, UniqueList, toSequence, isSequence, \
+from aql.util_types import uStr, is_string, cast_str, is_unicode, to_unicode,\
+    decode_bytes, encode_str, UniqueList, toSequence, isSequence, \
     SIMPLE_TYPES_SET
 
 __all__ = (
@@ -115,7 +115,7 @@ def openFile(filename,
              sync=False,
              encoding=None):
 
-    if not isString(filename):
+    if not is_string(filename):
         raise ErrorFileName(filename)
 
     flags = _O_NOINHERIT | _O_BINARY
@@ -168,15 +168,15 @@ def writeTextFile(filename, data, encoding='utf-8'):
     with openFile(filename, write=True, encoding=encoding) as f:
         f.truncate()
         if isinstance(data, (bytearray, bytes)):
-            data = decodeBytes(data, encoding)
+            data = decode_bytes(data, encoding)
         f.write(data)
 
 
 def writeBinFile(filename, data, encoding=None):
     with openFile(filename, write=True, binary=True, encoding=encoding) as f:
         f.truncate()
-        if isUnicode(data):
-            data = encodeStr(data, encoding)
+        if is_unicode(data):
+            data = encode_str(data, encoding)
 
         f.write(data)
 
@@ -434,7 +434,7 @@ def _decodeData(data):
     if not data:
         return str()
 
-    data = toUnicode(data)
+    data = to_unicode(data)
 
     data = data.replace('\r\n', '\n')
     data = data.replace('\r', '\n')
@@ -526,13 +526,13 @@ def executeCommand(cmd,
                    max_cmd_length=_MAX_CMD_LENGTH):
 
     cmd_file = None
-    if isString(cmd):
+    if is_string(cmd):
         shell = True
     else:
         shell = False
 
         for v in toSequence(cmd):
-            if not isString(v):
+            if not is_string(v):
                 raise ErrorInvalidExecCommand(v)
 
         if file_flag:
@@ -553,7 +553,7 @@ def executeCommand(cmd,
     try:
         try:
             if env:
-                env = dict((castStr(key), castStr(value))
+                env = dict((cast_str(key), cast_str(value))
                            for key, value in env.items())
 
             p = subprocess.Popen(cmd, cwd=cwd, env=env, shell=shell,

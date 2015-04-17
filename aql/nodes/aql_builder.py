@@ -24,7 +24,7 @@ import os
 import errno
 import operator
 
-from aql.util_types import FilePath, isString, toSequence
+from aql.util_types import FilePath, is_string, toSequence
 from aql.utils import simpleObjectSignature, simplifyValue, executeCommand,\
     eventDebug, logDebug, groupPathsByDir, groupItems, relativeJoin,\
     relativeJoinList
@@ -64,7 +64,7 @@ def _getTraceArg(entity, brief):
             if brief:
                 value = os.path.basename(entity)
 
-        elif isString(entity):
+        elif is_string(entity):
             value = entity.strip()
 
             npos = value.find('\n')
@@ -88,7 +88,7 @@ def _joinArgs(entities, brief):
 
     for arg in toSequence(entities):
         arg = _getTraceArg(arg, brief)
-        if arg and isString(arg):
+        if arg and is_string(arg):
             args.append(arg)
 
     if not brief or (len(args) < 3):
