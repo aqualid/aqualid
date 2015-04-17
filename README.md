@@ -16,6 +16,8 @@ Key features:
 
 More information can be found in [Wiki](https://github.com/aqualid/aqualid/wiki)
 
+Questions/Discussions can be posted to [Group](http://groups.google.com/d/forum/aqualid)
+
 Build System Shootout [results](https://github.com/aqualid/aqualid/tree/master/examples/build-shoutout)
 
 Performance [benchmarks](https://github.com/aqualid/aqualid/wiki/Benchmark-results)
