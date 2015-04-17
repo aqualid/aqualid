@@ -294,8 +294,7 @@ class SqlDataFile (object):
                                      (binascii.hexlify(data_id),))
 
             if k != key:
-                raise AssertionError("key(%s) != k(%s)" % (key,k))
-
+                raise AssertionError("key(%s) != k(%s)" % (key, k))
 
         if key2id:
             raise AssertionError("unknown keys: %s" % (key2id,))
