@@ -1,7 +1,5 @@
-Aqualid
+Aqualid [![Build Status](https://travis-ci.org/aqualid/aqualid.svg)](https://travis-ci.org/aqualid)
 =======
-
-![](https://travis-ci.org/aqualid/aqualid.svg)
 
 General purpose build tool.
 
