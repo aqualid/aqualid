@@ -140,19 +140,22 @@ class TestToolGcc(AqlTestCase):
 
             gcc.Compile(src_files, target='src_file0', batch_build=False)
 
-            with self.assertRaises(Exception) as cm:
+            try:
                 prj.Build()
-
-            self.assertEqual(
-                cm.exception.__class__.__name__, 'ErrorCompileWithCustomTarget')
+                raise AssertionError("No Exception")
+            except Exception as ex:
+                self.assertEqual(ex.__class__.__name__,
+                                 'ErrorCompileWithCustomTarget')
 
             gcc.Compile(src_files, target='src_file0', batch_build=True)
 
-            with self.assertRaises(Exception) as cm:
-                prj.Build()
 
-            self.assertEqual(
-                cm.exception.__class__.__name__, 'ErrorBatchCompileWithCustomTarget')
+            try:
+                prj.Build()
+                raise AssertionError("No Exception")
+            except Exception as ex:
+                self.assertEqual(ex.__class__.__name__,
+                                 'ErrorBatchCompileWithCustomTarget')
 
     # -----------------------------------------------------------
 

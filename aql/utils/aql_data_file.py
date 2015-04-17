@@ -77,7 +77,7 @@ class _MmapFile(object):
 
         try:
             memmap = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_WRITE)
-        except ValueError:
+        except Exception:
             stream.seek(0)
             stream.write(b'\0')
             stream.flush()
@@ -350,7 +350,7 @@ class DataFile (object):
         try:
             self.handle = _MmapFile(filename)
         except Exception as e:
-            logDebug("mmap is not supported: {}".format(e))
+            logDebug("mmap is not supported: %s" % (e,))
             self.handle = _IOFile(filename)
 
         self._init_header(force)
@@ -413,7 +413,7 @@ class DataFile (object):
             if (header and header != b'\0') and not force:
                 raise ErrorDataFileFormatInvalid()
 
-        # -----------------------------------------------------------
+        # -------------------
         # init the file
         header = header_struct.pack(self.MAGIC_TAG, self.VERSION)
         self.handle.resize(len(header))
@@ -732,7 +732,8 @@ class DataFile (object):
             meta_offset = meta.offset
             last_meta_end = meta_offset + meta_size
             data_offset = meta.data_offset
-            last_data_end = data_offset + meta.data_capacity
+            last_data_end = data_offset + meta.data_size
+            next_data_begin = data_offset + meta.data_capacity
 
             if meta.id in remove_data_ids:
 
@@ -769,7 +770,7 @@ class DataFile (object):
         if remove_data_begin is not None:
             if move_meta_begin is None:
                 meta_shift = last_meta_end - remove_meta_begin
-                data_shift = last_data_end - remove_data_begin
+                data_shift = next_data_begin - remove_data_begin
             else:
                 move(remove_meta_begin, move_meta_begin,
                      last_meta_end - move_meta_begin)

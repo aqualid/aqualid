@@ -22,6 +22,7 @@
 
 import os
 import sqlite3
+import binascii
 
 from .aql_utils import openFile
 
@@ -37,6 +38,26 @@ class ErrorDataFileFormatInvalid(Exception):
         super(ErrorDataFileFormatInvalid, self).__init__(msg)
 
 # ==============================================================================
+
+try:
+    def _bytes_to_blob(value, _buf=buffer):
+        return _buf(value)
+
+    def _many_bytes_to_blob(values, _buf=buffer):
+        return map(_buf, values)
+
+    def _blob_to_bytes(value):
+        return bytes(value)
+
+except NameError:
+    def _bytes_to_blob(value):
+        return value
+
+    def _many_bytes_to_blob(values):
+        return values
+
+    def _blob_to_bytes(value):
+        return value
 
 
 class SqlDataFile (object):
@@ -76,12 +97,13 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def _load_ids(self, conn):
+    def _load_ids(self, conn, blob_to_bytes=_blob_to_bytes):
 
         set_key = self.key2id.__setitem__
         set_id = self.id2key.__setitem__
 
         for key, data_id in conn.execute("SELECT key,id FROM items"):
+            data_id = blob_to_bytes(data_id)
             set_key(key, data_id)
             set_id(data_id, key)
 
@@ -130,11 +152,11 @@ class SqlDataFile (object):
     @staticmethod
     def _is_aql_db(filename):
 
-        MAGIC_TAG = b".AQL.DB."
+        magic_tag = b".AQL.DB."
 
         with openFile(filename, read=True, binary=True) as f:
-            tag = f.read(len(MAGIC_TAG))
-            return tag == MAGIC_TAG
+            tag = f.read(len(magic_tag))
+            return tag == magic_tag
 
     # -----------------------------------------------------------
 
@@ -144,14 +166,15 @@ class SqlDataFile (object):
         conn = None
 
         try:
-            conn = sqlite3.connect(filename)
+            conn = sqlite3.connect(filename,
+                                   detect_types=sqlite3.PARSE_DECLTYPES)
 
             with conn:
                 conn.execute(
                     "CREATE TABLE IF NOT EXISTS items("
                     "key INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    "id blob UNIQUE,"
-                    "data blob NOT NULL"
+                    "id BLOB UNIQUE,"
+                    "data BLOB NOT NULL"
                     ")")
 
         except Exception:
@@ -159,7 +182,6 @@ class SqlDataFile (object):
                 conn.close()
             raise
 
-        conn.text_factory = str
         conn.execute("PRAGMA synchronous=OFF")
         conn.execute("PRAGMA mmap_size=10000000")
 
@@ -167,20 +189,23 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def read(self, data_id):
+    def read(self, data_id,
+             bytes_to_blob=_bytes_to_blob,
+             blob_to_bytes=_blob_to_bytes):
 
-        result = self.connection.execute(
-            "SELECT data FROM items where id=?", (data_id,))
+        result = self.connection.execute("SELECT data FROM items where id=?",
+                                         (bytes_to_blob(data_id),))
 
         data = result.fetchone()
         if not data:
             return None
 
-        return data[0]
+        return blob_to_bytes(data[0])
 
     # -----------------------------------------------------------
 
-    def write_with_key(self, data_id, data):
+    def write_with_key(self, data_id, data,
+                       bytes_to_blob=_bytes_to_blob):
 
         key = self.id2key.pop(data_id, None)
         if key is not None:
@@ -189,7 +214,7 @@ class SqlDataFile (object):
         with self.connection as conn:
             cur = conn.execute(
                 "INSERT OR REPLACE INTO items(id, data) VALUES (?,?)",
-                (data_id, data))
+                (bytes_to_blob(data_id), bytes_to_blob(data)))
 
         key = cur.lastrowid
         self.key2id[key] = data_id
@@ -216,9 +241,11 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def remove(self, data_ids):
+    def remove(self, data_ids, many_bytes_to_blob=_many_bytes_to_blob):
+
         with self.connection as conn:
-            conn.executemany("DELETE FROM items WHERE id=?", zip(data_ids))
+            conn.executemany("DELETE FROM items WHERE id=?",
+                             zip(many_bytes_to_blob(data_ids)))
 
         get_key = self.id2key.__getitem__
         del_key = self.key2id.__delitem__
@@ -231,7 +258,7 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
+    def selfTest(self, blob_to_bytes=_blob_to_bytes):
         if self.connection is None:
             if self.id2key:
                 raise AssertionError("id2key is not empty")
@@ -247,12 +274,28 @@ class SqlDataFile (object):
         items = self.connection.execute("SELECT key,id FROM items")
 
         for key, data_id in items:
-            if key2id.pop(key, None) is None:
-                raise AssertionError("key(%s) not in self.key2id" % (key,))
 
-            if id2key.pop(data_id, None) is None:
-                raise AssertionError(
-                    "data_id(%s) not in self.id2key" % (data_id,))
+            data_id = blob_to_bytes(data_id)
+
+            d = key2id.pop(key, None)
+
+            if d is None:
+                raise AssertionError("key(%s) not in key2id" % (key,))
+
+            if d != data_id:
+                raise AssertionError("data_id(%s) != d(%s)" %
+                                     (binascii.hexlify(data_id),
+                                      binascii.hexlify(d)))
+
+            k = id2key.pop(data_id, None)
+
+            if k is None:
+                raise AssertionError("data_id(%s) not in id2key" %
+                                     (binascii.hexlify(data_id),))
+
+            if k != key:
+                raise AssertionError("key(%s) != k(%s)" % (key,k))
+
 
         if key2id:
             raise AssertionError("unknown keys: %s" % (key2id,))
