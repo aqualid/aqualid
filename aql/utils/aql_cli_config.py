@@ -59,7 +59,7 @@ class CLIOption(object):
 
     # -----------------------------------------------------------
 
-    def addToParser(self, parser):
+    def add_to_parser(self, parser):
         args = []
         if self.cli_name is not None:
             args.append(self.cli_name)
@@ -82,8 +82,6 @@ class CLIOption(object):
 
 # ==============================================================================
 
-# noinspection PyUnresolvedReferences,PyAttributeOutsideInit
-
 
 class CLIConfig(object):
 
@@ -95,21 +93,21 @@ class CLIConfig(object):
         super(CLIConfig, self).__setattr__('_set_options', set())
         super(CLIConfig, self).__setattr__('_defaults', {})
 
-        self.__parseArguments(cli_usage, cli_options, args)
+        self.__parse_arguments(cli_usage, cli_options, args)
 
     # -----------------------------------------------------------
 
     @staticmethod
-    def __getArgsParser(cli_usage, cli_options):
+    def __get_args_parser(cli_usage, cli_options):
         parser = optparse.OptionParser(usage=cli_usage)
 
         for opt in cli_options:
-            opt.addToParser(parser)
+            opt.add_to_parser(parser)
         return parser
 
     # -----------------------------------------------------------
 
-    def __setDefaults(self, cli_options):
+    def __set_defaults(self, cli_options):
         defaults = self._defaults
         for opt in cli_options:
             defaults[opt.opt_name] = (opt.default, opt.value_type)
@@ -121,7 +119,7 @@ class CLIConfig(object):
 
     # -----------------------------------------------------------
 
-    def __parseValues(self, args):
+    def __parse_values(self, args):
         targets = []
 
         for arg in args:
@@ -137,8 +135,8 @@ class CLIConfig(object):
 
     # -----------------------------------------------------------
 
-    def __parseOptions(self, cli_options, args):
-        defaults = self.__setDefaults(cli_options)
+    def __parse_options(self, cli_options, args):
+        defaults = self.__set_defaults(cli_options)
 
         for opt in cli_options:
             name = opt.opt_name
@@ -155,22 +153,22 @@ class CLIConfig(object):
 
     # -----------------------------------------------------------
 
-    def __parseArguments(self, cli_usage, cli_options, cli_args):
-        parser = self.__getArgsParser(cli_usage, cli_options)
+    def __parse_arguments(self, cli_usage, cli_options, cli_args):
+        parser = self.__get_args_parser(cli_usage, cli_options)
         args, values = parser.parse_args(cli_args)
 
-        self.__parseOptions(cli_options, args)
-        self.__parseValues(values)
+        self.__parse_options(cli_options, args)
+        self.__parse_values(values)
 
     # -----------------------------------------------------------
 
-    def readConfig(self, config_file, config_locals=None):
+    def read_file(self, config_file, config_locals=None):
         if config_locals is None:
             config_locals = {}
 
         exec_locals = execFile(config_file, config_locals)
         for name, value in exec_locals.items():
-            self.setDefault(name, value)
+            self.set_default(name, value)
 
     # -----------------------------------------------------------
 
@@ -193,15 +191,7 @@ class CLIConfig(object):
 
     # -----------------------------------------------------------
 
-    def getDefault(self, name):
-        try:
-            return self._defaults[name][0]
-        except KeyError:
-            return None
-
-    # -----------------------------------------------------------
-
-    def setDefault(self, name, value):
+    def set_default(self, name, value):
         if name.startswith("_"):
             super(CLIConfig, self).__setattr__(name, value)
         else:

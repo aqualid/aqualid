@@ -9,8 +9,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.entity import SimpleEntity
 from aql.nodes import Node, Builder
-from aql.utils import Tempfile, Tempdir,\
-    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
+from aql.utils import Tempfile, Tempdir, remove_user_handler, add_user_handler
 from aql.main import Project, ProjectConfig, Tool, \
     ErrorProjectBuilderMethodWithKW, \
     ErrorProjectBuilderMethodFewArguments, \
@@ -55,12 +54,12 @@ class TestProject(AqlTestCase):
         super(TestProject, self).setUp()
 
         self.building_started = 0
-        addUserHandler(self.eventNodeBuilding)
+        add_user_handler(self.eventNodeBuilding)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        removeUserHandler(self.eventNodeBuilding)
+        remove_user_handler(self.eventNodeBuilding)
 
         super(TestProject, self).tearDown()
 

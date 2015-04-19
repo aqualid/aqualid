@@ -7,8 +7,8 @@ sys.path.insert(
 
 from aql_tests import AqlTestCase, runLocalTests
 
-from aql.utils import Tempdir, removeUserHandler, addUserHandler
-from aql.utils import EventSettings, setEventSettings
+from aql.utils import Tempdir, remove_user_handler, add_user_handler
+from aql.utils import EventSettings, set_event_settings
 from aql.nodes import Node, BuildManager
 from aql.options import builtinOptions
 
@@ -30,15 +30,14 @@ class TestBuiltinTools(AqlTestCase):
 
     def setUp(self):
         super(TestBuiltinTools, self).setUp()
-        # disableDefaultHandlers()
 
         self.building_started = 0
-        addUserHandler(self.eventNodeBuilding)
+        add_user_handler(self.eventNodeBuilding)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        removeUserHandler(self.eventNodeBuilding)
+        remove_user_handler(self.eventNodeBuilding)
 
         super(TestBuiltinTools, self).tearDown()
 
@@ -134,7 +133,7 @@ class TestBuiltinTools(AqlTestCase):
 
         with Tempdir() as tmp_dir:
 
-            setEventSettings(
+            set_event_settings(
                 EventSettings(brief=True, with_output=True, trace_exec=False))
 
             build_dir = os.path.join(tmp_dir, 'build_output')
@@ -212,7 +211,7 @@ class TestBuiltinTools(AqlTestCase):
                 num_sources = 3
                 sources = self.generateSourceFiles(tmp_dir, num_sources, 200)
 
-                # setEventSettings( EventSettings( brief = False, with_output = True ) )
+                # set_event_settings( EventSettings( brief = False, with_output = True ) )
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
                 cfg.debug_backtrace = True

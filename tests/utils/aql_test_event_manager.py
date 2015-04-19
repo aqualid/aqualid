@@ -9,7 +9,7 @@ sys.path.insert(
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.utils import eventWarning, eventStatus, eventHandler, \
-    disableEvents, disableDefaultHandlers, enableDefaultHandlers, \
+    disableEvents, disable_default_handlers, enable_default_handlers, \
     EVENT_STATUS, EVENT_WARNING, \
     ErrorEventHandlerAlreadyDefined, ErrorEventHandlerUnknownEvent, ErrorEventUserHandlerWrongArgs
 
@@ -51,13 +51,13 @@ class TestEventManager(AqlTestCase):
         self.assertIn("user-event1", status)
 
         status = []
-        disableDefaultHandlers()
+        disable_default_handlers()
         testEvent1(status)
         self.assertNotIn("default-event1", status)
         self.assertIn("user-event1", status)
 
         status = []
-        enableDefaultHandlers()
+        enable_default_handlers()
         disableEvents(EVENT_WARNING)
         testEvent1(status)
         testEvent2(status)
@@ -84,18 +84,18 @@ class TestEventManager(AqlTestCase):
         def testUserEvent2(settings, msg, status):
             status.append("user-event2")
 
-        em.addDefaultHandler(testEvent1, EVENT_WARNING)
-        em.addDefaultHandler(testEvent2, EVENT_STATUS)
-        em.addUserHandler(testUserEvent1, 'testEvent1')
+        em.add_default_handler(testEvent1, EVENT_WARNING)
+        em.add_default_handler(testEvent2, EVENT_STATUS)
+        em.add_user_handler(testUserEvent1, 'testEvent1')
 
         # -----------------------------------------------------------
 
         self.assertRaises(ErrorEventHandlerAlreadyDefined,
-                          em.addDefaultHandler, testEvent2, EVENT_WARNING)
+                          em.add_default_handler, testEvent2, EVENT_WARNING)
         self.assertRaises(
-            ErrorEventHandlerUnknownEvent, em.addUserHandler, testUserEvent2)
+            ErrorEventHandlerUnknownEvent, em.add_user_handler, testUserEvent2)
         self.assertRaises(
-            ErrorEventUserHandlerWrongArgs, em.addUserHandler, testUserEvent2, 'testEvent2')
+            ErrorEventUserHandlerWrongArgs, em.add_user_handler, testUserEvent2, 'testEvent2')
 
 # ==============================================================================
 

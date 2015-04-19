@@ -10,7 +10,7 @@ from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.util_types import encode_str
 from aql.utils import fileChecksum, Tempdir, \
-    disableDefaultHandlers, enableDefaultHandlers, addUserHandler, removeUserHandler
+    enable_default_handlers, add_user_handler, remove_user_handler
 
 from aql.entity import SimpleEntity, FileChecksumEntity
 from aql.options import builtinOptions
@@ -266,12 +266,12 @@ class TestBuildManager(AqlTestCase):
         super(TestBuildManager, self).setUp()
 
         self.building_nodes = 0
-        addUserHandler(self.eventNodeBuilding)
+        add_user_handler(self.eventNodeBuilding)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        removeUserHandler([self.eventNodeBuilding, ])
+        remove_user_handler([self.eventNodeBuilding, ])
 
         super(TestBuildManager, self).tearDown()
 

@@ -8,7 +8,8 @@ sys.path[:0] = map(lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', p)), _search_paths)
 
 from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
-from aql.utils import Tempfile, addUserHandler, removeUserHandler, enableDefaultHandlers
+from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
+    enable_default_handlers
 from aql.util_types import FilePath
 from aql.nodes.aql_node import NodeEntity
 
@@ -89,20 +90,19 @@ class AqlTestCase(TestCaseBase):
 
     def setUp(self):
         super(AqlTestCase, self).setUp()
-        # disableDefaultHandlers()
 
         self.built_nodes = 0
         self.removed_nodes = 0
-        addUserHandler(self.eventNodeBuildingFinished)
-        addUserHandler(self.eventNodeRemoved)
+        add_user_handler(self.eventNodeBuildingFinished)
+        add_user_handler(self.eventNodeRemoved)
 
     # ==============================================================================
 
     def tearDown(self):
-        removeUserHandler(self.eventNodeBuildingFinished)
-        removeUserHandler(self.eventNodeRemoved)
+        remove_user_handler(self.eventNodeBuildingFinished)
+        remove_user_handler(self.eventNodeRemoved)
 
-        enableDefaultHandlers()
+        enable_default_handlers()
 
         super(AqlTestCase, self).tearDown()
 

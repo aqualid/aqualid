@@ -28,7 +28,7 @@ import traceback
 
 from aql.util_types import to_unicode
 from aql.utils import eventStatus, eventError, EventSettings,\
-    setEventSettings, Chrono, Chdir, memoryUsage,\
+    set_event_settings, Chrono, Chdir, memoryUsage,\
     splitPath, expandFilePath,\
     logInfo, logError, setLogLevel, LOG_WARNING
 
@@ -245,7 +245,7 @@ def _main(prj_cfg):
         ev_settings = EventSettings(brief=not prj_cfg.verbose,
                                     with_output=not prj_cfg.no_output,
                                     trace_exec=prj_cfg.debug_exec)
-        setEventSettings(ev_settings)
+        set_event_settings(ev_settings)
 
         with Chdir(prj_cfg.directory):
 

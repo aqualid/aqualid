@@ -9,7 +9,9 @@ sys.path.insert(
 from aql_tests import skip, AqlTestCase, runLocalTests
 
 from aql.util_types import toSequence
-from aql.utils import Tempfile, Tempdir, writeBinFile, disableDefaultHandlers, enableDefaultHandlers
+
+from aql.utils import Tempfile, Tempdir, writeBinFile, enable_default_handlers
+
 from aql.options import builtinOptions
 from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
 from aql.nodes import Node, Builder, FileBuilder
@@ -108,12 +110,8 @@ class CopyBuilder (FileBuilder):
 
 class TestNodes(AqlTestCase):
 
-    def setUp(self):
-        super(TestNodes, self).setUp()
-        # disableDefaultHandlers()
-
     def tearDown(self):
-        enableDefaultHandlers()
+        enable_default_handlers()
         super(TestNodes, self).tearDown()
 
     def test_node_value(self):

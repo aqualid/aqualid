@@ -190,7 +190,7 @@ def _getDefaultToolsPath(info=getAqlInfo()):
 
 
 def _readConfig(config_file, cli_config, options, tools_path):
-    cli_config.readConfig(config_file, {'options': options})
+    cli_config.read_file(config_file, {'options': options})
 
     if cli_config.tools_path:
         tools_path.extend(cli_config.tools_path)

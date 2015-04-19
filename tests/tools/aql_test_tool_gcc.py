@@ -7,7 +7,7 @@ sys.path.insert(
 
 from aql_tests import skip, AqlTestCase, runLocalTests
 
-from aql.utils import Tempfile, Tempdir, setEventSettings, EventSettings
+from aql.utils import Tempfile, Tempdir, EventSettings
 
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
@@ -59,8 +59,6 @@ class TestToolGcc(AqlTestCase):
             self.clearPrj(prj)
 
     def test_gcc_compiler_target(self):
-
-        # setEventSettings( EventSettings( brief = False, with_output = True, trace_exec = False ) )
 
         with Tempdir() as tmp_dir:
 
@@ -408,8 +406,6 @@ class TestToolGcc(AqlTestCase):
             src_dir = os.path.join(tmp_dir, 'src')
             copy_dir = os.path.join(tmp_dir, 'dist')
             os.makedirs(src_dir)
-
-            # setEventSettings( EventSettings( brief = False, with_output = True ) )
 
             num_src_files = 5
 

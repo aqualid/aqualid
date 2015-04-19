@@ -32,9 +32,9 @@ class TestCLIConfig(AqlTestCase):
         config = CLIConfig(
             usage, cli_options, ["-j", "0", "-v", "foo", "-s32", "bv=release", "jobs=10"])
 
-        config.setDefault('jobs', 3)
-        config.setDefault('size', 10)
-        config.setDefault('new_size', 2)
+        config.set_default('jobs', 3)
+        config.set_default('size', 10)
+        config.set_default('new_size', 2)
         self.assertEqual(config.jobs, 10)
         self.assertEqual(config.size, 32)
         self.assertIs(config.log_level, None)
@@ -44,11 +44,11 @@ class TestCLIConfig(AqlTestCase):
         self.assertFalse(config.quite)
         self.assertTrue(config.verbose)
 
-        config.setDefault('log_level', 1)
+        config.set_default('log_level', 1)
         self.assertEqual(config.log_level, 1)
 
         config.log_level = 2
-        config.setDefault('log_level', 0)
+        config.set_default('log_level', 0)
         self.assertEqual(config.log_level, 2)
 
         config.jobs = 10
@@ -58,7 +58,7 @@ class TestCLIConfig(AqlTestCase):
         config.new_size = 1
         self.assertEqual(config.new_size, 1)
 
-        config.setDefault('new_size', 30)
+        config.set_default('new_size', 30)
         self.assertTrue(config.new_size, 1)
 
     # ==========================================================
@@ -90,7 +90,7 @@ targets="test1 test2 test3"
             config = CLIConfig(
                 usage, cli_options, ["-j", "0", "-v", "foo", "bar", "bv=release", "jobs=10"])
             options = {}
-            config.readConfig(f, {'options': options})
+            config.read_file(f, {'options': options})
 
             self.assertRaises(AttributeError, getattr, config, 'options')
             self.assertEqual(config.abc, 123)
@@ -102,7 +102,7 @@ targets="test1 test2 test3"
             config = CLIConfig(
                 usage, cli_options, ["-j", "0", "-v", "bv=release", "jobs=10"])
             options = {}
-            config.readConfig(f, {'options': options})
+            config.read_file(f, {'options': options})
 
             self.assertEqual(
                 config.targets, ["test1", "test2", "test3", "test3"])
