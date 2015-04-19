@@ -293,6 +293,7 @@ def _patchSysModules():
 
 # ==============================================================================
 
+
 def _run_main(prj_cfg):
     debug_profile = prj_cfg.debug_profile
 
@@ -315,7 +316,7 @@ def _run_main(prj_cfg):
 # ==============================================================================
 
 
-def _log_error(ex,with_backtrace):
+def _log_error(ex, with_backtrace):
     if with_backtrace:
         err = traceback.format_exc()
     else:
@@ -347,7 +348,7 @@ def main():
         status = _run_main(prj_cfg)
 
     except (Exception, KeyboardInterrupt) as ex:
-        _log_error(ex,with_backtrace)
+        _log_error(ex, with_backtrace)
         status = 1
 
     return status

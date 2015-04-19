@@ -495,7 +495,6 @@ class DistBuilder (FileBuilder):
         elif command != 'sdist':
             raise ErrorDistCommandInvalid(command)
 
-
         args = self._get_args(args)
         script_args += args
 
@@ -520,7 +519,7 @@ class DistBuilder (FileBuilder):
     # -----------------------------------------------------------
 
     @staticmethod
-    def _get_formats(args, command ):
+    def _get_formats(args, command):
 
         if not command.startswith('bdist'):
             return None

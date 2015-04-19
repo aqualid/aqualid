@@ -128,6 +128,7 @@ def _add_packages_from_sys_path(paths):
 
 # ==============================================================================
 
+
 def _add_packages_from_sysconfig(paths):
     try:
         from distutils.sysconfig import get_python_lib
@@ -139,6 +140,7 @@ def _add_packages_from_sysconfig(paths):
         pass
 
 # ==============================================================================
+
 
 def _get_site_packages():
 
@@ -440,7 +442,7 @@ class BuilderWrapper(object):
             deps.extend(v for v in value if isinstance(v, _node_types))
         else:
             if isinstance(value, _node_types):
-                deps.append( value )
+                deps.append(value)
 
     # -----------------------------------------------------------
 
@@ -768,7 +770,6 @@ class Project(object):
                 del result[arg]
             except KeyError:
                 pass
-
 
     # -----------------------------------------------------------
 
