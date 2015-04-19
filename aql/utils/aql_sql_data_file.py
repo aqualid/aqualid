@@ -258,7 +258,7 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self, blob_to_bytes=_blob_to_bytes):
+    def self_test(self, blob_to_bytes=_blob_to_bytes):
         if self.connection is None:
             if self.id2key:
                 raise AssertionError("id2key is not empty")

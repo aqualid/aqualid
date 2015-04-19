@@ -329,7 +329,7 @@ class _NodesTree (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
+    def self_test(self):
         if set(self.node2deps) != set(self.dep2nodes):
             raise AssertionError("Not all deps are added")
 
@@ -603,7 +603,7 @@ class _NodeLocker(object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
+    def self_test(self):
         for node, deps in self.node2deps.items():
             if node in deps:
                 raise AssertionError("Node depends from itself: %s" % (node,))
@@ -934,10 +934,10 @@ class BuildManager (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
-        self._nodes.selfTest()
+    def self_test(self):
+        self._nodes.self_test()
         if self._node_locker is not None:
-            self._node_locker.selfTest()
+            self._node_locker.self_test()
 
     # -----------------------------------------------------------
 

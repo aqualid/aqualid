@@ -214,9 +214,9 @@ def _addNodesToBM(builder, src_files):
         checksums_node2 = Node(builder, checksums_node)
 
         bm.add([checksums_node])
-        bm.selfTest()
+        bm.self_test()
         bm.add([checksums_node2])
-        bm.selfTest()
+        bm.self_test()
     except Exception:
         bm.close()
         raise
@@ -228,16 +228,16 @@ def _addNodesToBM(builder, src_files):
 
 def _build(bm, jobs=1, keep_going=False, explain=False):
     try:
-        bm.selfTest()
+        bm.self_test()
         success = bm.build(jobs=jobs, keep_going=keep_going, explain=explain)
-        bm.selfTest()
+        bm.self_test()
         if not success:
             bm.printFails()
             raise Exception("Nodes failed")
 
     finally:
         bm.close()
-        bm.selfTest()
+        bm.self_test()
 
 # ==============================================================================
 
@@ -300,45 +300,45 @@ class TestBuildManager(AqlTestCase):
         node6.depends([node0, node1])
 
         bm.add([node0])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 1)
         bm.add([node1])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 2)
         bm.add([node2])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 3)
         bm.add([node3])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 4)
         bm.add([node4])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 5)
         bm.add([node5])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 6)
         bm.add([node6])
-        bm.selfTest()
+        bm.self_test()
         self.assertEqual(len(bm), 7)
 
         node0.depends(node3)
         bm.depends(node0, [node3])
-        bm.selfTest()
+        bm.self_test()
         node1.depends(node3)
         bm.depends(node1, [node3])
-        bm.selfTest()
+        bm.self_test()
         node2.depends(node3)
         bm.depends(node2, [node3])
-        bm.selfTest()
+        bm.self_test()
         node3.depends(node4)
         bm.depends(node3, [node4])
-        bm.selfTest()
+        bm.self_test()
         node0.depends(node5)
         bm.depends(node0, [node5])
-        bm.selfTest()
+        bm.self_test()
         node5.depends(node3)
         bm.depends(node5, [node3])
-        bm.selfTest()
+        bm.self_test()
 
         def _cyclicDeps(src_node, dep_node):
             src_node.depends(dep_node)
@@ -494,7 +494,7 @@ class TestBuildManager(AqlTestCase):
             bm = _addNodesToBM(builder, src_files)
             try:
                 bm.clear()
-                bm.selfTest()
+                bm.self_test()
             finally:
                 bm.close()
 
@@ -523,7 +523,7 @@ class TestBuildManager(AqlTestCase):
             bm = _addNodesToBM(builder, src_files)
             try:
                 bm.clear()
-                bm.selfTest()
+                bm.self_test()
             finally:
                 bm.close()
 
@@ -566,7 +566,7 @@ class TestBuildManager(AqlTestCase):
 
             node = Node(builder, src_entities)
             bm.add([node])
-            bm.selfTest()
+            bm.self_test()
             _build(bm)
 
             self.assertEqual(self.building_nodes, 0)

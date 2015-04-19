@@ -97,7 +97,7 @@ def _findMakeScript(script):
 # ==============================================================================
 
 
-def _startMemoryTracing():
+def _start_memory_tracing():
     try:
         import tracemalloc
     except ImportError:
@@ -108,7 +108,7 @@ def _startMemoryTracing():
 # ==============================================================================
 
 
-def _stopMemoryTracing():
+def _stop_memory_tracing():
     try:
         import tracemalloc
     except ImportError:
@@ -116,14 +116,14 @@ def _stopMemoryTracing():
 
     snapshot = tracemalloc.take_snapshot()
 
-    _logMemoryTop(snapshot)
+    _log_memory_top(snapshot)
 
     tracemalloc.stop()
 
 # ==============================================================================
 
 
-def _logMemoryTop(snapshot, group_by='lineno', limit=30):
+def _log_memory_top(snapshot, group_by='lineno', limit=30):
 
     try:
         import tracemalloc
@@ -161,7 +161,7 @@ def _logMemoryTop(snapshot, group_by='lineno', limit=30):
 
 def _printMemoryStatus():
 
-    _stopMemoryTracing()
+    _stop_memory_tracing()
 
     mem_usage = memoryUsage()
     num_objects = len(gc.get_objects())
@@ -185,6 +185,60 @@ def _setBuildDir(options, makefile):
 # ==============================================================================
 
 
+def _read_make_script(prj):
+    prj_cfg = prj.config
+
+    makefile = expandFilePath(prj_cfg.makefile)
+
+    if prj_cfg.search_up:
+        makefile = _findMakeScript(makefile)
+
+    _setBuildDir(prj_cfg.options, makefile)
+
+    eventReadingScripts()
+
+    with Chrono() as elapsed:
+        prj.Script(makefile)
+
+    eventReadingScriptsDone(elapsed)
+
+# ==============================================================================
+
+
+def _list_options(prj):
+    prj_cfg = prj.config
+
+    text = []
+
+    if prj_cfg.list_options:
+        text += prj.ListOptions(brief=not prj_cfg.verbose)
+
+    if prj_cfg.list_tool_options:
+        text += prj.ListToolsOptions(
+            prj_cfg.list_tool_options, brief=not prj_cfg.verbose)
+
+    logInfo('\n'.join(text))
+
+
+# ==============================================================================
+
+def _build(prj):
+    eventBuilding()
+
+    with Chrono() as elapsed:
+        success = prj.Build()
+
+    eventBuildingDone(success, elapsed)
+
+    if not success:
+        prj.build_manager.printFails()
+
+    return success
+
+
+# ==============================================================================
+
+
 def _main(prj_cfg):
     with Chrono() as total_elapsed:
 
@@ -196,23 +250,11 @@ def _main(prj_cfg):
         with Chdir(prj_cfg.directory):
 
             if prj_cfg.debug_memory:
-                _startMemoryTracing()
-
-            makefile = expandFilePath(prj_cfg.makefile)
-
-            if prj_cfg.search_up:
-                makefile = _findMakeScript(makefile)
-
-            _setBuildDir(prj_cfg.options, makefile)
+                _start_memory_tracing()
 
             prj = Project(prj_cfg)
 
-            eventReadingScripts()
-
-            with Chrono() as elapsed:
-                prj.Script(makefile)
-
-            eventReadingScriptsDone(elapsed)
+            _read_make_script(prj)
 
             success = True
 
@@ -224,26 +266,9 @@ def _main(prj_cfg):
                 logInfo('\n'.join(text))
 
             elif prj_cfg.list_options or prj_cfg.list_tool_options:
-                text = []
-
-                if prj_cfg.list_options:
-                    text += prj.ListOptions(brief=not prj_cfg.verbose)
-
-                if prj_cfg.list_tool_options:
-                    text += prj.ListToolsOptions(
-                        prj_cfg.list_tool_options, brief=not prj_cfg.verbose)
-
-                logInfo('\n'.join(text))
+                _list_options(prj_cfg)
             else:
-                eventBuilding()
-
-                with elapsed:
-                    success = prj.Build()
-
-                eventBuildingDone(success, elapsed)
-
-                if not success:
-                    prj.build_manager.printFails()
+                success = _build(prj)
 
             if prj_cfg.debug_memory:
                 _printMemoryStatus()
@@ -268,6 +293,41 @@ def _patchSysModules():
 
 # ==============================================================================
 
+def _run_main(prj_cfg):
+    debug_profile = prj_cfg.debug_profile
+
+    if not debug_profile:
+        status = _main(prj_cfg)
+    else:
+        profiler = cProfile.Profile()
+
+        status = profiler.runcall(_main, prj_cfg)
+
+        profiler.dump_stats(debug_profile)
+
+        p = pstats.Stats(debug_profile)
+        p.strip_dirs()
+        p.sort_stats('cumulative')
+        p.print_stats(prj_cfg.debug_profile_top)
+
+    return status
+
+# ==============================================================================
+
+
+def _log_error(ex,with_backtrace):
+    if with_backtrace:
+        err = traceback.format_exc()
+    else:
+        if isinstance(ex, KeyboardInterrupt):
+            err = "Keyboard Interrupt"
+        else:
+            err = to_unicode(ex)
+
+    eventAqlError(err)
+
+# ==============================================================================
+
 
 def main():
     with_backtrace = True
@@ -277,8 +337,6 @@ def main():
         prj_cfg = ProjectConfig()
         with_backtrace = prj_cfg.debug_backtrace
 
-        debug_profile = prj_cfg.debug_profile
-
         if prj_cfg.show_version:
             logInfo(dumpAqlInfo())
             return 0
@@ -286,30 +344,10 @@ def main():
         if prj_cfg.silent:
             setLogLevel(LOG_WARNING)
 
-        if not debug_profile:
-            status = _main(prj_cfg)
-        else:
-            profiler = cProfile.Profile()
-
-            status = profiler.runcall(_main, prj_cfg)
-
-            profiler.dump_stats(debug_profile)
-
-            p = pstats.Stats(debug_profile)
-            p.strip_dirs()
-            p.sort_stats('cumulative')
-            p.print_stats(prj_cfg.debug_profile_top)
+        status = _run_main(prj_cfg)
 
     except (Exception, KeyboardInterrupt) as ex:
-        if with_backtrace:
-            err = traceback.format_exc()
-        else:
-            if isinstance(ex, KeyboardInterrupt):
-                err = "Keyboard Interrupt"
-            else:
-                err = to_unicode(ex)
-
-        eventAqlError(err)
+        _log_error(ex,with_backtrace)
         status = 1
 
     return status

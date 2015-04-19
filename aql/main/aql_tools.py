@@ -96,13 +96,45 @@ class ToolInfo(object):
         'setup_methods',
     )
 
+    # ----------------------------------------------------------
+
     def __getattr__(self, attr):
         if attr == 'options':
             self.options = self.tool_class.options()
             return self.options
 
-        raise AttributeError(
-            "%s instance has no attribute '%s'" % (type(self), attr))
+        raise AttributeError("%s instance has no attribute '%s'" %
+                             (type(self), attr))
+
+    # ----------------------------------------------------------
+
+    def get_tool(self, options, setup, ignore_errors):
+
+        tool_options = options.override()
+        try:
+            tool_options.merge(self.options)
+
+            setup(tool_options)
+
+            self.tool_class.setup(tool_options)
+
+            if tool_options.hasChangedKeyOptions():
+                raise NotImplementedError()
+
+            tool_obj = self.tool_class(tool_options)
+            return tool_obj, tool_options
+
+        except NotImplementedError:
+            tool_options.clear()
+
+        except Exception as ex:
+            tool_options.clear()
+            eventToolsToolFailed(ex, self)
+            if not ignore_errors:
+                raise
+
+        return None, None
+
 
 # ==============================================================================
 
@@ -179,17 +211,21 @@ class ToolsManager(object):
             if not module_files:
                 continue
 
-            try:
-                package = loadPackage(path, generate_name=True)
-                package_name = package.__name__
-            except ImportError:
-                package_name = None
+            self._load_tools_package(path, module_files)
 
-            for module_file in module_files:
-                try:
-                    loadModule(module_file, package_name)
-                except Exception as ex:
-                    eventToolsUnableLoadModule(module_file, ex)
+    @staticmethod
+    def _load_tools_package(path, module_files):
+        try:
+            package = loadPackage(path, generate_name=True)
+            package_name = package.__name__
+        except ImportError:
+            package_name = None
+
+        for module_file in module_files:
+            try:
+                loadModule(module_file, package_name)
+            except Exception as ex:
+                eventToolsUnableLoadModule(module_file, ex)
 
     # -----------------------------------------------------------
 
@@ -228,39 +264,18 @@ class ToolsManager(object):
 
     # ==========================================================
 
-    def getTool(self, tool_name, options, no_errors=False):
+    def get_tool(self, tool_name, options, ignore_errors):
 
         tool_info_list = self.__getToolInfoList(tool_name)
 
         for tool_info in tool_info_list:
             for setup in tool_info.setup_methods:
 
-                tool_options = options.override()
-
-                try:
-                    tool_options.merge(tool_info.options)
-
-                    setup(tool_options)
-
-                    tool_info.tool_class.setup(tool_options)
-
-                    if tool_options.hasChangedKeyOptions():
-                        raise NotImplementedError()
-
-                    tool_obj = tool_info.tool_class(tool_options)
-
-                except NotImplementedError:
-                    tool_options.clear()
-
-                except Exception as ex:
-                    tool_options.clear()
-                    eventToolsToolFailed(ex, tool_info)
-                    if no_errors:
-                        raise
-
-                else:
-                    tool_names = self.tool_names.get(
-                        tool_info.tool_class, tuple())
+                tool_obj, tool_options = tool_info.get_tool(options,
+                                                            setup,
+                                                            ignore_errors)
+                if tool_obj is not None:
+                    tool_names = self.tool_names.get(tool_info.tool_class, [])
                     return tool_obj, tool_names, tool_options
 
         raise ErrorToolNotFound(tool_name, self.loaded_paths)

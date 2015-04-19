@@ -29,7 +29,8 @@ import itertools
 from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile,\
     flattenList, findFiles, cpuCount, Chdir, expandFilePath
 
-from aql.util_types import FilePath, ValueListType, UniqueList, toSequence
+from aql.util_types import FilePath, ValueListType, UniqueList,\
+    toSequence, isSequence
 
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity,\
     FileChecksumEntity, DirEntity, SimpleEntity
@@ -115,28 +116,41 @@ def _getUserConfigDir():
 # ==============================================================================
 
 
-def _getSitePackagesDirs():
+def _add_packages_from_sys_path(paths):
+
+    local_path = os.path.normcase(os.path.expanduser('~'))
+
+    for path in sys.path:
+        path = os.path.normcase(path)
+        if path.endswith('-packages') and not path.startswith(local_path):
+            if path not in paths:
+                paths.append(path)
+
+# ==============================================================================
+
+def _add_packages_from_sysconfig(paths):
+    try:
+        from distutils.sysconfig import get_python_lib
+
+        path = get_python_lib()
+        if path not in paths:
+            paths.append(path)
+    except Exception:
+        pass
+
+# ==============================================================================
+
+def _get_site_packages():
 
     try:
         return site.getsitepackages()
     except Exception:
         pass
 
-    local_path = os.path.normcase(os.path.expanduser('~'))
-
     paths = []
-    for path in sys.path:
-        path = os.path.normcase(path)
-        if path.endswith('-packages') and not path.startswith(local_path):
-            paths.append(path)
 
-    try:
-        from distutils.sysconfig import get_python_lib
-        lib_path = get_python_lib()
-        if lib_path not in paths:
-            paths.append(lib_path)
-    except Exception:
-        pass
+    _add_packages_from_sys_path(paths)
+    _add_packages_from_sysconfig(paths)
 
     return paths
 
@@ -157,7 +171,7 @@ def _getDefaultToolsPath(info=getAqlInfo()):
 
     aql_module_name = info.module
 
-    tool_dirs = _getSitePackagesDirs()
+    tool_dirs = _get_site_packages()
 
     tool_dirs += (site.USER_SITE, _getUserConfigDir())
 
@@ -403,8 +417,35 @@ class BuilderWrapper(object):
 
     # -----------------------------------------------------------
 
-    def __getOptionsAndArgs(self, kw):
-        args_kw = {}
+    @staticmethod
+    def _add_sources(name, value, sources,
+                     _names=('sources', 'source')):
+        if name in _names:
+            if isSequence(value):
+                sources.extend(value)
+            else:
+                sources.append(value)
+
+            return True
+
+        return False
+
+    # -----------------------------------------------------------
+
+    @staticmethod
+    def _add_deps(value, deps,
+                  _node_types=(Node, NodeFilter, EntityBase)):
+
+        if isSequence(value):
+            deps.extend(v for v in value if isinstance(v, _node_types))
+        else:
+            if isinstance(value, _node_types):
+                deps.append( value )
+
+    # -----------------------------------------------------------
+
+    def _get_builder_args(self, kw):
+        builder_args = {}
         sources = []
         deps = []
 
@@ -418,30 +459,28 @@ class BuilderWrapper(object):
         options = options.override()
 
         for name, value in kw.items():
-            if name in ['sources', 'source']:
-                sources += toSequence(value)
+            if self._add_sources(name, value, sources):
+                continue
+
+            self._add_deps(value, deps)
+
+            if name in self.arg_names:
+                builder_args[name] = value
             else:
-                for v in toSequence(value):
-                    if isinstance(v, (Node, NodeFilter, EntityBase)):
-                        deps.append(v)
+                options.appendValue(name, value, iUpdateValue)
 
-                if name in self.arg_names:
-                    args_kw[name] = value
-                else:
-                    options.appendValue(name, value, iUpdateValue)
-
-        return options, deps, sources, args_kw
+        return options, deps, sources, builder_args
 
     # -----------------------------------------------------------
 
     def __call__(self, *args, **kw):
 
-        options, deps, sources, args_kw = self.__getOptionsAndArgs(kw)
+        options, deps, sources, builder_args = self._get_builder_args(kw)
 
         sources += args
         sources = flattenList(sources)
 
-        builder = self.method(options, **args_kw)
+        builder = self.method(options, **builder_args)
 
         node = Node(builder, sources)
 
@@ -517,15 +556,18 @@ class ProjectTools(object):
 
         project = self.project
 
-        tool, tool_names, tool_options = self.tools.getTool(
-            tool_name, options, project.config.no_tool_errors)
+        ignore_errors = not project.config.no_tool_errors
+
+        tool, tool_names, tool_options = self.tools.get_tool(tool_name,
+                                                             options,
+                                                             ignore_errors)
 
         tool = ToolWrapper(tool, project, tool_options)
 
-        attrs = self.__dict__
+        set_attr = self.__dict__.setdefault
 
         for name in tool_names:
-            attrs.setdefault(name, tool)
+            set_attr(name, tool)
             self.tools_cache.setdefault(name, {})[options_ref] = tool
 
         return tool
@@ -700,38 +742,56 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def Config(self, config, options=None):
-
-        config = os.path.normcase(os.path.abspath(config))
+    def _get_config_options(self, config, options):
 
         if options is None:
             options = self.options
 
         options_ref = options.getHashRef()
 
+        config = os.path.normcase(os.path.abspath(config))
+
         options_set = self.configs_cache.setdefault(config, set())
 
         if options_ref in options_set:
-            return
+            return None
 
-        config_locals = {'options': options}
+        options_set.add(options_ref)
 
-        with Chdir(os.path.dirname(config)):
-            result = execFile(config, config_locals)
+        return options
 
-        # remove overridden options from CLI
+    # -----------------------------------------------------------
+
+    def _remove_overridden_options(self, result):
         for arg in self.arguments:
             try:
                 del result[arg]
             except KeyError:
                 pass
 
+
+    # -----------------------------------------------------------
+
+    def Config(self, config, options=None):
+
+        options = self._get_config_options(config, options)
+
+        if options is None:
+            return
+
+        config_locals = {'options': options}
+
+        dir_name, file_name = os.path.split(config)
+        with Chdir(dir_name):
+            result = execFile(file_name, config_locals)
+
         tools_path = result.pop('tools_path', None)
         if tools_path:
             self.tools.tools.loadTools(tools_path)
 
+        self._remove_overridden_options(result)
+
         options.update(result)
-        options_set.add(options_ref)
 
     # -----------------------------------------------------------
 
@@ -745,8 +805,9 @@ class Project(object):
         if script_result is not None:
             return script_result
 
-        with Chdir(os.path.dirname(script)):
-            script_result = execFile(script, self.script_locals)
+        dir_name, file_name = os.path.split(script)
+        with Chdir(dir_name):
+            script_result = execFile(file_name, self.script_locals)
 
         scripts_cache[script] = script_result
         return script_result
@@ -867,11 +928,9 @@ class Project(object):
 
     # ==========================================================
 
-    def Build(self, jobs=None):
-        config = self.config
-
+    def _get_jobs_count(self, jobs=None):
         if jobs is None:
-            jobs = config.jobs
+            jobs = self.config.jobs
 
         if not jobs:
             jobs = 0
@@ -881,17 +940,26 @@ class Project(object):
         if not jobs:
             jobs = cpuCount()
 
-        if jobs < 0:
+        if jobs < 1:
             jobs = 1
 
         elif jobs > 32:
             jobs = 32
+
+        return jobs
+
+    # ==========================================================
+
+    def Build(self, jobs=None):
+
+        jobs = self._get_jobs_count(jobs)
 
         if not self.options.batch_groups.isSet():
             self.options.batch_groups = jobs
 
         build_nodes = self._getBuildNodes()
 
+        config = self.config
         keep_going = config.keep_going,
         build_always = config.build_always
         explain = config.debug_explain
@@ -918,8 +986,9 @@ class Project(object):
         force_lock = self.config.force_lock
         use_sqlite = self.config.use_sqlite
 
-        self.build_manager.clear(
-            nodes=build_nodes, use_sqlite=use_sqlite, force_lock=force_lock)
+        self.build_manager.clear(nodes=build_nodes,
+                                 use_sqlite=use_sqlite,
+                                 force_lock=force_lock)
 
     # ==========================================================
 

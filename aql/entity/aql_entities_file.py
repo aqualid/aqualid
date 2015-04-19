@@ -235,14 +235,14 @@ class EntitiesFile (object):
 
     # -------------------------------------------------------------------------------
 
-    def selfTest(self):
+    def self_test(self):
         if self.data_file is None:
             if self.cache:
                 raise AssertionError("cache is not empty")
 
             return
 
-        self.data_file.selfTest()
+        self.data_file.self_test()
 
         for entity_id, entity in self.cache.items():
             if entity_id != entity.id:

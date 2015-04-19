@@ -29,7 +29,7 @@ class ErrorDistCommandInvalid(Exception):
 # ==============================================================================
 
 
-def _getMethodFullName(m):
+def _get_method_full_name(m):
     full_name = []
     mod = getattr(m, '__module__', None)
     if mod:
@@ -142,7 +142,7 @@ class ExecuteMethodBuilder (Builder):
                  make_files,
                  clear_targets):
 
-        self.method_name = _getMethodFullName(method)
+        self.method_name = _get_method_full_name(method)
         self.method = method
         self.args = args if args else []
         self.kw = kw if kw else {}
@@ -495,25 +495,11 @@ class DistBuilder (FileBuilder):
         elif command != 'sdist':
             raise ErrorDistCommandInvalid(command)
 
-        formats = set()
 
-        if args:
-            if is_string(args):
-                args = args.split()
-            else:
-                args = toSequence(args)
+        args = self._get_args(args)
+        script_args += args
 
-            script_args += args
-
-            for arg in args:
-                if command.startswith('bdist'):
-                    if arg.startswith('--formats='):
-                        v = arg[len('--formats='):].split(',')
-                        formats.update(v)
-
-                    elif arg.startswith('--plat-name='):
-                        v = arg[len('--plat-name='):]
-                        formats.add(v)
+        formats = self._get_formats(args, command)
 
         script_args += ['--dist-dir', target]
 
@@ -521,6 +507,35 @@ class DistBuilder (FileBuilder):
         self.target = target
         self.script_args = script_args
         self.formats = formats
+
+    # -----------------------------------------------------------
+
+    @staticmethod
+    def _get_args(args):
+        if args:
+            return args.split() if is_string(args) else toSequence(args)
+
+        return tuple()
+
+    # -----------------------------------------------------------
+
+    @staticmethod
+    def _get_formats(args, command ):
+
+        if not command.startswith('bdist'):
+            return None
+
+        formats = set()
+        for arg in args:
+            if arg.startswith('--formats='):
+                v = arg[len('--formats='):].split(',')
+                formats.update(v)
+
+            elif arg.startswith('--plat-name='):
+                v = arg[len('--plat-name='):]
+                formats.add(v)
+
+        return formats
 
     # -----------------------------------------------------------
 

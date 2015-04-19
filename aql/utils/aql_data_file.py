@@ -786,7 +786,7 @@ class DataFile (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
+    def self_test(self):
 
         if self.handle is None:
             return

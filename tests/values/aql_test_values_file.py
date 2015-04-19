@@ -20,7 +20,7 @@ class TestValuesFile(AqlTestCase):
             vfile = EntitiesFile(tmp)
 
             try:
-                vfile.selfTest()
+                vfile.self_test()
 
                 value1 = SimpleEntity("http://aql.org/download")
                 value2 = SimpleEntity("http://aql.org/download2")
@@ -29,9 +29,9 @@ class TestValuesFile(AqlTestCase):
                 values = [value1, value2, value3]
 
                 value_keys = vfile.addEntities(values)
-                vfile.selfTest()
+                vfile.self_test()
                 other_value_keys = vfile.addEntities(values)
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertItemsEqual(value_keys, other_value_keys)
 
@@ -43,24 +43,24 @@ class TestValuesFile(AqlTestCase):
                 self.assertItemsEqual(values, s_values)
 
                 vfile.clear()
-                vfile.selfTest()
+                vfile.self_test()
 
                 # -----------------------------------------------------------
 
                 value_keys = vfile.addEntities(values)
-                vfile.selfTest()
+                vfile.self_test()
 
                 s_values = vfile.findEntities(values)
-                vfile.selfTest()
+                vfile.self_test()
                 dep_values = vfile.findEntitiesByKey(value_keys)
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertItemsEqual(s_values, dep_values)
 
                 # -----------------------------------------------------------
 
                 value1_key = vfile.addEntities([value1])[0]
-                vfile.selfTest()
+                vfile.self_test()
 
                 s_dep_value = vfile.findEntitiesByKey([value1_key])[0]
                 self.assertEqual(value1, s_dep_value)
@@ -68,10 +68,10 @@ class TestValuesFile(AqlTestCase):
                 value1 = SimpleEntity("abc", name=value1.name)
 
                 vfile.addEntities([value1])
-                vfile.selfTest()
+                vfile.self_test()
 
                 s_dep_value = vfile.findEntitiesByKey(value_keys)
-                vfile.selfTest()
+                vfile.self_test()
                 self.assertIsNone(s_dep_value)
             finally:
                 vfile.close()
@@ -82,7 +82,7 @@ class TestValuesFile(AqlTestCase):
         with Tempfile() as tmp:
             vfile = EntitiesFile(tmp)
             try:
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertItemsEqual(vfile.findEntities([]), [])
 
@@ -109,20 +109,20 @@ class TestValuesFile(AqlTestCase):
                 all_values = dep_values_4
 
                 all_keys = vfile.addEntities(all_values)
-                vfile.selfTest()
+                vfile.self_test()
                 self.assertItemsEqual(
                     vfile.findEntities(all_values), all_values)
                 self.assertItemsEqual(
                     vfile.findEntitiesByKey(all_keys), all_values)
 
                 dep_keys_1 = vfile.addEntities(dep_values_1)
-                vfile.selfTest()
+                vfile.self_test()
                 dep_keys_2 = vfile.addEntities(dep_values_2)
-                vfile.selfTest()
+                vfile.self_test()
                 dep_keys_3 = vfile.addEntities(dep_values_3)
-                vfile.selfTest()
+                vfile.self_test()
                 dep_keys_4 = vfile.addEntities(dep_values_4)
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertTrue(set(dep_keys_1).issubset(dep_keys_2))
                 self.assertTrue(set(dep_keys_2).issubset(dep_keys_3))
@@ -132,11 +132,11 @@ class TestValuesFile(AqlTestCase):
 
                 vfile.close()
                 vfile.open(tmp)
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertItemsEqual(
                     vfile.findEntities(all_values), all_values)
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertItemsEqual(
                     vfile.findEntitiesByKey(dep_keys_1), dep_values_1)
@@ -151,7 +151,7 @@ class TestValuesFile(AqlTestCase):
                     "http://aql.org/download3/0", name=value4.name)
 
                 vfile.addEntities([value4])
-                vfile.selfTest()
+                vfile.self_test()
 
                 self.assertItemsEqual(
                     vfile.findEntitiesByKey(dep_keys_1), dep_values_1)
@@ -168,13 +168,13 @@ class TestValuesFile(AqlTestCase):
         with Tempfile() as tmp:
             vfile = EntitiesFile(tmp)
             try:
-                vfile.selfTest()
+                vfile.self_test()
 
                 value1 = SimpleEntity("test", name="test1")
                 value2 = SignatureEntity(b"1234354545", name=value1.name)
 
                 vfile.addEntities([value1, value2])
-                vfile.selfTest()
+                vfile.self_test()
 
                 values = [
                     SimpleEntity(name=value1.name), SignatureEntity(name=value2.name)]
@@ -183,7 +183,7 @@ class TestValuesFile(AqlTestCase):
 
                 vfile.close()
                 vfile.open(tmp)
-                vfile.selfTest()
+                vfile.self_test()
             finally:
                 vfile.close()
 

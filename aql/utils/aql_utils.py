@@ -49,7 +49,7 @@ from aql.util_types import uStr, is_string, cast_str, is_unicode, to_unicode,\
 __all__ = (
     'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile',
     'execFile', 'removeFiles', 'newHash', 'dumpSimpleObject',
-    'simpleObjectSignature', 'objectSignature', 'dataSignature',
+    'simpleObjectSignature', 'dataSignature',
     'fileSignature', 'fileTimeSignature', 'fileChecksum',
     'loadModule', 'loadPackage',
     'getFunctionName', 'printStacks',
@@ -217,7 +217,7 @@ def dumpSimpleObject(obj):
 
     else:
         try:
-            data = marshal.dumps(obj, 0)  # stick with version 0, we a raw dump
+            data = marshal.dumps(obj, 0)  # use version 0, for a raw dump
         except ValueError:
             raise ErrorUnmarshallableObject(obj)
 
@@ -226,21 +226,8 @@ def dumpSimpleObject(obj):
 # ==============================================================================
 
 
-def dumpObject(obj):
-    return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
-
-# ==============================================================================
-
-
 def simpleObjectSignature(obj, common_hash=None):
     data = dumpSimpleObject(obj)
-    return dataSignature(data, common_hash)
-
-# ==============================================================================
-
-
-def objectSignature(obj, common_hash=None):
-    data = dumpObject(obj)
     return dataSignature(data, common_hash)
 
 # ==============================================================================
@@ -646,7 +633,7 @@ def cpuCount():
         pass
 
     cpu_count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
-    if cpu_count:
+    if cpu_count > 0:
         return cpu_count
 
     try:
@@ -654,7 +641,7 @@ def cpuCount():
             cpu_count = os.sysconf('SC_NPROCESSORS_ONLN')
         elif 'SC_NPROCESSORS_CONF' in os.sysconf_names:
             cpu_count = os.sysconf('SC_NPROCESSORS_CONF')
-        if cpu_count:
+        if cpu_count > 0:
             return cpu_count
 
     except AttributeError:

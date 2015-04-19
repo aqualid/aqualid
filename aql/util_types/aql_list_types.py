@@ -28,9 +28,9 @@ __all__ = ('toSequence', 'isSequence', 'UniqueList',
 # ==============================================================================
 
 
-def toSequence(value, seq_types=(uStr, bytes, bytearray)):
+def toSequence(value, _seq_types=(uStr, bytes, bytearray)):
 
-    if not isinstance(value, seq_types):
+    if not isinstance(value, _seq_types):
         try:
             iter(value)
             return value
@@ -45,9 +45,9 @@ def toSequence(value, seq_types=(uStr, bytes, bytearray)):
 # ==============================================================================
 
 
-def isSequence(value, seq_types=(uStr, bytes, bytearray)):
+def isSequence(value, _seq_types=(uStr, bytes, bytearray)):
 
-    if not isinstance(value, seq_types):
+    if not isinstance(value, _seq_types):
         try:
             iter(value)
             return True
@@ -316,7 +316,7 @@ class UniqueList (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
+    def self_test(self):
         size = len(self)
         if size != len(self.__values_list):
             raise AssertionError(

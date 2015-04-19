@@ -51,15 +51,15 @@ class TestDataFile(AqlTestCase):
 
             df = DataFileType(tmp)
             try:
-                df.selfTest()
+                df.self_test()
 
                 df.clear()
 
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     df.write_with_key(data_id, data)
-                    df.selfTest()
+                    df.self_test()
                     stored_data = df.read(data_id)
                     self.assertEqual(stored_data, data)
 
@@ -77,15 +77,15 @@ class TestDataFile(AqlTestCase):
 
             df = DataFileType(tmp)
             try:
-                df.selfTest()
+                df.self_test()
 
                 df.clear()
 
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
-                    df.selfTest()
+                    df.self_test()
                     stored_data = df.read(data_id)
                     self.assertEqual(stored_data, data)
 
@@ -93,15 +93,15 @@ class TestDataFile(AqlTestCase):
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
-                    df.selfTest()
+                    df.self_test()
                     stored_data = df.read(data_id)
                     self.assertEqual(stored_data, data)
 
                 df.close()
-                df.selfTest()
+                df.self_test()
 
                 df.open(tmp)
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     stored_data = df.read(data_id)
@@ -109,12 +109,12 @@ class TestDataFile(AqlTestCase):
 
                 for data_id, data in data_map.items():
                     key = df.write_with_key(data_id, data)
-                    df.selfTest()
+                    df.self_test()
                     data_keys[data_id] = key
                     tmp_data_id = df.get_ids([key])[0]
                     self.assertEqual(tmp_data_id, data_id)
                     new_key = df.write_with_key(data_id, data)
-                    df.selfTest()
+                    df.self_test()
                     self.assertGreater(new_key, key)
                     self.assertIsNone(df.get_ids([key]))
                     self.assertSequenceEqual(df.get_ids([new_key]), [data_id])
@@ -138,28 +138,28 @@ class TestDataFile(AqlTestCase):
 
             df = DataFileType(tmp)
             try:
-                df.selfTest()
+                df.self_test()
 
                 df.clear()
 
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
 
                 for data_id in data_map:
                     df.remove((data_id,))
-                    df.selfTest()
+                    df.self_test()
 
                 df.close()
                 df = DataFileType(tmp)
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
 
                 df.remove(data_map)
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
@@ -168,14 +168,14 @@ class TestDataFile(AqlTestCase):
                 random.shuffle(data_ids)
 
                 df.remove(data_ids[:len(data_ids) // 2])
-                df.selfTest()
+                df.self_test()
 
                 df.close()
                 df = DataFileType(tmp)
-                df.selfTest()
+                df.self_test()
 
                 df.remove(data_ids[len(data_ids) // 2:])
-                df.selfTest()
+                df.self_test()
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
@@ -186,11 +186,11 @@ class TestDataFile(AqlTestCase):
                 remove_data_ids2 = [data_ids[i * 2 + 1]
                                     for i in range(len(data_ids) // 2)]
                 df.remove(remove_data_ids1)
-                df.selfTest()
+                df.self_test()
 
                 df.close()
                 df = DataFileType(tmp)
-                df.selfTest()
+                df.self_test()
 
                 for data_id in remove_data_ids2:
                     data = data_map[data_id]
@@ -198,7 +198,7 @@ class TestDataFile(AqlTestCase):
                     self.assertEqual(stored_data, data)
 
                 df.remove(remove_data_ids2)
-                df.selfTest()
+                df.self_test()
 
             finally:
                 df.close()
