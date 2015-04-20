@@ -56,12 +56,12 @@ class GeneralFileLock (object):
 
     # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_value, traceback):
-        self.releaseLock()
+        self.release_lock()
 
-    def readLock(self, wait=True, force=False):
-        return self.writeLock(wait=wait, force=force)
+    def read_lock(self, wait=True, force=False):
+        return self.write_lock(wait=wait, force=force)
 
-    def writeLock(self, wait=True, force=False):
+    def write_lock(self, wait=True, force=False):
         if wait:
             index = self.retries
         else:
@@ -91,7 +91,7 @@ class GeneralFileLock (object):
 
             raise
 
-    def releaseLock(self):
+    def release_lock(self):
         try:
             os.rmdir(self.lockfilename)
         except OSError as ex:
@@ -119,7 +119,7 @@ try:
 
         # noinspection PyUnusedLocal
         def __exit__(self, exc_type, exc_value, traceback):
-            self.releaseLock()
+            self.release_lock()
 
         def __open(self):
 
@@ -132,11 +132,11 @@ try:
             os.close(self.fd)
             self.fd = None
 
-        def readLock(self, wait=True, force=False):
+        def read_lock(self, wait=True, force=False):
             self.__lock(write=False, wait=wait)
             return self
 
-        def writeLock(self, wait=True, force=False):
+        def write_lock(self, wait=True, force=False):
             self.__lock(write=True, wait=wait)
             return self
 
@@ -159,7 +159,7 @@ try:
                     raise ErrorFileLocked(self.filename)
                 raise
 
-        def releaseLock(self):
+        def release_lock(self):
             fcntl.lockf(self.fd, fcntl.LOCK_UN)
             self.__close()
 
@@ -173,7 +173,7 @@ except ImportError:
 
         class WindowsFileLock (object):
 
-            def __initWinTypes(self):
+            def __init_win_types(self):
                 self.LOCKFILE_FAIL_IMMEDIATELY = 0x1
                 self.LOCKFILE_EXCLUSIVE_LOCK = 0x2
 
@@ -225,7 +225,7 @@ except ImportError:
 
             def __init__(self, filename):
 
-                self.__initWinTypes()
+                self.__init_win_types()
                 filename = os.path.normcase(os.path.abspath(filename))
                 self.filename = filename
                 self.fd = None
@@ -238,7 +238,7 @@ except ImportError:
 
             # noinspection PyUnusedLocal
             def __exit__(self, exc_type, exc_value, traceback):
-                self.releaseLock()
+                self.release_lock()
 
             # -----------------------------------------------------------
 
@@ -277,15 +277,15 @@ except ImportError:
 
             # -----------------------------------------------------------
 
-            def readLock(self, wait=True, force=False):
+            def read_lock(self, wait=True, force=False):
                 self.__lock(write=False, wait=wait)
                 return self
 
-            def writeLock(self, wait=True, force=False):
+            def write_lock(self, wait=True, force=False):
                 self.__lock(write=True, wait=wait)
                 return self
 
-            def releaseLock(self):
+            def release_lock(self):
                 self.UnlockFileEx(self.handle, 0, 0, 4096, self.poverlapped)
                 self.__close()
 

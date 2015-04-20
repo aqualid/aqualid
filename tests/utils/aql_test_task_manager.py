@@ -5,20 +5,20 @@ import time
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 from aql.utils import TaskManager, TaskResult
 
 # ==============================================================================
 
 
-def _doAppend(arg, results, delay=0):
+def _do_append(arg, results, delay=0):
     time.sleep(delay)
     results.add(arg)
 
 # ==============================================================================
 
 
-def _doFail(delay=0):
+def _do_fail(delay=0):
     time.sleep(delay)
     raise Exception()
 
@@ -37,13 +37,13 @@ class TestTaskManager(AqlTestCase):
         num_of_tasks = 8
 
         for i in range(num_of_tasks):
-            tm.addTask(num_of_tasks - i, i, _doAppend, i, results)
+            tm.add_task(num_of_tasks - i, i, _do_append, i, results)
 
         tm.start(jobs)
 
         time.sleep(0.5)  # wait until all tasks are done
 
-        done_tasks = [result.task_id for result in tm.finishedTasks()]
+        done_tasks = [result.task_id for result in tm.get_finished_tasks()]
         expected_tasks = sorted(range(num_of_tasks), reverse=True)
 
         self.assertEqual(done_tasks, expected_tasks)
@@ -60,13 +60,13 @@ class TestTaskManager(AqlTestCase):
         num_of_tasks = 100
 
         for i in range(num_of_tasks):
-            tm.addTask(0, i, _doFail, 0.0)
+            tm.add_task(0, i, _do_fail, 0.0)
 
         tm.start(jobs)
 
         time.sleep(0.5)  # wait until all tasks are done
 
-        done_tasks = tm.finishedTasks()
+        done_tasks = tm.get_finished_tasks()
 
         self.assertEqual(len(done_tasks), num_of_tasks)
 
@@ -86,14 +86,14 @@ class TestTaskManager(AqlTestCase):
         results = set()
 
         for i in range(num_tasks):
-            tm.addTask(0, i, _doAppend, i, results, 1)
+            tm.add_task(0, i, _do_append, i, results, 1)
 
         time.sleep(0.2)
 
         tm.stop()
         tm.stop()
 
-        done_tasks = sorted(result.task_id for result in tm.finishedTasks())
+        done_tasks = sorted(result.task_id for result in tm.get_finished_tasks())
 
         self.assertEqual(len(done_tasks), jobs)
         self.assertEqual(results, set(done_tasks))
@@ -107,15 +107,15 @@ class TestTaskManager(AqlTestCase):
 
         num_tasks = 3
 
-        tm.addTask(0, 0, _doAppend, 0, results, 0.3)
+        tm.add_task(0, 0, _do_append, 0, results, 0.3)
 
-        tm.addTask(0, 1, _doFail, 0.1)
+        tm.add_task(0, 1, _do_fail, 0.1)
 
-        tm.addTask(0, 2, _doAppend, 2, results, 0)
+        tm.add_task(0, 2, _do_append, 2, results, 0)
 
         time.sleep(1)
 
-        done_tasks = sorted(tm.finishedTasks(), key=lambda v: v.task_id)
+        done_tasks = sorted(tm.get_finished_tasks(), key=lambda v: v.task_id)
         self.assertEqual(len(done_tasks), num_tasks)
 
         expected_tasks = [TaskResult(task_id, error, result)
@@ -139,18 +139,18 @@ class TestTaskManager(AqlTestCase):
         results = set()
 
         for i in range(jobs - 1):
-            tm.addTask(0, i, _doAppend, i, results, 0.5)
+            tm.add_task(0, i, _do_append, i, results, 0.5)
 
-        tm.addTask(1, jobs - 1, _doFail, 0.1)
+        tm.add_task(1, jobs - 1, _do_fail, 0.1)
 
         for i in range(jobs, num_tasks):
-            tm.addTask(2, i, _doAppend, i, results, 0)
+            tm.add_task(2, i, _do_append, i, results, 0)
 
         tm.start(jobs)
 
         time.sleep(1)
 
-        done_tasks = sorted(tm.finishedTasks(), key=lambda t: t.task_id)
+        done_tasks = sorted(tm.get_finished_tasks(), key=lambda t: t.task_id)
         print()
         self.assertEqual(len(done_tasks), jobs)
 
@@ -165,4 +165,4 @@ class TestTaskManager(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

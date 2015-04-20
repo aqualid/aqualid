@@ -23,8 +23,8 @@
 import logging
 
 __all__ = (
-    'setLogLevel', 'logCritical',  'logWarning',  'logError',  'logDebug',
-    'logInfo', 'addLogHandler',
+    'set_log_level', 'log_critical',  'log_warning',  'log_error', 'log_debug',
+    'log_info', 'add_log_handler',
     'LOG_CRITICAL', 'LOG_WARNING', 'LOG_ERROR', 'LOG_DEBUG', 'LOG_INFO',
 )
 
@@ -37,36 +37,31 @@ LOG_DEBUG = logging.DEBUG
 # -------------------------------------------------------------------------------
 
 
-class LogFormatter(object):
+class LogFormatter(logging.Formatter):
 
-    __slots__ = ('info', 'other')
+    __slots__ = ('other',)
 
-    def __init__(self):
-        self.info = logging.Formatter()
+    def __init__(self, *args, **kw):
+        logging.Formatter.__init__(self, *args, **kw)
+
         self.other = logging.Formatter("%(levelname)s: %(message)s")
 
     def formatTime(self, record, datefmt=None):
         if record.levelno == logging.INFO:
-            return self.info.formatTime(record, datefmt=datefmt)
+            return logging.Formatter.formatTime(self, record, datefmt=datefmt)
         else:
             return self.other.formatTime(record, datefmt=datefmt)
 
     def format(self, record):
         if record.levelno == logging.INFO:
-            return self.info.format(record)
+            return logging.Formatter.format(self, record)
         else:
             return self.other.format(record)
-
-    def formatException(self, ei):
-        return self.other.formatException(ei)
-
-    def usesTime(self):
-        return self.other.usesTime()
 
 # -------------------------------------------------------------------------------
 
 
-def _makeAqlLogger():
+def _make_aql_logger():
     logger = logging.getLogger("AQL")
     handler = logging.StreamHandler()
 
@@ -80,14 +75,14 @@ def _makeAqlLogger():
 
 # -------------------------------------------------------------------------------
 
-_logger = _makeAqlLogger()
+_logger = _make_aql_logger()
 
-setLogLevel = _logger.setLevel
-logCritical = _logger.critical
-logError = _logger.error
-logWarning = _logger.warning
-logInfo = _logger.info
-logDebug = _logger.debug
-addLogHandler = _logger.addHandler
+set_log_level = _logger.setLevel
+log_critical = _logger.critical
+log_error = _logger.error
+log_warning = _logger.warning
+log_info = _logger.info
+log_debug = _logger.debug
+add_log_handler = _logger.addHandler
 
 # -------------------------------------------------------------------------------

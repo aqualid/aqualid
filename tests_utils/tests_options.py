@@ -29,7 +29,7 @@ except NameError:
     StrTypes = (str, )
 
 
-def _toSequence(value):
+def _to_sequence(value):
     if value is None:
         return None
 
@@ -46,7 +46,7 @@ def _toSequence(value):
 # ==============================================================================
 
 
-def _execFile(filename, in_context):
+def _exec_file(filename, in_context):
     with open(filename) as f:
         source = f.read()
 
@@ -58,7 +58,7 @@ def _execFile(filename, in_context):
 # ==============================================================================
 
 
-def _toBool(value):
+def _to_bool(value):
     if isinstance(value, StrTypes):
         return value.lower() == 'true'
 
@@ -83,7 +83,7 @@ class CLIOption(object):
 
     # -----------------------------------------------------------
 
-    def addToParser(self, parser):
+    def add_to_parser(self, parser):
         args = []
         if self.cli_name is not None:
             args.append(self.cli_name)
@@ -91,7 +91,7 @@ class CLIOption(object):
         if self.cli_long_name is not None:
             args.append(self.cli_long_name)
 
-        if (self.value_type is bool) or (self.value_type is _toBool):
+        if (self.value_type is bool) or (self.value_type is _to_bool):
             action = 'store_false' if self.default else 'store_true'
         else:
             action = 'store'
@@ -140,67 +140,67 @@ class TestsOptions(Singleton):
 
         CLI_OPTIONS = (
             CLIOption("-d", "--dir",           "tests_dirs",
-                      _toSequence,  '.',      "Tests directories", 'PATH,...'),
+                      _to_sequence,  '.',      "Tests directories", 'PATH,...'),
             CLIOption("-p", "--prefix",        "test_modules_prefix",  str,
                       'test_',  "File name prefix of test modules", 'PREFIX'),
             CLIOption("-m", "--method-prefix", "test_methods_prefix",
                       str,          'test',   "Test methods prefix", 'PREFIX'),
             CLIOption("-f", "--config",        "configs",
-                      _toSequence,  (),       "Path to config file(s).", 'FILE PATH, ...'),
-            CLIOption("-x", "--tests",         "tests",                _toSequence,
+                      _to_sequence,  (),       "Path to config file(s).", 'FILE PATH, ...'),
+            CLIOption("-x", "--tests",         "tests",                _to_sequence,
                       None,     "List of tests which should be executed.", "[+-~]TEST,..."),
-            CLIOption(None, "--run-tests",     "run_tests",            _toSequence,
+            CLIOption(None, "--run-tests",     "run_tests",            _to_sequence,
                       None,     "List of tests which should be executed.", "TEST,..."),
-            CLIOption(None, "--skip-tests",    "skip_tests",           _toSequence,
+            CLIOption(None, "--skip-tests",    "skip_tests",           _to_sequence,
                       None,     "List of tests which should be skipped.", "TEST,..."),
-            CLIOption(None, "--add-tests",     "add_tests",            _toSequence,
+            CLIOption(None, "--add-tests",     "add_tests",            _to_sequence,
                       None,     "List of tests which should be added.", "TEST,..."),
             CLIOption(None, "--continue",      "start_from_tests",
-                      _toSequence,  None,     "Continue execution from test.", "TEST"),
-            CLIOption("-k", "--keep-going",    "keep_going",           _toBool,
+                      _to_sequence,  None,     "Continue execution from test.", "TEST"),
+            CLIOption("-k", "--keep-going",    "keep_going",           _to_bool,
                       False,    "Keep going even if any test case failed"),
             CLIOption("-o", "--list-options",  "list_options",
-                      _toBool,      False,    "List options and exit."),
+                      _to_bool,      False,    "List options and exit."),
             CLIOption("-l", "--list",          "list_tests",
-                      _toBool,      False,    "List test cases and exit."),
+                      _to_bool,      False,    "List test cases and exit."),
             CLIOption("-r", "--reset",         "reset",
-                      _toBool,      False,    "Reset configuration."),
+                      _to_bool,      False,    "Reset configuration."),
             CLIOption("-v", "--verbose",       "verbose",
-                      _toBool,      False,    "Verbose mode."),
+                      _to_bool,      False,    "Verbose mode."),
             CLIOption("-q", "--quiet",         "quiet",
-                      _toBool,      False,    "Quiet mode."),
+                      _to_bool,      False,    "Quiet mode."),
         )
 
         super(TestsOptions, self).__setattr__('targets', tuple())
         super(TestsOptions, self).__setattr__('_set_options', set())
         super(TestsOptions, self).__setattr__('_defaults', {})
 
-        self.__parseArguments(CLI_USAGE, CLI_OPTIONS, args)
+        self.__parse_arguments(CLI_USAGE, CLI_OPTIONS, args)
 
     # -----------------------------------------------------------
 
     @staticmethod
-    def __getArgsParser(cli_usage, cli_options):
+    def __get_args_parser(cli_usage, cli_options):
         parser = optparse.OptionParser(usage=cli_usage)
 
         for opt in cli_options:
-            opt.addToParser(parser)
+            opt.add_to_parser(parser)
         return parser
 
     # -----------------------------------------------------------
 
-    def __setDefaults(self, cli_options):
+    def __set_defaults(self, cli_options):
         defaults = self._defaults
         for opt in cli_options:
             defaults[opt.opt_name] = (opt.default, opt.value_type)
 
-        defaults['targets'] = (tuple(), _toSequence)
+        defaults['targets'] = (tuple(), _to_sequence)
 
         return defaults
 
     # -----------------------------------------------------------
 
-    def __parseValues(self, args):
+    def __parse_values(self, args):
         targets = []
 
         for arg in args:
@@ -216,8 +216,8 @@ class TestsOptions(Singleton):
 
     # -----------------------------------------------------------
 
-    def __parseOptions(self, cli_options, args):
-        self.__setDefaults(cli_options)
+    def __parse_options(self, cli_options, args):
+        self.__set_defaults(cli_options)
 
         defaults = self._defaults
 
@@ -236,7 +236,7 @@ class TestsOptions(Singleton):
 
     # -----------------------------------------------------------
 
-    def __parseTests(self, tests):
+    def __parse_tests(self, tests):
 
         run_tests = None
         add_tests = None
@@ -244,7 +244,7 @@ class TestsOptions(Singleton):
         start_from_tests = None
 
         if tests is not None:
-            tests = _toSequence(tests)
+            tests = _to_sequence(tests)
         else:
             tests = ()
 
@@ -282,27 +282,27 @@ class TestsOptions(Singleton):
 
     # -----------------------------------------------------------
 
-    def __parseArguments(self, cli_usage, cli_options, cli_args):
-        parser = self.__getArgsParser(cli_usage, cli_options)
+    def __parse_arguments(self, cli_usage, cli_options, cli_args):
+        parser = self.__get_args_parser(cli_usage, cli_options)
         args, values = parser.parse_args(cli_args)
 
-        self.__parseOptions(cli_options, args)
-        self.__parseValues(values)
-        self.__parseTests(self.tests)
+        self.__parse_options(cli_options, args)
+        self.__parse_values(values)
+        self.__parse_tests(self.tests)
 
         for config in self.configs:
-            self.readConfig(config)
+            self.read_config(config)
 
     # -----------------------------------------------------------
 
-    def readConfig(self, config_file, exec_locals=None):
+    def read_config(self, config_file, exec_locals=None):
         if exec_locals is None:
             exec_locals = {}
 
-        file_locals = _execFile(config_file, exec_locals)
+        file_locals = _exec_file(config_file, exec_locals)
         for name, value in file_locals.items():
             if name not in exec_locals:
-                self.setDefault(name, value)
+                self.set_default(name, value)
 
     # -----------------------------------------------------------
 
@@ -321,7 +321,7 @@ class TestsOptions(Singleton):
 
     # -----------------------------------------------------------
 
-    def setDefault(self, name, value):
+    def set_default(self, name, value):
         if name.startswith("_"):
             super(TestsOptions, self).__setattr__(name, value)
         else:

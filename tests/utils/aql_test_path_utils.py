@@ -5,11 +5,11 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import AqlTestCase, runLocalTests
+from aql_tests import AqlTestCase, run_local_tests
 
-from aql.utils import findFiles, changePath, \
-    findProgram, findPrograms, findOptionalProgram, findOptionalPrograms, \
-    relativeJoin, excludeFilesFromDirs, groupPathsByDir, \
+from aql.utils import find_files, change_path, \
+    find_program, find_programs, find_optional_program, find_optional_programs, \
+    relative_join, exclude_files_from_dirs, group_paths_by_dir, \
     Chdir
 
 # ==============================================================================
@@ -30,27 +30,27 @@ class TestPathUtils(AqlTestCase):
             disk_file = os.path.join('a:', os.path.splitdrive(dir1)[1])
 
         self.assertEqual(
-            relativeJoin(dir1, file2), os.path.join(dir1, 'bar', 'file2.txt'))
-        self.assertEqual(relativeJoin(dir1, host_file), os.path.join(
+            relative_join(dir1, file2), os.path.join(dir1, 'bar', 'file2.txt'))
+        self.assertEqual(relative_join(dir1, host_file), os.path.join(
             dir1, *(filter(None, host_file.split('/')))))
 
         if disk_file:
-            self.assertEqual(relativeJoin(dir1, disk_file), os.path.join(
+            self.assertEqual(relative_join(dir1, disk_file), os.path.join(
                 dir1, *disk_file.replace(':', os.path.sep).split(os.path.sep)))
-        self.assertEqual(relativeJoin(dir1, ''), os.path.join(dir1, '.'))
-        self.assertEqual(relativeJoin(dir1, '.'), os.path.join(dir1, '.'))
-        self.assertEqual(relativeJoin(dir1, '..'), os.path.join(dir1, '..'))
+        self.assertEqual(relative_join(dir1, ''), os.path.join(dir1, '.'))
+        self.assertEqual(relative_join(dir1, '.'), os.path.join(dir1, '.'))
+        self.assertEqual(relative_join(dir1, '..'), os.path.join(dir1, '..'))
 
-        self.assertEqual(relativeJoin(
+        self.assertEqual(relative_join(
             'foo/bar', 'bar/foo/file.txt'), os.path.normpath('foo/bar/bar/foo/file.txt'))
         self.assertEqual(
-            relativeJoin('foo/bar', 'foo/file.txt'), os.path.normpath('foo/bar/file.txt'))
+            relative_join('foo/bar', 'foo/file.txt'), os.path.normpath('foo/bar/file.txt'))
 
     # ==========================================================
 
     def test_path_change(self):
-        self.assertEqual(changePath('file0.txt', ext='.ttt'), 'file0.ttt')
-        self.assertEqual(changePath('file0.txt', dirname=os.path.normpath(
+        self.assertEqual(change_path('file0.txt', ext='.ttt'), 'file0.ttt')
+        self.assertEqual(change_path('file0.txt', dirname=os.path.normpath(
             'foo/bar')), os.path.normpath('foo/bar/file0.txt'))
 
     # ==========================================================
@@ -59,92 +59,92 @@ class TestPathUtils(AqlTestCase):
         paths = list(map(os.path.normpath, [
                      'abc/file0.txt', 'abc/file1.txt', 'def/file2.txt', 'ghi/file0.txt', 'klm/file0.txt', 'ghi/file1.txt']))
 
-        def _normPaths(paths_list):
+        def _norm_paths(paths_list):
             norm_paths_list = []
             for paths in paths_list:
                 norm_paths_list.append(
                     [os.path.normpath(path) for path in paths])
             return norm_paths_list
 
-        groups = groupPathsByDir(paths)
+        groups = group_paths_by_dir(paths)
 
-        self.assertEqual(groups, _normPaths([['abc/file0.txt', 'abc/file1.txt'],
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt', 'abc/file1.txt'],
                                              ['def/file2.txt'],
                                              ['ghi/file0.txt',
                                                  'ghi/file1.txt'],
                                              ['klm/file0.txt']]))
 
-        groups = groupPathsByDir(paths, max_group_size=1)
+        groups = group_paths_by_dir(paths, max_group_size=1)
 
-        self.assertEqual(groups, _normPaths([['abc/file0.txt'], ['abc/file1.txt'], [
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt'], ['abc/file1.txt'], [
                          'def/file2.txt'], ['ghi/file0.txt'], ['ghi/file1.txt'], ['klm/file0.txt']]))
 
-        groups = groupPathsByDir(paths, max_group_size=2)
-        self.assertEqual(groups, _normPaths([['abc/file0.txt', 'abc/file1.txt'], [
+        groups = group_paths_by_dir(paths, max_group_size=2)
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt', 'abc/file1.txt'], [
                          'def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt']]))
 
-        groups = groupPathsByDir(paths, wish_groups=3)
-        self.assertEqual(groups, _normPaths([['abc/file0.txt', 'abc/file1.txt'], [
+        groups = group_paths_by_dir(paths, wish_groups=3)
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt', 'abc/file1.txt'], [
                          'def/file2.txt'], ['ghi/file0.txt', 'ghi/file1.txt'], ['klm/file0.txt']]))
 
         paths = list(map(os.path.normpath, [
                      'abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt']))
-        groups = groupPathsByDir(paths, wish_groups=3)
-        self.assertEqual(groups, _normPaths(
+        groups = group_paths_by_dir(paths, wish_groups=3)
+        self.assertEqual(groups, _norm_paths(
             [['abc/file0.txt', 'abc/file1.txt'], ['abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt']]))
 
-        groups = groupPathsByDir(paths, wish_groups=2)
-        self.assertEqual(groups, _normPaths(
+        groups = group_paths_by_dir(paths, wish_groups=2)
+        self.assertEqual(groups, _norm_paths(
             [['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt'], ['abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt']]))
 
-        groups = groupPathsByDir(paths, wish_groups=2, max_group_size=1)
-        self.assertEqual(groups, _normPaths([['abc/file0.txt'], ['abc/file1.txt'], [
+        groups = group_paths_by_dir(paths, wish_groups=2, max_group_size=1)
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt'], ['abc/file1.txt'], [
                          'abc/file2.txt'], ['abc/file3.txt'], ['abc/file4.txt'], ['abc/file5.txt']]))
 
-        groups = groupPathsByDir(paths, wish_groups=1)
-        self.assertEqual(groups, _normPaths(
+        groups = group_paths_by_dir(paths, wish_groups=1)
+        self.assertEqual(groups, _norm_paths(
             [['abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt']]))
 
         paths = list(map(os.path.normpath, [
                      'abc/file0.txt', 'abc/file1.txt', 'abc/file2.txt', 'abc/file3.txt', 'abc/file4.txt', 'abc/file5.txt', 'abc/file6.txt']))
-        groups = groupPathsByDir(paths, wish_groups=3)
-        self.assertEqual(groups, _normPaths([['abc/file0.txt', 'abc/file1.txt'], [
+        groups = group_paths_by_dir(paths, wish_groups=3)
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt', 'abc/file1.txt'], [
                          'abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt', 'abc/file6.txt']]))
 
-        groups = groupPathsByDir(paths, wish_groups=3, max_group_size=2)
-        self.assertEqual(groups, _normPaths([['abc/file0.txt', 'abc/file1.txt'], [
+        groups = group_paths_by_dir(paths, wish_groups=3, max_group_size=2)
+        self.assertEqual(groups, _norm_paths([['abc/file0.txt', 'abc/file1.txt'], [
                          'abc/file2.txt', 'abc/file3.txt'], ['abc/file4.txt', 'abc/file5.txt'], ['abc/file6.txt']]))
 
     # ==============================================================================
 
     def test_find_prog(self):
         os_env = os.environ
-        prog = findProgram('route', os_env)
-        self.assertEqual(findProgram('route', os_env, prog), prog)
-        self.assertIsNone(findProgram('non-existing-program', os_env, prog))
-        self.assertIsNone(findProgram('route', env={}))
-        self.assertEqual(findProgram('route', {}, prog), prog)
+        prog = find_program('route', os_env)
+        self.assertEqual(find_program('route', os_env, prog), prog)
+        self.assertIsNone(find_program('non-existing-program', os_env, prog))
+        self.assertIsNone(find_program('route', env={}))
+        self.assertEqual(find_program('route', {}, prog), prog)
 
-        route1, route2 = findPrograms(['route', 'route'], os_env)
+        route1, route2 = find_programs(['route', 'route'], os_env)
         self.assertEqual(route1, route2)
 
-        route1, route2 = findPrograms(
+        route1, route2 = find_programs(
             ['route', 'route'], env={}, hint_prog=prog)
         self.assertEqual(route1, route2)
 
-        self.assertTrue(findOptionalProgram('route', os_env))
+        self.assertTrue(find_optional_program('route', os_env))
 
-        oprog = findOptionalProgram('route', env={})
+        oprog = find_optional_program('route', env={})
         self.assertTrue(oprog.get().startswith('route'))
 
-        route1, route2 = findOptionalPrograms(['route', 'route'], os_env)
+        route1, route2 = find_optional_programs(['route', 'route'], os_env)
         self.assertEqual(route1.get(), route2.get())
 
-        route1, route2 = findOptionalPrograms(
+        route1, route2 = find_optional_programs(
             ['route', 'route'], env={}, hint_prog=prog)
         self.assertEqual(route1.get(), route2.get())
 
-        progs = findOptionalPrograms(['route'], env={})
+        progs = find_optional_programs(['route'], env={})
         self.assertTrue(progs[0].get().startswith('route'))
 
     # ==============================================================================
@@ -152,10 +152,10 @@ class TestPathUtils(AqlTestCase):
     def test_find_files(self):
         path = os.path.join(os.path.dirname(__file__), '..', '..')
 
-        files = findFiles(path, mask=['*.pythonics', "*.tdt", "*.py", "*.pyc"])
+        files = find_files(path, mask=['*.pythonics', "*.tdt", "*.py", "*.pyc"])
         self.assertIn(os.path.abspath(__file__), files)
 
-        files2 = findFiles(path, mask='|*.pythonics|*.tdt||*.py|*.pyc')
+        files2 = find_files(path, mask='|*.pythonics|*.tdt||*.py|*.pyc')
         self.assertEqual(files2, files)
 
     # ==============================================================================
@@ -170,7 +170,7 @@ class TestPathUtils(AqlTestCase):
 
         result = [os.path.normcase(os.path.abspath(file)) for file in result]
 
-        self.assertEqual(excludeFilesFromDirs(files, dirs), result)
+        self.assertEqual(exclude_files_from_dirs(files, dirs), result)
 
         dirs = ['abc/test0', 'efd', 'ttt/eee']
         files = [
@@ -186,9 +186,9 @@ class TestPathUtils(AqlTestCase):
 
         result = [os.path.normcase(os.path.abspath(file)) for file in result]
 
-        self.assertEqual(excludeFilesFromDirs(files, dirs), result)
+        self.assertEqual(exclude_files_from_dirs(files, dirs), result)
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

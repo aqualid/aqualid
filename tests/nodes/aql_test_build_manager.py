@@ -6,14 +6,14 @@ import threading
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.util_types import encode_str
-from aql.utils import fileChecksum, Tempdir, \
+from aql.utils import file_checksum, Tempdir, \
     enable_default_handlers, add_user_handler, remove_user_handler
 
 from aql.entity import SimpleEntity, FileChecksumEntity
-from aql.options import builtinOptions
+from aql.options import builtin_options
 from aql.nodes import Node, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
 
@@ -41,18 +41,18 @@ class SyncValueBuilder (Builder):
         self.sleep_interval = sleep_interval
         self.number = number
 
-        # self.initLocks( lock_names )
+        # self.init_locks( lock_names )
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         name = self.__class__.__name__
         name += "(%s:%s)" % (self.name, self.number,)
         return name
 
     # -----------------------------------------------------------
 
-    def initLocks(self, lock_names, sync_locks):
+    def init_locks(self, lock_names, sync_locks):
         self.locks = locks = []
         self.lock_names = lock_names
 
@@ -66,7 +66,7 @@ class SyncValueBuilder (Builder):
 
     # -----------------------------------------------------------
 
-    def acquireLocks(self):
+    def acquire_locks(self):
         locks = []
 
         try:
@@ -77,7 +77,7 @@ class SyncValueBuilder (Builder):
 
                 locks.insert(0, lock)
         except:
-            self.releaseLocks(locks)
+            self.release_locks(locks)
             raise
 
         return locks
@@ -85,7 +85,7 @@ class SyncValueBuilder (Builder):
     # -----------------------------------------------------------
 
     @staticmethod
-    def releaseLocks(locks):
+    def release_locks(locks):
         for lock in locks:
             lock.release()
 
@@ -114,9 +114,9 @@ class SyncValueBuilder (Builder):
                 _sync_value = _sync_value - self.number
 
         target = [src.get() for src in source_entities]
-        target = self.makeSimpleEntity(target)
+        target = self.make_simple_entity(target)
 
-        # self.releaseLocks( locks )
+        # self.release_locks( locks )
 
         targets.add(target)
 
@@ -138,10 +138,10 @@ class CopyValueBuilder (Builder):
 
         targets.add(target_entities)
 
-    def getTraceTargets(self, target_entities, brief):
+    def get_trace_targets(self, target_entities, brief):
         return tuple(value.name for value in target_entities)
 
-    def getTraceSources(self, source_entities, brief):
+    def get_trace_sources(self, source_entities, brief):
         return tuple(value.name for value in source_entities)
 
 
@@ -160,8 +160,8 @@ class ChecksumBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def _buildSrc(self, src, alg):
-        chcksum = fileChecksum(src, self.offset, self.length, alg)
+    def _build_src(self, src, alg):
+        chcksum = file_checksum(src, self.offset, self.length, alg)
         if self.replace_ext:
             chcksum_filename = os.path.splitext(src)[0]
         else:
@@ -169,12 +169,12 @@ class ChecksumBuilder (FileBuilder):
 
         chcksum_filename += '.%s.chksum' % alg
 
-        chcksum_filename = self.getTargetFromSourceFilePath(chcksum_filename)
+        chcksum_filename = self.get_target_from_source_file_path(chcksum_filename)
 
         with open(chcksum_filename, 'wb') as f:
             f.write(chcksum.digest())
 
-        return self.makeFileEntity(chcksum_filename, tags=alg)
+        return self.make_file_entity(chcksum_filename, tags=alg)
 
     # -----------------------------------------------------------
 
@@ -183,17 +183,17 @@ class ChecksumBuilder (FileBuilder):
 
         for src in source_entities:
             src = src.get()
-            target_entities.append(self._buildSrc(src, 'md5'))
-            target_entities.append(self._buildSrc(src, 'sha512'))
+            target_entities.append(self._build_src(src, 'md5'))
+            target_entities.append(self._build_src(src, 'sha512'))
 
         targets.add(target_entities)
 
     # -----------------------------------------------------------
 
-    def buildBatch(self, source_entities, targets):
+    def build_batch(self, source_entities, targets):
         for src_value in source_entities:
-            target_files = [self._buildSrc(src_value.get(), 'md5'),
-                            self._buildSrc(src_value.get(), 'sha512')]
+            target_files = [self._build_src(src_value.get(), 'md5'),
+                            self._build_src(src_value.get(), 'sha512')]
 
             targets[src_value].add(target_files)
 
@@ -202,12 +202,12 @@ class ChecksumBuilder (FileBuilder):
 
 class ChecksumSingleBuilder (ChecksumBuilder):
 
-    split = ChecksumBuilder.splitSingle
+    split = ChecksumBuilder.split_single
 
 # ==============================================================================
 
 
-def _addNodesToBM(builder, src_files):
+def _add_nodes_to_b_m(builder, src_files):
     bm = BuildManager()
     try:
         checksums_node = Node(builder, src_files)
@@ -232,7 +232,7 @@ def _build(bm, jobs=1, keep_going=False, explain=False):
         success = bm.build(jobs=jobs, keep_going=keep_going, explain=explain)
         bm.self_test()
         if not success:
-            bm.printFails()
+            bm.print_fails()
             raise Exception("Nodes failed")
 
     finally:
@@ -242,9 +242,9 @@ def _build(bm, jobs=1, keep_going=False, explain=False):
 # ==============================================================================
 
 
-def _buildChecksums(builder, src_files):
+def _build_checksums(builder, src_files):
 
-    bm = _addNodesToBM(builder, src_files)
+    bm = _add_nodes_to_b_m(builder, src_files)
     _build(bm)
 
 # ==============================================================================
@@ -252,12 +252,12 @@ def _buildChecksums(builder, src_files):
 
 class TestBuildManager(AqlTestCase):
 
-    def eventNodeBuilding(self, settings, node):
+    def event_node_building(self, settings, node):
         self.building_nodes += 1
 
     # -----------------------------------------------------------
 
-    def eventNodeRemoved(self, settings, node, progress):
+    def event_node_removed(self, settings, node, progress):
         self.removed_nodes += 1
 
     # -----------------------------------------------------------
@@ -266,12 +266,12 @@ class TestBuildManager(AqlTestCase):
         super(TestBuildManager, self).setUp()
 
         self.building_nodes = 0
-        add_user_handler(self.eventNodeBuilding)
+        add_user_handler(self.event_node_building)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        remove_user_handler([self.eventNodeBuilding, ])
+        remove_user_handler([self.event_node_building, ])
 
         super(TestBuildManager, self).tearDown()
 
@@ -285,7 +285,7 @@ class TestBuildManager(AqlTestCase):
         value2 = SimpleEntity("http://aql.org/download2", name="target_url2")
         value3 = SimpleEntity("http://aql.org/download3", name="target_url3")
 
-        options = builtinOptions()
+        options = builtin_options()
 
         builder = CopyValueBuilder(options)
 
@@ -340,11 +340,11 @@ class TestBuildManager(AqlTestCase):
         bm.depends(node5, [node3])
         bm.self_test()
 
-        def _cyclicDeps(src_node, dep_node):
+        def _cyclic_deps(src_node, dep_node):
             src_node.depends(dep_node)
             bm.depends(src_node, [dep_node])
 
-        self.assertRaises(ErrorNodeDependencyCyclic, _cyclicDeps, node4, node3)
+        self.assertRaises(ErrorNodeDependencyCyclic, _cyclic_deps, node4, node3)
 
     # -----------------------------------------------------------
 
@@ -352,22 +352,22 @@ class TestBuildManager(AqlTestCase):
 
         with Tempdir() as tmp_dir:
 
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
-            src_files = self.generateSourceFiles(tmp_dir, 5, 201)
+            src_files = self.generate_source_files(tmp_dir, 5, 201)
 
             builder = ChecksumBuilder(options, 0, 256)
 
             self.building_nodes = self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.building_nodes, 2)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
             # -----------------------------------------------------------
 
             self.building_nodes = self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.building_nodes, 0)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
@@ -376,14 +376,14 @@ class TestBuildManager(AqlTestCase):
             builder = ChecksumBuilder(options, 32, 1024)
 
             self.building_nodes = self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.building_nodes, 2)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
             # -----------------------------------------------------------
 
             self.building_nodes = self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.building_nodes, 0)
             self.assertEqual(self.building_nodes, self.building_nodes)
 
@@ -391,7 +391,7 @@ class TestBuildManager(AqlTestCase):
 
     def test_bm_nodes(self):
 
-        def _makeNodes(builder):
+        def _make_nodes(builder):
             node1 = Node(builder, value1)
             copy_node1 = Node(builder, node1)
             copy2_node1 = Node(builder, copy_node1)
@@ -406,7 +406,7 @@ class TestBuildManager(AqlTestCase):
         # with Tempdir() as tmp_dir:
         if True:
             tmp_dir = Tempdir()
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             bm = BuildManager()
@@ -420,7 +420,7 @@ class TestBuildManager(AqlTestCase):
 
             builder = CopyValueBuilder(options)
 
-            bm.add(_makeNodes(builder))
+            bm.add(_make_nodes(builder))
 
             self.built_nodes = 0
             bm.build(jobs=1, keep_going=False)
@@ -429,7 +429,7 @@ class TestBuildManager(AqlTestCase):
 
            #// --------- //
 
-            bm.add(_makeNodes(builder))
+            bm.add(_make_nodes(builder))
 
             self.built_nodes = 0
             bm.build(jobs=1, keep_going=False)
@@ -438,7 +438,7 @@ class TestBuildManager(AqlTestCase):
 
             #// --------- //
 
-            bm.add(_makeNodes(builder))
+            bm.add(_make_nodes(builder))
 
             self.removed_nodes = 0
             bm.clear()
@@ -447,7 +447,7 @@ class TestBuildManager(AqlTestCase):
 
             #// --------- //
 
-            nodes = _makeNodes(builder)
+            nodes = _make_nodes(builder)
             copy_node3 = nodes[4]
             bm.add(nodes)
 
@@ -458,7 +458,7 @@ class TestBuildManager(AqlTestCase):
 
             #// --------- //
 
-            nodes = _makeNodes(builder)
+            nodes = _make_nodes(builder)
             node2 = nodes[1]
             copy_node3 = nodes[4]
             bm.add(nodes)
@@ -475,23 +475,23 @@ class TestBuildManager(AqlTestCase):
     def test_bm_check(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
-            src_files = self.generateSourceFiles(tmp_dir, 3, 201)
+            src_files = self.generate_source_files(tmp_dir, 3, 201)
 
             builder = ChecksumBuilder(options, 0, 256, replace_ext=True)
 
             self.building_nodes = self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.building_nodes, 2)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
             self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.built_nodes, 0)
 
-            bm = _addNodesToBM(builder, src_files)
+            bm = _add_nodes_to_b_m(builder, src_files)
             try:
                 bm.clear()
                 bm.self_test()
@@ -503,24 +503,24 @@ class TestBuildManager(AqlTestCase):
     def test_bm_batch(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
             options.batch_build = True
 
-            src_files = self.generateSourceFiles(tmp_dir, 3, 201)
+            src_files = self.generate_source_files(tmp_dir, 3, 201)
 
             builder = ChecksumBuilder(options, 0, 256, replace_ext=True)
 
             self.building_nodes = self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.building_nodes, 2)
             self.assertEqual(self.building_nodes, self.built_nodes)
 
             self.built_nodes = 0
-            _buildChecksums(builder, src_files)
+            _build_checksums(builder, src_files)
             self.assertEqual(self.built_nodes, 0)
 
-            bm = _addNodesToBM(builder, src_files)
+            bm = _add_nodes_to_b_m(builder, src_files)
             try:
                 bm.clear()
                 bm.self_test()
@@ -532,11 +532,11 @@ class TestBuildManager(AqlTestCase):
     def test_bm_rebuild(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             num_src_files = 3
-            src_files = self.generateSourceFiles(tmp_dir, num_src_files, 201)
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             bm = BuildManager()
 
@@ -576,11 +576,11 @@ class TestBuildManager(AqlTestCase):
     def test_bm_tags(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             num_src_files = 3
-            src_files = self.generateSourceFiles(tmp_dir, num_src_files, 201)
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             builder = ChecksumSingleBuilder(options, 0, 256)
 
@@ -600,7 +600,7 @@ class TestBuildManager(AqlTestCase):
 
             # -----------------------------------------------------------
 
-            self.touchCppFile(src_files[0])
+            self.touch_cpp_file(src_files[0])
 
             bm = BuildManager()
 
@@ -621,12 +621,12 @@ class TestBuildManager(AqlTestCase):
     def test_bm_tags_batch(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
             options.batch_build = True
 
             num_src_files = 3
-            src_files = self.generateSourceFiles(tmp_dir, num_src_files, 201)
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             builder = ChecksumBuilder(options, 0, 256)
 
@@ -648,7 +648,7 @@ class TestBuildManager(AqlTestCase):
 
             # -----------------------------------------------------------
 
-            self.touchCppFile(src_files[0])
+            self.touch_cpp_file(src_files[0])
 
             bm = BuildManager()
 
@@ -669,11 +669,11 @@ class TestBuildManager(AqlTestCase):
     def test_bm_conflicts(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             num_src_files = 3
-            src_files = self.generateSourceFiles(tmp_dir, num_src_files, 201)
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             bm = BuildManager()
 
@@ -695,11 +695,11 @@ class TestBuildManager(AqlTestCase):
     def test_bm_no_conflicts(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             num_src_files = 3
-            src_files = self.generateSourceFiles(tmp_dir, num_src_files, 201)
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             bm = BuildManager()
 
@@ -724,11 +724,11 @@ class TestBuildManager(AqlTestCase):
     def test_bm_node_index(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             num_src_files = 2
-            src_files = self.generateSourceFiles(tmp_dir, num_src_files, 201)
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             bm = BuildManager()
 
@@ -753,7 +753,7 @@ class TestBuildManager(AqlTestCase):
     def test_bm_node_build_fail(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             bm = BuildManager()
@@ -774,7 +774,7 @@ class TestBuildManager(AqlTestCase):
     def test_bm_sync_nodes(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             bm = BuildManager()
@@ -794,7 +794,7 @@ class TestBuildManager(AqlTestCase):
     def test_bm_sync_modules(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             bm = BuildManager()
@@ -858,7 +858,7 @@ class TestBuildManager(AqlTestCase):
     def test_bm_require_modules(self):
 
         with Tempdir() as tmp_dir:
-            options = builtinOptions()
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             bm = BuildManager()
@@ -913,7 +913,7 @@ class TestBuildManager(AqlTestCase):
             # print( "node11: %s" % node11 )
 
             bm.add((node10, node11))
-            bm.moduleDepends(node10, [node11])
+            bm.module_depends(node10, [node11])
 
             _build(bm, jobs=4)
 
@@ -923,8 +923,8 @@ class TestBuildManager(AqlTestCase):
     def test_bm_node_names(self):
 
         with Tempdir() as tmp_dir:
-            src_files = self.generateSourceFiles(tmp_dir, 3, 201)
-            options = builtinOptions()
+            src_files = self.generate_source_files(tmp_dir, 3, 201)
+            options = builtin_options()
             options.build_dir = tmp_dir
 
             builder = ChecksumBuilder(options, 0, 256, replace_ext=False)
@@ -956,7 +956,7 @@ class TestBuildManager(AqlTestCase):
 # ==============================================================================
 
 
-def _generateNodeTree(bm, builder, node, depth):
+def _generate_node_tree(bm, builder, node, depth):
     while depth:
         node = Node(builder, node)
         bm.add([node])
@@ -978,9 +978,9 @@ class TestBuildManagerSpeed(AqlTestCase):
         node = Node(builder, value)
         bm.add([node])
 
-        _generateNodeTree(bm, builder, node, 5000)
+        _generate_node_tree(bm, builder, node, 5000)
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

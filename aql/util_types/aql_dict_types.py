@@ -31,7 +31,7 @@ __all__ = ('Dict', 'ValueDictType', 'SplitDictType')
 class Dict (dict):
 
     @staticmethod
-    def toItems(items):
+    def to_items(items):
         if not items or (items is NotImplemented):
             return tuple()
 
@@ -45,12 +45,12 @@ class Dict (dict):
     # -----------------------------------------------------------
 
     def __init__(self, items=None):
-        super(Dict, self).__init__(self.toItems(items))
+        super(Dict, self).__init__(self.to_items(items))
 
     # -----------------------------------------------------------
 
     def __iadd__(self, items):
-        for key, value in self.toItems(items):
+        for key, value in self.to_items(items):
             try:
                 self[key] += value
             except KeyError:
@@ -86,7 +86,7 @@ def SplitDictType(dict_type, separators):
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toItems(items_str, sep=separator, other_seps=other_separators):
+        def __to_items(items_str, sep=separator, other_seps=other_separators):
 
             if not is_string(items_str):
                 return items_str
@@ -105,7 +105,7 @@ def SplitDictType(dict_type, separators):
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toSplitDict(items):
+        def __to_split_dict(items):
             if isinstance(items, SplitDict):
                 return items
 
@@ -114,44 +114,44 @@ def SplitDictType(dict_type, separators):
         # -----------------------------------------------------------
 
         def __init__(self, items=None):
-            super(SplitDict, self).__init__(self.__toItems(items))
+            super(SplitDict, self).__init__(self.__to_items(items))
 
         # -----------------------------------------------------------
 
         def __iadd__(self, items):
-            return super(SplitDict, self).__iadd__(self.__toItems(items))
+            return super(SplitDict, self).__iadd__(self.__to_items(items))
 
         # -----------------------------------------------------------
 
         def update(self, other=None, **kwargs):
 
-            other = self.__toItems(other)
+            other = self.__to_items(other)
 
             super(SplitDict, self).update(other)
 
-            items = self.__toItems(kwargs)
+            items = self.__to_items(kwargs)
 
             super(SplitDict, self).update(items)
 
         # -----------------------------------------------------------
 
         def __eq__(self, other):
-            return super(SplitDict, self).__eq__(self.__toSplitDict(other))
+            return super(SplitDict, self).__eq__(self.__to_split_dict(other))
 
         def __ne__(self, other):
-            return super(SplitDict, self).__ne__(self.__toSplitDict(other))
+            return super(SplitDict, self).__ne__(self.__to_split_dict(other))
 
         def __lt__(self, other):
-            return super(SplitDict, self).__lt__(self.__toSplitDict(other))
+            return super(SplitDict, self).__lt__(self.__to_split_dict(other))
 
         def __le__(self, other):
-            return super(SplitDict, self).__le__(self.__toSplitDict(other))
+            return super(SplitDict, self).__le__(self.__to_split_dict(other))
 
         def __gt__(self, other):
-            return super(SplitDict, self).__gt__(self.__toSplitDict(other))
+            return super(SplitDict, self).__gt__(self.__to_split_dict(other))
 
         def __ge__(self, other):
-            return super(SplitDict, self).__ge__(self.__toSplitDict(other))
+            return super(SplitDict, self).__ge__(self.__to_split_dict(other))
 
         # -----------------------------------------------------------
 
@@ -175,17 +175,17 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         # -----------------------------------------------------------
 
         @staticmethod
-        def getKeyType():
+        def get_key_type():
             return key_type
 
         @staticmethod
-        def getValueType():
+        def get_value_type():
             return default_value_type
 
         # -----------------------------------------------------------
 
         @staticmethod
-        def _toValue(key, value,
+        def _to_value(key, value,
                      val_types=__VALUE_TYPES, val_type=default_value_type):
             try:
                 if val_type is None:
@@ -196,13 +196,13 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
             except KeyError:
                 pass
 
-            _ValueDict.setValueType(key, type(value))
+            _ValueDict.set_value_type(key, type(value))
             return value
 
         # -----------------------------------------------------------
 
         @staticmethod
-        def setValueType(key, value_type,
+        def set_value_type(key, value_type,
                          value_types=__VALUE_TYPES,
                          default_type=default_value_type):
 
@@ -219,16 +219,16 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toItems(items, _key_type=key_type):
+        def __to_items(items, _key_type=key_type):
             if isinstance(items, _ValueDict):
                 return items
 
             items_tmp = []
 
             try:
-                for key, value in Dict.toItems(items):
+                for key, value in Dict.to_items(items):
                     key = _key_type(key)
-                    value = _ValueDict._toValue(key, value)
+                    value = _ValueDict._to_value(key, value)
                     items_tmp.append((key, value))
 
                 return items_tmp
@@ -238,7 +238,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toValueDict(items):
+        def __to_value_dict(items):
             if isinstance(items, _ValueDict):
                 return items
 
@@ -247,10 +247,10 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
         # -----------------------------------------------------------
 
         def __init__(self, values=None):
-            super(_ValueDict, self).__init__(self.__toItems(values))
+            super(_ValueDict, self).__init__(self.__to_items(values))
 
         def __iadd__(self, values):
-            return super(_ValueDict, self).__iadd__(self.__toItems(values))
+            return super(_ValueDict, self).__iadd__(self.__to_items(values))
 
         def get(self, key, default=None):
             return super(_ValueDict, self).get(key_type(key), default)
@@ -260,7 +260,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
         def __setitem__(self, key, value):
             key = key_type(key)
-            value = _ValueDict._toValue(key, value)
+            value = _ValueDict._to_value(key, value)
             return super(_ValueDict, self).__setitem__(key, value)
 
         def __delitem__(self, key):
@@ -273,7 +273,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
         def setdefault(self, key, default):
             key = key_type(key)
-            default = _ValueDict._toValue(key, default)
+            default = _ValueDict._to_value(key, default)
 
             return super(_ValueDict, self).setdefault(key, default)
 
@@ -281,33 +281,33 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
         def update(self, other=None, **kwargs):
 
-            other = self.__toItems(other)
+            other = self.__to_items(other)
 
             super(_ValueDict, self).update(other)
 
-            items = self.__toItems(kwargs)
+            items = self.__to_items(kwargs)
 
             super(_ValueDict, self).update(items)
 
         # -----------------------------------------------------------
 
         def __eq__(self, other):
-            return super(_ValueDict, self).__eq__(self.__toValueDict(other))
+            return super(_ValueDict, self).__eq__(self.__to_value_dict(other))
 
         def __ne__(self, other):
-            return super(_ValueDict, self).__ne__(self.__toValueDict(other))
+            return super(_ValueDict, self).__ne__(self.__to_value_dict(other))
 
         def __lt__(self, other):
-            return super(_ValueDict, self).__lt__(self.__toValueDict(other))
+            return super(_ValueDict, self).__lt__(self.__to_value_dict(other))
 
         def __le__(self, other):
-            return super(_ValueDict, self).__le__(self.__toValueDict(other))
+            return super(_ValueDict, self).__le__(self.__to_value_dict(other))
 
         def __gt__(self, other):
-            return super(_ValueDict, self).__gt__(self.__toValueDict(other))
+            return super(_ValueDict, self).__gt__(self.__to_value_dict(other))
 
         def __ge__(self, other):
-            return super(_ValueDict, self).__ge__(self.__toValueDict(other))
+            return super(_ValueDict, self).__ge__(self.__to_value_dict(other))
 
         # -----------------------------------------------------------
 

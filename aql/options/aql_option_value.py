@@ -22,12 +22,12 @@
 
 import operator
 
-from aql.util_types import toSequence, UniqueList, Dict
+from aql.util_types import to_sequence, UniqueList, Dict
 
 __all__ = (
     'Condition', 'Operation', 'InplaceOperation', 'ConditionalValue',
     'OptionValue', 'SimpleOperation', 'SimpleInplaceOperation',
-    'SetValue', 'iAddValue', 'iSubValue', 'iUpdateValue',
+    'SetValue', 'iadd_value', 'isub_value', 'iupdate_value',
     'ErrorOptionValueMergeNonOptionValue'
 )
 
@@ -63,23 +63,23 @@ class ErrorOptionValueOperationFailed(TypeError):
 # ==============================================================================
 
 
-def _setOperator(dest_value, value):
+def _set_operator(dest_value, value):
     return value
 
 
-def _iAddKeyOperator(dest_value, key, value):
+def _i_add_key_operator(dest_value, key, value):
     dest_value[key] += value
     return dest_value
 
 
-def _iSubKeyOperator(dest_value, key, value):
+def _i_sub_key_operator(dest_value, key, value):
     dest_value[key] -= value
     return dest_value
 
 # ==============================================================================
 
 
-def _updateOperator(dest_value, value):
+def _update_operator(dest_value, value):
     if isinstance(dest_value, (UniqueList, list)):
         dest_value += value
         return dest_value
@@ -93,7 +93,7 @@ def _updateOperator(dest_value, value):
 
 
 def SetValue(value):
-    return SimpleInplaceOperation(_setOperator, value)
+    return SimpleInplaceOperation(_set_operator, value)
 
 
 def SetKey(key, value):
@@ -104,29 +104,29 @@ def GetKey(value, key):
     return SimpleOperation(operator.getitem, value, key)
 
 
-def iAddValue(value):
+def iadd_value(value):
     return SimpleInplaceOperation(operator.iadd, value)
 
 
-def iAddKey(key, value):
-    return SimpleInplaceOperation(_iAddKeyOperator, key, value)
+def iadd_key(key, value):
+    return SimpleInplaceOperation(_i_add_key_operator, key, value)
 
 
-def iSubKey(key, value):
-    return SimpleInplaceOperation(_iSubKeyOperator, key, value)
+def isub_key(key, value):
+    return SimpleInplaceOperation(_i_sub_key_operator, key, value)
 
 
-def iSubValue(value):
+def isub_value(value):
     return SimpleInplaceOperation(operator.isub, value)
 
 
-def iUpdateValue(value):
-    return SimpleInplaceOperation(_updateOperator, value)
+def iupdate_value(value):
+    return SimpleInplaceOperation(_update_operator, value)
 
 # ==============================================================================
 
 
-def _convertArgs(args, kw, options, converter):
+def _convert_args(args, kw, options, converter):
     tmp_args = []
     for arg in args:
         if isinstance(arg, Operation):
@@ -150,7 +150,7 @@ def _convertArgs(args, kw, options, converter):
 # ==============================================================================
 
 
-def _unconvertArgs(args, kw, options, context, unconverter):
+def _unconvert_args(args, kw, options, context, unconverter):
 
     tmp_args = []
     for arg in args:
@@ -193,7 +193,7 @@ class Condition(object):
     # -----------------------------------------------------------
 
     def convert(self, options, converter):
-        self.args, self.kw = _convertArgs(
+        self.args, self.kw = _convert_args(
             self.args, self.kw, options, converter)
 
         cond = self.condition
@@ -207,7 +207,7 @@ class Condition(object):
             if not self.condition(options, context, unconverter):
                 return False
 
-        args, kw = _unconvertArgs(
+        args, kw = _unconvert_args(
             self.args, self.kw, options, context, unconverter)
 
         return self.predicate(options, context, *args, **kw)
@@ -230,22 +230,22 @@ class Operation(object):
     # -----------------------------------------------------------
 
     def convert(self, options, converter):
-        self.args, self.kw = _convertArgs(
+        self.args, self.kw = _convert_args(
             self.args, self.kw, options, converter)
 
     # -----------------------------------------------------------
 
-    def _callAction(self, options, context, args, kw):
+    def _call_action(self, options, context, args, kw):
         return self.action(options, context, *args, **kw)
 
     # -----------------------------------------------------------
 
     def __call__(self, options, context, unconverter):
-        args, kw = _unconvertArgs(
+        args, kw = _unconvert_args(
             self.args, self.kw, options, context, unconverter)
 
         try:
-            result = self._callAction(options, context, args, kw)
+            result = self._call_action(options, context, args, kw)
         except Exception as ex:
             raise ErrorOptionValueOperationFailed(self.action, args, kw, ex)
 
@@ -276,7 +276,7 @@ class Operation(object):
 
 class SimpleOperation(Operation):
 
-    def _callAction(self, options, context, args, kw):
+    def _call_action(self, options, context, args, kw):
         return self.action(*args, **kw)
 
 # ==============================================================================
@@ -296,21 +296,21 @@ class InplaceOperation(object):
         self.kw = kw
 
     def convert(self, options, converter):
-        self.args, self.kw = _convertArgs(
+        self.args, self.kw = _convert_args(
             self.args, self.kw, options, converter)
 
-    def _callAction(self, options, context, dest_value, args, kw):
+    def _call_action(self, options, context, dest_value, args, kw):
         return self.action(options, context, dest_value, *args, **kw)
 
     def __call__(self, options, context, dest_value, value_type, unconverter):
         if self.action is None:
             return dest_value
 
-        args, kw = _unconvertArgs(
+        args, kw = _unconvert_args(
             self.args, self.kw, options, context, unconverter)
 
         try:
-            result = self._callAction(options, context, dest_value, args, kw)
+            result = self._call_action(options, context, dest_value, args, kw)
         except Exception as ex:
             raise ErrorOptionValueOperationFailed(self.action, args, kw, ex)
 
@@ -325,7 +325,7 @@ class InplaceOperation(object):
 
 class SimpleInplaceOperation(InplaceOperation):
 
-    def _callAction(self, options, context, dest_value, args, kw):
+    def _call_action(self, options, context, dest_value, args, kw):
         return self.action(dest_value, *args, **kw)
 
 # ==============================================================================
@@ -376,26 +376,26 @@ class OptionValue (object):
 
     def __init__(self, option_type, conditional_values=None):
         self.option_type = option_type
-        self.conditional_values = list(toSequence(conditional_values))
+        self.conditional_values = list(to_sequence(conditional_values))
 
     # -----------------------------------------------------------
 
-    def isSet(self):
+    def is_set(self):
         return bool(self.conditional_values)
 
     # -----------------------------------------------------------
 
-    def isToolKey(self):
+    def is_tool_key(self):
         return self.option_type.is_tool_key
 
     # -----------------------------------------------------------
 
-    def appendValue(self, conditional_value):
+    def append_value(self, conditional_value):
         self.conditional_values.append(conditional_value)
 
     # -----------------------------------------------------------
 
-    def prependValue(self, conditional_value):
+    def prepend_value(self, conditional_value):
         self.conditional_values[:0] = [conditional_value]
 
     # -----------------------------------------------------------

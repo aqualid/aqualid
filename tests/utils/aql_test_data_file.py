@@ -6,7 +6,7 @@ import uuid
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile, Chrono
 from aql.utils import DataFile, SqlDataFile
@@ -16,27 +16,27 @@ from aql.util_types import encode_str
 # ==============================================================================
 
 
-def generateData(min_size, max_size):
+def generate_data(min_size, max_size):
     return encode_str(''.join(chr(random.randint(32, 127)) for i in range(random.randint(min_size, max_size))))
 
 # ==============================================================================
 
 
-def generateDataMap(size, min_data_size, max_data_size):
+def generate_data_map(size, min_data_size, max_data_size):
     data_map = {}
     for i in range(0, size):
         data_id = uuid.uuid4().bytes
-        data_map[data_id] = generateData(min_data_size, max_data_size)
+        data_map[data_id] = generate_data(min_data_size, max_data_size)
 
     return data_map
 
 # ==============================================================================
 
 
-def extendDataMap(data_map):
+def extend_data_map(data_map):
     for data_id in data_map:
         data_size = len(data_map[data_id])
-        data_map[data_id] = generateData(data_size + 1, data_size * 2)
+        data_map[data_id] = generate_data(data_size + 1, data_size * 2)
 
 # ==============================================================================
 
@@ -47,7 +47,7 @@ class TestDataFile(AqlTestCase):
         with Tempfile() as tmp:
             tmp.remove()
 
-            data_map = generateDataMap(2100, 16, 128)
+            data_map = generate_data_map(2100, 16, 128)
 
             df = DataFileType(tmp)
             try:
@@ -72,7 +72,7 @@ class TestDataFile(AqlTestCase):
         with Tempfile() as tmp:
             tmp.remove()
 
-            data_map = generateDataMap(100, 16, 128)
+            data_map = generate_data_map(100, 16, 128)
             data_keys = {}
 
             df = DataFileType(tmp)
@@ -89,7 +89,7 @@ class TestDataFile(AqlTestCase):
                     stored_data = df.read(data_id)
                     self.assertEqual(stored_data, data)
 
-                extendDataMap(data_map)
+                extend_data_map(data_map)
 
                 for data_id, data in data_map.items():
                     df.write(data_id, data)
@@ -134,7 +134,7 @@ class TestDataFile(AqlTestCase):
         with Tempfile() as tmp:
             tmp.remove()
 
-            data_map = generateDataMap(1025, 16, 128)
+            data_map = generate_data_map(1025, 16, 128)
 
             df = DataFileType(tmp)
             try:
@@ -211,7 +211,7 @@ class TestDataFile(AqlTestCase):
             timer = Chrono()
 
             with timer:
-                data_map = generateDataMap(20000, 123, 123)
+                data_map = generate_data_map(20000, 123, 123)
 
             print("generate data time: %s" % timer)
 
@@ -286,4 +286,4 @@ class TestDataFile(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

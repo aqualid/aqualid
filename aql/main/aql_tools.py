@@ -22,25 +22,25 @@
 
 import sys
 
-from aql.util_types import toSequence
-from aql.utils import logWarning, logError, loadModule, loadPackage,\
-    expandFilePath, findFiles, eventWarning,\
-    findProgram, findPrograms, findOptionalProgram, findOptionalPrograms
+from aql.util_types import to_sequence
+from aql.utils import log_warning, log_error, load_module, load_package,\
+    expand_file_path, find_files, event_warning,\
+    find_program, find_programs, find_optional_program, find_optional_programs
 
-__all__ = ('Tool', 'tool', 'toolSetup', 'getToolsManager', 'ErrorToolNotFound')
-
-# ==============================================================================
-
-
-@eventWarning
-def eventToolsUnableLoadModule(settings, module, err):
-    logWarning("Unable to load module: %s, error: %s" % (module, err))
+__all__ = ('Tool', 'tool', 'tool_setup', 'get_tools_manager', 'ErrorToolNotFound')
 
 # ==============================================================================
 
 
-@eventWarning
-def eventToolsToolFailed(settings, ex, tool_info):
+@event_warning
+def event_tools_unable_load_module(settings, module, err):
+    log_warning("Unable to load module: %s, error: %s" % (module, err))
+
+# ==============================================================================
+
+
+@event_warning
+def event_tools_tool_failed(settings, ex, tool_info):
     tool_class = tool_info.tool_class
     module = tool_class.__module__
     try:
@@ -50,14 +50,14 @@ def eventToolsToolFailed(settings, ex, tool_info):
 
     names = ','.join(tool_info.names)
 
-    logError("Failed to initialize tool: name: %s, class: %s, file: %s" %
+    log_error("Failed to initialize tool: name: %s, class: %s, file: %s" %
              (names, tool_class.__name__, file))
-    logError(ex)
+    log_error(ex)
 
 # ==============================================================================
 
 
-def _toolSetupStub(options):
+def _tool_setup_stub(options):
     pass
 
 # ==============================================================================
@@ -118,7 +118,7 @@ class ToolInfo(object):
 
             self.tool_class.setup(tool_options)
 
-            if tool_options.hasChangedKeyOptions():
+            if tool_options.has_changed_key_options():
                 raise NotImplementedError()
 
             tool_obj = self.tool_class(tool_options)
@@ -129,7 +129,7 @@ class ToolInfo(object):
 
         except Exception as ex:
             tool_options.clear()
-            eventToolsToolFailed(ex, self)
+            event_tools_tool_failed(ex, self)
             if not ignore_errors:
                 raise
 
@@ -162,7 +162,7 @@ class ToolsManager(object):
     # -----------------------------------------------------------
 
     @staticmethod
-    def __addToMap(values_map, names, value):
+    def __add_to_map(values_map, names, value):
         for name in names:
             try:
                 value_list = values_map[name]
@@ -176,38 +176,38 @@ class ToolsManager(object):
 
     # -----------------------------------------------------------
 
-    def addTool(self, tool_class, names):
+    def add_tool(self, tool_class, names):
         if not issubclass(tool_class, Tool):
             raise ErrorToolInvalid(tool_class)
 
         if names:
-            names = tuple(toSequence(names))
+            names = tuple(to_sequence(names))
             self.tool_names.setdefault(tool_class, set()).update(names)
-            self.__addToMap(self.tool_classes, names, tool_class)
+            self.__add_to_map(self.tool_classes, names, tool_class)
 
     # -----------------------------------------------------------
 
-    def addSetup(self, setup_method, names):
+    def add_setup(self, setup_method, names):
         if not hasattr(setup_method, '__call__'):
             raise ErrorToolInvalidSetupMethod(setup_method)
 
-        names = toSequence(names)
-        self.__addToMap(self.all_setup_methods, names, setup_method)
+        names = to_sequence(names)
+        self.__add_to_map(self.all_setup_methods, names, setup_method)
 
     # -----------------------------------------------------------
 
-    def loadTools(self, paths):
+    def load_tools(self, paths):
 
-        for path in toSequence(paths):
+        for path in to_sequence(paths):
 
-            path = expandFilePath(path)
+            path = expand_file_path(path)
 
             if path in self.loaded_paths:
                 continue
 
             self.loaded_paths.append(path)
 
-            module_files = findFiles(path, mask="*.py")
+            module_files = find_files(path, mask="*.py")
             if not module_files:
                 continue
 
@@ -216,20 +216,20 @@ class ToolsManager(object):
     @staticmethod
     def _load_tools_package(path, module_files):
         try:
-            package = loadPackage(path, generate_name=True)
+            package = load_package(path, generate_name=True)
             package_name = package.__name__
         except ImportError:
             package_name = None
 
         for module_file in module_files:
             try:
-                loadModule(module_file, package_name)
+                load_module(module_file, package_name)
             except Exception as ex:
-                eventToolsUnableLoadModule(module_file, ex)
+                event_tools_unable_load_module(module_file, ex)
 
     # -----------------------------------------------------------
 
-    def __getToolInfoList(self, name):
+    def __get_tool_info_list(self, name):
 
         tools_info = []
 
@@ -256,7 +256,7 @@ class ToolsManager(object):
                     setup_methods.update(self.all_setup_methods.get(name, []))
 
                 if not setup_methods:
-                    setup_methods.add(_toolSetupStub)
+                    setup_methods.add(_tool_setup_stub)
 
             tools_info.append(tool_info)
 
@@ -266,7 +266,7 @@ class ToolsManager(object):
 
     def get_tool(self, tool_name, options, ignore_errors):
 
-        tool_info_list = self.__getToolInfoList(tool_name)
+        tool_info_list = self.__get_tool_info_list(tool_name)
 
         for tool_info in tool_info_list:
             for setup in tool_info.setup_methods:
@@ -285,13 +285,13 @@ class ToolsManager(object):
 _tools_manager = ToolsManager()
 
 
-def getToolsManager():
+def get_tools_manager():
     return _tools_manager
 
 
 def tool(*tool_names):
     def _tool(tool_class):
-        _tools_manager.addTool(tool_class, tool_names)
+        _tools_manager.add_tool(tool_class, tool_names)
         return tool_class
 
     return _tool
@@ -299,9 +299,9 @@ def tool(*tool_names):
 # ==============================================================================
 
 
-def toolSetup(*tool_names):
+def tool_setup(*tool_names):
     def _tool_setup(setup_method):
-        _tools_manager.addSetup(setup_method, tool_names)
+        _tools_manager.add_setup(setup_method, tool_names)
         return setup_method
 
     return _tool_setup
@@ -329,9 +329,9 @@ class Tool(object):
     # -----------------------------------------------------------
 
     @classmethod
-    def findProgram(cls, options, prog, hint_prog=None):
+    def find_program(cls, options, prog, hint_prog=None):
         env = options.env.get()
-        prog = findProgram(prog, env, hint_prog)
+        prog = find_program(prog, env, hint_prog)
 
         if prog is None:
             raise NotImplementedError()
@@ -341,9 +341,9 @@ class Tool(object):
     # -----------------------------------------------------------
 
     @classmethod
-    def findPrograms(cls, options, progs, hint_prog=None):
+    def find_programs(cls, options, progs, hint_prog=None):
         env = options.env.get()
-        progs = findPrograms(progs, env, hint_prog)
+        progs = find_programs(progs, env, hint_prog)
 
         for prog in progs:
             if prog is None:
@@ -354,13 +354,13 @@ class Tool(object):
     # -----------------------------------------------------------
 
     @classmethod
-    def findOptionalProgram(cls, options, prog, hint_prog=None):
+    def find_optional_program(cls, options, prog, hint_prog=None):
         env = options.env.get()
-        return findOptionalProgram(prog, env, hint_prog)
+        return find_optional_program(prog, env, hint_prog)
 
     # -----------------------------------------------------------
 
     @classmethod
-    def findOptionalPrograms(cls, options, progs, hint_prog=None):
+    def find_optional_programs(cls, options, progs, hint_prog=None):
         env = options.env.get()
-        return findOptionalPrograms(progs, env, hint_prog)
+        return find_optional_programs(progs, env, hint_prog)

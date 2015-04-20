@@ -7,7 +7,7 @@ import shutil
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import CLIOption, CLIConfig, Tempfile
 
@@ -115,4 +115,4 @@ targets="test1 test2 test3"
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

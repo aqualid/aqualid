@@ -65,7 +65,7 @@ class EntityPickler (object):
     def persistent_id(entity, known_type_names=_KNOWN_TYPE_NAMES):
 
         entity_type = type(entity)
-        type_name = _typeName(entity_type)
+        type_name = _type_name(entity_type)
 
         try:
             type_id = known_type_names[type_name]
@@ -111,7 +111,7 @@ class EntityPickler (object):
 # ==============================================================================
 
 
-def _typeName(entity_type):
+def _type_name(entity_type):
     return entity_type.__module__ + '.' + entity_type.__name__
 
 # ==============================================================================
@@ -122,14 +122,14 @@ def pickleable(entity_type,
                known_type_ids=_KNOWN_TYPE_IDS):
 
     if type(entity_type) is type:
-        type_name = _typeName(entity_type)
+        type_name = _type_name(entity_type)
         type_id = binascii.crc32(type_name.encode("utf-8")) & 0xFFFFFFFF
 
         other_type = known_type_ids.setdefault(type_id, entity_type)
         if other_type is not entity_type:
             raise Exception(
                 "Two different type names have identical CRC32 checksum:"
-                " '%s' and '%s'" % (_typeName(other_type), type_name))
+                " '%s' and '%s'" % (_type_name(other_type), type_name))
 
         known_type_names[type_name] = type_id
 

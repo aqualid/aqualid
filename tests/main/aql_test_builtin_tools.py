@@ -5,12 +5,12 @@ import shutil
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import AqlTestCase, runLocalTests
+from aql_tests import AqlTestCase, run_local_tests
 
 from aql.utils import Tempdir, remove_user_handler, add_user_handler
 from aql.utils import EventSettings, set_event_settings
 from aql.nodes import Node, BuildManager
-from aql.options import builtinOptions
+from aql.options import builtin_options
 
 from aql.main import Project, ProjectConfig
 from aql.main.aql_builtin_tools import ExecuteCommandBuilder
@@ -23,7 +23,7 @@ class TestBuiltinTools(AqlTestCase):
     # -----------------------------------------------------------
 
     # noinspection PyUnusedLocal
-    def eventNodeBuilding(self, settings, node):
+    def event_node_building(self, settings, node):
         self.building_started += 1
 
     # -----------------------------------------------------------
@@ -32,12 +32,12 @@ class TestBuiltinTools(AqlTestCase):
         super(TestBuiltinTools, self).setUp()
 
         self.building_started = 0
-        add_user_handler(self.eventNodeBuilding)
+        add_user_handler(self.event_node_building)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        remove_user_handler(self.eventNodeBuilding)
+        remove_user_handler(self.event_node_building)
 
         super(TestBuiltinTools, self).tearDown()
 
@@ -46,7 +46,7 @@ class TestBuiltinTools(AqlTestCase):
     def _build(self, bm, **kw):
         is_ok = bm.build(**kw)
         if not is_ok:
-            bm.printFails()
+            bm.print_fails()
 
         self.assertTrue(is_ok)
 
@@ -58,7 +58,7 @@ class TestBuiltinTools(AqlTestCase):
 
             build_dir = os.path.join(tmp_dir, 'build')
 
-            options = builtinOptions()
+            options = builtin_options()
 
             cmd = [sys.executable, '-c', 'print("TEST EXEC")']
 
@@ -105,7 +105,7 @@ class TestBuiltinTools(AqlTestCase):
                 build_dir = os.path.join(tmp_dir, 'output')
 
                 num_sources = 3
-                sources = self.generateSourceFiles(tmp_dir, num_sources, 200)
+                sources = self.generate_source_files(tmp_dir, num_sources, 200)
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
@@ -115,11 +115,11 @@ class TestBuiltinTools(AqlTestCase):
 
                 node.options.batch_groups = 1
 
-                self.buildPrj(prj, 1)
+                self.build_prj(prj, 1)
 
                 prj.tools.CopyFiles(sources, target=tmp_install_dir)
 
-                self.buildPrj(prj, 0)
+                self.build_prj(prj, 0)
 
     # -----------------------------------------------------------
 
@@ -139,7 +139,7 @@ class TestBuiltinTools(AqlTestCase):
             build_dir = os.path.join(tmp_dir, 'build_output')
 
             num_sources = 2
-            sources, headers = self.generateCppFiles(
+            sources, headers = self.generate_cpp_files(
                 tmp_dir, 'test_method_', num_sources)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -151,21 +151,21 @@ class TestBuiltinTools(AqlTestCase):
             prj.tools.ExecuteMethod(
                 headers, method=CopyFileExt, args=('.hxx',))
 
-            self.buildPrj(prj, len(sources) + len(headers))
+            self.build_prj(prj, len(sources) + len(headers))
 
             prj.tools.ExecuteMethod(
                 sources, method=CopyFileExt, args=('.cxx',))
             prj.tools.ExecuteMethod(
                 headers, method=CopyFileExt, args=('.hxx',))
 
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
             prj.tools.ExecuteMethod(sources, method=CopyFileExt, args=('.cc',))
-            self.buildPrj(prj, len(sources))
+            self.build_prj(prj, len(sources))
 
             prj.tools.ExecuteMethod(
                 sources, method=CopyFileExt, args=('.cxx',))
-            self.buildPrj(prj, len(sources))
+            self.build_prj(prj, len(sources))
 
             # -----------------------------------------------------------
 
@@ -175,7 +175,7 @@ class TestBuiltinTools(AqlTestCase):
 
             prj.tools.ExecuteMethod(
                 sources, method=CopyFileExt, args=('.cxx',))
-            self.clearPrj(prj)
+            self.clear_prj(prj)
 
             for src in sources:
                 self.assertFalse(
@@ -185,7 +185,7 @@ class TestBuiltinTools(AqlTestCase):
 
             prj.tools.ExecuteMethod(
                 sources, method=CopyFileExt, args=('.cxx',))
-            self.buildPrj(prj, len(sources))
+            self.build_prj(prj, len(sources))
 
             for src in sources:
                 self.assertTrue(
@@ -193,7 +193,7 @@ class TestBuiltinTools(AqlTestCase):
 
             prj.tools.ExecuteMethod(
                 sources, method=CopyFileExt, args=('.cxx',), clear_targets=False)
-            self.clearPrj(prj)
+            self.clear_prj(prj)
 
             for src in sources:
                 self.assertTrue(
@@ -209,7 +209,7 @@ class TestBuiltinTools(AqlTestCase):
                 build_dir = os.path.join(tmp_dir, 'output')
 
                 num_sources = 3
-                sources = self.generateSourceFiles(tmp_dir, num_sources, 200)
+                sources = self.generate_source_files(tmp_dir, num_sources, 200)
 
                 # set_event_settings( EventSettings( brief = False, with_output = True ) )
 
@@ -222,7 +222,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 prj.tools.CopyFiles(sources[1:], target=prj.DirName(node))
 
-                self.buildPrj(prj, 3)
+                self.build_prj(prj, 3)
 
                 for src in sources:
                     tgt = os.path.join(tmp_install_dir, os.path.basename(src))
@@ -231,7 +231,7 @@ class TestBuiltinTools(AqlTestCase):
                 node = prj.tools.CopyFiles(sources[0], target=tmp_install_dir)
                 prj.tools.CopyFiles(sources[1:], target=prj.DirName(node))
 
-                self.buildPrj(prj, 0)
+                self.build_prj(prj, 0)
 
     # -----------------------------------------------------------
 
@@ -244,7 +244,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 build_dir = os.path.join(tmp_dir, 'output')
 
-                source = self.generateFile(tmp_dir, 0, 200)
+                source = self.generate_file(tmp_dir, 0, 200)
                 target = os.path.join(tmp_install_dir, 'copy_as_source.dat')
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -253,11 +253,11 @@ class TestBuiltinTools(AqlTestCase):
 
                 prj.tools.CopyFileAs(source, target=target)
 
-                self.buildPrj(prj, 1)
+                self.build_prj(prj, 1)
 
                 prj.tools.CopyFileAs(source, target=target)
 
-                self.buildPrj(prj, 0)
+                self.build_prj(prj, 0)
 
     # -----------------------------------------------------------
 
@@ -279,11 +279,11 @@ class TestBuiltinTools(AqlTestCase):
                 target = os.path.join(tmp_install_dir, 'write_content.txt')
                 prj.tools.WriteFile(buf, target=target)
 
-                self.buildPrj(prj, 1)
+                self.build_prj(prj, 1)
 
                 prj.tools.WriteFile(buf, target=target)
 
-                self.buildPrj(prj, 0)
+                self.build_prj(prj, 0)
 
     # -----------------------------------------------------------
 
@@ -297,7 +297,7 @@ class TestBuiltinTools(AqlTestCase):
                 build_dir = os.path.join(tmp_dir, 'output')
 
                 num_sources = 3
-                sources = self.generateSourceFiles(tmp_dir, num_sources, 200)
+                sources = self.generate_source_files(tmp_dir, num_sources, 200)
 
                 zip_file = tmp_install_dir + "/test.zip"
 
@@ -311,21 +311,21 @@ class TestBuiltinTools(AqlTestCase):
                 prj.tools.CreateZip(
                     sources, value, target=zip_file, rename=rename)
 
-                self.buildPrj(prj, 1)
+                self.build_prj(prj, 1)
 
                 prj.tools.CreateZip(
                     sources, value, target=zip_file, rename=rename)
 
-                self.buildPrj(prj, 0)
+                self.build_prj(prj, 0)
 
-                self.touchCppFile(sources[-1])
+                self.touch_cpp_file(sources[-1])
 
                 prj.tools.CreateZip(
                     sources, value, target=zip_file, rename=rename)
-                self.buildPrj(prj, 1)
+                self.build_prj(prj, 1)
 
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

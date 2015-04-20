@@ -22,7 +22,7 @@
 import optparse
 
 from aql.util_types import SplitListType, ValueListType, UniqueList
-from .aql_utils import execFile
+from .aql_utils import exec_file
 
 __all__ = ('CLIOption', 'CLIConfig')
 
@@ -166,7 +166,7 @@ class CLIConfig(object):
         if config_locals is None:
             config_locals = {}
 
-        exec_locals = execFile(config_file, config_locals)
+        exec_locals = exec_file(config_file, config_locals)
         for name, value in exec_locals.items():
             self.set_default(name, value)
 

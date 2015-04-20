@@ -26,7 +26,7 @@ import errno
 from .aql_entity import EntityBase
 from .aql_entity_pickler import pickleable
 
-from aql.utils import fileSignature, fileTimeSignature
+from aql.utils import file_signature, file_time_signature
 
 __all__ = (
     'FileEntityBase', 'FileChecksumEntity', 'FileTimestampEntity', 'DirEntity',
@@ -87,8 +87,8 @@ class FileEntityBase (EntityBase):
 
     # -----------------------------------------------------------
 
-    def getActual(self):
-        signature = self.getSignature()
+    def get_actual(self):
+        signature = self.get_signature()
         if self.signature == signature:
             return self
 
@@ -98,11 +98,11 @@ class FileEntityBase (EntityBase):
 
     # -----------------------------------------------------------
 
-    def isActual(self):
+    def is_actual(self):
         if not self.signature:
             return False
 
-        if self.signature == self.getSignature():
+        if self.signature == self.get_signature():
             return True
 
         return False
@@ -110,15 +110,15 @@ class FileEntityBase (EntityBase):
 # ==============================================================================
 
 
-def _getFileChecksum(path):
+def _get_file_checksum(path):
     try:
-        signature = fileSignature(path)
+        signature = file_signature(path)
     except (OSError, IOError) as err:
         if err.errno != errno.EISDIR:
             return None
 
         try:
-            signature = fileTimeSignature(path)
+            signature = file_time_signature(path)
         except (OSError, IOError):
             return None
 
@@ -127,9 +127,9 @@ def _getFileChecksum(path):
 # ==============================================================================
 
 
-def _getFileTimestamp(path):
+def _get_file_timestamp(path):
     try:
-        signature = fileTimeSignature(path)
+        signature = file_time_signature(path)
     except (OSError, IOError):
         return None
 
@@ -141,8 +141,8 @@ def _getFileTimestamp(path):
 @pickleable
 class FileChecksumEntity(FileEntityBase):
 
-    def getSignature(self):
-        return _getFileChecksum(self.name)
+    def get_signature(self):
+        return _get_file_checksum(self.name)
 
 # ==============================================================================
 
@@ -150,8 +150,8 @@ class FileChecksumEntity(FileEntityBase):
 @pickleable
 class FileTimestampEntity(FileEntityBase):
 
-    def getSignature(self):
-        return _getFileTimestamp(self.name)
+    def get_signature(self):
+        return _get_file_timestamp(self.name)
 
 # ==============================================================================
 

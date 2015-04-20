@@ -28,7 +28,7 @@ try:
 except ImportError:
     import Queue as queue  # python 2
 
-from .aql_logging import logWarning
+from .aql_logging import log_warning
 
 __all__ = (
     'TaskManager', 'TaskResult'
@@ -170,7 +170,7 @@ class _TaskExecutor(threading.Thread):
                 if task_id is not None:
                     task_result.error = err
                 else:
-                    logWarning("Task failed with error: %s" % (err,))
+                    log_warning("Task failed with error: %s" % (err,))
 
                 if self.stop_on_error:
                     self.stop_event.set()
@@ -258,7 +258,7 @@ class TaskManager (object):
 
     # -----------------------------------------------------------
 
-    def addTask(self, priority, task_id, function, *args, **kw):
+    def add_task(self, priority, task_id, function, *args, **kw):
         with self.lock:
             task = _Task(priority, task_id, function, args, kw)
             self.tasks.put(task)
@@ -267,7 +267,7 @@ class TaskManager (object):
 
     # -----------------------------------------------------------
 
-    def finishedTasks(self, block=True):
+    def get_finished_tasks(self, block=True):
         result = []
         is_stopped = self.stop_event.is_set
         finished_tasks = self.finished_tasks

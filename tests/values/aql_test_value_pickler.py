@@ -2,14 +2,14 @@ import sys
 import os.path
 import timeit
 try:
-    import cPickle as pickle
+    import c_pickle as pickle
 except ImportError:
     import pickle
 
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile
 from aql.entity import FileChecksumEntity, FileTimestampEntity, SimpleEntity, EntityPickler, pickleable
@@ -85,4 +85,4 @@ class TestValuePickler(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

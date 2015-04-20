@@ -121,7 +121,7 @@ class FilePath (FilePathBase):
 
     # -----------------------------------------------------------
 
-    def joinPath(self, *paths):
+    def join_path(self, *paths):
         return FilePath(os.path.join(self, *paths))
 
 # ==============================================================================

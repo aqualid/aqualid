@@ -4,7 +4,7 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.entity import SimpleEntity, SignatureEntity, NullEntity
 
@@ -18,14 +18,14 @@ class TestValues(AqlTestCase):
         value1 = SimpleEntity('http://buildsrv.com/results.out')
         value2 = SimpleEntity('http://buildsrv.com/results.out')
 
-        self._testSaveLoad(value1)
+        self._test_save_load(value1)
 
         self.assertEqual(value1, value1)
         self.assertEqual(value1, value2)
 
-        self.assertTrue(value1.isActual())
+        self.assertTrue(value1.is_actual())
 
-        self._testSaveLoad(value2)
+        self._test_save_load(value2)
 
         value2 = SimpleEntity('http://buildsrv.com/results2.out')
         self.assertNotEqual(value1, value2)
@@ -38,11 +38,11 @@ class TestValues(AqlTestCase):
         value2 = SimpleEntity(name=value1.name)
         self.assertEqual(value1, value2)
 
-        self.assertFalse(value1.isActual())
-        self.assertFalse(value2.isActual())
+        self.assertFalse(value1.is_actual())
+        self.assertFalse(value2.is_actual())
 
-        self._testSaveLoad(value1)
-        self._testSaveLoad(value2)
+        self._test_save_load(value1)
+        self._test_save_load(value2)
 
     # ==========================================================
 
@@ -51,13 +51,13 @@ class TestValues(AqlTestCase):
         value1 = SignatureEntity(b'http://buildsrv.com/results.out')
         value2 = SignatureEntity(b'http://buildsrv.com/results.out')
 
-        self._testSaveLoad(value1)
+        self._test_save_load(value1)
 
         self.assertEqual(value1, value1)
         self.assertEqual(value1, value2)
-        self.assertTrue(value1.isActual())
+        self.assertTrue(value1.is_actual())
 
-        self._testSaveLoad(value2)
+        self._test_save_load(value2)
 
         value2 = SignatureEntity(b'http://buildsrv.com/results2.out')
         self.assertNotEqual(value1, value2)
@@ -70,11 +70,11 @@ class TestValues(AqlTestCase):
         value2 = SignatureEntity(name=value1.name)
         self.assertEqual(value1, value2)
 
-        self.assertFalse(value1.isActual())
-        self.assertFalse(value2.isActual())
+        self.assertFalse(value1.is_actual())
+        self.assertFalse(value2.is_actual())
 
-        self._testSaveLoad(value1)
-        self._testSaveLoad(value2)
+        self._test_save_load(value1)
+        self._test_save_load(value2)
 
     # ==============================================================================
 
@@ -84,11 +84,11 @@ class TestValues(AqlTestCase):
         value2 = NullEntity()
         self.assertEqual(value1, value2)
 
-        self.assertFalse(value1.isActual())
+        self.assertFalse(value1.is_actual())
 
-        self._testSaveLoad(value1)
+        self._test_save_load(value1)
 
 # ==========================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

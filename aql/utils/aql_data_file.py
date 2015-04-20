@@ -26,8 +26,8 @@ import operator
 import struct
 import mmap
 
-from .aql_utils import openFile
-from .aql_logging import logDebug
+from .aql_utils import open_file
+from .aql_logging import log_debug
 
 __all__ = ('DataFile', )
 
@@ -73,7 +73,7 @@ class ErrorDataFileCorrupted(Exception):
 class _MmapFile(object):
 
     def __init__(self, filename):
-        stream = openFile(filename, write=True, binary=True, sync=False)
+        stream = open_file(filename, write=True, binary=True, sync=False)
 
         try:
             memmap = mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_WRITE)
@@ -145,7 +145,7 @@ class _MmapFile(object):
 class _IOFile(object):
 
     def __init__(self, filename):
-        stream = openFile(filename, write=True, binary=True, sync=False)
+        stream = open_file(filename, write=True, binary=True, sync=False)
 
         self.stream = stream
         self.resize = stream.truncate
@@ -299,7 +299,7 @@ class DataFile (object):
     # +-----------------------------------+
     #           .......
     # +-----------------------------------+
-    # | metaN (32 bytes)                  |
+    # | meta_n (32 bytes)                  |
     # +-----------------------------------+
     # |  data1 (x bytes)                  |
     # +-----------------------------------+
@@ -307,7 +307,7 @@ class DataFile (object):
     # +-----------------------------------+
     #           .......
     # +-----------------------------------+
-    # |  dataN (z bytes)                  |
+    # |  data_n (z bytes)                  |
     # +-----------------------------------+
 
     MAGIC_TAG = b".AQL.DB."
@@ -350,7 +350,7 @@ class DataFile (object):
         try:
             self.handle = _MmapFile(filename)
         except Exception as e:
-            logDebug("mmap is not supported: %s" % (e,))
+            log_debug("mmap is not supported: %s" % (e,))
             self.handle = _IOFile(filename)
 
         self._init_header(force)

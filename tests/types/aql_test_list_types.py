@@ -5,7 +5,7 @@ import timeit
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.util_types import UniqueList, SplitListType, List, ValueListType
 
@@ -194,4 +194,4 @@ class TestListTypes(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

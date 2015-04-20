@@ -12,19 +12,19 @@
 #   $HOME/.config/aqualid/tools
 #
 #
-# from aql import toolSetup, getShellScriptEnv
+# from aql import tool_setup, get_shell_script_env
 #
 # script = r"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"
 #
-# @toolSetup('msvcpp','msvc++', 'msvc')
-# def   setupMsvc( options ):
+# @tool_setup('msvcpp','msvc++', 'msvc')
+# def   setup_msvc( options ):
 #
-#   if options.cc_name.isSetNotTo('msvc'):
+#   if options.cc_name.is_set_not_to('msvc'):
 #     return
 #
 #   target_arch = options.target_arch
 #
-#   if not target_arch.isSet() or (target_arch == 'x86-32'):
+#   if not target_arch.is_set() or (target_arch == 'x86-32'):
 #     target = "x86"
 #
 #   elif target_arch == 'x86-64':
@@ -36,5 +36,5 @@
 #   else:
 #     raise NotImplementedError()
 #
-#   vc_env = getShellScriptEnv( script, target )
+#   vc_env = get_shell_script_env( script, target )
 #   options.env.update( vc_env )

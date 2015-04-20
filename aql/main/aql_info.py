@@ -1,6 +1,6 @@
 __all__ = (
-    'getAqlInfo',
-    'dumpAqlInfo',
+    'get_aql_info',
+    'dump_aql_info',
 )
 
 # ==============================================================================
@@ -49,11 +49,11 @@ _AQL_VERSION_INFO = AqlInfo()
 # ==============================================================================
 
 
-def getAqlInfo():
+def get_aql_info():
     return _AQL_VERSION_INFO
 
 # ==============================================================================
 
 
-def dumpAqlInfo():
+def dump_aql_info():
     return _AQL_VERSION_INFO.dump()

@@ -24,10 +24,10 @@ import os
 import errno
 import operator
 
-from aql.util_types import FilePath, is_string, toSequence
-from aql.utils import simpleObjectSignature, simplifyValue, executeCommand,\
-    eventDebug, logDebug, groupPathsByDir, groupItems, relativeJoin,\
-    relativeJoinList
+from aql.util_types import FilePath, is_string, to_sequence
+from aql.utils import simple_object_signature, simplify_value, execute_command,\
+    event_debug, log_debug, group_paths_by_dir, group_items, relative_join,\
+    relative_join_list
 
 from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity,\
     FileEntityBase, SimpleEntity
@@ -39,16 +39,16 @@ __all__ = (
 # ==============================================================================
 
 
-@eventDebug
-def eventExecCmd(settings, cmd, cwd, env):
+@event_debug
+def event_exec_cmd(settings, cmd, cwd, env):
     if settings.trace_exec:
         cmd = ' '.join(cmd)
-        logDebug("CWD: '%s', CMD: '%s'" % (cwd, cmd,))
+        log_debug("CWD: '%s', CMD: '%s'" % (cwd, cmd,))
 
 # ==============================================================================
 
 
-def _getTraceArg(entity, brief):
+def _get_trace_arg(entity, brief):
 
     value = None
 
@@ -82,12 +82,12 @@ def _getTraceArg(entity, brief):
 # ==============================================================================
 
 
-def _joinArgs(entities, brief):
+def _join_args(entities, brief):
 
     args = []
 
-    for arg in toSequence(entities):
-        arg = _getTraceArg(arg, brief)
+    for arg in to_sequence(entities):
+        arg = _get_trace_arg(arg, brief)
         if arg and is_string(arg):
             args.append(arg)
 
@@ -117,12 +117,12 @@ def _joinArgs(entities, brief):
 # ==============================================================================
 
 
-def _getTraceStr(name, sources, targets, brief):
+def _get_trace_str(name, sources, targets, brief):
 
-    name = _joinArgs(name,    brief)
-    sources = _joinArgs(sources, brief)
+    name = _join_args(name,    brief)
+    sources = _join_args(sources, brief)
 
-    targets = _joinArgs(targets, brief)
+    targets = _join_args(targets, brief)
 
     build_str = name
     if sources:
@@ -135,7 +135,7 @@ def _getTraceStr(name, sources, targets, brief):
 # ==============================================================================
 
 
-def _makeBuildPath(path_dir, _path_cache=set()):
+def _make_build_path(path_dir, _path_cache=set()):
     if path_dir not in _path_cache:
         if not os.path.isdir(path_dir):
             try:
@@ -149,14 +149,14 @@ def _makeBuildPath(path_dir, _path_cache=set()):
 # ==============================================================================
 
 
-def _makeBuildPaths(dirnames):
+def _make_build_paths(dirnames):
     for dirname in dirnames:
-        _makeBuildPath(dirname)
+        _make_build_path(dirname)
 
 # ==============================================================================
 
 
-def _splitFileName(file_path,
+def _split_file_name(file_path,
                    ext=None,
                    prefix=None,
                    suffix=None,
@@ -196,7 +196,7 @@ def _splitFileName(file_path,
 # ==============================================================================
 
 
-def _splitFileNames(file_paths,
+def _split_file_names(file_paths,
                     ext=None,
                     prefix=None,
                     suffix=None,
@@ -205,7 +205,7 @@ def _splitFileNames(file_paths,
     dirnames = []
     filenames = []
     for file_path in file_paths:
-        dirname, filename = _splitFileName(
+        dirname, filename = _split_file_name(
             file_path, ext=ext, prefix=prefix,
             suffix=suffix, replace_ext=replace_ext)
         dirnames.append(dirname)
@@ -216,7 +216,7 @@ def _splitFileNames(file_paths,
 # ==============================================================================
 
 
-def _fileSinature2Type(file_signature_type):
+def _file_sinature2Type(file_signature_type):
     return FileTimestampEntity if file_signature_type == 'timestamp'\
         else FileChecksumEntity
 
@@ -232,30 +232,30 @@ class BuilderInitiator(object):
         self.is_initiated = False
         self.builder = builder
         self.options = options
-        self.args = self.__storeArgs(args)
-        self.kw = self.__storeKw(kw)
+        self.args = self.__store_args(args)
+        self.kw = self.__store_kw(kw)
 
     # ==========================================================
 
-    def __storeArgs(self, args):
-        return tuple(map(self.options._storeValue, args))
+    def __store_args(self, args):
+        return tuple(map(self.options._store_value, args))
 
     # ==========================================================
 
-    def __loadArgs(self):
-        return tuple(map(self.options._loadValue, self.args))
+    def __load_args(self):
+        return tuple(map(self.options._load_value, self.args))
 
     # ==========================================================
 
-    def __storeKw(self, kw):
-        storeValue = self.options._storeValue
-        return dict((name, storeValue(value)) for name, value in kw.items())
+    def __store_kw(self, kw):
+        store_value = self.options._store_value
+        return dict((name, store_value(value)) for name, value in kw.items())
 
     # ==========================================================
 
-    def __loadKw(self):
-        loadValue = self.options._loadValue
-        return dict((name, loadValue(value))
+    def __load_kw(self):
+        load_value = self.options._load_value
+        return dict((name, load_value(value))
                     for name, value in self.kw.items())
 
     # ==========================================================
@@ -267,20 +267,20 @@ class BuilderInitiator(object):
 
         builder = self.builder
 
-        kw = self.__loadKw()
-        args = self.__loadArgs()
+        kw = self.__load_kw()
+        args = self.__load_args()
 
         options = self.options
 
-        builder._initAttrs(options)
+        builder._init_attrs(options)
 
         builder.__init__(options, *args, **kw)
 
         if not hasattr(builder, 'name'):
-            builder.setName()
+            builder.set_name()
 
         if not hasattr(builder, 'signature'):
-            builder.setSignature()
+            builder.set_signature()
 
         self.is_initiated = True
 
@@ -288,14 +288,14 @@ class BuilderInitiator(object):
 
     # ==========================================================
 
-    def canBuildBatch(self):
-        return self.builder.canBuildBatch()
+    def can_build_batch(self):
+        return self.builder.can_build_batch()
 
-    def canBuild(self):
-        return self.builder.canBuild()
+    def can_build(self):
+        return self.builder.can_build()
 
-    def isBatch(self):
-        return self.builder.isBatch()
+    def is_batch(self):
+        return self.builder.is_batch()
 
 # ==============================================================================
 
@@ -324,16 +324,16 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def _initAttrs(self, options):
+    def _init_attrs(self, options):
         self.build_dir = options.build_dir.get()
         self.build_path = options.build_path.get()
         self.relative_build_paths = options.relative_build_paths.get()
-        self.file_entity_type = _fileSinature2Type(
+        self.file_entity_type = _file_sinature2Type(
             options.file_signature.get())
         self.env = options.env.get()
 
-        is_batch = (options.batch_build.get() or not self.canBuild()) and \
-            self.canBuildBatch()
+        is_batch = (options.batch_build.get() or not self.can_build()) and \
+            self.can_build_batch()
 
         self.__is_batch = is_batch
         if is_batch:
@@ -342,17 +342,17 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def canBuildBatch(self):
-        return self.__class__.buildBatch != Builder.buildBatch
+    def can_build_batch(self):
+        return self.__class__.build_batch != Builder.build_batch
 
     # -----------------------------------------------------------
 
-    def canBuild(self):
+    def can_build(self):
         return self.__class__.build != Builder.build
 
     # -----------------------------------------------------------
 
-    def isBatch(self):
+    def is_batch(self):
         return self.__is_batch
 
     # -----------------------------------------------------------
@@ -362,38 +362,38 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def setName(self):
+    def set_name(self):
 
         cls = self.__class__
         name = [cls.__module__,
                 cls.__name__,
-                simplifyValue(self.build_path),
+                simplify_value(self.build_path),
                 bool(self.relative_build_paths)]
 
         if self.NAME_ATTRS:
             for attr_name in self.NAME_ATTRS:
                 value = getattr(self, attr_name)
-                value = simplifyValue(value)
+                value = simplify_value(value)
                 name.append(value)
 
-        self.name = simpleObjectSignature(name)
+        self.name = simple_object_signature(name)
 
     # -----------------------------------------------------------
 
-    def setSignature(self):
+    def set_signature(self):
         sign = []
 
         if self.SIGNATURE_ATTRS:
             for attr_name in self.SIGNATURE_ATTRS:
                 value = getattr(self, attr_name)
-                value = simplifyValue(value)
+                value = simplify_value(value)
                 sign.append(value)
 
-        self.signature = simpleObjectSignature(sign)
+        self.signature = simple_object_signature(sign)
 
     # -----------------------------------------------------------
 
-    def isActual(self, target_entities):
+    def is_actual(self, target_entities):
         """
         Checks that target entities are up to date.
         It called only if all other checks were successful.
@@ -441,7 +441,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def splitSingle(self, source_entities):
+    def split_single(self, source_entities):
         """
         Implementation of split for splitting one-by-one
         """
@@ -449,15 +449,15 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def splitBatch(self, source_entities):
+    def split_batch(self, source_entities):
         """
         Implementation of split for splitting to batch groups of batch size
         """
-        return groupItems(source_entities, self.batch_groups, self.batch_size)
+        return group_items(source_entities, self.batch_groups, self.batch_size)
 
     # -----------------------------------------------------------
 
-    def splitBatchByBuildDir(self, source_entities):
+    def split_batch_by_build_dir(self, source_entities):
         """
         Implementation of split for grouping sources by output
         """
@@ -465,16 +465,16 @@ class Builder (object):
         group_size = self.batch_size
 
         if self.relative_build_paths:
-            groups = groupPathsByDir(source_entities, num_groups, group_size,
-                                     pathGetter=operator.methodcaller('get'))
+            groups = group_paths_by_dir(source_entities, num_groups, group_size,
+                                     path_getter=operator.methodcaller('get'))
         else:
-            groups = groupItems(source_entities, num_groups, group_size)
+            groups = group_items(source_entities, num_groups, group_size)
 
         return groups
 
     # -----------------------------------------------------------
 
-    def getWeight(self, source_entities):
+    def get_weight(self, source_entities):
         return len(source_entities)
 
     # -----------------------------------------------------------
@@ -489,7 +489,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def buildBatch(self, source_entities, targets):
+    def build_batch(self, source_entities, targets):
         """
         Builds a node
         Returns a build output string or None
@@ -499,7 +499,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         """
         If it's possible returns target entities of the node, otherwise None
         """
@@ -507,62 +507,62 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return self.__class__.__name__
 
     # -----------------------------------------------------------
 
-    def getTraceSources(self, source_entities, brief):
+    def get_trace_sources(self, source_entities, brief):
         return source_entities
 
     # -----------------------------------------------------------
 
-    def getTraceTargets(self, target_entities, brief):
+    def get_trace_targets(self, target_entities, brief):
         return target_entities
 
     # -----------------------------------------------------------
 
-    def getTrace(self,
+    def get_trace(self,
                  source_entities=None,
                  target_entities=None,
                  brief=False):
         try:
-            name = self.getTraceName(source_entities, brief)
+            name = self.get_trace_name(source_entities, brief)
         except Exception:
             name = ''
 
         try:
-            sources = self.getTraceSources(source_entities, brief)
+            sources = self.get_trace_sources(source_entities, brief)
         except Exception:
             sources = None
 
         try:
             if (target_entities is None) and source_entities:
-                target_entities = self.getTargetEntities(source_entities)
+                target_entities = self.get_target_entities(source_entities)
 
-            targets = self.getTraceTargets(target_entities, brief)
+            targets = self.get_trace_targets(target_entities, brief)
         except Exception:
             targets = None
 
-        return _getTraceStr(name, sources, targets, brief)
+        return _get_trace_str(name, sources, targets, brief)
 
     # -----------------------------------------------------------
 
-    def getBuildDir(self):
-        _makeBuildPath(self.build_dir)
+    def get_build_dir(self):
+        _make_build_path(self.build_dir)
 
         return self.build_dir
 
     # -----------------------------------------------------------
 
-    def getBuildPath(self):
-        _makeBuildPath(self.build_path)
+    def get_build_path(self):
+        _make_build_path(self.build_path)
         return self.build_path
 
     # -----------------------------------------------------------
 
-    def getTargetFilePath(self, target, ext=None, prefix=None):
-        target_dir, name = _splitFileName(target, prefix=prefix, ext=ext)
+    def get_target_file_path(self, target, ext=None, prefix=None):
+        target_dir, name = _split_file_name(target, prefix=prefix, ext=ext)
 
         if target_dir.startswith((os.path.curdir, os.path.pardir)):
             target_dir = os.path.abspath(target_dir)
@@ -570,14 +570,14 @@ class Builder (object):
             target_dir = os.path.abspath(
                 os.path.join(self.build_path, target_dir))
 
-        _makeBuildPath(target_dir)
+        _make_build_path(target_dir)
 
         target = os.path.join(target_dir, name)
         return target
 
     # -----------------------------------------------------------
 
-    def getTargetDirPath(self, target_dir):
+    def get_target_dir_path(self, target_dir):
         target_dir, name = os.path.split(target_dir)
         if not name:
             target_dir, name = os.path.split(target_dir)
@@ -594,13 +594,13 @@ class Builder (object):
 
         target_dir = os.path.join(target_dir, name)
 
-        _makeBuildPath(target_dir)
+        _make_build_path(target_dir)
 
         return target_dir
 
     # -----------------------------------------------------------
 
-    def getTargetFromSourceFilePath(self,
+    def get_target_from_source_file_path(self,
                                     file_path,
                                     ext=None,
                                     prefix=None,
@@ -609,16 +609,16 @@ class Builder (object):
 
         build_path = self.build_path
 
-        dirname, filename = _splitFileName(file_path,
+        dirname, filename = _split_file_name(file_path,
                                            ext=ext,
                                            prefix=prefix,
                                            suffix=suffix,
                                            replace_ext=replace_ext)
 
         if self.relative_build_paths:
-            build_path = relativeJoin(build_path, dirname)
+            build_path = relative_join(build_path, dirname)
 
-        _makeBuildPath(build_path)
+        _make_build_path(build_path)
 
         build_path = os.path.join(build_path, filename)
 
@@ -626,7 +626,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getTargetsFromSourceFilePaths(self,
+    def get_targets_from_source_file_paths(self,
                                       file_paths,
                                       ext=None,
                                       prefix=None,
@@ -635,21 +635,21 @@ class Builder (object):
 
         build_path = self.build_path
 
-        dirnames, filenames = _splitFileNames(file_paths,
+        dirnames, filenames = _split_file_names(file_paths,
                                               ext=ext,
                                               prefix=prefix,
                                               suffix=suffix,
                                               replace_ext=replace_ext)
 
         if self.relative_build_paths:
-            dirnames = relativeJoinList(build_path, dirnames)
-            _makeBuildPaths(dirnames)
+            dirnames = relative_join_list(build_path, dirnames)
+            _make_build_paths(dirnames)
 
             build_paths = [os.path.join(dirname, filename)
                            for dirname, filename in zip(dirnames, filenames)]
 
         else:
-            _makeBuildPath(build_path)
+            _make_build_path(build_path)
 
             build_paths = [
                 os.path.join(build_path, filename) for filename in filenames]
@@ -658,12 +658,12 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def getFileEntityType(self):
+    def get_file_entity_type(self):
         return self.file_entity_type
 
     # -----------------------------------------------------------
 
-    def makeSimpleEntity(self, entity, tags=None):
+    def make_simple_entity(self, entity, tags=None):
         if isinstance(entity, EntityBase):
             return entity
 
@@ -672,11 +672,11 @@ class Builder (object):
 
         return SimpleEntity(entity)
 
-    makeEntity = makeSimpleEntity
+    make_entity = make_simple_entity
 
     # -----------------------------------------------------------
 
-    def makeFileEntity(self, entity, tags=None):
+    def make_file_entity(self, entity, tags=None):
         if isinstance(entity, EntityBase):
             return entity
 
@@ -684,21 +684,21 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def makeFileEntities(self, entities, tags=None):
-        make_entity = self.makeFileEntity
+    def make_file_entities(self, entities, tags=None):
+        make_entity = self.make_file_entity
         return tuple(make_entity(entity, tags=tags)
-                     for entity in toSequence(entities))
+                     for entity in to_sequence(entities))
 
-    def makeEntities(self, entities, tags=None):
-        make_entity = self.makeEntity
+    def make_entities(self, entities, tags=None):
+        make_entity = self.make_entity
         return tuple(make_entity(entity, tags=tags)
-                     for entity in toSequence(entities))
+                     for entity in to_sequence(entities))
 
     # -----------------------------------------------------------
 
-    def execCmd(self, cmd, cwd=None, env=None, file_flag=None, stdin=None):
+    def exec_cmd(self, cmd, cwd=None, env=None, file_flag=None, stdin=None):
 
-        result = self.execCmdResult(
+        result = self.exec_cmd_result(
             cmd, cwd=cwd, env=env, file_flag=file_flag, stdin=stdin)
         if result.failed():
             raise result
@@ -707,7 +707,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def execCmdResult(self,
+    def exec_cmd_result(self,
                       cmd,
                       cwd=None,
                       env=None,
@@ -718,12 +718,12 @@ class Builder (object):
             env = self.env
 
         if cwd is None:
-            cwd = self.getBuildPath()
+            cwd = self.get_build_path()
 
-        result = executeCommand(
+        result = execute_command(
             cmd, cwd=cwd, env=env, file_flag=file_flag, stdin=stdin)
 
-        eventExecCmd(cmd, cwd, env)
+        event_exec_cmd(cmd, cwd, env)
 
         return result
 
@@ -731,4 +731,4 @@ class Builder (object):
 
 
 class FileBuilder (Builder):
-    makeEntity = Builder.makeFileEntity
+    make_entity = Builder.make_file_entity

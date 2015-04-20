@@ -74,7 +74,7 @@ class EntitiesFile (object):
     def open(self, filename, use_sqlite=False, force=False):
 
         self.file_lock = FileLock(filename)
-        self.file_lock.writeLock(wait=False, force=force)
+        self.file_lock.write_lock(wait=False, force=force)
 
         if use_sqlite:
             self.data_file = SqlDataFile(filename, force=force)
@@ -92,7 +92,7 @@ class EntitiesFile (object):
             self.data_file.close()
             self.data_file = None
 
-        self.file_lock.releaseLock()
+        self.file_lock.release_lock()
 
     # -------------------------------------------------------------------------------
 
@@ -105,7 +105,7 @@ class EntitiesFile (object):
 
     # -------------------------------------------------------------------------------
 
-    def findNodeEntity(self, entity):
+    def find_node_entity(self, entity):
 
         entity_id = entity.id
 
@@ -125,19 +125,19 @@ class EntitiesFile (object):
 
     # -------------------------------------------------------------------------------
 
-    def addNodeEntity(self, entity):
+    def add_node_entity(self, entity):
         dump = self.pickler.dumps(entity)
         self.data_file.write(entity.id, dump)
 
     # -------------------------------------------------------------------------------
 
-    def removeNodeEntities(self, entities):
+    def remove_node_entities(self, entities):
         entity_ids = map(operator.attrgetter('id'), entities)
         self.data_file.remove(entity_ids)
 
     # -------------------------------------------------------------------------------
 
-    def _findEntityById(self, entity_id):
+    def _find_entity_by_id(self, entity_id):
         try:
             return self.cache[entity_id]
         except KeyError:
@@ -160,28 +160,28 @@ class EntitiesFile (object):
 
     # -------------------------------------------------------------------------------
 
-    def findEntitiesByKey(self, keys):
+    def find_entities_by_key(self, keys):
         entity_ids = self.data_file.get_ids(keys)
         if entity_ids is None:
             return None
 
         try:
-            return list(map(self._findEntityById, entity_ids))
+            return list(map(self._find_entity_by_id, entity_ids))
         except Exception:
             return None
 
     # -------------------------------------------------------------------------------
 
-    def findEntities(self, entities):
+    def find_entities(self, entities):
         try:
-            return list(map(self._findEntityById,
+            return list(map(self._find_entity_by_id,
                             map(operator.attrgetter('id'), entities)))
         except Exception:
             return None
 
     # -------------------------------------------------------------------------------
 
-    def addEntities(self, entities):
+    def add_entities(self, entities):
 
         keys = []
         entity_ids = []
@@ -193,7 +193,7 @@ class EntitiesFile (object):
             entity_id = entity.id
 
             try:
-                stored_entity = self._findEntityById(entity_id)
+                stored_entity = self._find_entity_by_id(entity_id)
                 if stored_entity == entity:
                     entity_append(entity_id)
                     continue
@@ -201,7 +201,7 @@ class EntitiesFile (object):
             except Exception:
                 pass
 
-            key = self.updateEntity(entity)
+            key = self.update_entity(entity)
             key_append(key)
 
         keys.extend(self.data_file.get_keys(entity_ids))
@@ -210,7 +210,7 @@ class EntitiesFile (object):
 
     # -------------------------------------------------------------------------------
 
-    def updateEntity(self, entity):
+    def update_entity(self, entity):
 
         entity_id = entity.id
 
@@ -222,7 +222,7 @@ class EntitiesFile (object):
 
     # -------------------------------------------------------------------------------
 
-    def removeEntities(self, entities):
+    def remove_entities(self, entities):
         remove_ids = tuple(map(operator.attrgetter('id'), entities))
 
         for entity_id in remove_ids:

@@ -5,7 +5,7 @@ import types
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.entity import SimpleEntity
 from aql.nodes import Node, Builder
@@ -45,7 +45,7 @@ class TestTool(Tool):
 class TestProject(AqlTestCase):
 
     # noinspection PyUnusedLocal
-    def eventNodeBuilding(self, settings, node):
+    def event_node_building(self, settings, node):
         self.building_started += 1
 
     # -----------------------------------------------------------
@@ -54,12 +54,12 @@ class TestProject(AqlTestCase):
         super(TestProject, self).setUp()
 
         self.building_started = 0
-        add_user_handler(self.eventNodeBuilding)
+        add_user_handler(self.event_node_building)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        remove_user_handler(self.eventNodeBuilding)
+        remove_user_handler(self.event_node_building)
 
         super(TestProject, self).tearDown()
 
@@ -256,4 +256,4 @@ options.build_variant = "final"
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

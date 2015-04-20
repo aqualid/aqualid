@@ -7,7 +7,7 @@ _search_paths = ['.', 'tests_utils', 'tools']
 sys.path[:0] = map(lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', p)), _search_paths)
 
-from tests_utils import TestCaseBase, skip, runTests, runLocalTests, TestsOptions
+from tests_utils import TestCaseBase, skip, run_tests, run_local_tests, TestsOptions
 from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
     enable_default_handlers
 from aql.util_types import FilePath
@@ -79,11 +79,11 @@ END
 class AqlTestCase(TestCaseBase):
 
     # noinspection PyUnusedLocal
-    def eventNodeBuildingFinished(self, settings, node, builder_output, progress):
+    def event_node_building_finished(self, settings, node, builder_output, progress):
         self.built_nodes += 1
 
     # noinspection PyUnusedLocal
-    def eventNodeRemoved(self, settings, node, progress):
+    def event_node_removed(self, settings, node, progress):
         self.removed_nodes += 1
 
     # ==============================================================================
@@ -93,14 +93,14 @@ class AqlTestCase(TestCaseBase):
 
         self.built_nodes = 0
         self.removed_nodes = 0
-        add_user_handler(self.eventNodeBuildingFinished)
-        add_user_handler(self.eventNodeRemoved)
+        add_user_handler(self.event_node_building_finished)
+        add_user_handler(self.event_node_removed)
 
     # ==============================================================================
 
     def tearDown(self):
-        remove_user_handler(self.eventNodeBuildingFinished)
-        remove_user_handler(self.eventNodeRemoved)
+        remove_user_handler(self.event_node_building_finished)
+        remove_user_handler(self.event_node_removed)
 
         enable_default_handlers()
 
@@ -108,21 +108,21 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def buildPrj(self, prj, num_built_nodes, num_failed_nodes=0, jobs=4):
+    def build_prj(self, prj, num_built_nodes, num_failed_nodes=0, jobs=4):
         self.built_nodes = 0
 
         ok = prj.Build(jobs=jobs)
         if not ok:
             if num_failed_nodes == 0:
-                prj.build_manager.printFails()
+                prj.build_manager.print_fails()
                 assert False, "Build failed"
 
-        self.assertEqual(prj.build_manager.failsCount(), num_failed_nodes)
+        self.assertEqual(prj.build_manager.fails_count(), num_failed_nodes)
         self.assertEqual(self.built_nodes,               num_built_nodes)
 
     # ==============================================================================
 
-    def clearPrj(self, prj):
+    def clear_prj(self, prj):
         self.removed_nodes = 0
 
         prj.Clear()
@@ -131,7 +131,7 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def _testSaveLoad(self, value):
+    def _test_save_load(self, value):
         data = pickle.dumps((value, ), protocol=pickle.HIGHEST_PROTOCOL)
 
         loaded_values = pickle.loads(data)
@@ -141,7 +141,7 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def generateMainCppFile(self, dirname, name, content=None):
+    def generate_main_cpp_file(self, dirname, name, content=None):
         if not content:
             content = MAIN_SRC_FILE_TEMPLATE
 
@@ -154,7 +154,7 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def generateCppFile(self, dirname, name):
+    def generate_cpp_file(self, dirname, name):
         src_content = SRC_FILE_TEMPLATE % (name, 'foo_' + name)
         hdr_content = HDR_FILE_TEMPLATE % (
             name.upper(), name.upper(), 'foo_' + name)
@@ -172,7 +172,7 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def generateResFile(self, dirname, name):
+    def generate_res_file(self, dirname, name):
         src_content = RES_FILE_TEMPLATE
 
         src_file = os.path.join(dirname, name + '.rc')
@@ -184,11 +184,11 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def generateCppFiles(self, dirname, name, count):
+    def generate_cpp_files(self, dirname, name, count):
         src_files = []
         hdr_files = []
         for i in range(count):
-            src_file, hdr_file = self.generateCppFile(dirname, name + str(i))
+            src_file, hdr_file = self.generate_cpp_file(dirname, name + str(i))
             src_files.append(FilePath(src_file))
             hdr_files.append(FilePath(hdr_file))
 
@@ -197,17 +197,17 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def touchCppFile(cpp_file):
-        AqlTestCase.updateCppFile(cpp_file, "\n// touch file\n")
+    def touch_cpp_file(cpp_file):
+        AqlTestCase.update_cpp_file(cpp_file, "\n// touch file\n")
 
     @staticmethod
-    def addErrorToCppFile(cpp_file):
-        AqlTestCase.updateCppFile(cpp_file, "\n#error TEST ERROR\n")
+    def add_error_to_cpp_file(cpp_file):
+        AqlTestCase.update_cpp_file(cpp_file, "\n#error TEST ERROR\n")
 
     # ==============================================================================
 
     @staticmethod
-    def updateCppFile(cpp_file, new_line):
+    def update_cpp_file(cpp_file, new_line):
         with open(cpp_file, 'a') as f:
             f.write(new_line)
 
@@ -216,14 +216,14 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def touchCppFiles(cpp_files):
+    def touch_cpp_files(cpp_files):
         for cpp_file in cpp_files:
-            AqlTestCase.touchCppFile(cpp_file)
+            AqlTestCase.touch_cpp_file(cpp_file)
 
     # ==============================================================================
 
     @staticmethod
-    def generateFile(tmp_dir, start, stop):
+    def generate_file(tmp_dir, start, stop):
         tmp = Tempfile(folder=tmp_dir)
         tmp.write(bytearray(map(lambda v: v % 256, range(start, stop))))
 
@@ -234,7 +234,7 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def removeFiles(files):
+    def remove_files(files):
         for f in files:
             try:
                 os.remove(f)
@@ -244,13 +244,13 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def copyFile(src_file, dst_file):
+    def copy_file(src_file, dst_file):
         shutil.copy(src_file, dst_file)
 
     # ==============================================================================
 
     @staticmethod
-    def generateSourceFiles(tmp_dir, num, size):
+    def generate_source_files(tmp_dir, num, size):
 
         src_files = []
 
@@ -260,10 +260,10 @@ class AqlTestCase(TestCaseBase):
             while num > 0:
                 num -= 1
                 src_files.append(
-                    AqlTestCase.generateFile(tmp_dir, start, start + size))
+                    AqlTestCase.generate_file(tmp_dir, start, start + size))
                 start += size
         except:
-            AqlTestCase.removeFiles(src_files)
+            AqlTestCase.remove_files(src_files)
             raise
 
         return src_files
@@ -273,6 +273,6 @@ class AqlTestCase(TestCaseBase):
 if __name__ == '__main__':
 
     options = TestsOptions.instance()
-    options.setDefault('test_modules_prefix', 'aql_test_')
+    options.set_default('test_modules_prefix', 'aql_test_')
 
-    runTests(options=options)
+    run_tests(options=options)

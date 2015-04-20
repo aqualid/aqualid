@@ -28,8 +28,8 @@ try:
 except AttributeError:
     zip_longest = itertools.izip_longest
 
-from aql.util_types import String, uStr, is_string, to_string, IgnoreCaseString,\
-    Version, FilePath, AbsFilePath, toSequence,\
+from aql.util_types import String, u_str, is_string, to_string, IgnoreCaseString,\
+    Version, FilePath, AbsFilePath, to_sequence,\
     UniqueList, List, SplitListType, ValueListType,\
     Dict, SplitDictType, ValueDictType,\
     is_simple_value
@@ -38,7 +38,7 @@ __all__ = (
     'OptionType', 'StrOptionType', 'VersionOptionType', 'PathOptionType',
     'AbsPathOptionType', 'BoolOptionType',
     'EnumOptionType', 'RangeOptionType', 'ListOptionType', 'DictOptionType',
-    'autoOptionType', 'OptionHelpGroup', 'OptionHelp',
+    'auto_option_type', 'OptionHelpGroup', 'OptionHelp',
     'ErrorOptionTypeEnumAliasIsAlreadySet',
     'ErrorOptionTypeEnumValueIsAlreadySet',
     'ErrorOptionTypeUnableConvertValue', 'ErrorOptionTypeNoEnumValues',
@@ -79,7 +79,7 @@ class ErrorOptionTypeUnableConvertValue(TypeError):
         self.invalid_value = invalid_value
 
         msg = "Unable to convert value '%s (%s)' to option %s" % (
-            invalid_value, type(invalid_value), option_help.errorText())
+            invalid_value, type(invalid_value), option_help.error_text())
         super(type(self), self).__init__(msg)
 
 # ==============================================================================
@@ -102,7 +102,7 @@ class ErrorOptionTypeCantDeduce(Exception):
 # ==============================================================================
 
 
-def autoOptionType(value):
+def auto_option_type(value):
 
     is_seq = False
     unique = False
@@ -153,7 +153,7 @@ def autoOptionType(value):
 # ==============================================================================
 
 
-def _getTypeName(value_type):
+def _get_type_name(value_type):
     if issubclass(value_type, bool):
         name = "boolean"
 
@@ -163,7 +163,7 @@ def _getTypeName(value_type):
     elif issubclass(value_type, IgnoreCaseString):
         name = "case insensitive string"
 
-    elif issubclass(value_type, (str, uStr)):
+    elif issubclass(value_type, (str, u_str)):
         name = "string"
 
     else:
@@ -174,7 +174,7 @@ def _getTypeName(value_type):
 # ==============================================================================
 
 
-def _joinToLength(values, max_length=0, separator="", prefix="", suffix=""):
+def _join_to_length(values, max_length=0, separator="", prefix="", suffix=""):
 
     result = []
     current_value = ""
@@ -201,7 +201,7 @@ def _joinToLength(values, max_length=0, separator="", prefix="", suffix=""):
 # ==============================================================================
 
 
-def _indentItems(indent_value, values):
+def _indent_items(indent_value, values):
 
     result = []
 
@@ -221,7 +221,7 @@ def _indentItems(indent_value, values):
 # ==============================================================================
 
 
-def _mergeLists(values1, values2, indent_size):
+def _merge_lists(values1, values2, indent_size):
     result = []
 
     max_name = max(values1, key=len)
@@ -254,10 +254,10 @@ class OptionHelp(object):
     def __init__(self, option_type):
         self.option_type = option_type
 
-        help_type = option_type.helpType()
+        help_type = option_type.help_type()
         self.type_name = help_type if help_type else None
 
-        help_range = option_type.helpRange()
+        help_range = option_type.help_range()
         self.allowed_values = help_range if help_range else None
 
         self._names = []
@@ -287,30 +287,30 @@ class OptionHelp(object):
 
     # -----------------------------------------------------------
 
-    def isHidden(self):
+    def is_hidden(self):
         return not bool(self.description) or self.option_type.is_hidden
 
     # -----------------------------------------------------------
 
-    def _currentValue(self, details):
+    def _current_value(self, details):
         if self.current_value is not None:
             if isinstance(self.current_value, (list, tuple, UniqueList)):
                 current_value = [to_string(v) for v in self.current_value]
                 if current_value:
-                    current_value = _joinToLength(
+                    current_value = _join_to_length(
                         current_value,
                         64,
                         separator=",",
                         prefix="'",
                         suffix="'")
 
-                    current_value = _indentItems("[ ", current_value)
+                    current_value = _indent_items("[ ", current_value)
                     current_value[-1] += " ]"
                     details.extend(current_value)
                 else:
                     details.append("[]")
             else:
-                current_value = self.option_type.toStr(self.current_value)
+                current_value = self.option_type.to_str(self.current_value)
                 if not current_value:
                     current_value = "''"
 
@@ -324,7 +324,7 @@ class OptionHelp(object):
 
         details = []
 
-        self._currentValue(details)
+        self._current_value(details)
 
         if not brief:
             if self.description:
@@ -334,10 +334,10 @@ class OptionHelp(object):
                 details.append("Type: " + self.type_name)
 
             if self.allowed_values:
-                details += _indentItems("Allowed values: ",
+                details += _indent_items("Allowed values: ",
                                         self.allowed_values)
 
-        details = _indentItems(": ", details)
+        details = _indent_items(": ", details)
 
         result = []
 
@@ -346,7 +346,7 @@ class OptionHelp(object):
             key_marker = '* ' if self.is_key else '  '
             names = [key_marker + name for name in names]
 
-            details = _mergeLists(names, details, names_indent + 2)
+            details = _merge_lists(names, details, names_indent + 2)
 
         result += details
 
@@ -354,7 +354,7 @@ class OptionHelp(object):
 
     # -----------------------------------------------------------
 
-    def errorText(self):
+    def error_text(self):
 
         result = []
 
@@ -419,7 +419,7 @@ class OptionHelpGroup(object):
                 result.append("")
 
         if indent:
-            result = _indentItems(' ' * indent, result)
+            result = _indent_items(' ' * indent, result)
 
         return result
 
@@ -485,7 +485,7 @@ class OptionType (object):
 
     # -----------------------------------------------------------
 
-    def toStr(self, value):
+    def to_str(self, value):
         """
         Converts a value to options' value string
         """
@@ -498,17 +498,17 @@ class OptionType (object):
 
     # -----------------------------------------------------------
 
-    def helpType(self):
-        return _getTypeName(self.value_type)
+    def help_type(self):
+        return _get_type_name(self.value_type)
 
     # -----------------------------------------------------------
 
-    def helpRange(self):
+    def help_range(self):
         """
         Returns a description (list of strings) about range of allowed values
         """
         if self.range_help:
-            return list(toSequence(self.range_help))
+            return list(to_sequence(self.range_help))
 
         return []
 
@@ -555,7 +555,7 @@ class VersionOptionType (OptionType):
                                                 is_tool_key=is_tool_key,
                                                 is_hidden=is_hidden)
 
-    def helpType(self):
+    def help_type(self):
         return "Version String"
 
 # ==============================================================================
@@ -581,7 +581,7 @@ class PathOptionType (OptionType):
                                              is_hidden=is_hidden,
                                              default=default)
 
-    def helpType(self):
+    def help_type(self):
         return "File System Path"
 
 # ==============================================================================
@@ -607,7 +607,7 @@ class AbsPathOptionType (OptionType):
                                                 is_hidden=is_hidden,
                                                 default=default)
 
-    def helpType(self):
+    def help_type(self):
         return "File System Path"
 
 # ==============================================================================
@@ -656,19 +656,19 @@ class BoolOptionType (OptionType):
         if true_values is None:
             true_values = self.__true_values
         else:
-            true_values = toSequence(true_values)
+            true_values = to_sequence(true_values)
 
         if false_values is None:
             false_values = self.__false_values
         else:
-            false_values = toSequence(false_values)
+            false_values = to_sequence(false_values)
 
         self.true_value, self.false_value = style
         self.true_values = set()
         self.false_values = set()
 
-        self.addValues(true_values, false_values)
-        self.addValues(self.true_value, self.false_value)
+        self.add_values(true_values, false_values)
+        self.add_values(self.true_value, self.false_value)
 
     # -----------------------------------------------------------
 
@@ -691,23 +691,23 @@ class BoolOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def toStr(self, value):
+    def to_str(self, value):
         return self.true_value if value else self.false_value
 
     # -----------------------------------------------------------
 
-    def addValues(self, true_values, false_values):
-        true_values = toSequence(true_values)
-        false_values = toSequence(false_values)
+    def add_values(self, true_values, false_values):
+        true_values = to_sequence(true_values)
+        false_values = to_sequence(false_values)
 
         self.true_values.update(map(IgnoreCaseString,  true_values))
         self.false_values.update(map(IgnoreCaseString, false_values))
 
     # -----------------------------------------------------------
 
-    def helpRange(self):
+    def help_range(self):
 
-        def _makeHelp(value, values):
+        def _make_help(value, values):
             values = list(values)
             values.remove(value)
 
@@ -717,8 +717,8 @@ class BoolOptionType (OptionType):
 
             return "%s" % (value,)
 
-        return [_makeHelp(self.true_value, self.true_values),
-                _makeHelp(self.false_value, self.false_values), ]
+        return [_make_help(self.true_value, self.true_values),
+                _make_help(self.false_value, self.false_values), ]
 
 # ==============================================================================
 # ==============================================================================
@@ -751,15 +751,15 @@ class EnumOptionType (OptionType):
         self.__values = {}
 
         if default is not NotImplemented:
-            self.addValues(default)
+            self.add_values(default)
 
-        self.addValues(values)
+        self.add_values(values)
 
         self.strict = strict
 
     # -----------------------------------------------------------
 
-    def addValues(self, values):
+    def add_values(self, values):
         try:
             values = tuple(values.items())  # convert dictionary to a sequence
         except AttributeError:
@@ -768,9 +768,9 @@ class EnumOptionType (OptionType):
         set_default_value = self.__values.setdefault
         value_type = self.value_type
 
-        for value in toSequence(values):
+        for value in to_sequence(values):
 
-            it = iter(toSequence(value))
+            it = iter(to_sequence(value))
 
             value = value_type(next(it))
 
@@ -822,7 +822,7 @@ class EnumOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def helpRange(self):
+    def help_range(self):
 
         values = {}
 
@@ -886,13 +886,13 @@ class RangeOptionType (OptionType):
                                               is_tool_key=is_tool_key,
                                               is_hidden=is_hidden)
 
-        self.setRange(min_value, max_value, coerce)
+        self.set_range(min_value, max_value, coerce)
         if default is not NotImplemented:
             self.default = self(default)
 
     # -----------------------------------------------------------
 
-    def setRange(self, min_value, max_value, coerce=True):
+    def set_range(self, min_value, max_value, coerce=True):
 
         if min_value is not None:
             try:
@@ -950,7 +950,7 @@ class RangeOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def helpRange(self):
+    def help_range(self):
         return ["%s ... %s" % (self.min_value, self.max_value)]
 
     # -----------------------------------------------------------
@@ -1021,24 +1021,24 @@ class ListOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def helpType(self):
+    def help_type(self):
 
         if isinstance(self.item_type, OptionType):
-            item_type = self.item_type.helpType()
+            item_type = self.item_type.help_type()
         else:
-            item_type = _getTypeName(self.item_type)
+            item_type = _get_type_name(self.item_type)
 
         return "List of %s" % item_type
 
     # -----------------------------------------------------------
 
-    def helpRange(self):
+    def help_range(self):
 
         if self.range_help:
-            return list(toSequence(self.range_help))
+            return list(to_sequence(self.range_help))
 
         if isinstance(self.item_type, OptionType):
-            return self.item_type.helpRange()
+            return self.item_type.help_range()
 
         return []
 
@@ -1084,10 +1084,10 @@ class DictOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def setValueType(self, key, value_type):
+    def set_value_type(self, key, value_type):
         if isinstance(value_type, OptionType):
             value_type = value_type.value_type
-        self.value_type.setValueType(key, value_type)
+        self.value_type.set_value_type(key, value_type)
 
     # -----------------------------------------------------------
 
@@ -1103,14 +1103,14 @@ class DictOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def helpType(self):
+    def help_type(self):
 
-        value_type = self.value_type.getValueType()
+        value_type = self.value_type.get_value_type()
         if value_type is not None:
             if isinstance(value_type, OptionType):
-                value_type = value_type.helpType()
+                value_type = value_type.help_type()
             else:
-                value_type = _getTypeName(value_type)
+                value_type = _get_type_name(value_type)
 
             return "Dictionary of %s" % (value_type,)
 
@@ -1118,13 +1118,13 @@ class DictOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def helpRange(self):
+    def help_range(self):
 
         if self.range_help:
-            return list(toSequence(self.range_help))
+            return list(to_sequence(self.range_help))
 
-        value_type = self.value_type.getValueType()
+        value_type = self.value_type.get_value_type()
         if isinstance(value_type, OptionType):
-            return value_type.helpRange()
+            return value_type.help_range()
 
         return []

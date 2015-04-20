@@ -16,13 +16,13 @@ class ErrorNoCommonSourcesDir(Exception):
 # ==============================================================================
 
 
-def _toCygwinPath(path):
+def _to_cygwin_path(path):
 
     if not path:
         return '.'
 
     path_sep = '/'
-    drive, path = aql.splitDrive(path)
+    drive, path = aql.split_drive(path)
     if drive.find(':') == 1:
         drive = "/cygdrive/" + drive[0]
     path = drive + path
@@ -39,7 +39,7 @@ def _toCygwinPath(path):
 
 # ==============================================================================
 
-def _normLocalPath(path):
+def _norm_local_path(path):
 
     if not path:
         return '.'
@@ -60,7 +60,7 @@ def _normLocalPath(path):
 # ==============================================================================
 
 
-def _normRemotePath(path):
+def _norm_remote_path(path):
 
     if not path:
         return '.'
@@ -79,7 +79,7 @@ def _normRemotePath(path):
 # ==============================================================================
 
 
-def _splitRemotePath(remote_path):
+def _split_remote_path(remote_path):
     if os.path.isabs(remote_path):
         host = ''
         user = ''
@@ -100,7 +100,7 @@ def _splitRemotePath(remote_path):
             host = remote_path[:host_pos]
             remote_path = remote_path[host_pos + 1:]
 
-    remote_path = _normRemotePath(remote_path)
+    remote_path = _norm_remote_path(remote_path)
 
     return user, host, remote_path
 
@@ -113,7 +113,7 @@ class RemotePath(object):
 
     def __init__(self, remote_path, user=None, host=None):
 
-        u, h, remote_path = _splitRemotePath(remote_path)
+        u, h, remote_path = _split_remote_path(remote_path)
         if not user:
             user = u
 
@@ -126,7 +126,7 @@ class RemotePath(object):
 
     # -----------------------------------------------------------
 
-    def isRemote(self):
+    def is_remote(self):
         return bool(self.host)
 
     # -----------------------------------------------------------
@@ -138,9 +138,9 @@ class RemotePath(object):
 
     def join(self, other):
         if self.host:
-            path = self.path + '/' + _normRemotePath(other)
+            path = self.path + '/' + _norm_remote_path(other)
         else:
-            path = os.path.join(self.path, _normLocalPath(other))
+            path = os.path.join(self.path, _norm_local_path(other))
 
         return RemotePath(path, self.user, self.host)
 
@@ -163,7 +163,7 @@ class RemotePath(object):
             return "%s:%s" % (self.host, self.path)
         else:
             if cygwin_path:
-                return _toCygwinPath(self.path)
+                return _to_cygwin_path(self.path)
 
             return self.path
 
@@ -181,30 +181,30 @@ class RSyncPushBuilder(aql.FileBuilder):
         self.rsync_cygwin = (
             sys.platform != 'cygwin') and options.rsync_cygwin.get()
 
-        self.source_base = _normLocalPath(source_base) if source_base else None
+        self.source_base = _norm_local_path(source_base) if source_base else None
         self.remote_path = RemotePath(remote_path, login, host)
 
-        self.cmd = self.__getCmd(options, key_file, exclude)
+        self.cmd = self.__get_cmd(options, key_file, exclude)
         self.rsync = options.rsync.get()
 
         self.file_value_type = aql.FileTimestampEntity
 
     # -----------------------------------------------------------
 
-    def __getCmd(self, options, key_file, excludes):
+    def __get_cmd(self, options, key_file, excludes):
         cmd = [options.rsync.get()]
 
         cmd += options.rsync_flags.get()
 
         if excludes:
-            excludes = aql.toSequence(excludes)
+            excludes = aql.to_sequence(excludes)
             cmd += itertools.chain(*itertools.product(['--exclude'], excludes))
 
-        if self.remote_path.isRemote():
+        if self.remote_path.is_remote():
             ssh_flags = options.rsync_ssh_flags.get()
             if key_file:
                 if self.rsync_cygwin:
-                    key_file = _toCygwinPath(key_file)
+                    key_file = _to_cygwin_path(key_file)
                 ssh_flags += ['-i', key_file]
 
             cmd += ['-e', 'ssh %s' % ' '.join(ssh_flags)]
@@ -213,9 +213,9 @@ class RSyncPushBuilder(aql.FileBuilder):
 
     # -----------------------------------------------------------
 
-    def _getSources(self, source_entities):
+    def _get_sources(self, source_entities):
 
-        sources = [_normLocalPath(src.get()) for src in source_entities]
+        sources = [_norm_local_path(src.get()) for src in source_entities]
 
         source_base = self.source_base
         if source_base:
@@ -232,13 +232,13 @@ class RSyncPushBuilder(aql.FileBuilder):
 
     # -----------------------------------------------------------
 
-    def _setTargets(self, source_entities, sources, targets):
+    def _set_targets(self, source_entities, sources, targets):
 
         remote_path = self.remote_path
         source_base = self.source_base
 
-        value_type = aql.SimpleEntity if remote_path.isRemote(
-        ) else self.getFileEntityType()
+        value_type = aql.SimpleEntity if remote_path.is_remote(
+        ) else self.get_file_entity_type()
 
         for src_value, src in zip(source_entities, sources):
 
@@ -252,15 +252,15 @@ class RSyncPushBuilder(aql.FileBuilder):
 
     # -----------------------------------------------------------
 
-    def buildBatch(self, source_entities, targets):
-        sources = self._getSources(source_entities)
+    def build_batch(self, source_entities, targets):
+        sources = self._get_sources(source_entities)
 
         cmd = list(self.cmd)
 
         tmp_r, tmp_w = None, None
         try:
             if self.rsync_cygwin:
-                sources = map(_toCygwinPath, sources)
+                sources = map(_to_cygwin_path, sources)
 
             sorted_sources = sorted(sources)
 
@@ -268,7 +268,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
             if source_base:
                 if self.rsync_cygwin:
-                    source_base = _toCygwinPath(source_base)
+                    source_base = _to_cygwin_path(source_base)
 
                 tmp_r, tmp_w = os.pipe()
                 os.write(tmp_w, '\n'.join(sorted_sources).encode('utf-8'))
@@ -282,7 +282,7 @@ class RSyncPushBuilder(aql.FileBuilder):
 
             cmd.append(remote_path)
 
-            out = self.execCmd(cmd, stdin=tmp_r)
+            out = self.exec_cmd(cmd, stdin=tmp_r)
 
         finally:
             if tmp_r:
@@ -290,13 +290,13 @@ class RSyncPushBuilder(aql.FileBuilder):
             if tmp_w:
                 os.close(tmp_w)
 
-        self._setTargets(source_entities, sources, targets)
+        self._set_targets(source_entities, sources, targets)
 
         return out
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         if brief:
             name = self.cmd[0]
             name = os.path.splitext(os.path.basename(name))[0]
@@ -321,41 +321,41 @@ class RSyncPullBuilder(aql.Builder):
         self.rsync_cygwin = (
             sys.platform != 'cygwin') and options.rsync_cygwin.get()
 
-        self.target_path = _normLocalPath(target)
+        self.target_path = _norm_local_path(target)
         self.host = host
         self.login = login
 
-        self.cmd = self.__getCmd(options, key_file, exclude)
+        self.cmd = self.__get_cmd(options, key_file, exclude)
         self.rsync = options.rsync.get()
 
         self.file_value_type = aql.FileTimestampEntity
 
     # -----------------------------------------------------------
 
-    def makeEntity(self, value):
+    def make_entity(self, value):
         if aql.is_string(value):
             remote_path = RemotePath(value, self.login, self.host)
-            if not remote_path.isRemote():
-                return self.makeFileEntity(value)
+            if not remote_path.is_remote():
+                return self.make_file_entity(value)
 
-        return self.makeSimpleEntity(value)
+        return self.make_simple_entity(value)
 
     # -----------------------------------------------------------
 
-    def __getCmd(self, options, key_file, excludes):
+    def __get_cmd(self, options, key_file, excludes):
         cmd = [options.rsync.get()]
 
         cmd += options.rsync_flags.get()
 
         if excludes:
-            excludes = aql.toSequence(excludes)
+            excludes = aql.to_sequence(excludes)
             cmd += itertools.chain(*itertools.product(['--exclude'], excludes))
 
         if self.host:
             ssh_flags = options.rsync_ssh_flags.get()
             if key_file:
                 if self.rsync_cygwin:
-                    key_file = _toCygwinPath(key_file)
+                    key_file = _to_cygwin_path(key_file)
                 ssh_flags += ['-i', key_file]
 
             cmd += ['-e', 'ssh %s' % ' '.join(ssh_flags)]
@@ -364,7 +364,7 @@ class RSyncPullBuilder(aql.Builder):
 
     # -----------------------------------------------------------
 
-    def _getSourcesAndTargets(self, source_entities):
+    def _get_sources_and_targets(self, source_entities):
 
         sources = []
         targets = []
@@ -390,28 +390,28 @@ class RSyncPullBuilder(aql.Builder):
     # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
-        sources, target_files = self._getSourcesAndTargets(source_entities)
+        sources, target_files = self._get_sources_and_targets(source_entities)
 
         cmd = list(self.cmd)
 
         target_path = self.target_path
 
         if self.rsync_cygwin:
-            target_path = _toCygwinPath(target_path)
+            target_path = _to_cygwin_path(target_path)
 
         cmd += sources
 
         cmd.append(target_path)
 
-        out = self.execCmd(cmd)
+        out = self.exec_cmd(cmd)
 
-        targets.addFiles(target_files)
+        targets.add_files(target_files)
 
         return out
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         if brief:
             name = self.cmd[0]
             name = os.path.splitext(os.path.basename(name))[0]
@@ -429,10 +429,10 @@ class ToolRsync(aql.Tool):
     @classmethod
     def setup(cls, options):
 
-        rsync = cls.findProgram(options, 'rsync')
+        rsync = cls.find_program(options, 'rsync')
 
         options.rsync = rsync
-        if not options.rsync_cygwin.isSet():
+        if not options.rsync_cygwin.is_set():
             options.rsync_cygwin = rsync.find('cygwin') != -1
 
     # -----------------------------------------------------------
@@ -462,7 +462,7 @@ class ToolRsync(aql.Tool):
         options.rsync_ssh_flags = [
             '-o', 'StrictHostKeyChecking=no', '-o', 'BatchMode=yes']
 
-        options.setGroup("rsync")
+        options.set_group("rsync")
 
     # -----------------------------------------------------------
 

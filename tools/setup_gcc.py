@@ -12,16 +12,16 @@
 #   $HOME/.config/aqualid/tools
 #
 #
-# from aql import toolSetup
+# from aql import tool_setup
 #
-# @toolSetup('g++', 'gxx', 'gcc')
-# def   setupGcc( options ):
-#   if options.cc_name.isSetNotTo( 'gcc' ):
+# @tool_setup('g++', 'gxx', 'gcc')
+# def   setup_gcc( options ):
+#   if options.cc_name.is_set_not_to( 'gcc' ):
 #     return
 #
 #   target_arch = options.target_arch
 #
-#   if not target_arch.isSet() or target_arch == 'x86-32':
+#   if not target_arch.is_set() or target_arch == 'x86-32':
 #     if options.cc_ver == '4.6':
 #       path = r"C:\MinGW32\bin"
 #     else:

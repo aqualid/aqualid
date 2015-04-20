@@ -32,7 +32,7 @@ from .aql_option_types import BoolOptionType, EnumOptionType, RangeOptionType,\
     VersionOptionType, OptionType
 
 __all__ = (
-    'builtinOptions',
+    'builtin_options',
 )
 
 # ==============================================================================
@@ -101,7 +101,7 @@ def _build_options():
 
     # -----------------------------------------------------------
 
-    options.setGroup("Build")
+    options.set_group("Build")
 
     return options
 
@@ -187,7 +187,7 @@ def _target_options():
         value_type=IgnoreCaseString,
         description="The target CPU flags, e.g. 'mmx', 'sse2'.")
 
-    options.setGroup("Target system")
+    options.set_group("Target system")
 
     return options
 
@@ -219,7 +219,7 @@ def _optimization_options():
         description='Whole program optimization')
     options.whole_opt = options.whole_optimization
 
-    options.setGroup("Optimization")
+    options.set_group("Optimization")
 
     return options
 
@@ -266,7 +266,7 @@ def _code_gen_options():
 
     options.rt_thread = options.runtime_thread
 
-    options.setGroup("Code generation")
+    options.set_group("Code generation")
     return options
 
 # ==============================================================================
@@ -295,7 +295,7 @@ def _diagnostic_options():
     options.lint_flags = ListOptionType(description="Lint tool options",
                                         is_hidden=True)
 
-    options.setGroup("Diagnostic")
+    options.set_group("Diagnostic")
     return options
 
 # ==============================================================================
@@ -360,7 +360,7 @@ def _init_defaults(options):
     debug_build_variant.debug_symbols = 'on'
     debug_build_variant.runtime_debug = 'on'
 
-    speed_build_variant = bv.oneOf(['release_speed', 'final'])
+    speed_build_variant = bv.one_of(['release_speed', 'final'])
     speed_build_variant.optimization = 'speed'
     speed_build_variant.inlining = 'full'
     speed_build_variant.whole_optimization = 'on'
@@ -377,7 +377,7 @@ def _init_defaults(options):
 # ==============================================================================
 
 
-def builtinOptions():
+def builtin_options():
 
     options = Options()
 

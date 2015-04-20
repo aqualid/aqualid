@@ -5,7 +5,7 @@ import itertools
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile, Tempdir, EventSettings
 
@@ -28,7 +28,7 @@ class TestToolGcc(AqlTestCase):
 
             num_src_files = 5
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -42,21 +42,21 @@ class TestToolGcc(AqlTestCase):
                 return
 
             gcc.Compile(src_files, batch_build=False)
-            self.buildPrj(prj, num_src_files)
+            self.build_prj(prj, num_src_files)
 
             gcc.Compile(src_files, batch_build=False)
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
             gcc.Compile(src_files, batch_build=False)
 
-            self.touchCppFile(hdr_files[0])
-            self.buildPrj(prj, 1)
+            self.touch_cpp_file(hdr_files[0])
+            self.build_prj(prj, 1)
 
             gcc.Compile(src_files, batch_build=False)
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
             gcc.Compile(src_files, batch_build=False)
-            self.clearPrj(prj)
+            self.clear_prj(prj)
 
     def test_gcc_compiler_target(self):
 
@@ -68,7 +68,7 @@ class TestToolGcc(AqlTestCase):
 
             num_src_files = 2
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -82,7 +82,7 @@ class TestToolGcc(AqlTestCase):
                 return
 
             gcc.options.batch_build = False
-            gcc.options.If().target.isTrue().objsuffix = ''
+            gcc.options.If().target.is_true().objsuffix = ''
 
             targets = [os.path.join(build_dir, 'src_file%s.o' % i)
                        for i in range(len(src_files))]
@@ -93,7 +93,7 @@ class TestToolGcc(AqlTestCase):
             for target in targets:
                 self.assertFalse(os.path.isfile(target))
 
-            self.buildPrj(prj, num_src_files)
+            self.build_prj(prj, num_src_files)
 
             for target in targets:
                 self.assertTrue(os.path.isfile(target))
@@ -101,12 +101,12 @@ class TestToolGcc(AqlTestCase):
             for src, target in zip(src_files, targets):
                 gcc.Compile(src, target=target)
 
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
             for src, target in zip(src_files, targets):
                 gcc.Compile(src, target=target)
 
-            self.clearPrj(prj)
+            self.clear_prj(prj)
 
             for target in targets:
                 self.assertFalse(os.path.isfile(target))
@@ -123,7 +123,7 @@ class TestToolGcc(AqlTestCase):
 
             num_src_files = 2
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -167,9 +167,9 @@ class TestToolGcc(AqlTestCase):
 
             num_src_files = 2
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
-            res_file = self.generateResFile(src_dir, 'foo')
+            res_file = self.generate_res_file(src_dir, 'foo')
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
@@ -190,20 +190,20 @@ class TestToolGcc(AqlTestCase):
 
             gcc.Compile(src_files, batch_build=False)
             rc.Compile(res_file)
-            self.buildPrj(prj, num_src_files + 1)
+            self.build_prj(prj, num_src_files + 1)
 
             gcc.Compile(src_files, batch_build=False)
             rc.Compile(res_file)
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
             gcc.Compile(src_files, batch_build=False)
             rc.Compile(res_file)
-            self.touchCppFile(res_file)
-            self.buildPrj(prj, 1)
+            self.touch_cpp_file(res_file)
+            self.build_prj(prj, 1)
 
             gcc.Compile(src_files, batch_build=False)
             rc.Compile(res_file)
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
     # -----------------------------------------------------------
 
@@ -219,7 +219,7 @@ class TestToolGcc(AqlTestCase):
             group_size = 8
             num_src_files = num_groups * group_size
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -235,25 +235,25 @@ class TestToolGcc(AqlTestCase):
 
             cpp.LinkLibrary(src_files, target='foo', batch_build=False)
 
-            self.buildPrj(prj, num_src_files + 1)
+            self.build_prj(prj, num_src_files + 1)
 
             cpp.LinkLibrary(src_files, target='foo')
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
-            self.touchCppFile(hdr_files[0])
+            self.touch_cpp_file(hdr_files[0])
 
             cpp.LinkLibrary(src_files, target='foo')
-            self.buildPrj(prj, 1)
+            self.build_prj(prj, 1)
 
             # prj.config.debug_explain = True
 
             cpp.LinkLibrary(src_files, target='foo', batch_build=False)
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
-            self.touchCppFiles(hdr_files)
+            self.touch_cpp_files(hdr_files)
 
             cpp.LinkLibrary(src_files, target='foo', batch_build=False)
-            self.buildPrj(prj, num_src_files)
+            self.build_prj(prj, num_src_files)
 
     # -----------------------------------------------------------
 
@@ -269,9 +269,9 @@ class TestToolGcc(AqlTestCase):
             group_size = 8
             num_src_files = num_groups * group_size
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
-            main_src_file = self.generateMainCppFile(src_dir, 'main')
+            main_src_file = self.generate_main_cpp_file(src_dir, 'main')
 
             cfg = ProjectConfig(
                 args=["build_dir=%s" % build_dir, "batch_build=0"])
@@ -289,23 +289,23 @@ class TestToolGcc(AqlTestCase):
             cpp.LinkSharedLibrary(src_files, target='foo')
             cpp.LinkProgram(src_files, main_src_file, target='foo')
 
-            self.buildPrj(prj, num_src_files + 3)
+            self.build_prj(prj, num_src_files + 3)
 
             cpp.LinkSharedLibrary(src_files, target='foo')
             cpp.LinkProgram(src_files, main_src_file, target='foo')
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
-            self.touchCppFile(hdr_files[0])
+            self.touch_cpp_file(hdr_files[0])
 
             cpp.LinkSharedLibrary(src_files, target='foo')
             cpp.LinkProgram(src_files, main_src_file, target='foo')
-            self.buildPrj(prj, 1)
+            self.build_prj(prj, 1)
 
-            self.touchCppFiles(hdr_files)
+            self.touch_cpp_files(hdr_files)
             cpp.LinkSharedLibrary(src_files, target='foo', batch_build=False)
             cpp.LinkProgram(
                 src_files, main_src_file, target='foo', batch_build=False)
-            self.buildPrj(prj, num_src_files)
+            self.build_prj(prj, num_src_files)
 
     # -----------------------------------------------------------
 
@@ -321,7 +321,7 @@ class TestToolGcc(AqlTestCase):
             group_size = 8
             num_src_files = num_groups * group_size
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -336,22 +336,22 @@ class TestToolGcc(AqlTestCase):
                 return
 
             cpp.Compile(src_files, batch_build=True)
-            self.buildPrj(prj, num_groups, jobs=num_groups)
+            self.build_prj(prj, num_groups, jobs=num_groups)
 
             cpp.Compile(src_files, batch_build=False)
-            self.buildPrj(prj, 0)
+            self.build_prj(prj, 0)
 
-            self.touchCppFile(hdr_files[0])
+            self.touch_cpp_file(hdr_files[0])
             cpp.Compile(src_files, batch_build=False)
-            self.buildPrj(prj, 1)
+            self.build_prj(prj, 1)
 
-            self.touchCppFiles(hdr_files[:group_size])
-
-            cpp.Compile(src_files, batch_build=True, batch_groups=num_groups)
-            self.buildPrj(prj, num_groups)
+            self.touch_cpp_files(hdr_files[:group_size])
 
             cpp.Compile(src_files, batch_build=True, batch_groups=num_groups)
-            self.clearPrj(prj)
+            self.build_prj(prj, num_groups)
+
+            cpp.Compile(src_files, batch_build=True, batch_groups=num_groups)
+            self.clear_prj(prj)
 
     # -----------------------------------------------------------
 
@@ -365,15 +365,15 @@ class TestToolGcc(AqlTestCase):
 
             num_src_files = 5
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             src_file_orig = Tempfile(folder=tmp_dir)
             src_file_orig.close()
 
-            self.copyFile(src_files[0], src_file_orig)
+            self.copy_file(src_files[0], src_file_orig)
 
-            self.addErrorToCppFile(src_files[0])
+            self.add_error_to_cpp_file(src_files[0])
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
@@ -388,13 +388,13 @@ class TestToolGcc(AqlTestCase):
 
             cpp.Compile(src_files, batch_build=True, batch_groups=1)
 
-            self.buildPrj(prj, 0, num_failed_nodes=1)
+            self.build_prj(prj, 0, num_failed_nodes=1)
 
-            self.copyFile(src_file_orig, src_files[0])
+            self.copy_file(src_file_orig, src_files[0])
 
             cpp.Compile(src_files)
 
-            self.buildPrj(prj, 1)
+            self.build_prj(prj, 1)
 
     # -----------------------------------------------------------
 
@@ -409,7 +409,7 @@ class TestToolGcc(AqlTestCase):
 
             num_src_files = 5
 
-            src_files, hdr_files = self.generateCppFiles(
+            src_files, hdr_files = self.generate_cpp_files(
                 src_dir, 'foo', num_src_files)
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -423,21 +423,21 @@ class TestToolGcc(AqlTestCase):
                 return
 
             node = gcc.Compile(src_files, batch_build=False)
-            prj.tools.CopyFiles(node.filterSources(
-            ), node.filterImplicitDependencies(), target=copy_dir, batch_groups=1)
+            prj.tools.CopyFiles(node.filter_sources(
+            ), node.filter_implicit_dependencies(), target=copy_dir, batch_groups=1)
 
-            self.buildPrj(prj, num_src_files + 1)
+            self.build_prj(prj, num_src_files + 1)
 
             for file in itertools.chain(src_files, hdr_files):
                 self.assertTrue(
                     os.path.isfile(os.path.join(copy_dir, os.path.basename(file))))
 
             node = gcc.Compile(src_files, batch_build=False)
-            prj.tools.CopyFiles(node.filterSources(
-            ), node.filterImplicitDependencies(), target=copy_dir, batch_groups=1)
-            self.buildPrj(prj, 0)
+            prj.tools.CopyFiles(node.filter_sources(
+            ), node.filter_implicit_dependencies(), target=copy_dir, batch_groups=1)
+            self.build_prj(prj, 0)
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()
