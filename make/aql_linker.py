@@ -6,7 +6,7 @@ import aql
 
 # ==============================================================================
 
-info = aql.getAqlInfo()
+info = aql.get_aql_info()
 
 HEADER = """#!/usr/bin/env python
 #
@@ -47,13 +47,14 @@ if __name__ == '__main__':
   sys.modules[ aql_module_name ] = aql_module
 
   sys.exit( main() )
-""".format( date = datetime.date.today().isoformat() )
+""".format(date = datetime.date.today().isoformat())
 
 # ==============================================================================
 
+
 class AqlPreprocess (aql.FileBuilder):
 
-  split = aql.FileBuilder.splitSingle
+  split = aql.FileBuilder.split_single
 
   def   getTraceTargets( self, target_entities, brief ):
     return None
@@ -68,7 +69,7 @@ class AqlPreprocess (aql.FileBuilder):
     comments_re = re.compile(r"^\s*#.*$", re.MULTILINE )
     all_stmt_re = re.compile(r"^__all__\s*=\s*\(.+?\)", re.MULTILINE | re.DOTALL )
 
-    content = aql.readTextFile( src_file )
+    content = aql.read_text_file( src_file )
 
     content = slash_re.sub( "", content )
     content = comments_re.sub( "", content )
@@ -116,18 +117,18 @@ class AqlPreprocess (aql.FileBuilder):
 
 class AqlLink (aql.Builder):
 
-  def   __init__(self, options, target ):
-    self.target = self.getTargetFilePath( target )
+  def   __init__(self, options, target):
+    self.target = self.get_target_file_path(target)
 
   # -----------------------------------------------------------
 
-  def   getTargetEntities( self, source_values ):
+  def   get_target_entities( self, source_values ):
     return self.target
 
   # -----------------------------------------------------------
 
   @staticmethod
-  def   _modToFiles( file2deps, modules ):
+  def   _mod_to_files( file2deps, modules ):
 
     mod2files = {}
 
@@ -144,31 +145,31 @@ class AqlLink (aql.Builder):
   # -----------------------------------------------------------
 
   @staticmethod
-  def   _getDep2Files( file2deps, mod2files ):
+  def   _get_dep_to_files( file2deps, mod2files ):
 
     dep2files = {}
     tmp_file2deps = {}
 
     for file, mods in file2deps.items():
       for mod in mods:
-        files = mod2files[ mod ]
-        tmp_file2deps.setdefault( file, set() ).update( files )
+        files = mod2files[mod]
+        tmp_file2deps.setdefault(file, set()).update(files)
         for f in files:
-          dep2files.setdefault( f, set() ).add( file )
+          dep2files.setdefault(f, set()).add(file)
 
     return dep2files, tmp_file2deps
 
   # -----------------------------------------------------------
 
   @staticmethod
-  def   _getContent( files_content, dep2files, file2deps, tails ):
+  def   _get_content( files_content, dep2files, file2deps, tails ):
 
     content = ""
     while tails:
       tail = tails.pop(0)
-      content += files_content[ tail ]
+      content += files_content[tail]
 
-      files = dep2files.pop( tail, [] )
+      files = dep2files.pop( tail, [])
 
       for file in files:
         deps = file2deps[ file ]
@@ -206,19 +207,19 @@ class AqlLink (aql.Builder):
       std_modules.update( mod_std_imports )
       modules.update( mod_deps )
 
-    mod2files = self._modToFiles( file2deps, modules )
+    mod2files = self._mod_to_files( file2deps, modules )
 
-    dep2files, file2deps = self._getDep2Files( file2deps, mod2files )
+    dep2files, file2deps = self._get_dep_to_files( file2deps, mod2files )
 
-    content = self._getContent( files_content, dep2files, file2deps, tails )
+    content = self._get_content( files_content, dep2files, file2deps, tails )
 
     imports_content = '\n'.join( "import %s" % module for module in sorted(std_modules) )
 
     content = HEADER + '\n' + imports_content + '\n' + content + '\n' + MAIN
 
-    aql.writeTextFile( self.target, content )
+    aql.write_text_file(self.target, content)
 
-    targets.addFiles( self.target )
+    targets.add_files( self.target )
 
 # ==============================================================================
 
