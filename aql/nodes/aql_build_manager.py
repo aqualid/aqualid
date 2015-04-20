@@ -38,7 +38,7 @@ __all__ = (
 @event_warning
 def event_build_target_twice(settings, entity, node1):
     log_warning("Target '%s' is built twice. The last time built by: '%s' " %
-               (entity.name, node1.get_build_str(settings.brief)))
+                (entity.name, node1.get_build_str(settings.brief)))
 
 # ==============================================================================
 
@@ -984,7 +984,8 @@ class BuildManager (object):
 
         self.completed += 1
 
-        event_node_building_finished(node, builder_output, self.get_progress_str())
+        event_node_building_finished(
+            node, builder_output, self.get_progress_str())
 
         node.shrink()
 

@@ -23,7 +23,9 @@ import gc
 import os
 import sys
 import pstats
+import cProfile
 import traceback
+
 
 from aql.util_types import to_unicode
 from aql.utils import event_status, event_error, EventSettings,\
@@ -143,7 +145,7 @@ def _log_memory_top(snapshot, group_by='lineno', limit=30):
         # replace "/path/to/module/file.py" with "module/file.py"
         filename = os.sep.join(frame.filename.split(os.sep)[-2:])
         log_info("#%s: %s:%s: %.1f KiB"
-                % (index, filename, frame.lineno, stat.size / 1024))
+                 % (index, filename, frame.lineno, stat.size / 1024))
         line = linecache.getline(frame.filename, frame.lineno).strip()
         if line:
             log_info('    %s' % line)
@@ -168,7 +170,7 @@ def _print_memory_status():
     obj_mem_usage = sum(sys.getsizeof(obj) for obj in gc.get_objects())
 
     log_info("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb" %
-            (num_objects, obj_mem_usage / 1024, mem_usage))
+             (num_objects, obj_mem_usage / 1024, mem_usage))
 
 # ==============================================================================
 
@@ -299,7 +301,7 @@ def _run_main(prj_cfg):
     if not debug_profile:
         status = _main(prj_cfg)
     else:
-        profiler = c_profile.Profile()
+        profiler = cProfile.Profile()
 
         status = profiler.runcall(_main, prj_cfg)
 

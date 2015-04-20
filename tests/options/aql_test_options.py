@@ -11,7 +11,7 @@ from aql.util_types import UpperCaseString, FilePath
 from aql.options import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
     DictOptionType, PathOptionType, StrOptionType, OptionType, \
     builtin_options, \
-    Options, iadd_value, \
+    Options, op_iadd, \
     ErrorOptionsCyclicallyDependent, \
     ErrorOptionsMergeNonOptions, ErrorOptionsNoIteration
 
@@ -261,7 +261,7 @@ class TestOptions(AqlTestCase):
         options.opt = RangeOptionType(min_value=1, max_value=100)
         options.warn_level = RangeOptionType(min_value=0, max_value=5)
 
-        options.warn_level = iadd_value(options.opt)
+        options.warn_level = op_iadd(options.opt)
         self.assertEqual(options.warn_level, 1)
 
         options.If().warn_level.eq(options.opt).warn_level += 1

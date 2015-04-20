@@ -27,7 +27,7 @@ from aql.util_types import to_sequence, UniqueList, Dict
 __all__ = (
     'Condition', 'Operation', 'InplaceOperation', 'ConditionalValue',
     'OptionValue', 'SimpleOperation', 'SimpleInplaceOperation',
-    'SetValue', 'iadd_value', 'isub_value', 'iupdate_value',
+    'op_set', 'op_iadd', 'op_isub', 'op_iupdate',
     'ErrorOptionValueMergeNonOptionValue'
 )
 
@@ -39,7 +39,7 @@ class ErrorOptionValueMergeNonOptionValue(TypeError):
     def __init__(self, value):
         msg = "Unable to merge option value with non option value: '%s'" % (
             type(value),)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionValueMergeNonOptionValue, self).__init__(msg)
 
 # ==============================================================================
 
@@ -58,7 +58,7 @@ class ErrorOptionValueOperationFailed(TypeError):
             args_str += str(kw)
 
         msg = "Operation %s( %s ) failed with error: %s" % (op, args_str, err)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionValueOperationFailed, self).__init__(msg)
 
 # ==============================================================================
 
@@ -67,12 +67,12 @@ def _set_operator(dest_value, value):
     return value
 
 
-def _i_add_key_operator(dest_value, key, value):
+def _op_iadd_key_operator(dest_value, key, value):
     dest_value[key] += value
     return dest_value
 
 
-def _i_sub_key_operator(dest_value, key, value):
+def _op_isub_key_operator(dest_value, key, value):
     dest_value[key] -= value
     return dest_value
 
@@ -92,35 +92,35 @@ def _update_operator(dest_value, value):
 # ==============================================================================
 
 
-def SetValue(value):
+def op_set(value):
     return SimpleInplaceOperation(_set_operator, value)
 
 
-def SetKey(key, value):
+def op_set_key(key, value):
     return SimpleInplaceOperation(operator.setitem, key, value)
 
 
-def GetKey(value, key):
+def op_get_key(value, key):
     return SimpleOperation(operator.getitem, value, key)
 
 
-def iadd_value(value):
+def op_iadd(value):
     return SimpleInplaceOperation(operator.iadd, value)
 
 
-def iadd_key(key, value):
-    return SimpleInplaceOperation(_i_add_key_operator, key, value)
+def op_iadd_key(key, value):
+    return SimpleInplaceOperation(_op_iadd_key_operator, key, value)
 
 
-def isub_key(key, value):
-    return SimpleInplaceOperation(_i_sub_key_operator, key, value)
+def op_isub_key(key, value):
+    return SimpleInplaceOperation(_op_isub_key_operator, key, value)
 
 
-def isub_value(value):
+def op_isub(value):
     return SimpleInplaceOperation(operator.isub, value)
 
 
-def iupdate_value(value):
+def op_iupdate(value):
     return SimpleInplaceOperation(_update_operator, value)
 
 # ==============================================================================

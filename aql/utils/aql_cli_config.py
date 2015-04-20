@@ -21,7 +21,7 @@
 
 import optparse
 
-from aql.util_types import SplitListType, ValueListType, UniqueList
+from aql.util_types import split_list_type, value_list_type, UniqueList
 from .aql_utils import exec_file
 
 __all__ = ('CLIOption', 'CLIConfig')
@@ -112,7 +112,7 @@ class CLIConfig(object):
         for opt in cli_options:
             defaults[opt.opt_name] = (opt.default, opt.value_type)
 
-        targets_type = SplitListType(ValueListType(UniqueList, str), ', ')
+        targets_type = split_list_type(value_list_type(UniqueList, str), ', ')
         defaults['targets'] = (tuple(), targets_type)
 
         return defaults

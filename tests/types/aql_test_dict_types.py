@@ -6,7 +6,7 @@ sys.path.insert(
 
 from aql_tests import AqlTestCase, run_local_tests
 
-from aql.util_types import Dict, SplitDictType, ValueDictType
+from aql.util_types import Dict, split_dict_type, value_dict_type
 
 # ==============================================================================
 
@@ -43,7 +43,7 @@ class TestDictTypes(AqlTestCase):
         v = {'1': '2', '3': '4'}
         vs = "1=2, 3=4"
 
-        d = SplitDictType(Dict, separators=', ')(vs)
+        d = split_dict_type(Dict, separators=', ')(vs)
         self.assertEqual(d, v)
 
         d.update("a=7,c=9")
@@ -59,11 +59,11 @@ class TestDictTypes(AqlTestCase):
         v = {'1': '2', '3': '4'}
         vs = "1=2, 3=4"
 
-        d = ValueDictType(Dict, int, int)(v)
+        d = value_dict_type(Dict, int, int)(v)
         self.assertEqual(d['1'], 2)
         self.assertEqual(d[3], 4)
 
-        ds = SplitDictType(type(d), separators=', ')(vs)
+        ds = split_dict_type(type(d), separators=', ')(vs)
 
         self.assertEqual(d, ds)
 

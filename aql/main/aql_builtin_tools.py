@@ -60,8 +60,9 @@ class ExecuteCommandBuilder (Builder):
 
     def __init__(self, options, target=None, target_flag=None, cwd=None):
 
-        self.targets = [
-            self.get_target_file_path(target) for target in to_sequence(target)]
+        self.targets = tuple(map(self.get_target_file_path,
+                                 to_sequence(target)))
+
         self.target_flag = target_flag
 
         if cwd:
@@ -447,9 +448,9 @@ class WriteFileBuilder (Builder):
         target = self.target
 
         with open_file(target,
-                      write=True,
-                      binary=self.binary,
-                      encoding=self.encoding) as f:
+                       write=True,
+                       binary=self.binary,
+                       encoding=self.encoding) as f:
             f.truncate()
             for src in source_entities:
                 src = src.get()
@@ -597,42 +598,78 @@ class InstallDistBuilder (FileBuilder):
 
 class BuiltinTool(Tool):
 
-    def ExecuteCommand(self, options, target=None, target_flag=None, cwd=None):
+    def execute_command(self, options,
+                        target=None, target_flag=None, cwd=None):
+
         return ExecuteCommandBuilder(options, target=target,
                                      target_flag=target_flag, cwd=cwd)
 
+    ExecuteCommand = execute_command
     Command = ExecuteCommand
 
-    def ExecuteMethod(self, options, method, args=None, kw=None, single=True,
-                      make_files=True, clear_targets=True):
+    # ----------------------------------------------------------
+
+    def execute_method(self, options,
+                       method, args=None, kw=None, single=True,
+                       make_files=True, clear_targets=True):
+
         return ExecuteMethodBuilder(options, method=method, args=args, kw=kw,
                                     single=single, make_files=make_files,
                                     clear_targets=clear_targets)
 
+    ExecuteMethod = execute_method
     Method = ExecuteMethod
 
-    def CopyFiles(self, options, target):
+    # ----------------------------------------------------------
+
+    def copy_files(self, options, target):
         return CopyFilesBuilder(options, target)
 
-    def CopyFileAs(self, options, target):
+    CopyFiles = copy_files
+
+    # ----------------------------------------------------------
+
+    def copy_file_as(self, options, target):
         return CopyFileAsBuilder(options, target)
 
-    def WriteFile(self, options, target, binary=False, encoding=None):
+    CopyFileAs = copy_file_as
+
+    # ----------------------------------------------------------
+
+    def write_file(self, options, target, binary=False, encoding=None):
         return WriteFileBuilder(options, target,
                                 binary=binary, encoding=encoding)
 
-    def CreateDist(self, options, target, command, args=None):
+    WriteFile = write_file
+
+    # ----------------------------------------------------------
+
+    def create_dist(self, options, target, command, args=None):
         return DistBuilder(options, target=target, command=command, args=args)
 
-    def InstallDist(self, options, user=True):
+    CreateDist = create_dist
+
+    # ----------------------------------------------------------
+
+    def install_dist(self, options, user=True):
         return InstallDistBuilder(options, user=user)
 
-    def CreateZip(self, options, target, rename=None, basedir=None, ext=None):
+    InstallDist = install_dist
+
+    # ----------------------------------------------------------
+
+    def create_zip(self, options, target, rename=None, basedir=None, ext=None):
         return ZipFilesBuilder(options, target=target, rename=rename,
                                basedir=basedir, ext=ext)
 
-    def CreateTar(self, options, target, mode=None, rename=None,
-                  basedir=None, ext=None):
+    CreateZip = create_zip
+
+    # ----------------------------------------------------------
+
+    def create_tar(self, options,
+                   target, mode=None, rename=None, basedir=None, ext=None):
 
         return TarFilesBuilder(options, target=target, mode=mode,
                                rename=rename, basedir=basedir, ext=ext)
+
+    CreateTar = create_tar

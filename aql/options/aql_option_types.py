@@ -30,8 +30,8 @@ except AttributeError:
 
 from aql.util_types import String, u_str, is_string, to_string, IgnoreCaseString,\
     Version, FilePath, AbsFilePath, to_sequence,\
-    UniqueList, List, SplitListType, ValueListType,\
-    Dict, SplitDictType, ValueDictType,\
+    UniqueList, List, split_list_type, value_list_type,\
+    Dict, split_dict_type, value_dict_type,\
     is_simple_value
 
 __all__ = (
@@ -335,7 +335,7 @@ class OptionHelp(object):
 
             if self.allowed_values:
                 details += _indent_items("Allowed values: ",
-                                        self.allowed_values)
+                                         self.allowed_values)
 
         details = _indent_items(": ", details)
 
@@ -996,10 +996,10 @@ class ListOptionType (OptionType):
         else:
             list_type = List
 
-        list_type = ValueListType(list_type, value_type)
+        list_type = value_list_type(list_type, value_type)
 
         if separators:
-            list_type = SplitListType(list_type, separators)
+            list_type = split_list_type(list_type, separators)
 
         super(ListOptionType, self).__init__(list_type, description,
                                              group, range_help,
@@ -1072,10 +1072,10 @@ class DictOptionType (OptionType):
             if range_help is None:
                 range_help = value_type.range_help
 
-        dict_type = ValueDictType(Dict, key_type, value_type)
+        dict_type = value_dict_type(Dict, key_type, value_type)
 
         if separators:
-            dict_type = SplitDictType(dict_type, separators)
+            dict_type = split_dict_type(dict_type, separators)
 
         super(DictOptionType, self).__init__(dict_type, description, group,
                                              range_help,

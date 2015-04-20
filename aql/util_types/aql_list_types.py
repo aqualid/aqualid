@@ -23,7 +23,7 @@
 from .aql_simple_types import u_str, is_string, cast_str
 
 __all__ = ('to_sequence', 'is_sequence', 'UniqueList',
-           'List', 'ValueListType', 'SplitListType')
+           'List', 'value_list_type', 'split_list_type')
 
 # ==============================================================================
 
@@ -427,7 +427,7 @@ class List (list):
 # ==============================================================================
 
 
-def SplitListType(list_type, separators):
+def split_list_type(list_type, separators):
 
     separator = separators[0]
     other_separators = separators[1:]
@@ -513,7 +513,7 @@ def SplitListType(list_type, separators):
 # ==============================================================================
 
 
-def ValueListType(list_type, value_type):
+def value_list_type(list_type, value_type):
 
     class _ValueList (list_type):
 

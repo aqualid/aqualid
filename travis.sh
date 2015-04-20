@@ -8,5 +8,6 @@ python -c "import aql;import sys;sys.exit(aql.main())" -C examples/cpp_libs -I $
 python -c "import aql;import sys;sys.exit(aql.main())" -C examples/cpp_libs_1 -I $PWD/tools
 python -c "import aql;import sys;sys.exit(aql.main())" -C examples/cpp_libs_2 -I $PWD/tools
 
-pep8 `find aql -name "[a-zA-Z]*.py"`
+#pep8 `find aql -name "[a-zA-Z]*.py"`
+flake8 `find aql -name "[a-zA-Z]*.py"`
 #flake8 --max-complexity=7 `find aql -name "[a-zA-Z]*.py"`

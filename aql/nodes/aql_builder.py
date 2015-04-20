@@ -157,11 +157,11 @@ def _make_build_paths(dirnames):
 
 
 def _split_file_name(file_path,
-                   ext=None,
-                   prefix=None,
-                   suffix=None,
-                   replace_ext=False
-                   ):
+                     ext=None,
+                     prefix=None,
+                     suffix=None,
+                     replace_ext=False
+                     ):
 
     if isinstance(file_path, EntityBase):
         file_path = file_path.get()
@@ -197,10 +197,10 @@ def _split_file_name(file_path,
 
 
 def _split_file_names(file_paths,
-                    ext=None,
-                    prefix=None,
-                    suffix=None,
-                    replace_ext=False):
+                      ext=None,
+                      prefix=None,
+                      suffix=None,
+                      replace_ext=False):
 
     dirnames = []
     filenames = []
@@ -216,7 +216,7 @@ def _split_file_names(file_paths,
 # ==============================================================================
 
 
-def _file_sinature2Type(file_signature_type):
+def _get_file_signature_type(file_signature_type):
     return FileTimestampEntity if file_signature_type == 'timestamp'\
         else FileChecksumEntity
 
@@ -328,8 +328,9 @@ class Builder (object):
         self.build_dir = options.build_dir.get()
         self.build_path = options.build_path.get()
         self.relative_build_paths = options.relative_build_paths.get()
-        self.file_entity_type = _file_sinature2Type(
-            options.file_signature.get())
+        self.file_entity_type = \
+            _get_file_signature_type(options.file_signature.get())
+
         self.env = options.env.get()
 
         is_batch = (options.batch_build.get() or not self.can_build()) and \
@@ -465,8 +466,12 @@ class Builder (object):
         group_size = self.batch_size
 
         if self.relative_build_paths:
-            groups = group_paths_by_dir(source_entities, num_groups, group_size,
-                                     path_getter=operator.methodcaller('get'))
+            path_getter = operator.methodcaller('get')
+
+            groups = group_paths_by_dir(source_entities,
+                                        num_groups,
+                                        group_size,
+                                        path_getter=path_getter)
         else:
             groups = group_items(source_entities, num_groups, group_size)
 
@@ -523,9 +528,9 @@ class Builder (object):
     # -----------------------------------------------------------
 
     def get_trace(self,
-                 source_entities=None,
-                 target_entities=None,
-                 brief=False):
+                  source_entities=None,
+                  target_entities=None,
+                  brief=False):
         try:
             name = self.get_trace_name(source_entities, brief)
         except Exception:
@@ -601,19 +606,19 @@ class Builder (object):
     # -----------------------------------------------------------
 
     def get_target_from_source_file_path(self,
-                                    file_path,
-                                    ext=None,
-                                    prefix=None,
-                                    suffix=None,
-                                    replace_ext=True):
+                                         file_path,
+                                         ext=None,
+                                         prefix=None,
+                                         suffix=None,
+                                         replace_ext=True):
 
         build_path = self.build_path
 
         dirname, filename = _split_file_name(file_path,
-                                           ext=ext,
-                                           prefix=prefix,
-                                           suffix=suffix,
-                                           replace_ext=replace_ext)
+                                             ext=ext,
+                                             prefix=prefix,
+                                             suffix=suffix,
+                                             replace_ext=replace_ext)
 
         if self.relative_build_paths:
             build_path = relative_join(build_path, dirname)
@@ -627,19 +632,19 @@ class Builder (object):
     # -----------------------------------------------------------
 
     def get_targets_from_source_file_paths(self,
-                                      file_paths,
-                                      ext=None,
-                                      prefix=None,
-                                      suffix=None,
-                                      replace_ext=True):
+                                           file_paths,
+                                           ext=None,
+                                           prefix=None,
+                                           suffix=None,
+                                           replace_ext=True):
 
         build_path = self.build_path
 
         dirnames, filenames = _split_file_names(file_paths,
-                                              ext=ext,
-                                              prefix=prefix,
-                                              suffix=suffix,
-                                              replace_ext=replace_ext)
+                                                ext=ext,
+                                                prefix=prefix,
+                                                suffix=suffix,
+                                                replace_ext=replace_ext)
 
         if self.relative_build_paths:
             dirnames = relative_join_list(build_path, dirnames)
@@ -708,11 +713,11 @@ class Builder (object):
     # -----------------------------------------------------------
 
     def exec_cmd_result(self,
-                      cmd,
-                      cwd=None,
-                      env=None,
-                      file_flag=None,
-                      stdin=None):
+                        cmd,
+                        cwd=None,
+                        env=None,
+                        file_flag=None,
+                        stdin=None):
 
         if env is None:
             env = self.env

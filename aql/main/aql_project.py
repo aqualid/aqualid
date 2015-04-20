@@ -29,13 +29,13 @@ import itertools
 from aql.utils import CLIConfig, CLIOption, get_function_args, exec_file,\
     flatten_list, find_files, cpu_count, Chdir, expand_file_path
 
-from aql.util_types import FilePath, ValueListType, UniqueList,\
+from aql.util_types import FilePath, value_list_type, UniqueList,\
     to_sequence, is_sequence
 
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity,\
     FileChecksumEntity, DirEntity, SimpleEntity
 
-from aql.options import builtin_options, Options, iupdate_value
+from aql.options import builtin_options, Options, op_iupdate
 
 from aql.nodes import BuildManager, Node,\
     NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
@@ -217,12 +217,12 @@ class ProjectConfig(object):
 
     def __init__(self, args=None):
 
-        CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
+        cli_usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
 
-        Paths = ValueListType(UniqueList, FilePath)
-        Strings = ValueListType(UniqueList, str)
+        paths_type = value_list_type(UniqueList, FilePath)
+        strings_type = value_list_type(UniqueList, str)
 
-        CLI_OPTIONS = (
+        cli_options = (
 
             CLIOption("-C", "--directory",  "directory",  FilePath, '',
                       "Change directory before reading the make files.",
@@ -236,7 +236,9 @@ class ProjectConfig(object):
                       "List current options and exit."),
 
             CLIOption("-L", "--list-tool-options", "list_tool_options",
-                      Strings, [], "List tool options and exit.", "TOOL_NAME"),
+                      strings_type, [],
+                      "List tool options and exit.",
+                      "TOOL_NAME"),
 
             CLIOption("-t", "--list-targets", "list_targets", bool, False,
                       "List all available targets and exit."),
@@ -256,7 +258,7 @@ class ProjectConfig(object):
             CLIOption("-e", "--no-tool-errors", "no_tool_errors", bool, False,
                       "Stop on any error during initialization of tools."),
 
-            CLIOption("-I", "--tools-path", "tools_path", Paths, [],
+            CLIOption("-I", "--tools-path", "tools_path", paths_type, [],
                       "Path to tools and setup scripts.", 'FILE PATH, ...'),
 
             CLIOption("-k", "--keep-going", "keep_going", bool, False,
@@ -307,7 +309,7 @@ class ProjectConfig(object):
                       "Show version and exit."),
         )
 
-        cli_config = CLIConfig(CLI_USAGE, CLI_OPTIONS, args)
+        cli_config = CLIConfig(cli_usage, cli_options, args)
 
         options = builtin_options()
 
@@ -469,7 +471,7 @@ class BuilderWrapper(object):
             if name in self.arg_names:
                 builder_args[name] = value
             else:
-                options.append_value(name, value, iupdate_value)
+                options.append_value(name, value, op_iupdate)
 
         return options, deps, sources, builder_args
 
@@ -595,7 +597,7 @@ class ProjectTools(object):
 
     # -----------------------------------------------------------
 
-    def Tools(self, *tool_names, **kw):
+    def get_tools(self, *tool_names, **kw):
 
         options = kw.pop('options', None)
 
@@ -617,12 +619,12 @@ class ProjectTools(object):
 
     # -----------------------------------------------------------
 
-    def Tool(self, tool_name, **kw):
+    def get_tool(self, tool_name, **kw):
         return self.Tools(tool_name, **kw)[0]
 
     # -----------------------------------------------------------
 
-    def AddTool(self, tool_class, tool_names=tuple()):
+    def add_tool(self, tool_class, tool_names=tuple()):
         self.tools.add_tool(tool_class, tool_names)
 
         return self.__add_tool(tool_class, self.project.options)
@@ -693,9 +695,9 @@ class Project(object):
         script_locals = {
             'options': self.options,
             'tools': self.tools,
-            'Tool': self.tools.Tool,
-            'Tools': self.tools.Tools,
-            'AddTool': self.tools.AddTool,
+            'Tool': self.tools.get_tool,
+            'Tools': self.tools.get_tools,
+            'AddTool': self.tools.add_tool,
             'LoadTools': self.tools.tools.load_tools,
             'FindFiles': find_files
         }
@@ -712,17 +714,21 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def GetProject(self):
+    def get_project(self):
         return self
 
+    GetProject = get_project
+
     # -----------------------------------------------------------
 
-    def GetBuildTargets(self):
+    def get_build_targets(self):
         return self.targets
 
+    GetBuildTargets = get_build_targets
+
     # -----------------------------------------------------------
 
-    def File(self, filepath, options=None):
+    def file_entity(self, filepath, options=None):
         if options is None:
             options = self.options
 
@@ -732,15 +738,21 @@ class Project(object):
 
         return file_type(filepath)
 
+    File = file_entity
+
     # -----------------------------------------------------------
 
-    def Dir(self, filepath):
+    def dir_entity(self, filepath):
         return DirEntity(filepath)
 
+    Dir = dir_entity
+
     # -----------------------------------------------------------
 
-    def Entity(self, data, name=None):
+    def entity(self, data, name=None):
         return SimpleEntity(data=data, name=name)
+
+    Entity = entity
 
     # -----------------------------------------------------------
 
@@ -773,7 +785,7 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def Config(self, config, options=None):
+    def read_config(self, config, options=None):
 
         options = self._get_config_options(config, options)
 
@@ -794,9 +806,11 @@ class Project(object):
 
         options.update(result)
 
+    Config = read_config
+
     # -----------------------------------------------------------
 
-    def Script(self, script):
+    def read_script(self, script):
 
         script = os.path.normcase(os.path.abspath(script))
 
@@ -813,30 +827,38 @@ class Project(object):
         scripts_cache[script] = script_result
         return script_result
 
+    Script = read_script
+
     # -----------------------------------------------------------
 
-    def AddNodes(self, nodes):
+    def add_nodes(self, nodes):
         self.build_manager.add(nodes)
 
+    AddNodes = add_nodes
+
     # -----------------------------------------------------------
 
-    def SetBuildDir(self, build_dir):
+    def set_build_dir(self, build_dir):
         build_dir = os.path.abspath(expand_file_path(build_dir))
         if self.options.build_dir != build_dir:
             self.options.build_dir = build_dir
 
+    SetBuildDir = set_build_dir
+
     # -----------------------------------------------------------
 
-    def Depends(self, nodes, dependencies):
+    def depends(self, nodes, dependencies):
         dependencies = tuple(to_sequence(dependencies))
 
         for node in to_sequence(nodes):
             node.depends(dependencies)
             self.build_manager.depends(node, node.dep_nodes)
 
+    Depends = depends
+
     # -----------------------------------------------------------
 
-    def Requires(self, nodes, dependencies):
+    def requires(self, nodes, dependencies):
         dependencies = tuple(
             dep for dep in to_sequence(dependencies) if isinstance(dep, Node))
 
@@ -844,15 +866,19 @@ class Project(object):
         for node in to_sequence(nodes):
             depends(node, dependencies)
 
+    Requires = requires
+
     # -----------------------------------------------------------
 
-    def RequireModules(self, nodes, dependencies):
+    def require_modules(self, nodes, dependencies):
         dependencies = tuple(
             dep for dep in to_sequence(dependencies) if isinstance(dep, Node))
 
         module_depends = self.build_manager.module_depends
         for node in to_sequence(nodes):
             module_depends(node, dependencies)
+
+    RequireModules = require_modules
 
     # -----------------------------------------------------------
 
@@ -864,15 +890,17 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def Sync(self, *nodes):
+    def sync(self, *nodes):
         nodes = flatten_list(nodes)
 
         nodes = tuple(node for node in nodes if isinstance(node, Node))
         self.build_manager.sync(nodes)
 
+    Sync = sync
+
     # -----------------------------------------------------------
 
-    def Alias(self, alias, nodes, description=None):
+    def alias(self, alias, nodes, description=None):
         for alias, node in itertools.product(to_sequence(alias),
                                              to_sequence(nodes)):
 
@@ -881,18 +909,24 @@ class Project(object):
             if description:
                 self.alias_descriptions[alias] = description
 
+    Alias = alias
+
     # -----------------------------------------------------------
 
-    def Default(self, nodes):
+    def default_build(self, nodes):
         for node in to_sequence(nodes):
             self.defaults.append(node)
 
+    Default = default_build
+
     # -----------------------------------------------------------
 
-    def AlwaysBuild(self, nodes):
+    def always_build(self, nodes):
         null_value = NullEntity()
         for node in to_sequence(nodes):
             node.depends(null_value)
+
+    AlwaysBuild = always_build
 
     # ==========================================================
 
@@ -951,7 +985,7 @@ class Project(object):
 
     # ==========================================================
 
-    def Build(self, jobs=None):
+    def build(self, jobs=None):
 
         jobs = self._get_jobs_count(jobs)
 
@@ -978,9 +1012,11 @@ class Project(object):
                                          force_lock=force_lock)
         return is_ok
 
+    Build = build
+
     # ==========================================================
 
-    def Clear(self):
+    def clear(self):
 
         build_nodes = self._get_build_nodes()
 
@@ -991,9 +1027,11 @@ class Project(object):
                                  use_sqlite=use_sqlite,
                                  force_lock=force_lock)
 
+    Clear = clear
+
     # ==========================================================
 
-    def ListTargets(self):
+    def list_targets(self):
         targets = []
         node2alias = {}
 
@@ -1027,9 +1065,11 @@ class Project(object):
 
         return _text_targets(targets)
 
+    ListTargets = list_targets
+
     # ==========================================================
 
-    def ListOptions(self, brief=False):
+    def list_options(self, brief=False):
         result = self.options.help_text("Builtin options:", brief=brief)
         result.append("")
         tool_names = self.tools._get_tool_names()
@@ -1040,9 +1080,11 @@ class Project(object):
             result.append("")
         return result
 
+    ListOptions = list_options
+
     # ==========================================================
 
-    def ListToolsOptions(self, tools, brief=False):
+    def list_tools_options(self, tools, brief=False):
         tools = set(to_sequence(tools))
         result = []
 
@@ -1056,10 +1098,16 @@ class Project(object):
             result.append("")
         return result
 
+    ListToolsOptions = list_tools_options
+
     # ==========================================================
 
-    def DirName(self, node):
+    def dir_name(self, node):
         return NodeDirNameFilter(node)
 
-    def BaseName(self, node):
+    DirName = dir_name
+
+    def base_name(self, node):
         return NodeBaseNameFilter(node)
+
+    BaseName = base_name

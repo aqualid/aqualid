@@ -27,7 +27,8 @@ from aql.utils import log_warning, log_error, load_module, load_package,\
     expand_file_path, find_files, event_warning,\
     find_program, find_programs, find_optional_program, find_optional_programs
 
-__all__ = ('Tool', 'tool', 'tool_setup', 'get_tools_manager', 'ErrorToolNotFound')
+__all__ = ('Tool', 'tool', 'tool_setup',
+           'get_tools_manager', 'ErrorToolNotFound')
 
 # ==============================================================================
 
@@ -51,7 +52,7 @@ def event_tools_tool_failed(settings, ex, tool_info):
     names = ','.join(tool_info.names)
 
     log_error("Failed to initialize tool: name: %s, class: %s, file: %s" %
-             (names, tool_class.__name__, file))
+              (names, tool_class.__name__, file))
     log_error(ex)
 
 # ==============================================================================

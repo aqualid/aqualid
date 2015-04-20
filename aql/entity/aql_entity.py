@@ -99,7 +99,9 @@ class EntityBase (object):
 
     def get_id(self):
         cls = self.__class__
-        return simple_object_signature((self.name, cls.__name__, cls.__module__))
+        return simple_object_signature((self.name,
+                                        cls.__name__,
+                                        cls.__module__))
 
     # -----------------------------------------------------------
 

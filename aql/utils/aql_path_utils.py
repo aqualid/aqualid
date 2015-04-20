@@ -35,8 +35,8 @@ __all__ = (
     'change_path', 'split_path',
     'find_program', 'find_programs', 'find_optional_program',
     'find_optional_programs',
-    'relative_join', 'relative_join_list', 'exclude_files_from_dirs', 'split_drive',
-    'group_paths_by_dir', 'Chdir',
+    'relative_join', 'relative_join_list', 'exclude_files_from_dirs',
+    'split_drive', 'group_paths_by_dir', 'Chdir',
 )
 
 # ==============================================================================
@@ -52,9 +52,9 @@ class ErrorNoPrograms(Exception):
 
 
 def abs_file_path(file_path, path_sep=os.path.sep,
-                seps=(os.path.sep, os.path.altsep),
-                _abspath=os.path.abspath,
-                _normcase=os.path.normcase):
+                  seps=(os.path.sep, os.path.altsep),
+                  _abspath=os.path.abspath,
+                  _normcase=os.path.normcase):
     if not file_path:
         file_path = '.'
 
@@ -69,9 +69,9 @@ def abs_file_path(file_path, path_sep=os.path.sep,
 
 
 def expand_file_path(path,
-                   _normpath=os.path.normpath,
-                   _expanduser=os.path.expanduser,
-                   _expandvars=os.path.expandvars):
+                     _normpath=os.path.normpath,
+                     _expanduser=os.path.expanduser,
+                     _expandvars=os.path.expandvars):
 
     return _normpath(_expanduser(_expandvars(path)))
 
@@ -113,9 +113,9 @@ def _masks_to_match(masks, _null_match=lambda name: False):
 
 
 def find_files(paths=".",
-              mask=("*", ),
-              exclude_mask=tuple(),
-              exclude_subdir_mask=('__*', '.*')):
+               mask=("*", ),
+               exclude_mask=tuple(),
+               exclude_subdir_mask=('__*', '.*')):
 
     found_files = []
 
@@ -173,8 +173,8 @@ def _get_env_path(env, hint_prog=None):
 
 
 def _get_env_path_ext(env, hint_prog=None,
-                   is_windows=(os.name == 'nt'),
-                   is_cygwin=(sys.platform == 'cygwin')):
+                      is_windows=(os.name == 'nt'),
+                      is_cygwin=(sys.platform == 'cygwin')):
 
     if not is_windows and not is_cygwin:
         return tuple()
@@ -468,9 +468,9 @@ def _simple_path_getter(path):
 
 
 def group_paths_by_dir(file_paths,
-                    wish_groups=1,
-                    max_group_size=-1,
-                    path_getter=None):
+                       wish_groups=1,
+                       max_group_size=-1,
+                       path_getter=None):
 
     groups = ItemsGroups(len(file_paths), wish_groups, max_group_size)
 

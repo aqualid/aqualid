@@ -31,8 +31,8 @@ from .aql_option_types import OptionType, DictOptionType, auto_option_type,\
     ErrorOptionTypeCantDeduce, ErrorOptionTypeUnableConvertValue
 from .aql_option_value import OptionValue, Operation, InplaceOperation,\
     ConditionalValue, Condition,\
-    SetValue, iadd_value, isub_value, iupdate_value, SimpleOperation,\
-    SetKey, iadd_key, isub_key
+    op_set, op_iadd, op_isub, op_iupdate, SimpleOperation,\
+    op_set_key, op_iadd_key, op_isub_key
 
 __all__ = (
     'Options',
@@ -152,7 +152,8 @@ def _store_op_value(options, value):
             value = _OpValueExRef(value)
 
     elif isinstance(value, dict):
-        value = dict((k, _store_op_value(options, v)) for k, v in value.items())
+        value = dict((k, _store_op_value(options, v))
+                     for k, v in value.items())
 
     elif isinstance(value, (list, tuple, UniqueList, set, frozenset)):
         value = [_store_op_value(options, v) for v in value]
@@ -239,10 +240,10 @@ class OptionValueProxy (object):
         self.child_ref = None
 
         if self.key is not NotImplemented:
-            other = iadd_key(self.key, other)
+            other = op_iadd_key(self.key, other)
 
         self.options._append_value(
-            self.option_value, self.from_parent, other, iadd_value)
+            self.option_value, self.from_parent, other, op_iadd)
         return self
 
     # -----------------------------------------------------------
@@ -271,10 +272,10 @@ class OptionValueProxy (object):
         self.child_ref = None
 
         if self.key is not NotImplemented:
-            other = isub_key(self.key, other)
+            other = op_isub_key(self.key, other)
 
         self.options._append_value(
-            self.option_value, self.from_parent, other, isub_value)
+            self.option_value, self.from_parent, other, op_isub)
         return self
 
     # -----------------------------------------------------------
@@ -283,10 +284,10 @@ class OptionValueProxy (object):
         self.child_ref = None
 
         if self.key is not NotImplemented:
-            value = SetKey(self.key, value)
+            value = op_set_key(self.key, value)
 
         self.options._append_value(
-            self.option_value, self.from_parent, value, SetValue)
+            self.option_value, self.from_parent, value, op_set)
 
     # -----------------------------------------------------------
 
@@ -305,12 +306,12 @@ class OptionValueProxy (object):
                 option_type.set_value_type(key, value)
                 return
 
-        value = SetKey(key, value)
+        value = op_set_key(key, value)
 
         self.child_ref = None
 
         self.options._append_value(
-            self.option_value, self.from_parent, value, SetValue)
+            self.option_value, self.from_parent, value, op_set)
 
     # -----------------------------------------------------------
 
@@ -328,7 +329,7 @@ class OptionValueProxy (object):
     def update(self, value):
         self.child_ref = None
         self.options._append_value(
-            self.option_value, self.from_parent, value, iupdate_value)
+            self.option_value, self.from_parent, value, op_iupdate)
 
     # -----------------------------------------------------------
 
@@ -523,10 +524,10 @@ class ConditionGeneratorHelper(object):
     def __setitem__(self, key, value):
         if not isinstance(value, ConditionGeneratorHelper):
 
-            value = SetKey(key, value)
+            value = op_set_key(key, value)
 
             self.options.append_value(
-                self.name, value, SetValue, self.condition)
+                self.name, value, op_set, self.condition)
 
     # -----------------------------------------------------------
 
@@ -573,18 +574,18 @@ class ConditionGeneratorHelper(object):
 
     def __iadd__(self, value):
         if self.key is not NotImplemented:
-            value = iadd_key(self.key, value)
+            value = op_iadd_key(self.key, value)
 
-        self.options.append_value(self.name, value, iadd_value, self.condition)
+        self.options.append_value(self.name, value, op_iadd, self.condition)
         return self
 
     # -----------------------------------------------------------
 
     def __isub__(self, value):
         if self.key is not NotImplemented:
-            value = isub_key(self.key, value)
+            value = op_isub_key(self.key, value)
 
-        self.options.append_value(self.name, value, isub_value, self.condition)
+        self.options.append_value(self.name, value, op_isub, self.condition)
         return self
 
 # ==============================================================================
@@ -611,7 +612,7 @@ class ConditionGenerator(object):
             condition = self.__dict__['__condition']
 
             self.__dict__['__options'].append_value(
-                name, value, SetValue, condition)
+                name, value, op_set, condition)
 
 # ==============================================================================
 
@@ -746,7 +747,7 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def __set_value(self, name, value, operation_type=SetValue):
+    def __set_value(self, name, value, operation_type=op_set):
 
         opt_value, from_parent = self._get_value(name, raise_ex=False)
 
@@ -761,7 +762,8 @@ class Options (object):
                     if not value.from_parent:
                         opt_value = value.option_value
                     else:
-                        opt_value = self.__copy_parent_option(value.option_value)
+                        opt_value = self.__copy_parent_option(
+                            value.option_value)
 
                 elif self._is_parent(value.options):
                     opt_value = self.__copy_parent_option(value.option_value)
@@ -769,13 +771,13 @@ class Options (object):
                 else:
                     opt_value = value.option_value.copy()
                     opt_value.reset()
-                    value = self._make_cond_value(value, SetValue)
+                    value = self._make_cond_value(value, op_set)
                     opt_value.append_value(value)
 
             elif not isinstance(value, OptionValue):
                 opt_value = OptionValue(auto_option_type(value))
 
-                value = self._make_cond_value(value, SetValue)
+                value = self._make_cond_value(value, op_set)
                 opt_value.append_value(value)
 
             self.__dict__['__opt_values'][name] = opt_value
@@ -966,7 +968,7 @@ class Options (object):
                     continue
 
                 try:
-                    self.__set_value(name, value, iupdate_value)
+                    self.__set_value(name, value, op_iupdate)
                 except ErrorOptionTypeCantDeduce:
                     pass
 
@@ -1044,7 +1046,8 @@ class Options (object):
         if parent is None:
             return
 
-        self.__merge(self.__dict__['__opt_values'], parent._values_map_by_name())
+        self.__merge(
+            self.__dict__['__opt_values'], parent._values_map_by_name())
 
         self.__dict__['__parent'] = None
 
@@ -1213,11 +1216,11 @@ class Options (object):
     # -----------------------------------------------------------
 
     def _append_value(self,
-                     opt_value,
-                     from_parent,
-                     value,
-                     operation_type,
-                     condition=None):
+                      opt_value,
+                      from_parent,
+                      value,
+                      operation_type,
+                      condition=None):
 
         value = self._make_cond_value(value, operation_type, condition)
 
@@ -1236,5 +1239,7 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def If(self):
+    def when(self):
         return ConditionGenerator(self)
+
+    If = when

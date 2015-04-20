@@ -37,17 +37,14 @@ import threading
 import subprocess
 import multiprocessing
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 from aql.util_types import u_str, is_string, cast_str, is_unicode, to_unicode,\
     decode_bytes, encode_str, UniqueList, to_sequence, is_sequence, \
     SIMPLE_TYPES_SET
 
 __all__ = (
-    'open_file', 'read_bin_file', 'read_text_file', 'write_bin_file', 'write_text_file',
+    'open_file', 'read_bin_file', 'read_text_file', 'write_bin_file',
+    'write_text_file',
     'exec_file', 'remove_files', 'new_hash', 'dump_simple_object',
     'simple_object_signature', 'data_signature',
     'file_signature', 'file_time_signature', 'file_checksum',
@@ -109,11 +106,11 @@ else:
 
 
 def open_file(filename,
-             read=True,
-             write=False,
-             binary=False,
-             sync=False,
-             encoding=None):
+              read=True,
+              write=False,
+              binary=False,
+              sync=False,
+              encoding=None):
 
     if not is_string(filename):
         raise ErrorFileName(filename)
@@ -357,7 +354,10 @@ def equal_function_args(function1, function2):
     if function1 is function2:
         return True
 
-    return get_function_args(function1)[0:3] == get_function_args(function2)[0:3]
+    args1 = get_function_args(function1)
+    args2 = get_function_args(function2)
+
+    return args1[0:3] == args2[0:3]
 
 # ==============================================================================
 
@@ -506,11 +506,11 @@ except AttributeError:
 
 
 def execute_command(cmd,
-                   cwd=None,
-                   env=None,
-                   stdin=None,
-                   file_flag=None,
-                   max_cmd_length=_MAX_CMD_LENGTH):
+                    cwd=None,
+                    env=None,
+                    stdin=None,
+                    file_flag=None,
+                    max_cmd_length=_MAX_CMD_LENGTH):
 
     cmd_file = None
     if is_string(cmd):
@@ -632,24 +632,24 @@ def cpu_count():
     except NotImplementedError:
         pass
 
-    cpu_count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
-    if cpu_count > 0:
-        return cpu_count
+    count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
+    if count > 0:
+        return count
 
     try:
         if 'SC_NPROCESSORS_ONLN' in os.sysconf_names:
-            cpu_count = os.sysconf('SC_NPROCESSORS_ONLN')
+            count = os.sysconf('SC_NPROCESSORS_ONLN')
         elif 'SC_NPROCESSORS_CONF' in os.sysconf_names:
-            cpu_count = os.sysconf('SC_NPROCESSORS_CONF')
-        if cpu_count > 0:
+            count = os.sysconf('SC_NPROCESSORS_CONF')
+        if count > 0:
             return cpu_count
 
     except AttributeError:
         pass
 
-    cpu_count = 1  # unable to detect number of CPUs
+    count = 1  # unable to detect number of CPUs
 
-    return cpu_count
+    return count
 
 # ==============================================================================
 
@@ -668,12 +668,12 @@ def _memory_usage_smaps():
 
 
 def _memory_usage_statm():
-    PAGESIZE = os.sysconf("SC_PAGE_SIZE")
+    page_size = os.sysconf("SC_PAGE_SIZE")
 
     with open('/proc/self/statm') as f:
         mem_stat = f.readline().split()
-        rss = int(mem_stat[1]) * PAGESIZE
-        shared = int(mem_stat[2]) * PAGESIZE
+        rss = int(mem_stat[1]) * page_size
+        shared = int(mem_stat[2]) * page_size
 
         private = rss - shared
 
@@ -790,8 +790,8 @@ _SIMPLE_SEQUENCES = (list, tuple, UniqueList, set, frozenset)
 
 
 def simplify_value(value,
-                  simple_types=SIMPLE_TYPES_SET,
-                  simple_lists=_SIMPLE_SEQUENCES):
+                   simple_types=SIMPLE_TYPES_SET,
+                   simple_lists=_SIMPLE_SEQUENCES):
 
     if value is None:
         return None

@@ -23,7 +23,7 @@
 from .aql_simple_types import is_string
 from .aql_list_types import List
 
-__all__ = ('Dict', 'ValueDictType', 'SplitDictType')
+__all__ = ('Dict', 'value_dict_type', 'split_dict_type')
 
 # ==============================================================================
 
@@ -76,7 +76,7 @@ class Dict (dict):
 # ==============================================================================
 
 
-def SplitDictType(dict_type, separators):
+def split_dict_type(dict_type, separators):
 
     separator = separators[0]
     other_separators = separators[1:]
@@ -166,7 +166,7 @@ def SplitDictType(dict_type, separators):
 # ==============================================================================
 
 
-def ValueDictType(dict_type, key_type, default_value_type=None):
+def value_dict_type(dict_type, key_type, default_value_type=None):
 
     class _ValueDict (dict_type):
 
@@ -186,7 +186,7 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
         @staticmethod
         def _to_value(key, value,
-                     val_types=__VALUE_TYPES, val_type=default_value_type):
+                      val_types=__VALUE_TYPES, val_type=default_value_type):
             try:
                 if val_type is None:
                     val_type = val_types[key]
@@ -203,8 +203,8 @@ def ValueDictType(dict_type, key_type, default_value_type=None):
 
         @staticmethod
         def set_value_type(key, value_type,
-                         value_types=__VALUE_TYPES,
-                         default_type=default_value_type):
+                           value_types=__VALUE_TYPES,
+                           default_type=default_value_type):
 
             if default_type is None:
 

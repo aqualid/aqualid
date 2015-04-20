@@ -181,42 +181,42 @@ except ImportError:
                 if ctypes.sizeof(ctypes.c_ulong) !=\
                    ctypes.sizeof(ctypes.c_void_p):
 
-                    ULONG_PTR = ctypes.c_int64
+                    ulong_ptr = ctypes.c_int64
                 else:
-                    ULONG_PTR = ctypes.c_ulong
+                    ulong_ptr = ctypes.c_ulong
 
-                PVOID = ctypes.c_void_p
-                DWORD = ctypes.wintypes.DWORD
-                HANDLE = ctypes.wintypes.HANDLE
+                pvoid = ctypes.c_void_p
+                dword = ctypes.wintypes.DWORD
+                handle = ctypes.wintypes.HANDLE
 
-                class _OFFSET(ctypes.Structure):
+                class _Offset(ctypes.Structure):
                     _fields_ = [
-                        ('Offset', DWORD),
-                        ('OffsetHigh', DWORD)
+                        ('Offset', dword),
+                        ('OffsetHigh', dword)
                     ]
 
-                class _OFFSET_UNION(ctypes.Union):
+                class _OffsetUnion(ctypes.Union):
                     _anonymous_ = ['_offset']
 
                     _fields_ = [
-                        ('_offset', _OFFSET),
-                        ('Pointer', PVOID)
+                        ('_offset', _Offset),
+                        ('Pointer', pvoid)
                     ]
 
                 class OVERLAPPED(ctypes.Structure):
                     _anonymous_ = ['_offset_union']
 
                     _fields_ = [
-                        ('Internal', ULONG_PTR),
-                        ('InternalHigh', ULONG_PTR),
-                        ('_offset_union', _OFFSET_UNION),
-                        ('hEvent', HANDLE)
+                        ('Internal', ulong_ptr),
+                        ('InternalHigh', ulong_ptr),
+                        ('_offset_union', _OffsetUnion),
+                        ('hEvent', handle)
                     ]
 
-                LPOVERLAPPED = ctypes.POINTER(OVERLAPPED)
+                lpoverlapped = ctypes.POINTER(OVERLAPPED)
 
                 self.overlapped = OVERLAPPED()
-                self.poverlapped = LPOVERLAPPED(self.overlapped)
+                self.poverlapped = lpoverlapped(self.overlapped)
 
                 self.LockFileEx = ctypes.windll.kernel32.LockFileEx
                 self.UnlockFileEx = ctypes.windll.kernel32.UnlockFileEx

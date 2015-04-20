@@ -21,7 +21,6 @@
 
 
 import os
-import io
 import operator
 import struct
 import mmap
@@ -424,7 +423,7 @@ class DataFile (object):
     def _key_generator(self,
                        key_offset=_KEY_OFFSET,
                        key_struct=_KEY_STRUCT,
-                       MAX_KEY=(2 ** 64) - 1):
+                       max_key=(2 ** 64) - 1):
 
         key_dump = self.handle.read(key_offset, key_struct.size)
         try:
@@ -437,7 +436,7 @@ class DataFile (object):
 
         while True:
 
-            if next_key < MAX_KEY:
+            if next_key < max_key:
                 next_key += 1
             else:
                 next_key = 1    # this should never happen

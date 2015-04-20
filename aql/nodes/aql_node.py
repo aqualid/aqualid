@@ -24,7 +24,7 @@ import os
 import operator
 
 from aql.util_types import to_sequence
-from aql.utils import new_hash, Chdir, event_status, log_debug, log_info
+from aql.utils import new_hash, event_status, log_debug, log_info
 from aql.entity import EntityBase, SimpleEntity, pickleable
 
 __all__ = (
@@ -128,28 +128,28 @@ class NodeStaleReason (object):
 
     # -----------------------------------------------------------
 
-    def set_no_signature(self, NO_SIGNATURE=NO_SIGNATURE):
-        self._set(NO_SIGNATURE)
+    def set_no_signature(self, _no_signature=NO_SIGNATURE):
+        self._set(_no_signature)
 
-    def set_new(self, NEW=NEW):
-        self._set(NEW)
+    def set_new(self, _new=NEW):
+        self._set(_new)
 
-    def set_signature_changed(self, SIGNATURE_CHANGED=SIGNATURE_CHANGED):
-        self._set(SIGNATURE_CHANGED)
+    def set_signature_changed(self, _signature_changed=SIGNATURE_CHANGED):
+        self._set(_signature_changed)
 
     def set_implicit_dep_changed(self,
-                              entity=None,
-                              IMPLICIT_DEP_CHANGED=IMPLICIT_DEP_CHANGED):
-        self._set(IMPLICIT_DEP_CHANGED, entity)
+                                 entity=None,
+                                 _implicit_dep_changed=IMPLICIT_DEP_CHANGED):
+        self._set(_implicit_dep_changed, entity)
 
-    def set_no_targets(self, NO_TARGETS=NO_TARGETS):
-        self._set(NO_TARGETS)
+    def set_no_targets(self, _no_targets=NO_TARGETS):
+        self._set(_no_targets)
 
-    def set_target_changed(self, entity, TARGET_CHANGED=TARGET_CHANGED):
-        self._set(TARGET_CHANGED, entity)
+    def set_target_changed(self, entity, _target_changed=TARGET_CHANGED):
+        self._set(_target_changed, entity)
 
-    def set_force_rebuild(self, FORCE_REBUILD=FORCE_REBUILD):
-        self._set(FORCE_REBUILD)
+    def set_force_rebuild(self, _force_rebuild=FORCE_REBUILD):
+        self._set(_force_rebuild)
 
     # -----------------------------------------------------------
 
@@ -323,12 +323,13 @@ class NodeEntity (EntityBase):
 
     _ACTUAL_IDEPS_CACHE = {}
 
+    @staticmethod
     def _get_ideps(vfile,
-                  idep_keys,
-                  reason,
-                  ideps_cache_get=_ACTUAL_IDEPS_CACHE.__getitem__,
-                  ideps_cache_set=_ACTUAL_IDEPS_CACHE.__setitem__
-                  ):
+                   idep_keys,
+                   reason,
+                   ideps_cache_get=_ACTUAL_IDEPS_CACHE.__getitem__,
+                   ideps_cache_set=_ACTUAL_IDEPS_CACHE.__setitem__
+                   ):
 
         entities = vfile.find_entities_by_key(idep_keys)
         if entities is None:
@@ -357,9 +358,8 @@ class NodeEntity (EntityBase):
     # -----------------------------------------------------------
 
     def _save_ideps(self,
-                   vfile,
-                   _actual_ideps_cache=_ACTUAL_IDEPS_CACHE
-                   ):
+                    vfile,
+                    _actual_ideps_cache=_ACTUAL_IDEPS_CACHE):
 
         entities = []
         for entity in self.idep_entities:
@@ -396,7 +396,7 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def check_actual(self, vfile, explain=False, _get_ideps=_get_ideps):
+    def check_actual(self, vfile, explain=False):
 
         if explain:
             reason = NodeStaleReason(
@@ -425,7 +425,7 @@ class NodeEntity (EntityBase):
                 reason.set_signature_changed()
             return False
 
-        ideps = _get_ideps(vfile, other.idep_keys, reason)
+        ideps = self._get_ideps(vfile, other.idep_keys, reason)
         if ideps is None:
             return False
 

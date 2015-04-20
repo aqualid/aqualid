@@ -7,7 +7,7 @@ sys.path.insert(
 
 from aql_tests import skip, AqlTestCase, run_local_tests
 
-from aql.util_types import UniqueList, SplitListType, List, ValueListType
+from aql.util_types import UniqueList, split_list_type, List, value_list_type
 
 # ==============================================================================
 
@@ -107,7 +107,7 @@ class TestListTypes(AqlTestCase):
 
     def test_splitlist(self):
 
-        l = SplitListType(List, ", \t\n\r")("1,2, 3,,, \n\r\t4")
+        l = split_list_type(List, ", \t\n\r")("1,2, 3,,, \n\r\t4")
         self.assertEqual(l, ['1', '2', '3', '4'])
         self.assertEqual(l, "1,2,3,4")
         self.assertEqual(l, "1 2 3 4")
@@ -132,7 +132,7 @@ class TestListTypes(AqlTestCase):
 
     def test_valuelist(self):
 
-        l = SplitListType(ValueListType(List, int), ", \t\n\r")(
+        l = split_list_type(value_list_type(List, int), ", \t\n\r")(
             "1,2, 3,,, \n\r\t4")
         self.assertEqual(l, [1, 2, 3, 4])
         self.assertEqual(l, "1,2,3,4")

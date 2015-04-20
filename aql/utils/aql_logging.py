@@ -46,12 +46,6 @@ class LogFormatter(logging.Formatter):
 
         self.other = logging.Formatter("%(levelname)s: %(message)s")
 
-    def formatTime(self, record, datefmt=None):
-        if record.levelno == logging.INFO:
-            return logging.Formatter.formatTime(self, record, datefmt=datefmt)
-        else:
-            return self.other.formatTime(record, datefmt=datefmt)
-
     def format(self, record):
         if record.levelno == logging.INFO:
             return logging.Formatter.format(self, record)
