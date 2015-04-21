@@ -1,4 +1,4 @@
-Aqualid [![Build Status](https://travis-ci.org/aqualid/aqualid.svg)](https://travis-ci.org/aqualid/aqualid)
+Aqualid [![Build Status](https://travis-ci.org/aqualid/aqualid.svg?branch=master)](https://travis-ci.org/aqualid/aqualid)  [![Code Health](https://landscape.io/github/aqualid/aqualid/master/landscape.svg?style=flat)](https://landscape.io/github/aqualid/aqualid/master)
 =======
 
 General purpose build tool.
