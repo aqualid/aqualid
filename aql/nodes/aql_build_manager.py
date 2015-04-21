@@ -266,8 +266,8 @@ class _NodesTree (object):
             deps = node2deps.pop(node)
             if deps:
                 raise InternalErrorRemoveNonTailNode(node)
-        except KeyError as node:
-            raise InternalErrorRemoveUnknownTailNode(node.args[0])
+        except KeyError as ex:
+            raise InternalErrorRemoveUnknownTailNode(ex.args[0])
 
         tail_nodes = self.tail_nodes
 
