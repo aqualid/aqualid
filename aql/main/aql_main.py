@@ -199,7 +199,7 @@ def _read_make_script(prj):
     event_reading_scripts()
 
     with Chrono() as elapsed:
-        prj.Script(makefile)
+        prj.read_script(makefile)
 
     event_reading_scripts_done(elapsed)
 
@@ -215,8 +215,8 @@ def _list_options(prj):
         text += prj.list_options(brief=not prj_cfg.verbose)
 
     if prj_cfg.list_tool_options:
-        text += prj.list_tool_options( prj_cfg.list_tool_options,
-                                       brief=not prj_cfg.verbose)
+        text += prj.list_tool_options(prj_cfg.list_tool_options,
+                                      brief=not prj_cfg.verbose)
 
     log_info('\n'.join(text))
 
