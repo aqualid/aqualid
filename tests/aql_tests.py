@@ -111,7 +111,7 @@ class AqlTestCase(TestCaseBase):
     def build_prj(self, prj, num_built_nodes, num_failed_nodes=0, jobs=4):
         self.built_nodes = 0
 
-        ok = prj.Build(jobs=jobs)
+        ok = prj.build(jobs=jobs)
         if not ok:
             if num_failed_nodes == 0:
                 prj.build_manager.print_fails()
@@ -125,7 +125,7 @@ class AqlTestCase(TestCaseBase):
     def clear_prj(self, prj):
         self.removed_nodes = 0
 
-        prj.Clear()
+        prj.clear()
 
         self.assertGreater(self.removed_nodes, 0)
 

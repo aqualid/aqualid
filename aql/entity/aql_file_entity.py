@@ -39,7 +39,7 @@ class ErrorFileEntityNoName(Exception):
 
     def __init__(self):
         msg = "Filename is not specified"
-        super(type(self), self).__init__(msg)
+        super(ErrorFileEntityNoName, self).__init__(msg)
 
 # ==============================================================================
 

@@ -54,7 +54,7 @@ class ErrorOptionTypeEnumAliasIsAlreadySet(Exception):
         msg = "Alias '%s' of Enum Option '%s' can't be changed to " \
               "'%s' from '%s'" %\
               (value, option, new_value, current_value)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionTypeEnumAliasIsAlreadySet, self).__init__(msg)
 
 # ==============================================================================
 
@@ -64,7 +64,7 @@ class ErrorOptionTypeEnumValueIsAlreadySet(Exception):
     def __init__(self, option, value, new_value):
         msg = "Value '%s' of Enum Option '%s' can't be changed to alias " \
               "to '%s'" % (value, option, new_value)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionTypeEnumValueIsAlreadySet, self).__init__(msg)
 
 # ==============================================================================
 
@@ -80,7 +80,7 @@ class ErrorOptionTypeUnableConvertValue(TypeError):
 
         msg = "Unable to convert value '%s (%s)' to option %s" % (
             invalid_value, type(invalid_value), option_help.error_text())
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionTypeUnableConvertValue, self).__init__(msg)
 
 # ==============================================================================
 
@@ -89,7 +89,7 @@ class ErrorOptionTypeNoEnumValues(TypeError):
 
     def __init__(self, option_type):
         msg = "Enum option type '%s' doesn't have any values." % (option_type,)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionTypeNoEnumValues, self).__init__(msg)
 
 
 class ErrorOptionTypeCantDeduce(Exception):
@@ -97,7 +97,7 @@ class ErrorOptionTypeCantDeduce(Exception):
     def __init__(self, value):
         msg = "Unable to deduce option type from value type: '%s." % (
             type(value),)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionTypeCantDeduce, self).__init__(msg)
 
 # ==============================================================================
 

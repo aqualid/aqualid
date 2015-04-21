@@ -37,7 +37,7 @@ class ErrorEntitiesFileUnknownEntity(Exception):
 
     def __init__(self, entity):
         msg = "Unknown entity: %s" % (entity, )
-        super(type(self), self).__init__(msg)
+        super(ErrorEntitiesFileUnknownEntity, self).__init__(msg)
 
 # ==============================================================================
 

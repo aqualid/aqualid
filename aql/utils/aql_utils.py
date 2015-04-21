@@ -66,7 +66,7 @@ class ErrorInvalidExecCommand(Exception):
 
     def __init__(self, arg):
         msg = "Invalid type of command argument: %s(%s)" % (arg, type(arg))
-        super(type(self), self).__init__(msg)
+        super(ErrorInvalidExecCommand, self).__init__(msg)
 
 # ==============================================================================
 
@@ -75,7 +75,8 @@ class ErrorFileName(Exception):
 
     def __init__(self, filename):
         msg = "Invalid file name: %s(%s)" % (filename, type(filename))
-        super(type(self), self).__init__(msg)
+        super(ErrorFileName, self).__init__(msg)
+
 # ==============================================================================
 
 
@@ -83,7 +84,7 @@ class ErrorUnmarshallableObject(Exception):
 
     def __init__(self, obj):
         msg = "Unmarshallable object: '%s'" % (obj, )
-        super(type(self), self).__init__(msg)
+        super(ErrorUnmarshallableObject, self).__init__(msg)
 
 # ==============================================================================
 
@@ -441,7 +442,7 @@ class ExecCommandException(Exception):
 
         self.exception = exception
 
-        super(type(self), self).__init__(msg)
+        super(ExecCommandException, self).__init__(msg)
 
     @staticmethod
     def failed():
@@ -470,7 +471,7 @@ class ExecCommandResult(Exception):
 
         self.output = stdout
 
-        super(type(self), self).__init__()
+        super(ExecCommandResult, self).__init__()
 
     # -----------------------------------------------------------
 

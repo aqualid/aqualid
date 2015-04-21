@@ -46,7 +46,7 @@ class ErrorNoPrograms(Exception):
 
     def __init__(self, prog):
         msg = "No programs were specified: %s(%s)" % (prog, type(prog))
-        super(type(self), self).__init__(msg)
+        super(ErrorNoPrograms, self).__init__(msg)
 
 # ==============================================================================
 

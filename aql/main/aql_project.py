@@ -58,7 +58,7 @@ class ErrorProjectInvalidMethod(Exception):
 
     def __init__(self, method):
         msg = "Invalid project method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectInvalidMethod, self).__init__(msg)
 
 # ==============================================================================
 
@@ -67,7 +67,7 @@ class ErrorProjectUnknownTarget(Exception):
 
     def __init__(self, target):
         msg = "Unknown build target: '%s'" % (target,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectUnknownTarget, self).__init__(msg)
 
 # ==============================================================================
 
@@ -77,7 +77,7 @@ class ErrorProjectBuilderMethodWithKW(Exception):
     def __init__(self, method):
         msg = "Keyword arguments are not allowed in builder method: '%s'" % (
             method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodWithKW, self).__init__(msg)
 
 # ==============================================================================
 
@@ -86,7 +86,7 @@ class ErrorProjectBuilderMethodUnbound(Exception):
 
     def __init__(self, method):
         msg = "Unbound builder method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodUnbound, self).__init__(msg)
 
 # ==============================================================================
 
@@ -95,7 +95,7 @@ class ErrorProjectBuilderMethodFewArguments(Exception):
 
     def __init__(self, method):
         msg = "Too few arguments in builder method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodFewArguments, self).__init__(msg)
 
 # ==============================================================================
 
@@ -105,7 +105,7 @@ class ErrorProjectBuilderMethodInvalidOptions(Exception):
     def __init__(self, value):
         msg = "Type of 'options' argument must be Options, instead of: " \
               "'%s'(%s)" % (type(value), value)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodInvalidOptions, self).__init__(msg)
 
 # ==============================================================================
 
@@ -490,7 +490,7 @@ class BuilderWrapper(object):
 
         node.depends(deps)
 
-        self.project.AddNodes((node,))
+        self.project.add_nodes((node,))
 
         return node
 
@@ -620,7 +620,7 @@ class ProjectTools(object):
     # -----------------------------------------------------------
 
     def get_tool(self, tool_name, **kw):
-        return self.Tools(tool_name, **kw)[0]
+        return self.get_tools(tool_name, **kw)[0]
 
     # -----------------------------------------------------------
 
@@ -693,22 +693,33 @@ class Project(object):
     def __get_script_locals(self):
 
         script_locals = {
-            'options': self.options,
-            'tools': self.tools,
-            'Tool': self.tools.get_tool,
-            'Tools': self.tools.get_tools,
-            'AddTool': self.tools.add_tool,
-            'LoadTools': self.tools.tools.load_tools,
-            'FindFiles': find_files
+            'options':          self.options,
+            'tools':            self.tools,
+            'Tool':             self.tools.get_tool,
+            'Tools':            self.tools.get_tools,
+            'AddTool':          self.tools.add_tool,
+            'LoadTools':        self.tools.tools.load_tools,
+            'FindFiles':        find_files,
+            'GetProject':       self.get_project,
+            'GetBuildTargets':  self.get_build_targets,
+            'File':             self.make_file_entity,
+            'Entity':           self.make_entity,
+            'Dir':              self.make_dir_entity,
+            'Config':           self.read_config,
+            'Script':           self.read_script,
+            'SetBuildDir':      self.set_build_dir,
+            'Depends':          self.depends,
+            'Requires':         self.requires,
+            'RequireModules':   self.require_modules,
+            'Sync':             self.sync_nodes,
+            'Alias':            self.alias_nodes,
+            'Default':          self.default_build,
+            'AlwaysBuild':      self.always_build,
+            'Build':            self.build,
+            'Clear':            self.clear,
+            'DirName':          self.node_dirname,
+            'BaseName':         self.node_basename,
         }
-
-        for name in dir(self):
-            if name.startswith('_'):
-                continue
-
-            member = getattr(self, name)
-            if isinstance(member, types.MethodType):
-                script_locals.setdefault(name, member)
 
         return script_locals
 
@@ -717,18 +728,14 @@ class Project(object):
     def get_project(self):
         return self
 
-    GetProject = get_project
-
     # -----------------------------------------------------------
 
     def get_build_targets(self):
         return self.targets
 
-    GetBuildTargets = get_build_targets
-
     # -----------------------------------------------------------
 
-    def file_entity(self, filepath, options=None):
+    def make_file_entity(self, filepath, options=None):
         if options is None:
             options = self.options
 
@@ -738,21 +745,15 @@ class Project(object):
 
         return file_type(filepath)
 
-    File = file_entity
-
     # -----------------------------------------------------------
 
-    def dir_entity(self, filepath):
+    def make_dir_entity(self, filepath):
         return DirEntity(filepath)
 
-    Dir = dir_entity
-
     # -----------------------------------------------------------
 
-    def entity(self, data, name=None):
+    def make_entity(self, data, name=None):
         return SimpleEntity(data=data, name=name)
-
-    Entity = entity
 
     # -----------------------------------------------------------
 
@@ -806,8 +807,6 @@ class Project(object):
 
         options.update(result)
 
-    Config = read_config
-
     # -----------------------------------------------------------
 
     def read_script(self, script):
@@ -827,14 +826,10 @@ class Project(object):
         scripts_cache[script] = script_result
         return script_result
 
-    Script = read_script
-
     # -----------------------------------------------------------
 
     def add_nodes(self, nodes):
         self.build_manager.add(nodes)
-
-    AddNodes = add_nodes
 
     # -----------------------------------------------------------
 
@@ -842,8 +837,6 @@ class Project(object):
         build_dir = os.path.abspath(expand_file_path(build_dir))
         if self.options.build_dir != build_dir:
             self.options.build_dir = build_dir
-
-    SetBuildDir = set_build_dir
 
     # -----------------------------------------------------------
 
@@ -853,8 +846,6 @@ class Project(object):
         for node in to_sequence(nodes):
             node.depends(dependencies)
             self.build_manager.depends(node, node.dep_nodes)
-
-    Depends = depends
 
     # -----------------------------------------------------------
 
@@ -866,8 +857,6 @@ class Project(object):
         for node in to_sequence(nodes):
             depends(node, dependencies)
 
-    Requires = requires
-
     # -----------------------------------------------------------
 
     def require_modules(self, nodes, dependencies):
@@ -877,8 +866,6 @@ class Project(object):
         module_depends = self.build_manager.module_depends
         for node in to_sequence(nodes):
             module_depends(node, dependencies)
-
-    RequireModules = require_modules
 
     # -----------------------------------------------------------
 
@@ -890,17 +877,15 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def sync(self, *nodes):
+    def sync_nodes(self, *nodes):
         nodes = flatten_list(nodes)
 
         nodes = tuple(node for node in nodes if isinstance(node, Node))
         self.build_manager.sync(nodes)
 
-    Sync = sync
-
     # -----------------------------------------------------------
 
-    def alias(self, alias, nodes, description=None):
+    def alias_nodes(self, alias, nodes, description=None):
         for alias, node in itertools.product(to_sequence(alias),
                                              to_sequence(nodes)):
 
@@ -909,15 +894,11 @@ class Project(object):
             if description:
                 self.alias_descriptions[alias] = description
 
-    Alias = alias
-
     # -----------------------------------------------------------
 
     def default_build(self, nodes):
         for node in to_sequence(nodes):
             self.defaults.append(node)
-
-    Default = default_build
 
     # -----------------------------------------------------------
 
@@ -926,9 +907,7 @@ class Project(object):
         for node in to_sequence(nodes):
             node.depends(null_value)
 
-    AlwaysBuild = always_build
-
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _add_alias_nodes(self, target_nodes, aliases):
         try:
@@ -937,7 +916,7 @@ class Project(object):
         except KeyError as ex:
             raise ErrorProjectUnknownTarget(ex.args[0])
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _add_default_nodes(self, target_nodes):
         for node in self.defaults:
@@ -946,7 +925,7 @@ class Project(object):
             else:
                 self._add_alias_nodes(target_nodes, (node,))
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _get_build_nodes(self):
         target_nodes = set()
@@ -961,7 +940,7 @@ class Project(object):
 
         return target_nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _get_jobs_count(self, jobs=None):
         if jobs is None:
@@ -983,7 +962,7 @@ class Project(object):
 
         return jobs
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def build(self, jobs=None):
 
@@ -1012,9 +991,7 @@ class Project(object):
                                          force_lock=force_lock)
         return is_ok
 
-    Build = build
-
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def clear(self):
 
@@ -1027,9 +1004,7 @@ class Project(object):
                                  use_sqlite=use_sqlite,
                                  force_lock=force_lock)
 
-    Clear = clear
-
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def list_targets(self):
         targets = []
@@ -1065,9 +1040,7 @@ class Project(object):
 
         return _text_targets(targets)
 
-    ListTargets = list_targets
-
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def list_options(self, brief=False):
         result = self.options.help_text("Builtin options:", brief=brief)
@@ -1080,9 +1053,7 @@ class Project(object):
             result.append("")
         return result
 
-    ListOptions = list_options
-
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def list_tools_options(self, tools, brief=False):
         tools = set(to_sequence(tools))
@@ -1098,16 +1069,12 @@ class Project(object):
             result.append("")
         return result
 
-    ListToolsOptions = list_tools_options
+    # ----------------------------------------------------------
 
-    # ==========================================================
-
-    def dir_name(self, node):
+    def node_dirname(self, node):
         return NodeDirNameFilter(node)
 
-    DirName = dir_name
+    # ----------------------------------------------------------
 
-    def base_name(self, node):
+    def node_basename(self, node):
         return NodeBaseNameFilter(node)
-
-    BaseName = base_name

@@ -220,7 +220,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 node = prj.tools.CopyFiles(sources[0], target=tmp_install_dir)
 
-                prj.tools.CopyFiles(sources[1:], target=prj.DirName(node))
+                prj.tools.CopyFiles(sources[1:], target=prj.node_dirname(node))
 
                 self.build_prj(prj, 3)
 
@@ -229,7 +229,7 @@ class TestBuiltinTools(AqlTestCase):
                     self.assertTrue(os.path.isfile(tgt))
 
                 node = prj.tools.CopyFiles(sources[0], target=tmp_install_dir)
-                prj.tools.CopyFiles(sources[1:], target=prj.DirName(node))
+                prj.tools.CopyFiles(sources[1:], target=prj.node_dirname(node))
 
                 self.build_prj(prj, 0)
 
@@ -305,7 +305,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 prj = Project(cfg)
 
-                value = prj.Entity("test_content.txt", "To add to a ZIP file")
+                value = prj.make_entity("test_content.txt", "To add to a ZIP file")
                 rename = [('test_file', sources[0])]
 
                 prj.tools.CreateZip(

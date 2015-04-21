@@ -47,14 +47,14 @@ class ErrorOptionsCyclicallyDependent(TypeError):
 
     def __init__(self):
         msg = "Options cyclically depend from each other."
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsCyclicallyDependent, self).__init__(msg)
 
 
 class ErrorOptionsMergeNonOptions(TypeError):
 
     def __init__(self, value):
         msg = "Type '%s' can't be merged with Options." % (type(value),)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsMergeNonOptions, self).__init__(msg)
 
 
 class ErrorOptionsMergeDifferentOptions(TypeError):
@@ -62,7 +62,7 @@ class ErrorOptionsMergeDifferentOptions(TypeError):
     def __init__(self, name1, name2):
         msg = "Can't merge one an optional value into two different options " \
               "'%s' and '%s' " % (name1, name2)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsMergeDifferentOptions, self).__init__(msg)
 
 
 class ErrorOptionsMergeChild(TypeError):
@@ -70,35 +70,35 @@ class ErrorOptionsMergeChild(TypeError):
     def __init__(self):
         msg = "Can't merge child options into the parent options. " \
               "Use join() to move child options into its parent."
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsMergeChild, self).__init__(msg)
 
 
 class ErrorOptionsJoinNoParent(TypeError):
 
     def __init__(self, options):
         msg = "Can't join options without parent: %s" % (options, )
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsJoinNoParent, self).__init__(msg)
 
 
 class ErrorOptionsJoinParent(TypeError):
 
     def __init__(self, options):
         msg = "Can't join options with children: %s" % (options, )
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsJoinParent, self).__init__(msg)
 
 
 class ErrorOptionsNoIteration(TypeError):
 
     def __init__(self):
         msg = "Options doesn't support iteration"
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsNoIteration, self).__init__(msg)
 
 
 class ErrorOptionsUnableEvaluate(TypeError):
 
     def __init__(self, name, err):
         msg = "Unable to evaluate option '%s', error: %s" % (name, err)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsUnableEvaluate, self).__init__(msg)
 
 # ==============================================================================
 

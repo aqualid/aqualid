@@ -35,7 +35,7 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.Tool(
+                gcc = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
@@ -75,7 +75,7 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.Tool(
+                gcc = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
@@ -130,7 +130,7 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.Tool(
+                gcc = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
@@ -139,7 +139,7 @@ class TestToolGcc(AqlTestCase):
             gcc.Compile(src_files, target='src_file0', batch_build=False)
 
             try:
-                prj.Build()
+                prj.build()
                 raise AssertionError("No Exception")
             except Exception as ex:
                 self.assertEqual(ex.__class__.__name__,
@@ -149,7 +149,7 @@ class TestToolGcc(AqlTestCase):
 
 
             try:
-                prj.Build()
+                prj.build()
                 raise AssertionError("No Exception")
             except Exception as ex:
                 self.assertEqual(ex.__class__.__name__,
@@ -175,13 +175,13 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.Tool(
+                gcc = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
             try:
-                rc = prj.tools.Tool(
+                rc = prj.tools.get_tool(
                     'windres', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print(
@@ -227,7 +227,7 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.Tool(
+                cpp = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
@@ -279,7 +279,7 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.Tool(
+                cpp = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
@@ -329,7 +329,7 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.Tool(
+                cpp = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: g++ tool has not been found. Skip the test.")
@@ -380,7 +380,7 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.Tool(
+                cpp = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: g++ tool has not been found. Skip the test.")
@@ -416,7 +416,7 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.Tool(
+                gcc = prj.tools.get_tool(
                     'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")

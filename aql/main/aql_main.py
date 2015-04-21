@@ -212,11 +212,11 @@ def _list_options(prj):
     text = []
 
     if prj_cfg.list_options:
-        text += prj.ListOptions(brief=not prj_cfg.verbose)
+        text += prj.list_options(brief=not prj_cfg.verbose)
 
     if prj_cfg.list_tool_options:
-        text += prj.ListToolsOptions(
-            prj_cfg.list_tool_options, brief=not prj_cfg.verbose)
+        text += prj.list_tool_options( prj_cfg.list_tool_options,
+                                       brief=not prj_cfg.verbose)
 
     log_info('\n'.join(text))
 
@@ -227,7 +227,7 @@ def _build(prj):
     event_building()
 
     with Chrono() as elapsed:
-        success = prj.Build()
+        success = prj.build()
 
     event_building_done(success, elapsed)
 
@@ -260,10 +260,10 @@ def _main(prj_cfg):
             success = True
 
             if prj_cfg.clean:
-                prj.Clear()
+                prj.clear()
 
             elif prj_cfg.list_targets:
-                text = prj.ListTargets()
+                text = prj.list_targets()
                 log_info('\n'.join(text))
 
             elif prj_cfg.list_options or prj_cfg.list_tool_options:

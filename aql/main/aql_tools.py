@@ -68,14 +68,14 @@ class ErrorToolInvalid(Exception):
 
     def __init__(self, tool_class):
         msg = "Invalid tool type: '%s'" % (tool_class,)
-        super(type(self), self).__init__(msg)
+        super(ErrorToolInvalid, self).__init__(msg)
 
 
 class ErrorToolInvalidSetupMethod(Exception):
 
     def __init__(self, method):
         msg = "Invalid tool setup method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorToolInvalidSetupMethod, self).__init__(msg)
 
 
 class ErrorToolNotFound(Exception):
@@ -84,7 +84,7 @@ class ErrorToolNotFound(Exception):
         loaded_paths = ', '.join(loaded_paths)
         msg = "Tool '%s' has not been found in the following paths: %s" % (
             tool_name, loaded_paths)
-        super(type(self), self).__init__(msg)
+        super(ErrorToolNotFound, self).__init__(msg)
 
 # ==============================================================================
 

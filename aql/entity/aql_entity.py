@@ -35,7 +35,7 @@ class ErrorEntityNameEmpty(Exception):
 
     def __init__(self):
         msg = "Entity name is empty"
-        super(type(self), self).__init__(msg)
+        super(ErrorEntityNameEmpty, self).__init__(msg)
 
 # ==============================================================================
 
@@ -46,7 +46,7 @@ class ErrorSignatureEntityInvalidDataType(Exception):
         msg = "Signature data type must be bytes or bytearray, " \
               "actual type: '%s'" % (type(data),)
 
-        super(type(self), self).__init__(msg)
+        super(ErrorSignatureEntityInvalidDataType, self).__init__(msg)
 
 
 class ErrorTextEntityInvalidDataType(Exception):
@@ -54,7 +54,7 @@ class ErrorTextEntityInvalidDataType(Exception):
     def __init__(self, text):
         msg = "Text data type must be string, actual type: '%s'" % (
             type(text),)
-        super(type(self), self).__init__(msg)
+        super(ErrorTextEntityInvalidDataType, self).__init__(msg)
 
 # ==============================================================================
 

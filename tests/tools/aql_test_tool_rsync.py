@@ -13,7 +13,7 @@ from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
 
 def _build(prj):
-    if not prj.Build():
+    if not prj.build():
         prj.build_manager.print_fails()
         assert False, "Build failed"
 
@@ -33,7 +33,7 @@ class TestToolRsync(AqlTestCase):
                     prj = Project(cfg)
 
                     try:
-                        rsync = prj.tools.Tool(
+                        rsync = prj.tools.get_tool(
                             'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
                     except ErrorToolNotFound:
                         print(
@@ -60,7 +60,7 @@ class TestToolRsync(AqlTestCase):
 
                 prj = Project(cfg)
 
-                rsync = prj.tools.Tool(
+                rsync = prj.tools.get_tool(
                     'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
 
                 remote_files = rsync.Push(src_dir + '/', target='test_rsync_push/',
@@ -83,7 +83,7 @@ class TestToolRsync(AqlTestCase):
                     prj = Project(cfg)
 
                     try:
-                        rsync = prj.tools.Tool(
+                        rsync = prj.tools.get_tool(
                             'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
                     except ErrorToolNotFound:
                         print(
