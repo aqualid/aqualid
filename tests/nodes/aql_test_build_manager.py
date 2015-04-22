@@ -100,16 +100,16 @@ class SyncValueBuilder (Builder):
                 _sync_value = _sync_value + self.number
 
                 if (_sync_value % self.number) != 0:
-                    raise Exception(
-                        "_sync_value: %s, number: %s, node: %s" % (_sync_value, self.number, node))
+                    raise Exception("_sync_value: %s, number: %s, node: %s" %
+                                    (_sync_value, self.number, node))
 
         time.sleep(self.sleep_interval)
 
         if self.number:
             with _sync_lock:
                 if (_sync_value % self.number) != 0:
-                    raise Exception(
-                        "_sync_value: %s, number: %s, node: %s" % (_sync_value, self.number, node))
+                    raise Exception("_sync_value: %s, number: %s, node: %s" %
+                                    (_sync_value, self.number, node))
 
                 _sync_value = _sync_value - self.number
 
@@ -169,7 +169,7 @@ class ChecksumBuilder (FileBuilder):
 
         chcksum_filename += '.%s.chksum' % alg
 
-        chcksum_filename = self.get_target_from_source_file_path(chcksum_filename)
+        chcksum_filename = self.get_source_target_path(chcksum_filename)
 
         with open(chcksum_filename, 'wb') as f:
             f.write(chcksum.digest())
@@ -207,7 +207,7 @@ class ChecksumSingleBuilder (ChecksumBuilder):
 # ==============================================================================
 
 
-def _add_nodes_to_b_m(builder, src_files):
+def _add_nodes_to_bm(builder, src_files):
     bm = BuildManager()
     try:
         checksums_node = Node(builder, src_files)
@@ -226,10 +226,13 @@ def _add_nodes_to_b_m(builder, src_files):
 # ==============================================================================
 
 
-def _build(bm, jobs=1, keep_going=False, explain=False):
+def _build(bm, jobs=1, keep_going=False, explain=False,build_always=False):
     try:
         bm.self_test()
-        success = bm.build(jobs=jobs, keep_going=keep_going, explain=explain)
+        success = bm.build(jobs=jobs,
+                           keep_going=keep_going,
+                           explain=explain,
+                           build_always=build_always)
         bm.self_test()
         if not success:
             bm.print_fails()
@@ -244,7 +247,7 @@ def _build(bm, jobs=1, keep_going=False, explain=False):
 
 def _build_checksums(builder, src_files):
 
-    bm = _add_nodes_to_b_m(builder, src_files)
+    bm = _add_nodes_to_bm(builder, src_files)
     _build(bm)
 
 # ==============================================================================
@@ -491,7 +494,7 @@ class TestBuildManager(AqlTestCase):
             _build_checksums(builder, src_files)
             self.assertEqual(self.built_nodes, 0)
 
-            bm = _add_nodes_to_b_m(builder, src_files)
+            bm = _add_nodes_to_bm(builder, src_files)
             try:
                 bm.clear()
                 bm.self_test()
@@ -520,7 +523,7 @@ class TestBuildManager(AqlTestCase):
             _build_checksums(builder, src_files)
             self.assertEqual(self.built_nodes, 0)
 
-            bm = _add_nodes_to_b_m(builder, src_files)
+            bm = _add_nodes_to_bm(builder, src_files)
             try:
                 bm.clear()
                 bm.self_test()
@@ -570,6 +573,57 @@ class TestBuildManager(AqlTestCase):
             _build(bm)
 
             self.assertEqual(self.building_nodes, 0)
+
+    # -----------------------------------------------------------
+
+    def test_bm_force_rebuild(self):
+
+        with Tempdir() as tmp_dir:
+            options = builtin_options()
+            options.build_dir = tmp_dir
+
+            num_src_files = 3
+            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
+
+            bm = BuildManager()
+
+            self.building_nodes = self.built_nodes = 0
+
+            builder = ChecksumSingleBuilder(options, 0, 256)
+
+            src_entities = tuple(map(FileChecksumEntity, src_files))
+
+            node = Node(builder, src_entities)
+            node = Node(builder, node)
+            node = Node(builder, node)
+
+            bm.add([node])
+            _build(bm)
+
+            self.assertEqual(self.building_nodes, num_src_files * 7)
+
+            # -----------------------------------------------------------
+
+            self.building_nodes = 0
+
+            bm = BuildManager()
+            builder = ChecksumSingleBuilder(options, 0, 256)
+
+            node = Node(builder, src_entities)
+            node = Node(builder, node)
+            node = Node(builder, node)
+
+            bm.add([node])
+
+            node = Node(builder, src_entities)
+            node = Node(builder, node)
+            node = Node(builder, node)
+
+            bm.add([node])
+            bm.self_test()
+            _build(bm, build_always=True)
+
+            self.assertEqual(self.building_nodes, num_src_files * 7)
 
     # -----------------------------------------------------------
 

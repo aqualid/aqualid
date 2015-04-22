@@ -137,9 +137,9 @@ class TestNodes(AqlTestCase):
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value1)
                 node.initiate()
-                node.build_split(vfile)
+                node.build_split(vfile, None, False)
 
-                self.assertFalse(node.check_actual(vfile))
+                self.assertFalse(node.check_actual(vfile, None, False))
                 out = node.build()
                 node.save(vfile)
 
@@ -148,17 +148,17 @@ class TestNodes(AqlTestCase):
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value1)
                 node.initiate()
-                node.build_split(vfile)
-                self.assertTrue(node.check_actual(vfile))
+                node.build_split(vfile, None, False)
+                self.assertTrue(node.check_actual(vfile, None, False))
 
                 # -----------------------------------------------------------
 
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value2)
                 node.initiate()
-                node.build_split(vfile)
+                node.build_split(vfile, None, False)
 
-                self.assertFalse(node.check_actual(vfile))
+                self.assertFalse(node.check_actual(vfile, None, False))
                 out = node.build()
                 node.save(vfile)
 
@@ -167,8 +167,8 @@ class TestNodes(AqlTestCase):
                 node = Node(builder, [value1, value2, value3])
                 node.depends(dep_value2)
                 node.initiate()
-                node.build_split(vfile)
-                self.assertTrue(node.check_actual(vfile))
+                node.build_split(vfile, None, False)
+                self.assertTrue(node.check_actual(vfile, None, False))
 
                 # -----------------------------------------------------------
 
@@ -176,9 +176,9 @@ class TestNodes(AqlTestCase):
                 node.depends(dep_value2)
                 node.depends(NullEntity())
                 node.initiate()
-                node.build_split(vfile)
+                node.build_split(vfile, None, False)
 
-                self.assertFalse(node.check_actual(vfile))
+                self.assertFalse(node.check_actual(vfile, None, False))
                 node.build()
                 node.save(vfile)
 
@@ -186,9 +186,9 @@ class TestNodes(AqlTestCase):
                 node.depends(dep_value2)
                 node.depends(NullEntity())
                 node.initiate()
-                node.build_split(vfile)
+                node.build_split(vfile, None, False)
 
-                self.assertFalse(node.check_actual(vfile))
+                self.assertFalse(node.check_actual(vfile, None, False))
 
             finally:
                 vfile.close()
@@ -200,9 +200,9 @@ class TestNodes(AqlTestCase):
         node.depends(deps)
 
         node.initiate()
-        node.build_split(vfile)
+        node.build_split(vfile, None, False)
 
-        self.assertFalse(node.check_actual(vfile))
+        self.assertFalse(node.check_actual(vfile, None, False))
         node.build()
         node.save(vfile)
 
@@ -212,9 +212,9 @@ class TestNodes(AqlTestCase):
         node.depends(deps)
 
         node.initiate()
-        node.build_split(vfile, explain=True)
+        node.build_split(vfile, None, explain=True)
 
-        self.assertTrue(node.check_actual(vfile, explain=True))
+        self.assertTrue(node.check_actual(vfile, None, explain=True))
 
         tmp_files.extend(target.get() for target in node.get_target_entities())
         tmp_files.extend(target.get()
@@ -319,9 +319,9 @@ class TestNodes(AqlTestCase):
                                 node = Node(builder, [value1])
                                 node.depends([node3])
                                 node.initiate()
-                                node.build_split(vfile)
+                                node.build_split(vfile, None, False)
 
-                                self.assertTrue(node.check_actual(vfile))
+                                self.assertTrue(node.check_actual(vfile, None, False))
                                 # node = self._rebuild_node( vfile, builder, [value1], [node3], tmp_files )
                 finally:
                     vfile.close()
@@ -346,19 +346,19 @@ class TestNodes(AqlTestCase):
         node.depends(dep)
 
         node.initiate()
-        split_nodes = node.build_split(vfile)
+        split_nodes = node.build_split(vfile, None, False)
 
         if built_count == 0:
             self.assertFalse(split_nodes)
-            self.assertTrue(node.check_actual(vfile))
+            self.assertTrue(node.check_actual(vfile, None, False))
         else:
             for split_node in split_nodes:
-                self.assertFalse(split_node.check_actual(vfile))
+                self.assertFalse(split_node.check_actual(vfile, None, False))
                 split_node.build()
                 split_node.save(vfile)
 
             self.assertEqual(len(split_nodes), 2)
-            self.assertTrue(node.check_actual(vfile))
+            self.assertTrue(node.check_actual(vfile, None, False))
 
     # ==========================================================
 
@@ -421,8 +421,8 @@ def _test_no_build_speed(vfile, builder, source_values):
     for source in source_values:
         node = Node(builder, _FileValueType(source))
         node.initiate()
-        node.build_split(vfile)
-        if not node.check_actual(vfile):
+        node.build_split(vfile, None, False)
+        if not node.check_actual(vfile, None, False):
             raise AssertionError("node is not actual")
 
 
@@ -470,8 +470,8 @@ class TestNodesSpeed (AqlTestCase):
                     for source in source_files:
                         node = Node(builder, _FileValueType(source))
                         node.initiate()
-                        node.build_split(vfile)
-                        self.assertFalse(node.check_actual(vfile))
+                        node.build_split(vfile, None, False)
+                        self.assertFalse(node.check_actual(vfile, None, False))
                         node.build()
                         node.save(vfile)
                         for tmp_file in node.get_targets():

@@ -60,13 +60,12 @@ class ExecuteCommandBuilder (Builder):
 
     def __init__(self, options, target=None, target_flag=None, cwd=None):
 
-        self.targets = tuple(map(self.get_target_file_path,
-                                 to_sequence(target)))
+        self.targets = tuple(map(self.get_target_path, to_sequence(target)))
 
         self.target_flag = target_flag
 
         if cwd:
-            cwd = self.get_target_dir_path(cwd)
+            cwd = self.get_target_dir(cwd)
 
         self.cwd = cwd
 
@@ -191,7 +190,7 @@ class CopyFilesBuilder (FileBuilder):
     NAME_ATTRS = ['target']
 
     def __init__(self, options, target):
-        self.target = self.get_target_dir_path(target)
+        self.target = self.get_target_dir(target)
         self.split = self.split_batch
 
     # -----------------------------------------------------------
@@ -227,7 +226,7 @@ class CopyFileAsBuilder (FileBuilder):
     NAME_ATTRS = ['target']
 
     def __init__(self, options, target):
-        self.target = self.get_target_file_path(target)
+        self.target = self.get_target_path(target)
 
     # -----------------------------------------------------------
 
@@ -271,7 +270,7 @@ class TarFilesBuilder (FileBuilder):
             elif mode == "w":
                 ext = ".tar"
 
-        self.target = self.get_target_file_path(target, ext)
+        self.target = self.get_target_path(target, ext)
         self.mode = mode
         self.rename = rename if rename else tuple()
         self.basedir = os.path.normcase(
@@ -351,7 +350,7 @@ class ZipFilesBuilder (FileBuilder):
         if ext is None:
             ext = ".zip"
 
-        self.target = self.get_target_file_path(target, ext=ext)
+        self.target = self.get_target_path(target, ext=ext)
         self.rename = rename if rename else tuple()
         self.basedir = os.path.normcase(
             os.path.normpath(basedir)) if basedir else None
@@ -440,7 +439,7 @@ class WriteFileBuilder (Builder):
     def __init__(self, options, target, binary=False, encoding=None):
         self.binary = binary
         self.encoding = encoding
-        self.target = self.get_target_file_path(target)
+        self.target = self.get_target_path(target)
 
     # -----------------------------------------------------------
 
@@ -485,7 +484,7 @@ class DistBuilder (FileBuilder):
 
     def __init__(self, options, command, args, target):
 
-        target = self.get_target_dir_path(target)
+        target = self.get_target_dir(target)
 
         script_args = [command]
 

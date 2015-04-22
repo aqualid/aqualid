@@ -217,8 +217,10 @@ def _split_file_names(file_paths,
 
 
 def _get_file_signature_type(file_signature_type):
-    return FileTimestampEntity if file_signature_type == 'timestamp'\
-        else FileChecksumEntity
+    if file_signature_type == 'timestamp':
+        return FileTimestampEntity
+
+    return FileChecksumEntity
 
 # ==============================================================================
 
@@ -566,7 +568,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def get_target_file_path(self, target, ext=None, prefix=None):
+    def get_target_path(self, target, ext=None, prefix=None):
         target_dir, name = _split_file_name(target, prefix=prefix, ext=ext)
 
         if target_dir.startswith((os.path.curdir, os.path.pardir)):
@@ -582,7 +584,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def get_target_dir_path(self, target_dir):
+    def get_target_dir(self, target_dir):
         target_dir, name = os.path.split(target_dir)
         if not name:
             target_dir, name = os.path.split(target_dir)
@@ -593,6 +595,7 @@ class Builder (object):
 
         if target_dir.startswith((os.path.curdir, os.path.pardir)):
             target_dir = os.path.abspath(target_dir)
+
         elif not os.path.isabs(target_dir):
             target_dir = os.path.abspath(
                 os.path.join(self.build_path, target_dir))
@@ -605,12 +608,12 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def get_target_from_source_file_path(self,
-                                         file_path,
-                                         ext=None,
-                                         prefix=None,
-                                         suffix=None,
-                                         replace_ext=True):
+    def get_source_target_path(self,
+                               file_path,
+                               ext=None,
+                               prefix=None,
+                               suffix=None,
+                               replace_ext=True):
 
         build_path = self.build_path
 
@@ -631,12 +634,12 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def get_targets_from_source_file_paths(self,
-                                           file_paths,
-                                           ext=None,
-                                           prefix=None,
-                                           suffix=None,
-                                           replace_ext=True):
+    def get_source_target_paths(self,
+                                file_paths,
+                                ext=None,
+                                prefix=None,
+                                suffix=None,
+                                replace_ext=True):
 
         build_path = self.build_path
 

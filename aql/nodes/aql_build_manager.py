@@ -711,7 +711,7 @@ class _NodesBuilder (object):
 
     # -----------------------------------------------------------
 
-    def build(self, nodes):
+    def build(self, nodes, rebuild_checker):
 
         build_manager = self.build_manager
         explain = build_manager.explain
@@ -737,17 +737,15 @@ class _NodesBuilder (object):
                 changed = True
                 continue
 
-            split_nodes = node.build_split(vfile, explain)
+            split_nodes = node.build_split(vfile, rebuild_checker, explain)
             if split_nodes:
                 build_manager.depends(node, split_nodes)
                 changed = True
                 continue
 
-            actual = node.check_actual(vfile, explain)
+            actual = node.check_actual(vfile, rebuild_checker, explain)
 
-            force_rebuild = build_manager.check_force_rebuild(node)
-
-            if actual and not force_rebuild:
+            if actual:
                 build_manager.actual_node(node)
                 changed = True
                 continue
@@ -833,13 +831,29 @@ class _NodesBuilder (object):
 # ==============================================================================
 
 
+class RebuildChecker(object):
+
+    def __init__(self):
+        self.built_node_names = set()
+
+    def __call__(self, node_name):
+        names = self.built_node_names
+
+        result = node_name not in names
+
+        names.add(node_name)
+
+        return result
+
+# ==============================================================================
+
+
 class BuildManager (object):
 
     __slots__ = (
         '_nodes',
         '_built_targets',
         '_failed_nodes',
-        '_built_node_names',
         '_node_locker',
         '_module_cache',
         '_node_cache',
@@ -857,13 +871,12 @@ class BuildManager (object):
 
     # -----------------------------------------------------------
 
-    def __reset(self, build_always=False, explain=False):
+    def __reset(self, explain=False):
 
         self._built_targets = {}
         self._failed_nodes = {}
         self._module_cache = {}
         self._node_cache = {}
-        self._built_node_names = set() if build_always else None
 
         self.completed = 0
         self.actual = 0
@@ -950,21 +963,6 @@ class BuildManager (object):
                 return node_locker.pop_unlocked()
 
         return tails
-
-    # -----------------------------------------------------------
-
-    def check_force_rebuild(self, node):
-        built_names = self._built_node_names
-        if built_names is None:
-            return False
-
-        names = frozenset(node.get_names())
-
-        result = not names.issubset(built_names)
-
-        built_names.update(names)
-
-        return result
 
     # -----------------------------------------------------------
 
@@ -1064,9 +1062,11 @@ class BuildManager (object):
               force_lock=False
               ):
 
-        self.__reset(build_always=build_always, explain=explain)
+        self.__reset(explain=explain)
 
         self.shrink(nodes)
+
+        rebuild_checker = RebuildChecker() if build_always else None
 
         with _NodesBuilder(self,
                            jobs,
@@ -1080,7 +1080,7 @@ class BuildManager (object):
                 if not tails and not nodes_builder.is_building():
                     break
 
-                if not nodes_builder.build(tails):
+                if not nodes_builder.build(tails, rebuild_checker):
                     # no more processing threads
                     break
 

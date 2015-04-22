@@ -399,7 +399,7 @@ class CommonCompiler (FileBuilder):
 
         target = options.target.get()
         if target:
-            self.target = self.get_target_file_path(target, self.ext, self.prefix)
+            self.target = self.get_target_path(target, self.ext, self.prefix)
         else:
             self.target = None
 
@@ -420,10 +420,10 @@ class CommonCompiler (FileBuilder):
         if self.target:
             return self.target
 
-        return self.get_target_from_source_file_path(source,
-                                                ext=self.ext,
-                                                prefix=self.prefix,
-                                                suffix=self.suffix)
+        return self.get_source_target_path(source,
+                                           ext=self.ext,
+                                           prefix=self.prefix,
+                                           suffix=self.suffix)
 
     # -----------------------------------------------------------
 
@@ -636,7 +636,7 @@ class CommonCppArchiver(CommonCppLinkerBase):
         prefix = options.libprefix.get()
         ext = options.libsuffix.get()
 
-        self.target = self.get_target_file_path(target, ext=ext, prefix=prefix)
+        self.target = self.get_target_path(target, ext=ext, prefix=prefix)
         self.cmd = options.lib_cmd.get()
         self.shared = False
 
@@ -656,7 +656,7 @@ class CommonCppLinker(CommonCppLinkerBase):
             prefix = options.prefix.get()
             ext = options.progsuffix.get()
 
-        self.target = self.get_target_file_path(target, prefix=prefix, ext=ext)
+        self.target = self.get_target_path(target, prefix=prefix, ext=ext)
         self.cmd = options.link_cmd.get()
         self.shared = shared
 

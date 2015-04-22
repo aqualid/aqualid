@@ -125,7 +125,7 @@ class GccCompiler (CommonCppCompiler):
 
         sources = tuple(src.get() for src in source_entities)
 
-        obj_files = self.get_targets_from_source_file_paths(sources, ext=self.ext)
+        obj_files = self.get_source_target_paths(sources, ext=self.ext)
 
         cwd = os.path.dirname(obj_files[0])
 

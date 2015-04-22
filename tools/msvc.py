@@ -102,11 +102,11 @@ class MsvcCompiler (CommonCppCompiler):
     # -----------------------------------------------------------
 
     def _set_targets(self,
-                    source_entities,
-                    targets,
-                    sources,
-                    obj_files,
-                    output):
+                     source_entities,
+                     targets,
+                     sources,
+                     obj_files,
+                     output):
 
         deps, errors, out = _parse_output(sources, output, self.ext_cpppath)
 
@@ -126,7 +126,7 @@ class MsvcCompiler (CommonCppCompiler):
 
         sources = tuple(src.get() for src in source_entities)
 
-        obj_files = self.get_targets_from_source_file_paths(sources, ext=self.ext)
+        obj_files = self.get_source_target_paths(sources, ext=self.ext)
 
         cwd = os.path.dirname(obj_files[0])
 

@@ -118,7 +118,7 @@ class AqlPreprocess (aql.FileBuilder):
 class AqlLink (aql.Builder):
 
   def   __init__(self, options, target):
-    self.target = self.get_target_file_path(target)
+    self.target = self.get_target_path(target)
 
   # -----------------------------------------------------------
 
