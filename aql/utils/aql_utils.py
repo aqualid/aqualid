@@ -735,12 +735,19 @@ def load_module(module_file, package_name=None):
 
     module_name = os.path.splitext(module_file)[0]
 
+    if package_name:
+        full_module_name = package_name + '.' + module_name
+    else:
+        full_module_name = module_name
+
+    try:
+        return sys.modules[full_module_name]
+    except KeyError:
+        pass
+
     fp, pathname, description = imp.find_module(module_name, [module_dir])
 
-    if package_name:
-        module_name = package_name + '.' + module_name
-
-    module = imp.load_module(module_name, fp, pathname, description)
+    module = imp.load_module(full_module_name, fp, pathname, description)
     return module
 
 # ==============================================================================
@@ -749,13 +756,18 @@ def load_module(module_file, package_name=None):
 def load_package(path, name=None, generate_name=False):
     find_path, find_name = os.path.split(path)
 
-    fp, pathname, description = imp.find_module(find_name, [find_path])
-
     if not name:
         if generate_name:
             name = new_hash(dump_simple_object(path)).hexdigest()
         else:
             name = find_name
+
+    try:
+        return sys.modules[name]
+    except KeyError:
+        pass
+
+    fp, pathname, description = imp.find_module(find_name, [find_path])
 
     package = imp.load_module(name, fp, pathname, description)
     return package
