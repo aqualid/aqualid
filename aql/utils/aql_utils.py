@@ -740,10 +740,9 @@ def load_module(module_file, package_name=None):
     else:
         full_module_name = module_name
 
-    try:
-        return sys.modules[full_module_name]
-    except KeyError:
-        pass
+    module = sys.modules.get(full_module_name)
+    if module is not None:
+        return module
 
     fp, pathname, description = imp.find_module(module_name, [module_dir])
 
@@ -762,10 +761,9 @@ def load_package(path, name=None, generate_name=False):
         else:
             name = find_name
 
-    try:
-        return sys.modules[name]
-    except KeyError:
-        pass
+    package = sys.modules.get(name)
+    if package is not None:
+        return package
 
     fp, pathname, description = imp.find_module(find_name, [find_path])
 
