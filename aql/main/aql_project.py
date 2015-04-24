@@ -204,7 +204,7 @@ class ProjectConfig(object):
     __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
                  'verbose', 'silent', 'no_output', 'jobs', 'keep_going',
                  'search_up', 'tools_path', 'no_tool_errors',
-                 'build_always', 'clean', 'list_options', 'list_tool_options',
+                 'clean', 'list_options', 'list_tool_options',
                  'list_targets',
                  'debug_profile', 'debug_profile_top', 'debug_memory',
                  'debug_explain', 'debug_backtrace',
@@ -245,9 +245,6 @@ class ProjectConfig(object):
 
             CLIOption("-c", "--config", "config", FilePath, None,
                       "The configuration file used to read CLI arguments."),
-
-            CLIOption("-B", "--always", "build_always", bool, False,
-                      "Unconditionally build all targets."),
 
             CLIOption("-R", "--clean", "clean", bool, False,
                       "Cleans targets."),
@@ -368,7 +365,6 @@ class ProjectConfig(object):
         self.show_version = cli_config.version
         self.no_output = cli_config.no_output
         self.keep_going = cli_config.keep_going
-        self.build_always = cli_config.build_always
         self.clean = cli_config.clean
         self.list_options = cli_config.list_options
         self.list_tool_options = cli_config.list_tool_options
@@ -975,7 +971,6 @@ class Project(object):
 
         config = self.config
         keep_going = config.keep_going,
-        build_always = config.build_always
         explain = config.debug_explain
         with_backtrace = config.debug_backtrace
         force_lock = config.force_lock
@@ -984,7 +979,6 @@ class Project(object):
         is_ok = self.build_manager.build(jobs=jobs,
                                          keep_going=bool(keep_going),
                                          nodes=build_nodes,
-                                         build_always=build_always,
                                          explain=explain,
                                          with_backtrace=with_backtrace,
                                          use_sqlite=use_sqlite,

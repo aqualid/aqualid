@@ -106,8 +106,7 @@ class NodeStaleReason (object):
         IMPLICIT_DEP_CHANGED, \
         NO_TARGETS, \
         TARGET_CHANGED, \
-        FORCE_REBUILD, \
-        = range(8)
+        = range(7)
 
     # -----------------------------------------------------------
 
@@ -148,9 +147,6 @@ class NodeStaleReason (object):
     def set_target_changed(self, entity, _target_changed=TARGET_CHANGED):
         self._set(_target_changed, entity)
 
-    def set_force_rebuild(self, _force_rebuild=FORCE_REBUILD):
-        self._set(_force_rebuild)
-
     # -----------------------------------------------------------
 
     def get_node_name(self, brief):
@@ -189,9 +185,6 @@ class NodeStaleReason (object):
         elif code == NodeStaleReason.TARGET_CHANGED:
             msg = "Node's target '%s' has changed, rebuilding the node: %s" %\
                   (self.entity, node_name)
-
-        elif code == NodeStaleReason.FORCE_REBUILD:
-            msg = "Forced rebuild, rebuilding the node: %s" % (node_name,)
 
         else:
             msg = "Node's state is outdated, rebuilding the node: %s" %\
@@ -403,7 +396,7 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def check_actual(self, vfile, rebuild_checker, explain):
+    def check_actual(self, vfile, explain):
 
         if explain:
             reason = NodeStaleReason(
@@ -412,11 +405,6 @@ class NodeEntity (EntityBase):
             reason = None
 
         self.reset_targets()
-
-        if (rebuild_checker is not None) and rebuild_checker(self.name):
-            if reason is not None:
-                reason.set_force_rebuild()
-            return False
 
         other = vfile.find_node_entity(self)
 
@@ -845,7 +833,7 @@ class Node (object):
 
     # ==========================================================
 
-    def _split_batch(self, vfile, rebuild_checker, explain):
+    def _split_batch(self, vfile, explain):
         builder = self.builder
         dep_entities = self.dep_entities
         node_entities = []
@@ -856,7 +844,7 @@ class Node (object):
                                      source_entities=(src,),
                                      dep_entities=dep_entities)
 
-            if not node_entity.check_actual(vfile, rebuild_checker, explain):
+            if not node_entity.check_actual(vfile, explain):
                 not_actual_nodes[src] = node_entity
                 not_actual_sources.append(src)
 
@@ -890,7 +878,7 @@ class Node (object):
 
     # ==========================================================
 
-    def build_split(self, vfile, rebuild_checker, explain):
+    def build_split(self, vfile, explain):
         if self.split_called:
             return None
 
@@ -900,7 +888,7 @@ class Node (object):
         dep_entities = self.dep_entities
 
         if builder.is_batch():
-            return self._split_batch(vfile, rebuild_checker, explain)
+            return self._split_batch(vfile, explain)
 
         # -----------------------------------------------------------
         sources = self.source_entities
@@ -913,9 +901,7 @@ class Node (object):
                                      source_entities=sources,
                                      dep_entities=dep_entities)
 
-            self.is_actual = node_entity.check_actual(vfile,
-                                                      rebuild_checker,
-                                                      explain)
+            self.is_actual = node_entity.check_actual(vfile, explain)
             self.node_entities = (node_entity,)
             return None
 
@@ -932,7 +918,7 @@ class Node (object):
                                      source_entities=group,
                                      dep_entities=dep_entities)
 
-            if not node_entity.check_actual(vfile, rebuild_checker, explain):
+            if not node_entity.check_actual(vfile, explain):
                 node = self._split(group, (node_entity,))
                 split_nodes.append(node)
 
@@ -1002,13 +988,11 @@ class Node (object):
 
     # ==========================================================
 
-    def check_actual(self, vfile, rebuild_checker, explain):
+    def check_actual(self, vfile, explain):
 
         if self.is_actual is None:
             for node_entity in self.node_entities:
-                if not node_entity.check_actual(vfile,
-                                                rebuild_checker,
-                                                explain):
+                if not node_entity.check_actual(vfile, explain):
                     return False
 
             self.is_actual = True

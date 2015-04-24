@@ -711,7 +711,7 @@ class _NodesBuilder (object):
 
     # -----------------------------------------------------------
 
-    def build(self, nodes, rebuild_checker):
+    def build(self, nodes):
 
         build_manager = self.build_manager
         explain = build_manager.explain
@@ -737,13 +737,13 @@ class _NodesBuilder (object):
                 changed = True
                 continue
 
-            split_nodes = node.build_split(vfile, rebuild_checker, explain)
+            split_nodes = node.build_split(vfile, explain)
             if split_nodes:
                 build_manager.depends(node, split_nodes)
                 changed = True
                 continue
 
-            actual = node.check_actual(vfile, rebuild_checker, explain)
+            actual = node.check_actual(vfile, explain)
 
             if actual:
                 build_manager.actual_node(node)
@@ -827,23 +827,6 @@ class _NodesBuilder (object):
             self._get_finished_nodes(block=False)
         finally:
             self.vfiles.close()
-
-# ==============================================================================
-
-
-class RebuildChecker(object):
-
-    def __init__(self):
-        self.built_node_names = set()
-
-    def __call__(self, node_name):
-        names = self.built_node_names
-
-        result = node_name not in names
-
-        names.add(node_name)
-
-        return result
 
 # ==============================================================================
 
@@ -1055,7 +1038,6 @@ class BuildManager (object):
               jobs,
               keep_going,
               nodes=None,
-              build_always=False,
               explain=False,
               with_backtrace=True,
               use_sqlite=False,
@@ -1065,8 +1047,6 @@ class BuildManager (object):
         self.__reset(explain=explain)
 
         self.shrink(nodes)
-
-        rebuild_checker = RebuildChecker() if build_always else None
 
         with _NodesBuilder(self,
                            jobs,
@@ -1080,7 +1060,7 @@ class BuildManager (object):
                 if not tails and not nodes_builder.is_building():
                     break
 
-                if not nodes_builder.build(tails, rebuild_checker):
+                if not nodes_builder.build(tails):
                     # no more processing threads
                     break
 

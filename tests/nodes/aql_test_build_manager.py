@@ -226,13 +226,10 @@ def _add_nodes_to_bm(builder, src_files):
 # ==============================================================================
 
 
-def _build(bm, jobs=1, keep_going=False, explain=False, build_always=False):
+def _build(bm, jobs=1, keep_going=False, explain=False):
     try:
         bm.self_test()
-        success = bm.build(jobs=jobs,
-                           keep_going=keep_going,
-                           explain=explain,
-                           build_always=build_always)
+        success = bm.build(jobs=jobs, keep_going=keep_going, explain=explain)
         bm.self_test()
         if not success:
             bm.print_fails()
@@ -580,62 +577,6 @@ class TestBuildManager(AqlTestCase):
             _build(bm)
 
             self.assertEqual(self.building_nodes, 0)
-
-    # -----------------------------------------------------------
-
-    def test_bm_force_rebuild(self):
-
-        with Tempdir() as tmp_dir:
-            options = builtin_options()
-            options.build_dir = tmp_dir
-
-            num_src_files = 5
-            src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
-
-            bm = BuildManager()
-
-            self.building_nodes = self.built_nodes = 0
-
-            builder = ChecksumSingleBuilder(options, 0, 256)
-
-            src_entities = tuple(map(FileChecksumEntity, src_files))
-
-            node = Node(builder, src_entities)  # num
-            node = Node(builder, node)          # num * 2
-            node = Node(builder, node)          # num * 2 * 2
-            node = Node(builder, node)          # num * 2 * 2 * 2
-
-            bm.add([node])
-            _build(bm)
-
-            num_built_nodes = (2**3 + 2**2 + 2 + 1) * num_src_files
-
-            self.assertEqual(self.building_nodes, num_built_nodes)
-
-            # -----------------------------------------------------------
-
-            self.building_nodes = 0
-
-            bm = BuildManager()
-            builder = ChecksumSingleBuilder(options, 0, 256)
-
-            node = Node(builder, src_entities)
-            node = Node(builder, node)
-            node = Node(builder, node)
-            node = Node(builder, node)
-
-            bm.add([node])
-
-            node = Node(builder, src_entities)
-            node = Node(builder, node)
-            node = Node(builder, node)
-            node = Node(builder, node)
-
-            bm.add([node])
-            bm.self_test()
-            _build(bm, build_always=True)
-
-            self.assertEqual(self.building_nodes, num_built_nodes)
 
     # -----------------------------------------------------------
 
