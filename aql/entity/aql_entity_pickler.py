@@ -49,8 +49,6 @@ class EntityPickler (object):
         membuf = io.BytesIO()
 
         pickler = pickle.Pickler(membuf, protocol=pickle.HIGHEST_PROTOCOL)
-        pickler.fast = True
-
         unpickler = pickle.Unpickler(membuf)
 
         pickler.persistent_id = self.persistent_id
@@ -65,7 +63,7 @@ class EntityPickler (object):
     def persistent_id(entity, known_type_names=_KNOWN_TYPE_NAMES):
 
         entity_type = type(entity)
-        type_name = _type_name(entity_type)
+        type_name = _pickle_type_name(entity_type)
 
         try:
             type_id = known_type_names[type_name]
@@ -93,7 +91,10 @@ class EntityPickler (object):
         buf = self.buffer
         buf.seek(0)
         buf.truncate(0)
-        self.pickler.dump(entity)
+
+        pickler = self.pickler
+        pickler.dump(entity)
+        pickler.clear_memo()   # clear memo to pickle another entity
 
         return buf.getvalue()
 
@@ -111,7 +112,7 @@ class EntityPickler (object):
 # ==============================================================================
 
 
-def _type_name(entity_type):
+def _pickle_type_name(entity_type):
     return entity_type.__module__ + '.' + entity_type.__name__
 
 # ==============================================================================
@@ -122,14 +123,14 @@ def pickleable(entity_type,
                known_type_ids=_KNOWN_TYPE_IDS):
 
     if type(entity_type) is type:
-        type_name = _type_name(entity_type)
+        type_name = _pickle_type_name(entity_type)
         type_id = binascii.crc32(type_name.encode("utf-8")) & 0xFFFFFFFF
 
         other_type = known_type_ids.setdefault(type_id, entity_type)
         if other_type is not entity_type:
             raise Exception(
                 "Two different type names have identical CRC32 checksum:"
-                " '%s' and '%s'" % (_type_name(other_type), type_name))
+                " '%s' and '%s'" % (_pickle_type_name(other_type), type_name))
 
         known_type_names[type_name] = type_id
 

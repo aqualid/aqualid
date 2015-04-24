@@ -538,7 +538,7 @@ class TestBuildManager(AqlTestCase):
             options = builtin_options()
             options.build_dir = tmp_dir
 
-            num_src_files = 3
+            num_src_files = 5
             src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             bm = BuildManager()
@@ -554,11 +554,14 @@ class TestBuildManager(AqlTestCase):
             node = Node(builder, src_entities)
             node = Node(builder, node)
             node = Node(builder, node)
+            node = Node(builder, node)
 
             bm.add([node])
             _build(bm)
 
-            self.assertEqual(self.building_nodes, num_src_files * 7)
+            num_built_nodes = (2 ** 3 + 2 ** 2 + 2 + 1) * num_src_files
+
+            self.assertEqual(self.building_nodes, num_built_nodes)
 
             # -----------------------------------------------------------
 
@@ -568,6 +571,10 @@ class TestBuildManager(AqlTestCase):
             builder = ChecksumSingleBuilder(options, 0, 256)
 
             node = Node(builder, src_entities)
+            node = Node(builder, node)
+            node = Node(builder, node)
+            node = Node(builder, node)
+
             bm.add([node])
             bm.self_test()
             _build(bm)
@@ -582,7 +589,7 @@ class TestBuildManager(AqlTestCase):
             options = builtin_options()
             options.build_dir = tmp_dir
 
-            num_src_files = 2
+            num_src_files = 5
             src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
             bm = BuildManager()
@@ -593,16 +600,17 @@ class TestBuildManager(AqlTestCase):
 
             src_entities = tuple(map(FileChecksumEntity, src_files))
 
-            node = Node(builder, src_entities)
-            node = Node(builder, node)
-            node = Node(builder, node)
-            node = Node(builder, node)
+            node = Node(builder, src_entities)  # num
+            node = Node(builder, node)          # num * 2
+            node = Node(builder, node)          # num * 2 * 2
+            node = Node(builder, node)          # num * 2 * 2 * 2
 
             bm.add([node])
             _build(bm)
-            return
 
-            # self.assertEqual(self.building_nodes, num_src_files * 7)
+            num_built_nodes = (2**3 + 2**2 + 2 + 1) * num_src_files
+
+            self.assertEqual(self.building_nodes, num_built_nodes)
 
             # -----------------------------------------------------------
 
@@ -613,19 +621,21 @@ class TestBuildManager(AqlTestCase):
 
             node = Node(builder, src_entities)
             node = Node(builder, node)
-            # node = Node(builder, node)
+            node = Node(builder, node)
+            node = Node(builder, node)
 
             bm.add([node])
 
-            # node = Node(builder, src_entities)
-            # node = Node(builder, node)
-            # node = Node(builder, node)
-            #
-            # bm.add([node])
-            bm.self_test()
-            _build(bm, build_always=False)
+            node = Node(builder, src_entities)
+            node = Node(builder, node)
+            node = Node(builder, node)
+            node = Node(builder, node)
 
-            # self.assertEqual(self.building_nodes, num_src_files * 7)
+            bm.add([node])
+            bm.self_test()
+            _build(bm, build_always=True)
+
+            self.assertEqual(self.building_nodes, num_built_nodes)
 
     # -----------------------------------------------------------
 
