@@ -20,8 +20,8 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-from aql.util_types import toSequence, cast_str
-from aql.utils import simpleObjectSignature
+from aql.util_types import to_sequence, cast_str
+from aql.utils import simple_object_signature
 from .aql_entity_pickler import pickleable
 
 __all__ = (
@@ -35,7 +35,7 @@ class ErrorEntityNameEmpty(Exception):
 
     def __init__(self):
         msg = "Entity name is empty"
-        super(type(self), self).__init__(msg)
+        super(ErrorEntityNameEmpty, self).__init__(msg)
 
 # ==============================================================================
 
@@ -46,7 +46,7 @@ class ErrorSignatureEntityInvalidDataType(Exception):
         msg = "Signature data type must be bytes or bytearray, " \
               "actual type: '%s'" % (type(data),)
 
-        super(type(self), self).__init__(msg)
+        super(ErrorSignatureEntityInvalidDataType, self).__init__(msg)
 
 
 class ErrorTextEntityInvalidDataType(Exception):
@@ -54,7 +54,7 @@ class ErrorTextEntityInvalidDataType(Exception):
     def __init__(self, text):
         msg = "Text data type must be string, actual type: '%s'" % (
             type(text),)
-        super(type(self), self).__init__(msg)
+        super(ErrorTextEntityInvalidDataType, self).__init__(msg)
 
 # ==============================================================================
 
@@ -77,7 +77,7 @@ class EntityBase (object):
         if signature is not NotImplemented:
             self.signature = signature
 
-        self.tags = frozenset(toSequence(tags)) if tags else None
+        self.tags = frozenset(to_sequence(tags)) if tags else None
 
         return self
 
@@ -97,18 +97,20 @@ class EntityBase (object):
 
     # -----------------------------------------------------------
 
-    def getId(self):
+    def get_id(self):
         cls = self.__class__
-        return simpleObjectSignature((self.name, cls.__name__, cls.__module__))
+        return simple_object_signature((self.name,
+                                        cls.__name__,
+                                        cls.__module__))
 
     # -----------------------------------------------------------
 
-    def getName(self):
+    def get_name(self):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
     # -----------------------------------------------------------
 
-    def getSignature(self):
+    def get_signature(self):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
@@ -116,13 +118,13 @@ class EntityBase (object):
 
     def __getattr__(self, attr):
         if attr == 'signature':
-            self.signature = signature = self.getSignature()
+            self.signature = signature = self.get_signature()
             return signature
         elif attr == 'name':
-            self.name = name = self.getName()
+            self.name = name = self.get_name()
             return name
         elif attr == 'id':
-            self.id = entity_id = self.getId()
+            self.id = entity_id = self.get_id()
             return entity_id
 
         raise AttributeError("Unknown attribute: '%s'" % (attr,))
@@ -135,7 +137,7 @@ class EntityBase (object):
 
     # -----------------------------------------------------------
 
-    def isActual(self):
+    def is_actual(self):
         """
         Checks whether the entity is actual or not
         """
@@ -143,7 +145,7 @@ class EntityBase (object):
 
     # -----------------------------------------------------------
 
-    def getActual(self):
+    def get_actual(self):
         """
         Returns an actual entity.
         If the current entity is actual then it will be simply returned.
@@ -191,7 +193,7 @@ class SimpleEntity (EntityBase):
             signature = None
         else:
             if signature is None:
-                signature = simpleObjectSignature(data)
+                signature = simple_object_signature(data)
 
         if not name:
             name = signature
@@ -244,7 +246,7 @@ class NullEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def isActual(self):
+    def is_actual(self):
         return False
 
 

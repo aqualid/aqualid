@@ -1,7 +1,7 @@
 import os
 import itertools
 
-from aql import findFileInPaths,\
+from aql import find_file_in_paths,\
     StrOptionType, BoolOptionType, VersionOptionType, ListOptionType,\
     AbsPathOptionType, EnumOptionType, SimpleOperation, Options, \
     Builder, FileBuilder, Node, Tool
@@ -61,7 +61,7 @@ class ErrorCompileWithCustomTarget(Exception):
 # ==============================================================================
 
 
-def _addPrefix(prefix, values):
+def _add_prefix(prefix, values):
     prefix = prefix.lstrip()
 
     if not prefix:
@@ -76,7 +76,7 @@ def _addPrefix(prefix, values):
 # ==============================================================================
 
 
-def _addIxes(prefix, suffix, values):
+def _add_ixes(prefix, suffix, values):
     prefix = prefix.lstrip()
     suffix = suffix.strip()
 
@@ -98,7 +98,7 @@ def _addIxes(prefix, suffix, values):
 # ==============================================================================
 
 
-def _preprocessorOptions(options):
+def _preprocessor_options(options):
 
     options.cppdefines = ListOptionType(
         description="C/C++ preprocessor defines",
@@ -112,7 +112,7 @@ def _preprocessorOptions(options):
 
     options.cppdefines_flags = ListOptionType(separators=None)
 
-    options.cppdefines_flags += SimpleOperation(_addPrefix,
+    options.cppdefines_flags += SimpleOperation(_add_prefix,
                                                 options.cppdefines_prefix,
                                                 options.cppdefines)
 
@@ -130,7 +130,7 @@ def _preprocessorOptions(options):
 
     options.include = options.cpppath
 
-    options.cpppath_flags = SimpleOperation(_addPrefix,
+    options.cpppath_flags = SimpleOperation(_add_prefix,
                                             options.cpppath_prefix,
                                             options.cpppath)
 
@@ -140,7 +140,7 @@ def _preprocessorOptions(options):
         description="C/C++ preprocessor paths to API headers",
         separators=None)
 
-    options.cpppath_flags += SimpleOperation(_addPrefix,
+    options.cpppath_flags += SimpleOperation(_add_prefix,
                                              options.cpppath_prefix,
                                              options.api_cpppath)
 
@@ -151,7 +151,7 @@ def _preprocessorOptions(options):
         separators=None)
 
     options.ext_include = options.ext_cpppath
-    options.cpppath_flags += SimpleOperation(_addPrefix,
+    options.cpppath_flags += SimpleOperation(_add_prefix,
                                              options.cpppath_prefix,
                                              options.ext_cpppath)
 
@@ -163,7 +163,7 @@ def _preprocessorOptions(options):
 # ==============================================================================
 
 
-def _compilerOptions(options):
+def _compiler_options(options):
 
     options.language = EnumOptionType(values=[('c++', 'cpp'), 'c'],
                                       default='c++',
@@ -218,7 +218,7 @@ def _compilerOptions(options):
 # ==============================================================================
 
 
-def _resourceCompilerOptions(options):
+def _resource_compiler_options(options):
 
     options.rc = AbsPathOptionType(
         description="C/C++ resource compiler program")
@@ -242,7 +242,7 @@ def _resourceCompilerOptions(options):
 # ==============================================================================
 
 
-def _linkerOptions(options):
+def _linker_options(options):
 
     options.libprefix = StrOptionType(
         description="Static library archiver prefix.", is_hidden=True)
@@ -284,7 +284,7 @@ def _linkerOptions(options):
 
     options.libpath_flags = ListOptionType(separators=None)
 
-    options.libpath_flags = SimpleOperation(_addPrefix,
+    options.libpath_flags = SimpleOperation(_add_prefix,
                                             options.libpath_prefix,
                                             options.libpath)
 
@@ -301,7 +301,7 @@ def _linkerOptions(options):
 
     options.libs_flags = ListOptionType(separators=None)
 
-    options.libs_flags = SimpleOperation(_addIxes,
+    options.libs_flags = SimpleOperation(_add_ixes,
                                          options.libs_prefix,
                                          options.libs_suffix,
                                          options.libs)
@@ -327,22 +327,22 @@ def _linkerOptions(options):
 # ==============================================================================
 
 
-def _getCppOptions():
+def _get_cpp_options():
     options = Options()
-    _preprocessorOptions(options)
-    _compilerOptions(options)
-    _resourceCompilerOptions(options)
-    _linkerOptions(options)
+    _preprocessor_options(options)
+    _compiler_options(options)
+    _resource_compiler_options(options)
+    _linker_options(options)
 
     return options
 
 # ==============================================================================
 
 
-def _getResOptions():
+def _get_res_options():
     options = Options()
-    _preprocessorOptions(options)
-    _resourceCompilerOptions(options)
+    _preprocessor_options(options)
+    _resource_compiler_options(options)
 
     return options
 
@@ -370,7 +370,7 @@ class HeaderChecker (Builder):
         cpppath = self.cpppath
 
         for header in source_entities:
-            found = findFileInPaths(cpppath, header.get())
+            found = find_file_in_paths(cpppath, header.get())
             if not found:
                 has_headers = False
                 break
@@ -399,7 +399,7 @@ class CommonCompiler (FileBuilder):
 
         target = options.target.get()
         if target:
-            self.target = self.getTargetFilePath(target, self.ext, self.prefix)
+            self.target = self.get_target_path(target, self.ext, self.prefix)
         else:
             self.target = None
 
@@ -411,23 +411,23 @@ class CommonCompiler (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_values):
-        return self.getObjPath(source_values[0].get())
+    def get_target_entities(self, source_values):
+        return self.get_obj_path(source_values[0].get())
 
     # -----------------------------------------------------------
 
-    def getObjPath(self, source):
+    def get_obj_path(self, source):
         if self.target:
             return self.target
 
-        return self.getTargetFromSourceFilePath(source,
-                                                ext=self.ext,
-                                                prefix=self.prefix,
-                                                suffix=self.suffix)
+        return self.get_source_target_path(source,
+                                           ext=self.ext,
+                                           prefix=self.prefix,
+                                           suffix=self.suffix)
 
     # -----------------------------------------------------------
 
-    def getDefaultObjExt(self):
+    def get_default_obj_ext(self):
         """
         Returns a default extension of output object files.
         """
@@ -436,31 +436,31 @@ class CommonCompiler (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def checkBatchSplit(self, source_entities):
+    def check_batch_split(self, source_entities):
 
-        default_ext = self.getDefaultObjExt()
+        default_ext = self.get_default_obj_ext()
 
         if self.ext != default_ext:
             raise ErrorBatchBuildCustomExt(
-                self.getTrace(source_entities), self.ext)
+                self.get_trace(source_entities), self.ext)
 
         if self.prefix:
             raise ErrorBatchBuildWithPrefix(
-                self.getTrace(source_entities), self.prefix)
+                self.get_trace(source_entities), self.prefix)
 
         if self.suffix:
             raise ErrorBatchBuildWithSuffix(
-                self.getTrace(source_entities), self.suffix)
+                self.get_trace(source_entities), self.suffix)
 
         if self.target:
             raise ErrorBatchCompileWithCustomTarget(
-                self.getTrace(source_entities), self.target)
+                self.get_trace(source_entities), self.target)
 
     # -----------------------------------------------------------
 
-    def splitBatch(self, source_entities):
-        self.checkBatchSplit(source_entities)
-        return self.splitBatchByBuildDir(source_entities)
+    def split_batch(self, source_entities):
+        self.check_batch_split(source_entities)
+        return self.split_batch_by_build_dir(source_entities)
 
     # -----------------------------------------------------------
 
@@ -468,13 +468,13 @@ class CommonCompiler (FileBuilder):
 
         if self.target and (len(source_entities) > 1):
             raise ErrorCompileWithCustomTarget(
-                self.getTrace(source_entities), self.target)
+                self.get_trace(source_entities), self.target)
 
-        return self.splitSingle(source_entities)
+        return self.split_single(source_entities)
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         if brief:
             name = self.cmd[0]
             name = os.path.splitext(os.path.basename(name))[0]
@@ -518,19 +518,19 @@ class CommonCppLinkerBase(FileBuilder):
     SIGNATURE_ATTRS = ('cmd', )
 
     def __init__(self, options):
-        self.compilers = self.getSourceBuilders(options)
+        self.compilers = self.get_source_builders(options)
 
-    def getCppExts(self, _cpp_ext=CPP_EXT):
+    def get_cpp_exts(self, _cpp_ext=CPP_EXT):
         return _cpp_ext
 
     # -----------------------------------------------------------
 
-    def getResExts(self):
+    def get_res_exts(self):
         return '.rc',
 
     # -----------------------------------------------------------
 
-    def makeCompiler(self, options):
+    def make_compiler(self, options):
         """
         It should return a builder of C/C++ compiler
         """
@@ -539,7 +539,7 @@ class CommonCppLinkerBase(FileBuilder):
 
     # -----------------------------------------------------------
 
-    def makeResCompiler(self, options):
+    def make_res_compiler(self, options):
         """
         It should return a builder of C/C++ resource compiler
         """
@@ -548,22 +548,22 @@ class CommonCppLinkerBase(FileBuilder):
 
     # -----------------------------------------------------------
 
-    def addSourceBuilders(self, builders, exts, builder):
+    def add_source_builders(self, builders, exts, builder):
         if builder:
             for ext in exts:
                 builders[ext] = builder
 
     # -----------------------------------------------------------
 
-    def getSourceBuilders(self, options):
+    def get_source_builders(self, options):
         builders = {}
 
-        compiler = self.makeCompiler(options)
+        compiler = self.make_compiler(options)
 
-        self.addSourceBuilders(builders, self.getCppExts(), compiler)
+        self.add_source_builders(builders, self.get_cpp_exts(), compiler)
 
-        rc_compiler = self.makeResCompiler(options)
-        self.addSourceBuilders(builders, self.getResExts(), rc_compiler)
+        rc_compiler = self.make_res_compiler(options)
+        self.add_source_builders(builders, self.get_res_exts(), rc_compiler)
 
         return builders
 
@@ -573,7 +573,7 @@ class CommonCppLinkerBase(FileBuilder):
 
         cwd = os.getcwd()
 
-        def _addSources():
+        def _add_sources():
             if current_builder is None:
                 new_sources.extend(current_sources)
                 return
@@ -598,24 +598,24 @@ class CommonCppLinkerBase(FileBuilder):
                 current_sources.append(src_file)
             else:
                 if current_sources:
-                    _addSources()
+                    _add_sources()
 
                 current_builder = builder
                 current_sources = [src_file]
 
         if current_sources:
-            _addSources()
+            _add_sources()
 
         return new_sources
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_values):
+    def get_target_entities(self, source_values):
         return self.target
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         if brief:
             name = self.cmd[0]
             name = os.path.splitext(os.path.basename(name))[0]
@@ -636,7 +636,7 @@ class CommonCppArchiver(CommonCppLinkerBase):
         prefix = options.libprefix.get()
         ext = options.libsuffix.get()
 
-        self.target = self.getTargetFilePath(target, ext=ext, prefix=prefix)
+        self.target = self.get_target_path(target, ext=ext, prefix=prefix)
         self.cmd = options.lib_cmd.get()
         self.shared = False
 
@@ -656,13 +656,13 @@ class CommonCppLinker(CommonCppLinkerBase):
             prefix = options.prefix.get()
             ext = options.progsuffix.get()
 
-        self.target = self.getTargetFilePath(target, prefix=prefix, ext=ext)
+        self.target = self.get_target_path(target, prefix=prefix, ext=ext)
         self.cmd = options.link_cmd.get()
         self.shared = shared
 
     # -----------------------------------------------------------
 
-    def getWeight(self, source_entities):
+    def get_weight(self, source_entities):
         return 2 * len(source_entities)
 
 
@@ -673,7 +673,7 @@ class CommonCppLinker(CommonCppLinkerBase):
 class ToolCommonCpp(Tool):
 
     def __init__(self, options):
-        options.If().cc_name.isTrue().build_dir_name += '_' + \
+        options.If().cc_name.is_true().build_dir_name += '_' + \
             options.cc_name + '_' + options.cc_ver
 
         self.LinkLibrary = self.LinkStaticLibrary
@@ -682,8 +682,8 @@ class ToolCommonCpp(Tool):
 
     @classmethod
     def options(cls):
-        options = _getCppOptions()
-        options.setGroup("C/C++ compiler")
+        options = _get_cpp_options()
+        options.set_group("C/C++ compiler")
 
         return options
 
@@ -717,8 +717,8 @@ class ToolCommonRes(Tool):
 
     @classmethod
     def options(cls):
-        options = _getResOptions()
-        options.setGroup("C/C++ resource compiler")
+        options = _get_res_options()
+        options.set_group("C/C++ resource compiler")
 
         return options
 

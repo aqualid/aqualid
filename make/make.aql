@@ -34,7 +34,7 @@ Default( linked_file )
 
 # -----------------------------------------------------------
 
-info = aql.getAqlInfo()
+info = aql.get_aql_info()
 standalone_name = dist_dir + "/{name}-{version}.local".format( name = info.name, version = info.version )
 
 standalone_zip = tools.CreateZip( linked_file, Entity( STANDALONE_WINDOWS_SCRIPT, 'aql.cmd' ),

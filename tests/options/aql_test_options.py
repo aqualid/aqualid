@@ -4,14 +4,14 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.util_types import UpperCaseString, FilePath
 
 from aql.options import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
     DictOptionType, PathOptionType, StrOptionType, OptionType, \
-    builtinOptions, \
-    Options, iAddValue, \
+    builtin_options, \
+    Options, op_iadd, \
     ErrorOptionsCyclicallyDependent, \
     ErrorOptionsMergeNonOptions, ErrorOptionsNoIteration
 
@@ -107,7 +107,7 @@ class TestOptions(AqlTestCase):
         self.assertGreaterEqual(options.warn_level, 2)
 
         options.warn_levels = ListOptionType(
-            value_type=options.warn_level.optionType())
+            value_type=options.warn_level.option_type())
 
         options.warn_levels += [1, 2, 3]
 
@@ -161,7 +161,7 @@ class TestOptions(AqlTestCase):
             values=('debug', 'release', 'final'))
 
         options.build_variants = ListOptionType(
-            value_type=options.optimization.optionType())
+            value_type=options.optimization.option_type())
 
         options.If().build_variants.has('release').warning_level = 5
 
@@ -180,8 +180,8 @@ class TestOptions(AqlTestCase):
             value_type=RangeOptionType(min_value=0, max_value=5))
         options.opt = RangeOptionType(min_value=1, max_value=100)
 
-        options.If().warn_levels.hasAny([2, 5]).opt += 10
-        options.If().warn_levels.hasAll([1, 4, 3]).opt += 20
+        options.If().warn_levels.has_any([2, 5]).opt += 10
+        options.If().warn_levels.has_all([1, 4, 3]).opt += 20
 
         self.assertEqual(options.opt, 1)
 
@@ -198,8 +198,8 @@ class TestOptions(AqlTestCase):
         self.assertEqual(options.warn_levels, [1, 3, 2, 4])
         self.assertEqual(options.opt, 31)
 
-        options.If().opt.oneOf([1, 11, 21, 31]).opt -= 1
-        options.If().opt.oneOf([1, 11, 21, 31]).opt -= 1
+        options.If().opt.one_of([1, 11, 21, 31]).opt -= 1
+        options.If().opt.one_of([1, 11, 21, 31]).opt -= 1
 
         self.assertEqual(options.opt, 30)
 
@@ -217,8 +217,8 @@ class TestOptions(AqlTestCase):
 
         options.warn_level = 3
 
-        options.If().opt.oneOf([1, 11, 21, 31]).opt -= 1
-        options.If().opt.oneOf([1, 11, 21, 31]).opt -= 1
+        options.If().opt.one_of([1, 11, 21, 31]).opt -= 1
+        options.If().opt.one_of([1, 11, 21, 31]).opt -= 1
 
         self.assertEqual(options.opt, 20)
 
@@ -261,7 +261,7 @@ class TestOptions(AqlTestCase):
         options.opt = RangeOptionType(min_value=1, max_value=100)
         options.warn_level = RangeOptionType(min_value=0, max_value=5)
 
-        options.warn_level = iAddValue(options.opt)
+        options.warn_level = op_iadd(options.opt)
         self.assertEqual(options.warn_level, 1)
 
         options.If().warn_level.eq(options.opt).warn_level += 1
@@ -391,7 +391,7 @@ class TestOptions(AqlTestCase):
     # -----------------------------------------------------------
 
     def test_builtin_options(self):
-        options = builtinOptions()
+        options = builtin_options()
         self.assertEqual(options.optimization, 'off')
         self.assertEqual(options.build_variant, 'debug')
 
@@ -404,7 +404,7 @@ class TestOptions(AqlTestCase):
         options.build_variant = 'final'
         self.assertEqual(options.optimization, 'speed')
 
-        self.assertEqual(options.build_variant.optionType().group, "Build")
+        self.assertEqual(options.build_variant.option_type().group, "Build")
 
     # -----------------------------------------------------------
 
@@ -559,7 +559,7 @@ class TestOptions(AqlTestCase):
 
     def test_options_build_dir_name(self):
 
-        options = builtinOptions()
+        options = builtin_options()
 
         self.assertEqual(options.build_dir_name, 'debug')
 
@@ -575,7 +575,7 @@ class TestOptions(AqlTestCase):
 
     def test_options_join(self):
 
-        built_options = builtinOptions()
+        built_options = builtin_options()
 
         p_options = built_options.override()
 
@@ -663,22 +663,22 @@ class TestOptions(AqlTestCase):
         child.cc = 'g++'
         child.ccflags = '-O3'
 
-        self.assertFalse(child.hasChangedKeyOptions())
+        self.assertFalse(child.has_changed_key_options())
 
         child.cc_name = 'icc'
-        self.assertFalse(child.hasChangedKeyOptions())
+        self.assertFalse(child.has_changed_key_options())
 
         options.cc_name = 'gcc'
-        self.assertTrue(child.hasChangedKeyOptions())
+        self.assertTrue(child.has_changed_key_options())
 
         child.cc_name = 'gcc'
-        self.assertFalse(child.hasChangedKeyOptions())
+        self.assertFalse(child.has_changed_key_options())
 
         child.cc_ver = '4.9'
-        self.assertFalse(child.hasChangedKeyOptions())
+        self.assertFalse(child.has_changed_key_options())
 
         options.cc_ver = '4.8'
-        self.assertTrue(child.hasChangedKeyOptions())
+        self.assertTrue(child.has_changed_key_options())
 
     @skip
     def test_options_wiki_examples(self):
@@ -707,4 +707,4 @@ class TestOptions(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

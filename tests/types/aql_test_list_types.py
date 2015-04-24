@@ -5,9 +5,9 @@ import timeit
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
-from aql.util_types import UniqueList, SplitListType, List, ValueListType
+from aql.util_types import UniqueList, split_list_type, List, value_list_type
 
 # ==============================================================================
 
@@ -17,7 +17,7 @@ class TestListTypes(AqlTestCase):
     def test_unique_list(self):
 
         ul = UniqueList([1, 2, 3, 2, 1, 3])
-        ul.selfTest()
+        ul.self_test()
 
         self.assertEqual(ul, [2, 3, 1])
         self.assertEqual(list(ul), [1, 2, 3])
@@ -25,60 +25,60 @@ class TestListTypes(AqlTestCase):
         ul = UniqueList()
 
         ul.append(1)
-        ul.selfTest()
+        ul.self_test()
         ul.append(3)
-        ul.selfTest()
+        ul.self_test()
         ul.append(1)
-        ul.selfTest()
+        ul.self_test()
         ul.append(2)
-        ul.selfTest()
+        ul.self_test()
         ul.append(3)
-        ul.selfTest()
+        ul.self_test()
         ul.append(1)
-        ul.selfTest()
+        ul.self_test()
 
         self.assertEqual(list(ul), [1, 3, 2])
 
         ul.append_front(2)
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [2, 1, 3])
 
         ul.extend([4, 1, 2, 2, 5])
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [2, 1, 3, 4, 5])
 
         ul.extend_front([1, 2, 2, 3, 1, 1, 5, 5])
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [1, 2, 3, 5, 4])
 
         self.assertEqual(list(ul), [1, 2, 3, 5, 4])
 
         ul.remove(1)
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [2, 3, 5, 4])
 
         ul.remove(5)
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [2, 3, 4])
 
         ul.remove(55)
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [2, 3, 4])
 
         self.assertEqual(ul.pop(), 4)
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(ul.pop_front(), 2)
-        ul.selfTest()
+        ul.self_test()
 
         self.assertEqual(ul.pop_front(), 3)
-        ul.selfTest()
+        ul.self_test()
 
         ul += [1, 2, 2, 2, 3, 1, 2, 4, 3, 3, 5, 4, 5, 5]
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [1, 2, 3, 4, 5])
 
         ul -= [2, 2, 2, 4, 33]
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(list(ul), [1, 3, 5])
 
         self.assertEqual(ul[0], 1)
@@ -90,11 +90,11 @@ class TestListTypes(AqlTestCase):
         self.assertEqual(list(reversed(ul)), [5, 3, 1])
 
         ul.reverse()
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(ul, [5, 3, 1])
 
         ul.reverse()
-        ul.selfTest()
+        ul.self_test()
         self.assertEqual(str(ul), "[1, 3, 5]")
 
         self.assertEqual(ul, UniqueList([1, 3, 5]))
@@ -107,7 +107,7 @@ class TestListTypes(AqlTestCase):
 
     def test_splitlist(self):
 
-        l = SplitListType(List, ", \t\n\r")("1,2, 3,,, \n\r\t4")
+        l = split_list_type(List, ", \t\n\r")("1,2, 3,,, \n\r\t4")
         self.assertEqual(l, ['1', '2', '3', '4'])
         self.assertEqual(l, "1,2,3,4")
         self.assertEqual(l, "1 2 3 4")
@@ -132,7 +132,7 @@ class TestListTypes(AqlTestCase):
 
     def test_valuelist(self):
 
-        l = SplitListType(ValueListType(List, int), ", \t\n\r")(
+        l = split_list_type(value_list_type(List, int), ", \t\n\r")(
             "1,2, 3,,, \n\r\t4")
         self.assertEqual(l, [1, 2, 3, 4])
         self.assertEqual(l, "1,2,3,4")
@@ -194,4 +194,4 @@ class TestListTypes(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

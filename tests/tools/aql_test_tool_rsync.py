@@ -4,7 +4,7 @@ import sys
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempdir
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
@@ -13,8 +13,8 @@ from aql.main import Project, ProjectConfig, ErrorToolNotFound
 
 
 def _build(prj):
-    if not prj.Build():
-        prj.build_manager.printFails()
+    if not prj.build():
+        prj.build_manager.print_fails()
         assert False, "Build failed"
 
 # ==============================================================================
@@ -26,14 +26,14 @@ class TestToolRsync(AqlTestCase):
         with Tempdir() as tmp_dir:
             with Tempdir() as src_dir:
                 with Tempdir() as target_dir:
-                    src_files = self.generateCppFiles(src_dir, "src_test", 3)
+                    src_files = self.generate_cpp_files(src_dir, "src_test", 3)
 
                     cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir])
 
                     prj = Project(cfg)
 
                     try:
-                        rsync = prj.tools.Tool(
+                        rsync = prj.tools.get_tool(
                             'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
                     except ErrorToolNotFound:
                         print(
@@ -54,13 +54,13 @@ class TestToolRsync(AqlTestCase):
     def test_rsync_push_remote(self):
         with Tempdir() as tmp_dir:
             with Tempdir() as src_dir:
-                src_files = self.generateCppFiles(src_dir, "src_test", 3)
+                src_files = self.generate_cpp_files(src_dir, "src_test", 3)
 
                 cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir])
 
                 prj = Project(cfg)
 
-                rsync = prj.tools.Tool(
+                rsync = prj.tools.get_tool(
                     'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
 
                 remote_files = rsync.Push(src_dir + '/', target='test_rsync_push/',
@@ -76,14 +76,14 @@ class TestToolRsync(AqlTestCase):
         with Tempdir() as tmp_dir:
             with Tempdir() as src_dir:
                 with Tempdir() as target_dir:
-                    src_files = self.generateCppFiles(src_dir, "src_test", 3)
+                    src_files = self.generate_cpp_files(src_dir, "src_test", 3)
 
                     cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir])
 
                     prj = Project(cfg)
 
                     try:
-                        rsync = prj.tools.Tool(
+                        rsync = prj.tools.get_tool(
                             'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
                     except ErrorToolNotFound:
                         print(
@@ -101,4 +101,4 @@ class TestToolRsync(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

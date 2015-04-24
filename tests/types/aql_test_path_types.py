@@ -4,7 +4,7 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import AqlTestCase, runLocalTests
+from aql_tests import AqlTestCase, run_local_tests
 
 from aql.util_types import FilePath
 
@@ -38,13 +38,13 @@ class TestPathTypes(AqlTestCase):
                                   prefix='_'), os.path.join('test', '_test_file.ttt'))
 
         self.assertEqual(FilePath(
-            'foo/bar').joinPath('foo/file.txt').normpath(), os.path.normpath('foo/bar/foo/file.txt'))
+            'foo/bar').join_path('foo/file.txt').normpath(), os.path.normpath('foo/bar/foo/file.txt'))
         self.assertEqual(FilePath(
-            'foo/bar').joinPath('foo', 'file.txt').normpath(), os.path.normpath('foo/bar/foo/file.txt'))
-        self.assertEqual(FilePath('foo/bar').joinPath('foo', 'foo2', 'test',
+            'foo/bar').join_path('foo', 'file.txt').normpath(), os.path.normpath('foo/bar/foo/file.txt'))
+        self.assertEqual(FilePath('foo/bar').join_path('foo', 'foo2', 'test',
                                                       'file.txt').normpath(), os.path.normpath('foo/bar/foo/foo2/test/file.txt'))
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

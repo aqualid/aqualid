@@ -1,7 +1,7 @@
 
-from aql import getAqlInfo, readTextFile
+from aql import get_aql_info, read_text_file
 
-info = getAqlInfo()
+info = get_aql_info()
 
 SCRIPTS_PATH = 'scripts'
 MODULES_PATH = 'modules'
@@ -66,7 +66,7 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
 # ==============================================================================
 
 def readLongDescription( readme_path ):
-  readme = readTextFile( readme_path )
+  readme = read_text_file( readme_path )
   readme = '\n'.join( readme.split('\n')[2:] )
   return readme.strip()
 

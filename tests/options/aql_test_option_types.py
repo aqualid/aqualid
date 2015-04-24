@@ -4,7 +4,7 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
     DictOptionType, PathOptionType, \
@@ -24,9 +24,9 @@ class TestOptionTypes(AqlTestCase):
             description='Include debug symbols', group="Debug", style=(True, False))
 
         true_values = [
-            'tRUe', 't', '1', 'yeS', 'ENABled', 'On', 'y', 1, 2, 3, -1, True]
+            'tRUe', 't', '1', 'Yes', 'ENABled', 'On', 'y', 1, 2, 3, -1, True]
         false_values = [
-            'FAlsE', 'F', '0', 'nO', 'disabled', 'oFF', 'N', 0, None, False]
+            'FAlsE', 'F', '0', 'No', 'disabled', 'oFF', 'N', 0, None, False]
 
         for t in true_values:
             v = debug_symbols(t)
@@ -43,22 +43,22 @@ class TestOptionTypes(AqlTestCase):
 
         v = debug_symbols('TRUE')
         self.assertTrue(v)
-        self.assertEqual(debug_symbols.toStr(v), 'ON')
+        self.assertEqual(debug_symbols.to_str(v), 'ON')
 
         v = debug_symbols(0)
         self.assertFalse(v)
-        self.assertEqual(debug_symbols.toStr(v), 'OFF')
+        self.assertEqual(debug_symbols.to_str(v), 'OFF')
 
         opt_type = BoolOptionType(
             style=('Yes', 'No'), true_values=[], false_values=[])
 
-        self.assertEqual(opt_type.helpRange(), ['Yes', 'No'])
+        self.assertEqual(opt_type.help_range(), ['Yes', 'No'])
 
-        opt_type.addValues('Y', 'N')
-        opt_type.addValues('y', 'n')
-        self.assertEqual(opt_type.helpRange(), ['Yes (or Y)', 'No (or N)'])
+        opt_type.add_values('Y', 'N')
+        opt_type.add_values('y', 'n')
+        self.assertEqual(opt_type.help_range(), ['Yes (or Y)', 'No (or N)'])
 
-        opt_type.addValues('1', '0')
+        opt_type.add_values('1', '0')
 
         v = opt_type('1')
         v |= opt_type(3)
@@ -123,17 +123,17 @@ class TestOptionTypes(AqlTestCase):
 
         self.assertRaises(ErrorOptionTypeUnableConvertValue, optimization, 3)
 
-        optimization.addValues({'final': 3})
+        optimization.add_values({'final': 3})
 
-        optimization.addValues({'final': 99})
-        optimization.addValues({2: 'fast'})
+        optimization.add_values({'final': 99})
+        optimization.add_values({2: 'fast'})
 
         self.assertRaises(
-            ErrorOptionTypeEnumAliasIsAlreadySet, optimization.addValues, {'slow': 'fast'})
+            ErrorOptionTypeEnumAliasIsAlreadySet, optimization.add_values, {'slow': 'fast'})
         self.assertRaises(
-            ErrorOptionTypeEnumValueIsAlreadySet, optimization.addValues, {'slow': 'speed'})
+            ErrorOptionTypeEnumValueIsAlreadySet, optimization.add_values, {'slow': 'speed'})
 
-        optimization.addValues(('ultra', 'speed'))
+        optimization.add_values(('ultra', 'speed'))
         self.assertEqual(optimization('ULTRA'), 'ultra')
 
         self.assertEqual(sorted(optimization.range()), sorted(
@@ -202,22 +202,22 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(warn_level(-100), 0)
         self.assertEqual(warn_level(100), 5)
 
-        self.assertEqual(warn_level.helpRange(), ['0 ... 5'])
+        self.assertEqual(warn_level.help_range(), ['0 ... 5'])
         self.assertEqual(warn_level.range(), [0, 5])
 
-        warn_level.setRange(min_value=None, max_value=None, coerce=False)
+        warn_level.set_range(min_value=None, max_value=None, coerce=False)
         self.assertEqual(warn_level(0), 0)
         self.assertRaises(ErrorOptionTypeUnableConvertValue, warn_level, 1)
 
-        warn_level.setRange(min_value=None, max_value=None, coerce=True)
+        warn_level.set_range(min_value=None, max_value=None, coerce=True)
         self.assertEqual(warn_level(0), 0)
         self.assertEqual(warn_level(10), 0)
         self.assertEqual(warn_level(-10), 0)
 
         self.assertRaises(ErrorOptionTypeUnableConvertValue,
-                          warn_level.setRange, min_value="abc", max_value=None)
+                          warn_level.set_range, min_value="abc", max_value=None)
         self.assertRaises(ErrorOptionTypeUnableConvertValue,
-                          warn_level.setRange, min_value=None, max_value="efg")
+                          warn_level.set_range, min_value=None, max_value="efg")
 
     # ==============================================================================
 
@@ -232,7 +232,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(opt1('efg'), 'EFG')
         self.assertEqual(opt1(None), '')
 
-        self.assertEqual(opt1.helpRange(), [range_help])
+        self.assertEqual(opt1.help_range(), [range_help])
 
     # ==============================================================================
 
@@ -245,7 +245,7 @@ class TestOptionTypes(AqlTestCase):
 
         self.assertRaises(ErrorOptionTypeUnableConvertValue, opt1, 'a1')
 
-        self.assertEqual(opt1.helpRange(), [])
+        self.assertEqual(opt1.help_range(), [])
 
         self.assertEqual(opt1(), 0)
         self.assertEqual(opt1(1), opt1(1))
@@ -302,7 +302,7 @@ class TestOptionTypes(AqlTestCase):
         # self.assertEqual( opt1( '../abc/../123' ), '../123' )
         self.assertEqual(opt1('../abc/../123'), '../abc/../123')
 
-        self.assertEqual(opt1.helpRange(), [])
+        self.assertEqual(opt1.help_range(), [])
 
     # ==============================================================================
 
@@ -325,7 +325,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertIn('yes', ob('yes,no'))
 
         self.assertEqual(
-            ob.helpRange(), ['On (or enabled, Yes)', 'Off (or disabled, No)'])
+            ob.help_range(), ['On (or enabled, Yes)', 'Off (or disabled, No)'])
 
         on = ListOptionType(
             value_type=int, unique=True, range_help="List of integers")
@@ -333,10 +333,10 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(on('1,0,2,1,1,2,0'), [1, 0, 2])
         self.assertRaises(ErrorOptionTypeUnableConvertValue, on, [1, 'abc'])
 
-        self.assertEqual(on.helpRange(), ["List of integers"])
+        self.assertEqual(on.help_range(), ["List of integers"])
 
         on = ListOptionType(value_type=int)
-        self.assertEqual(on.helpRange(), [])
+        self.assertEqual(on.help_range(), [])
 
     # ==============================================================================
 
@@ -385,4 +385,4 @@ class TestOptionTypes(AqlTestCase):
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

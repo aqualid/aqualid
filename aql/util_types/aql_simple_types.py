@@ -25,7 +25,7 @@ import locale
 import operator
 
 __all__ = (
-    'uStr', 'to_unicode', 'is_unicode', 'is_string', 'to_string',
+    'u_str', 'to_unicode', 'is_unicode', 'is_string', 'to_string',
     'cast_str', 'encode_str', 'decode_bytes', 'String', 'IgnoreCaseString',
     'LowerCaseString', 'UpperCaseString', 'Version',
     'SIMPLE_TYPES_SET', 'SIMPLE_TYPES', 'is_simple_value', 'is_simple_type'
@@ -35,9 +35,9 @@ __all__ = (
 
 
 try:
-    uStr = unicode
+    u_str = unicode
 except NameError:
-    uStr = str
+    u_str = str
 
 # ==============================================================================
 
@@ -76,12 +76,12 @@ def encode_str(value, encoding=None, _try_encodings=_TRY_ENCODINGS):
 
 def decode_bytes(obj, encoding=None, _try_encodings=_TRY_ENCODINGS):
     if encoding:
-        return uStr(obj, encoding)
+        return u_str(obj, encoding)
 
     error = None
     for encoding in _try_encodings:
         try:
-            return uStr(obj, encoding)
+            return u_str(obj, encoding)
         except UnicodeDecodeError as ex:
             if error is None:
                 error = ex
@@ -95,25 +95,25 @@ def to_unicode(obj, encoding=None):
     if isinstance(obj, (bytearray, bytes)):
         return decode_bytes(obj, encoding)
 
-    return uStr(obj)
+    return u_str(obj)
 
 # ==============================================================================
 
-if uStr is not str:
-    def is_unicode(value, _ustr=uStr, _isinstance=isinstance):
+if u_str is not str:
+    def is_unicode(value, _ustr=u_str, _isinstance=isinstance):
         return _isinstance(value, _ustr)
 
-    def is_string(value, _ustr=uStr, _str=str, _isinstance=isinstance):
+    def is_string(value, _ustr=u_str, _str=str, _isinstance=isinstance):
         return _isinstance(value, (_ustr, _str))
 
-    def to_string(value, _ustr=uStr, _str=str, _isinstance=isinstance):
+    def to_string(value, _ustr=u_str, _str=str, _isinstance=isinstance):
         if _isinstance(value, (_ustr, _str)):
             return value
         return _str(value)
 
     # -----------------------------------------------------------
 
-    def cast_str(obj, encoding=None, _ustr=uStr):
+    def cast_str(obj, encoding=None, _ustr=u_str):
         if isinstance(obj, _ustr):
             return encode_str(obj, encoding)
 
@@ -297,7 +297,7 @@ class Version (str):
 # ==============================================================================
 
 SIMPLE_TYPES_SET = frozenset(
-    (uStr, str, int, float, complex, bool, bytes, bytearray))
+    (u_str, str, int, float, complex, bool, bytes, bytearray))
 SIMPLE_TYPES = tuple(SIMPLE_TYPES_SET)
 
 

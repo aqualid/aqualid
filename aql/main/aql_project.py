@@ -26,21 +26,22 @@ import site
 import types
 import itertools
 
-from aql.utils import CLIConfig, CLIOption, getFunctionArgs, execFile,\
-    flattenList, findFiles, cpuCount, Chdir, expandFilePath
+from aql.utils import CLIConfig, CLIOption, get_function_args, exec_file,\
+    flatten_list, find_files, cpu_count, Chdir, expand_file_path
 
-from aql.util_types import FilePath, ValueListType, UniqueList, toSequence
+from aql.util_types import FilePath, value_list_type, UniqueList,\
+    to_sequence, is_sequence
 
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity,\
     FileChecksumEntity, DirEntity, SimpleEntity
 
-from aql.options import builtinOptions, Options, iUpdateValue
+from aql.options import builtin_options, Options, op_iupdate
 
 from aql.nodes import BuildManager, Node,\
     NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
 
-from .aql_info import getAqlInfo
-from .aql_tools import getToolsManager
+from .aql_info import get_aql_info
+from .aql_tools import get_tools_manager
 from .aql_builtin_tools import BuiltinTool
 
 __all__ = ('Project', 'ProjectConfig',
@@ -57,7 +58,7 @@ class ErrorProjectInvalidMethod(Exception):
 
     def __init__(self, method):
         msg = "Invalid project method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectInvalidMethod, self).__init__(msg)
 
 # ==============================================================================
 
@@ -66,7 +67,7 @@ class ErrorProjectUnknownTarget(Exception):
 
     def __init__(self, target):
         msg = "Unknown build target: '%s'" % (target,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectUnknownTarget, self).__init__(msg)
 
 # ==============================================================================
 
@@ -76,7 +77,7 @@ class ErrorProjectBuilderMethodWithKW(Exception):
     def __init__(self, method):
         msg = "Keyword arguments are not allowed in builder method: '%s'" % (
             method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodWithKW, self).__init__(msg)
 
 # ==============================================================================
 
@@ -85,7 +86,7 @@ class ErrorProjectBuilderMethodUnbound(Exception):
 
     def __init__(self, method):
         msg = "Unbound builder method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodUnbound, self).__init__(msg)
 
 # ==============================================================================
 
@@ -94,7 +95,7 @@ class ErrorProjectBuilderMethodFewArguments(Exception):
 
     def __init__(self, method):
         msg = "Too few arguments in builder method: '%s'" % (method,)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodFewArguments, self).__init__(msg)
 
 # ==============================================================================
 
@@ -104,46 +105,61 @@ class ErrorProjectBuilderMethodInvalidOptions(Exception):
     def __init__(self, value):
         msg = "Type of 'options' argument must be Options, instead of: " \
               "'%s'(%s)" % (type(value), value)
-        super(type(self), self).__init__(msg)
+        super(ErrorProjectBuilderMethodInvalidOptions, self).__init__(msg)
 
 # ==============================================================================
 
 
-def _getUserConfigDir():
+def _get_user_config_dir():
     return os.path.join(os.path.expanduser('~'), '.config')
 
 # ==============================================================================
 
 
-def _getSitePackagesDirs():
+def _add_packages_from_sys_path(paths):
+
+    local_path = os.path.normcase(os.path.expanduser('~'))
+
+    for path in sys.path:
+        path = os.path.normcase(path)
+        if path.endswith('-packages') and not path.startswith(local_path):
+            if path not in paths:
+                paths.append(path)
+
+# ==============================================================================
+
+
+def _add_packages_from_sysconfig(paths):
+    try:
+        from distutils.sysconfig import get_python_lib
+
+        path = get_python_lib()
+        if path not in paths:
+            paths.append(path)
+    except Exception:
+        pass
+
+# ==============================================================================
+
+
+def _get_site_packages():
 
     try:
         return site.getsitepackages()
     except Exception:
         pass
 
-    local_path = os.path.normcase(os.path.expanduser('~'))
-
     paths = []
-    for path in sys.path:
-        path = os.path.normcase(path)
-        if path.endswith('-packages') and not path.startswith(local_path):
-            paths.append(path)
 
-    try:
-        from distutils.sysconfig import get_python_lib
-        lib_path = get_python_lib()
-        if lib_path not in paths:
-            paths.append(lib_path)
-    except Exception:
-        pass
+    _add_packages_from_sys_path(paths)
+    _add_packages_from_sysconfig(paths)
 
     return paths
 
 # ==============================================================================
 
 
-def _getAqualidInstallDir():
+def _get_aqualid_install_dir():
     try:
         import aql
         return os.path.dirname(aql.__file__)
@@ -153,17 +169,17 @@ def _getAqualidInstallDir():
 # ==============================================================================
 
 
-def _getDefaultToolsPath(info=getAqlInfo()):
+def _get_default_tools_path(info=get_aql_info()):
 
     aql_module_name = info.module
 
-    tool_dirs = _getSitePackagesDirs()
+    tool_dirs = _get_site_packages()
 
-    tool_dirs += (site.USER_SITE, _getUserConfigDir())
+    tool_dirs += (site.USER_SITE, _get_user_config_dir())
 
     tool_dirs = [os.path.join(path, aql_module_name) for path in tool_dirs]
 
-    aql_dir = _getAqualidInstallDir()
+    aql_dir = _get_aqualid_install_dir()
     if aql_dir:
         tool_dirs.insert(-2, aql_dir)  # insert before the local tools
 
@@ -173,8 +189,8 @@ def _getDefaultToolsPath(info=getAqlInfo()):
 # ==============================================================================
 
 
-def _readConfig(config_file, cli_config, options, tools_path):
-    cli_config.readConfig(config_file, {'options': options})
+def _read_config(config_file, cli_config, options, tools_path):
+    cli_config.read_file(config_file, {'options': options})
 
     if cli_config.tools_path:
         tools_path.extend(cli_config.tools_path)
@@ -188,7 +204,7 @@ class ProjectConfig(object):
     __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
                  'verbose', 'silent', 'no_output', 'jobs', 'keep_going',
                  'search_up', 'tools_path', 'no_tool_errors',
-                 'build_always', 'clean', 'list_options', 'list_tool_options',
+                 'clean', 'list_options', 'list_tool_options',
                  'list_targets',
                  'debug_profile', 'debug_profile_top', 'debug_memory',
                  'debug_explain', 'debug_backtrace',
@@ -201,12 +217,12 @@ class ProjectConfig(object):
 
     def __init__(self, args=None):
 
-        CLI_USAGE = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
+        cli_usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
 
-        Paths = ValueListType(UniqueList, FilePath)
-        Strings = ValueListType(UniqueList, str)
+        paths_type = value_list_type(UniqueList, FilePath)
+        strings_type = value_list_type(UniqueList, str)
 
-        CLI_OPTIONS = (
+        cli_options = (
 
             CLIOption("-C", "--directory",  "directory",  FilePath, '',
                       "Change directory before reading the make files.",
@@ -220,16 +236,15 @@ class ProjectConfig(object):
                       "List current options and exit."),
 
             CLIOption("-L", "--list-tool-options", "list_tool_options",
-                      Strings, [], "List tool options and exit.", "TOOL_NAME"),
+                      strings_type, [],
+                      "List tool options and exit.",
+                      "TOOL_NAME"),
 
             CLIOption("-t", "--list-targets", "list_targets", bool, False,
                       "List all available targets and exit."),
 
             CLIOption("-c", "--config", "config", FilePath, None,
                       "The configuration file used to read CLI arguments."),
-
-            CLIOption("-B", "--always", "build_always", bool, False,
-                      "Unconditionally build all targets."),
 
             CLIOption("-R", "--clean", "clean", bool, False,
                       "Cleans targets."),
@@ -240,7 +255,7 @@ class ProjectConfig(object):
             CLIOption("-e", "--no-tool-errors", "no_tool_errors", bool, False,
                       "Stop on any error during initialization of tools."),
 
-            CLIOption("-I", "--tools-path", "tools_path", Paths, [],
+            CLIOption("-I", "--tools-path", "tools_path", paths_type, [],
                       "Path to tools and setup scripts.", 'FILE PATH, ...'),
 
             CLIOption("-k", "--keep-going", "keep_going", bool, False,
@@ -291,30 +306,30 @@ class ProjectConfig(object):
                       "Show version and exit."),
         )
 
-        cli_config = CLIConfig(CLI_USAGE, CLI_OPTIONS, args)
+        cli_config = CLIConfig(cli_usage, cli_options, args)
 
-        options = builtinOptions()
+        options = builtin_options()
 
         # -----------------------------------------------------------
         # Add default tools path
 
-        tools_path = _getDefaultToolsPath()
+        tools_path = _get_default_tools_path()
         cli_tools_path = cli_config.tools_path
         cli_config.tools_path = None
 
         # -----------------------------------------------------------
         # Read a config file from user's home
 
-        user_config = os.path.join(_getUserConfigDir(), 'default.cfg')
+        user_config = os.path.join(_get_user_config_dir(), 'default.cfg')
         if os.path.isfile(user_config):
-            _readConfig(user_config, cli_config, options, tools_path)
+            _read_config(user_config, cli_config, options, tools_path)
 
         # -----------------------------------------------------------
         # Read a config file specified from CLI
 
         config = cli_config.config
         if config:
-            _readConfig(config, cli_config, options, tools_path)
+            _read_config(config, cli_config, options, tools_path)
 
         # add user specified tools_path to the end of search path to override
         # default tools
@@ -350,7 +365,6 @@ class ProjectConfig(object):
         self.show_version = cli_config.version
         self.no_output = cli_config.no_output
         self.keep_going = cli_config.keep_going
-        self.build_always = cli_config.build_always
         self.clean = cli_config.clean
         self.list_options = cli_config.list_options
         self.list_tool_options = cli_config.list_tool_options
@@ -372,7 +386,7 @@ class BuilderWrapper(object):
     __slots__ = ('project', 'options', 'tool', 'method', 'arg_names')
 
     def __init__(self, tool, method, project, options):
-        self.arg_names = self.__checkBuilderMethod(method)
+        self.arg_names = self.__check_builder_method(method)
         self.tool = tool
         self.method = method
         self.project = project
@@ -381,11 +395,11 @@ class BuilderWrapper(object):
     # -----------------------------------------------------------
 
     @staticmethod
-    def __checkBuilderMethod(method):
+    def __check_builder_method(method):
         if not hasattr(method, '__call__'):
             raise ErrorProjectInvalidMethod(method)
 
-        f_args, f_varargs, f_kw, f_defaults = getFunctionArgs(method)
+        f_args, f_varargs, f_kw, f_defaults = get_function_args(method)
 
         if f_kw:
             raise ErrorProjectBuilderMethodWithKW(method)
@@ -403,8 +417,35 @@ class BuilderWrapper(object):
 
     # -----------------------------------------------------------
 
-    def __getOptionsAndArgs(self, kw):
-        args_kw = {}
+    @staticmethod
+    def _add_sources(name, value, sources,
+                     _names=('sources', 'source')):
+        if name in _names:
+            if is_sequence(value):
+                sources.extend(value)
+            else:
+                sources.append(value)
+
+            return True
+
+        return False
+
+    # -----------------------------------------------------------
+
+    @staticmethod
+    def _add_deps(value, deps,
+                  _node_types=(Node, NodeFilter, EntityBase)):
+
+        if is_sequence(value):
+            deps.extend(v for v in value if isinstance(v, _node_types))
+        else:
+            if isinstance(value, _node_types):
+                deps.append(value)
+
+    # -----------------------------------------------------------
+
+    def _get_builder_args(self, kw):
+        builder_args = {}
         sources = []
         deps = []
 
@@ -418,36 +459,34 @@ class BuilderWrapper(object):
         options = options.override()
 
         for name, value in kw.items():
-            if name in ['sources', 'source']:
-                sources += toSequence(value)
+            if self._add_sources(name, value, sources):
+                continue
+
+            self._add_deps(value, deps)
+
+            if name in self.arg_names:
+                builder_args[name] = value
             else:
-                for v in toSequence(value):
-                    if isinstance(v, (Node, NodeFilter, EntityBase)):
-                        deps.append(v)
+                options.append_value(name, value, op_iupdate)
 
-                if name in self.arg_names:
-                    args_kw[name] = value
-                else:
-                    options.appendValue(name, value, iUpdateValue)
-
-        return options, deps, sources, args_kw
+        return options, deps, sources, builder_args
 
     # -----------------------------------------------------------
 
     def __call__(self, *args, **kw):
 
-        options, deps, sources, args_kw = self.__getOptionsAndArgs(kw)
+        options, deps, sources, builder_args = self._get_builder_args(kw)
 
         sources += args
-        sources = flattenList(sources)
+        sources = flatten_list(sources)
 
-        builder = self.method(options, **args_kw)
+        builder = self.method(options, **builder_args)
 
         node = Node(builder, sources)
 
         node.depends(deps)
 
-        self.project.AddNodes((node,))
+        self.project.add_nodes((node,))
 
         return node
 
@@ -483,15 +522,15 @@ class ProjectTools(object):
         self.project = project
         self.tools_cache = {}
 
-        tools = getToolsManager()
+        tools = get_tools_manager()
 
-        tools.loadTools(self.project.config.tools_path)
+        tools.load_tools(self.project.config.tools_path)
 
         self.tools = tools
 
     # -----------------------------------------------------------
 
-    def _getToolsOptions(self):
+    def _get_tools_options(self):
         tools_options = {}
         for name, tool in self.tools_cache.items():
             tool = next(iter(tool.values()))
@@ -501,14 +540,14 @@ class ProjectTools(object):
 
     # -----------------------------------------------------------
 
-    def _getToolNames(self):
+    def _get_tool_names(self):
         return sorted(self.tools_cache)
 
     # -----------------------------------------------------------
 
-    def __addTool(self, tool_name, options):
+    def __add_tool(self, tool_name, options):
 
-        options_ref = options.getHashRef()
+        options_ref = options.get_hash_ref()
 
         try:
             return self.tools_cache[tool_name][options_ref]
@@ -517,15 +556,18 @@ class ProjectTools(object):
 
         project = self.project
 
-        tool, tool_names, tool_options = self.tools.getTool(
-            tool_name, options, project.config.no_tool_errors)
+        ignore_errors = not project.config.no_tool_errors
+
+        tool, tool_names, tool_options = self.tools.get_tool(tool_name,
+                                                             options,
+                                                             ignore_errors)
 
         tool = ToolWrapper(tool, project, tool_options)
 
-        attrs = self.__dict__
+        set_attr = self.__dict__.setdefault
 
         for name in tool_names:
-            attrs.setdefault(name, tool)
+            set_attr(name, tool)
             self.tools_cache.setdefault(name, {})[options_ref] = tool
 
         return tool
@@ -542,7 +584,7 @@ class ProjectTools(object):
         if tool_method and isinstance(tool_method, _func_types):
             return BuilderWrapper(tool, tool_method, self.project, options)
 
-        return self.__addTool(name, options)
+        return self.__add_tool(name, options)
 
     # -----------------------------------------------------------
 
@@ -551,13 +593,13 @@ class ProjectTools(object):
 
     # -----------------------------------------------------------
 
-    def Tools(self, *tool_names, **kw):
+    def get_tools(self, *tool_names, **kw):
 
         options = kw.pop('options', None)
 
         tools_path = kw.pop('tools_path', None)
         if tools_path:
-            self.tools.loadTools(tools_path)
+            self.tools.load_tools(tools_path)
 
         if options is None:
             options = self.project.options
@@ -566,27 +608,27 @@ class ProjectTools(object):
             options = options.override()
             options.update(kw)
 
-        tools = [self.__addTool(tool_name, options)
+        tools = [self.__add_tool(tool_name, options)
                  for tool_name in tool_names]
 
         return tools
 
     # -----------------------------------------------------------
 
-    def Tool(self, tool_name, **kw):
-        return self.Tools(tool_name, **kw)[0]
+    def get_tool(self, tool_name, **kw):
+        return self.get_tools(tool_name, **kw)[0]
 
     # -----------------------------------------------------------
 
-    def AddTool(self, tool_class, tool_names=tuple()):
-        self.tools.addTool(tool_class, tool_names)
+    def add_tool(self, tool_class, tool_names=tuple()):
+        self.tools.add_tool(tool_class, tool_names)
 
-        return self.__addTool(tool_class, self.project.options)
+        return self.__add_tool(tool_class, self.project.options)
 
 # ==============================================================================
 
 
-def _textTargets(targets):
+def _text_targets(targets):
     text = ["", "  Targets:", "==================", ""]
 
     max_name = ""
@@ -637,48 +679,59 @@ class Project(object):
 
     def __getattr__(self, attr):
         if attr == 'script_locals':
-            self.script_locals = self.__getScriptLocals()
+            self.script_locals = self.__get_script_locals()
             return self.script_locals
 
         raise AttributeError("No attribute '%s'" % (attr,))
 
     # -----------------------------------------------------------
 
-    def __getScriptLocals(self):
+    def __get_script_locals(self):
 
         script_locals = {
-            'options': self.options,
-            'tools': self.tools,
-            'Tool': self.tools.Tool,
-            'Tools': self.tools.Tools,
-            'AddTool': self.tools.AddTool,
-            'LoadTools': self.tools.tools.loadTools,
-            'FindFiles': findFiles
+            'options':          self.options,
+            'tools':            self.tools,
+            'Tool':             self.tools.get_tool,
+            'Tools':            self.tools.get_tools,
+            'AddTool':          self.tools.add_tool,
+            'LoadTools':        self.tools.tools.load_tools,
+            'FindFiles':        find_files,
+            'GetProject':       self.get_project,
+            'GetBuildTargets':  self.get_build_targets,
+            'File':             self.make_file_entity,
+            'Entity':           self.make_entity,
+            'Dir':              self.make_dir_entity,
+            'Config':           self.read_config,
+            'Script':           self.read_script,
+            'SetBuildDir':      self.set_build_dir,
+            'Depends':          self.depends,
+            'Requires':         self.requires,
+            'RequireModules':   self.require_modules,
+            'Sync':             self.sync_nodes,
+            'Alias':            self.alias_nodes,
+            'Default':          self.default_build,
+            'AlwaysBuild':      self.always_build,
+            'Build':            self.build,
+            'Clear':            self.clear,
+            'DirName':          self.node_dirname,
+            'BaseName':         self.node_basename,
         }
-
-        for name in dir(self):
-            if name.startswith('_'):
-                continue
-
-            member = getattr(self, name)
-            if isinstance(member, types.MethodType):
-                script_locals.setdefault(name, member)
 
         return script_locals
 
     # -----------------------------------------------------------
 
-    def GetProject(self):
+    def get_project(self):
         return self
 
     # -----------------------------------------------------------
 
-    def GetBuildTargets(self):
+    def get_build_targets(self):
         return self.targets
 
     # -----------------------------------------------------------
 
-    def File(self, filepath, options=None):
+    def make_file_entity(self, filepath, options=None):
         if options is None:
             options = self.options
 
@@ -690,52 +743,69 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def Dir(self, filepath):
+    def make_dir_entity(self, filepath):
         return DirEntity(filepath)
 
     # -----------------------------------------------------------
 
-    def Entity(self, data, name=None):
+    def make_entity(self, data, name=None):
         return SimpleEntity(data=data, name=name)
 
     # -----------------------------------------------------------
 
-    def Config(self, config, options=None):
-
-        config = os.path.normcase(os.path.abspath(config))
+    def _get_config_options(self, config, options):
 
         if options is None:
             options = self.options
 
-        options_ref = options.getHashRef()
+        options_ref = options.get_hash_ref()
+
+        config = os.path.normcase(os.path.abspath(config))
 
         options_set = self.configs_cache.setdefault(config, set())
 
         if options_ref in options_set:
-            return
+            return None
 
-        config_locals = {'options': options}
+        options_set.add(options_ref)
 
-        with Chdir(os.path.dirname(config)):
-            result = execFile(config, config_locals)
+        return options
 
-        # remove overridden options from CLI
+    # -----------------------------------------------------------
+
+    def _remove_overridden_options(self, result):
         for arg in self.arguments:
             try:
                 del result[arg]
             except KeyError:
                 pass
 
+    # -----------------------------------------------------------
+
+    def read_config(self, config, options=None):
+
+        options = self._get_config_options(config, options)
+
+        if options is None:
+            return
+
+        config_locals = {'options': options}
+
+        dir_name, file_name = os.path.split(config)
+        with Chdir(dir_name):
+            result = exec_file(file_name, config_locals)
+
         tools_path = result.pop('tools_path', None)
         if tools_path:
-            self.tools.tools.loadTools(tools_path)
+            self.tools.tools.load_tools(tools_path)
+
+        self._remove_overridden_options(result)
 
         options.update(result)
-        options_set.add(options_ref)
 
     # -----------------------------------------------------------
 
-    def Script(self, script):
+    def read_script(self, script):
 
         script = os.path.normcase(os.path.abspath(script))
 
@@ -745,74 +815,75 @@ class Project(object):
         if script_result is not None:
             return script_result
 
-        with Chdir(os.path.dirname(script)):
-            script_result = execFile(script, self.script_locals)
+        dir_name, file_name = os.path.split(script)
+        with Chdir(dir_name):
+            script_result = exec_file(file_name, self.script_locals)
 
         scripts_cache[script] = script_result
         return script_result
 
     # -----------------------------------------------------------
 
-    def AddNodes(self, nodes):
+    def add_nodes(self, nodes):
         self.build_manager.add(nodes)
 
     # -----------------------------------------------------------
 
-    def SetBuildDir(self, build_dir):
-        build_dir = os.path.abspath(expandFilePath(build_dir))
+    def set_build_dir(self, build_dir):
+        build_dir = os.path.abspath(expand_file_path(build_dir))
         if self.options.build_dir != build_dir:
             self.options.build_dir = build_dir
 
     # -----------------------------------------------------------
 
-    def Depends(self, nodes, dependencies):
-        dependencies = tuple(toSequence(dependencies))
+    def depends(self, nodes, dependencies):
+        dependencies = tuple(to_sequence(dependencies))
 
-        for node in toSequence(nodes):
+        for node in to_sequence(nodes):
             node.depends(dependencies)
             self.build_manager.depends(node, node.dep_nodes)
 
     # -----------------------------------------------------------
 
-    def Requires(self, nodes, dependencies):
+    def requires(self, nodes, dependencies):
         dependencies = tuple(
-            dep for dep in toSequence(dependencies) if isinstance(dep, Node))
+            dep for dep in to_sequence(dependencies) if isinstance(dep, Node))
 
         depends = self.build_manager.depends
-        for node in toSequence(nodes):
+        for node in to_sequence(nodes):
             depends(node, dependencies)
 
     # -----------------------------------------------------------
 
-    def RequireModules(self, nodes, dependencies):
+    def require_modules(self, nodes, dependencies):
         dependencies = tuple(
-            dep for dep in toSequence(dependencies) if isinstance(dep, Node))
+            dep for dep in to_sequence(dependencies) if isinstance(dep, Node))
 
-        moduleDepends = self.build_manager.moduleDepends
-        for node in toSequence(nodes):
-            moduleDepends(node, dependencies)
+        module_depends = self.build_manager.module_depends
+        for node in to_sequence(nodes):
+            module_depends(node, dependencies)
 
     # -----------------------------------------------------------
 
     # TODO: It works not fully correctly yet. See test aq_test_sync_modules
     # def   SyncModules( self, nodes ):
-    #   nodes = tuple( node for node in toSequence( nodes )
+    #   nodes = tuple( node for node in to_sequence( nodes )
     #                  if isinstance( node, Node ) )
     #   self.build_manager.sync( nodes, deep = True)
 
     # -----------------------------------------------------------
 
-    def Sync(self, *nodes):
-        nodes = flattenList(nodes)
+    def sync_nodes(self, *nodes):
+        nodes = flatten_list(nodes)
 
         nodes = tuple(node for node in nodes if isinstance(node, Node))
         self.build_manager.sync(nodes)
 
     # -----------------------------------------------------------
 
-    def Alias(self, alias, nodes, description=None):
-        for alias, node in itertools.product(toSequence(alias),
-                                             toSequence(nodes)):
+    def alias_nodes(self, alias, nodes, description=None):
+        for alias, node in itertools.product(to_sequence(alias),
+                                             to_sequence(nodes)):
 
             self.aliases.setdefault(alias, set()).add(node)
 
@@ -821,57 +892,55 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    def Default(self, nodes):
-        for node in toSequence(nodes):
+    def default_build(self, nodes):
+        for node in to_sequence(nodes):
             self.defaults.append(node)
 
     # -----------------------------------------------------------
 
-    def AlwaysBuild(self, nodes):
+    def always_build(self, nodes):
         null_value = NullEntity()
-        for node in toSequence(nodes):
+        for node in to_sequence(nodes):
             node.depends(null_value)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def _addAliasNodes(self, target_nodes, aliases):
+    def _add_alias_nodes(self, target_nodes, aliases):
         try:
             for alias in aliases:
                 target_nodes.update(self.aliases[alias])
         except KeyError as ex:
             raise ErrorProjectUnknownTarget(ex.args[0])
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def _addDefaultNodes(self, target_nodes):
+    def _add_default_nodes(self, target_nodes):
         for node in self.defaults:
             if isinstance(node, Node):
                 target_nodes.add(node)
             else:
-                self._addAliasNodes(target_nodes, (node,))
+                self._add_alias_nodes(target_nodes, (node,))
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def _getBuildNodes(self):
+    def _get_build_nodes(self):
         target_nodes = set()
 
-        self._addAliasNodes(target_nodes, self.targets)
+        self._add_alias_nodes(target_nodes, self.targets)
 
         if not target_nodes:
-            self._addDefaultNodes(target_nodes)
+            self._add_default_nodes(target_nodes)
 
         if not target_nodes:
             target_nodes = None
 
         return target_nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def Build(self, jobs=None):
-        config = self.config
-
+    def _get_jobs_count(self, jobs=None):
         if jobs is None:
-            jobs = config.jobs
+            jobs = self.config.jobs
 
         if not jobs:
             jobs = 0
@@ -879,21 +948,29 @@ class Project(object):
             jobs = int(jobs)
 
         if not jobs:
-            jobs = cpuCount()
+            jobs = cpu_count()
 
-        if jobs < 0:
+        if jobs < 1:
             jobs = 1
 
         elif jobs > 32:
             jobs = 32
 
-        if not self.options.batch_groups.isSet():
+        return jobs
+
+    # ----------------------------------------------------------
+
+    def build(self, jobs=None):
+
+        jobs = self._get_jobs_count(jobs)
+
+        if not self.options.batch_groups.is_set():
             self.options.batch_groups = jobs
 
-        build_nodes = self._getBuildNodes()
+        build_nodes = self._get_build_nodes()
 
+        config = self.config
         keep_going = config.keep_going,
-        build_always = config.build_always
         explain = config.debug_explain
         with_backtrace = config.debug_backtrace
         force_lock = config.force_lock
@@ -902,28 +979,28 @@ class Project(object):
         is_ok = self.build_manager.build(jobs=jobs,
                                          keep_going=bool(keep_going),
                                          nodes=build_nodes,
-                                         build_always=build_always,
                                          explain=explain,
                                          with_backtrace=with_backtrace,
                                          use_sqlite=use_sqlite,
                                          force_lock=force_lock)
         return is_ok
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def Clear(self):
+    def clear(self):
 
-        build_nodes = self._getBuildNodes()
+        build_nodes = self._get_build_nodes()
 
         force_lock = self.config.force_lock
         use_sqlite = self.config.use_sqlite
 
-        self.build_manager.clear(
-            nodes=build_nodes, use_sqlite=use_sqlite, force_lock=force_lock)
+        self.build_manager.clear(nodes=build_nodes,
+                                 use_sqlite=use_sqlite,
+                                 force_lock=force_lock)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def ListTargets(self):
+    def list_targets(self):
         targets = []
         node2alias = {}
 
@@ -936,9 +1013,9 @@ class Project(object):
                 if len(target_info[1]) < len(description):
                     target_info[1] = description
 
-        build_nodes = self._getBuildNodes()
+        build_nodes = self._get_build_nodes()
         self.build_manager.shrink(build_nodes)
-        build_nodes = self.build_manager.getNodes()
+        build_nodes = self.build_manager.get_nodes()
 
         for nodes, aliases_and_description in node2alias.items():
 
@@ -955,14 +1032,14 @@ class Project(object):
         # sorted list in format: [ (target_names, is_built, description), ... ]
         targets.sort(key=lambda names: names[0][0].lower())
 
-        return _textTargets(targets)
+        return _text_targets(targets)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def ListOptions(self, brief=False):
-        result = self.options.helpText("Builtin options:", brief=brief)
+    def list_options(self, brief=False):
+        result = self.options.help_text("Builtin options:", brief=brief)
         result.append("")
-        tool_names = self.tools._getToolNames()
+        tool_names = self.tools._get_tool_names()
         if tool_names:
             result.append("Available options of tools: %s" %
                           (', '.join(tool_names)))
@@ -970,26 +1047,28 @@ class Project(object):
             result.append("")
         return result
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def ListToolsOptions(self, tools, brief=False):
-        tools = set(toSequence(tools))
+    def list_tools_options(self, tools, brief=False):
+        tools = set(to_sequence(tools))
         result = []
 
-        for tools_options, names in self.tools._getToolsOptions().items():
+        for tools_options, names in self.tools._get_tools_options().items():
             names_set = tools & set(names)
             if names_set:
                 tools -= names_set
                 options_name = "Options of tool: %s" % (', '.join(names))
-                result += tools_options.helpText(options_name, brief=brief)
+                result += tools_options.help_text(options_name, brief=brief)
         if result and result[-1]:
             result.append("")
         return result
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def DirName(self, node):
+    def node_dirname(self, node):
         return NodeDirNameFilter(node)
 
-    def BaseName(self, node):
+    # ----------------------------------------------------------
+
+    def node_basename(self, node):
         return NodeBaseNameFilter(node)

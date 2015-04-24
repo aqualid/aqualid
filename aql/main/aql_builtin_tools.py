@@ -9,8 +9,8 @@ import tarfile
 import itertools
 
 from aql.util_types import is_unicode, encode_str, decode_bytes,\
-    is_string, toSequence
-from aql.utils import openFile
+    is_string, to_sequence
+from aql.utils import open_file
 from aql.entity import FileEntityBase
 from aql.nodes import Builder, FileBuilder
 from .aql_tools import Tool
@@ -29,7 +29,7 @@ class ErrorDistCommandInvalid(Exception):
 # ==============================================================================
 
 
-def _getMethodFullName(m):
+def _get_method_full_name(m):
     full_name = []
     mod = getattr(m, '__module__', None)
     if mod:
@@ -60,18 +60,18 @@ class ExecuteCommandBuilder (Builder):
 
     def __init__(self, options, target=None, target_flag=None, cwd=None):
 
-        self.targets = [
-            self.getTargetFilePath(target) for target in toSequence(target)]
+        self.targets = tuple(map(self.get_target_path, to_sequence(target)))
+
         self.target_flag = target_flag
 
         if cwd:
-            cwd = self.getTargetDirPath(cwd)
+            cwd = self.get_target_dir(cwd)
 
         self.cwd = cwd
 
     # -----------------------------------------------------------
 
-    def _getCmdTargets(self):
+    def _get_cmd_targets(self):
 
         targets = self.targets
 
@@ -97,24 +97,24 @@ class ExecuteCommandBuilder (Builder):
     def build(self, source_entities, targets):
         cmd = tuple(src.get() for src in source_entities)
 
-        cmd_targets = self._getCmdTargets()
+        cmd_targets = self._get_cmd_targets()
         if cmd_targets:
             cmd += cmd_targets
 
-        out = self.execCmd(cmd, cwd=self.cwd)
+        out = self.exec_cmd(cmd, cwd=self.cwd)
 
-        targets.addFiles(self.targets)
+        targets.add_files(self.targets)
 
         return out
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         return self.targets
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         try:
             return source_entities[0]
         except Exception:
@@ -122,7 +122,7 @@ class ExecuteCommandBuilder (Builder):
 
     # -----------------------------------------------------------
 
-    def getTraceSources(self, source_entities, brief):
+    def get_trace_sources(self, source_entities, brief):
         return source_entities[1:]
 
 # ==============================================================================
@@ -142,7 +142,7 @@ class ExecuteMethodBuilder (Builder):
                  make_files,
                  clear_targets):
 
-        self.method_name = _getMethodFullName(method)
+        self.method_name = _get_method_full_name(method)
         self.method = method
         self.args = args if args else []
         self.kw = kw if kw else {}
@@ -151,10 +151,10 @@ class ExecuteMethodBuilder (Builder):
             self.clear = lambda target_entities, side_effect_entities: None
 
         if single:
-            self.split = self.splitSingle
+            self.split = self.split_single
 
         if make_files:
-            self.makeEntity = self.makeFileEntity
+            self.make_entity = self.make_file_entity
 
     # -----------------------------------------------------------
 
@@ -164,7 +164,7 @@ class ExecuteMethodBuilder (Builder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         name = self.method_name
 
         if not brief:
@@ -190,12 +190,12 @@ class CopyFilesBuilder (FileBuilder):
     NAME_ATTRS = ['target']
 
     def __init__(self, options, target):
-        self.target = self.getTargetDirPath(target)
-        self.split = self.splitBatch
+        self.target = self.get_target_dir(target)
+        self.split = self.split_batch
 
     # -----------------------------------------------------------
 
-    def buildBatch(self, source_entities, targets):
+    def build_batch(self, source_entities, targets):
         target = self.target
 
         for src_entity in source_entities:
@@ -209,12 +209,12 @@ class CopyFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return "Copy files"
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         src = source_entities[0].get()
         return os.path.join(self.target, os.path.basename(src)),
 
@@ -226,7 +226,7 @@ class CopyFileAsBuilder (FileBuilder):
     NAME_ATTRS = ['target']
 
     def __init__(self, options, target):
-        self.target = self.getTargetFilePath(target)
+        self.target = self.get_target_path(target)
 
     # -----------------------------------------------------------
 
@@ -241,12 +241,12 @@ class CopyFileAsBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return "Copy file"
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         return self.target
 
 # ==============================================================================
@@ -270,7 +270,7 @@ class TarFilesBuilder (FileBuilder):
             elif mode == "w":
                 ext = ".tar"
 
-        self.target = self.getTargetFilePath(target, ext)
+        self.target = self.get_target_path(target, ext)
         self.mode = mode
         self.rename = rename if rename else tuple()
         self.basedir = os.path.normcase(
@@ -278,7 +278,7 @@ class TarFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def __getArcname(self, file_path):
+    def __get_arcname(self, file_path):
         for arc_name, path in self.rename:
             if file_path == path:
                 return arc_name
@@ -292,14 +292,14 @@ class TarFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def __addFile(self, arch, filepath):
-        arcname = self.__getArcname(filepath)
+    def __add_file(self, arch, filepath):
+        arcname = self.__get_arcname(filepath)
         arch.add(filepath, arcname)
 
     # -----------------------------------------------------------
 
     @staticmethod
-    def __addEntity(arch, entity):
+    def __add_entity(arch, entity):
         arcname = entity.name
         data = entity.get()
         if is_unicode(data):
@@ -318,9 +318,9 @@ class TarFilesBuilder (FileBuilder):
         try:
             for entity in source_entities:
                 if isinstance(entity, FileEntityBase):
-                    self.__addFile(arch, entity.get())
+                    self.__add_file(arch, entity.get())
                 else:
-                    self.__addEntity(arch, entity)
+                    self.__add_entity(arch, entity)
 
         finally:
             arch.close()
@@ -329,12 +329,12 @@ class TarFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return "Create Tar"
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         return self.target
 
 # ==============================================================================
@@ -350,14 +350,14 @@ class ZipFilesBuilder (FileBuilder):
         if ext is None:
             ext = ".zip"
 
-        self.target = self.getTargetFilePath(target, ext=ext)
+        self.target = self.get_target_path(target, ext=ext)
         self.rename = rename if rename else tuple()
         self.basedir = os.path.normcase(
             os.path.normpath(basedir)) if basedir else None
 
     # -----------------------------------------------------------
 
-    def __openArch(self, large=False):
+    def __open_arch(self, large=False):
         try:
             return zipfile.ZipFile(self.target,
                                    "w",
@@ -370,7 +370,7 @@ class ZipFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def __getArcname(self, file_path):
+    def __get_arcname(self, file_path):
         for arc_name, path in self.rename:
             if file_path == path:
                 return arc_name
@@ -384,11 +384,11 @@ class ZipFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def __addFiles(self, arch, source_entities):
+    def __add_files(self, arch, source_entities):
         for entity in source_entities:
             if isinstance(entity, FileEntityBase):
                 filepath = entity.get()
-                arcname = self.__getArcname(filepath)
+                arcname = self.__get_arcname(filepath)
                 arch.write(filepath, arcname)
             else:
                 arcname = entity.name
@@ -403,16 +403,16 @@ class ZipFilesBuilder (FileBuilder):
     def build(self, source_entities, targets):
         target = self.target
 
-        arch = self.__openArch()
+        arch = self.__open_arch()
 
         try:
-            self.__addFiles(arch, source_entities)
+            self.__add_files(arch, source_entities)
         except zipfile.LargeZipFile:
             arch.close()
             arch = None
-            arch = self.__openArch(large=True)
+            arch = self.__open_arch(large=True)
 
-            self.__addFiles(arch, source_entities)
+            self.__add_files(arch, source_entities)
         finally:
             if arch is not None:
                 arch.close()
@@ -421,12 +421,12 @@ class ZipFilesBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return "Create Zip"
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         return self.target
 
 # ==============================================================================
@@ -439,17 +439,17 @@ class WriteFileBuilder (Builder):
     def __init__(self, options, target, binary=False, encoding=None):
         self.binary = binary
         self.encoding = encoding
-        self.target = self.getTargetFilePath(target)
+        self.target = self.get_target_path(target)
 
     # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
         target = self.target
 
-        with openFile(target,
-                      write=True,
-                      binary=self.binary,
-                      encoding=self.encoding) as f:
+        with open_file(target,
+                       write=True,
+                       binary=self.binary,
+                       encoding=self.encoding) as f:
             f.truncate()
             for src in source_entities:
                 src = src.get()
@@ -462,16 +462,16 @@ class WriteFileBuilder (Builder):
 
                 f.write(src)
 
-        targets.addFiles(target)
+        targets.add_files(target)
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return "Writing content"
 
     # -----------------------------------------------------------
 
-    def getTargetEntities(self, source_entities):
+    def get_target_entities(self, source_entities):
         return self.target
 
 # ==============================================================================
@@ -484,36 +484,21 @@ class DistBuilder (FileBuilder):
 
     def __init__(self, options, command, args, target):
 
-        target = self.getTargetDirPath(target)
+        target = self.get_target_dir(target)
 
         script_args = [command]
 
         if command.startswith('bdist'):
-            temp_dir = self.getBuildPath()
+            temp_dir = self.get_build_path()
             script_args += ['--bdist-base', temp_dir]
 
         elif command != 'sdist':
             raise ErrorDistCommandInvalid(command)
 
-        formats = set()
+        args = self._get_args(args)
+        script_args += args
 
-        if args:
-            if is_string(args):
-                args = args.split()
-            else:
-                args = toSequence(args)
-
-            script_args += args
-
-            for arg in args:
-                if command.startswith('bdist'):
-                    if arg.startswith('--formats='):
-                        v = arg[len('--formats='):].split(',')
-                        formats.update(v)
-
-                    elif arg.startswith('--plat-name='):
-                        v = arg[len('--plat-name='):]
-                        formats.add(v)
+        formats = self._get_formats(args, command)
 
         script_args += ['--dist-dir', target]
 
@@ -524,7 +509,36 @@ class DistBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    @staticmethod
+    def _get_args(args):
+        if args:
+            return args.split() if is_string(args) else to_sequence(args)
+
+        return tuple()
+
+    # -----------------------------------------------------------
+
+    @staticmethod
+    def _get_formats(args, command):
+
+        if not command.startswith('bdist'):
+            return None
+
+        formats = set()
+        for arg in args:
+            if arg.startswith('--formats='):
+                v = arg[len('--formats='):].split(',')
+                formats.update(v)
+
+            elif arg.startswith('--plat-name='):
+                v = arg[len('--plat-name='):]
+                formats.add(v)
+
+        return formats
+
+    # -----------------------------------------------------------
+
+    def get_trace_name(self, source_entities, brief):
         return "distutils %s" % ' '.join(self.script_args)
 
     # -----------------------------------------------------------
@@ -537,7 +551,7 @@ class DistBuilder (FileBuilder):
         cmd += self.script_args
 
         script_dir = os.path.dirname(script)
-        out = self.execCmd(cmd, script_dir)
+        out = self.exec_cmd(cmd, script_dir)
 
         # TODO: Add parsing of setup.py output
         # "copying <filepath> -> <detination dir>"
@@ -557,7 +571,7 @@ class InstallDistBuilder (FileBuilder):
 
     # -----------------------------------------------------------
 
-    def getTraceName(self, source_entities, brief):
+    def get_trace_name(self, source_entities, brief):
         return "distutils install"
 
     # -----------------------------------------------------------
@@ -571,7 +585,7 @@ class InstallDistBuilder (FileBuilder):
             cmd.append("--user")
 
         script_dir = os.path.dirname(script)
-        out = self.execCmd(cmd, script_dir)
+        out = self.exec_cmd(cmd, script_dir)
 
         # TODO: Add parsing of setup.py output
         # "copying <filepath> -> <detination dir>"
@@ -583,42 +597,78 @@ class InstallDistBuilder (FileBuilder):
 
 class BuiltinTool(Tool):
 
-    def ExecuteCommand(self, options, target=None, target_flag=None, cwd=None):
+    def execute_command(self, options,
+                        target=None, target_flag=None, cwd=None):
+
         return ExecuteCommandBuilder(options, target=target,
                                      target_flag=target_flag, cwd=cwd)
 
+    ExecuteCommand = execute_command
     Command = ExecuteCommand
 
-    def ExecuteMethod(self, options, method, args=None, kw=None, single=True,
-                      make_files=True, clear_targets=True):
+    # ----------------------------------------------------------
+
+    def execute_method(self, options,
+                       method, args=None, kw=None, single=True,
+                       make_files=True, clear_targets=True):
+
         return ExecuteMethodBuilder(options, method=method, args=args, kw=kw,
                                     single=single, make_files=make_files,
                                     clear_targets=clear_targets)
 
+    ExecuteMethod = execute_method
     Method = ExecuteMethod
 
-    def CopyFiles(self, options, target):
+    # ----------------------------------------------------------
+
+    def copy_files(self, options, target):
         return CopyFilesBuilder(options, target)
 
-    def CopyFileAs(self, options, target):
+    CopyFiles = copy_files
+
+    # ----------------------------------------------------------
+
+    def copy_file_as(self, options, target):
         return CopyFileAsBuilder(options, target)
 
-    def WriteFile(self, options, target, binary=False, encoding=None):
+    CopyFileAs = copy_file_as
+
+    # ----------------------------------------------------------
+
+    def write_file(self, options, target, binary=False, encoding=None):
         return WriteFileBuilder(options, target,
                                 binary=binary, encoding=encoding)
 
-    def CreateDist(self, options, target, command, args=None):
+    WriteFile = write_file
+
+    # ----------------------------------------------------------
+
+    def create_dist(self, options, target, command, args=None):
         return DistBuilder(options, target=target, command=command, args=args)
 
-    def InstallDist(self, options, user=True):
+    CreateDist = create_dist
+
+    # ----------------------------------------------------------
+
+    def install_dist(self, options, user=True):
         return InstallDistBuilder(options, user=user)
 
-    def CreateZip(self, options, target, rename=None, basedir=None, ext=None):
+    InstallDist = install_dist
+
+    # ----------------------------------------------------------
+
+    def create_zip(self, options, target, rename=None, basedir=None, ext=None):
         return ZipFilesBuilder(options, target=target, rename=rename,
                                basedir=basedir, ext=ext)
 
-    def CreateTar(self, options, target, mode=None, rename=None,
-                  basedir=None, ext=None):
+    CreateZip = create_zip
+
+    # ----------------------------------------------------------
+
+    def create_tar(self, options,
+                   target, mode=None, rename=None, basedir=None, ext=None):
 
         return TarFilesBuilder(options, target=target, mode=mode,
                                rename=rename, basedir=basedir, ext=ext)
+
+    CreateTar = create_tar

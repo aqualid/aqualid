@@ -37,27 +37,24 @@ import threading
 import subprocess
 import multiprocessing
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
-from aql.util_types import uStr, is_string, cast_str, is_unicode, to_unicode,\
-    decode_bytes, encode_str, UniqueList, toSequence, isSequence, \
+from aql.util_types import u_str, is_string, cast_str, is_unicode, to_unicode,\
+    decode_bytes, encode_str, UniqueList, to_sequence, is_sequence, \
     SIMPLE_TYPES_SET
 
 __all__ = (
-    'openFile', 'readBinFile', 'readTextFile', 'writeBinFile', 'writeTextFile',
-    'execFile', 'removeFiles', 'newHash', 'dumpSimpleObject',
-    'simpleObjectSignature', 'objectSignature', 'dataSignature',
-    'fileSignature', 'fileTimeSignature', 'fileChecksum',
-    'loadModule', 'loadPackage',
-    'getFunctionName', 'printStacks',
-    'equalFunctionArgs', 'checkFunctionArgs', 'getFunctionArgs',
-    'executeCommand', 'ExecCommandResult', 'getShellScriptEnv',
-    'cpuCount', 'memoryUsage',
-    'flattenList', 'simplifyValue',
-    'Chrono', 'ItemsGroups', 'groupItems'
+    'open_file', 'read_bin_file', 'read_text_file', 'write_bin_file',
+    'write_text_file',
+    'exec_file', 'remove_files', 'new_hash', 'dump_simple_object',
+    'simple_object_signature', 'data_signature',
+    'file_signature', 'file_time_signature', 'file_checksum',
+    'load_module', 'load_package',
+    'get_function_name', 'print_stacks',
+    'equal_function_args', 'check_function_args', 'get_function_args',
+    'execute_command', 'ExecCommandResult', 'get_shell_script_env',
+    'cpu_count', 'memory_usage',
+    'flatten_list', 'simplify_value',
+    'Chrono', 'ItemsGroups', 'group_items'
 )
 
 # ==============================================================================
@@ -69,7 +66,7 @@ class ErrorInvalidExecCommand(Exception):
 
     def __init__(self, arg):
         msg = "Invalid type of command argument: %s(%s)" % (arg, type(arg))
-        super(type(self), self).__init__(msg)
+        super(ErrorInvalidExecCommand, self).__init__(msg)
 
 # ==============================================================================
 
@@ -78,7 +75,8 @@ class ErrorFileName(Exception):
 
     def __init__(self, filename):
         msg = "Invalid file name: %s(%s)" % (filename, type(filename))
-        super(type(self), self).__init__(msg)
+        super(ErrorFileName, self).__init__(msg)
+
 # ==============================================================================
 
 
@@ -86,7 +84,7 @@ class ErrorUnmarshallableObject(Exception):
 
     def __init__(self, obj):
         msg = "Unmarshallable object: '%s'" % (obj, )
-        super(type(self), self).__init__(msg)
+        super(ErrorUnmarshallableObject, self).__init__(msg)
 
 # ==============================================================================
 
@@ -108,12 +106,12 @@ else:
 # -------------------------------------------------------------------------------
 
 
-def openFile(filename,
-             read=True,
-             write=False,
-             binary=False,
-             sync=False,
-             encoding=None):
+def open_file(filename,
+              read=True,
+              write=False,
+              binary=False,
+              sync=False,
+              encoding=None):
 
     if not is_string(filename):
         raise ErrorFileName(filename)
@@ -154,26 +152,26 @@ def openFile(filename,
 # ==============================================================================
 
 
-def readTextFile(filename, encoding='utf-8'):
-    with openFile(filename, encoding=encoding) as f:
+def read_text_file(filename, encoding='utf-8'):
+    with open_file(filename, encoding=encoding) as f:
         return f.read()
 
 
-def readBinFile(filename):
-    with openFile(filename, binary=True) as f:
+def read_bin_file(filename):
+    with open_file(filename, binary=True) as f:
         return f.read()
 
 
-def writeTextFile(filename, data, encoding='utf-8'):
-    with openFile(filename, write=True, encoding=encoding) as f:
+def write_text_file(filename, data, encoding='utf-8'):
+    with open_file(filename, write=True, encoding=encoding) as f:
         f.truncate()
         if isinstance(data, (bytearray, bytes)):
             data = decode_bytes(data, encoding)
         f.write(data)
 
 
-def writeBinFile(filename, data, encoding=None):
-    with openFile(filename, write=True, binary=True, encoding=encoding) as f:
+def write_bin_file(filename, data, encoding=None):
+    with open_file(filename, write=True, binary=True, encoding=encoding) as f:
         f.truncate()
         if is_unicode(data):
             data = encode_str(data, encoding)
@@ -183,12 +181,12 @@ def writeBinFile(filename, data, encoding=None):
 # ==============================================================================
 
 
-def execFile(filename, file_locals):
+def exec_file(filename, file_locals):
 
     if not file_locals:
         file_locals = {}
 
-    source = readTextFile(filename)
+    source = read_text_file(filename)
     code = compile(source, filename, 'exec')
     file_locals_orig = file_locals.copy()
 
@@ -207,17 +205,17 @@ def execFile(filename, file_locals):
 # ==============================================================================
 
 
-def dumpSimpleObject(obj):
+def dump_simple_object(obj):
 
     if isinstance(obj, (bytes, bytearray)):
         data = obj
 
-    elif isinstance(obj, uStr):
+    elif isinstance(obj, u_str):
         data = obj.encode('utf-8')
 
     else:
         try:
-            data = marshal.dumps(obj, 0)  # stick with version 0, we a raw dump
+            data = marshal.dumps(obj, 0)  # use version 0, for a raw dump
         except ValueError:
             raise ErrorUnmarshallableObject(obj)
 
@@ -226,33 +224,20 @@ def dumpSimpleObject(obj):
 # ==============================================================================
 
 
-def dumpObject(obj):
-    return pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+def simple_object_signature(obj, common_hash=None):
+    data = dump_simple_object(obj)
+    return data_signature(data, common_hash)
 
 # ==============================================================================
 
 
-def simpleObjectSignature(obj, common_hash=None):
-    data = dumpSimpleObject(obj)
-    return dataSignature(data, common_hash)
-
-# ==============================================================================
-
-
-def objectSignature(obj, common_hash=None):
-    data = dumpObject(obj)
-    return dataSignature(data, common_hash)
-
-# ==============================================================================
-
-
-def newHash(data=b''):
+def new_hash(data=b''):
     return hashlib.md5(data)
 
 # ==============================================================================
 
 
-def dataSignature(data, common_hash=None):
+def data_signature(data, common_hash=None):
     if common_hash is None:
         obj_hash = hashlib.md5(data)
     else:
@@ -264,12 +249,12 @@ def dataSignature(data, common_hash=None):
 # ==============================================================================
 
 
-def fileSignature(filename):
+def file_signature(filename):
 
     checksum = hashlib.md5()
     chunk_size = checksum.block_size * 4096
 
-    with openFile(filename, binary=True) as f:
+    with open_file(filename, binary=True) as f:
         read = f.read
         checksum_update = checksum.update
 
@@ -279,26 +264,26 @@ def fileSignature(filename):
             chunk = read(chunk_size)
             checksum_update(chunk)
 
-    # print("fileSignature: %s: %s" % (filename, checksum.hexdigest()) )
+    # print("file_signature: %s: %s" % (filename, checksum.hexdigest()) )
     return checksum.digest()
 
 # ==============================================================================
 
 
-def fileTimeSignature(filename):
+def file_time_signature(filename):
     stat = os.stat(filename)
-    # print("fileTimeSignature: %s: %s" %
+    # print("file_time_signature: %s: %s" %
     #                           (filename, (stat.st_size, stat.st_mtime)) )
-    return simpleObjectSignature((stat.st_size, stat.st_mtime))
+    return simple_object_signature((stat.st_size, stat.st_mtime))
 
 # ==============================================================================
 
 
-def fileChecksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
+def file_checksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
 
     checksum = hashlib.__dict__[alg]()
 
-    with openFile(filename, binary=True) as f:
+    with open_file(filename, binary=True) as f:
         read = f.read
         f.seek(offset)
         checksum_update = checksum.update
@@ -321,7 +306,7 @@ def fileChecksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
 # ==============================================================================
 
 
-def getFunctionName(currentframe=inspect.currentframe):
+def get_function_name(currentframe=inspect.currentframe):
 
     frame = currentframe()
     if frame:
@@ -332,7 +317,7 @@ def getFunctionName(currentframe=inspect.currentframe):
 # ==============================================================================
 
 
-def printStacks():
+def print_stacks():
     id2name = dict([(th.ident, th.name) for th in threading.enumerate()])
 
     # noinspection PyProtectedMember
@@ -353,7 +338,7 @@ except AttributeError:
 # ==============================================================================
 
 
-def getFunctionArgs(function, getargspec=_getargspec):
+def get_function_args(function, getargspec=_getargspec):
 
     args = getargspec(function)[:4]
 
@@ -366,16 +351,19 @@ def getFunctionArgs(function, getargspec=_getargspec):
 # ==============================================================================
 
 
-def equalFunctionArgs(function1, function2):
+def equal_function_args(function1, function2):
     if function1 is function2:
         return True
 
-    return getFunctionArgs(function1)[0:3] == getFunctionArgs(function2)[0:3]
+    args1 = get_function_args(function1)
+    args2 = get_function_args(function2)
+
+    return args1[0:3] == args2[0:3]
 
 # ==============================================================================
 
 
-def checkFunctionArgs(function, args, kw, getargspec=_getargspec):
+def check_function_args(function, args, kw, getargspec=_getargspec):
 
     f_args, f_varargs, f_varkw, f_defaults = getargspec(function)[:4]
 
@@ -418,9 +406,9 @@ def checkFunctionArgs(function, args, kw, getargspec=_getargspec):
 # ==============================================================================
 
 
-def removeFiles(files):
+def remove_files(files):
 
-    for f in toSequence(files):
+    for f in to_sequence(files):
         try:
             os.remove(f)
         except OSError as ex:
@@ -430,7 +418,7 @@ def removeFiles(files):
 # ==============================================================================
 
 
-def _decodeData(data):
+def _decode_data(data):
     if not data:
         return str()
 
@@ -449,12 +437,12 @@ class ExecCommandException(Exception):
 
     def __init__(self, cmd, exception):
 
-        msg = ' '.join(toSequence(cmd))
+        msg = ' '.join(to_sequence(cmd))
         msg += '\n%s' % (exception,)
 
         self.exception = exception
 
-        super(type(self), self).__init__(msg)
+        super(ExecCommandException, self).__init__(msg)
 
     @staticmethod
     def failed():
@@ -472,7 +460,7 @@ class ExecCommandResult(Exception):
 
     def __init__(self, cmd, status=None, stdout=None, stderr=None):
 
-        self.cmd = tuple(toSequence(cmd))
+        self.cmd = tuple(to_sequence(cmd))
         self.status = status
 
         if not stdout:
@@ -483,7 +471,7 @@ class ExecCommandResult(Exception):
 
         self.output = stdout
 
-        super(type(self), self).__init__()
+        super(ExecCommandResult, self).__init__()
 
     # -----------------------------------------------------------
 
@@ -518,12 +506,12 @@ except AttributeError:
 # ==============================================================================
 
 
-def executeCommand(cmd,
-                   cwd=None,
-                   env=None,
-                   stdin=None,
-                   file_flag=None,
-                   max_cmd_length=_MAX_CMD_LENGTH):
+def execute_command(cmd,
+                    cwd=None,
+                    env=None,
+                    stdin=None,
+                    file_flag=None,
+                    max_cmd_length=_MAX_CMD_LENGTH):
 
     cmd_file = None
     if is_string(cmd):
@@ -531,7 +519,7 @@ def executeCommand(cmd,
     else:
         shell = False
 
-        for v in toSequence(cmd):
+        for v in to_sequence(cmd):
             if not is_string(v):
                 raise ErrorInvalidExecCommand(v)
 
@@ -567,8 +555,8 @@ def executeCommand(cmd,
         except Exception as ex:
             raise ExecCommandException(cmd, exception=ex)
 
-        stdout = _decodeData(stdout)
-        stderr = _decodeData(stderr)
+        stdout = _decode_data(stdout)
+        stderr = _decode_data(stderr)
 
         return ExecCommandResult(cmd, status=returncode,
                                  stdout=stdout, stderr=stderr)
@@ -576,14 +564,14 @@ def executeCommand(cmd,
     finally:
         if cmd_file is not None:
             cmd_file.close()
-            removeFiles(cmd_file.name)
+            remove_files(cmd_file.name)
 
 # ==============================================================================
 
 
-def getShellScriptEnv(script, args=None, _var_re=re.compile(r'^\w+=')):
+def get_shell_script_env(script, args=None, _var_re=re.compile(r'^\w+=')):
 
-    args = toSequence(args)
+    args = to_sequence(args)
 
     script_path = os.path.abspath(
         os.path.expanduser(os.path.expandvars(script)))
@@ -614,8 +602,8 @@ def getShellScriptEnv(script, args=None, _var_re=re.compile(r'^\w+=')):
     except Exception as ex:
         raise ExecCommandException(cmd, exception=ex)
 
-    stdout = _decodeData(stdout)
-    stderr = _decodeData(stderr)
+    stdout = _decode_data(stdout)
+    stderr = _decode_data(stderr)
 
     if status != 0:
         raise ExecCommandResult(cmd, status, stdout, stderr)
@@ -638,36 +626,36 @@ def getShellScriptEnv(script, args=None, _var_re=re.compile(r'^\w+=')):
 # ==============================================================================
 
 
-def cpuCount():
+def cpu_count():
 
     try:
         return multiprocessing.cpu_count()
     except NotImplementedError:
         pass
 
-    cpu_count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
-    if cpu_count:
-        return cpu_count
+    count = int(os.environ.get('NUMBER_OF_PROCESSORS', 0))
+    if count > 0:
+        return count
 
     try:
         if 'SC_NPROCESSORS_ONLN' in os.sysconf_names:
-            cpu_count = os.sysconf('SC_NPROCESSORS_ONLN')
+            count = os.sysconf('SC_NPROCESSORS_ONLN')
         elif 'SC_NPROCESSORS_CONF' in os.sysconf_names:
-            cpu_count = os.sysconf('SC_NPROCESSORS_CONF')
-        if cpu_count:
+            count = os.sysconf('SC_NPROCESSORS_CONF')
+        if count > 0:
             return cpu_count
 
     except AttributeError:
         pass
 
-    cpu_count = 1  # unable to detect number of CPUs
+    count = 1  # unable to detect number of CPUs
 
-    return cpu_count
+    return count
 
 # ==============================================================================
 
 
-def _memoryUsageSmaps():
+def _memory_usage_smaps():
     private = 0
 
     with open("/proc/self/smaps") as smaps:
@@ -680,13 +668,13 @@ def _memoryUsageSmaps():
 # ==============================================================================
 
 
-def _memoryUsageStatm():
-    PAGESIZE = os.sysconf("SC_PAGE_SIZE")
+def _memory_usage_statm():
+    page_size = os.sysconf("SC_PAGE_SIZE")
 
     with open('/proc/self/statm') as f:
         mem_stat = f.readline().split()
-        rss = int(mem_stat[1]) * PAGESIZE
-        shared = int(mem_stat[2]) * PAGESIZE
+        rss = int(mem_stat[1]) * page_size
+        shared = int(mem_stat[2]) * page_size
 
         private = rss - shared
 
@@ -695,26 +683,26 @@ def _memoryUsageStatm():
 # ==============================================================================
 
 
-def memoryUsageLinux():
+def memory_usage_linux():
     try:
-        return _memoryUsageSmaps()
+        return _memory_usage_smaps()
     except IOError:
         try:
-            return _memoryUsageStatm()
+            return _memory_usage_statm()
         except IOError:
-            return memoryUsageUnix()
+            return memory_usage_unix()
 
 # ==============================================================================
 
 
-def memoryUsageUnix():
+def memory_usage_unix():
     res = resource.getrusage(resource.RUSAGE_SELF)
     return res.ru_maxrss
 
 # ==============================================================================
 
 
-def memoryUsageWindows():
+def memory_usage_windows():
     process_handle = win32api.GetCurrentProcess()
     memory_info = win32process.GetProcessMemoryInfo(process_handle)
     return memory_info['PeakWorkingSetSize']
@@ -723,51 +711,61 @@ try:
     import resource
 
     if sys.platform[:5] == "linux":
-        memoryUsage = memoryUsageLinux
+        memory_usage = memory_usage_linux
     else:
-        memoryUsage = memoryUsageUnix
+        memory_usage = memory_usage_unix
 
 except ImportError:
     try:
         import win32process
         import win32api
 
-        memoryUsage = memoryUsageWindows
+        memory_usage = memory_usage_windows
 
     except ImportError:
-        def memoryUsage():
+        def memory_usage():
             return 0
 
 # ==============================================================================
 
 
-def loadModule(module_file, package_name=None):
+def load_module(module_file, package_name=None):
 
     module_dir, module_file = os.path.split(module_file)
 
     module_name = os.path.splitext(module_file)[0]
 
+    if package_name:
+        full_module_name = package_name + '.' + module_name
+    else:
+        full_module_name = module_name
+
+    module = sys.modules.get(full_module_name)
+    if module is not None:
+        return module
+
     fp, pathname, description = imp.find_module(module_name, [module_dir])
 
-    if package_name:
-        module_name = package_name + '.' + module_name
-
-    module = imp.load_module(module_name, fp, pathname, description)
+    module = imp.load_module(full_module_name, fp, pathname, description)
     return module
 
 # ==============================================================================
 
 
-def loadPackage(path, name=None, generate_name=False):
+def load_package(path, name=None, generate_name=False):
     find_path, find_name = os.path.split(path)
-
-    fp, pathname, description = imp.find_module(find_name, [find_path])
 
     if not name:
         if generate_name:
-            name = newHash(dumpSimpleObject(path)).hexdigest()
+            name = new_hash(dump_simple_object(path)).hexdigest()
         else:
             name = find_name
+
+    package = sys.modules.get(name)
+    if package is not None:
+        return package
+
+    fp, pathname, description = imp.find_module(find_name, [find_path])
 
     package = imp.load_module(name, fp, pathname, description)
     return package
@@ -775,9 +773,9 @@ def loadPackage(path, name=None, generate_name=False):
 # ==============================================================================
 
 
-def flattenList(seq):
+def flatten_list(seq):
 
-    out_list = list(toSequence(seq))
+    out_list = list(to_sequence(seq))
 
     i = 0
 
@@ -785,7 +783,7 @@ def flattenList(seq):
 
         value = out_list[i]
 
-        if isSequence(value):
+        if is_sequence(value):
             if value:
                 out_list[i: i + 1] = value
             else:
@@ -802,9 +800,9 @@ def flattenList(seq):
 _SIMPLE_SEQUENCES = (list, tuple, UniqueList, set, frozenset)
 
 
-def simplifyValue(value,
-                  simple_types=SIMPLE_TYPES_SET,
-                  simple_lists=_SIMPLE_SEQUENCES):
+def simplify_value(value,
+                   simple_types=SIMPLE_TYPES_SET,
+                   simple_lists=_SIMPLE_SEQUENCES):
 
     if value is None:
         return None
@@ -819,13 +817,13 @@ def simplifyValue(value,
             return simple_type(value)
 
     if isinstance(value, simple_lists):
-        return [simplifyValue(v) for v in value]
+        return [simplify_value(v) for v in value]
 
     if isinstance(value, dict):
-        return dict((key, simplifyValue(v)) for key, v in value.items())
+        return dict((key, simplify_value(v)) for key, v in value.items())
 
     try:
-        return simplifyValue(value.get())
+        return simplify_value(value.get())
     except Exception:
         pass
 
@@ -906,7 +904,7 @@ class ItemsGroups(object):
 
     # -----------------------------------------------------------
 
-    def addGroup(self):
+    def add_group(self):
 
         groups = self.groups
         if not groups[0]:
@@ -925,7 +923,7 @@ class ItemsGroups(object):
     def add(self, item):
         group_files = self.groups[-1]
         if len(group_files) >= self.group_size:
-            group_files = self.addGroup()
+            group_files = self.add_group()
 
         group_files.append(item)
         self.tail_size -= 1
@@ -942,7 +940,7 @@ class ItemsGroups(object):
 # ==============================================================================
 
 
-def groupItems(items, wish_groups=1, max_group_size=-1):
+def group_items(items, wish_groups=1, max_group_size=-1):
 
     groups = ItemsGroups(len(items), wish_groups, max_group_size)
     for item in items:

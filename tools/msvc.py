@@ -1,7 +1,7 @@
 import os
 import re
 
-from aql import executeCommand, ListOptionType, PathOptionType, tool
+from aql import execute_command, ListOptionType, PathOptionType, tool
 
 from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
     CommonCppLinker, ToolCommonRes, CommonResCompiler
@@ -11,7 +11,7 @@ from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
 # ==============================================================================
 
 
-def _parseOutput(source_paths, output, exclude_dirs,
+def _parse_output(source_paths, output, exclude_dirs,
                  _err_re=re.compile(r".+\s+:\s+(fatal\s)?error\s+[0-9A-Z]+:")):
 
     gen_code = ("Generating Code...", "Compiling...")
@@ -66,7 +66,7 @@ class MsvcCompiler (CommonCppCompiler):
 
     def __init__(self, options):
         super(MsvcCompiler, self).__init__(options)
-        self.cmd += ['/nologo', '/c', '/showIncludes']
+        self.cmd += ['/nologo', '/c', '/show_includes']
 
     # -----------------------------------------------------------
 
@@ -74,15 +74,15 @@ class MsvcCompiler (CommonCppCompiler):
 
         source = source_entities[0].get()
 
-        obj_file = self.getObjPath(source)
+        obj_file = self.get_obj_path(source)
         cwd = os.path.dirname(obj_file)
 
         cmd = list(self.cmd)
         cmd += ['/Fo%s' % obj_file, source]
 
-        result = self.execCmdResult(cmd, cwd, file_flag='@')
+        result = self.exec_cmd_result(cmd, cwd, file_flag='@')
 
-        deps, errors, out = _parseOutput(
+        deps, errors, out = _parse_output(
             (source,), result.output, self.ext_cpppath)
 
         if result.failed():
@@ -90,25 +90,25 @@ class MsvcCompiler (CommonCppCompiler):
             raise result
 
         targets.add(obj_file)
-        targets.addImplicitDeps(deps[0])
+        targets.add_implicit_deps(deps[0])
 
         return out
 
     # -----------------------------------------------------------
 
-    def getDefaultObjExt(self):
+    def get_default_obj_ext(self):
         return '.obj'
 
     # -----------------------------------------------------------
 
-    def _setTargets(self,
-                    source_entities,
-                    targets,
-                    sources,
-                    obj_files,
-                    output):
+    def _set_targets(self,
+                     source_entities,
+                     targets,
+                     sources,
+                     obj_files,
+                     output):
 
-        deps, errors, out = _parseOutput(sources, output, self.ext_cpppath)
+        deps, errors, out = _parse_output(sources, output, self.ext_cpppath)
 
         items = zip(source_entities, obj_files, deps, errors)
 
@@ -116,26 +116,26 @@ class MsvcCompiler (CommonCppCompiler):
             if not error:
                 src_targets = targets[src_value]
                 src_targets.add(obj_file)
-                src_targets.addImplicitDeps(deps)
+                src_targets.add_implicit_deps(deps)
 
         return out
 
     # -----------------------------------------------------------
 
-    def buildBatch(self, source_entities, targets):
+    def build_batch(self, source_entities, targets):
 
         sources = tuple(src.get() for src in source_entities)
 
-        obj_files = self.getTargetsFromSourceFilePaths(sources, ext=self.ext)
+        obj_files = self.get_source_target_paths(sources, ext=self.ext)
 
         cwd = os.path.dirname(obj_files[0])
 
         cmd = list(self.cmd)
         cmd += sources
 
-        result = self.execCmdResult(cmd, cwd, file_flag='@')
+        result = self.exec_cmd_result(cmd, cwd, file_flag='@')
 
-        out = self._setTargets(
+        out = self._set_targets(
             source_entities, targets, sources, obj_files, result.output)
 
         if result.failed():
@@ -153,15 +153,15 @@ class MsvcResCompiler (CommonResCompiler):
 
         src = source_entities[0].get()
 
-        res_file = self.getObjPath(src)
+        res_file = self.get_obj_path(src)
         cwd = os.path.dirname(res_file)
 
         cmd = list(self.cmd)
         cmd += ['/nologo', '/Fo%s' % res_file, src]
 
-        out = self.execCmd(cmd, cwd, file_flag='@')
+        out = self.exec_cmd(cmd, cwd, file_flag='@')
 
-        # deps = _parseRes( src )
+        # deps = _parse_res( src )
 
         targets.add(res_file)
 
@@ -172,10 +172,10 @@ class MsvcResCompiler (CommonResCompiler):
 
 class MsvcCompilerMaker (object):
 
-    def makeCompiler(self, options):
+    def make_compiler(self, options):
         return MsvcCompiler(options)
 
-    def makeResCompiler(self, options):
+    def make_res_compiler(self, options):
         return MsvcResCompiler(options)
 
 # ==============================================================================
@@ -193,7 +193,7 @@ class MsvcArchiver (MsvcCompilerMaker, CommonCppArchiver):
 
         cwd = os.path.dirname(self.target)
 
-        out = self.execCmd(cmd, cwd=cwd, file_flag='@')
+        out = self.exec_cmd(cmd, cwd=cwd, file_flag='@')
 
         targets.add(self.target)
 
@@ -242,7 +242,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
 
         cwd = os.path.dirname(target)
 
-        out = self.execCmd(cmd, cwd=cwd, file_flag='@')
+        out = self.exec_cmd(cmd, cwd=cwd, file_flag='@')
 
         # -----------------------------------------------------------
         #  SET TARGETS
@@ -259,7 +259,7 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
                 itargets.append(exports_lib)
 
         targets.add(target, tags=tags)
-        targets.addSideEffects(itargets)
+        targets.add_side_effects(itargets)
 
         return out
 
@@ -270,9 +270,9 @@ class MsvcLinker (MsvcCompilerMaker, CommonCppLinker):
 # ==============================================================================
 
 
-def _getMsvcSpecs(cl):
+def _get_msvc_specs(cl):
 
-    result = executeCommand(cl)
+    result = execute_command(cl)
 
     specs_re = re.compile(r'Compiler Version (?P<version>[0-9.]+) '
                           r'for (?P<machine>[a-zA-Z0-9_-]+)',
@@ -307,14 +307,14 @@ class ToolMsvcCommon(ToolCommonCpp):
     @classmethod
     def setup(cls, options):
 
-        if options.cc_name.isSetNotTo('msvc'):
+        if options.cc_name.is_set_not_to('msvc'):
             raise NotImplementedError()
 
-        cl = cls.findProgram(options, 'cl')
-        link, lib, rc = cls.findOptionalPrograms(
+        cl = cls.find_program(options, 'cl')
+        link, lib, rc = cls.find_optional_programs(
             options, ['link', 'lib', 'rc'], cl)
 
-        specs = _getMsvcSpecs(cl)
+        specs = _get_msvc_specs(cl)
 
         options.update(specs)
 
@@ -362,11 +362,11 @@ class ToolMsvcCommon(ToolCommonCpp):
         options.cflags += '/TC'
         options.cxxflags += '/TP'
 
-        if_.rtti.isTrue().cxxflags += '/GR'
-        if_.rtti.isFalse().cxxflags += '/GR-'
+        if_.rtti.is_true().cxxflags += '/GR'
+        if_.rtti.is_false().cxxflags += '/GR-'
 
-        if_.exceptions.isTrue().cxxflags += '/EHsc'
-        if_.exceptions.isFalse().cxxflags += ['/EHs-', '/EHc-']
+        if_.exceptions.is_true().cxxflags += '/EHsc'
+        if_.exceptions.is_false().cxxflags += ['/EHs-', '/EHc-']
 
         if_.target_subsystem.eq('console').linkflags += '/SUBSYSTEM:CONSOLE'
         if_.target_subsystem.eq('windows').linkflags += '/SUBSYSTEM:WINDOWS'
@@ -381,20 +381,20 @@ class ToolMsvcCommon(ToolCommonCpp):
         if_.target_arch.eq('arm').linkflags += '/MACHINE:ARM'
         if_.target_arch.eq('arm64').linkflags += '/MACHINE:ARM64'
 
-        if_.debug_symbols.isTrue().ccflags += '/Z7'
-        if_.debug_symbols.isTrue().linkflags += '/DEBUG'
+        if_.debug_symbols.is_true().ccflags += '/Z7'
+        if_.debug_symbols.is_true().linkflags += '/DEBUG'
 
         if_runtime_link = if_.runtime_link
 
-        if_runtime_link.eq('shared').runtime_debug.isFalse().ccflags += '/MD'
-        if_runtime_link.eq('shared').runtime_debug.isTrue().ccflags += '/MDd'
-        if_runtime_link.eq('static').runtime_debug.isFalse().runtime_thread.eq(
+        if_runtime_link.eq('shared').runtime_debug.is_false().ccflags += '/MD'
+        if_runtime_link.eq('shared').runtime_debug.is_true().ccflags += '/MDd'
+        if_runtime_link.eq('static').runtime_debug.is_false().runtime_thread.eq(
             'single').ccflags += '/ML'
-        if_runtime_link.eq('static').runtime_debug.isFalse().runtime_thread.eq(
+        if_runtime_link.eq('static').runtime_debug.is_false().runtime_thread.eq(
             'multi').ccflags += '/MT'
-        if_runtime_link.eq('static').runtime_debug.isTrue().runtime_thread.eq(
+        if_runtime_link.eq('static').runtime_debug.is_true().runtime_thread.eq(
             'single').ccflags += '/MLd'
-        if_runtime_link.eq('static').runtime_debug.isTrue().runtime_thread.eq(
+        if_runtime_link.eq('static').runtime_debug.is_true().runtime_thread.eq(
             'multi').ccflags += '/MTd'
 
         # if_.cc_ver.ge(7).cc_ver.lt(8).ccflags += '/Zc:forScope /Zc:wchar_t'
@@ -419,11 +419,11 @@ class ToolMsvcCommon(ToolCommonCpp):
         if_warning_level.eq(3).ccflags += '/W3'
         if_warning_level.eq(4).ccflags += '/W4'
 
-        if_.warnings_as_errors.isTrue().ccflags += '/WX'
-        if_.warnings_as_errors.isTrue().linkflags += '/WX'
+        if_.warnings_as_errors.is_true().ccflags += '/WX'
+        if_.warnings_as_errors.is_true().linkflags += '/WX'
 
-        if_.whole_optimization.isTrue().ccflags += '/GL'
-        if_.whole_optimization.isTrue().linkflags += '/LTCG'
+        if_.whole_optimization.is_true().ccflags += '/GL'
+        if_.whole_optimization.is_true().linkflags += '/LTCG'
 
     # -----------------------------------------------------------
 
@@ -471,7 +471,7 @@ class ToolMsrc(ToolCommonRes):
     @classmethod
     def setup(cls, options):
 
-        rc = cls.findProgram(options, 'rc')
+        rc = cls.find_program(options, 'rc')
         options.target_os = 'windows'
         options.rc = rc
 

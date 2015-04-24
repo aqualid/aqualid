@@ -6,10 +6,10 @@ import pprint
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
-from aql.utils import eventWarning, eventStatus, eventHandler, \
-    disableEvents, disableDefaultHandlers, enableDefaultHandlers, \
+from aql.utils import event_warning, event_status, event_handler, \
+    disable_events, disable_default_handlers, enable_default_handlers, \
     EVENT_STATUS, EVENT_WARNING, \
     ErrorEventHandlerAlreadyDefined, ErrorEventHandlerUnknownEvent, ErrorEventUserHandlerWrongArgs
 
@@ -24,43 +24,43 @@ class TestEventManager(AqlTestCase):
 
     def test_event_manager(self):
 
-        @eventWarning
-        def testEvent1(settings, status):
+        @event_warning
+        def test_event1(settings, status):
             status.append("default-event1")
 
-        @eventHandler('testEvent1')
-        def testUserEvent1(settings, status):
+        @event_handler('test_event1')
+        def test_user_event1(settings, status):
             status.append("user-event1")
 
-        @eventStatus
-        def testEvent2(settings, status):
+        @event_status
+        def test_event2(settings, status):
             status.append("default-event2")
 
-        @eventHandler('testEvent2')
-        def testUserEvent2(settings, status):
+        @event_handler('test_event2')
+        def test_user_event2(settings, status):
             status.append("user-event2")
 
         status = []
-        testEvent1(status)
+        test_event1(status)
         self.assertIn("default-event1", status)
         self.assertIn("user-event1", status)
 
         status = []
-        testEvent1(status)
+        test_event1(status)
         self.assertIn("default-event1", status)
         self.assertIn("user-event1", status)
 
         status = []
-        disableDefaultHandlers()
-        testEvent1(status)
+        disable_default_handlers()
+        test_event1(status)
         self.assertNotIn("default-event1", status)
         self.assertIn("user-event1", status)
 
         status = []
-        enableDefaultHandlers()
-        disableEvents(EVENT_WARNING)
-        testEvent1(status)
-        testEvent2(status)
+        enable_default_handlers()
+        disable_events(EVENT_WARNING)
+        test_event1(status)
+        test_event2(status)
         self.assertNotIn("default-event1", status)
         self.assertNotIn("user-event1", status)
         self.assertIn("default-event2", status)
@@ -72,32 +72,32 @@ class TestEventManager(AqlTestCase):
 
         em = EventManager()
 
-        def testEvent1(settings, status):
+        def test_event1(settings, status):
             status.append("default-event1")
 
-        def testUserEvent1(settings, status):
+        def test_user_event1(settings, status):
             status.append("user-event1")
 
-        def testEvent2(settings, status):
+        def test_event2(settings, status):
             status.append("default-event2")
 
-        def testUserEvent2(settings, msg, status):
+        def test_user_event2(settings, msg, status):
             status.append("user-event2")
 
-        em.addDefaultHandler(testEvent1, EVENT_WARNING)
-        em.addDefaultHandler(testEvent2, EVENT_STATUS)
-        em.addUserHandler(testUserEvent1, 'testEvent1')
+        em.add_default_handler(test_event1, EVENT_WARNING)
+        em.add_default_handler(test_event2, EVENT_STATUS)
+        em.add_user_handler(test_user_event1, 'test_event1')
 
         # -----------------------------------------------------------
 
         self.assertRaises(ErrorEventHandlerAlreadyDefined,
-                          em.addDefaultHandler, testEvent2, EVENT_WARNING)
+                          em.add_default_handler, test_event2, EVENT_WARNING)
         self.assertRaises(
-            ErrorEventHandlerUnknownEvent, em.addUserHandler, testUserEvent2)
+            ErrorEventHandlerUnknownEvent, em.add_user_handler, test_user_event2)
         self.assertRaises(
-            ErrorEventUserHandlerWrongArgs, em.addUserHandler, testUserEvent2, 'testEvent2')
+            ErrorEventUserHandlerWrongArgs, em.add_user_handler, test_user_event2, 'test_event2')
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

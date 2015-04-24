@@ -22,67 +22,68 @@
 import gc
 import os
 import sys
-import cProfile
 import pstats
+import cProfile
 import traceback
 
+
 from aql.util_types import to_unicode
-from aql.utils import eventStatus, eventError, EventSettings,\
-    setEventSettings, Chrono, Chdir, memoryUsage,\
-    splitPath, expandFilePath,\
-    logInfo, logError, setLogLevel, LOG_WARNING
+from aql.utils import event_status, event_error, EventSettings,\
+    set_event_settings, Chrono, Chdir, memory_usage,\
+    split_path, expand_file_path,\
+    log_info, log_error, set_log_level, LOG_WARNING
 
 from .aql_project import Project, ProjectConfig
-from .aql_info import getAqlInfo, dumpAqlInfo
+from .aql_info import get_aql_info, dump_aql_info
 
 __all__ = ('main', )
 
 # ==============================================================================
 
 
-@eventStatus
-def eventReadingScripts(settings):
-    logInfo("Reading scripts...")
+@event_status
+def event_reading_scripts(settings):
+    log_info("Reading scripts...")
 
 
-@eventStatus
-def eventReadingScriptsDone(settings, elapsed):
-    logInfo("Reading scripts finished (%s)" % elapsed)
+@event_status
+def event_reading_scripts_done(settings, elapsed):
+    log_info("Reading scripts finished (%s)" % elapsed)
 
 
-@eventError
-def eventAqlError(settings, error):
-    logError(error)
+@event_error
+def event_aql_error(settings, error):
+    log_error(error)
 
 # ==============================================================================
 
 
-@eventStatus
-def eventBuilding(settings):
-    logInfo("Building targets...")
+@event_status
+def event_building(settings):
+    log_info("Building targets...")
 
 
-@eventStatus
-def eventBuildingDone(settings, success, elapsed):
+@event_status
+def event_building_done(settings, success, elapsed):
     status = "finished" if success else "failed"
-    logInfo("Building targets %s (%s)" % (status, elapsed))
+    log_info("Building targets %s (%s)" % (status, elapsed))
 
 # ==============================================================================
 
 
-@eventStatus
-def eventBuildSummary(settings, elapsed):
-    logInfo("Total time: %s" % elapsed)
+@event_status
+def event_build_summary(settings, elapsed):
+    log_info("Total time: %s" % elapsed)
 
 # ==============================================================================
 
 
-def _findMakeScript(script):
+def _find_make_script(script):
 
     if os.path.isabs(script):
         return script
 
-    cwd = splitPath(os.path.abspath('.'))
+    cwd = split_path(os.path.abspath('.'))
     path_sep = os.path.sep
 
     while cwd:
@@ -97,7 +98,7 @@ def _findMakeScript(script):
 # ==============================================================================
 
 
-def _startMemoryTracing():
+def _start_memory_tracing():
     try:
         import tracemalloc
     except ImportError:
@@ -108,7 +109,7 @@ def _startMemoryTracing():
 # ==============================================================================
 
 
-def _stopMemoryTracing():
+def _stop_memory_tracing():
     try:
         import tracemalloc
     except ImportError:
@@ -116,14 +117,14 @@ def _stopMemoryTracing():
 
     snapshot = tracemalloc.take_snapshot()
 
-    _logMemoryTop(snapshot)
+    _log_memory_top(snapshot)
 
     tracemalloc.stop()
 
 # ==============================================================================
 
 
-def _logMemoryTop(snapshot, group_by='lineno', limit=30):
+def _log_memory_top(snapshot, group_by='lineno', limit=30):
 
     try:
         import tracemalloc
@@ -138,43 +139,43 @@ def _logMemoryTop(snapshot, group_by='lineno', limit=30):
 
     top_stats = snapshot.statistics(group_by)
 
-    logInfo("Top %s lines" % limit)
+    log_info("Top %s lines" % limit)
     for index, stat in enumerate(top_stats[:limit], 1):
         frame = stat.traceback[0]
         # replace "/path/to/module/file.py" with "module/file.py"
         filename = os.sep.join(frame.filename.split(os.sep)[-2:])
-        logInfo("#%s: %s:%s: %.1f KiB"
-                % (index, filename, frame.lineno, stat.size / 1024))
+        log_info("#%s: %s:%s: %.1f KiB"
+                 % (index, filename, frame.lineno, stat.size / 1024))
         line = linecache.getline(frame.filename, frame.lineno).strip()
         if line:
-            logInfo('    %s' % line)
+            log_info('    %s' % line)
 
     other = top_stats[limit:]
     if other:
         size = sum(stat.size for stat in other)
-        logInfo("%s other: %.1f KiB" % (len(other), size / 1024))
+        log_info("%s other: %.1f KiB" % (len(other), size / 1024))
     total = sum(stat.size for stat in top_stats)
-    logInfo("Total allocated size: %.1f KiB" % (total / 1024))
+    log_info("Total allocated size: %.1f KiB" % (total / 1024))
 
 # ==============================================================================
 
 
-def _printMemoryStatus():
+def _print_memory_status():
 
-    _stopMemoryTracing()
+    _stop_memory_tracing()
 
-    mem_usage = memoryUsage()
+    mem_usage = memory_usage()
     num_objects = len(gc.get_objects())
 
     obj_mem_usage = sum(sys.getsizeof(obj) for obj in gc.get_objects())
 
-    logInfo("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb" %
-            (num_objects, obj_mem_usage / 1024, mem_usage))
+    log_info("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb" %
+             (num_objects, obj_mem_usage / 1024, mem_usage))
 
 # ==============================================================================
 
 
-def _setBuildDir(options, makefile):
+def _set_build_dir(options, makefile):
     build_dir = options.build_dir.get()
     if os.path.isabs(build_dir):
         return
@@ -185,70 +186,95 @@ def _setBuildDir(options, makefile):
 # ==============================================================================
 
 
+def _read_make_script(prj):
+    prj_cfg = prj.config
+
+    makefile = expand_file_path(prj_cfg.makefile)
+
+    if prj_cfg.search_up:
+        makefile = _find_make_script(makefile)
+
+    _set_build_dir(prj_cfg.options, makefile)
+
+    event_reading_scripts()
+
+    with Chrono() as elapsed:
+        prj.read_script(makefile)
+
+    event_reading_scripts_done(elapsed)
+
+# ==============================================================================
+
+
+def _list_options(prj):
+    prj_cfg = prj.config
+
+    text = []
+
+    if prj_cfg.list_options:
+        text += prj.list_options(brief=not prj_cfg.verbose)
+
+    if prj_cfg.list_tool_options:
+        text += prj.list_tool_options(prj_cfg.list_tool_options,
+                                      brief=not prj_cfg.verbose)
+
+    log_info('\n'.join(text))
+
+
+# ==============================================================================
+
+def _build(prj):
+    event_building()
+
+    with Chrono() as elapsed:
+        success = prj.build()
+
+    event_building_done(success, elapsed)
+
+    if not success:
+        prj.build_manager.print_fails()
+
+    return success
+
+
+# ==============================================================================
+
+
 def _main(prj_cfg):
     with Chrono() as total_elapsed:
 
         ev_settings = EventSettings(brief=not prj_cfg.verbose,
                                     with_output=not prj_cfg.no_output,
                                     trace_exec=prj_cfg.debug_exec)
-        setEventSettings(ev_settings)
+        set_event_settings(ev_settings)
 
         with Chdir(prj_cfg.directory):
 
             if prj_cfg.debug_memory:
-                _startMemoryTracing()
-
-            makefile = expandFilePath(prj_cfg.makefile)
-
-            if prj_cfg.search_up:
-                makefile = _findMakeScript(makefile)
-
-            _setBuildDir(prj_cfg.options, makefile)
+                _start_memory_tracing()
 
             prj = Project(prj_cfg)
 
-            eventReadingScripts()
-
-            with Chrono() as elapsed:
-                prj.Script(makefile)
-
-            eventReadingScriptsDone(elapsed)
+            _read_make_script(prj)
 
             success = True
 
             if prj_cfg.clean:
-                prj.Clear()
+                prj.clear()
 
             elif prj_cfg.list_targets:
-                text = prj.ListTargets()
-                logInfo('\n'.join(text))
+                text = prj.list_targets()
+                log_info('\n'.join(text))
 
             elif prj_cfg.list_options or prj_cfg.list_tool_options:
-                text = []
-
-                if prj_cfg.list_options:
-                    text += prj.ListOptions(brief=not prj_cfg.verbose)
-
-                if prj_cfg.list_tool_options:
-                    text += prj.ListToolsOptions(
-                        prj_cfg.list_tool_options, brief=not prj_cfg.verbose)
-
-                logInfo('\n'.join(text))
+                _list_options(prj_cfg)
             else:
-                eventBuilding()
-
-                with elapsed:
-                    success = prj.Build()
-
-                eventBuildingDone(success, elapsed)
-
-                if not success:
-                    prj.build_manager.printFails()
+                success = _build(prj)
 
             if prj_cfg.debug_memory:
-                _printMemoryStatus()
+                _print_memory_status()
 
-    eventBuildSummary(total_elapsed)
+    event_build_summary(total_elapsed)
 
     status = int(not success)
 
@@ -257,14 +283,50 @@ def _main(prj_cfg):
 # ==============================================================================
 
 
-def _patchSysModules():
+def _patch_sys_modules():
     aql_module = sys.modules.get('aql', None)
     if aql_module is not None:
-        sys.modules.setdefault(getAqlInfo().module, aql_module)
+        sys.modules.setdefault(get_aql_info().module, aql_module)
     else:
-        aql_module = sys.modules.get(getAqlInfo().module, None)
+        aql_module = sys.modules.get(get_aql_info().module, None)
         if aql_module is not None:
             sys.modules.setdefault('aql', aql_module)
+
+# ==============================================================================
+
+
+def _run_main(prj_cfg):
+    debug_profile = prj_cfg.debug_profile
+
+    if not debug_profile:
+        status = _main(prj_cfg)
+    else:
+        profiler = cProfile.Profile()
+
+        status = profiler.runcall(_main, prj_cfg)
+
+        profiler.dump_stats(debug_profile)
+
+        p = pstats.Stats(debug_profile)
+        p.strip_dirs()
+        p.sort_stats('cumulative')
+        p.print_stats(prj_cfg.debug_profile_top)
+
+    return status
+
+# ==============================================================================
+
+
+def _log_error(ex, with_backtrace):
+    if with_backtrace:
+        err = traceback.format_exc()
+    else:
+        if isinstance(ex, KeyboardInterrupt):
+            err = "Keyboard Interrupt"
+        else:
+            err = to_unicode(ex)
+
+    event_aql_error(err)
 
 # ==============================================================================
 
@@ -272,44 +334,22 @@ def _patchSysModules():
 def main():
     with_backtrace = True
     try:
-        _patchSysModules()
+        _patch_sys_modules()
 
         prj_cfg = ProjectConfig()
         with_backtrace = prj_cfg.debug_backtrace
 
-        debug_profile = prj_cfg.debug_profile
-
         if prj_cfg.show_version:
-            logInfo(dumpAqlInfo())
+            log_info(dump_aql_info())
             return 0
 
         if prj_cfg.silent:
-            setLogLevel(LOG_WARNING)
+            set_log_level(LOG_WARNING)
 
-        if not debug_profile:
-            status = _main(prj_cfg)
-        else:
-            profiler = cProfile.Profile()
-
-            status = profiler.runcall(_main, prj_cfg)
-
-            profiler.dump_stats(debug_profile)
-
-            p = pstats.Stats(debug_profile)
-            p.strip_dirs()
-            p.sort_stats('cumulative')
-            p.print_stats(prj_cfg.debug_profile_top)
+        status = _run_main(prj_cfg)
 
     except (Exception, KeyboardInterrupt) as ex:
-        if with_backtrace:
-            err = traceback.format_exc()
-        else:
-            if isinstance(ex, KeyboardInterrupt):
-                err = "Keyboard Interrupt"
-            else:
-                err = to_unicode(ex)
-
-        eventAqlError(err)
+        _log_error(ex, with_backtrace)
         status = 1
 
     return status

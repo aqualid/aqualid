@@ -24,7 +24,7 @@ import os
 import sqlite3
 import binascii
 
-from .aql_utils import openFile
+from .aql_utils import open_file
 
 __all__ = ('SqlDataFile', )
 
@@ -154,7 +154,7 @@ class SqlDataFile (object):
 
         magic_tag = b".AQL.DB."
 
-        with openFile(filename, read=True, binary=True) as f:
+        with open_file(filename, read=True, binary=True) as f:
             tag = f.read(len(magic_tag))
             return tag == magic_tag
 
@@ -258,7 +258,7 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self, blob_to_bytes=_blob_to_bytes):
+    def self_test(self, blob_to_bytes=_blob_to_bytes):
         if self.connection is None:
             if self.id2key:
                 raise AssertionError("id2key is not empty")

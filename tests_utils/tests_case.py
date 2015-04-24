@@ -56,7 +56,7 @@ class TestCaseSuite(unittest.TestSuite):
 
     # -----------------------------------------------------------
 
-    def __getTestCaseClass(self):
+    def __get_test_case_class(self):
 
         try:
             return next(iter(self)).__class__
@@ -65,27 +65,27 @@ class TestCaseSuite(unittest.TestSuite):
 
     # -----------------------------------------------------------
 
-    def __setUpTestCaseClass(self, test_case_class, result):
+    def __set_up_test_case_class(self, test_case_class, result):
         if test_case_class is not None:
             # call setUpClass only if it's not supported
             if not hasattr(unittest.TestCase, 'setUpClass'):
-                setUpClass = getattr(test_case_class, 'setUpClass', None)
-                if setUpClass is not None:
+                set_up_class = getattr(test_case_class, 'setUpClass', None)
+                if set_up_class is not None:
                     try:
-                        setUpClass()
+                        set_up_class()
                     except Exception as ex:
                         if not self.keep_going:
                             result.stop()
                         error_name = _ErrorHolder(
                             test_case_class, 'setUpClass', ex)
-                        result.addError(error_name, sys.exc_info())
+                        result.add_error(error_name, sys.exc_info())
                         return False
 
         return True
 
     # -----------------------------------------------------------
 
-    def __tearDownTestCaseClass(self, test_case_class, result):
+    def __tear_down_test_case_class(self, test_case_class, result):
         """Method tries to call tearDownClass method from test case instance."""
 
         if test_case_class is not None:
@@ -106,27 +106,27 @@ class TestCaseSuite(unittest.TestSuite):
 
     def run(self, result, debug=False):
 
-        test_case_class = self.__getTestCaseClass()
+        test_case_class = self.__get_test_case_class()
 
-        if self.__setUpTestCaseClass(test_case_class, result):
+        if self.__set_up_test_case_class(test_case_class, result):
             super(TestCaseSuite, self).run(result)
 
-        self.__tearDownTestCaseClass(test_case_class, result)
+        self.__tear_down_test_case_class(test_case_class, result)
 
 # ==============================================================================
 
 
 class TestCaseBase(unittest.TestCase):
 
-    def __init__(self, methodName='runTest', keep_going=False):
+    def __init__(self, method_name='run_test', keep_going=False):
 
         self.keep_going = keep_going
-        super(TestCaseBase, self).__init__(methodName)
+        super(TestCaseBase, self).__init__(method_name)
 
     # -----------------------------------------------------------
 
     @classmethod
-    def getOptions(cls):
+    def get_options(cls):
         options = getattr(cls, 'options', None)
 
         if options:
@@ -142,7 +142,7 @@ class TestCaseBase(unittest.TestCase):
     def __getattr__(self, attr):
 
         if attr == 'options':
-            return self.getOptions()
+            return self.get_options()
 
         raise AttributeError("Invalid attribute: '%s'" % str(attr))
 
@@ -280,15 +280,15 @@ class TestCaseBase(unittest.TestCase):
 
     if not hasattr(unittest.TestCase, 'assertItemsEqual'):
         def assertItemsEqual(self, actual, expected, msg=None):
-            def _valueCounts(seq):
+            def _value_counts(seq):
                 counts = dict()
                 for value in seq:
                     counts.setdefault(value, 0)
                     counts[value] += 1
                 return counts
 
-            actual_counts = _valueCounts(actual)
-            expected_counts = _valueCounts(expected)
+            actual_counts = _value_counts(actual)
+            expected_counts = _value_counts(expected)
 
             if msg is None:
                 msg = str(actual) + " != " + str(expected)

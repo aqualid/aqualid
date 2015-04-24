@@ -5,12 +5,11 @@ import types
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.entity import SimpleEntity
 from aql.nodes import Node, Builder
-from aql.utils import Tempfile, Tempdir,\
-    removeUserHandler, addUserHandler, disableDefaultHandlers, enableDefaultHandlers
+from aql.utils import Tempfile, Tempdir, remove_user_handler, add_user_handler
 from aql.main import Project, ProjectConfig, Tool, \
     ErrorProjectBuilderMethodWithKW, \
     ErrorProjectBuilderMethodFewArguments, \
@@ -46,7 +45,7 @@ class TestTool(Tool):
 class TestProject(AqlTestCase):
 
     # noinspection PyUnusedLocal
-    def eventNodeBuilding(self, settings, node):
+    def event_node_building(self, settings, node):
         self.building_started += 1
 
     # -----------------------------------------------------------
@@ -55,12 +54,12 @@ class TestProject(AqlTestCase):
         super(TestProject, self).setUp()
 
         self.building_started = 0
-        addUserHandler(self.eventNodeBuilding)
+        add_user_handler(self.event_node_building)
 
     # -----------------------------------------------------------
 
     def tearDown(self):
-        removeUserHandler(self.eventNodeBuilding)
+        remove_user_handler(self.event_node_building)
 
         super(TestProject, self).tearDown()
 
@@ -86,53 +85,6 @@ options.build_variant = "final"
 
     # -----------------------------------------------------------
 
-    @skip
-    def test_prj_add_builder(self):
-        cfg = ProjectConfig([])
-        prj = Project(cfg)
-
-        class TestBuilder (Builder):
-
-            def __init__(self, options):
-                self.signature = b''
-
-            def build(self, source_entities, targets):
-                targets.add(SimpleEntity(b"", name="value1"))
-
-        class TestTool:
-
-            def TestBuilder(self, prj, options):
-                pass
-
-            def TestBuilder2(self, prj, options, **vals):
-                pass
-
-            def TestBuilder3(self, prj):
-                pass
-
-            def TestBuildNode(self, prj, options, source):
-                return Node(TestBuilder(), '')
-
-        if isinstance(TestTool.TestBuilder, types.MethodType):
-            self.assertRaises(
-                ErrorProjectBuilderMethodUnbound, prj.AddBuilder, TestTool.TestBuilder)
-
-        #~ prj.AddBuilder( TestTool().TestBuilder )
-        #~ self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
-
-        self.assertRaises(
-            ErrorProjectBuilderMethodWithKW, prj.AddBuilder, TestTool().TestBuilder2)
-        self.assertRaises(
-            ErrorProjectBuilderMethodFewArguments, prj.AddBuilder, TestTool().TestBuilder3)
-        self.assertRaises(
-            ErrorProjectInvalidMethod, prj.AddBuilder, "TestTool().TestBuilder3")
-
-        prj.AddBuilder(TestTool().TestBuildNode)
-        node = prj.TestBuildNode('a')
-        #~ self.assertRaises( ErrorProjectBuilderMethodResultInvalid, prj.TestBuilder )
-
-    # -----------------------------------------------------------
-
     def test_prj_builtin_tools(self):
 
         with Tempdir() as tmp_dir:
@@ -142,7 +94,7 @@ options.build_variant = "final"
             prj = Project(cfg)
 
             prj.tools.ExecuteCommand("python", "-c", "print('test builtin')")
-            prj.Build()
+            prj.build()
 
             self.assertEqual(self.building_started, 1)
             self.assertEqual(self.built_nodes, 1)
@@ -151,7 +103,7 @@ options.build_variant = "final"
 
             prj = Project(cfg)
             prj.tools.ExecuteCommand("python", "-c", "print('test builtin')")
-            prj.Build()
+            prj.build()
 
             self.assertEqual(self.building_started, 0)
 
@@ -170,10 +122,10 @@ options.build_variant = "final"
             cmd_other = prj.tools.ExecuteCommand(
                 "python", "-c", "print('test other')")
 
-            self.assertSequenceEqual(prj.GetBuildTargets(), ['test', 'run'])
+            self.assertSequenceEqual(prj.get_build_targets(), ['test', 'run'])
 
-            prj.Alias(prj.GetBuildTargets(), cmd)
-            prj.Build()
+            prj.alias_nodes(prj.get_build_targets(), cmd)
+            prj.build()
 
             self.assertEqual(self.built_nodes, 1)
 
@@ -194,8 +146,8 @@ options.build_variant = "final"
             cmd_other2 = prj.tools.ExecuteCommand(
                 "python", "-c", "print('test other2')")
 
-            prj.Default([cmd_other, cmd_other2])
-            prj.Build()
+            prj.default_build([cmd_other, cmd_other2])
+            prj.build()
 
             self.assertEqual(self.built_nodes, 2)
 
@@ -209,10 +161,10 @@ options.build_variant = "final"
 
             prj = Project(cfg)
 
-            tool = prj.tools.AddTool(TestTool)
+            tool = prj.tools.add_tool(TestTool)
 
             tool.Noop(v1="a", v2="b", v3="c")
-            prj.Build()
+            prj.build()
 
             self.assertEqual(self.built_nodes, 1)
 
@@ -221,7 +173,7 @@ options.build_variant = "final"
             self.built_nodes = 0
 
             tool.Noop(v1="aa", v2="bb", v3="cc")
-            prj.Build()
+            prj.build()
             self.assertEqual(self.built_nodes, 0)
 
             # -----------------------------------------------------------
@@ -231,7 +183,7 @@ options.build_variant = "final"
             v1 = SimpleEntity("a", name="value1")
 
             tool.Noop(v1=v1, v2="b", v3="c")
-            prj.Build()
+            prj.build()
             self.assertEqual(self.built_nodes, 1)
 
             # -----------------------------------------------------------
@@ -241,7 +193,7 @@ options.build_variant = "final"
             v1 = SimpleEntity("ab", name="value1")
 
             tool.Noop(v1=v1, v2="b", v3="c")
-            prj.Build()
+            prj.build()
             self.assertEqual(self.built_nodes, 1)
 
             # -----------------------------------------------------------
@@ -251,10 +203,10 @@ options.build_variant = "final"
             v1 = SimpleEntity("ab", name="value1")
 
             tool.Noop(v1=v1, v2="b", v3="c")
-            prj.Build()
+            prj.build()
             self.assertEqual(self.built_nodes, 0)
 
 # ==============================================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

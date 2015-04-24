@@ -23,16 +23,16 @@
 import operator
 import weakref
 
-from aql.util_types import toSequence, UniqueList, List, Dict
-from aql.utils import simplifyValue
+from aql.util_types import to_sequence, UniqueList, List, Dict
+from aql.utils import simplify_value
 
-from .aql_option_types import OptionType, DictOptionType, autoOptionType,\
+from .aql_option_types import OptionType, DictOptionType, auto_option_type,\
     OptionHelpGroup,\
     ErrorOptionTypeCantDeduce, ErrorOptionTypeUnableConvertValue
 from .aql_option_value import OptionValue, Operation, InplaceOperation,\
     ConditionalValue, Condition,\
-    SetValue, iAddValue, iSubValue, iUpdateValue, SimpleOperation,\
-    SetKey, iAddKey, iSubKey
+    op_set, op_iadd, op_isub, op_iupdate, SimpleOperation,\
+    op_set_key, op_iadd_key, op_isub_key
 
 __all__ = (
     'Options',
@@ -47,14 +47,14 @@ class ErrorOptionsCyclicallyDependent(TypeError):
 
     def __init__(self):
         msg = "Options cyclically depend from each other."
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsCyclicallyDependent, self).__init__(msg)
 
 
 class ErrorOptionsMergeNonOptions(TypeError):
 
     def __init__(self, value):
         msg = "Type '%s' can't be merged with Options." % (type(value),)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsMergeNonOptions, self).__init__(msg)
 
 
 class ErrorOptionsMergeDifferentOptions(TypeError):
@@ -62,7 +62,7 @@ class ErrorOptionsMergeDifferentOptions(TypeError):
     def __init__(self, name1, name2):
         msg = "Can't merge one an optional value into two different options " \
               "'%s' and '%s' " % (name1, name2)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsMergeDifferentOptions, self).__init__(msg)
 
 
 class ErrorOptionsMergeChild(TypeError):
@@ -70,35 +70,35 @@ class ErrorOptionsMergeChild(TypeError):
     def __init__(self):
         msg = "Can't merge child options into the parent options. " \
               "Use join() to move child options into its parent."
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsMergeChild, self).__init__(msg)
 
 
 class ErrorOptionsJoinNoParent(TypeError):
 
     def __init__(self, options):
         msg = "Can't join options without parent: %s" % (options, )
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsJoinNoParent, self).__init__(msg)
 
 
 class ErrorOptionsJoinParent(TypeError):
 
     def __init__(self, options):
         msg = "Can't join options with children: %s" % (options, )
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsJoinParent, self).__init__(msg)
 
 
 class ErrorOptionsNoIteration(TypeError):
 
     def __init__(self):
         msg = "Options doesn't support iteration"
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsNoIteration, self).__init__(msg)
 
 
 class ErrorOptionsUnableEvaluate(TypeError):
 
     def __init__(self, name, err):
         msg = "Unable to evaluate option '%s', error: %s" % (name, err)
-        super(type(self), self).__init__(msg)
+        super(ErrorOptionsUnableEvaluate, self).__init__(msg)
 
 # ==============================================================================
 
@@ -139,58 +139,59 @@ class _OpValueExRef(tuple):
 # ==============================================================================
 
 
-def _storeOpValue(options, value):
-    # print("_storeOpValue: %s (%s)" % (value,type(value)))
+def _store_op_value(options, value):
+    # print("_store_op_value: %s (%s)" % (value,type(value)))
 
     if isinstance(value, OptionValueProxy):
         value_options = value.options
 
-        if (options is value_options) or options._isParent(value_options):
+        if (options is value_options) or options._is_parent(value_options):
             value = _OpValueRef(value)
         else:
-            value_options._addDependency(options)
+            value_options._add_dependency(options)
             value = _OpValueExRef(value)
 
     elif isinstance(value, dict):
-        value = dict((k, _storeOpValue(options, v)) for k, v in value.items())
-
-    elif isinstance(value, (list, tuple, UniqueList, set, frozenset)):
-        value = [_storeOpValue(options, v) for v in value]
-
-    return value
-
-# ==============================================================================
-
-
-def _loadOpValue(options, context, value):
-    if isinstance(value, _OpValueRef):
-        value = value.get(options, context)
-        value = simplifyValue(value)
-
-    elif isinstance(value, _OpValueExRef):
-        value = value.get()
-        value = simplifyValue(value)
-
-    elif isinstance(value, dict):
-        value = dict((k, _loadOpValue(options, context, v))
+        value = dict((k, _store_op_value(options, v))
                      for k, v in value.items())
 
     elif isinstance(value, (list, tuple, UniqueList, set, frozenset)):
-        value = [_loadOpValue(options, context, v) for v in value]
-
-    else:
-        value = simplifyValue(value)
+        value = [_store_op_value(options, v) for v in value]
 
     return value
 
 # ==============================================================================
 
 
-def _evalCmpValue(value):
+def _load_op_value(options, context, value):
+    if isinstance(value, _OpValueRef):
+        value = value.get(options, context)
+        value = simplify_value(value)
+
+    elif isinstance(value, _OpValueExRef):
+        value = value.get()
+        value = simplify_value(value)
+
+    elif isinstance(value, dict):
+        value = dict((k, _load_op_value(options, context, v))
+                     for k, v in value.items())
+
+    elif isinstance(value, (list, tuple, UniqueList, set, frozenset)):
+        value = [_load_op_value(options, context, v) for v in value]
+
+    else:
+        value = simplify_value(value)
+
+    return value
+
+# ==============================================================================
+
+
+def _eval_cmp_value(value):
     if isinstance(value, OptionValueProxy):
         value = value.get()
 
-    value = simplifyValue(value)
+    value = simplify_value(value)
 
     return value
 
@@ -217,13 +218,13 @@ class OptionValueProxy (object):
 
     # -----------------------------------------------------------
 
-    def isSet(self):
-        return self.option_value.isSet()
+    def is_set(self):
+        return self.option_value.is_set()
 
     # -----------------------------------------------------------
 
-    def isSetNotTo(self, value):
-        return self.option_value.isSet() and (self != value)
+    def is_set_not_to(self, value):
+        return self.option_value.is_set() and (self != value)
 
     # -----------------------------------------------------------
 
@@ -239,10 +240,10 @@ class OptionValueProxy (object):
         self.child_ref = None
 
         if self.key is not NotImplemented:
-            other = iAddKey(self.key, other)
+            other = op_iadd_key(self.key, other)
 
-        self.options._appendValue(
-            self.option_value, self.from_parent, other, iAddValue)
+        self.options._append_value(
+            self.option_value, self.from_parent, other, op_iadd)
         return self
 
     # -----------------------------------------------------------
@@ -271,10 +272,10 @@ class OptionValueProxy (object):
         self.child_ref = None
 
         if self.key is not NotImplemented:
-            other = iSubKey(self.key, other)
+            other = op_isub_key(self.key, other)
 
-        self.options._appendValue(
-            self.option_value, self.from_parent, other, iSubValue)
+        self.options._append_value(
+            self.option_value, self.from_parent, other, op_isub)
         return self
 
     # -----------------------------------------------------------
@@ -283,10 +284,10 @@ class OptionValueProxy (object):
         self.child_ref = None
 
         if self.key is not NotImplemented:
-            value = SetKey(self.key, value)
+            value = op_set_key(self.key, value)
 
-        self.options._appendValue(
-            self.option_value, self.from_parent, value, SetValue)
+        self.options._append_value(
+            self.option_value, self.from_parent, value, op_set)
 
     # -----------------------------------------------------------
 
@@ -302,15 +303,15 @@ class OptionValueProxy (object):
 
         if isinstance(option_type, DictOptionType):
             if isinstance(value, OptionType) or (type(value) is type):
-                option_type.setValueType(key, value)
+                option_type.set_value_type(key, value)
                 return
 
-        value = SetKey(key, value)
+        value = op_set_key(key, value)
 
         self.child_ref = None
 
-        self.options._appendValue(
-            self.option_value, self.from_parent, value, SetValue)
+        self.options._append_value(
+            self.option_value, self.from_parent, value, op_set)
 
     # -----------------------------------------------------------
 
@@ -327,8 +328,8 @@ class OptionValueProxy (object):
 
     def update(self, value):
         self.child_ref = None
-        self.options._appendValue(
-            self.option_value, self.from_parent, value, iUpdateValue)
+        self.options._append_value(
+            self.option_value, self.from_parent, value, op_iupdate)
 
     # -----------------------------------------------------------
 
@@ -348,10 +349,10 @@ class OptionValueProxy (object):
 
     # -----------------------------------------------------------
 
-    def isTrue(self, context):
+    def is_true(self, context):
         return bool(self.get(context))
 
-    def isFalse(self, context):
+    def is_false(self, context):
         return not bool(self.get(context))
 
     # -----------------------------------------------------------
@@ -375,25 +376,25 @@ class OptionValueProxy (object):
         return self.cmp(context, operator.ge, other)
 
     def __eq__(self, other):
-        return self.eq(None,   _evalCmpValue(other))
+        return self.eq(None,   _eval_cmp_value(other))
 
     def __ne__(self, other):
-        return self.ne(None,   _evalCmpValue(other))
+        return self.ne(None,   _eval_cmp_value(other))
 
     def __lt__(self, other):
-        return self.lt(None,   _evalCmpValue(other))
+        return self.lt(None,   _eval_cmp_value(other))
 
     def __le__(self, other):
-        return self.le(None,   _evalCmpValue(other))
+        return self.le(None,   _eval_cmp_value(other))
 
     def __gt__(self, other):
-        return self.gt(None,   _evalCmpValue(other))
+        return self.gt(None,   _eval_cmp_value(other))
 
     def __ge__(self, other):
-        return self.ge(None,   _evalCmpValue(other))
+        return self.ge(None,   _eval_cmp_value(other))
 
     def __contains__(self, other):
-        return self.has(None,  _evalCmpValue(other))
+        return self.has(None,  _eval_cmp_value(other))
 
     # -----------------------------------------------------------
 
@@ -418,29 +419,29 @@ class OptionValueProxy (object):
 
     # -----------------------------------------------------------
 
-    def hasAny(self, context, others):
+    def has_any(self, context, others):
 
         value = self.get(context)
 
-        for other in toSequence(others):
+        for other in to_sequence(others):
             if other in value:
                 return True
         return False
 
     # -----------------------------------------------------------
 
-    def hasAll(self, context, others):
+    def has_all(self, context, others):
 
         value = self.get(context)
 
-        for other in toSequence(others):
+        for other in to_sequence(others):
             if other not in value:
                 return False
         return True
 
     # -----------------------------------------------------------
 
-    def oneOf(self, context, others):
+    def one_of(self, context, others):
 
         value = self.get(context)
 
@@ -452,12 +453,12 @@ class OptionValueProxy (object):
 
     # -----------------------------------------------------------
 
-    def notIn(self, context, others):
-        return not self.oneOf(context, others)
+    def not_in(self, context, others):
+        return not self.one_of(context, others)
 
     # -----------------------------------------------------------
 
-    def optionType(self):
+    def option_type(self):
         self.child_ref = None
         return self.option_value.option_type
 
@@ -477,7 +478,7 @@ class ConditionGeneratorHelper(object):
     # -----------------------------------------------------------
 
     @staticmethod
-    def __cmpValue(options, context, cmp_method, name, key, *args):
+    def __cmp_value(options, context, cmp_method, name, key, *args):
         opt = getattr(options, name)
         if key is not NotImplemented:
             opt = opt[key]
@@ -487,9 +488,9 @@ class ConditionGeneratorHelper(object):
     # -----------------------------------------------------------
 
     @staticmethod
-    def __makeCmpCondition(condition, cmp_method, name, key, *args):
+    def __make_cmp_condition(condition, cmp_method, name, key, *args):
         return Condition(condition,
-                         ConditionGeneratorHelper.__cmpValue,
+                         ConditionGeneratorHelper.__cmp_value,
                          cmp_method,
                          name,
                          key,
@@ -498,7 +499,7 @@ class ConditionGeneratorHelper(object):
     # -----------------------------------------------------------
 
     def cmp(self, cmp_method, *args):
-        condition = self.__makeCmpCondition(
+        condition = self.__make_cmp_condition(
             self.condition, cmp_method, self.name, self.key, *args)
         return ConditionGenerator(self.options, condition)
 
@@ -523,10 +524,10 @@ class ConditionGeneratorHelper(object):
     def __setitem__(self, key, value):
         if not isinstance(value, ConditionGeneratorHelper):
 
-            value = SetKey(key, value)
+            value = op_set_key(key, value)
 
-            self.options.appendValue(
-                self.name, value, SetValue, self.condition)
+            self.options.append_value(
+                self.name, value, op_set, self.condition)
 
     # -----------------------------------------------------------
 
@@ -551,40 +552,40 @@ class ConditionGeneratorHelper(object):
     def has(self, value):
         return self.cmp('has',     value)
 
-    def hasAny(self, values):
-        return self.cmp('hasAny',  values)
+    def has_any(self, values):
+        return self.cmp('has_any',  values)
 
-    def hasAll(self, values):
-        return self.cmp('hasAll',  values)
+    def has_all(self, values):
+        return self.cmp('has_all',  values)
 
-    def oneOf(self, values):
-        return self.cmp('oneOf',   values)
+    def one_of(self, values):
+        return self.cmp('one_of',   values)
 
-    def notIn(self, values):
-        return self.cmp('notIn',   values)
+    def not_in(self, values):
+        return self.cmp('not_in',   values)
 
-    def isTrue(self):
-        return self.cmp('isTrue')
+    def is_true(self):
+        return self.cmp('is_true')
 
-    def isFalse(self):
-        return self.cmp('isFalse')
+    def is_false(self):
+        return self.cmp('is_false')
 
     # -----------------------------------------------------------
 
     def __iadd__(self, value):
         if self.key is not NotImplemented:
-            value = iAddKey(self.key, value)
+            value = op_iadd_key(self.key, value)
 
-        self.options.appendValue(self.name, value, iAddValue, self.condition)
+        self.options.append_value(self.name, value, op_iadd, self.condition)
         return self
 
     # -----------------------------------------------------------
 
     def __isub__(self, value):
         if self.key is not NotImplemented:
-            value = iSubKey(self.key, value)
+            value = op_isub_key(self.key, value)
 
-        self.options.appendValue(self.name, value, iSubValue, self.condition)
+        self.options.append_value(self.name, value, op_isub, self.condition)
         return self
 
 # ==============================================================================
@@ -610,13 +611,13 @@ class ConditionGenerator(object):
 
             condition = self.__dict__['__condition']
 
-            self.__dict__['__options'].appendValue(
-                name, value, SetValue, condition)
+            self.__dict__['__options'].append_value(
+                name, value, op_set, condition)
 
 # ==============================================================================
 
 
-def _itemsByValue(items):
+def _items_by_value(items):
 
     values = {}
 
@@ -646,7 +647,7 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def _addDependency(self, child):
+    def _add_dependency(self, child):
 
         children = self.__dict__['__children']
 
@@ -654,14 +655,14 @@ class Options (object):
             if child_ref() is child:
                 return
 
-        if child._isDependency(self):
+        if child._is_dependency(self):
             raise ErrorOptionsCyclicallyDependent()
 
         children.append(weakref.ref(child))
 
     # -----------------------------------------------------------
 
-    def _isDependency(self, other):
+    def _is_dependency(self, other):
 
         children = list(self.__dict__['__children'])
 
@@ -682,7 +683,7 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def _isParent(self, other):
+    def _is_parent(self, other):
 
         if other is None:
             return False
@@ -699,9 +700,9 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def __copyParentOption(self, opt_value):
+    def __copy_parent_option(self, opt_value):
         parent = self.__dict__['__parent']
-        items = parent._valuesMapByName().items()
+        items = parent._values_map_by_name().items()
         names = [name for name, value in items if value is opt_value]
         opt_value = opt_value.copy()
         self.__set_opt_value(opt_value, names)
@@ -710,7 +711,7 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def getHashRef(self):
+    def get_hash_ref(self):
         if self.__dict__['__opt_values']:
             return weakref.ref(self)
 
@@ -719,16 +720,16 @@ class Options (object):
         if parent is None:
             return weakref.ref(self)
 
-        return parent.getHashRef()
+        return parent.get_hash_ref()
 
     # -----------------------------------------------------------
 
-    def hasChangedKeyOptions(self):
+    def has_changed_key_options(self):
 
         parent = self.__dict__['__parent']
 
         for name, opt_value in self.__dict__['__opt_values'].items():
-            if not opt_value.isToolKey() or not opt_value.isSet():
+            if not opt_value.is_tool_key() or not opt_value.is_set():
                 continue
 
             parent_opt_value, from_parent = parent._get_value(
@@ -736,7 +737,7 @@ class Options (object):
             if parent_opt_value is None:
                 continue
 
-            if parent_opt_value.isSet():
+            if parent_opt_value.is_set():
                 value = self.evaluate(opt_value, None, name)
                 parent_value = parent.evaluate(parent_opt_value, None, name)
                 if value != parent_value:
@@ -746,12 +747,12 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def __set_value(self, name, value, operation_type=SetValue):
+    def __set_value(self, name, value, operation_type=op_set):
 
         opt_value, from_parent = self._get_value(name, raise_ex=False)
 
         if opt_value is None:
-            self.clearCache()
+            self.clear_cache()
 
             if isinstance(value, OptionType):
                 opt_value = OptionValue(value)
@@ -761,22 +762,23 @@ class Options (object):
                     if not value.from_parent:
                         opt_value = value.option_value
                     else:
-                        opt_value = self.__copyParentOption(value.option_value)
+                        opt_value = self.__copy_parent_option(
+                            value.option_value)
 
-                elif self._isParent(value.options):
-                    opt_value = self.__copyParentOption(value.option_value)
+                elif self._is_parent(value.options):
+                    opt_value = self.__copy_parent_option(value.option_value)
 
                 else:
                     opt_value = value.option_value.copy()
                     opt_value.reset()
-                    value = self._makeCondValue(value, SetValue)
-                    opt_value.appendValue(value)
+                    value = self._make_cond_value(value, op_set)
+                    opt_value.append_value(value)
 
             elif not isinstance(value, OptionValue):
-                opt_value = OptionValue(autoOptionType(value))
+                opt_value = OptionValue(auto_option_type(value))
 
-                value = self._makeCondValue(value, SetValue)
-                opt_value.appendValue(value)
+                value = self._make_cond_value(value, op_set)
+                opt_value.append_value(value)
 
             self.__dict__['__opt_values'][name] = opt_value
 
@@ -792,7 +794,7 @@ class Options (object):
             elif value is opt_value:
                 return
 
-            self._appendValue(opt_value, from_parent, value, operation_type)
+            self._append_value(opt_value, from_parent, value, operation_type)
 
     # -----------------------------------------------------------
 
@@ -853,14 +855,14 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def _valuesMapByName(self, result=None):
+    def _values_map_by_name(self, result=None):
 
         if result is None:
             result = {}
 
         parent = self.__dict__['__parent']
         if parent is not None:
-            parent._valuesMapByName(result=result)
+            parent._values_map_by_name(result=result)
 
         result.update(self.__dict__['__opt_values'])
 
@@ -868,26 +870,26 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def _valuesMapByValue(self):
-        items = self._valuesMapByName().items()
-        return _itemsByValue(items)
+    def _values_map_by_value(self):
+        items = self._values_map_by_name().items()
+        return _items_by_value(items)
 
     # -----------------------------------------------------------
 
     def help(self, with_parent=False, hidden=False):
 
         if with_parent:
-            options_map = self._valuesMapByName()
+            options_map = self._values_map_by_name()
         else:
             options_map = self.__dict__['__opt_values']
 
-        options2names = _itemsByValue(options_map.items())
+        options2names = _items_by_value(options_map.items())
 
         result = {}
         for option, names in options2names.items():
             option_help = option.option_type.help()
 
-            if option_help.isHidden() and not hidden:
+            if option_help.is_hidden() and not hidden:
                 continue
 
             option_help.names = names
@@ -910,7 +912,7 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def helpText(self, title, with_parent=False, hidden=False, brief=False):
+    def help_text(self, title, with_parent=False, hidden=False, brief=False):
 
         border = "=" * len(title)
         result = ["", title, border, ""]
@@ -925,8 +927,8 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def setGroup(self, group):
-        opt_values = self._valuesMapByName().values()
+    def set_group(self, group):
+        opt_values = self._values_map_by_name().values()
 
         for opt_value in opt_values:
             if isinstance(opt_value, OptionValueProxy):
@@ -966,7 +968,7 @@ class Options (object):
                     continue
 
                 try:
-                    self.__set_value(name, value, iUpdateValue)
+                    self.__set_value(name, value, op_iupdate)
                 except ErrorOptionTypeCantDeduce:
                     pass
 
@@ -974,12 +976,12 @@ class Options (object):
 
     def __merge(self, self_names, other_names, move_values=False):
 
-        self.clearCache()
+        self.clear_cache()
 
-        other_values = _itemsByValue(other_names.items())
+        other_values = _items_by_value(other_names.items())
 
         self_names_set = set(self_names)
-        self_values = _itemsByValue(self_names.items())
+        self_values = _items_by_value(self_names.items())
 
         for value, names in other_values.items():
             same_names = names & self_names_set
@@ -1016,10 +1018,10 @@ class Options (object):
         if not isinstance(other, Options):
             raise ErrorOptionsMergeNonOptions(other)
 
-        if other._isParent(self):
+        if other._is_parent(self):
             raise ErrorOptionsMergeChild()
 
-        self.__merge(self._valuesMapByName(), other._valuesMapByName())
+        self.__merge(self._values_map_by_name(), other._values_map_by_name())
 
     # -----------------------------------------------------------
 
@@ -1044,13 +1046,14 @@ class Options (object):
         if parent is None:
             return
 
-        self.__merge(self.__dict__['__opt_values'], parent._valuesMapByName())
+        self.__merge(
+            self.__dict__['__opt_values'], parent._values_map_by_name())
 
         self.__dict__['__parent'] = None
 
     # -----------------------------------------------------------
 
-    def __unjoinChildren(self):
+    def __unjoin_children(self):
 
         children = self.__dict__['__children']
 
@@ -1063,40 +1066,40 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def __clearChildrenCache(self):
+    def __clear_children_cache(self):
 
-        def _clearChildCache(ref):
+        def _clear_child_cache(ref):
             child = ref()
             if child is not None:
-                child.clearCache()
+                child.clear_cache()
                 return True
 
             return False
 
         self.__dict__['__children'] = list(
-            filter(_clearChildCache, self.__dict__['__children']))
+            filter(_clear_child_cache, self.__dict__['__children']))
 
     # -----------------------------------------------------------
 
-    def __removeChild(self, child):
+    def __remove_child(self, child):
 
-        def _filterChild(child_ref, removed_child=child):
+        def _filter_child(child_ref, removed_child=child):
             filter_child = child_ref()
             return (filter_child is not None) and \
                    (filter_child is not removed_child)
 
         self.__dict__['__children'] = list(
-            filter(_filterChild, self.__dict__['__children']))
+            filter(_filter_child, self.__dict__['__children']))
 
     # -----------------------------------------------------------
 
     def clear(self):
         parent = self.__dict__['__parent']
 
-        self.__unjoinChildren()
+        self.__unjoin_children()
 
         if parent is not None:
-            parent.__removeChild(self)
+            parent.__remove_child(self)
 
         self.__dict__['__parent'] = None
         self.__dict__['__cache'].clear()
@@ -1115,7 +1118,7 @@ class Options (object):
 
         other = Options()
 
-        for opt_value, names in self._valuesMapByValue().items():
+        for opt_value, names in self._values_map_by_value().items():
             other.__set_opt_value(opt_value.copy(), names)
 
         return other
@@ -1141,7 +1144,7 @@ class Options (object):
         except KeyError:
             pass
 
-        value = option_value.get(self, context, _loadOpValue)
+        value = option_value.get(self, context, _load_op_value)
         cache[option_value] = value
 
         return value
@@ -1161,7 +1164,7 @@ class Options (object):
             if option_help.names:
                 raise
 
-            option_help.names = tuple(toSequence(name))
+            option_help.names = tuple(to_sequence(name))
             raise ErrorOptionTypeUnableConvertValue(
                 option_help, ex.invalid_value)
 
@@ -1170,27 +1173,27 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def _storeValue(self, value):
+    def _store_value(self, value):
         if isinstance(value, Operation):
-            value.convert(self, _storeOpValue)
+            value.convert(self, _store_op_value)
         else:
-            value = _storeOpValue(self, value)
+            value = _store_op_value(self, value)
 
         return value
 
     # -----------------------------------------------------------
 
-    def _loadValue(self, value):
+    def _load_value(self, value):
         if isinstance(value, Operation):
-            return value(self, {}, _loadOpValue)
+            return value(self, {}, _load_op_value)
         else:
-            value = _loadOpValue(self, {}, value)
+            value = _load_op_value(self, {}, value)
 
         return value
 
     # -----------------------------------------------------------
 
-    def _makeCondValue(self, value, operation_type, condition=None):
+    def _make_cond_value(self, value, operation_type, condition=None):
         if isinstance(value, ConditionalValue):
             return value
 
@@ -1199,42 +1202,44 @@ class Options (object):
 
         value = ConditionalValue(value, condition)
 
-        value.convert(self, _storeOpValue)
+        value.convert(self, _store_op_value)
 
         return value
 
     # -----------------------------------------------------------
 
-    def appendValue(self, name, value, operation_type, condition=None):
+    def append_value(self, name, value, operation_type, condition=None):
         opt_value, from_parent = self._get_value(name, raise_ex=True)
-        self._appendValue(
+        self._append_value(
             opt_value, from_parent, value, operation_type, condition)
 
     # -----------------------------------------------------------
 
-    def _appendValue(self,
-                     opt_value,
-                     from_parent,
-                     value,
-                     operation_type,
-                     condition=None):
+    def _append_value(self,
+                      opt_value,
+                      from_parent,
+                      value,
+                      operation_type,
+                      condition=None):
 
-        value = self._makeCondValue(value, operation_type, condition)
+        value = self._make_cond_value(value, operation_type, condition)
 
-        self.clearCache()
+        self.clear_cache()
 
         if from_parent:
-            opt_value = self.__copyParentOption(opt_value)
+            opt_value = self.__copy_parent_option(opt_value)
 
-        opt_value.appendValue(value)
+        opt_value.append_value(value)
 
     # -----------------------------------------------------------
 
-    def clearCache(self):
+    def clear_cache(self):
         self.__dict__['__cache'].clear()
-        self.__clearChildrenCache()
+        self.__clear_children_cache()
 
     # -----------------------------------------------------------
 
-    def If(self):
+    def when(self):
         return ConditionGenerator(self)
+
+    If = when

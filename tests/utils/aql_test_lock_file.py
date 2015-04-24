@@ -6,7 +6,7 @@ import multiprocessing as mp
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, runLocalTests
+from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile, FileLock, ErrorFileLocked
 from aql.utils.aql_lock_file import GeneralFileLock
@@ -14,11 +14,11 @@ from aql.utils.aql_lock_file import GeneralFileLock
 # ==============================================================================
 
 
-def writeProcess(filename, event, LockType, **lock_flags):
+def write_process(filename, event, LockType, **lock_flags):
 
     flock = LockType(filename)
 
-    with flock.writeLock(**lock_flags):
+    with flock.write_lock(**lock_flags):
         event.set()
 
         time.sleep(2)
@@ -30,11 +30,11 @@ def writeProcess(filename, event, LockType, **lock_flags):
 # ==============================================================================
 
 
-def readProcess(filename, event, LockType, **lock_flags):
+def read_process(filename, event, LockType, **lock_flags):
 
     flock = LockType(filename)
 
-    with flock.readLock(**lock_flags):
+    with flock.read_lock(**lock_flags):
         event.set()
 
         time.sleep(2)
@@ -56,13 +56,13 @@ class TestFileLock(AqlTestCase):
             event = mp.Event()
 
             p = mp.Process(
-                target=writeProcess, args=(str(temp_file), event, LockType))
+                target=write_process, args=(str(temp_file), event, LockType))
             p.start()
 
             event.wait()
 
             start_time = time.time()
-            with flock.writeLock():
+            with flock.write_lock():
 
                 self.assertGreaterEqual(time.time() - start_time, 1)
 
@@ -90,9 +90,9 @@ class TestFileLock(AqlTestCase):
             flock1 = GeneralFileLock(temp_file)
             flock2 = GeneralFileLock(temp_file, interval=1, timeout=3)
 
-            with flock1.writeLock():
+            with flock1.write_lock():
                 start_time = time.time()
-                self.assertRaises(ErrorFileLocked, flock2.writeLock)
+                self.assertRaises(ErrorFileLocked, flock2.write_lock)
                 self.assertGreaterEqual(time.time() - start_time, 3)
 
     # ==============================================================================
@@ -107,9 +107,9 @@ class TestFileLock(AqlTestCase):
             flock1 = FileLock(temp_file)
             flock2 = FileLock(temp_file)
 
-            with flock1.readLock():
+            with flock1.read_lock():
                 start_time = time.time()
-                with flock2.readLock():
+                with flock2.read_lock():
                     self.assertLess(time.time() - start_time, 1)
 
                     with open(temp_file, 'r+b') as file:
@@ -129,14 +129,14 @@ class TestFileLock(AqlTestCase):
             event = mp.Event()
 
             p = mp.Process(
-                target=writeProcess, args=(str(temp_file), event, FileLock))
+                target=write_process, args=(str(temp_file), event, FileLock))
             p.start()
 
             event.wait()
 
             start_time = time.time()
 
-            with flock.readLock():
+            with flock.read_lock():
 
                 self.assertGreaterEqual(time.time() - start_time, 1)
 
@@ -160,14 +160,14 @@ class TestFileLock(AqlTestCase):
             event = mp.Event()
 
             p = mp.Process(
-                target=readProcess, args=(str(temp_file), event, FileLock))
+                target=read_process, args=(str(temp_file), event, FileLock))
             p.start()
 
             event.wait()
 
             start_time = time.time()
 
-            with flock.writeLock():
+            with flock.write_lock():
 
                 self.assertGreaterEqual(time.time() - start_time, 1)
 
@@ -188,13 +188,13 @@ class TestFileLock(AqlTestCase):
             event = mp.Event()
 
             p = mp.Process(
-                target=writeProcess, args=(str(temp_file), event, lock_type))
+                target=write_process, args=(str(temp_file), event, lock_type))
             p.start()
 
             event.wait()
 
-            self.assertRaises(ErrorFileLocked, flock.readLock, wait=False)
-            self.assertRaises(ErrorFileLocked, flock.writeLock, wait=False)
+            self.assertRaises(ErrorFileLocked, flock.read_lock, wait=False)
+            self.assertRaises(ErrorFileLocked, flock.write_lock, wait=False)
 
             p.join()
 
@@ -226,15 +226,15 @@ class TestFileLock(AqlTestCase):
             event = mp.Event()
 
             p = mp.Process(
-                target=writeProcess, args=(str(temp_file), event, FileLock))
+                target=write_process, args=(str(temp_file), event, FileLock))
             p.start()
 
             event.wait()
 
             self.assertRaises(
-                ErrorFileLocked, flock.readLock, wait=False, force=True)
+                ErrorFileLocked, flock.read_lock, wait=False, force=True)
             self.assertRaises(
-                ErrorFileLocked, flock.writeLock, wait=False, force=True)
+                ErrorFileLocked, flock.write_lock, wait=False, force=True)
 
             p.join()
 
@@ -249,13 +249,13 @@ class TestFileLock(AqlTestCase):
             event = mp.Event()
 
             p = mp.Process(
-                target=writeProcess, args=(str(temp_file), event, GeneralFileLock))
+                target=write_process, args=(str(temp_file), event, GeneralFileLock))
             p.start()
 
             event.wait()
 
-            with flock.readLock(wait=False, force=True):
-                with flock.writeLock(wait=False, force=True):
+            with flock.read_lock(wait=False, force=True):
+                with flock.write_lock(wait=False, force=True):
                     pass
 
             p.join()
@@ -264,4 +264,4 @@ class TestFileLock(AqlTestCase):
 # ==========================================================
 
 if __name__ == "__main__":
-    runLocalTests()
+    run_local_tests()

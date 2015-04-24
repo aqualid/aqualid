@@ -20,17 +20,17 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-from .aql_simple_types import uStr, is_string, cast_str
+from .aql_simple_types import u_str, is_string, cast_str
 
-__all__ = ('toSequence', 'isSequence', 'UniqueList',
-           'List', 'ValueListType', 'SplitListType')
+__all__ = ('to_sequence', 'is_sequence', 'UniqueList',
+           'List', 'value_list_type', 'split_list_type')
 
 # ==============================================================================
 
 
-def toSequence(value, seq_types=(uStr, bytes, bytearray)):
+def to_sequence(value, _seq_types=(u_str, bytes, bytearray)):
 
-    if not isinstance(value, seq_types):
+    if not isinstance(value, _seq_types):
         try:
             iter(value)
             return value
@@ -45,9 +45,9 @@ def toSequence(value, seq_types=(uStr, bytes, bytearray)):
 # ==============================================================================
 
 
-def isSequence(value, seq_types=(uStr, bytes, bytearray)):
+def is_sequence(value, _seq_types=(u_str, bytes, bytearray)):
 
-    if not isinstance(value, seq_types):
+    if not isinstance(value, _seq_types):
         try:
             iter(value)
             return True
@@ -73,11 +73,11 @@ class UniqueList (object):
         self.__values_list = []
         self.__values_set = set()
 
-        self.__addValues(values)
+        self.__add_values(values)
 
     # -----------------------------------------------------------
 
-    def __addValueFront(self, value):
+    def __add_value_front(self, value):
 
         values_set = self.__values_set
         values_list = self.__values_list
@@ -91,7 +91,7 @@ class UniqueList (object):
 
     # -----------------------------------------------------------
 
-    def __addValue(self, value):
+    def __add_value(self, value):
 
         values_set = self.__values_set
         values_list = self.__values_list
@@ -102,21 +102,21 @@ class UniqueList (object):
 
     # -----------------------------------------------------------
 
-    def __addValues(self, values):
+    def __add_values(self, values):
 
         values_set_add = self.__values_set.add
         values_list_append = self.__values_list.append
         values_set_size = self.__values_set.__len__
         values_list_size = self.__values_list.__len__
 
-        for value in toSequence(values):
+        for value in to_sequence(values):
             values_set_add(value)
             if values_set_size() > values_list_size():
                 values_list_append(value)
 
     # -----------------------------------------------------------
 
-    def __addValuesFront(self, values):
+    def __add_values_front(self, values):
 
         values_set = self.__values_set
         values_list = self.__values_list
@@ -129,7 +129,7 @@ class UniqueList (object):
 
         pos = 0
 
-        for value in toSequence(values):
+        for value in to_sequence(values):
             values_set_add(value)
             if values_set_size() == values_list_size():
                 i = values_list_index(value)
@@ -144,7 +144,7 @@ class UniqueList (object):
 
     # -----------------------------------------------------------
 
-    def __removeValue(self, value):
+    def __remove_value(self, value):
 
         try:
             self.__values_set.remove(value)
@@ -154,12 +154,12 @@ class UniqueList (object):
 
     # -----------------------------------------------------------
 
-    def __removeValues(self, values):
+    def __remove_values(self, values):
 
         values_set_remove = self.__values_set.remove
         values_list_remove = self.__values_list.remove
 
-        for value in toSequence(values):
+        for value in to_sequence(values):
             try:
                 values_set_remove(value)
                 values_list_remove(value)
@@ -197,7 +197,7 @@ class UniqueList (object):
         if isinstance(other, UniqueList):
             return self.__values_set == other.__values_set
 
-        return self.__values_set == set(toSequence(other))
+        return self.__values_set == set(to_sequence(other))
 
     # -----------------------------------------------------------
 
@@ -205,7 +205,7 @@ class UniqueList (object):
         if isinstance(other, UniqueList):
             return self.__values_set != other.__values_set
 
-        return self.__values_set != set(toSequence(other))
+        return self.__values_set != set(to_sequence(other))
 
     # -----------------------------------------------------------
 
@@ -245,38 +245,38 @@ class UniqueList (object):
     # -----------------------------------------------------------
 
     def __iadd__(self, values):
-        self.__addValues(values)
+        self.__add_values(values)
         return self
 
     # -----------------------------------------------------------
 
     def __add__(self, values):
         other = UniqueList(self)
-        other.__addValues(values)
+        other.__add_values(values)
         return other
 
     # -----------------------------------------------------------
 
     def __radd__(self, values):
         other = UniqueList(values)
-        other.__addValues(self)
+        other.__add_values(self)
         return other
 
     # -----------------------------------------------------------
 
     def __isub__(self, values):
-        self.__removeValues(values)
+        self.__remove_values(values)
         return self
 
     # -----------------------------------------------------------
 
     def append(self, value):
-        self.__addValue(value)
+        self.__add_value(value)
 
     # -----------------------------------------------------------
 
     def extend(self, values):
-        self.__addValues(values)
+        self.__add_values(values)
 
     # -----------------------------------------------------------
 
@@ -286,17 +286,17 @@ class UniqueList (object):
     # -----------------------------------------------------------
 
     def append_front(self, value):
-        self.__addValueFront(value)
+        self.__add_value_front(value)
 
     # -----------------------------------------------------------
 
     def extend_front(self, values):
-        self.__addValuesFront(values)
+        self.__add_values_front(values)
 
     # -----------------------------------------------------------
 
     def remove(self, value):
-        self.__removeValue(value)
+        self.__remove_value(value)
 
     # -----------------------------------------------------------
 
@@ -316,7 +316,7 @@ class UniqueList (object):
 
     # -----------------------------------------------------------
 
-    def selfTest(self):
+    def self_test(self):
         size = len(self)
         if size != len(self.__values_list):
             raise AssertionError(
@@ -339,12 +339,12 @@ class List (list):
     # -----------------------------------------------------------
 
     def __init__(self, values=None):
-        super(List, self).__init__(toSequence(values))
+        super(List, self).__init__(to_sequence(values))
 
     # -----------------------------------------------------------
 
     def __iadd__(self, values):
-        super(List, self).__iadd__(toSequence(values))
+        super(List, self).__iadd__(to_sequence(values))
         return self
 
     # -----------------------------------------------------------
@@ -366,7 +366,7 @@ class List (list):
     # -----------------------------------------------------------
 
     def __isub__(self, values):
-        for value in toSequence(values):
+        for value in to_sequence(values):
             while True:
                 try:
                     self.remove(value)
@@ -378,7 +378,7 @@ class List (list):
     # -----------------------------------------------------------
 
     @staticmethod
-    def __toList(values):
+    def __to_list(values):
         if isinstance(values, List):
             return values
 
@@ -387,22 +387,22 @@ class List (list):
     # -----------------------------------------------------------
 
     def __eq__(self, other):
-        return super(List, self).__eq__(self.__toList(other))
+        return super(List, self).__eq__(self.__to_list(other))
 
     def __ne__(self, other):
-        return super(List, self).__ne__(self.__toList(other))
+        return super(List, self).__ne__(self.__to_list(other))
 
     def __lt__(self, other):
-        return super(List, self).__lt__(self.__toList(other))
+        return super(List, self).__lt__(self.__to_list(other))
 
     def __le__(self, other):
-        return super(List, self).__le__(self.__toList(other))
+        return super(List, self).__le__(self.__to_list(other))
 
     def __gt__(self, other):
-        return super(List, self).__gt__(self.__toList(other))
+        return super(List, self).__gt__(self.__to_list(other))
 
     def __ge__(self, other):
-        return super(List, self).__ge__(self.__toList(other))
+        return super(List, self).__ge__(self.__to_list(other))
 
     # -----------------------------------------------------------
 
@@ -412,12 +412,12 @@ class List (list):
     # -----------------------------------------------------------
 
     def extend(self, values):
-        super(List, self).extend(toSequence(values))
+        super(List, self).extend(to_sequence(values))
 
     # -----------------------------------------------------------
 
     def extend_front(self, values):
-        self[:0] = toSequence(values)
+        self[:0] = to_sequence(values)
 
     # -----------------------------------------------------------
 
@@ -427,7 +427,7 @@ class List (list):
 # ==============================================================================
 
 
-def SplitListType(list_type, separators):
+def split_list_type(list_type, separators):
 
     separator = separators[0]
     other_separators = separators[1:]
@@ -438,7 +438,7 @@ def SplitListType(list_type, separators):
 
         # noinspection PyShadowingNames
         @staticmethod
-        def __toSequence(values):
+        def __to_sequence(values):
             if not is_string(values):
                 return values
 
@@ -450,7 +450,7 @@ def SplitListType(list_type, separators):
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toSplitList(values):
+        def __to_split_list(values):
             if isinstance(values, SplitList):
                 return values
 
@@ -459,47 +459,47 @@ def SplitListType(list_type, separators):
         # -----------------------------------------------------------
 
         def __init__(self, values=None):
-            super(SplitList, self).__init__(self.__toSequence(values))
+            super(SplitList, self).__init__(self.__to_sequence(values))
 
         # -----------------------------------------------------------
 
         def __iadd__(self, values):
-            return super(SplitList, self).__iadd__(self.__toSequence(values))
+            return super(SplitList, self).__iadd__(self.__to_sequence(values))
 
         # -----------------------------------------------------------
 
         def __isub__(self, values):
-            return super(SplitList, self).__isub__(self.__toSequence(values))
+            return super(SplitList, self).__isub__(self.__to_sequence(values))
 
         # -----------------------------------------------------------
 
         def extend(self, values):
-            super(SplitList, self).extend(self.__toSequence(values))
+            super(SplitList, self).extend(self.__to_sequence(values))
 
         # -----------------------------------------------------------
 
         def extend_front(self, values):
-            super(SplitList, self).extend_front(self.__toSequence(values))
+            super(SplitList, self).extend_front(self.__to_sequence(values))
 
         # -----------------------------------------------------------
 
         def __eq__(self, other):
-            return super(SplitList, self).__eq__(self.__toSplitList(other))
+            return super(SplitList, self).__eq__(self.__to_split_list(other))
 
         def __ne__(self, other):
-            return super(SplitList, self).__ne__(self.__toSplitList(other))
+            return super(SplitList, self).__ne__(self.__to_split_list(other))
 
         def __lt__(self, other):
-            return super(SplitList, self).__lt__(self.__toSplitList(other))
+            return super(SplitList, self).__lt__(self.__to_split_list(other))
 
         def __le__(self, other):
-            return super(SplitList, self).__le__(self.__toSplitList(other))
+            return super(SplitList, self).__le__(self.__to_split_list(other))
 
         def __gt__(self, other):
-            return super(SplitList, self).__gt__(self.__toSplitList(other))
+            return super(SplitList, self).__gt__(self.__to_split_list(other))
 
         def __ge__(self, other):
-            return super(SplitList, self).__ge__(self.__toSplitList(other))
+            return super(SplitList, self).__ge__(self.__to_split_list(other))
 
         # -----------------------------------------------------------
 
@@ -513,23 +513,23 @@ def SplitListType(list_type, separators):
 # ==============================================================================
 
 
-def ValueListType(list_type, value_type):
+def value_list_type(list_type, value_type):
 
     class _ValueList (list_type):
 
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toSequence(values):
+        def __to_sequence(values):
             if isinstance(values, _ValueList):
                 return values
 
-            return map(value_type, toSequence(values))
+            return map(value_type, to_sequence(values))
 
         # -----------------------------------------------------------
 
         @staticmethod
-        def __toValueList(values):
+        def __to_value_list(values):
             if isinstance(values, _ValueList):
                 return values
 
@@ -538,19 +538,21 @@ def ValueListType(list_type, value_type):
         # -----------------------------------------------------------
 
         def __init__(self, values=None):
-            super(_ValueList, self).__init__(self.__toSequence(values))
+            super(_ValueList, self).__init__(self.__to_sequence(values))
 
         def __iadd__(self, values):
-            return super(_ValueList, self).__iadd__(self.__toValueList(values))
+            return super(_ValueList, self).__iadd__(
+                self.__to_value_list(values))
 
         def __isub__(self, values):
-            return super(_ValueList, self).__isub__(self.__toValueList(values))
+            return super(_ValueList, self).__isub__(
+                self.__to_value_list(values))
 
         def extend(self, values):
-            super(_ValueList, self).extend(self.__toValueList(values))
+            super(_ValueList, self).extend(self.__to_value_list(values))
 
         def extend_front(self, values):
-            super(_ValueList, self).extend_front(self.__toValueList(values))
+            super(_ValueList, self).extend_front(self.__to_value_list(values))
 
         def append(self, value):
             super(_ValueList, self).append(value_type(value))
@@ -569,7 +571,7 @@ def ValueListType(list_type, value_type):
 
         def __setitem__(self, index, value):
             if type(index) is slice:
-                value = self.__toValueList(value)
+                value = self.__to_value_list(value)
             else:
                 value = value_type(value)
 
@@ -578,22 +580,22 @@ def ValueListType(list_type, value_type):
         # -----------------------------------------------------------
 
         def __eq__(self, other):
-            return super(_ValueList, self).__eq__(self.__toValueList(other))
+            return super(_ValueList, self).__eq__(self.__to_value_list(other))
 
         def __ne__(self, other):
-            return super(_ValueList, self).__ne__(self.__toValueList(other))
+            return super(_ValueList, self).__ne__(self.__to_value_list(other))
 
         def __lt__(self, other):
-            return super(_ValueList, self).__lt__(self.__toValueList(other))
+            return super(_ValueList, self).__lt__(self.__to_value_list(other))
 
         def __le__(self, other):
-            return super(_ValueList, self).__le__(self.__toValueList(other))
+            return super(_ValueList, self).__le__(self.__to_value_list(other))
 
         def __gt__(self, other):
-            return super(_ValueList, self).__gt__(self.__toValueList(other))
+            return super(_ValueList, self).__gt__(self.__to_value_list(other))
 
         def __ge__(self, other):
-            return super(_ValueList, self).__ge__(self.__toValueList(other))
+            return super(_ValueList, self).__ge__(self.__to_value_list(other))
 
         # -----------------------------------------------------------
 

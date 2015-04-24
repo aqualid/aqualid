@@ -23,16 +23,17 @@
 import types
 import itertools
 
-from aql.util_types import toSequence
+from aql.util_types import to_sequence
 
-from .aql_utils import equalFunctionArgs
+from .aql_utils import equal_function_args
 
 __all__ = (
     'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
-    'eventWarning',  'eventStatus',  'eventDebug', 'eventError',
-    'eventHandler', 'disableEvents', 'enableEvents', 'EventSettings',
-    'setEventSettings', 'disableDefaultHandlers', 'enableDefaultHandlers',
-    'addUserHandler', 'removeUserHandler',
+    'event_warning',  'event_status',  'event_debug', 'event_error',
+    'event_handler', 'disable_events', 'enable_events', 'EventSettings',
+    'set_event_settings', 'disable_default_handlers',
+    'enable_default_handlers',
+    'add_user_handler', 'remove_user_handler',
     'ErrorEventUserHandlerWrongArgs', 'ErrorEventHandlerAlreadyDefined',
     'ErrorEventHandlerUnknownEvent',
 )
@@ -53,7 +54,7 @@ class ErrorEventUserHandlerWrongArgs (Exception):
     def __init__(self, event, handler):
         msg = "Invalid arguments of event '%s' handler method: '%s'" % (
             event, handler)
-        super(type(self), self).__init__(msg)
+        super(ErrorEventUserHandlerWrongArgs, self).__init__(msg)
 
 # ==============================================================================
 
@@ -63,7 +64,7 @@ class ErrorEventHandlerAlreadyDefined (Exception):
     def __init__(self, event, handler, other_handler):
         msg = "Default event '%s' handler is defined twice: '%s', '%s'" % \
               (event, handler, other_handler)
-        super(type(self), self).__init__(msg)
+        super(ErrorEventHandlerAlreadyDefined, self).__init__(msg)
 
 # ==============================================================================
 
@@ -72,7 +73,7 @@ class ErrorEventHandlerUnknownEvent (Exception):
 
     def __init__(self, event):
         msg = "Unknown event: '%s'" % (event,)
-        super(type(self), self).__init__(msg)
+        super(ErrorEventHandlerUnknownEvent, self).__init__(msg)
 
 # ==============================================================================
 
@@ -113,7 +114,7 @@ class EventManager(object):
 
     # -----------------------------------------------------------
 
-    def addDefaultHandler(self, handler, importance_level, event=None):
+    def add_default_handler(self, handler, importance_level, event=None):
         if not event:
             event = handler.__name__
 
@@ -124,7 +125,7 @@ class EventManager(object):
 
     # -----------------------------------------------------------
 
-    def addUserHandler(self, user_handler, event=None):
+    def add_user_handler(self, user_handler, event=None):
 
         if not event:
             event = user_handler.__name__
@@ -134,17 +135,17 @@ class EventManager(object):
         except KeyError:
             raise ErrorEventHandlerUnknownEvent(event)
 
-        if not equalFunctionArgs(default_handler, user_handler):
+        if not equal_function_args(default_handler, user_handler):
             raise ErrorEventUserHandlerWrongArgs(event, user_handler)
 
         self.user_handlers.setdefault(event, []).append(user_handler)
 
     # -----------------------------------------------------------
 
-    def removeUserHandler(self, user_handlers):
+    def remove_user_handler(self, user_handlers):
 
         for event, handlers in self.user_handlers.items():
-            for user_handler in toSequence(user_handlers):
+            for user_handler in to_sequence(user_handlers):
                 try:
                     handlers.remove(user_handler)
                 except ValueError:
@@ -152,7 +153,7 @@ class EventManager(object):
 
     # -----------------------------------------------------------
 
-    def sendEvent(self, event, *args, **kw):
+    def send_event(self, event, *args, **kw):
 
         if event in self.ignored_events:
             return
@@ -170,10 +171,10 @@ class EventManager(object):
 
     # -----------------------------------------------------------
 
-    def __getEvents(self, event_filters):
+    def __get_events(self, event_filters):
         events = set()
 
-        for event_filter in toSequence(event_filters):
+        for event_filter in to_sequence(event_filters):
             if event_filter not in EVENT_ALL:
                 events.add(event_filter)
             else:
@@ -186,9 +187,9 @@ class EventManager(object):
 
     # -----------------------------------------------------------
 
-    def enableEvents(self, event_filters, enable):
+    def enable_events(self, event_filters, enable):
 
-        events = self.__getEvents(event_filters)
+        events = self.__get_events(event_filters)
 
         if enable:
             self.ignored_events.difference_update(events)
@@ -197,12 +198,12 @@ class EventManager(object):
 
     # -----------------------------------------------------------
 
-    def enableDefaultHandlers(self, enable):
+    def enable_default_handlers(self, enable):
         self.disable_defaults = not enable
 
     # -----------------------------------------------------------
 
-    def setSettings(self, settings):
+    def set_settings(self, settings):
         self.settings = settings
 
 _event_manager = EventManager()
@@ -210,91 +211,91 @@ _event_manager = EventManager()
 # ==============================================================================
 
 
-def _eventImpl(handler, importance_level, event=None):
+def _event_impl(handler, importance_level, event=None):
 
     if not event:
         event = handler.__name__
 
-    _event_manager.addDefaultHandler(handler, importance_level)
+    _event_manager.add_default_handler(handler, importance_level)
 
-    def _sendEvent(*args, **kw):
-        _event_manager.sendEvent(event, *args, **kw)
+    def _send_event(*args, **kw):
+        _event_manager.send_event(event, *args, **kw)
 
-    return _sendEvent
-
-# ==============================================================================
-
-
-def eventError(handler):
-    return _eventImpl(handler, EVENT_ERROR)
-
-
-def eventWarning(handler):
-    return _eventImpl(handler, EVENT_WARNING)
-
-
-def eventStatus(handler):
-    return _eventImpl(handler, EVENT_STATUS)
-
-
-def eventDebug(handler):
-    return _eventImpl(handler, EVENT_DEBUG)
+    return _send_event
 
 # ==============================================================================
 
 
-def eventHandler(event=None):
+def event_error(handler):
+    return _event_impl(handler, EVENT_ERROR)
+
+
+def event_warning(handler):
+    return _event_impl(handler, EVENT_WARNING)
+
+
+def event_status(handler):
+    return _event_impl(handler, EVENT_STATUS)
+
+
+def event_debug(handler):
+    return _event_impl(handler, EVENT_DEBUG)
+
+# ==============================================================================
+
+
+def event_handler(event=None):
 
     if isinstance(event, (types.FunctionType, types.MethodType)):
-        _event_manager.addUserHandler(event)
+        _event_manager.add_user_handler(event)
         return event
 
-    def _eventHandlerImpl(handler):
-        _event_manager.addUserHandler(handler, event)
+    def _event_handler_impl(handler):
+        _event_manager.add_user_handler(handler, event)
         return handler
 
-    return _eventHandlerImpl
+    return _event_handler_impl
 
 # ==============================================================================
 
 
-def setEventSettings(settings):
-    _event_manager.setSettings(settings)
+def set_event_settings(settings):
+    _event_manager.set_settings(settings)
 
 # ==============================================================================
 
 
-def enableEvents(event_filters):
-    _event_manager.enableEvents(event_filters, True)
+def enable_events(event_filters):
+    _event_manager.enable_events(event_filters, True)
 
 # ==============================================================================
 
 
-def disableEvents(event_filters):
-    _event_manager.enableEvents(event_filters, False)
+def disable_events(event_filters):
+    _event_manager.enable_events(event_filters, False)
 
 # ==============================================================================
 
 
-def disableDefaultHandlers():
-    _event_manager.enableDefaultHandlers(False)
+def disable_default_handlers():
+    _event_manager.enable_default_handlers(False)
 
 # ==============================================================================
 
 
-def enableDefaultHandlers():
-    _event_manager.enableDefaultHandlers(True)
+def enable_default_handlers():
+    _event_manager.enable_default_handlers(True)
 
 # ==============================================================================
 
 
-def addUserHandler(handler, event=None):
-    _event_manager.addUserHandler(handler, event)
+def add_user_handler(handler, event=None):
+    _event_manager.add_user_handler(handler, event)
 
 # ==============================================================================
 
 
-def removeUserHandler(handler):
-    _event_manager.removeUserHandler(handler)
+def remove_user_handler(handler):
+    _event_manager.remove_user_handler(handler)
 
 # ==============================================================================
