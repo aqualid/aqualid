@@ -12,7 +12,8 @@ sys.path.insert(
 from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile
-from aql.entity import FileChecksumEntity, FileTimestampEntity, SimpleEntity, EntityPickler, pickleable
+from aql.entity import FileChecksumEntity, FileTimestampEntity, SimpleEntity,\
+    EntityPickler
 
 # ==============================================================================
 
@@ -52,10 +53,6 @@ class TestValuePickler(AqlTestCase):
         self.assertEqual(value.name, v.name)
         self.assertIsNone(v.signature)
 
-        #value = Value( "1221", 12345 )
-        #v = vpick.loads( vpick.dumps( value ) )
-        #self.assertEqual( value, v )
-
     # ==============================================================================
 
     @skip
@@ -66,13 +63,16 @@ class TestValuePickler(AqlTestCase):
             vpick = EntityPickler()
             value = FileChecksumEntity(tmp)
 
-            t = lambda pload = vpick.loads, pdump = vpick.dumps, value = value: pload(
-                pdump(value))
+            t = lambda vpick = vpick, value = value: \
+                vpick.loads(vpick.dumps(value))
+
             t = timeit.timeit(t, number=10000)
             print("value picker: %s" % t)
 
-            t = lambda pload = pickle.loads, pdump = pickle.dumps, value = value: pload(
-                pdump(value, protocol=pickle.HIGHEST_PROTOCOL))
+            t = lambda vpick = vpick, value = value:\
+                vpick.loads(vpick.dumps(value,
+                                        protocol=pickle.HIGHEST_PROTOCOL))
+
             t = timeit.timeit(t, number=10000)
             print("pickle: %s" % t)
 

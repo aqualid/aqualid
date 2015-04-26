@@ -7,11 +7,11 @@ sys.path.insert(
 
 from aql_tests import skip, AqlTestCase, run_local_tests
 
-from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
-    OptionValue, ConditionalValue, Condition, SimpleOperation, SimpleInplaceOperation, \
-    op_set, op_iadd, op_isub, ErrorOptionTypeUnableConvertValue
+from aql.options import OptionType, EnumOptionType, RangeOptionType,\
+    ListOptionType, OptionValue, ConditionalValue, Condition,\
+    SimpleInplaceOperation, op_set, op_iadd, op_isub,\
+    ErrorOptionTypeUnableConvertValue
 
-from aql.util_types import Dict
 
 # ==============================================================================
 
@@ -115,8 +115,6 @@ class TestOptionValue(AqlTestCase):
     # -------------------------------------------------------------------------------
 
     def test_option_value4(self):
-        opt_value = OptionValue(OptionType(int))
-
         def _inc_value(value):
             return value + 1
 
@@ -163,8 +161,9 @@ class TestOptionValue(AqlTestCase):
 
         opt_value1.append_value(ConditionalValue(op_iadd(opt_value2)))
 
-        self.assertEqual(
-            opt_value2.get({}, None, _convert_value), opt_value2.option_type(7))
+        self.assertEqual(opt_value2.get({}, None, _convert_value),
+                         opt_value2.option_type(7))
+
         self.assertEqual(opt_value1.get({}, None, _convert_value), 7)
 
         # opt1: 1 + opt2 + opt2 = 1 + 3 + 3
@@ -173,8 +172,9 @@ class TestOptionValue(AqlTestCase):
     # -------------------------------------------------------------------------------
 
     def test_option_value_list(self):
-        opt_type1 = ListOptionType(
-            value_type=EnumOptionType(values=(('off', 0), ('size', 1), ('speed', 2))))
+
+        opt_type1 = ListOptionType(value_type=EnumOptionType(
+            values=(('off', 0), ('size', 1), ('speed', 2))))
 
         opt_value = OptionValue(opt_type1)
 
@@ -208,14 +208,11 @@ class TestOptionValue(AqlTestCase):
 
         opt_value = OptionValue(opt_type1)
 
-        cond_value = ConditionalValue(op_set({1: 2}))
         cond_value = ConditionalValue(op_set({3: 4}))
 
         opt_value.append_value(cond_value)
 
         self.assertEqual(opt_value.get({}, None), {3: 4})
-
-        opt_type1 = OptionType(value_type=Dict)
 
 
 # ==============================================================================

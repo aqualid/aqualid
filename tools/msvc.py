@@ -11,8 +11,11 @@ from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
 # ==============================================================================
 
 
-def _parse_output(source_paths, output, exclude_dirs,
-                 _err_re=re.compile(r".+\s+:\s+(fatal\s)?error\s+[0-9A-Z]+:")):
+def _parse_output(source_paths,
+                  output,
+                  exclude_dirs,
+                  _err_re=re.compile(r".+\s+:\s+(fatal\s)?error\s+[0-9A-Z]+:")
+                  ):
 
     gen_code = ("Generating Code...", "Compiling...")
     include_prefix = "Note: including file:"
@@ -388,14 +391,18 @@ class ToolMsvcCommon(ToolCommonCpp):
 
         if_runtime_link.eq('shared').runtime_debug.is_false().ccflags += '/MD'
         if_runtime_link.eq('shared').runtime_debug.is_true().ccflags += '/MDd'
-        if_runtime_link.eq('static').runtime_debug.is_false().runtime_thread.eq(
-            'single').ccflags += '/ML'
-        if_runtime_link.eq('static').runtime_debug.is_false().runtime_thread.eq(
-            'multi').ccflags += '/MT'
-        if_runtime_link.eq('static').runtime_debug.is_true().runtime_thread.eq(
-            'single').ccflags += '/MLd'
-        if_runtime_link.eq('static').runtime_debug.is_true().runtime_thread.eq(
-            'multi').ccflags += '/MTd'
+
+        if_runtime_link.eq('static').runtime_debug.is_false().\
+            runtime_thread.eq('single').ccflags += '/ML'
+
+        if_runtime_link.eq('static').runtime_debug.is_false().\
+            runtime_thread.eq('multi').ccflags += '/MT'
+
+        if_runtime_link.eq('static').runtime_debug.is_true().\
+            runtime_thread.eq('single').ccflags += '/MLd'
+
+        if_runtime_link.eq('static').runtime_debug.is_true().\
+            runtime_thread.eq('multi').ccflags += '/MTd'
 
         # if_.cc_ver.ge(7).cc_ver.lt(8).ccflags += '/Zc:forScope /Zc:wchar_t'
 
@@ -427,26 +434,20 @@ class ToolMsvcCommon(ToolCommonCpp):
 
     # -----------------------------------------------------------
 
-    def Compile(self, options):
+    def compile(self, options):
         return MsvcCompiler(options)
 
-    def CompileResource(self, options):
+    def compile_resource(self, options):
         return MsvcResCompiler(options)
 
-    def LinkStaticLibrary(self, options, target):
+    def link_static_library(self, options, target):
         return MsvcArchiver(options, target)
 
-    def LinkSharedLibrary(self, options, target, def_file=None):
+    def link_shared_library(self, options, target, def_file=None):
         return MsvcLinker(options, target, shared=True, def_file=def_file)
 
-    def LinkProgram(self, options, target):
+    def link_program(self, options, target):
         return MsvcLinker(options, target, shared=False, def_file=None)
-
-    Object = Compile
-    Resource = CompileResource
-    Library = LinkStaticLibrary
-    SharedLibrary = LinkSharedLibrary
-    Program = LinkProgram
 
 # ==============================================================================
 
@@ -479,7 +480,5 @@ class ToolMsrc(ToolCommonRes):
         super(ToolMsrc, self).__init__(options)
         options.ressuffix = '.res'
 
-    def Compile(self, options):
+    def compile(self, options):
         return MsvcResCompiler(options)
-
-    Object = Compile

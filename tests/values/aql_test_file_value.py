@@ -5,7 +5,7 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile
 from aql.entity.aql_file_entity import FileChecksumEntity, FileTimestampEntity
@@ -109,8 +109,6 @@ class TestFileValue(AqlTestCase):
     def test_file_empty_value_save_load(self):
 
         value1 = FileChecksumEntity('__non_exist_file__')
-        #~ print( id(value1.content) )
-        #~ print( value1.content.signature )
 
         value2 = FileTimestampEntity(value1.name)
 

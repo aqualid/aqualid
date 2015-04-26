@@ -1,14 +1,13 @@
 import sys
 import os.path
 import operator
-import sqlite3
 
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.utils import Tempfile, Chrono
-from aql.entity import SimpleEntity, SignatureEntity, EntitiesFile, EntityPickler, EntityBase
+from aql.entity import SimpleEntity, SignatureEntity, EntitiesFile
 
 # ==============================================================================
 
@@ -176,8 +175,9 @@ class TestValuesFile(AqlTestCase):
                 vfile.add_entities([value1, value2])
                 vfile.self_test()
 
-                values = [
-                    SimpleEntity(name=value1.name), SignatureEntity(name=value2.name)]
+                values = [SimpleEntity(name=value1.name),
+                          SignatureEntity(name=value2.name)]
+
                 values = vfile.find_entities(values)
                 self.assertItemsEqual(values, [value1, value2])
 

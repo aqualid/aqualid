@@ -33,11 +33,13 @@ class TestToolRsync(AqlTestCase):
                     prj = Project(cfg)
 
                     try:
-                        rsync = prj.tools.get_tool(
-                            'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                        tools_path = os.path.join(os.path.dirname(__file__),
+                                                  '../../tools')
+                        rsync = prj.tools.get_tool('rsync',
+                                                   tools_path=tools_path)
                     except ErrorToolNotFound:
-                        print(
-                            "WARNING: Rsync tool has not been found. Skip the test.")
+                        print("WARNING: Rsync tool has not been found. "
+                              "Skip the test.")
                         return
 
                     rsync.Push(src_files, target=target_dir)
@@ -54,17 +56,22 @@ class TestToolRsync(AqlTestCase):
     def test_rsync_push_remote(self):
         with Tempdir() as tmp_dir:
             with Tempdir() as src_dir:
-                src_files = self.generate_cpp_files(src_dir, "src_test", 3)
+                # src_files = self.generate_cpp_files(src_dir, "src_test", 3)
 
                 cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir])
 
                 prj = Project(cfg)
 
-                rsync = prj.tools.get_tool(
-                    'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                rsync = prj.tools.get_tool('rsync', tools_path=tools_path)
 
-                remote_files = rsync.Push(src_dir + '/', target='test_rsync_push/',
-                                          host='nas', key_file=r'C:\cygwin\home\me\rsync.key',
+                key_file = r'C:\cygwin\home\me\rsync.key',
+
+                remote_files = rsync.Push(src_dir + '/',
+                                          target='test_rsync_push/',
+                                          host='nas',
+                                          key_file=key_file,
                                           exclude="*.h")
                 remote_files.options.rsync_flags += ['--chmod=u+xrw,g+xr,o+xr']
                 remote_files.options.rsync_flags += ['--delete-excluded']
@@ -83,11 +90,13 @@ class TestToolRsync(AqlTestCase):
                     prj = Project(cfg)
 
                     try:
-                        rsync = prj.tools.get_tool(
-                            'rsync', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                        tools_path = os.path.join(os.path.dirname(__file__),
+                                                  '../../tools')
+                        rsync = prj.tools.get_tool('rsync',
+                                                   tools_path=tools_path)
                     except ErrorToolNotFound:
-                        print(
-                            "WARNING: Rsync tool has not been found. Skip the test.")
+                        print("WARNING: Rsync tool has not been found. "
+                              "Skip the test.")
                         return
 
                     rsync.Pull(src_files, target=target_dir)

@@ -14,9 +14,9 @@ from aql.utils.aql_lock_file import GeneralFileLock
 # ==============================================================================
 
 
-def write_process(filename, event, LockType, **lock_flags):
+def write_process(filename, event, lock_type, **lock_flags):
 
-    flock = LockType(filename)
+    flock = lock_type(filename)
 
     with flock.write_lock(**lock_flags):
         event.set()
@@ -30,9 +30,9 @@ def write_process(filename, event, LockType, **lock_flags):
 # ==============================================================================
 
 
-def read_process(filename, event, LockType, **lock_flags):
+def read_process(filename, event, lock_type, **lock_flags):
 
-    flock = LockType(filename)
+    flock = lock_type(filename)
 
     with flock.read_lock(**lock_flags):
         event.set()
@@ -47,16 +47,16 @@ def read_process(filename, event, LockType, **lock_flags):
 
 class TestFileLock(AqlTestCase):
 
-    def __test_file_lock_type(self, LockType):
+    def __test_file_lock_type(self, lock_type):
 
         with Tempfile() as temp_file:
 
-            flock = LockType(temp_file)
+            flock = lock_type(temp_file)
 
             event = mp.Event()
 
             p = mp.Process(
-                target=write_process, args=(str(temp_file), event, LockType))
+                target=write_process, args=(str(temp_file), event, lock_type))
             p.start()
 
             event.wait()
@@ -248,8 +248,9 @@ class TestFileLock(AqlTestCase):
 
             event = mp.Event()
 
-            p = mp.Process(
-                target=write_process, args=(str(temp_file), event, GeneralFileLock))
+            p = mp.Process(target=write_process,
+                           args=(str(temp_file), event, GeneralFileLock))
+
             p.start()
 
             event.wait()

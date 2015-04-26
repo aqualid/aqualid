@@ -26,8 +26,8 @@ import unittest
 
 from tests_case import TestCaseSuite, TestCaseBase
 
-__all__ = ('tests_suite', 'local_tests_suite', 'skip', 'run_suite', 'run_tests',
-           'run_local_tests')
+__all__ = ('tests_suite', 'local_tests_suite', 'skip',
+           'run_suite', 'run_tests', 'run_local_tests')
 
 # ==============================================================================
 
@@ -159,7 +159,8 @@ def _get_module_test_case_classes(module_globals):
 def _get_test_case_classes(test_modules):
     test_case_classes = []
     for test_module in test_modules:
-        test_case_classes += _get_module_test_case_classes(test_module.__dict__)
+        test_case_classes += \
+            _get_module_test_case_classes(test_module.__dict__)
 
     return test_case_classes
 
@@ -167,7 +168,9 @@ def _get_test_case_classes(test_modules):
 
 
 def _load_test_case_classes(path, test_modules_prefix, verbose):
-    return _get_test_case_classes(_load_test_modules(path, test_modules_prefix, verbose))
+    return _get_test_case_classes(_load_test_modules(path,
+                                                     test_modules_prefix,
+                                                     verbose))
 
 # ==============================================================================
 
@@ -183,7 +186,9 @@ class Tests(dict):
         test_methods = set()
 
         for name, instance in test_class.__dict__.items():
-            if hasattr(instance, '__call__') and name.startswith(test_methods_prefix):
+            if hasattr(instance, '__call__') and \
+               name.startswith(test_methods_prefix):
+
                 test_methods.add(instance)
 
         return test_methods
@@ -194,7 +199,8 @@ class Tests(dict):
 
         if isinstance(test_classes, Tests.SortedClassesAndMethods):
             for test_class, methods in test_classes:
-                module_name, cls_name = test_class.__module__, test_class.__name__
+                module_name = test_class.__module__
+                cls_name = test_class.__name__
 
                 for method in methods:
                     test_name = (module_name, cls_name, method.__name__)
@@ -202,10 +208,11 @@ class Tests(dict):
 
         else:
             for test_class in _to_sequence(test_classes):
+                module_name = test_class.__module__
+                cls_name = test_class.__name__
 
-                module_name, cls_name = test_class.__module__, test_class.__name__
-
-                for method in self.__get_test_methods(test_class, test_methods_prefix):
+                for method in self.__get_test_methods(test_class,
+                                                      test_methods_prefix):
                     test_name = (module_name, cls_name, method.__name__)
                     self[method] = (test_name, test_class)
 
@@ -399,8 +406,9 @@ class Tests(dict):
         test_names = []
         for test_class, methods in self.sorted():
             method_names = map(formatter, methods)
-            test_names.append(
-                ("%s.%s" % (test_class.__module__, test_class.__name__), method_names))
+            test_names.append(("%s.%s" % (test_class.__module__,
+                                          test_class.__name__),
+                              method_names))
 
         return test_names
 
@@ -422,22 +430,28 @@ class TestsSuiteMaker(object):
     # -----------------------------------------------------------
 
     def load_locals(self, test_methods_prefix='test'):
-        test_classes = _get_module_test_case_classes(
-            __import__('__main__').__dict__)
+        main_dict = __import__('__main__').__dict__
+        test_classes = _get_module_test_case_classes(main_dict)
 
         return Tests(test_classes, test_methods_prefix=test_methods_prefix)
 
     # -----------------------------------------------------------
 
-    def load(self, path=None, test_modules_prefix='test', test_methods_prefix='test', verbose=False):
-        test_classes = _load_test_case_classes(path, test_modules_prefix, verbose)
+    def load(self, path=None, test_modules_prefix='test',
+             test_methods_prefix='test', verbose=False):
+
+        test_classes = _load_test_case_classes(path,
+                                               test_modules_prefix,
+                                               verbose)
 
         return Tests(test_classes, test_methods_prefix=test_methods_prefix)
 
     # -----------------------------------------------------------
 
     @staticmethod
-    def __update_skipped_tests(all_tests, exec_test_names, skip_test_methods, skip_test_classes):
+    def __update_skipped_tests(all_tests, exec_test_names,
+                               skip_test_methods, skip_test_classes):
+
         method_tests = all_tests.get_tests_by_method_names(exec_test_names)
         class_tests = all_tests.get_tests_by_class_names(exec_test_names)
 
@@ -447,17 +461,25 @@ class TestsSuiteMaker(object):
 
     # -----------------------------------------------------------
 
-    def tests(self, all_tests, run_tests=None, add_tests=None, skip_tests=None, start_from_test=None):
+    def tests(self, all_tests, run_tests=None, add_tests=None,
+              skip_tests=None, start_from_test=None):
 
-        skip_test_methods = all_tests.get_tests_by_methods(self.skip_test_methods)
-        skip_test_classes = all_tests.get_tests_by_classes(self.skip_test_classes)
+        skip_test_methods = all_tests.get_tests_by_methods(
+            self.skip_test_methods
+        )
 
-        self.__update_skipped_tests(
-            all_tests, run_tests,        skip_test_methods, skip_test_classes)
-        self.__update_skipped_tests(
-            all_tests, add_tests,        skip_test_methods, skip_test_classes)
-        self.__update_skipped_tests(
-            all_tests, start_from_test,  skip_test_methods, skip_test_classes)
+        skip_test_classes = all_tests.get_tests_by_classes(
+            self.skip_test_classes
+        )
+
+        self.__update_skipped_tests(all_tests, run_tests,
+                                    skip_test_methods, skip_test_classes)
+
+        self.__update_skipped_tests(all_tests, add_tests,
+                                    skip_test_methods, skip_test_classes)
+
+        self.__update_skipped_tests(all_tests, start_from_test,
+                                    skip_test_methods, skip_test_classes)
 
         if run_tests is None:
             tests = all_tests.copy()
@@ -512,7 +534,7 @@ def skip(test_case):
     global _suite_maker
 
     if isinstance(test_case, type) and \
-        issubclass(test_case, unittest.TestCase):
+       issubclass(test_case, unittest.TestCase):
         _suite_maker.skip_test_classes.add(test_case)
 
     elif hasattr(test_case, '__call__'):
@@ -574,7 +596,9 @@ def tests_suite(path=None,
 
 
 def local_tests_suite(test_methods_prefix='test',
-                    run_tests=None, add_tests=None, skip_tests=None, start_from_test=None, suite_class=TestCaseSuite, list_tests=False, options=None):
+                      run_tests=None, add_tests=None, skip_tests=None,
+                      start_from_test=None, suite_class=TestCaseSuite,
+                      list_tests=False, options=None):
 
     global _suite_maker
 
@@ -618,8 +642,11 @@ def run_tests(suite_class=TestCaseSuite, options=None):
         from tests_options import TestsOptions
         options = TestsOptions.instance()
 
-    suite = tests_suite(options.tests_dirs, options.test_modules_prefix, options.test_methods_prefix,
-                       options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options)
+    suite = tests_suite(options.tests_dirs, options.test_modules_prefix,
+                        options.test_methods_prefix, options.run_tests,
+                        options.add_tests, options.skip_tests,
+                        options.start_from_tests, suite_class,
+                        options.list_tests, options)
 
     if options.list_options:
         _print_options_and_exit(options)
@@ -634,8 +661,10 @@ def run_local_tests(suite_class=TestCaseSuite, options=None):
         from tests_options import TestsOptions
         options = TestsOptions.instance()
 
-    suite = local_tests_suite(options.test_methods_prefix,
-                            options.run_tests, options.add_tests, options.skip_tests, options.start_from_tests, suite_class, options.list_tests, options)
+    suite = local_tests_suite(options.test_methods_prefix, options.run_tests,
+                              options.add_tests, options.skip_tests,
+                              options.start_from_tests, suite_class,
+                              options.list_tests, options)
 
     if options.list_options:
         _print_options_and_exit(options)
@@ -643,30 +672,3 @@ def run_local_tests(suite_class=TestCaseSuite, options=None):
     run_suite(suite)
 
 # ==============================================================================
-
-if __name__ == "__main__":
-
-    #@skip
-    class Foo(TestCaseBase):
-
-        #@skip
-        def test(self):
-            print("Foo.test")
-
-        #@skip
-        def test2(self):
-            raise NotImplementedError()
-
-    class Foo2(TestCaseBase):
-
-        #@skip
-        def test(self):
-            print("Foo2.test")
-
-        #@skip
-        def test2(self):
-            print("Foo2.test2")
-
-    run_local_tests()
-
-    #~ pprint.pprint( run_suite( suite_local( globals() ) ) )

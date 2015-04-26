@@ -14,7 +14,7 @@
 #
 # from aql import tool_setup, get_shell_script_env
 #
-# script = r"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"
+# script=r"C:\Program Files (x86)\Microsoft Visual Studio 12\VC\vcvarsall.bat"
 #
 # @tool_setup('msvcpp','msvc++', 'msvc')
 # def   setup_msvc( options ):

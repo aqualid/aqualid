@@ -1,13 +1,10 @@
 import sys
 import os.path
-import timeit
-import hashlib
-import shutil
 
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase, run_local_tests
 
 from aql.utils import CLIOption, CLIConfig, Tempfile
 
@@ -19,18 +16,17 @@ class TestCLIConfig(AqlTestCase):
         usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
 
         cli_options = (
-            CLIOption(
-                "-l", "--log-level", "log_level",  int,  None,   "", 'NUMBER'),
-            CLIOption(
-                "-j", "--jobs",      "jobs",       int,  1,      "", 'NUMBER'),
-            CLIOption(
-                "-s", "--size",      "size",       int,  256,    "", 'NUMBER'),
-            CLIOption("-q", "--quite",     "quite",      bool, False,  ""),
-            CLIOption("-v", "--verbose",   "verbose",    bool, False,  ""),
+            CLIOption("-l", "--log-level", "log_level", int, None,
+                      "", 'NUMBER'),
+
+            CLIOption("-j", "--jobs", "jobs", int, 1, "", 'NUMBER'),
+            CLIOption("-s", "--size", "size", int, 256, "", 'NUMBER'),
+            CLIOption("-q", "--quite", "quite", bool, False,  ""),
+            CLIOption("-v", "--verbose", "verbose", bool, False,  ""),
         )
 
-        config = CLIConfig(
-            usage, cli_options, ["-j", "0", "-v", "foo", "-s32", "bv=release", "jobs=10"])
+        config = CLIConfig(usage, cli_options, ["-j", "0", "-v", "foo", "-s32",
+                                                "bv=release", "jobs=10"])
 
         config.set_default('jobs', 3)
         config.set_default('size', 10)
@@ -68,12 +64,10 @@ class TestCLIConfig(AqlTestCase):
         usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
 
         cli_options = (
-            CLIOption(
-                "-j", "--jobs",    "jobs",     int,  1,      "", 'NUMBER'),
-            CLIOption(
-                "-s", "--size",    "size",     int,  256,    "", 'NUMBER'),
-            CLIOption("-q", "--quite",   "quite",    bool, False,  ""),
-            CLIOption("-v", "--verbose", "verbose",  bool, False,  ""),
+            CLIOption("-j", "--jobs", "jobs", int, 1, "", 'NUMBER'),
+            CLIOption("-s", "--size", "size", int, 256, "", 'NUMBER'),
+            CLIOption("-q", "--quite", "quite", bool, False,  ""),
+            CLIOption("-v", "--verbose", "verbose", bool, False,  ""),
         )
 
         with Tempfile() as f:
@@ -88,7 +82,8 @@ targets="test1 test2 test3"
             f.flush()
 
             config = CLIConfig(
-                usage, cli_options, ["-j", "0", "-v", "foo", "bar", "bv=release", "jobs=10"])
+                usage, cli_options, ["-j", "0", "-v", "foo", "bar",
+                                     "bv=release", "jobs=10"])
             options = {}
             config.read_file(f, {'options': options})
 

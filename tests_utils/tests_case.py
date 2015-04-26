@@ -86,7 +86,8 @@ class TestCaseSuite(unittest.TestSuite):
     # -----------------------------------------------------------
 
     def __tear_down_test_case_class(self, test_case_class, result):
-        """Method tries to call tearDownClass method from test case instance."""
+        """Method tries to call tearDownClass
+           method from test case instance."""
 
         if test_case_class is not None:
             # call tearDownClass only if it's not supported

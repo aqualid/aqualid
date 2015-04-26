@@ -13,11 +13,10 @@ from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
 # ==============================================================================
 
 
-def _read_deps(dep_file,
-              exclude_dirs,
-              _space_splitter_re=re.compile(r'(?<!\\)\s+')):
+def _read_deps(deps_file, exclude_dirs,
+               _space_splitter_re=re.compile(r'(?<!\\)\s+')):
 
-    deps = read_text_file(dep_file)
+    deps = read_text_file(deps_file)
 
     dep_files = []
 
@@ -54,7 +53,7 @@ def _read_deps(dep_file,
 
 
 def _parse_output(output,
-                 _err_re=re.compile(r"(.+):\d+:\d+:\s+error:\s+")):
+                  _err_re=re.compile(r"(.+):\d+:\d+:\s+error:\s+")):
 
     failed_sources = set()
 
@@ -479,26 +478,20 @@ class ToolGccCommon(ToolCommonCpp):
 
     # -----------------------------------------------------------
 
-    def Compile(self, options):
+    def compile(self, options):
         return GccCompiler(options)
 
-    def CompileResource(self, options):
+    def compile_resource(self, options):
         return GccResCompiler(options)
 
-    def LinkStaticLibrary(self, options, target):
+    def link_static_library(self, options, target):
         return GccArchiver(options, target)
 
-    def LinkSharedLibrary(self, options, target, def_file=None):
+    def link_shared_library(self, options, target, def_file=None):
         return GccLinker(options, target, shared=True)
 
-    def LinkProgram(self, options, target):
+    def link_program(self, options, target):
         return GccLinker(options, target, shared=False)
-
-    Object = Compile
-    Resource = CompileResource
-    Library = LinkStaticLibrary
-    SharedLibrary = LinkSharedLibrary
-    Program = LinkProgram
 
 # ==============================================================================
 
@@ -552,7 +545,5 @@ class ToolWindRes(ToolCommonRes):
         super(ToolWindRes, self).__init__(options)
         options.ressuffix = '.o'
 
-    def Compile(self, options):
+    def compile(self, options):
         return GccResCompiler(options)
-
-    Object = Compile

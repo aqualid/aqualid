@@ -8,8 +8,9 @@ sys.path.insert(
 
 from aql_tests import skip, AqlTestCase, run_local_tests
 
-from aql.utils import equal_function_args, check_function_args, get_function_name, \
-    execute_command, flatten_list, group_items, Tempfile, get_shell_script_env
+from aql.utils import equal_function_args, check_function_args,\
+    get_function_name, execute_command, flatten_list, group_items, Tempfile,\
+    get_shell_script_env
 
 
 class TestUtils(AqlTestCase):
@@ -17,38 +18,49 @@ class TestUtils(AqlTestCase):
     # ==============================================================================
 
     def test_equal_function_args(self):
-        def f0(a, b, c): pass
+        def f0(a, b, c):
+            pass
 
-        def f1(a, b, c): pass
+        def f1(a, b, c):
+            pass
 
         self.assertTrue(equal_function_args(f0, f1))
 
-        def f2(a, b, c, *args): pass
+        def f2(a, b, c, *args):
+            pass
 
-        def f3(a, b, c, *args): pass
+        def f3(a, b, c, *args):
+            pass
 
         self.assertTrue(equal_function_args(f2, f3))
 
-        def f4(a, b, c=3, *args, **kw): pass
+        def f4(a, b, c=3, *args, **kw):
+            pass
 
-        def f5(a, b, c, *args, **kw): pass
+        def f5(a, b, c, *args, **kw):
+            pass
 
         self.assertTrue(equal_function_args(f4, f5))
 
-        def f6(a, b, c): pass
+        def f6(a, b, c):
+            pass
 
-        def f7(a, b, c, *args): pass
+        def f7(a, b, c, *args):
+            pass
 
         self.assertFalse(equal_function_args(f6, f7))
 
     # ==============================================================================
 
     def test_check_function_args(self):
-        def f(): pass
+        def f():
+            pass
 
-        def f0(a, b, c): pass
+        def f0(a, b, c):
+            pass
 
-        def f1(a, b, c, d=0, e=1, f=2, *args, **kw): pass
+        def f1(a, b, c, d=0, e=1, f=2, *args, **kw):
+            pass
 
         args = []
         kw = {}
@@ -138,7 +150,8 @@ class TestUtils(AqlTestCase):
             if os.name == 'nt':
                 return "set %s=%s\n" % (name, value)
             else:
-                return "{name}={value};export {name}\n".format(name=name, value=value)
+                return "{name}={value};export {name}\n".format(name=name,
+                                                               value=value)
 
         with Tempfile(suffix=suffix, mode="w+") as script:
             if os.name != 'nt':

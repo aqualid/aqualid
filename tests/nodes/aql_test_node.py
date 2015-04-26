@@ -6,14 +6,18 @@ import hashlib
 
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
+
 from aql_tests import skip, AqlTestCase, run_local_tests
 
 from aql.util_types import to_sequence
 
-from aql.utils import Tempfile, Tempdir, write_bin_file, enable_default_handlers
+from aql.utils import Tempfile, Tempdir, write_bin_file,\
+    enable_default_handlers
 
 from aql.options import builtin_options
-from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity, EntitiesFile
+from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity,\
+    EntitiesFile
+
 from aql.nodes import Node, Builder, FileBuilder
 
 # ==============================================================================
@@ -241,22 +245,26 @@ class TestNodes(AqlTestCase):
                             options = builtin_options()
 
                             builder = CopyBuilder(options, "tmp", "i")
-                            node = self._rebuild_node(
-                                vfile, builder, [value1, value2], [], tmp_files)
+                            node = self._rebuild_node(vfile, builder,
+                                                      [value1, value2], [],
+                                                      tmp_files)
 
                             builder = CopyBuilder(options, "ttt", "i")
-                            node = self._rebuild_node(
-                                vfile, builder, [value1, value2], [], tmp_files)
+                            node = self._rebuild_node(vfile, builder,
+                                                      [value1, value2], [],
+                                                      tmp_files)
 
                             builder = CopyBuilder(options, "ttt", "d")
-                            node = self._rebuild_node(
-                                vfile, builder, [value1, value2], [], tmp_files)
+                            node = self._rebuild_node(vfile, builder,
+                                                      [value1, value2], [],
+                                                      tmp_files)
 
                             tmp1.write(b'123')
                             tmp1.flush()
                             value1 = FileChecksumEntity(tmp1)
-                            node = self._rebuild_node(
-                                vfile, builder, [value1, value2], [], tmp_files)
+                            node = self._rebuild_node(vfile, builder,
+                                                      [value1, value2], [],
+                                                      tmp_files)
 
                             with Tempfile(suffix='.3') as tmp3:
                                 value3 = FileChecksumEntity(tmp3)
@@ -264,44 +272,55 @@ class TestNodes(AqlTestCase):
                                 node3 = self._rebuild_node(
                                     vfile, builder, [value3], [], tmp_files)
 
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1, node3], [], tmp_files)
-
-                                # node3: CopyBuilder, tmp, i, tmp3 -> tmp3.tmp, ,tmp3.i
-                                # node: CopyBuilder, tmp, i, tmp1, tmp3.tmp ->
-                                # tmp1.tmp, tmp3.tmp.tmp, , tmp1.i, tmp3.tmp.i
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1, node3], [],
+                                                          tmp_files)
 
                                 builder3 = CopyBuilder(options, "xxx", "3")
-                                node3 = self._rebuild_node(
-                                    vfile, builder3, [value3], [], tmp_files)
+
+                                node3 = self._rebuild_node(vfile, builder3,
+                                                           [value3], [],
+                                                           tmp_files)
 
                                 # node3: CopyBuilder, xxx, 3, tmp3 -> tmp3.xxx,
                                 # ,tmp3.3
 
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1, node3], [], tmp_files)
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1, node3], [],
+                                                          tmp_files)
 
                                 # node: CopyBuilder, tmp, i, tmp1, tmp3.xxx ->
                                 # tmp1.tmp, tmp3.xxx.tmp, , tmp1.i, tmp3.xxx.i
 
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1], [node3], tmp_files)
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1], [node3],
+                                                          tmp_files)
 
                                 dep = SimpleEntity("1", name="dep1")
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1, node3], [dep], tmp_files)
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1, node3],
+                                                          [dep], tmp_files)
 
                                 dep = SimpleEntity("11", name="dep1")
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1, node3], [dep], tmp_files)
-                                node3 = self._rebuild_node(
-                                    vfile, builder3, [value1], [], tmp_files)
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1], [node3], tmp_files)
-                                node3 = self._rebuild_node(
-                                    vfile, builder3, [value2], [], tmp_files)
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1], [node3], tmp_files)
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1, node3],
+                                                          [dep], tmp_files)
+
+                                node3 = self._rebuild_node(vfile, builder3,
+                                                           [value1], [],
+                                                           tmp_files)
+
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1], [node3],
+                                                          tmp_files)
+
+                                node3 = self._rebuild_node(vfile, builder3,
+                                                           [value2], [],
+                                                           tmp_files)
+
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1], [node3],
+                                                          tmp_files)
 
                                 node_tname = node.get_target_entities()[0].name
 
@@ -309,10 +328,12 @@ class TestNodes(AqlTestCase):
                                     f.write(b'333')
                                     f.flush()
 
-                                node = self._rebuild_node(
-                                    vfile, builder, [value1], [node3], tmp_files)
+                                node = self._rebuild_node(vfile, builder,
+                                                          [value1], [node3],
+                                                          tmp_files)
 
-                                with open(node.get_side_effect_entities()[0].name, 'wb') as f:
+                                side_effects = node.get_side_effect_entities()
+                                with open(side_effects[0].name, 'wb') as f:
                                     f.write(b'abc')
                                     f.flush()
 
@@ -321,8 +342,8 @@ class TestNodes(AqlTestCase):
                                 node.initiate()
                                 node.build_split(vfile, False)
 
-                                self.assertTrue(node.check_actual(vfile, False))
-                                # node = self._rebuild_node( vfile, builder, [value1], [node3], tmp_files )
+                                self.assertTrue(node.check_actual(vfile,
+                                                                  False))
                 finally:
                     vfile.close()
         finally:
@@ -477,8 +498,9 @@ class TestNodesSpeed (AqlTestCase):
                         for tmp_file in node.get_targets():
                             tmp_files.append(tmp_file)
 
-                    t = lambda vfile = vfile, builder = builder, source_files = source_files, test_no_build_speed = _test_no_build_speed: test_no_build_speed(
-                        vfile, builder, source_files)
+                    t = lambda: _test_no_build_speed(vfile,
+                                                     builder,
+                                                     source_files)
                     t = timeit.timeit(t, number=1)
                 finally:
                     vfile.close()

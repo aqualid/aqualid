@@ -6,10 +6,12 @@ sys.path.insert(
 
 from aql_tests import skip, AqlTestCase, run_local_tests
 
-from aql.options import OptionType, BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
-    DictOptionType, PathOptionType, \
-    ErrorOptionTypeEnumAliasIsAlreadySet, ErrorOptionTypeEnumValueIsAlreadySet,\
+from aql.options import OptionType, BoolOptionType, EnumOptionType,\
+    RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
+    ErrorOptionTypeEnumAliasIsAlreadySet,\
+    ErrorOptionTypeEnumValueIsAlreadySet,\
     ErrorOptionTypeUnableConvertValue, ErrorOptionTypeNoEnumValues
+
 from aql.util_types import IgnoreCaseString, UpperCaseString, Dict, FilePath
 
 # ==============================================================================
@@ -20,13 +22,14 @@ class TestOptionTypes(AqlTestCase):
     # ==============================================================================
 
     def test_bool_option(self):
-        debug_symbols = BoolOptionType(
-            description='Include debug symbols', group="Debug", style=(True, False))
+        debug_symbols = BoolOptionType(description='Include debug symbols',
+                                       group="Debug", style=(True, False))
 
-        true_values = [
-            'tRUe', 't', '1', 'Yes', 'ENABled', 'On', 'y', 1, 2, 3, -1, True]
-        false_values = [
-            'FAlsE', 'F', '0', 'No', 'disabled', 'oFF', 'N', 0, None, False]
+        true_values = ['tRUe', 't', '1', 'Yes', 'ENABled',
+                       'On', 'y', 1, 2, 3, -1, True]
+
+        false_values = ['FAlsE', 'F', '0', 'No', 'disabled',
+                        'oFF', 'N', 0, None, False]
 
         for t in true_values:
             v = debug_symbols(t)
@@ -38,8 +41,8 @@ class TestOptionTypes(AqlTestCase):
             self.assertFalse(v)
             self.assertEqual(str(v), str(False))
 
-        debug_symbols = BoolOptionType(
-            description='Include debug symbols', group="Debug", style=('ON', 'OFF'))
+        debug_symbols = BoolOptionType(description='Include debug symbols',
+                                       group="Debug", style=('ON', 'OFF'))
 
         v = debug_symbols('TRUE')
         self.assertTrue(v)
@@ -106,8 +109,11 @@ class TestOptionTypes(AqlTestCase):
     # ==============================================================================
 
     def test_enum_option(self):
-        optimization = EnumOptionType(values=(('off', 0), ('size', 1), ('speed', 2)),
-                                      description='Compiler optimization level', group="Optimization", default='off')
+        optimization = EnumOptionType(
+            values=(('off', 0), ('size', 1), ('speed', 2)),
+            description='Compiler optimization level',
+            group="Optimization",
+            default='off')
 
         values = ['oFF', 'siZe', 'SpeeD', '0', '1', '2', 0, 1, 2]
         base_values = ['off', 'size', 'speed', 'off',
@@ -115,8 +121,9 @@ class TestOptionTypes(AqlTestCase):
 
         self.assertEqual(optimization(), 'off')
         self.assertEqual(EnumOptionType(values=[1, 2, 3, 4], default=3)(), 3)
-        self.assertNotEqual(
-            EnumOptionType(values=[1, 2, 3, 4], default=1)(), 3)
+
+        self.assertNotEqual(EnumOptionType(values=[1, 2, 3, 4], default=1)(),
+                            3)
 
         for v, base in zip(values, base_values):
             self.assertEqual(optimization(v), base)
@@ -128,22 +135,26 @@ class TestOptionTypes(AqlTestCase):
         optimization.add_values({'final': 99})
         optimization.add_values({2: 'fast'})
 
-        self.assertRaises(
-            ErrorOptionTypeEnumAliasIsAlreadySet, optimization.add_values, {'slow': 'fast'})
-        self.assertRaises(
-            ErrorOptionTypeEnumValueIsAlreadySet, optimization.add_values, {'slow': 'speed'})
+        self.assertRaises(ErrorOptionTypeEnumAliasIsAlreadySet,
+                          optimization.add_values, {'slow': 'fast'})
+
+        self.assertRaises(ErrorOptionTypeEnumValueIsAlreadySet,
+                          optimization.add_values, {'slow': 'speed'})
 
         optimization.add_values(('ultra', 'speed'))
         self.assertEqual(optimization('ULTRA'), 'ultra')
 
-        self.assertEqual(sorted(optimization.range()), sorted(
-            ['slow', 'off', 'ultra', 'speed', 'final', 'size']))
+        self.assertEqual(sorted(optimization.range()),
+                         sorted(['slow', 'off', 'ultra',
+                                 'speed', 'final', 'size']))
 
     # ==============================================================================
 
     def test_enum_option_int(self):
+
         optimization = EnumOptionType(values=((0, 10), (1, 100), (2, 1000)),
-                                      description='Optimization level', group="Optimization",
+                                      description='Optimization level',
+                                      group="Optimization",
                                       value_type=int)
 
         values = [0, 1, 2, 10, 100, 1000]
@@ -183,7 +194,8 @@ class TestOptionTypes(AqlTestCase):
 
     def test_range_option(self):
         warn_level = RangeOptionType(min_value=0, max_value=5, coerce=False,
-                                     description='Warning level', group="Diagnostics")
+                                     description='Warning level',
+                                     group="Diagnostics")
 
         self.assertEqual(warn_level(0), 0)
         self.assertEqual(warn_level(5), 5)
@@ -193,7 +205,8 @@ class TestOptionTypes(AqlTestCase):
         self.assertRaises(ErrorOptionTypeUnableConvertValue, warn_level, -1)
 
         warn_level = RangeOptionType(min_value=0, max_value=5, coerce=True,
-                                     description='Warning level', group="Diagnostics")
+                                     description='Warning level',
+                                     group="Diagnostics")
 
         self.assertEqual(warn_level(0), 0)
         self.assertEqual(warn_level(), 0)
@@ -215,9 +228,14 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(warn_level(-10), 0)
 
         self.assertRaises(ErrorOptionTypeUnableConvertValue,
-                          warn_level.set_range, min_value="abc", max_value=None)
+                          warn_level.set_range,
+                          min_value="abc",
+                          max_value=None)
+
         self.assertRaises(ErrorOptionTypeUnableConvertValue,
-                          warn_level.set_range, min_value=None, max_value="efg")
+                          warn_level.set_range,
+                          min_value=None,
+                          max_value="efg")
 
     # ==============================================================================
 
@@ -225,7 +243,9 @@ class TestOptionTypes(AqlTestCase):
         range_help = "<Case-insensitive string>"
 
         opt1 = OptionType(value_type=IgnoreCaseString,
-                          description='Option 1', group="group1", range_help=range_help)
+                          description='Option 1',
+                          group="group1",
+                          range_help=range_help)
 
         self.assertEqual(opt1(0), '0')
         self.assertEqual(opt1('ABC'), 'abc')
@@ -250,47 +270,8 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(opt1(), 0)
         self.assertEqual(opt1(1), opt1(1))
 
-        #~ v = opt1(1)
-        #~ v += '1'; self.assertEqual( v, 2 ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v + '2'; self.assertEqual( v, 4 ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v - '3'; self.assertEqual( v, 1 ); self.assertIs( type(v), type(opt1()) )
-        #~ v -= '1'; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v + '5'; self.assertEqual( v, '5' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v * '2'; self.assertEqual( v, '10' ); self.assertIs( type(v), type(opt1()) )
-        #~ v *= '0'; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
-        #~ v += '2'; self.assertEqual( v, '2' ); self.assertIs( type(v), type(opt1()) )
-        #~ v //= '2';
-        #~ self.assertEqual( v, '1' );
-        #~ self.assertIs( type(v), type(opt1()) )
-        #~ v = v / '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
-        #~ v //= '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v // '1'; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
-        #~ v += 4; self.assertEqual( v, '5' ); self.assertIs( type(v), type(opt1()) )
-        #~ v %= 2; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v % 2; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
-        #~ v |= 3; self.assertEqual( v, '3' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v | 7; self.assertEqual( v, '7' ); self.assertIs( type(v), type(opt1()) )
-        #~ v &= 5; self.assertEqual( v, '5' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v & 2; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
-        #~ v ^= 2; self.assertEqual( v, '2' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v ^ 2; self.assertEqual( v, '0' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = (v + 2) ** 2; self.assertEqual( v, '4' ); self.assertIs( type(v), type(opt1()) )
-        #~ v **= 1; self.assertEqual( v, '4' ); self.assertIs( type(v), type(opt1()) )
-        #~ v >>= 2; self.assertEqual( v, '1' ); self.assertIs( type(v), type(opt1()) )
-        #~ v <<= 3; self.assertEqual( v, '8' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v << 2; self.assertEqual( v, '32' ); self.assertIs( type(v), type(opt1()) )
-        #~ v = v >> 2; self.assertEqual( v, '8' ); self.assertIs( type(v), type(opt1()) )
-
-        #~ self.assertNotEqual( v, '7' )
-        #~ self.assertLess( v, '9' )
-        #~ self.assertLessEqual( v, '9' )
-        #~ self.assertLessEqual( v, '8' )
-        #~ self.assertGreater( v, '7' )
-        #~ self.assertGreaterEqual( v, '7' )
-        #~ self.assertGreaterEqual( v, '8' )
-
-        self.assertEqual(
-            set([opt1(7), opt1(5)]), set([opt1(5), opt1(7), opt1(5)]))
+        self.assertEqual(set([opt1(7), opt1(5)]),
+                         set([opt1(5), opt1(7), opt1(5)]))
 
     # ==============================================================================
 
@@ -317,8 +298,10 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(opt1(), [])
         self.assertEqual(opt1(NotImplemented), [])
 
-        b = BoolOptionType(description='Test1', group="Debug", style=(
-            "On", "Off"), true_values=["Yes", "enabled"], false_values=["No", "disabled"])
+        b = BoolOptionType(description='Test1', group="Debug",
+                           style=("On", "Off"), true_values=["Yes", "enabled"],
+                           false_values=["No", "disabled"])
+
         ob = ListOptionType(value_type=b, unique=True)
 
         self.assertEqual(ob('yes,no'), 'on,disabled')
@@ -364,8 +347,9 @@ class TestOptionTypes(AqlTestCase):
         env['HOME'] = PathOptionType()('/home/user')
         env['HOME'] = '/home/guest'
 
-        self.assertEqual(
-            str(env['PATH']), ':'.join(['/work/bin', '/usr/bin', '/usr/local/bin']))
+        self.assertEqual(str(env['PATH']),
+                         ':'.join(['/work/bin', '/usr/bin', '/usr/local/bin']))
+
         self.assertEqual(env['HOME'], '/home/guest')
 
         env = DictOptionType(key_type=UpperCaseString)()
@@ -378,8 +362,11 @@ class TestOptionTypes(AqlTestCase):
         env['Home'] = os.path.normpath('/home/user')
 
         self.assertEqual(env['HOME'], os.path.normpath('/home/user'))
-        self.assertEqual(str(env['PATH']), os.pathsep.join(
-            map(os.path.normpath, ['/work/bin', '/usr/bin', '/usr/local/bin'])))
+        self.assertEqual(str(env['PATH']),
+                         os.pathsep.join(map(os.path.normpath,
+                                             ['/work/bin',
+                                              '/usr/bin',
+                                              '/usr/local/bin'])))
 
 
 # ==============================================================================

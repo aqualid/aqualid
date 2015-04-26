@@ -181,7 +181,11 @@ class RSyncPushBuilder(aql.FileBuilder):
         self.rsync_cygwin = (
             sys.platform != 'cygwin') and options.rsync_cygwin.get()
 
-        self.source_base = _norm_local_path(source_base) if source_base else None
+        if source_base:
+            self.source_base = _norm_local_path(source_base)
+        else:
+            self.source_base = None
+
         self.remote_path = RemotePath(remote_path, login, host)
 
         self.cmd = self.__get_cmd(options, key_file, exclude)
@@ -466,14 +470,18 @@ class ToolRsync(aql.Tool):
 
     # -----------------------------------------------------------
 
-    def Pull(self, options, target, host=None,
+    def pull(self, options, target, host=None,
              login=None, key_file=None, exclude=None):
 
         return RSyncPullBuilder(options, target,
                                 host=host, login=login,
                                 key_file=key_file, exclude=exclude)
 
-    def Push(self, options, target, source_base=None,
+    Pull = pull
+
+    # ----------------------------------------------------------
+
+    def push(self, options, target, source_base=None,
              host=None, login=None, key_file=None, exclude=None):
 
         builder = RSyncPushBuilder(options, target,
@@ -482,3 +490,7 @@ class ToolRsync(aql.Tool):
                                    key_file=key_file, exclude=exclude)
 
         return builder
+
+    Push = push
+
+    # ----------------------------------------------------------

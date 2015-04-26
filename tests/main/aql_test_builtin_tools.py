@@ -125,7 +125,7 @@ class TestBuiltinTools(AqlTestCase):
 
     def test_exec_method(self):
 
-        def CopyFileExt(builder, source_entities, targets, ext):
+        def copy_file_ext(builder, source_entities, targets, ext):
             src_file = source_entities[0].get()
             dst_file = os.path.splitext(src_file)[0] + ext
             shutil.copy(src_file, dst_file)
@@ -147,24 +147,27 @@ class TestBuiltinTools(AqlTestCase):
             prj = Project(cfg)
 
             prj.tools.ExecuteMethod(
-                sources, method=CopyFileExt, args=('.cxx',))
+                sources, method=copy_file_ext, args=('.cxx',))
             prj.tools.ExecuteMethod(
-                headers, method=CopyFileExt, args=('.hxx',))
+                headers, method=copy_file_ext, args=('.hxx',))
 
             self.build_prj(prj, len(sources) + len(headers))
 
             prj.tools.ExecuteMethod(
-                sources, method=CopyFileExt, args=('.cxx',))
+                sources, method=copy_file_ext, args=('.cxx',))
             prj.tools.ExecuteMethod(
-                headers, method=CopyFileExt, args=('.hxx',))
+                headers, method=copy_file_ext, args=('.hxx',))
 
             self.build_prj(prj, 0)
 
-            prj.tools.ExecuteMethod(sources, method=CopyFileExt, args=('.cc',))
+            prj.tools.ExecuteMethod(sources,
+                                    method=copy_file_ext,
+                                    args=('.cc',))
+
             self.build_prj(prj, len(sources))
 
             prj.tools.ExecuteMethod(
-                sources, method=CopyFileExt, args=('.cxx',))
+                sources, method=copy_file_ext, args=('.cxx',))
             self.build_prj(prj, len(sources))
 
             # -----------------------------------------------------------
@@ -174,7 +177,7 @@ class TestBuiltinTools(AqlTestCase):
                     os.path.isfile(os.path.splitext(src)[0] + '.cxx'))
 
             prj.tools.ExecuteMethod(
-                sources, method=CopyFileExt, args=('.cxx',))
+                sources, method=copy_file_ext, args=('.cxx',))
             self.clear_prj(prj)
 
             for src in sources:
@@ -184,15 +187,17 @@ class TestBuiltinTools(AqlTestCase):
             # -----------------------------------------------------------
 
             prj.tools.ExecuteMethod(
-                sources, method=CopyFileExt, args=('.cxx',))
+                sources, method=copy_file_ext, args=('.cxx',))
             self.build_prj(prj, len(sources))
 
             for src in sources:
                 self.assertTrue(
                     os.path.isfile(os.path.splitext(src)[0] + '.cxx'))
 
-            prj.tools.ExecuteMethod(
-                sources, method=CopyFileExt, args=('.cxx',), clear_targets=False)
+            prj.tools.ExecuteMethod(sources,
+                                    method=copy_file_ext,
+                                    args=('.cxx',),
+                                    clear_targets=False)
             self.clear_prj(prj)
 
             for src in sources:
@@ -211,7 +216,8 @@ class TestBuiltinTools(AqlTestCase):
                 num_sources = 3
                 sources = self.generate_source_files(tmp_dir, num_sources, 200)
 
-                # set_event_settings( EventSettings( brief = False, with_output = True ) )
+                # set_event_settings( EventSettings( brief = False,
+                #                                    with_output = True ) )
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
                 cfg.debug_backtrace = True
@@ -305,7 +311,8 @@ class TestBuiltinTools(AqlTestCase):
 
                 prj = Project(cfg)
 
-                value = prj.make_entity("test_content.txt", "To add to a ZIP file")
+                value = prj.make_entity("test_content.txt",
+                                        "To add to a ZIP file")
                 rename = [('test_file', sources[0])]
 
                 prj.tools.CreateZip(

@@ -14,8 +14,6 @@ from aql.utils import Tempfile, Tempdir, open_file
 class TestTempFile(AqlTestCase):
 
     def test_temp_file(self):
-        temp_file_name = None
-
         with Tempfile() as temp_file:
 
             temp_file.write('1234567890\n1234567890'.encode())
@@ -26,8 +24,6 @@ class TestTempFile(AqlTestCase):
     # ==========================================================
 
     def test_temp_file_rw(self):
-        temp_file_name = None
-
         with Tempfile() as temp_file:
 
             test_string = '1234567890'
@@ -90,8 +86,9 @@ class TestTempFile(AqlTestCase):
 
                     if end_offset > mem.size():
                         page_size = mmap.ALLOCATIONGRANULARITY
-                        new_size = (
-                            (end_offset + (page_size - 1)) // page_size) * page_size
+                        new_size = ((end_offset + (page_size - 1)) //
+                                    page_size) * page_size
+
                         mem.resize(new_size)
 
                     mem[0:end_offset] = data

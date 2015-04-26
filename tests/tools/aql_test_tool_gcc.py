@@ -35,8 +35,9 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                gcc = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
@@ -75,8 +76,9 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                gcc = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
@@ -130,8 +132,9 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                gcc = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
@@ -146,7 +149,6 @@ class TestToolGcc(AqlTestCase):
                                  'ErrorCompileWithCustomTarget')
 
             gcc.Compile(src_files, target='src_file0', batch_build=True)
-
 
             try:
                 prj.build()
@@ -175,17 +177,17 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                gcc = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
             try:
-                rc = prj.tools.get_tool(
-                    'windres', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                rc = prj.tools.get_tool('windres', tools_path=tools_path)
             except ErrorToolNotFound:
-                print(
-                    "WARNING: Windres tool has not been found. Skip the test.")
+                print("WARNING: Windres tool has not been found. "
+                      "Skip the test.")
                 return
 
             gcc.Compile(src_files, batch_build=False)
@@ -227,8 +229,9 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
@@ -279,8 +282,9 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
@@ -329,8 +333,9 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: g++ tool has not been found. Skip the test.")
                 return
@@ -380,8 +385,9 @@ class TestToolGcc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: g++ tool has not been found. Skip the test.")
                 return
@@ -416,25 +422,30 @@ class TestToolGcc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                gcc = prj.tools.get_tool(
-                    'g++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                gcc = prj.tools.get_tool('g++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: GCC tool has not been found. Skip the test.")
                 return
 
             node = gcc.Compile(src_files, batch_build=False)
-            prj.tools.CopyFiles(node.filter_sources(
-            ), node.filter_implicit_dependencies(), target=copy_dir, batch_groups=1)
+            prj.tools.CopyFiles(node.filter_sources(),
+                                node.filter_implicit_dependencies(),
+                                target=copy_dir,
+                                batch_groups=1)
 
             self.build_prj(prj, num_src_files + 1)
 
             for file in itertools.chain(src_files, hdr_files):
-                self.assertTrue(
-                    os.path.isfile(os.path.join(copy_dir, os.path.basename(file))))
+                self.assertTrue(os.path.isfile(
+                    os.path.join(copy_dir, os.path.basename(file))))
 
             node = gcc.Compile(src_files, batch_build=False)
-            prj.tools.CopyFiles(node.filter_sources(
-            ), node.filter_implicit_dependencies(), target=copy_dir, batch_groups=1)
+            prj.tools.CopyFiles(node.filter_sources(),
+                                node.filter_implicit_dependencies(),
+                                target=copy_dir,
+                                batch_groups=1)
             self.build_prj(prj, 0)
 
 # ==============================================================================
