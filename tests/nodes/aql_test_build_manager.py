@@ -535,48 +535,46 @@ class TestBuildManager(AqlTestCase):
             options = builtin_options()
             options.build_dir = tmp_dir
 
-            num_src_files = 5
+            num_src_files = 10
             src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
-            bm = BuildManager()
+            def _build_nodes( num_dups, uptodate ):
+                bm = BuildManager()
 
-            self.building_nodes = self.built_nodes = 0
+                self.building_nodes = self.built_nodes = 0
 
-            builder = ChecksumSingleBuilder(options, 0, 256)
+                builder = ChecksumSingleBuilder(options, 0, 256)
 
-            src_entities = []
-            for s in src_files:
-                src_entities.append(FileChecksumEntity(s))
+                src_entities = []
+                for s in src_files:
+                    src_entities.append(FileChecksumEntity(s))
 
-            node = Node(builder, src_entities)
-            node = Node(builder, node)
-            node = Node(builder, node)
-            node = Node(builder, node)
+                for i in range(num_dups):
+                    num_built_nodes = 1
+                    node = Node(builder, src_entities)
 
-            bm.add([node])
-            _build(bm)
+                    node = Node(builder, node)
+                    num_built_nodes += 2
 
-            num_built_nodes = (2 ** 3 + 2 ** 2 + 2 + 1) * num_src_files
+                    node = Node(builder, node)
+                    num_built_nodes += 2**2
 
-            self.assertEqual(self.building_nodes, num_built_nodes)
+                    node = Node(builder, node)
+                    num_built_nodes += 2**3
 
-            # -----------------------------------------------------------
+                    bm.add([node])
 
-            self.building_nodes = 0
+                _build(bm, jobs=10, explain=False)
 
-            bm = BuildManager()
-            builder = ChecksumSingleBuilder(options, 0, 256)
+                if uptodate:
+                    num_built_nodes = 0
+                else:
+                    num_built_nodes = num_built_nodes * num_src_files
 
-            node = Node(builder, src_entities)
-            node = Node(builder, node)
-            node = Node(builder, node)
-            node = Node(builder, node)
+                self.assertEqual(self.building_nodes, num_built_nodes)
 
-            bm.add([node])
-            bm.self_test()
-            _build(bm)
-
-            self.assertEqual(self.building_nodes, 0)
+            _build_nodes(3, False)
+            _build_nodes(3, True)
 
     # -----------------------------------------------------------
 
