@@ -244,8 +244,8 @@ class _NodesTree (object):
 
                 # recursively add sources and depends
                 self.add(node_srcnodes)
-                # TODO: It would be better to rewrite this code to avoid the
-                # recursion
+                # TODO: It would be better
+                # to rewrite this code to avoid the recursion
                 self.add(node_depnodes)
 
                 self._depends(node, node_srcnodes)
@@ -684,6 +684,10 @@ class _NodesBuilder (object):
                 continue
 
             other_node, other_signature = other
+
+            if node is other_node:
+                continue
+
             if other_signature != signature:
                 raise ErrorNodeSignatureDifferent(node)
 
@@ -740,6 +744,11 @@ class _NodesBuilder (object):
             split_nodes = node.build_split(vfile, explain)
             if split_nodes:
                 build_manager.depends(node, split_nodes)
+
+                # split nodes are not actual, check them for building conflicts
+                for split_node in split_nodes:
+                    self._add_building_node(split_node)
+
                 changed = True
                 continue
 
@@ -965,8 +974,8 @@ class BuildManager (object):
 
         self.completed += 1
 
-        event_node_building_finished(
-            node, builder_output, self.get_progress_str())
+        event_node_building_finished(node, builder_output,
+                                     self.get_progress_str())
 
         node.shrink()
 
