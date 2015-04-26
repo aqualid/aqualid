@@ -5,7 +5,8 @@ import shutil
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.utils import Tempdir, remove_user_handler, add_user_handler
 from aql.utils import EventSettings, set_event_settings
@@ -28,7 +29,7 @@ class TestBuiltinTools(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def setUp(self):
+    def setUp(self):    # noqa
         super(TestBuiltinTools, self).setUp()
 
         self.building_started = 0
@@ -36,7 +37,7 @@ class TestBuiltinTools(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def tearDown(self):
+    def tearDown(self):     # noqa
         remove_user_handler(self.event_node_building)
 
         super(TestBuiltinTools, self).tearDown()

@@ -7,8 +7,7 @@ _search_paths = ['.', 'tests_utils', 'tools']
 sys.path[:0] = map(lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', p)), _search_paths)
 
-from tests_utils import TestCaseBase, skip, run_tests, run_local_tests,\
-    TestsOptions
+from tests_utils import TestCaseBase, run_tests, TestsOptions
 
 from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
     enable_default_handlers
@@ -92,7 +91,7 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def setUp(self):
+    def setUp(self):    # noqa
         super(AqlTestCase, self).setUp()
 
         self.built_nodes = 0
@@ -102,7 +101,7 @@ class AqlTestCase(TestCaseBase):
 
     # ==============================================================================
 
-    def tearDown(self):
+    def tearDown(self):     # noqa
         remove_user_handler(self.event_node_building_finished)
         remove_user_handler(self.event_node_removed)
 

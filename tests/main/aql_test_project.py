@@ -1,20 +1,16 @@
 import sys
 import os.path
-import types
 
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.entity import SimpleEntity
-from aql.nodes import Node, Builder
+from aql.nodes import Builder
 from aql.utils import Tempfile, Tempdir, remove_user_handler, add_user_handler
-from aql.main import Project, ProjectConfig, Tool, \
-    ErrorProjectBuilderMethodWithKW, \
-    ErrorProjectBuilderMethodFewArguments, \
-    ErrorProjectBuilderMethodUnbound, \
-    ErrorProjectInvalidMethod
+from aql.main import Project, ProjectConfig, Tool
 
 # ==============================================================================
 
@@ -36,7 +32,7 @@ class TestNullBuilder (Builder):
 
 class TestTool(Tool):
 
-    def Noop(self, options, v1, v2, v3):
+    def noop(self, options, v1, v2, v3):
         return TestNullBuilder(options, v1, v2, v3)
 
 # ==============================================================================
@@ -50,7 +46,7 @@ class TestProject(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def setUp(self):
+    def setUp(self):    # noqa
         super(TestProject, self).setUp()
 
         self.building_started = 0
@@ -58,7 +54,7 @@ class TestProject(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def tearDown(self):
+    def tearDown(self):     # noqa
         remove_user_handler(self.event_node_building)
 
         super(TestProject, self).tearDown()
@@ -119,8 +115,8 @@ options.build_variant = "final"
 
             cmd = prj.tools.ExecuteCommand(
                 "python", "-c", "print('test builtin')")
-            cmd_other = prj.tools.ExecuteCommand(
-                "python", "-c", "print('test other')")
+
+            prj.tools.ExecuteCommand("python", "-c", "print('test other')")
 
             self.assertSequenceEqual(prj.get_build_targets(), ['test', 'run'])
 
@@ -139,7 +135,7 @@ options.build_variant = "final"
 
             prj = Project(cfg)
 
-            cmd = prj.tools.ExecuteCommand(
+            prj.tools.ExecuteCommand(
                 "python", "-c", "print('test builtin')")
             cmd_other = prj.tools.ExecuteCommand(
                 "python", "-c", "print('test other')")
@@ -163,7 +159,7 @@ options.build_variant = "final"
 
             tool = prj.tools.add_tool(TestTool)
 
-            tool.Noop(v1="a", v2="b", v3="c")
+            tool.noop(v1="a", v2="b", v3="c")
             prj.build()
 
             self.assertEqual(self.built_nodes, 1)
@@ -172,7 +168,7 @@ options.build_variant = "final"
 
             self.built_nodes = 0
 
-            tool.Noop(v1="aa", v2="bb", v3="cc")
+            tool.noop(v1="aa", v2="bb", v3="cc")
             prj.build()
             self.assertEqual(self.built_nodes, 0)
 
@@ -182,7 +178,7 @@ options.build_variant = "final"
 
             v1 = SimpleEntity("a", name="value1")
 
-            tool.Noop(v1=v1, v2="b", v3="c")
+            tool.noop(v1=v1, v2="b", v3="c")
             prj.build()
             self.assertEqual(self.built_nodes, 1)
 
@@ -192,7 +188,7 @@ options.build_variant = "final"
 
             v1 = SimpleEntity("ab", name="value1")
 
-            tool.Noop(v1=v1, v2="b", v3="c")
+            tool.noop(v1=v1, v2="b", v3="c")
             prj.build()
             self.assertEqual(self.built_nodes, 1)
 
@@ -202,7 +198,7 @@ options.build_variant = "final"
 
             v1 = SimpleEntity("ab", name="value1")
 
-            tool.Noop(v1=v1, v2="b", v3="c")
+            tool.noop(v1=v1, v2="b", v3="c")
             prj.build()
             self.assertEqual(self.built_nodes, 0)
 

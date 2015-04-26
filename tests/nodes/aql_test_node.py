@@ -7,12 +7,13 @@ import hashlib
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+
+from tests_utils import skip, run_local_tests
 
 from aql.util_types import to_sequence
 
-from aql.utils import Tempfile, Tempdir, write_bin_file,\
-    enable_default_handlers
+from aql.utils import Tempfile, Tempdir, write_bin_file
 
 from aql.options import builtin_options
 from aql.entity import SimpleEntity, NullEntity, FileChecksumEntity,\
@@ -114,10 +115,6 @@ class CopyBuilder (FileBuilder):
 
 class TestNodes(AqlTestCase):
 
-    def tearDown(self):
-        enable_default_handlers()
-        super(TestNodes, self).tearDown()
-
     def test_node_value(self):
 
         with Tempfile() as tmp:
@@ -144,7 +141,7 @@ class TestNodes(AqlTestCase):
                 node.build_split(vfile, False)
 
                 self.assertFalse(node.check_actual(vfile, False))
-                out = node.build()
+                node.build()
                 node.save(vfile)
 
                 # -----------------------------------------------------------
@@ -163,7 +160,7 @@ class TestNodes(AqlTestCase):
                 node.build_split(vfile, False)
 
                 self.assertFalse(node.check_actual(vfile, False))
-                out = node.build()
+                node.build()
                 node.save(vfile)
 
                 # -----------------------------------------------------------
@@ -480,7 +477,7 @@ class TestNodesSpeed (AqlTestCase):
             tmp_files = []
 
             source_files = _generate_files(tmp_files, 4000, 50 * 1024)
-            idep_files = _copy_files(tmp_files, source_files, 'h')
+            # idep_files = _copy_files(tmp_files, source_files, 'h')
 
             with Tempfile() as tmp:
 

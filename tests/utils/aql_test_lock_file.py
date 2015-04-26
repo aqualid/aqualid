@@ -6,7 +6,8 @@ import multiprocessing as mp
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.utils import Tempfile, FileLock, ErrorFileLocked
 from aql.utils.aql_lock_file import GeneralFileLock

@@ -6,7 +6,8 @@ import threading
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import skip, run_local_tests
 
 from aql.util_types import encode_str
 from aql.utils import file_checksum, Tempdir, \
@@ -264,7 +265,7 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def setUp(self):
+    def setUp(self):    # noqa
         super(TestBuildManager, self).setUp()
 
         self.building_nodes = 0
@@ -272,7 +273,7 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def tearDown(self):
+    def tearDown(self):     # noqa
         remove_user_handler([self.event_node_building, ])
 
         super(TestBuildManager, self).tearDown()

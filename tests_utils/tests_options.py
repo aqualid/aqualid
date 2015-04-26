@@ -140,9 +140,9 @@ class TestsOptions(Singleton):
 
     def __init__(self, args=None):
 
-        CLI_USAGE = "usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]"
+        cli_usage = "usage: %prog [OPTIONS] [ARGUMENT=VALUE ...]"
 
-        CLI_OPTIONS = (
+        cli_options = (
             CLIOption("-d", "--dir", "tests_dirs", _to_sequence, '.',
                       "Tests directories", 'PATH,...'),
 
@@ -194,7 +194,7 @@ class TestsOptions(Singleton):
         super(TestsOptions, self).__setattr__('_set_options', set())
         super(TestsOptions, self).__setattr__('_defaults', {})
 
-        self.__parse_arguments(CLI_USAGE, CLI_OPTIONS, args)
+        self.__parse_arguments(cli_usage, cli_options, args)
 
     # -----------------------------------------------------------
 

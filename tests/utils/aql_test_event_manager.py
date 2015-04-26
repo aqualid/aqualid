@@ -4,7 +4,8 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.utils import event_warning, event_status, event_handler, \
     disable_events, disable_default_handlers, enable_default_handlers, \

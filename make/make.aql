@@ -77,8 +77,8 @@ setup_script = tools.WriteFile(SETUP_SCRIPT,
 sdist = tools.CreateDist(
     setup_script, target=dist_dir, command="sdist", args="--formats=zip,bztar")
 
-wdist32 = tools.CreateDist(setup_script, target=dist_dir, command="bdist", args=[
-                           "--plat-name=win32", "--formats=wininst"])
+wdist32 = tools.CreateDist(setup_script, target=dist_dir, command="bdist",
+                           args=["--plat-name=win32", "--formats=wininst"])
 
 wdist64 = tools.CreateDist(setup_script,
                            target=dist_dir,
@@ -107,7 +107,7 @@ Alias('install', install_user,
 Alias('install_system', install_system, "Install distribution for all users.")
 
 # -----------------------------------------------------------
-#// Examples
+# Examples
 
 examples_name = dist_dir + \
     "/{name}-{version}-examples".format(name=info.name, version=info.version)
