@@ -1,17 +1,17 @@
 import sys
 import os.path
-import time
-import pprint
 
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.utils import event_warning, event_status, event_handler, \
     disable_events, disable_default_handlers, enable_default_handlers, \
     EVENT_STATUS, EVENT_WARNING, \
-    ErrorEventHandlerAlreadyDefined, ErrorEventHandlerUnknownEvent, ErrorEventUserHandlerWrongArgs
+    ErrorEventHandlerAlreadyDefined, ErrorEventHandlerUnknownEvent,\
+    ErrorEventUserHandlerWrongArgs
 
 from aql.utils.aql_event_manager import EventManager
 
@@ -91,11 +91,18 @@ class TestEventManager(AqlTestCase):
         # -----------------------------------------------------------
 
         self.assertRaises(ErrorEventHandlerAlreadyDefined,
-                          em.add_default_handler, test_event2, EVENT_WARNING)
-        self.assertRaises(
-            ErrorEventHandlerUnknownEvent, em.add_user_handler, test_user_event2)
-        self.assertRaises(
-            ErrorEventUserHandlerWrongArgs, em.add_user_handler, test_user_event2, 'test_event2')
+                          em.add_default_handler,
+                          test_event2,
+                          EVENT_WARNING)
+
+        self.assertRaises(ErrorEventHandlerUnknownEvent,
+                          em.add_user_handler,
+                          test_user_event2)
+
+        self.assertRaises(ErrorEventUserHandlerWrongArgs,
+                          em.add_user_handler,
+                          test_user_event2,
+                          'test_event2')
 
 # ==============================================================================
 

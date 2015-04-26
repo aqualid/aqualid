@@ -676,7 +676,21 @@ class ToolCommonCpp(Tool):
         options.If().cc_name.is_true().build_dir_name += '_' + \
             options.cc_name + '_' + options.cc_ver
 
-        self.LinkLibrary = self.LinkStaticLibrary
+        self.Object = self.compile
+        self.Compile = self.compile
+
+        self.Resource = self.compile_resource
+        self.CompileResource = self.compile_resource
+
+        self.Library = self.link_static_library
+        self.LinkLibrary = self.link_static_library
+        self.LinkStaticLibrary = self.link_static_library
+
+        self.SharedLibrary = self.link_shared_library
+        self.LinkSharedLibrary = self.link_shared_library
+
+        self.Program = self.link_program
+        self.LinkProgram = self.link_program
 
     # -----------------------------------------------------------
 
@@ -687,26 +701,36 @@ class ToolCommonCpp(Tool):
 
         return options
 
-    def CheckHeaders(self, options):
+    # ----------------------------------------------------------
+
+    def check_headers(self, options):
         return HeaderChecker(options)
 
-    def Compile(self, options):
+    CheckHeaders = check_headers
+
+    # ----------------------------------------------------------
+
+    def compile(self, options):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    def CompileResource(self, options):
+    # ----------------------------------------------------------
+
+    def compile_resource(self, options):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    def LinkStaticLibrary(self, options, target):
+    # ----------------------------------------------------------
+
+    def link_static_library(self, options, target):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    def LinkSharedLibrary(self, options, target, def_file=None):
+    def link_shared_library(self, options, target, def_file=None):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
-    def LinkProgram(self, options, target):
+    def link_program(self, options, target):
         raise NotImplementedError(
             "Abstract method. It should be implemented in a child class.")
 
@@ -714,6 +738,10 @@ class ToolCommonCpp(Tool):
 
 
 class ToolCommonRes(Tool):
+
+    def __init__(self, options):
+        self.Object = self.compile
+        self.Compile = self.compile
 
     @classmethod
     def options(cls):
@@ -724,7 +752,7 @@ class ToolCommonRes(Tool):
 
     # -----------------------------------------------------------
 
-    def Compile(self, options):
+    def compile(self, options):
         """
         It should return a builder of C/C++ resource compiler
         """

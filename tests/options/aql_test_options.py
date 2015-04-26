@@ -4,14 +4,14 @@ import os.path
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import skip, run_local_tests
 
 from aql.util_types import UpperCaseString, FilePath
 
-from aql.options import BoolOptionType, EnumOptionType, RangeOptionType, ListOptionType, \
-    DictOptionType, PathOptionType, StrOptionType, OptionType, \
-    builtin_options, \
-    Options, op_iadd, \
+from aql.options import BoolOptionType, EnumOptionType, RangeOptionType,\
+    ListOptionType, DictOptionType, PathOptionType, StrOptionType, OptionType,\
+    builtin_options, Options, op_iadd, \
     ErrorOptionsCyclicallyDependent, \
     ErrorOptionsMergeNonOptions, ErrorOptionsNoIteration
 
@@ -94,7 +94,6 @@ class TestOptions(AqlTestCase):
         options2.warn_level = 1
 
         self.assertEqual(options.warn_level, options2.warn_level)
-        # self.assertEqual( options.warn_level, options2.warn_level.option_value )
 
         options.warn_level.set(2)
         self.assertEqual(options.warn_level, 2)
@@ -340,7 +339,6 @@ class TestOptions(AqlTestCase):
         self.assertEqual(options.opt.get(), 20)
         self.assertEqual(options2.opt2.get(), 48)
 
-        # self.assertRaises( ErrorOptionsForeignOptionValue, options2.__setattr__, 'opt', options.opt )
         self.assertRaises(AttributeError, options.__getattr__, 'debug_on')
 
         options.opt = options.warn_level
@@ -441,8 +439,9 @@ class TestOptions(AqlTestCase):
         options.If().defines['DEBUG'].eq(
             'TRUE').defines['OPTS'] += options.defines['DEBUG']
 
-        path = list(map(FilePath, [
-                    '/work/bin', '/usr/bin', '/usr/local/bin', '/home/user/bin', '/home/user', '/mingw/bin/g++']))
+        path = list(map(FilePath, ['/work/bin', '/usr/bin', '/usr/local/bin',
+                                   '/home/user/bin', '/home/user',
+                                   '/mingw/bin/g++']))
 
         value = options.env
         self.assertEqual(value['path'].get(), path)
@@ -490,15 +489,16 @@ class TestOptions(AqlTestCase):
 
         child_options2.option21 = child_options2.opt21
 
-        self.assertIs(
-            child_options2.option21.option_value, child_options2.opt21.option_value)
+        self.assertIs(child_options2.option21.option_value,
+                      child_options2.opt21.option_value)
 
         child_options2.opt22 = 3
         child_options2.opt23 = 7
 
         child_options2.join()
-        self.assertIs(
-            options2.option21.option_value, options2.opt21.option_value)
+        self.assertIs(options2.option21.option_value,
+                      options2.opt21.option_value)
+
         self.assertEqual(options2.opt22, 3)
         self.assertEqual(options2.opt23, 7)
         self.assertFalse(child_options2)
@@ -512,12 +512,14 @@ class TestOptions(AqlTestCase):
 
         child_options2.unjoin()
 
-        self.assertIs(
-            child_options2.option21.option_value, child_options2.option_21.option_value)
-        self.assertIs(
-            child_options2.option21.option_value, child_options2.opt21.option_value)
-        self.assertIsNot(
-            child_options2.opt21.option_value, options2.opt21.option_value)
+        self.assertIs(child_options2.option21.option_value,
+                      child_options2.option_21.option_value)
+
+        self.assertIs(child_options2.option21.option_value,
+                      child_options2.opt21.option_value)
+
+        self.assertIsNot(child_options2.opt21.option_value,
+                         options2.opt21.option_value)
 
     # ==========================================================
 
@@ -687,9 +689,10 @@ class TestOptions(AqlTestCase):
         options.debug_symbols = BoolOptionType(
             description='Include debug symbols')
 
-        options.build_variant = EnumOptionType(values=['debug', 'release'],
-                                               default='debug',
-                                               description="Current build variant")
+        options.build_variant = EnumOptionType(
+            values=['debug', 'release'],
+            default='debug',
+            description="Current build variant")
 
         options.If().build_variant.eq('debug').debug_symbols = True
 

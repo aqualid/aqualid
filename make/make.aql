@@ -4,14 +4,14 @@ import aql
 
 from aql_linker import AqlBuildTool
 
-from setup_settings import  UNIX_SCRIPT_PATH, \
-                            WINDOWS_SCRIPT_PATH, \
-                            UNIX_SCRIPT, \
-                            WINDOWS_SCRIPT, \
-                            STANDALONE_WINDOWS_SCRIPT, \
-                            MANIFEST, \
-                            AQL_MODULE_PATH, \
-                            SETUP_SCRIPT
+from setup_settings import UNIX_SCRIPT_PATH, \
+    WINDOWS_SCRIPT_PATH, \
+    UNIX_SCRIPT, \
+    WINDOWS_SCRIPT, \
+    STANDALONE_WINDOWS_SCRIPT, \
+    MANIFEST, \
+    AQL_MODULE_PATH, \
+    SETUP_SCRIPT
 
 # ==============================================================================
 
@@ -22,75 +22,110 @@ dist_dir = './install'
 SetBuildDir('output')
 options.build_dir_name = ''
 
-src_files = FindFiles( src_dir, '*.py', exclude_mask = "__init__.py" )
+src_files = FindFiles(src_dir, '*.py', exclude_mask="__init__.py")
 
-aql_tool = AddTool( AqlBuildTool )
+aql_tool = AddTool(AqlBuildTool)
 
-pre_files = aql_tool.Preprocess( src_files )
-linked_file = aql_tool.Link( pre_files, target = "aql.py" )
+pre_files = aql_tool.Preprocess(src_files)
+linked_file = aql_tool.Link(pre_files, target="aql.py")
 
 Alias('link', linked_file, "Merge aql source files into one Python script.")
-Default( linked_file )
+Default(linked_file)
 
 # -----------------------------------------------------------
 
 info = aql.get_aql_info()
-standalone_name = dist_dir + "/{name}-{version}.local".format( name = info.name, version = info.version )
+standalone_name = dist_dir + \
+    "/{name}-{version}.local".format(name=info.name, version=info.version)
 
-standalone_zip = tools.CreateZip( linked_file, Entity( STANDALONE_WINDOWS_SCRIPT, 'aql.cmd' ),
-                                  rename = [('aql', linked_file)],
-                                  target = standalone_name )
+standalone_zip = tools.CreateZip(linked_file,
+                                 Entity(STANDALONE_WINDOWS_SCRIPT, 'aql.cmd'),
+                                 rename=[('aql', linked_file)],
+                                 target=standalone_name)
 
-standalone_tar = tools.CreateTar( linked_file,
-                                  rename = [('aql', linked_file)],
-                                  target = standalone_name )
+standalone_tar = tools.CreateTar(linked_file,
+                                 rename=[('aql', linked_file)],
+                                 target=standalone_name)
 
-Alias( 'local', [standalone_zip, standalone_tar], "Create standalone distributions." )
+Alias('local', [standalone_zip, standalone_tar],
+      "Create standalone distributions.")
 
 # -----------------------------------------------------------
 
 setup_dir = 'setup/'
 module_dir = setup_dir + AQL_MODULE_PATH
 
-mod = tools.CopyFileAs( linked_file, target = module_dir + '/__init__.py' )
+mod = tools.CopyFileAs(linked_file, target=module_dir + '/__init__.py')
 
-tool_files = FindFiles( tool_dir, '*.py' )
-aql_tools = tools.CopyFiles( tool_files,    target = module_dir + '/tools' )
-readme = tools.CopyFileAs( '../README.md',  target = setup_dir + '/README.txt' )
+tool_files = FindFiles(tool_dir, '*.py')
+aql_tools = tools.CopyFiles(tool_files,    target=module_dir + '/tools')
+readme = tools.CopyFileAs('../README.md',  target=setup_dir + '/README.txt')
 
-manifest = tools.WriteFile(     MANIFEST,       target = setup_dir + "MANIFEST.in" )
-win_script = tools.WriteFile(   WINDOWS_SCRIPT, target = setup_dir + WINDOWS_SCRIPT_PATH, binary = True )
-unix_script = tools.WriteFile(  UNIX_SCRIPT,    target = setup_dir + UNIX_SCRIPT_PATH, binary = True )
-setup_script = tools.WriteFile( SETUP_SCRIPT,   target = setup_dir + "setup.py" )
+manifest = tools.WriteFile(MANIFEST,       target=setup_dir + "MANIFEST.in")
 
-sdist = tools.CreateDist( setup_script, target = dist_dir, command = "sdist", args = "--formats=zip,bztar" )
-wdist32 = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", args = ["--plat-name=win32", "--formats=wininst"] )
-wdist64 = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", args = ["--plat-name=win-amd64", "--formats=wininst"] )
-rpm_dist = tools.CreateDist( setup_script, target = dist_dir, command = "bdist", args = "--formats=rpm")
-install_user = tools.InstallDist( setup_script, user = True )
-install_system = tools.InstallDist( setup_script, user = False )
+win_script = tools.WriteFile(WINDOWS_SCRIPT,
+                             target=setup_dir + WINDOWS_SCRIPT_PATH,
+                             binary=True)
 
-Depends( [sdist, wdist32, wdist64, rpm_dist, install_user, install_system ],
-         [ mod, aql_tools, unix_script, win_script, manifest, readme ] )
-Sync( wdist32, wdist64, rpm_dist, sdist, install_user, install_system )
+unix_script = tools.WriteFile(UNIX_SCRIPT,
+                              target=setup_dir + UNIX_SCRIPT_PATH,
+                              binary=True)
 
-Alias('sdist', sdist, "Build source distributions." )
-Alias('wdist', [wdist32, wdist64], "Build Windows distributions." )
-Alias('rpm', rpm_dist, "Build RPM distribution." )
-Alias('install', install_user, "Install distribution for the current user only." )
-Alias('install_system', install_system, "Install distribution for all users." )
+setup_script = tools.WriteFile(SETUP_SCRIPT,
+                               target=setup_dir + "setup.py")
+
+sdist = tools.CreateDist(
+    setup_script, target=dist_dir, command="sdist", args="--formats=zip,bztar")
+
+wdist32 = tools.CreateDist(setup_script, target=dist_dir, command="bdist",
+                           args=["--plat-name=win32", "--formats=wininst"])
+
+wdist64 = tools.CreateDist(setup_script,
+                           target=dist_dir,
+                           command="bdist",
+                           args=["--plat-name=win-amd64", "--formats=wininst"])
+
+rpm_dist = tools.CreateDist(setup_script,
+                            target=dist_dir,
+                            command="bdist",
+                            args="--formats=rpm")
+
+install_user = tools.InstallDist(setup_script, user=True)
+
+install_system = tools.InstallDist(setup_script, user=False)
+
+Depends([sdist, wdist32, wdist64, rpm_dist, install_user, install_system],
+        [mod, aql_tools, unix_script, win_script, manifest, readme])
+
+Sync(wdist32, wdist64, rpm_dist, sdist, install_user, install_system)
+
+Alias('sdist', sdist, "Build source distributions.")
+Alias('wdist', [wdist32, wdist64], "Build Windows distributions.")
+Alias('rpm', rpm_dist, "Build RPM distribution.")
+Alias('install', install_user,
+      "Install distribution for the current user only.")
+Alias('install_system', install_system, "Install distribution for all users.")
 
 # -----------------------------------------------------------
-#// Examples
+# Examples
 
-examples_name = dist_dir + "/{name}-{version}-examples".format( name = info.name, version = info.version )
+examples_name = dist_dir + \
+    "/{name}-{version}-examples".format(name=info.name, version=info.version)
 
 examples_dir = os.path.abspath('../examples')
 
-examples = FindFiles( examples_dir, ["*.cpp", "*.hpp", "*.aql", "*.cfg"],
-                      exclude_subdir_mask = ["benchmarks", "build-shoutout", ".*", "_*"] )
-examples_zip = tools.CreateZip( examples, target = examples_name, basedir = examples_dir )
-examples_tar = tools.CreateTar( examples, target = examples_name, basedir = examples_dir )
+examples = FindFiles(examples_dir, ["*.cpp", "*.hpp", "*.aql", "*.cfg"],
+                     exclude_subdir_mask=["benchmarks",
+                                          "build-shoutout",
+                                          ".*", "_*"])
 
-Alias('examples', [examples_zip, examples_tar], "Create an archive of examples" )
+examples_zip = tools.CreateZip(examples,
+                               target=examples_name,
+                               basedir=examples_dir)
 
+examples_tar = tools.CreateTar(examples,
+                               target=examples_name,
+                               basedir=examples_dir)
+
+Alias('examples', [examples_zip, examples_tar],
+      "Create an archive of examples")

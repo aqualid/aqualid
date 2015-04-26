@@ -7,22 +7,22 @@ SCRIPTS_PATH = 'scripts'
 MODULES_PATH = 'modules'
 AQL_MODULE_PATH = MODULES_PATH + '/' + info.module
 
-UNIX_SCRIPT_PATH    = SCRIPTS_PATH + '/aql'
+UNIX_SCRIPT_PATH = SCRIPTS_PATH + '/aql'
 WINDOWS_SCRIPT_PATH = SCRIPTS_PATH + '/aql.cmd'
 
 MANIFEST = """include {unix_script}
 include {win_script}
-""".format( unix_script = UNIX_SCRIPT_PATH,
-            win_script = WINDOWS_SCRIPT_PATH )
+""".format(unix_script=UNIX_SCRIPT_PATH,
+           win_script=WINDOWS_SCRIPT_PATH)
 
 # ==============================================================================
 
-UNIX_SCRIPT ="""#!/usr/bin/env python
+UNIX_SCRIPT = """#!/usr/bin/env python
 if __name__ == '__main__':
   import {module}
   import sys
   sys.exit({module}.main())
-""".format( module = info.module ).replace('\r', '')
+""".format(module=info.module).replace('\r', '')
 
 # ==============================================================================
 
@@ -32,7 +32,8 @@ WINDOWS_SCRIPT = """@echo off
 set AQL_ERRORLEVEL=
 IF [%AQL_RUN_SCRIPT%] == [YES] goto run
 
-REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
+REM Workaround for an interactive prompt "Terminate batch script? (Y/N)"
+REM When CTRL+C is pressed
 SET AQL_RUN_SCRIPT=YES
 CALL %0 %* <NUL
 set AQL_ERRORLEVEL=%ERRORLEVEL%
@@ -47,7 +48,7 @@ ENDLOCAL & set AQL_ERRORLEVEL=%ERRORLEVEL%
 
 :exit
 exit /B %AQL_ERRORLEVEL%
-""".format( module = info.module ).replace('\r','').replace('\n','\r\n')
+""".format(module=info.module).replace('\r', '').replace('\n', '\r\n')
 
 # ==============================================================================
 
@@ -57,18 +58,20 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
   python -OO aql %*
 
 ) ELSE (
-  REM Workaround for an interactive prompt "Terminate batch script? (Y/N)" when CTRL+C is pressed
+  REM Workaround for an interactive prompt "Terminate batch script? (Y/N)"
+  REM When CTRL+C is pressed
   SET AQL_RUN_SCRIPT=YES
   CALL %0 %* <NUL
 )
-""".replace('\r','').replace('\n','\r\n')
+""".replace('\r', '').replace('\n', '\r\n')
 
 # ==============================================================================
 
-def readLongDescription( readme_path ):
-  readme = read_text_file( readme_path )
-  readme = '\n'.join( readme.split('\n')[2:] )
-  return readme.strip()
+
+def read_long_description(readme_path):
+    readme = read_text_file(readme_path)
+    readme = '\n'.join(readme.split('\n')[2:])
+    return readme.strip()
 
 # ==============================================================================
 
@@ -126,7 +129,7 @@ class InstallScripts( install_scripts ):
       if install_dir:
         for script in self.get_outputs():
           if script.endswith( ('.cmd','.bat') ):
-            dest_script = os.path.join( install_dir, os.path.basename( script ) )
+            dest_script = os.path.join(install_dir, os.path.basename(script))
             _removeFile( dest_script )
             self.move_file( script, dest_script )
 
@@ -155,14 +158,14 @@ setup(
       package_data      = {{'{modname}': ['tools/*']}},
       cmdclass          = {{ 'install_scripts' : InstallScripts,}}
 )
-""".format( short_descr   = info.description,
-            long_descr    = readLongDescription('../README.md'),
-            name          = info.name,
-            modname       = info.module,
-            version       = info.version,
-            url           = info.url,
-            license       = info.license,
-            package_root  = MODULES_PATH,
-            unix_script   = UNIX_SCRIPT_PATH,
-            win_script    = WINDOWS_SCRIPT_PATH,
-)
+""".format(short_descr=info.description,
+           long_descr=read_long_description('../README.md'),
+           name=info.name,
+           modname=info.module,
+           version=info.version,
+           url=info.url,
+           license=info.license,
+           package_root=MODULES_PATH,
+           unix_script=UNIX_SCRIPT_PATH,
+           win_script=WINDOWS_SCRIPT_PATH,
+           )

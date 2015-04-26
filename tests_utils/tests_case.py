@@ -36,7 +36,7 @@ class _ErrorHolder(object):
         self.test_id = test_class.__module__ + '.' + test_class.__name__
         self.__name__ = test_class.__name__
 
-    def shortDescription(self):
+    def shortDescription(self):     # noqa
         return None
 
     def __str__(self):
@@ -86,20 +86,24 @@ class TestCaseSuite(unittest.TestSuite):
     # -----------------------------------------------------------
 
     def __tear_down_test_case_class(self, test_case_class, result):
-        """Method tries to call tearDownClass method from test case instance."""
+        """Method tries to call tearDownClass
+           method from test case instance."""
 
         if test_case_class is not None:
             # call tearDownClass only if it's not supported
             if not hasattr(unittest.TestCase, 'tearDownClass'):
-                tearDownClass = getattr(test_case_class, 'tearDownClass', None)
-                if tearDownClass is not None:
+                tear_down_class = getattr(test_case_class,
+                                          'tearDownClass',
+                                          None)
+                if tear_down_class is not None:
                     try:
-                        tearDownClass()
+                        tear_down_class()
                     except Exception as ex:
                         if not self.keep_going:
                             result.stop()
-                        error_name = _ErrorHolder(
-                            test_case_class, 'tearDownClass', ex)
+                        error_name = _ErrorHolder(test_case_class,
+                                                  'tearDownClass',
+                                                  ex)
                         result.addError(error_name, sys.exc_info())
 
     # -----------------------------------------------------------
@@ -158,25 +162,13 @@ class TestCaseBase(unittest.TestCase):
 
     # -----------------------------------------------------------
 
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    # -----------------------------------------------------------
-
-    def tearDown(self):
+    def tearDown(self):     # noqa
         if not (self.keep_going or self.result.wasSuccessful()):
             self.result.stop()
 
     # -----------------------------------------------------------
 
-    def setUp(self):
+    def setUp(self):    # noqa
         if not (self.keep_going or self.result.wasSuccessful()):
             self.result.stop()
 
@@ -190,67 +182,71 @@ class TestCaseBase(unittest.TestCase):
     # -----------------------------------------------------------
 
     if not hasattr(unittest.TestCase, 'assertIn'):
-        def assertIn(self, a, b, msg=None):
+        def assertIn(self, a, b, msg=None):         # noqa
             if msg is None:
                 msg = str(a) + " in " + str(b) + ' is False'
             self.assertTrue(a in b, msg)
 
     if not hasattr(unittest.TestCase, 'assertNotIn'):
-        def assertNotIn(self, a, b, msg=None):
+        def assertNotIn(self, a, b, msg=None):      # noqa
             if msg is None:
                 msg = str(a) + " not in " + str(b) + ' is False'
             self.assertTrue(a not in b, msg)
 
     if not hasattr(unittest.TestCase, 'assertIsNone'):
-        def assertIsNone(self, a, msg=None):
+        def assertIsNone(self, a, msg=None):        # noqa
             if msg is None:
                 msg = str(a) + " is " + str(None) + ' is False'
             self.assertTrue(a is None, msg)
 
     if not hasattr(unittest.TestCase, 'assertIs'):
-        def assertIs(self, a, b, msg=None):
+        def assertIs(self, a, b, msg=None):         # noqa
             if msg is None:
                 msg = str(a) + " is not " + str(b)
             self.assertTrue(a is b, msg)
 
     if not hasattr(unittest.TestCase, 'assertIsNot'):
-        def assertIsNot(self, a, b, msg=None):
+        def assertIsNot(self, a, b, msg=None):      # noqa
             if msg is None:
                 msg = str(a) + " is " + str(b)
             self.assertTrue(a is not b, msg)
 
     if not hasattr(unittest.TestCase, 'assertIsNotNone'):
-        def assertIsNotNone(self, a, msg=None):
+        def assertIsNotNone(self, a, msg=None):     # noqa
             if msg is None:
                 msg = str(a) + " is not " + str(None) + ' is False'
             self.assertTrue(a is not None, msg)
 
     if not hasattr(unittest.TestCase, 'assertGreater'):
-        def assertGreater(self, a, b, msg=None):
+        def assertGreater(self, a, b, msg=None):    # noqa
             if msg is None:
                 msg = str(a) + " > " + str(b) + ' is False'
             self.assertTrue(a > b, msg)
 
     if not hasattr(unittest.TestCase, 'assertGreaterEqual'):
-        def assertGreaterEqual(self, a, b, msg=None):
+        def assertGreaterEqual(self, a, b, msg=None):   # noqa
             if msg is None:
                 msg = str(a) + " >= " + str(b) + ' is False'
             self.assertTrue(a >= b, msg)
 
     if not hasattr(unittest.TestCase, 'assertLess'):
-        def assertLess(self, a, b, msg=None):
+        def assertLess(self, a, b, msg=None):       # noqa
             if msg is None:
                 msg = str(a) + " < " + str(b) + ' is False'
             self.assertTrue(a < b, msg)
 
     if not hasattr(unittest.TestCase, 'assertLessEqual'):
-        def assertLessEqual(self, a, b, msg=None):
+        def assertLessEqual(self, a, b, msg=None):  # noqa
             if msg is None:
                 msg = str(a) + " <= " + str(b) + ' is False'
             self.assertTrue(a <= b, msg)
 
     if not hasattr(unittest.TestCase, 'assertSequenceEqual'):
-        def assertSequenceEqual(self, first, second, msg=None, seq_type=None):
+        def assertSequenceEqual(self,       # noqa
+                                first,
+                                second,
+                                msg=None,
+                                seq_type=None):
             if msg is None:
                 msg = str(first) + " != " + str(second)
 
@@ -279,7 +275,7 @@ class TestCaseBase(unittest.TestCase):
                 self.assertEqual(v1, v2, msg)
 
     if not hasattr(unittest.TestCase, 'assertItemsEqual'):
-        def assertItemsEqual(self, actual, expected, msg=None):
+        def assertItemsEqual(self, actual, expected, msg=None):     # noqa
             def _value_counts(seq):
                 counts = dict()
                 for value in seq:

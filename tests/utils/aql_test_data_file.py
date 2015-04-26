@@ -6,7 +6,9 @@ import uuid
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+
+from tests_utils import skip, run_local_tests
 
 from aql.utils import Tempfile, Chrono
 from aql.utils import DataFile, SqlDataFile
@@ -17,7 +19,9 @@ from aql.util_types import encode_str
 
 
 def generate_data(min_size, max_size):
-    return encode_str(''.join(chr(random.randint(32, 127)) for i in range(random.randint(min_size, max_size))))
+    return encode_str(''.join(chr(random.randint(32, 127))
+                              for i in range(random.randint(min_size,
+                                                            max_size))))
 
 # ==============================================================================
 
@@ -43,13 +47,13 @@ def extend_data_map(data_map):
 
 class TestDataFile(AqlTestCase):
 
-    def _test_data_file_add(self, DataFileType):
+    def _test_data_file_add(self, data_file_type):
         with Tempfile() as tmp:
             tmp.remove()
 
             data_map = generate_data_map(2100, 16, 128)
 
-            df = DataFileType(tmp)
+            df = data_file_type(tmp)
             try:
                 df.self_test()
 
@@ -68,14 +72,14 @@ class TestDataFile(AqlTestCase):
 
     # ==========================================================
 
-    def _test_data_file_update(self, DataFileType):
+    def _test_data_file_update(self, data_file_type):
         with Tempfile() as tmp:
             tmp.remove()
 
             data_map = generate_data_map(100, 16, 128)
             data_keys = {}
 
-            df = DataFileType(tmp)
+            df = data_file_type(tmp)
             try:
                 df.self_test()
 
@@ -130,13 +134,13 @@ class TestDataFile(AqlTestCase):
 
     # ==========================================================
 
-    def _test_data_file_remove(self, DataFileType):
+    def _test_data_file_remove(self, data_file_type):
         with Tempfile() as tmp:
             tmp.remove()
 
             data_map = generate_data_map(1025, 16, 128)
 
-            df = DataFileType(tmp)
+            df = data_file_type(tmp)
             try:
                 df.self_test()
 
@@ -152,7 +156,7 @@ class TestDataFile(AqlTestCase):
                     df.self_test()
 
                 df.close()
-                df = DataFileType(tmp)
+                df = data_file_type(tmp)
                 df.self_test()
 
                 for data_id, data in data_map.items():
@@ -171,7 +175,7 @@ class TestDataFile(AqlTestCase):
                 df.self_test()
 
                 df.close()
-                df = DataFileType(tmp)
+                df = data_file_type(tmp)
                 df.self_test()
 
                 df.remove(data_ids[len(data_ids) // 2:])
@@ -189,7 +193,7 @@ class TestDataFile(AqlTestCase):
                 df.self_test()
 
                 df.close()
-                df = DataFileType(tmp)
+                df = data_file_type(tmp)
                 df.self_test()
 
                 for data_id in remove_data_ids2:
@@ -205,7 +209,7 @@ class TestDataFile(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def _test_data_file_speed(self, DataFileType):
+    def _test_data_file_speed(self, data_file_type):
 
         with Tempfile() as tmp:
             timer = Chrono()
@@ -215,7 +219,7 @@ class TestDataFile(AqlTestCase):
 
             print("generate data time: %s" % timer)
 
-            df = DataFileType(tmp)
+            df = data_file_type(tmp)
             try:
 
                 with timer:
@@ -227,7 +231,7 @@ class TestDataFile(AqlTestCase):
                 df.close()
 
                 with timer:
-                    df = DataFileType(tmp)
+                    df = data_file_type(tmp)
                 print("load time: %s" % timer)
 
                 with timer:

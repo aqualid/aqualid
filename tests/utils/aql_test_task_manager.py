@@ -5,7 +5,9 @@ import time
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
+
 from aql.utils import TaskManager, TaskResult
 
 # ==============================================================================
@@ -93,7 +95,8 @@ class TestTaskManager(AqlTestCase):
         tm.stop()
         tm.stop()
 
-        done_tasks = sorted(result.task_id for result in tm.get_finished_tasks())
+        done_tasks = sorted(result.task_id
+                            for result in tm.get_finished_tasks())
 
         self.assertEqual(len(done_tasks), jobs)
         self.assertEqual(results, set(done_tasks))
@@ -118,8 +121,10 @@ class TestTaskManager(AqlTestCase):
         done_tasks = sorted(tm.get_finished_tasks(), key=lambda v: v.task_id)
         self.assertEqual(len(done_tasks), num_tasks)
 
+        items = zip(range(num_tasks), [None] * num_tasks, [None] * num_tasks)
+
         expected_tasks = [TaskResult(task_id, error, result)
-                          for task_id, error, result in zip(range(num_tasks), [None] * num_tasks, [None] * num_tasks)]
+                          for task_id, error, result in items]
 
         self.assertEqual(done_tasks[0], expected_tasks[0])
 
@@ -154,8 +159,9 @@ class TestTaskManager(AqlTestCase):
         print()
         self.assertEqual(len(done_tasks), jobs)
 
+        items = zip(range(jobs), [None] * num_tasks, [None] * num_tasks)
         expected_tasks = [TaskResult(task_id, error, result)
-                          for task_id, error, result in zip(range(jobs), [None] * num_tasks, [None] * num_tasks)]
+                          for task_id, error, result in items]
 
         self.assertEqual(done_tasks[:3], expected_tasks[:3])
 

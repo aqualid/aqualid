@@ -4,7 +4,8 @@ import sys
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.utils import Tempdir, Tempfile
 from aql.main import Project, ProjectConfig, ErrorToolNotFound
@@ -34,8 +35,9 @@ class TestToolMsvc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'msvc++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
@@ -77,8 +79,9 @@ class TestToolMsvc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'msvc++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
@@ -125,8 +128,9 @@ class TestToolMsvc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'msvc++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
@@ -164,14 +168,15 @@ class TestToolMsvc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'msvc++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
-            cpp.LinkLibrary(
-                src_files, res_file, target='foo', batch_build=True, batch_groups=num_groups)
+            cpp.LinkLibrary(src_files, res_file, target='foo',
+                            batch_build=True, batch_groups=num_groups)
 
             self.build_prj(prj, num_groups + 2)
 
@@ -188,8 +193,8 @@ class TestToolMsvc(AqlTestCase):
             self.build_prj(prj, 0)
 
             self.touch_cpp_files(hdr_files)
-            cpp.LinkLibrary(
-                src_files, res_file, target='foo', batch_build=True, batch_groups=num_groups)
+            cpp.LinkLibrary(src_files, res_file, target='foo',
+                            batch_build=True, batch_groups=num_groups)
             self.build_prj(prj, num_groups + 1)
 
     # -----------------------------------------------------------
@@ -217,8 +222,9 @@ class TestToolMsvc(AqlTestCase):
             prj = Project(cfg)
 
             try:
-                cpp = prj.tools.get_tool(
-                    'msvc++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
@@ -241,10 +247,12 @@ class TestToolMsvc(AqlTestCase):
 
             self.touch_cpp_files(hdr_files)
 
-            cpp.LinkSharedLibrary(
-                src_files, res_file, target='foo', batch_build=True, batch_groups=num_groups)
-            cpp.LinkProgram(src_files, main_src_file, res_file,
-                            target='foo', batch_build=True, batch_groups=num_groups)
+            cpp.LinkSharedLibrary(src_files, res_file, target='foo',
+                                  batch_build=True, batch_groups=num_groups)
+
+            cpp.LinkProgram(src_files, main_src_file, res_file, target='foo',
+                            batch_build=True, batch_groups=num_groups)
+
             self.build_prj(prj, num_groups + 2, jobs=1)
 
     # -----------------------------------------------------------
@@ -267,16 +275,19 @@ class TestToolMsvc(AqlTestCase):
 
             prj = Project(cfg)
             try:
-                cpp = prj.tools.get_tool(
-                    'msvc++', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
             except ErrorToolNotFound:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
+
             try:
-                rc = prj.tools.get_tool(
-                    'msrc', tools_path=os.path.join(os.path.dirname(__file__), '../../tools'))
+                tools_path = os.path.join(os.path.dirname(__file__),
+                                          '../../tools')
+                rc = prj.tools.get_tool('msrc', tools_path=tools_path)
             except ErrorToolNotFound:
-                print("WARNING: MS RC tool has not been found. Skip the test.")
+                print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
             cpp.Compile(src_files, batch_build=False)

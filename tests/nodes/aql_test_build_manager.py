@@ -6,16 +6,18 @@ import threading
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import skip, AqlTestCase, run_local_tests
+from aql_tests import AqlTestCase
+from tests_utils import skip, run_local_tests
 
 from aql.util_types import encode_str
 from aql.utils import file_checksum, Tempdir, \
-    enable_default_handlers, add_user_handler, remove_user_handler
+    add_user_handler, remove_user_handler
 
 from aql.entity import SimpleEntity, FileChecksumEntity
 from aql.options import builtin_options
 from aql.nodes import Node, Builder, FileBuilder, BuildManager
-from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic, ErrorNodeSignatureDifferent
+from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic,\
+    ErrorNodeSignatureDifferent
 
 # ==============================================================================
 
@@ -72,8 +74,8 @@ class SyncValueBuilder (Builder):
         try:
             for i, lock in enumerate(self.locks):
                 if not lock.acquire(False):
-                    raise Exception(
-                        "Lock '%s' is already acquired." % (self.lock_names[i]))
+                    raise Exception("Lock '%s' is already acquired." %
+                                    (self.lock_names[i]))
 
                 locks.insert(0, lock)
         except:
@@ -100,23 +102,23 @@ class SyncValueBuilder (Builder):
                 _sync_value = _sync_value + self.number
 
                 if (_sync_value % self.number) != 0:
+                    name = self.get_trace(source_entities)
                     raise Exception("_sync_value: %s, number: %s, node: %s" %
-                                    (_sync_value, self.number, node))
+                                    (_sync_value, self.number, name))
 
         time.sleep(self.sleep_interval)
 
         if self.number:
             with _sync_lock:
                 if (_sync_value % self.number) != 0:
+                    name = self.get_trace(source_entities)
                     raise Exception("_sync_value: %s, number: %s, node: %s" %
-                                    (_sync_value, self.number, node))
+                                    (_sync_value, self.number, name))
 
                 _sync_value = _sync_value - self.number
 
         target = [src.get() for src in source_entities]
         target = self.make_simple_entity(target)
-
-        # self.release_locks( locks )
 
         targets.add(target)
 
@@ -162,6 +164,7 @@ class ChecksumBuilder (FileBuilder):
 
     def _build_src(self, src, alg):
         chcksum = file_checksum(src, self.offset, self.length, alg)
+
         if self.replace_ext:
             chcksum_filename = os.path.splitext(src)[0]
         else:
@@ -262,7 +265,7 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def setUp(self):
+    def setUp(self):    # noqa
         super(TestBuildManager, self).setUp()
 
         self.building_nodes = 0
@@ -270,7 +273,7 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    def tearDown(self):
+    def tearDown(self):     # noqa
         remove_user_handler([self.event_node_building, ])
 
         super(TestBuildManager, self).tearDown()
@@ -344,7 +347,8 @@ class TestBuildManager(AqlTestCase):
             src_node.depends(dep_node)
             bm.depends(src_node, [dep_node])
 
-        self.assertRaises(ErrorNodeDependencyCyclic, _cyclic_deps, node4, node3)
+        self.assertRaises(ErrorNodeDependencyCyclic,
+                          _cyclic_deps, node4, node3)
 
     # -----------------------------------------------------------
 
@@ -401,11 +405,11 @@ class TestBuildManager(AqlTestCase):
 
             copy2_node3 = Node(builder, copy_node3)
             copy2_node3.depends([node1, copy_node1])
-            return node1, node2, node3, copy_node1, copy_node3, copy2_node1, copy2_node3
 
-        # with Tempdir() as tmp_dir:
-        if True:
-            tmp_dir = Tempdir()
+            return node1, node2, node3, copy_node1,\
+                copy_node3, copy2_node1, copy2_node3
+
+        with Tempdir() as tmp_dir:
             options = builtin_options()
             options.build_dir = tmp_dir
 
@@ -427,7 +431,7 @@ class TestBuildManager(AqlTestCase):
             bm.close()
             self.assertEqual(self.built_nodes, 7)
 
-           #// --------- //
+            # ----------------------------------------------------------
 
             bm.add(_make_nodes(builder))
 
@@ -436,7 +440,7 @@ class TestBuildManager(AqlTestCase):
             bm.close()
             self.assertEqual(self.built_nodes, 0)
 
-            #// --------- //
+            # ----------------------------------------------------------
 
             bm.add(_make_nodes(builder))
 
@@ -445,7 +449,7 @@ class TestBuildManager(AqlTestCase):
             bm.close()
             self.assertEqual(self.removed_nodes, 7)
 
-            #// --------- //
+            # ----------------------------------------------------------
 
             nodes = _make_nodes(builder)
             copy_node3 = nodes[4]
@@ -456,7 +460,7 @@ class TestBuildManager(AqlTestCase):
             bm.close()
             self.assertEqual(self.built_nodes, 2)
 
-            #// --------- //
+            # ----------------------------------------------------------
 
             nodes = _make_nodes(builder)
             node2 = nodes[1]
@@ -468,9 +472,7 @@ class TestBuildManager(AqlTestCase):
             bm.close()
             self.assertEqual(self.built_nodes, 1)
 
-            #// --------- //
-
-    # -----------------------------------------------------------
+    # ==========================================================
 
     def test_bm_check(self):
 
@@ -538,7 +540,7 @@ class TestBuildManager(AqlTestCase):
             num_src_files = 10
             src_files = self.generate_source_files(tmp_dir, num_src_files, 201)
 
-            def _build_nodes( num_dups, uptodate ):
+            def _build_nodes(num_dups, uptodate):
                 bm = BuildManager()
 
                 self.building_nodes = self.built_nodes = 0
@@ -569,7 +571,7 @@ class TestBuildManager(AqlTestCase):
                 if uptodate:
                     num_built_nodes = 0
                 else:
-                    num_built_nodes = num_built_nodes * num_src_files
+                    num_built_nodes *= num_src_files
 
                 self.assertEqual(self.building_nodes, num_built_nodes)
 
@@ -786,8 +788,10 @@ class TestBuildManager(AqlTestCase):
 
             self.built_nodes = 0
 
-            nodes = [Node(SyncValueBuilder(options, name="%s" % i, number=n), SimpleEntity(
-                "123-%s" % i)) for i, n in zip(range(4), [3, 5, 7, 11])]
+            nodes = [Node(SyncValueBuilder(options, name="%s" % i, number=n),
+                          SimpleEntity("123-%s" % i))
+                     for i, n in zip(range(4), [3, 5, 7, 11])]
+
             bm.add(nodes)
             bm.sync(nodes)
 
@@ -814,44 +818,41 @@ class TestBuildManager(AqlTestCase):
         30    31   32  33
       """
 
-            node30 = Node(
-                SyncValueBuilder(options, name="30", number=7), SimpleEntity("30"))
-            node31 = Node(SyncValueBuilder(
-                options, name="31", number=0, sleep_interval=0), SimpleEntity("31"))
-            node32 = Node(SyncValueBuilder(
-                options, name="32", number=0, sleep_interval=0), SimpleEntity("32"))
-            node33 = Node(
-                SyncValueBuilder(options, name="33", number=17), SimpleEntity("33"))
+            node30 = Node(SyncValueBuilder(options, name="30", number=7),
+                          SimpleEntity("30"))
 
-            node20 = Node(
-                SyncValueBuilder(options, name="20", number=7), (node30, node31))
-            node21 = Node(
-                SyncValueBuilder(options, name="21", number=7), (node31,))
-            node22 = Node(SyncValueBuilder(
-                options, name="22", number=0, sleep_interval=5), (node31, node32))
-            node23 = Node(
-                SyncValueBuilder(options, name="23", number=17), (node33,))
-            node24 = Node(
-                SyncValueBuilder(options, name="24", number=17), (node33,))
+            node31 = Node(SyncValueBuilder(options, name="31", number=0,
+                                           sleep_interval=0),
+                          SimpleEntity("31"))
 
-            node10 = Node(
-                SyncValueBuilder(options, name="10", number=7), (node20, node21, node22))
-            node11 = Node(
-                SyncValueBuilder(options, name="11", number=17), (node22, node23, node24))
+            node32 = Node(SyncValueBuilder(options, name="32", number=0,
+                                           sleep_interval=0),
+                          SimpleEntity("32"))
 
-            # print( "node30: %s" % node30 )
-            # print( "node31: %s" % node31 )
-            # print( "node32: %s" % node32 )
-            # print( "node33: %s" % node33 )
-            #
-            # print( "node20: %s" % node20 )
-            # print( "node21: %s" % node21 )
-            # print( "node22: %s" % node22 )
-            # print( "node23: %s" % node23 )
-            # print( "node24: %s" % node24 )
-            #
-            # print( "node10: %s" % node10 )
-            # print( "node11: %s" % node11 )
+            node33 = Node(SyncValueBuilder(options, name="33", number=17),
+                          SimpleEntity("33"))
+
+            node20 = Node(SyncValueBuilder(options, name="20", number=7),
+                          (node30, node31))
+
+            node21 = Node(SyncValueBuilder(options, name="21", number=7),
+                          (node31,))
+
+            node22 = Node(SyncValueBuilder(options, name="22", number=0,
+                                           sleep_interval=5),
+                          (node31, node32))
+
+            node23 = Node(SyncValueBuilder(options, name="23", number=17),
+                          (node33,))
+
+            node24 = Node(SyncValueBuilder(options, name="24", number=17),
+                          (node33,))
+
+            node10 = Node(SyncValueBuilder(options, name="10", number=7),
+                          (node20, node21, node22))
+
+            node11 = Node(SyncValueBuilder(options, name="11", number=17),
+                          (node22, node23, node24))
 
             bm.add((node10, node11))
             bm.sync((node10, node11), deep=True)
@@ -871,37 +872,48 @@ class TestBuildManager(AqlTestCase):
             self.built_nodes = 0
 
             """
-             10    11__
-            / | \ / \  \
-          20 21  22  23 24
-         /  \ | / \   \ |
-        30    31   32  33
-      """
+                 10    11__
+                / | \ / \  \
+              20 21  22  23 24
+             /  \ | / \   \ |
+            30    31   32  33
+            """
 
-            node30 = Node(
-                SyncValueBuilder(options, name="30", number=7), SimpleEntity("30"))
-            node31 = Node(SyncValueBuilder(
-                options, name="31", number=0, sleep_interval=0), SimpleEntity("31"))
-            node32 = Node(SyncValueBuilder(
-                options, name="32", number=0, sleep_interval=0), SimpleEntity("32"))
-            node33 = Node(
-                SyncValueBuilder(options, name="33", number=17), SimpleEntity("33"))
+            node30 = Node(SyncValueBuilder(options, name="30", number=7),
+                          SimpleEntity("30"))
 
-            node20 = Node(
-                SyncValueBuilder(options, name="20", number=7), (node30, node31))
-            node21 = Node(
-                SyncValueBuilder(options, name="21", number=7), (node31,))
-            node22 = Node(SyncValueBuilder(
-                options, name="22", number=0, sleep_interval=5), (node31, node32))
-            node23 = Node(
-                SyncValueBuilder(options, name="23", number=17), (node33,))
-            node24 = Node(
-                SyncValueBuilder(options, name="24", number=17), (node33,))
+            node31 = Node(SyncValueBuilder(options, name="31", number=0,
+                                           sleep_interval=0),
+                          SimpleEntity("31"))
 
-            node10 = Node(
-                SyncValueBuilder(options, name="10", number=7), (node20, node21, node22))
-            node11 = Node(
-                SyncValueBuilder(options, name="11", number=17), (node22, node23, node24))
+            node32 = Node(SyncValueBuilder(options, name="32", number=0,
+                                           sleep_interval=0),
+                          SimpleEntity("32"))
+
+            node33 = Node(SyncValueBuilder(options, name="33", number=17),
+                          SimpleEntity("33"))
+
+            node20 = Node(SyncValueBuilder(options, name="20", number=7),
+                          (node30, node31))
+
+            node21 = Node(SyncValueBuilder(options, name="21", number=7),
+                          (node31,))
+
+            node22 = Node(SyncValueBuilder(options, name="22", number=0,
+                                           sleep_interval=5),
+                          (node31, node32))
+
+            node23 = Node(SyncValueBuilder(options, name="23", number=17),
+                          (node33,))
+
+            node24 = Node(SyncValueBuilder(options, name="24", number=17),
+                          (node33,))
+
+            node10 = Node(SyncValueBuilder(options, name="10", number=7),
+                          (node20, node21, node22))
+
+            node11 = Node(SyncValueBuilder(options, name="11", number=17),
+                          (node22, node23, node24))
 
             # print( "node30: %s" % node30 )
             # print( "node31: %s" % node31 )
