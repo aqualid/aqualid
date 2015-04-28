@@ -99,17 +99,27 @@ def to_unicode(obj, encoding=None):
 
 # ==============================================================================
 
-if u_str is not str:
-    def is_unicode(value, _ustr=u_str, _isinstance=isinstance):
-        return _isinstance(value, _ustr)
 
-    def is_string(value, _ustr=u_str, _str=str, _isinstance=isinstance):
-        return _isinstance(value, (_ustr, _str))
+def is_unicode(value, _ustr=u_str, _isinstance=isinstance):
+    return _isinstance(value, _ustr)
 
-    def to_string(value, _ustr=u_str, _str=str, _isinstance=isinstance):
-        if _isinstance(value, (_ustr, _str)):
+# ==============================================================================
+
+
+def is_string(value, _str_types=(u_str, str), _isinstance=isinstance):
+    return _isinstance(value, _str_types)
+
+# ==============================================================================
+
+if u_str is str:
+    to_string = to_unicode
+    cast_str = str
+
+else:
+    def to_string(value, _str_types=(u_str, str), _isinstance=isinstance):
+        if _isinstance(value, _str_types):
             return value
-        return _str(value)
+        return str(value)
 
     # -----------------------------------------------------------
 
@@ -118,15 +128,6 @@ if u_str is not str:
             return encode_str(obj, encoding)
 
         return str(obj)
-
-else:
-    to_string = to_unicode
-    cast_str = str
-
-    def is_string(value, _str=str, _isinstance=isinstance):
-        return _isinstance(value, _str)
-
-    is_unicode = is_string
 
 # ==============================================================================
 

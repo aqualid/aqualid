@@ -85,9 +85,9 @@ class MsvcCompiler (CommonCppCompiler):
 
         result = self.exec_cmd_result(cmd, cwd, file_flag='@')
 
-        deps, errors, out = _parse_output(
-            (source,), result.output, self.ext_cpppath)
-
+        deps, errors, out = _parse_output((source,),
+                                          result.output,
+                                          self.ext_cpppath)
         if result.failed():
             result.output = out
             raise result

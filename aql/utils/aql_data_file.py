@@ -785,7 +785,7 @@ class DataFile (object):
 
     # -----------------------------------------------------------
 
-    def self_test(self):
+    def self_test(self):    # noqa
 
         if self.handle is None:
             return
