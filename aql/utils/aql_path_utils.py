@@ -183,9 +183,9 @@ def _get_env_path_ext(env, hint_prog=None,
         hint_ext = os.path.splitext(hint_prog)[1]
         return hint_ext,
 
-    path_exts = env.get('PATHEXT', None)
+    path_exts = env.get('PATHEXT')
     if path_exts is None:
-        path_exts = os.environ.get('PATHEXT', None)
+        path_exts = os.environ.get('PATHEXT')
 
     if is_string(path_exts):
         path_sep = ';' if is_cygwin else os.pathsep

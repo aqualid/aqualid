@@ -1,6 +1,6 @@
 set -ex
 
-python tests/aql_tests.py
+coverage run --source=aql tests/aql_tests.py
 
 python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $PWD/tools
 python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $PWD/tools --use-sqlite
@@ -21,4 +21,4 @@ flake8 `find tests_utils -name "[a-zA-Z]*.py"`
 flake8 make/*.py
 pep8 make/make.aql
 
-#flake8 --max-complexity=7 `find aql -name "[a-zA-Z]*.py"`
+#flake8 --max-complexity=9 `find aql -name "[a-zA-Z]*.py"`
