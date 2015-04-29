@@ -603,7 +603,7 @@ class _NodeLocker(object):
 
     # -----------------------------------------------------------
 
-    def self_test(self):
+    def self_test(self):    # noqa
         for node, deps in self.node2deps.items():
             if node in deps:
                 raise AssertionError("Node depends from itself: %s" % (node,))
@@ -622,8 +622,8 @@ class _NodeLocker(object):
                         (dep, node))
 
                 if dep in self.unlocked_nodes:
-                    raise AssertionError(
-                        "Locked node %s is actually locked" % (dep,))
+                    raise AssertionError("Locked node %s is actually locked" %
+                                         (dep,))
 
         for node in self.unlocked_nodes:
             if node not in self.node2deps:
