@@ -80,13 +80,14 @@ class _SplitDictBase(object):
 
     # -----------------------------------------------------------
 
-    def __to_items(self, items_str):
+    @classmethod
+    def __to_items(cls, items_str):
 
         if not is_string(items_str):
             return items_str
 
-        sep = self._separator
-        for s in self._other_separators:
+        sep = cls._separator
+        for s in cls._other_separators:
             items_str = items_str.replace(s, sep)
 
         items = []
@@ -99,11 +100,12 @@ class _SplitDictBase(object):
 
     # -----------------------------------------------------------
 
-    def __to_split_dict(self, items):
-        if isinstance(items, _SplitDictBase):
+    @classmethod
+    def __to_split_dict(cls, items):
+        if isinstance(items, cls):
             return items
 
-        return type(self)(self.__to_items(items))
+        return cls(cls.__to_items(items))
 
     # -----------------------------------------------------------
 
@@ -150,8 +152,8 @@ class _SplitDictBase(object):
     # -----------------------------------------------------------
 
     def __str__(self):
-        return self._separator.join(
-            sorted("%s=%s" % (key, value) for key, value in self.items()))
+        return self._separator.join(sorted("%s=%s" % (key, value)
+                                           for key, value in self.items()))
 
 # ==============================================================================
 
@@ -180,9 +182,10 @@ class _ValueDictBase(object):
 
     # -----------------------------------------------------------
 
-    def _to_value(self, key, value, val_types=__VALUE_TYPES):
+    @classmethod
+    def _to_value(cls, key, value, val_types=__VALUE_TYPES):
 
-        val_type = self._default_value_type
+        val_type = cls._default_value_type
 
         try:
             if val_type is None:
@@ -193,7 +196,7 @@ class _ValueDictBase(object):
         except KeyError:
             pass
 
-        self.set_value_type(key, type(value))
+        cls.set_value_type(key, type(value))
         return value
 
     # -----------------------------------------------------------
@@ -215,33 +218,32 @@ class _ValueDictBase(object):
 
     # -----------------------------------------------------------
 
-    def __to_items(self, items):
+    @classmethod
+    def __to_items(cls, items):
 
         if isinstance(items, _ValueDictBase):
             return items
 
-        key_type = self._key_type
-        to_value = self._to_value
+        key_type = cls._key_type
+        to_value = cls._to_value
 
         items_tmp = []
 
-        try:
-            for key, value in Dict.to_items(items):
-                key = key_type(key)
-                value = to_value(key, value)
-                items_tmp.append((key, value))
+        for key, value in Dict.to_items(items):
+            key = key_type(key)
+            value = to_value(key, value)
+            items_tmp.append((key, value))
 
-            return items_tmp
-        except ValueError:
-            raise
+        return items_tmp
 
     # -----------------------------------------------------------
 
-    def __to_value_dict(self, items):
+    @classmethod
+    def __to_value_dict(cls, items):
         if isinstance(items, _ValueDictBase):
             return items
 
-        return type(self)(self.__to_items(items))
+        return cls(items)
 
     # -----------------------------------------------------------
 

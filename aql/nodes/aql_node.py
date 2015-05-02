@@ -83,114 +83,102 @@ class ErrorNodeUnknownSource(Exception):
 
 
 @event_status
-def event_node_stale_reason(brief, reason):
-    msg = reason.get_description(brief)
+def event_node_rebuild_reason(settings, reason):
+    if isinstance(reason, NodeRebuildReason):
+        msg = reason.get_message(settings.brief)
+    else:
+        msg = str(reason)
+
     log_debug(msg)
 
 # ==============================================================================
 
 
-class NodeStaleReason (object):
+class NodeRebuildReason (Exception):
     __slots__ = (
-        'code',
-        'entity',
         'builder',
         'sources',
-        'targets',
     )
 
-    ACTUAL, \
-        NO_SIGNATURE, \
-        NEW, \
-        SIGNATURE_CHANGED, \
-        IMPLICIT_DEP_CHANGED, \
-        NO_TARGETS, \
-        TARGET_CHANGED, \
-        = range(7)
-
     # -----------------------------------------------------------
 
-    def __init__(self, builder, sources, targets):
-        self.builder = builder
-        self.sources = sources
-        self.targets = targets
-        self.code = self.ACTUAL
-        self.entity = None
-
-    # -----------------------------------------------------------
-
-    def _set(self, code, entity=None):
-        self.code = code
-        self.entity = entity
-
-        event_node_stale_reason(self)
-
-    # -----------------------------------------------------------
-
-    def set_no_signature(self, _no_signature=NO_SIGNATURE):
-        self._set(_no_signature)
-
-    def set_new(self, _new=NEW):
-        self._set(_new)
-
-    def set_signature_changed(self, _signature_changed=SIGNATURE_CHANGED):
-        self._set(_signature_changed)
-
-    def set_implicit_dep_changed(self,
-                                 entity=None,
-                                 _implicit_dep_changed=IMPLICIT_DEP_CHANGED):
-        self._set(_implicit_dep_changed, entity)
-
-    def set_no_targets(self, _no_targets=NO_TARGETS):
-        self._set(_no_targets)
-
-    def set_target_changed(self, entity, _target_changed=TARGET_CHANGED):
-        self._set(_target_changed, entity)
+    def __init__(self, node_entity):
+        self.builder = node_entity.builder
+        self.sources = node_entity.source_entities
 
     # -----------------------------------------------------------
 
     def get_node_name(self, brief):
-        return self.builder.get_trace(self.sources, self.targets, brief)
+        return self.builder.get_trace(self.sources, brief=brief)
 
     # -----------------------------------------------------------
 
-    def get_description(self, brief=True):
+    def __str__(self):
+        return self.get_message(False)
 
+    # -----------------------------------------------------------
+
+    def get_message(self, brief):
         node_name = self.get_node_name(brief)
-        code = self.code
+        description = self.get_description(brief)
+        return "%s\nRebuilding the node: %s" % (description, node_name)
 
-        if code == NodeStaleReason.NO_SIGNATURE:
-            msg = "Node`s is marked to rebuild always, " \
-                  "rebuilding the node: %s" % node_name
+    # -----------------------------------------------------------
 
-        elif code == NodeStaleReason.SIGNATURE_CHANGED:
-            msg = "Node`s signature has been changed " \
-                  "(sources, builder parameters or " \
-                  "dependencies were changed), " \
-                  "rebuilding the node: %s" % node_name
+    def get_description(self, brief):
+        return "Node's state is changed."
 
-        elif code == NodeStaleReason.NEW:
-            msg = "Node's previous state has not been found, " \
-                  "building the new node: %s" % node_name
+# ==============================================================================
 
-        elif code == NodeStaleReason.IMPLICIT_DEP_CHANGED:
-            dep = (" '%s'" % self.entity) if self.entity is not None else ""
-            msg = "Node's implicit dependency%s has changed, " \
-                  "rebuilding the node: %s" % (dep, node_name)
 
-        elif code == NodeStaleReason.NO_TARGETS:
-            msg = "Node's targets were not previously stored, " \
-                  "rebuilding the node: %s" % (node_name,)
+class NodeRebuildReasonAlways (NodeRebuildReason):
+    def get_description(self, brief):
+        return "Node is marked to rebuild always."
 
-        elif code == NodeStaleReason.TARGET_CHANGED:
-            msg = "Node's target '%s' has changed, rebuilding the node: %s" %\
-                  (self.entity, node_name)
 
-        else:
-            msg = "Node's state is outdated, rebuilding the node: %s" %\
-                  (node_name,)
+class NodeRebuildReasonNew (NodeRebuildReason):
+    def get_description(self, brief):
+        return "Node's previous state has not been found."
 
-        return msg
+
+class NodeRebuildReasonSignature (NodeRebuildReason):
+    def get_description(self, brief):
+        return "Node`s signature has been changed " \
+               "(sources, builder parameters or dependencies were changed)."
+
+
+class NodeRebuildReasonNoTargets (NodeRebuildReason):
+    def get_description(self, brief):
+        return "Unknown Node's targets."
+
+
+class NodeRebuildReasonImplicitDep (NodeRebuildReason):
+
+    __slots__ = (
+        'entity',
+    )
+
+    def __init__(self, node_entity, idep_entity=None):
+        super(NodeRebuildReasonImplicitDep, self).__init__(node_entity)
+        self.entity = idep_entity
+
+    def get_description(self, brief):
+        dep = (" '%s'" % self.entity) if self.entity is not None else ""
+        return "Node's implicit dependency%s has changed, " % (dep,)
+
+
+class NodeRebuildReasonTarget (NodeRebuildReason):
+
+    __slots__ = (
+        'entity',
+    )
+
+    def __init__(self, node_entity, target_entity):
+        super(NodeRebuildReasonTarget, self).__init__(node_entity)
+        self.entity = target_entity
+
+    def get_description(self, brief):
+        return "Node's target '%s' has changed." % (self.entity,)
 
 # ==============================================================================
 
@@ -316,19 +304,13 @@ class NodeEntity (EntityBase):
 
     _ACTUAL_IDEPS_CACHE = {}
 
-    @staticmethod
-    def _get_ideps(vfile,
-                   idep_keys,
-                   reason,
+    def _get_ideps(self, vfile, idep_keys,
                    ideps_cache_get=_ACTUAL_IDEPS_CACHE.__getitem__,
-                   ideps_cache_set=_ACTUAL_IDEPS_CACHE.__setitem__
-                   ):
+                   ideps_cache_set=_ACTUAL_IDEPS_CACHE.__setitem__):
 
         entities = vfile.find_entities_by_key(idep_keys)
         if entities is None:
-            if reason is not None:
-                reason.set_implicit_dep_changed()
-            return None
+            raise NodeRebuildReasonImplicitDep(self)
 
         for i, entity in enumerate(entities):
             entity_id = entity.id
@@ -342,22 +324,19 @@ class NodeEntity (EntityBase):
                 if entity is not actual_entity:
                     vfile.update_entity(actual_entity)
 
-                    if reason is not None:
-                        reason.set_implicit_dep_changed(entity)
-                    return None
+                    raise NodeRebuildReasonImplicitDep(self, entity)
 
         return entities
 
     # -----------------------------------------------------------
 
-    def _save_ideps(self,
-                    vfile,
-                    _actual_ideps_cache=_ACTUAL_IDEPS_CACHE):
+    def _save_ideps(self, vfile,
+                    _actual_ideps_cache_set=_ACTUAL_IDEPS_CACHE.setdefault):
 
         entities = []
         for entity in self.idep_entities:
             entity_id = entity.id
-            cached_entity = _actual_ideps_cache.setdefault(entity_id, entity)
+            cached_entity = _actual_ideps_cache_set(entity_id, entity)
 
             if cached_entity is entity:
                 if entity.signature is None:
@@ -372,71 +351,50 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    @staticmethod
-    def _check_targets(entities, reason):
+    def _check_targets(self, entities):
         if entities is None:
-            if reason is not None:
-                reason.set_no_targets()
-            return False
+            raise NodeRebuildReasonNoTargets(self)
 
         for entity in entities:
             if not entity.is_actual():
-                if reason is not None:
-                    reason.set_target_changed(entity)
-                return False
-
-        return True
-
-    # -----------------------------------------------------------
-
-    def reset_targets(self):
-        self.target_entities = []
-        self.itarget_entities = []
-        self.idep_entities = []
+                raise NodeRebuildReasonTarget(self, entity)
 
     # -----------------------------------------------------------
 
     def check_actual(self, vfile, explain):
 
-        if explain:
-            reason = NodeStaleReason(
-                self.builder, self.source_entities, self.target_entities)
-        else:
-            reason = None
+        self.target_entities = []
+        self.itarget_entities = []
+        self.idep_entities = []
 
-        self.reset_targets()
+        try:
+            previous = vfile.find_node_entity(self)
 
-        other = vfile.find_node_entity(self)
+            if previous is None:
+                raise NodeRebuildReasonNew(self)
 
-        if other is None:
-            if reason is not None:
-                reason.set_new()
-            return False
+            if not self.signature:
+                raise NodeRebuildReasonAlways(self)
 
-        if not self.signature:
-            if reason is not None:
-                reason.set_no_signature()
-            return False
+            if self.signature != previous.signature:
+                raise NodeRebuildReasonSignature(self)
 
-        if self.signature != other.signature:
-            if reason is not None:
-                reason.set_signature_changed()
-            return False
+            ideps = self._get_ideps(vfile, previous.idep_keys)
 
-        ideps = self._get_ideps(vfile, other.idep_keys, reason)
-        if ideps is None:
-            return False
+            target_entities = previous.target_entities
 
-        target_entities = other.target_entities
+            self._check_targets(target_entities)
 
-        if not self._check_targets(target_entities, reason):
-            return False
+            self.builder.check_actual(target_entities)
 
-        if not self.builder.is_actual(target_entities):
+        except Exception as reason:
+            if explain:
+                event_node_rebuild_reason(reason)
+
             return False
 
         self.target_entities = target_entities
-        self.itarget_entities = other.itarget_entities
+        self.itarget_entities = previous.itarget_entities
         self.idep_entities = ideps
 
         return True
@@ -1204,7 +1162,7 @@ class Node (object):
 
     # ==========================================================
 
-    def print_sources(self):
+    def print_sources(self):    # noqa
         result = []
         sources = self.sources
         if not sources:

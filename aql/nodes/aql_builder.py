@@ -401,15 +401,15 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def is_actual(self, target_entities):
+    def check_actual(self, target_entities):
         """
         Checks that target entities are up to date.
         It called only if all other checks were successful.
         It can't be used to check remote resources.
+        It should raise an exception if any target is not up to date.
         :param target_entities: Previous target entities
-        :return: True if is up to date otherwise False
         """
-        return True
+        pass
 
     # -----------------------------------------------------------
 
