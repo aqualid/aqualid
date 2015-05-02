@@ -187,7 +187,7 @@ class _TaskExecutor(threading.Thread):
         if task_result is not None:
             task_result.error = err
         else:
-            log_warning("Task failed with error: %s" % (err,))
+            log_warning("Task failed with error: %s", err)
 
         if self.stop_on_error:
             self.stop_event.set()

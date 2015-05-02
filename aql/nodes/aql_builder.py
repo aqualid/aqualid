@@ -43,7 +43,7 @@ __all__ = (
 def event_exec_cmd(settings, cmd, cwd, env):
     if settings.trace_exec:
         cmd = ' '.join(cmd)
-        log_debug("CWD: '%s', CMD: '%s'" % (cwd, cmd,))
+        log_debug("CWD: '%s', CMD: '%s'", cwd, cmd)
 
 # ==============================================================================
 

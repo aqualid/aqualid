@@ -35,7 +35,7 @@ __all__ = ('Tool', 'tool', 'tool_setup',
 
 @event_warning
 def event_tools_unable_load_module(settings, module, err):
-    log_warning("Unable to load module: %s, error: %s" % (module, err))
+    log_warning("Unable to load module: %s, error: %s", module, err)
 
 # ==============================================================================
 
@@ -51,8 +51,8 @@ def event_tools_tool_failed(settings, ex, tool_info):
 
     names = ','.join(tool_info.names)
 
-    log_error("Failed to initialize tool: name: %s, class: %s, file: %s" %
-              (names, tool_class.__name__, file))
+    log_error("Failed to initialize tool: name: %s, class: %s, file: %s",
+              names, tool_class.__name__, file)
     log_error(ex)
 
 # ==============================================================================

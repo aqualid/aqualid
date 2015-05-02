@@ -1195,10 +1195,10 @@ class Node (object):
 
         sources_str = ', '.join(map(str, result))
 
-        log_info("node '%s' sources: %s" % (self, sources_str))
+        log_info("node '%s' sources: %s", self, sources_str)
 
     # ==========================================================
 
     def print_targets(self):
         targets = [t.get() for t in getattr(self, 'target_entities', [])]
-        log_info("node '%s' targets: %s" % (self, targets))
+        log_info("node '%s' targets: %s", self, targets)
