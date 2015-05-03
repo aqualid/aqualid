@@ -69,7 +69,7 @@ class MsvcCompiler (CommonCppCompiler):
 
     def __init__(self, options):
         super(MsvcCompiler, self).__init__(options)
-        self.cmd += ['/nologo', '/c', '/show_includes']
+        self.cmd += ['/nologo', '/c', '/showIncludes']
 
     # -----------------------------------------------------------
 
