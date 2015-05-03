@@ -7,36 +7,11 @@ environment:
 
   matrix:
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.9"
-      PYTHON_ARCH: "32"
-
     - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.9"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python32"
-      PYTHON_VERSION: "3.2.5"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python32-x64"
-      PYTHON_VERSION: "3.2.6"
-      PYTHON_ARCH: "64"
-
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python33-x64"
     - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.3"
-      PYTHON_ARCH: "32"
-
     - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.3"
-      PYTHON_ARCH: "64"
-
-    #- PYTHON: "C:\\Python35"
-    #  PYTHON_VERSION: "3.5.0"
-    #  PYTHON_ARCH: "32"
-    #
-    #- PYTHON: "C:\\Python35-x64"
-    #  PYTHON_VERSION: "3.5.0"
-    #  PYTHON_ARCH: "64"
 
 install:
   - ECHO "Filesystem root:"
@@ -45,18 +20,22 @@ install:
   - ECHO "Installed SDKs:"
   - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
 
+  #- CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+
   # Install Python (from the official .msi of http://python.org) and pip when
   # not already installed.
-  - "powershell ./appveyor/install.ps1"
+  #- "powershell ./appveyor/install.ps1"
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;C:\MinGW\bin;%PATH%"
 
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+  - "gcc --version"
+  - "cl /?"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
@@ -68,7 +47,8 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  - "%CMD_IN_ENV% python tests\\aql_tests.py"
+  #- "%CMD_IN_ENV% python tests\\aql_tests.py"
+  - "python tests\\aql_tests.py"
 
 #after_test:
 #  # If tests are successful, create a whl package for the project.
