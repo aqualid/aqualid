@@ -45,14 +45,14 @@ def event_tools_tool_failed(settings, ex, tool_info):
     tool_class = tool_info.tool_class
     module = tool_class.__module__
     try:
-        file = sys.modules[module].__file__
+        filename = sys.modules[module].__file__
     except Exception:
-        file = module[module.rfind('.') + 1:] + '.py'
+        filename = module[module.rfind('.') + 1:] + '.py'
 
     names = ','.join(tool_info.names)
 
     log_error("Failed to initialize tool: name: %s, class: %s, file: %s",
-              names, tool_class.__name__, file)
+              names, tool_class.__name__, filename)
     log_error(ex)
 
 # ==============================================================================

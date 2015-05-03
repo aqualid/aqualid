@@ -863,7 +863,7 @@ class RangeOptionType (OptionType):
     __slots__ = (
         'min_value',
         'max_value',
-        'coerce',
+        'restrain',
     )
 
     def __init__(self,
@@ -872,7 +872,7 @@ class RangeOptionType (OptionType):
                  description=None,
                  group=None,
                  value_type=int,
-                 coerce=True,
+                 restrain=True,
                  default=NotImplemented,
                  is_tool_key=False,
                  is_hidden=False
@@ -884,13 +884,13 @@ class RangeOptionType (OptionType):
                                               is_tool_key=is_tool_key,
                                               is_hidden=is_hidden)
 
-        self.set_range(min_value, max_value, coerce)
+        self.set_range(min_value, max_value, restrain)
         if default is not NotImplemented:
             self.default = self(default)
 
     # -----------------------------------------------------------
 
-    def set_range(self, min_value, max_value, coerce=True):
+    def set_range(self, min_value, max_value, restrain=True):
 
         if min_value is not None:
             try:
@@ -911,8 +911,8 @@ class RangeOptionType (OptionType):
         self.min_value = min_value
         self.max_value = max_value
 
-        if coerce is not None:
-            self.coerce = coerce
+        if restrain is not None:
+            self.restrain = restrain
 
     # -----------------------------------------------------------
 
@@ -928,7 +928,7 @@ class RangeOptionType (OptionType):
             value = self.value_type(value)
 
             if value < min_value:
-                if self.coerce:
+                if self.restrain:
                     value = min_value
                 else:
                     raise TypeError()
@@ -936,7 +936,7 @@ class RangeOptionType (OptionType):
             max_value = self.max_value
 
             if value > max_value:
-                if self.coerce:
+                if self.restrain:
                     value = max_value
                 else:
                     raise TypeError()

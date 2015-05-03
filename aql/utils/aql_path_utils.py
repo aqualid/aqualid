@@ -83,10 +83,10 @@ def exclude_files_from_dirs(files, dirs):
     folders = tuple(os.path.normcase(
         os.path.abspath(folder)) + os.path.sep for folder in to_sequence(dirs))
 
-    for file in to_sequence(files):
-        file = os.path.normcase(os.path.abspath(file))
-        if not file.startswith(folders):
-            result.append(file)
+    for filename in to_sequence(files):
+        filename = os.path.normcase(os.path.abspath(filename))
+        if not filename.startswith(folders):
+            result.append(filename)
 
     return result
 
@@ -102,8 +102,8 @@ def _masks_to_match(masks, _null_match=lambda name: False):
 
     re_list = []
     for mask in to_sequence(masks):
-        re_list.append(
-            "(%s)" % fnmatch.translate(os.path.normcase(mask).strip()))
+        mask = os.path.normcase(mask).strip()
+        re_list.append("(%s)" % fnmatch.translate(mask))
 
     re_str = '|'.join(re_list)
 
