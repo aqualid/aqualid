@@ -194,7 +194,7 @@ class TestOptionTypes(AqlTestCase):
     # ==============================================================================
 
     def test_range_option(self):
-        warn_level = RangeOptionType(min_value=0, max_value=5, coerce=False,
+        warn_level = RangeOptionType(min_value=0, max_value=5, restrain=False,
                                      description='Warning level',
                                      group="Diagnostics")
 
@@ -205,7 +205,7 @@ class TestOptionTypes(AqlTestCase):
         self.assertRaises(ErrorOptionTypeUnableConvertValue, warn_level, 10)
         self.assertRaises(ErrorOptionTypeUnableConvertValue, warn_level, -1)
 
-        warn_level = RangeOptionType(min_value=0, max_value=5, coerce=True,
+        warn_level = RangeOptionType(min_value=0, max_value=5, restrain=True,
                                      description='Warning level',
                                      group="Diagnostics")
 
@@ -219,11 +219,11 @@ class TestOptionTypes(AqlTestCase):
         self.assertEqual(warn_level.help_range(), ['0 ... 5'])
         self.assertEqual(warn_level.range(), [0, 5])
 
-        warn_level.set_range(min_value=None, max_value=None, coerce=False)
+        warn_level.set_range(min_value=None, max_value=None, restrain=False)
         self.assertEqual(warn_level(0), 0)
         self.assertRaises(ErrorOptionTypeUnableConvertValue, warn_level, 1)
 
-        warn_level.set_range(min_value=None, max_value=None, coerce=True)
+        warn_level.set_range(min_value=None, max_value=None, restrain=True)
         self.assertEqual(warn_level(0), 0)
         self.assertEqual(warn_level(10), 0)
         self.assertEqual(warn_level(-10), 0)

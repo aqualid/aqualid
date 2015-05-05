@@ -76,244 +76,250 @@ class Dict (dict):
 # ==============================================================================
 
 
-def split_dict_type(dict_type, separators):
+class _SplitDictBase(object):
 
-    separator = separators[0]
-    other_separators = separators[1:]
+    # -----------------------------------------------------------
 
-    class SplitDict (dict_type):
+    @classmethod
+    def __to_items(cls, items_str):
 
-        # -----------------------------------------------------------
+        if not is_string(items_str):
+            return items_str
 
-        @staticmethod
-        def __to_items(items_str, sep=separator, other_seps=other_separators):
+        sep = cls._separator
+        for s in cls._other_separators:
+            items_str = items_str.replace(s, sep)
 
-            if not is_string(items_str):
-                return items_str
+        items = []
 
-            for s in other_seps:
-                items_str = items_str.replace(s, sep)
+        for v in filter(None, items_str.split(sep)):
+            key, _, value = v.partition('=')
+            items.append((key, value))
 
-            items = []
+        return items
 
-            for v in filter(None, items_str.split(sep)):
-                key, sep, value = v.partition('=')
-                items.append((key, value))
+    # -----------------------------------------------------------
 
+    @classmethod
+    def __to_split_dict(cls, items):
+        if isinstance(items, cls):
             return items
 
-        # -----------------------------------------------------------
+        return cls(cls.__to_items(items))
 
-        @staticmethod
-        def __to_split_dict(items):
-            if isinstance(items, SplitDict):
-                return items
+    # -----------------------------------------------------------
 
-            return SplitDict(items)
+    def __init__(self, items=None):
+        super(_SplitDictBase, self).__init__(self.__to_items(items))
 
-        # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-        def __init__(self, items=None):
-            super(SplitDict, self).__init__(self.__to_items(items))
+    def __iadd__(self, items):
+        return super(_SplitDictBase, self).__iadd__(self.__to_items(items))
 
-        # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-        def __iadd__(self, items):
-            return super(SplitDict, self).__iadd__(self.__to_items(items))
+    def update(self, other=None, **kwargs):
 
-        # -----------------------------------------------------------
+        other = self.__to_items(other)
 
-        def update(self, other=None, **kwargs):
+        super(_SplitDictBase, self).update(other)
 
-            other = self.__to_items(other)
+        items = self.__to_items(kwargs)
 
-            super(SplitDict, self).update(other)
+        super(_SplitDictBase, self).update(items)
 
-            items = self.__to_items(kwargs)
+    # -----------------------------------------------------------
 
-            super(SplitDict, self).update(items)
+    def __eq__(self, other):
+        return super(_SplitDictBase, self).__eq__(self.__to_split_dict(other))
 
-        # -----------------------------------------------------------
+    def __ne__(self, other):
+        return super(_SplitDictBase, self).__ne__(self.__to_split_dict(other))
 
-        def __eq__(self, other):
-            return super(SplitDict, self).__eq__(self.__to_split_dict(other))
+    def __lt__(self, other):
+        return super(_SplitDictBase, self).__lt__(self.__to_split_dict(other))
 
-        def __ne__(self, other):
-            return super(SplitDict, self).__ne__(self.__to_split_dict(other))
+    def __le__(self, other):
+        return super(_SplitDictBase, self).__le__(self.__to_split_dict(other))
 
-        def __lt__(self, other):
-            return super(SplitDict, self).__lt__(self.__to_split_dict(other))
+    def __gt__(self, other):
+        return super(_SplitDictBase, self).__gt__(self.__to_split_dict(other))
 
-        def __le__(self, other):
-            return super(SplitDict, self).__le__(self.__to_split_dict(other))
+    def __ge__(self, other):
+        return super(_SplitDictBase, self).__ge__(self.__to_split_dict(other))
 
-        def __gt__(self, other):
-            return super(SplitDict, self).__gt__(self.__to_split_dict(other))
+    # -----------------------------------------------------------
 
-        def __ge__(self, other):
-            return super(SplitDict, self).__ge__(self.__to_split_dict(other))
+    def __str__(self):
+        return self._separator.join(sorted("%s=%s" % (key, value)
+                                           for key, value in self.items()))
 
-        # -----------------------------------------------------------
+# ==============================================================================
 
-        def __str__(self):
-            return separator.join(
-                sorted("%s=%s" % (key, value) for key, value in self.items()))
 
-    # ==========================================================
+def split_dict_type(dict_type, separators):
+    attrs = dict(_separator=separators[0],
+                 _other_separators=separators[1:])
 
-    return SplitDict
+    return type('SplitDict', (_SplitDictBase, dict_type), attrs)
+
+# ==============================================================================
+
+
+class _ValueDictBase(object):
+    __VALUE_TYPES = {}
+
+    # -----------------------------------------------------------
+
+    @classmethod
+    def get_key_type(cls):
+        return cls._key_type
+
+    @classmethod
+    def get_value_type(cls):
+        return cls._default_value_type
+
+    # -----------------------------------------------------------
+
+    @classmethod
+    def _to_value(cls, key, value, val_types=__VALUE_TYPES):
+
+        val_type = cls._default_value_type
+
+        try:
+            if val_type is None:
+                val_type = val_types[key]
+            if isinstance(value, val_type):
+                return value
+            value = val_type(value)
+        except KeyError:
+            pass
+
+        cls.set_value_type(key, type(value))
+        return value
+
+    # -----------------------------------------------------------
+
+    @classmethod
+    def set_value_type(cls, key, value_type, value_types=__VALUE_TYPES):
+
+        default_type = cls._default_value_type
+
+        if default_type is None:
+
+            if value_type is list:
+                value_type = List
+
+            if value_type is dict:
+                value_type = Dict
+
+            value_types[key] = value_type
+
+    # -----------------------------------------------------------
+
+    @classmethod
+    def __to_items(cls, items):
+
+        if isinstance(items, _ValueDictBase):
+            return items
+
+        key_type = cls._key_type
+        to_value = cls._to_value
+
+        items_tmp = []
+
+        for key, value in Dict.to_items(items):
+            key = key_type(key)
+            value = to_value(key, value)
+            items_tmp.append((key, value))
+
+        return items_tmp
+
+    # -----------------------------------------------------------
+
+    @classmethod
+    def __to_value_dict(cls, items):
+        if isinstance(items, _ValueDictBase):
+            return items
+
+        return cls(items)
+
+    # -----------------------------------------------------------
+
+    def __init__(self, values=None):
+        super(_ValueDictBase, self).__init__(self.__to_items(values))
+
+    def __iadd__(self, values):
+        return super(_ValueDictBase, self).__iadd__(self.__to_items(values))
+
+    def get(self, key, default=None):
+        return super(_ValueDictBase, self).get(self._key_type(key), default)
+
+    def __getitem__(self, key):
+        return super(_ValueDictBase, self).__getitem__(self._key_type(key))
+
+    def __setitem__(self, key, value):
+        key = self._key_type(key)
+        value = self._to_value(key, value)
+        return super(_ValueDictBase, self).__setitem__(key, value)
+
+    def __delitem__(self, key):
+        return super(_ValueDictBase, self).__delitem__(self._key_type(key))
+
+    def pop(self, key, *args):
+        return super(_ValueDictBase, self).pop(self._key_type(key), *args)
+
+    # -----------------------------------------------------------
+
+    def setdefault(self, key, default):
+        key = self._key_type(key)
+        default = self._to_value(key, default)
+
+        return super(_ValueDictBase, self).setdefault(key, default)
+
+    # -----------------------------------------------------------
+
+    def update(self, other=None, **kwargs):
+
+        other = self.__to_items(other)
+
+        super(_ValueDictBase, self).update(other)
+
+        items = self.__to_items(kwargs)
+
+        super(_ValueDictBase, self).update(items)
+
+    # -----------------------------------------------------------
+
+    def __eq__(self, other):
+        return super(_ValueDictBase, self).__eq__(self.__to_value_dict(other))
+
+    def __ne__(self, other):
+        return super(_ValueDictBase, self).__ne__(self.__to_value_dict(other))
+
+    def __lt__(self, other):
+        return super(_ValueDictBase, self).__lt__(self.__to_value_dict(other))
+
+    def __le__(self, other):
+        return super(_ValueDictBase, self).__le__(self.__to_value_dict(other))
+
+    def __gt__(self, other):
+        return super(_ValueDictBase, self).__gt__(self.__to_value_dict(other))
+
+    def __ge__(self, other):
+        return super(_ValueDictBase, self).__ge__(self.__to_value_dict(other))
+
+    # -----------------------------------------------------------
+
+    def __contains__(self, key):
+        return super(_ValueDictBase, self).__contains__(self._key_type(key))
 
 # ==============================================================================
 
 
 def value_dict_type(dict_type, key_type, default_value_type=None):
+    attrs = dict(_key_type=key_type,
+                 _default_value_type=default_value_type)
 
-    class _ValueDict (dict_type):
-
-        __VALUE_TYPES = {}
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def get_key_type():
-            return key_type
-
-        @staticmethod
-        def get_value_type():
-            return default_value_type
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def _to_value(key, value,
-                      val_types=__VALUE_TYPES, val_type=default_value_type):
-            try:
-                if val_type is None:
-                    val_type = val_types[key]
-                if isinstance(value, val_type):
-                    return value
-                value = val_type(value)
-            except KeyError:
-                pass
-
-            _ValueDict.set_value_type(key, type(value))
-            return value
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def set_value_type(key, value_type,
-                           value_types=__VALUE_TYPES,
-                           default_type=default_value_type):
-
-            if default_type is None:
-
-                if value_type is list:
-                    value_type = List
-
-                if value_type is dict:
-                    value_type = Dict
-
-                value_types[key] = value_type
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def __to_items(items, _key_type=key_type):
-            if isinstance(items, _ValueDict):
-                return items
-
-            items_tmp = []
-
-            try:
-                for key, value in Dict.to_items(items):
-                    key = _key_type(key)
-                    value = _ValueDict._to_value(key, value)
-                    items_tmp.append((key, value))
-
-                return items_tmp
-            except ValueError:
-                raise
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def __to_value_dict(items):
-            if isinstance(items, _ValueDict):
-                return items
-
-            return _ValueDict(items)
-
-        # -----------------------------------------------------------
-
-        def __init__(self, values=None):
-            super(_ValueDict, self).__init__(self.__to_items(values))
-
-        def __iadd__(self, values):
-            return super(_ValueDict, self).__iadd__(self.__to_items(values))
-
-        def get(self, key, default=None):
-            return super(_ValueDict, self).get(key_type(key), default)
-
-        def __getitem__(self, key):
-            return super(_ValueDict, self).__getitem__(key_type(key))
-
-        def __setitem__(self, key, value):
-            key = key_type(key)
-            value = _ValueDict._to_value(key, value)
-            return super(_ValueDict, self).__setitem__(key, value)
-
-        def __delitem__(self, key):
-            return super(_ValueDict, self).__delitem__(key_type(key))
-
-        def pop(self, key, *args):
-            return super(_ValueDict, self).pop(key_type(key), *args)
-
-        # -----------------------------------------------------------
-
-        def setdefault(self, key, default):
-            key = key_type(key)
-            default = _ValueDict._to_value(key, default)
-
-            return super(_ValueDict, self).setdefault(key, default)
-
-        # -----------------------------------------------------------
-
-        def update(self, other=None, **kwargs):
-
-            other = self.__to_items(other)
-
-            super(_ValueDict, self).update(other)
-
-            items = self.__to_items(kwargs)
-
-            super(_ValueDict, self).update(items)
-
-        # -----------------------------------------------------------
-
-        def __eq__(self, other):
-            return super(_ValueDict, self).__eq__(self.__to_value_dict(other))
-
-        def __ne__(self, other):
-            return super(_ValueDict, self).__ne__(self.__to_value_dict(other))
-
-        def __lt__(self, other):
-            return super(_ValueDict, self).__lt__(self.__to_value_dict(other))
-
-        def __le__(self, other):
-            return super(_ValueDict, self).__le__(self.__to_value_dict(other))
-
-        def __gt__(self, other):
-            return super(_ValueDict, self).__gt__(self.__to_value_dict(other))
-
-        def __ge__(self, other):
-            return super(_ValueDict, self).__ge__(self.__to_value_dict(other))
-
-        # -----------------------------------------------------------
-
-        def __contains__(self, key):
-            return super(_ValueDict, self).__contains__(key_type(key))
-
-    # ==========================================================
-
-    return _ValueDict
+    return type('ValueDict', (_ValueDictBase, dict_type), attrs)

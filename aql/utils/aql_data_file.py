@@ -348,8 +348,8 @@ class DataFile (object):
 
         try:
             self.handle = _MmapFile(filename)
-        except Exception as e:
-            log_debug("mmap is not supported: %s" % (e,))
+        except Exception as ex:
+            log_debug("mmap is not supported: %s", ex)
             self.handle = _IOFile(filename)
 
         self._init_header(force)
@@ -709,8 +709,8 @@ class DataFile (object):
 
         remove_data_ids = frozenset(data_ids)
 
-        metas = sorted(
-            self.id2data.values(), key=operator.attrgetter('data_offset'))
+        metas = sorted(self.id2data.values(),
+                       key=operator.attrgetter('data_offset'))
 
         meta_shift = 0
         data_shift = 0
@@ -785,7 +785,7 @@ class DataFile (object):
 
     # -----------------------------------------------------------
 
-    def self_test(self):
+    def self_test(self):    # noqa
 
         if self.handle is None:
             return

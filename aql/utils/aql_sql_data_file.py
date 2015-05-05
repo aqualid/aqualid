@@ -33,31 +33,59 @@ __all__ = ('SqlDataFile', )
 
 class ErrorDataFileFormatInvalid(Exception):
 
-    def __init__(self):
-        msg = "Data file format is not valid."
+    def __init__(self, filename):
+        msg = "Invalid format of data file: %s" % (filename,)
         super(ErrorDataFileFormatInvalid, self).__init__(msg)
+
+
+class ErrorDataFileCorrupted(Exception):
+
+    def __init__(self, filename):
+        msg = "Corrupted format of data file: %s" % (filename,)
+        super(ErrorDataFileCorrupted, self).__init__(msg)
 
 # ==============================================================================
 
+
+def _bytes_to_blob_stub(value):
+    return value
+
+
+def _many_bytes_to_blob_stub(values):
+    return values
+
+
+def _blob_to_bytes_stub(value):
+    return value
+
+# ----------------------------------------------------------
+
+
+def _bytes_to_blob_buf(value):
+    return buffer(value)        # noqa
+
+
+def _many_bytes_to_blob_buf(values):
+    return map(buffer, values)  # noqa
+
+
+def _blob_to_bytes_buf(value):
+    return bytes(value)
+
+
 try:
-    def _bytes_to_blob(value, _buf=buffer):
-        return _buf(value)
-
-    def _many_bytes_to_blob(values, _buf=buffer):
-        return map(_buf, values)
-
-    def _blob_to_bytes(value):
-        return bytes(value)
-
+    buffer
 except NameError:
-    def _bytes_to_blob(value):
-        return value
+    _bytes_to_blob = _bytes_to_blob_stub
+    _many_bytes_to_blob = _many_bytes_to_blob_stub
+    _blob_to_bytes = _blob_to_bytes_stub
 
-    def _many_bytes_to_blob(values):
-        return values
+else:
+    _bytes_to_blob = _bytes_to_blob_buf
+    _many_bytes_to_blob = _many_bytes_to_blob_buf
+    _blob_to_bytes = _blob_to_bytes_buf
 
-    def _blob_to_bytes(value):
-        return value
+# ==============================================================================
 
 
 class SqlDataFile (object):
@@ -115,22 +143,16 @@ class SqlDataFile (object):
 
         try:
             conn = self._open_connection(filename)
-        except (sqlite3.DataError, sqlite3.IntegrityError):
+        except ErrorDataFileCorrupted:
             os.remove(filename)
-            try:
-                conn = self._open_connection(filename)
-            except Exception:
-                raise ErrorDataFileFormatInvalid()
+            conn = self._open_connection(filename)
 
-        except sqlite3.DatabaseError:
+        except ErrorDataFileFormatInvalid:
             if not force and not self._is_aql_db(filename):
-                raise ErrorDataFileFormatInvalid()
+                raise
 
             os.remove(filename)
-            try:
-                conn = self._open_connection(filename)
-            except Exception:
-                raise ErrorDataFileFormatInvalid()
+            conn = self._open_connection(filename)
 
         self._load_ids(conn)
 
@@ -177,13 +199,17 @@ class SqlDataFile (object):
                     "data BLOB NOT NULL"
                     ")")
 
-        except Exception:
+        except (sqlite3.DataError, sqlite3.IntegrityError):
             if conn is not None:
                 conn.close()
-            raise
+            raise ErrorDataFileCorrupted(filename)
+
+        except sqlite3.DatabaseError:
+            if conn is not None:
+                conn.close()
+            raise ErrorDataFileFormatInvalid(filename)
 
         conn.execute("PRAGMA synchronous=OFF")
-        conn.execute("PRAGMA mmap_size=10000000")
 
         return conn
 
@@ -258,7 +284,7 @@ class SqlDataFile (object):
 
     # -----------------------------------------------------------
 
-    def self_test(self, blob_to_bytes=_blob_to_bytes):
+    def self_test(self, blob_to_bytes=_blob_to_bytes):  # noqa
         if self.connection is None:
             if self.id2key:
                 raise AssertionError("id2key is not empty")

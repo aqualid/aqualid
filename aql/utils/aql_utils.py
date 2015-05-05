@@ -498,73 +498,80 @@ class ExecCommandResult(Exception):
         return self.failed()
 
 
+# ==============================================================================
+
 try:
     _MAX_CMD_LENGTH = os.sysconf('SC_ARG_MAX')
 except AttributeError:
-    _MAX_CMD_LENGTH = 32000  # 32768 default for windows
+    _MAX_CMD_LENGTH = 32000  # 32768 default for Windows
+
+
+def _gen_exec_cmd_file(cmd, file_flag, max_cmd_length=_MAX_CMD_LENGTH):
+    if not file_flag:
+        return cmd, None
+
+    cmd_length = sum(map(len, cmd)) + len(cmd) - 1
+    if cmd_length <= max_cmd_length:
+        return cmd, None
+
+    cmd_str = subprocess.list2cmdline(cmd[1:]).replace('\\', '\\\\')
+
+    cmd_file = tempfile.NamedTemporaryFile(mode='w+',
+                                           suffix='.args',
+                                           delete=False)
+
+    with cmd_file:
+        cmd_file.write(cmd_str)
+
+    cmd_file = cmd_file.name
+
+    cmd = [cmd[0], file_flag + cmd_file]
+    return cmd, cmd_file
 
 # ==============================================================================
 
 
-def execute_command(cmd,
-                    cwd=None,
-                    env=None,
-                    stdin=None,
-                    file_flag=None,
-                    max_cmd_length=_MAX_CMD_LENGTH):
+def _exec_command_result(cmd, cwd, env, shell, stdin):
+    try:
+        if env:
+            env = dict((cast_str(key), cast_str(value))
+                       for key, value in env.items())
 
-    cmd_file = None
+        p = subprocess.Popen(cmd, cwd=cwd, env=env,
+                             shell=shell,
+                             stdin=stdin, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             universal_newlines=False)
+
+        stdout, stderr = p.communicate()
+        returncode = p.poll()
+
+    except Exception as ex:
+        raise ExecCommandException(cmd, exception=ex)
+
+    stdout = _decode_data(stdout)
+    stderr = _decode_data(stderr)
+
+    return ExecCommandResult(cmd, status=returncode,
+                             stdout=stdout, stderr=stderr)
+
+# ==============================================================================
+
+
+def execute_command(cmd, cwd=None, env=None, stdin=None, file_flag=None):
+
     if is_string(cmd):
         shell = True
+        cmd_file = None
     else:
         shell = False
-
-        for v in to_sequence(cmd):
-            if not is_string(v):
-                raise ErrorInvalidExecCommand(v)
-
-        if file_flag:
-            cmd_length = sum(map(len, cmd)) + len(cmd) - 1
-
-            if cmd_length > max_cmd_length:
-                args_str = subprocess.list2cmdline(
-                    cmd[1:]).replace('\\', '\\\\')
-
-                cmd_file = tempfile.NamedTemporaryFile(
-                    mode='w+', suffix='.args', delete=False)
-
-                cmd_file.write(args_str)
-                cmd_file.close()
-
-                cmd = [cmd[0], file_flag + cmd_file.name]
+        cmd, cmd_file = _gen_exec_cmd_file(cmd, file_flag)
 
     try:
-        try:
-            if env:
-                env = dict((cast_str(key), cast_str(value))
-                           for key, value in env.items())
-
-            p = subprocess.Popen(cmd, cwd=cwd, env=env, shell=shell,
-                                 stdin=stdin, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE,
-                                 universal_newlines=False)
-
-            stdout, stderr = p.communicate()
-            returncode = p.poll()
-
-        except Exception as ex:
-            raise ExecCommandException(cmd, exception=ex)
-
-        stdout = _decode_data(stdout)
-        stderr = _decode_data(stderr)
-
-        return ExecCommandResult(cmd, status=returncode,
-                                 stdout=stdout, stderr=stderr)
-
+        return _exec_command_result(cmd, cwd, env, shell, stdin)
     finally:
-        if cmd_file is not None:
-            cmd_file.close()
-            remove_files(cmd_file.name)
+        if cmd_file:
+            remove_files(cmd_file)
 
 # ==============================================================================
 

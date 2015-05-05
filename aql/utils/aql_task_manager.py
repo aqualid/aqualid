@@ -71,8 +71,12 @@ class _Task(object):
     )
 
     def __init__(self, priority, task_id, func, args, kw):
-        self.priority, self.task_id, self.func, self.args, self.kw =\
-            priority, task_id, func, args, kw
+
+        self.priority = priority
+        self.task_id = task_id
+        self.func = func
+        self.args = args
+        self.kw = kw
 
     def __lt__(self, other):
         if isinstance(other, _StopTask):
@@ -146,8 +150,10 @@ class _TaskExecutor(threading.Thread):
 
             task_id = task.task_id
 
-            task_result = TaskResult(
-                task_id=task_id) if task_id is not None else None
+            if task_id is not None:
+                task_result = TaskResult(task_id=task_id)
+            else:
+                task_result = None
 
             try:
                 result = task()
@@ -160,27 +166,32 @@ class _TaskExecutor(threading.Thread):
                 break
 
             except (Exception, BaseException) as ex:
-                task_result.error = "Internal error"
-
-                if self.with_backtrace:
-                    err = traceback.format_exc()
-                else:
-                    err = str(ex)
-
-                if task_id is not None:
-                    task_result.error = err
-                else:
-                    log_warning("Task failed with error: %s" % (err,))
-
-                if self.stop_on_error:
-                    self.stop_event.set()
-                    break
+                self.fail_task(task_result, ex)
 
             finally:
                 if task_result is not None:
                     finished_tasks.put(task_result)
 
                 tasks.task_done()
+
+    # ==========================================================
+
+    def fail_task(self, task_result, ex):
+        task_result.error = "Internal error"
+
+        if self.with_backtrace:
+            err = traceback.format_exc()
+        else:
+            err = str(ex)
+
+        if task_result is not None:
+            task_result.error = err
+        else:
+            log_warning("Task failed with error: %s", err)
+
+        if self.stop_on_error:
+            self.stop_event.set()
+
 
 # ==============================================================================
 

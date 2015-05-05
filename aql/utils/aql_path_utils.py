@@ -83,10 +83,10 @@ def exclude_files_from_dirs(files, dirs):
     folders = tuple(os.path.normcase(
         os.path.abspath(folder)) + os.path.sep for folder in to_sequence(dirs))
 
-    for file in to_sequence(files):
-        file = os.path.normcase(os.path.abspath(file))
-        if not file.startswith(folders):
-            result.append(file)
+    for filename in to_sequence(files):
+        filename = os.path.normcase(os.path.abspath(filename))
+        if not filename.startswith(folders):
+            result.append(filename)
 
     return result
 
@@ -102,8 +102,8 @@ def _masks_to_match(masks, _null_match=lambda name: False):
 
     re_list = []
     for mask in to_sequence(masks):
-        re_list.append(
-            "(%s)" % fnmatch.translate(os.path.normcase(mask).strip()))
+        mask = os.path.normcase(mask).strip()
+        re_list.append("(%s)" % fnmatch.translate(mask))
 
     re_str = '|'.join(re_list)
 
@@ -183,9 +183,9 @@ def _get_env_path_ext(env, hint_prog=None,
         hint_ext = os.path.splitext(hint_prog)[1]
         return hint_ext,
 
-    path_exts = env.get('PATHEXT', None)
+    path_exts = env.get('PATHEXT')
     if path_exts is None:
-        path_exts = os.environ.get('PATHEXT', None)
+        path_exts = os.environ.get('PATHEXT')
 
     if is_string(path_exts):
         path_sep = ';' if is_cygwin else os.pathsep

@@ -747,54 +747,61 @@ class Options (object):
 
     # -----------------------------------------------------------
 
+    def __add_new_option(self, name, value):
+        self.clear_cache()
+
+        if isinstance(value, OptionType):
+            opt_value = OptionValue(value)
+
+        elif isinstance(value, OptionValueProxy):
+            if value.options is self:
+                if not value.from_parent:
+                    opt_value = value.option_value
+                else:
+                    opt_value = self.__copy_parent_option(value.option_value)
+
+            elif self._is_parent(value.options):
+                opt_value = self.__copy_parent_option(value.option_value)
+
+            else:
+                opt_value = value.option_value.copy()
+                opt_value.reset()
+                value = self._make_cond_value(value, op_set)
+                opt_value.append_value(value)
+
+        elif isinstance(value, OptionValue):
+            opt_value = value
+
+        else:
+            opt_value = OptionValue(auto_option_type(value))
+
+            value = self._make_cond_value(value, op_set)
+            opt_value.append_value(value)
+
+        self.__dict__['__opt_values'][name] = opt_value
+
+    # -----------------------------------------------------------
+
     def __set_value(self, name, value, operation_type=op_set):
 
         opt_value, from_parent = self._get_value(name, raise_ex=False)
 
         if opt_value is None:
-            self.clear_cache()
+            self.__add_new_option(name, value)
+            return
 
-            if isinstance(value, OptionType):
-                opt_value = OptionValue(value)
+        if isinstance(value, OptionType):
+            opt_value.option_type = value
+            return
 
-            elif isinstance(value, OptionValueProxy):
-                if value.options is self:
-                    if not value.from_parent:
-                        opt_value = value.option_value
-                    else:
-                        opt_value = self.__copy_parent_option(
-                            value.option_value)
-
-                elif self._is_parent(value.options):
-                    opt_value = self.__copy_parent_option(value.option_value)
-
-                else:
-                    opt_value = value.option_value.copy()
-                    opt_value.reset()
-                    value = self._make_cond_value(value, op_set)
-                    opt_value.append_value(value)
-
-            elif not isinstance(value, OptionValue):
-                opt_value = OptionValue(auto_option_type(value))
-
-                value = self._make_cond_value(value, op_set)
-                opt_value.append_value(value)
-
-            self.__dict__['__opt_values'][name] = opt_value
-
-        else:
-            if isinstance(value, OptionType):
-                opt_value.option_type = value
+        elif isinstance(value, OptionValueProxy):
+            if value.option_value is opt_value:
                 return
 
-            elif isinstance(value, OptionValueProxy):
-                if value.option_value is opt_value:
-                    return
+        elif value is opt_value:
+            return
 
-            elif value is opt_value:
-                return
-
-            self._append_value(opt_value, from_parent, value, operation_type)
+        self._append_value(opt_value, from_parent, value, operation_type)
 
     # -----------------------------------------------------------
 

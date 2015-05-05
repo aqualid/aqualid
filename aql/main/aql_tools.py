@@ -35,7 +35,7 @@ __all__ = ('Tool', 'tool', 'tool_setup',
 
 @event_warning
 def event_tools_unable_load_module(settings, module, err):
-    log_warning("Unable to load module: %s, error: %s" % (module, err))
+    log_warning("Unable to load module: %s, error: %s", module, err)
 
 # ==============================================================================
 
@@ -45,14 +45,14 @@ def event_tools_tool_failed(settings, ex, tool_info):
     tool_class = tool_info.tool_class
     module = tool_class.__module__
     try:
-        file = sys.modules[module].__file__
+        filename = sys.modules[module].__file__
     except Exception:
-        file = module[module.rfind('.') + 1:] + '.py'
+        filename = module[module.rfind('.') + 1:] + '.py'
 
     names = ','.join(tool_info.names)
 
-    log_error("Failed to initialize tool: name: %s, class: %s, file: %s" %
-              (names, tool_class.__name__, file))
+    log_error("Failed to initialize tool: name: %s, class: %s, file: %s",
+              names, tool_class.__name__, filename)
     log_error(ex)
 
 # ==============================================================================

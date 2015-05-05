@@ -427,181 +427,181 @@ class List (list):
 # ==============================================================================
 
 
+class _SplitListBase(object):
+
+    @classmethod
+    def __to_sequence(cls, values):
+        if not is_string(values):
+            return values
+
+        sep = cls._separator
+
+        for s in cls._other_separators:
+            values = values.replace(s, sep)
+
+        return filter(None, values.split(sep))
+
+    # -----------------------------------------------------------
+
+    @classmethod
+    def __to_split_list(cls, values):
+        if isinstance(values, cls):
+            return values
+
+        return cls(values)
+
+    # -----------------------------------------------------------
+
+    def __init__(self, values=None):
+        super(_SplitListBase, self).__init__(self.__to_sequence(values))
+
+    # -----------------------------------------------------------
+
+    def __iadd__(self, values):
+        return super(_SplitListBase, self).__iadd__(self.__to_sequence(values))
+
+    # -----------------------------------------------------------
+
+    def __isub__(self, values):
+        return super(_SplitListBase, self).__isub__(self.__to_sequence(values))
+
+    # -----------------------------------------------------------
+
+    def extend(self, values):
+        super(_SplitListBase, self).extend(self.__to_sequence(values))
+
+    # -----------------------------------------------------------
+
+    def extend_front(self, values):
+        super(_SplitListBase, self).extend_front(self.__to_sequence(values))
+
+    # -----------------------------------------------------------
+
+    def __eq__(self, other):
+        return super(_SplitListBase, self).__eq__(self.__to_split_list(other))
+
+    def __ne__(self, other):
+        return super(_SplitListBase, self).__ne__(self.__to_split_list(other))
+
+    def __lt__(self, other):
+        return super(_SplitListBase, self).__lt__(self.__to_split_list(other))
+
+    def __le__(self, other):
+        return super(_SplitListBase, self).__le__(self.__to_split_list(other))
+
+    def __gt__(self, other):
+        return super(_SplitListBase, self).__gt__(self.__to_split_list(other))
+
+    def __ge__(self, other):
+        return super(_SplitListBase, self).__ge__(self.__to_split_list(other))
+
+    # -----------------------------------------------------------
+
+    def __str__(self):
+        return self._separator.join(map(cast_str, iter(self)))
+
+# ==============================================================================
+
+
 def split_list_type(list_type, separators):
+    attrs = dict(_separator=separators[0],
+                 _other_separators=separators[1:])
 
-    separator = separators[0]
-    other_separators = separators[1:]
+    return type('SplitList', (_SplitListBase, list_type), attrs)
 
-    class SplitList (list_type):
+# ==============================================================================
 
-        # -----------------------------------------------------------
 
-        # noinspection PyShadowingNames
-        @staticmethod
-        def __to_sequence(values):
-            if not is_string(values):
-                return values
+class _ValueListBase(object):
 
-            for sep in other_separators:
-                values = values.replace(sep, separator)
+    @classmethod
+    def __to_sequence(cls, values):
+        if isinstance(values, cls):
+            return values
 
-            return filter(None, values.split(separator))
+        return map(cls._value_type, to_sequence(values))
 
-        # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-        @staticmethod
-        def __to_split_list(values):
-            if isinstance(values, SplitList):
-                return values
+    @classmethod
+    def __to_value_list(cls, values):
+        if isinstance(values, cls):
+            return values
 
-            return SplitList(values)
+        return cls(values)
 
-        # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
-        def __init__(self, values=None):
-            super(SplitList, self).__init__(self.__to_sequence(values))
+    def __init__(self, values=None):
+        super(_ValueListBase, self).__init__(self.__to_sequence(values))
 
-        # -----------------------------------------------------------
+    def __iadd__(self, values):
+        return super(_ValueListBase, self).__iadd__(
+            self.__to_value_list(values))
 
-        def __iadd__(self, values):
-            return super(SplitList, self).__iadd__(self.__to_sequence(values))
+    def __isub__(self, values):
+        return super(_ValueListBase, self).__isub__(
+            self.__to_value_list(values))
 
-        # -----------------------------------------------------------
+    def extend(self, values):
+        super(_ValueListBase, self).extend(self.__to_value_list(values))
 
-        def __isub__(self, values):
-            return super(SplitList, self).__isub__(self.__to_sequence(values))
+    def extend_front(self, values):
+        super(_ValueListBase, self).extend_front(self.__to_value_list(values))
 
-        # -----------------------------------------------------------
+    def append(self, value):
+        super(_ValueListBase, self).append(self._value_type(value))
 
-        def extend(self, values):
-            super(SplitList, self).extend(self.__to_sequence(values))
+    def count(self, value):
+        return super(_ValueListBase, self).count(self._value_type(value))
 
-        # -----------------------------------------------------------
+    def index(self, value, i=0, j=-1):
+        return super(_ValueListBase, self).index(self._value_type(value), i, j)
 
-        def extend_front(self, values):
-            super(SplitList, self).extend_front(self.__to_sequence(values))
+    def insert(self, i, value):
+        return super(_ValueListBase, self).insert(i, self._value_type(value))
 
-        # -----------------------------------------------------------
+    def remove(self, value):
+        return super(_ValueListBase, self).remove(self._value_type(value))
 
-        def __eq__(self, other):
-            return super(SplitList, self).__eq__(self.__to_split_list(other))
+    def __setitem__(self, index, value):
+        if type(index) is slice:
+            value = self.__to_value_list(value)
+        else:
+            value = self._value_type(value)
 
-        def __ne__(self, other):
-            return super(SplitList, self).__ne__(self.__to_split_list(other))
+        return super(_ValueListBase, self).__setitem__(index, value)
 
-        def __lt__(self, other):
-            return super(SplitList, self).__lt__(self.__to_split_list(other))
+    # -----------------------------------------------------------
 
-        def __le__(self, other):
-            return super(SplitList, self).__le__(self.__to_split_list(other))
+    def __eq__(self, other):
+        return super(_ValueListBase, self).__eq__(self.__to_value_list(other))
 
-        def __gt__(self, other):
-            return super(SplitList, self).__gt__(self.__to_split_list(other))
+    def __ne__(self, other):
+        return super(_ValueListBase, self).__ne__(self.__to_value_list(other))
 
-        def __ge__(self, other):
-            return super(SplitList, self).__ge__(self.__to_split_list(other))
+    def __lt__(self, other):
+        return super(_ValueListBase, self).__lt__(self.__to_value_list(other))
 
-        # -----------------------------------------------------------
+    def __le__(self, other):
+        return super(_ValueListBase, self).__le__(self.__to_value_list(other))
 
-        def __str__(self):
-            return separator.join(map(cast_str, iter(self)))
+    def __gt__(self, other):
+        return super(_ValueListBase, self).__gt__(self.__to_value_list(other))
 
-    # ==========================================================
+    def __ge__(self, other):
+        return super(_ValueListBase, self).__ge__(self.__to_value_list(other))
 
-    return SplitList
+    # -----------------------------------------------------------
+
+    def __contains__(self, other):
+        value = self._value_type(other)
+        return super(_ValueListBase, self).__contains__(value)
 
 # ==============================================================================
 
 
 def value_list_type(list_type, value_type):
+    attrs = dict(_value_type=value_type)
 
-    class _ValueList (list_type):
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def __to_sequence(values):
-            if isinstance(values, _ValueList):
-                return values
-
-            return map(value_type, to_sequence(values))
-
-        # -----------------------------------------------------------
-
-        @staticmethod
-        def __to_value_list(values):
-            if isinstance(values, _ValueList):
-                return values
-
-            return _ValueList(values)
-
-        # -----------------------------------------------------------
-
-        def __init__(self, values=None):
-            super(_ValueList, self).__init__(self.__to_sequence(values))
-
-        def __iadd__(self, values):
-            return super(_ValueList, self).__iadd__(
-                self.__to_value_list(values))
-
-        def __isub__(self, values):
-            return super(_ValueList, self).__isub__(
-                self.__to_value_list(values))
-
-        def extend(self, values):
-            super(_ValueList, self).extend(self.__to_value_list(values))
-
-        def extend_front(self, values):
-            super(_ValueList, self).extend_front(self.__to_value_list(values))
-
-        def append(self, value):
-            super(_ValueList, self).append(value_type(value))
-
-        def count(self, value):
-            return super(_ValueList, self).count(value_type(value))
-
-        def index(self, value, i=0, j=-1):
-            return super(_ValueList, self).index(value_type(value), i, j)
-
-        def insert(self, i, value):
-            return super(_ValueList, self).insert(i, value_type(value))
-
-        def remove(self, value):
-            return super(_ValueList, self).remove(value_type(value))
-
-        def __setitem__(self, index, value):
-            if type(index) is slice:
-                value = self.__to_value_list(value)
-            else:
-                value = value_type(value)
-
-            return super(_ValueList, self).__setitem__(index, value)
-
-        # -----------------------------------------------------------
-
-        def __eq__(self, other):
-            return super(_ValueList, self).__eq__(self.__to_value_list(other))
-
-        def __ne__(self, other):
-            return super(_ValueList, self).__ne__(self.__to_value_list(other))
-
-        def __lt__(self, other):
-            return super(_ValueList, self).__lt__(self.__to_value_list(other))
-
-        def __le__(self, other):
-            return super(_ValueList, self).__le__(self.__to_value_list(other))
-
-        def __gt__(self, other):
-            return super(_ValueList, self).__gt__(self.__to_value_list(other))
-
-        def __ge__(self, other):
-            return super(_ValueList, self).__ge__(self.__to_value_list(other))
-
-        # -----------------------------------------------------------
-
-        def __contains__(self, other):
-            return super(_ValueList, self).__contains__(value_type(other))
-
-    # ==========================================================
-
-    return _ValueList
+    return type('ValueList', (_ValueListBase, list_type), attrs)

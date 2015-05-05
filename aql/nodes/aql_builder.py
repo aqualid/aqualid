@@ -43,7 +43,7 @@ __all__ = (
 def event_exec_cmd(settings, cmd, cwd, env):
     if settings.trace_exec:
         cmd = ' '.join(cmd)
-        log_debug("CWD: '%s', CMD: '%s'" % (cwd, cmd,))
+        log_debug("CWD: '%s', CMD: '%s'", cwd, cmd)
 
 # ==============================================================================
 
@@ -156,6 +156,25 @@ def _make_build_paths(dirnames):
 # ==============================================================================
 
 
+def _split_filename_ext(filename, ext, replace_ext):
+    if ext:
+        if filename.endswith(ext):
+            return filename[:-len(ext)], ext
+
+        if not replace_ext:
+            return filename, ext
+
+    ext_pos = filename.rfind(os.path.extsep)
+    if ext_pos > 0:
+        if not ext:
+            ext = filename[ext_pos:]
+        filename = filename[:ext_pos]
+
+    return filename, ext
+
+# ==============================================================================
+
+
 def _split_file_name(file_path,
                      ext=None,
                      prefix=None,
@@ -167,20 +186,7 @@ def _split_file_name(file_path,
         file_path = file_path.get()
 
     dirname, filename = os.path.split(file_path)
-
-    if ext:
-        if filename.endswith(ext):
-            filename = filename[:-len(ext)]
-
-        elif replace_ext:
-            ext_pos = filename.rfind(os.path.extsep)
-            if ext_pos > 0:
-                filename = filename[:ext_pos]
-    else:
-        ext_pos = filename.rfind(os.path.extsep)
-        if ext_pos > 0:
-            ext = filename[ext_pos:]
-            filename = filename[:ext_pos]
+    filename, ext = _split_filename_ext(filename, ext, replace_ext)
 
     if prefix:
         filename = prefix + filename
@@ -205,9 +211,8 @@ def _split_file_names(file_paths,
     dirnames = []
     filenames = []
     for file_path in file_paths:
-        dirname, filename = _split_file_name(
-            file_path, ext=ext, prefix=prefix,
-            suffix=suffix, replace_ext=replace_ext)
+        dirname, filename = _split_file_name(file_path, ext, prefix, suffix,
+                                             replace_ext)
         dirnames.append(dirname)
         filenames.append(filename)
 
@@ -396,15 +401,15 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def is_actual(self, target_entities):
+    def check_actual(self, target_entities):
         """
         Checks that target entities are up to date.
         It called only if all other checks were successful.
         It can't be used to check remote resources.
+        It should raise an exception if any target is not up to date.
         :param target_entities: Previous target entities
-        :return: True if is up to date otherwise False
         """
-        return True
+        pass
 
     # -----------------------------------------------------------
 

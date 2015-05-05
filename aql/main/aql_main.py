@@ -48,7 +48,7 @@ def event_reading_scripts(settings):
 
 @event_status
 def event_reading_scripts_done(settings, elapsed):
-    log_info("Reading scripts finished (%s)" % elapsed)
+    log_info("Reading scripts finished (%s)", elapsed)
 
 
 @event_error
@@ -66,14 +66,14 @@ def event_building(settings):
 @event_status
 def event_building_done(settings, success, elapsed):
     status = "finished" if success else "failed"
-    log_info("Building targets %s (%s)" % (status, elapsed))
+    log_info("Building targets %s (%s)", status, elapsed)
 
 # ==============================================================================
 
 
 @event_status
 def event_build_summary(settings, elapsed):
-    log_info("Total time: %s" % elapsed)
+    log_info("Total time: %s", elapsed)
 
 # ==============================================================================
 
@@ -139,23 +139,24 @@ def _log_memory_top(snapshot, group_by='lineno', limit=30):
 
     top_stats = snapshot.statistics(group_by)
 
-    log_info("Top %s lines" % limit)
+    log_info("Top %s lines", limit)
     for index, stat in enumerate(top_stats[:limit], 1):
         frame = stat.traceback[0]
         # replace "/path/to/module/file.py" with "module/file.py"
         filename = os.sep.join(frame.filename.split(os.sep)[-2:])
-        log_info("#%s: %s:%s: %.1f KiB"
-                 % (index, filename, frame.lineno, stat.size / 1024))
+        log_info("#%s: %s:%s: %.1f KiB",
+                 index, filename, frame.lineno, stat.size / 1024)
+
         line = linecache.getline(frame.filename, frame.lineno).strip()
         if line:
-            log_info('    %s' % line)
+            log_info('    %s', line)
 
     other = top_stats[limit:]
     if other:
         size = sum(stat.size for stat in other)
-        log_info("%s other: %.1f KiB" % (len(other), size / 1024))
+        log_info("%s other: %.1f KiB", len(other), size / 1024)
     total = sum(stat.size for stat in top_stats)
-    log_info("Total allocated size: %.1f KiB" % (total / 1024))
+    log_info("Total allocated size: %.1f KiB", total / 1024)
 
 # ==============================================================================
 
@@ -169,8 +170,8 @@ def _print_memory_status():
 
     obj_mem_usage = sum(sys.getsizeof(obj) for obj in gc.get_objects())
 
-    log_info("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb" %
-             (num_objects, obj_mem_usage / 1024, mem_usage))
+    log_info("GC objects: %s, size: %.1f KiB, heap memory usage: %s Kb",
+             num_objects, obj_mem_usage / 1024, mem_usage)
 
 # ==============================================================================
 

@@ -144,8 +144,10 @@ class EventManager(object):
 
     def remove_user_handler(self, user_handlers):
 
-        for event, handlers in self.user_handlers.items():
-            for user_handler in to_sequence(user_handlers):
+        user_handlers = to_sequence(user_handlers)
+
+        for handlers in self.user_handlers.values():
+            for user_handler in user_handlers:
                 try:
                     handlers.remove(user_handler)
                 except ValueError:
@@ -179,7 +181,7 @@ class EventManager(object):
                 events.add(event_filter)
             else:
                 for event, pair in self.default_handlers.items():
-                    handler, level = pair
+                    level = pair[1]
                     if event_filter == level:
                         events.add(event)
 

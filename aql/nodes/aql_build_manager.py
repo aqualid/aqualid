@@ -37,8 +37,8 @@ __all__ = (
 
 @event_warning
 def event_build_target_twice(settings, entity, node1):
-    log_warning("Target '%s' is built twice. The last time built by: '%s' " %
-                (entity.name, node1.get_build_str(settings.brief)))
+    log_warning("Target '%s' is built twice. The last time built by: '%s' ",
+                entity.name, node1.get_build_str(settings.brief))
 
 # ==============================================================================
 
@@ -89,7 +89,7 @@ def event_node_building_failed(settings, node, error):
 def event_node_removed(settings, node, progress):
     msg = node.get_build_str(settings.brief)
     if msg:
-        log_info("(%s) Removed: %s" % (progress, msg))
+        log_info("(%s) Removed: %s", progress, msg)
 
 # ==============================================================================
 
@@ -603,7 +603,7 @@ class _NodeLocker(object):
 
     # -----------------------------------------------------------
 
-    def self_test(self):
+    def self_test(self):    # noqa
         for node, deps in self.node2deps.items():
             if node in deps:
                 raise AssertionError("Node depends from itself: %s" % (node,))
@@ -622,8 +622,8 @@ class _NodeLocker(object):
                         (dep, node))
 
                 if dep in self.unlocked_nodes:
-                    raise AssertionError(
-                        "Locked node %s is actually locked" % (dep,))
+                    raise AssertionError("Locked node %s is actually locked" %
+                                         (dep,))
 
         for node in self.unlocked_nodes:
             if node not in self.node2deps:
@@ -1094,9 +1094,9 @@ class BuildManager (object):
     # -----------------------------------------------------------
 
     def print_build_state(self):
-        log_info("Failed nodes: %s" % len(self._failed_nodes))
-        log_info("Completed nodes: %s" % self.completed)
-        log_info("Actual nodes: %s" % self.actual)
+        log_info("Failed nodes: %s", len(self._failed_nodes))
+        log_info("Completed nodes: %s", self.completed)
+        log_info("Actual nodes: %s", self.actual)
 
     # -----------------------------------------------------------
 

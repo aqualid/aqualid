@@ -29,7 +29,7 @@ except AttributeError:
     zip_longest = itertools.izip_longest
 
 from aql.util_types import String, u_str, is_string, to_string, IgnoreCaseString,\
-    Version, FilePath, AbsFilePath, to_sequence,\
+    Version, FilePath, AbsFilePath, to_sequence, is_sequence,\
     UniqueList, List, split_list_type, value_list_type,\
     Dict, split_dict_type, value_dict_type,\
     is_simple_value
@@ -104,21 +104,10 @@ class ErrorOptionTypeCantDeduce(Exception):
 
 def auto_option_type(value):
 
-    is_seq = False
-    unique = False
+    if is_sequence(value):
+        unique = isinstance(value, (UniqueList, set, frozenset))
 
-    if isinstance(value, (UniqueList, list, tuple)):
-        is_seq = True
-    elif isinstance(value, (UniqueList, set, frozenset)):
-        is_seq = True
-        unique = True
-
-    if is_seq:
-        value_type = str
-        try:
-            value_type = next(iter(value))
-        except StopIteration:
-            pass
+        value_type = type(next(iter(value), ''))
 
         opt_type = ListOptionType(value_type=value_type, unique=unique)
 
@@ -790,35 +779,44 @@ class EnumOptionType (OptionType):
 
     # -----------------------------------------------------------
 
-    def __call__(self, value=NotImplemented):
+    def _get_default(self):
+        value = self.default
+        if value is not NotImplemented:
+            return value
 
-        if value is NotImplemented:
-            value = self.default
-            if value is not NotImplemented:
-                return value
+        try:
+            return next(iter(self.__values.values()))
+        except StopIteration:
+            if self.strict:
+                raise ErrorOptionTypeNoEnumValues(self)
 
-            try:
-                value = next(iter(self.__values.values()))
-                return value
-            except StopIteration:
-                if self.strict:
-                    raise ErrorOptionTypeNoEnumValues(self)
-                else:
-                    return self.value_type()
+        return self.value_type()
+
+    # -----------------------------------------------------------
+
+    def _convert_value(self, value):
 
         try:
             value = self.value_type(value)
         except (TypeError, ValueError):
             raise ErrorOptionTypeUnableConvertValue(self, value)
 
-        result = self.__values.get(value, None)
-        if result is None:
+        try:
+            return self.__values[value]
+        except KeyError:
             if self.strict:
                 raise ErrorOptionTypeUnableConvertValue(self, value)
-            else:
-                return value
 
-        return result
+        return value
+
+    # -----------------------------------------------------------
+
+    def __call__(self, value=NotImplemented):
+
+        if value is NotImplemented:
+            return self._get_default()
+
+        return self._convert_value(value)
 
     # -----------------------------------------------------------
 
@@ -865,7 +863,7 @@ class RangeOptionType (OptionType):
     __slots__ = (
         'min_value',
         'max_value',
-        'coerce',
+        'restrain',
     )
 
     def __init__(self,
@@ -874,7 +872,7 @@ class RangeOptionType (OptionType):
                  description=None,
                  group=None,
                  value_type=int,
-                 coerce=True,
+                 restrain=True,
                  default=NotImplemented,
                  is_tool_key=False,
                  is_hidden=False
@@ -886,13 +884,13 @@ class RangeOptionType (OptionType):
                                               is_tool_key=is_tool_key,
                                               is_hidden=is_hidden)
 
-        self.set_range(min_value, max_value, coerce)
+        self.set_range(min_value, max_value, restrain)
         if default is not NotImplemented:
             self.default = self(default)
 
     # -----------------------------------------------------------
 
-    def set_range(self, min_value, max_value, coerce=True):
+    def set_range(self, min_value, max_value, restrain=True):
 
         if min_value is not None:
             try:
@@ -913,8 +911,8 @@ class RangeOptionType (OptionType):
         self.min_value = min_value
         self.max_value = max_value
 
-        if coerce is not None:
-            self.coerce = coerce
+        if restrain is not None:
+            self.restrain = restrain
 
     # -----------------------------------------------------------
 
@@ -930,7 +928,7 @@ class RangeOptionType (OptionType):
             value = self.value_type(value)
 
             if value < min_value:
-                if self.coerce:
+                if self.restrain:
                     value = min_value
                 else:
                     raise TypeError()
@@ -938,7 +936,7 @@ class RangeOptionType (OptionType):
             max_value = self.max_value
 
             if value > max_value:
-                if self.coerce:
+                if self.restrain:
                     value = max_value
                 else:
                     raise TypeError()

@@ -98,71 +98,194 @@ class GeneralFileLock (object):
             if ex.errno != errno.ENOENT:
                 raise
 
+
+# ==============================================================================
+# Unix implementation
+# ==============================================================================
+
+class UnixFileLock(object):
+    __slots__ = ('fd', 'filename')
+
+    def __init__(self, filename):
+        filename = os.path.normcase(os.path.abspath(filename))
+        self.filename = filename
+        self.fd = None
+
+    def __enter__(self):
+        return self
+
+    # noinspection PyUnusedLocal
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.release_lock()
+
+    def __open(self):
+
+        if self.fd is None:
+            self.fd = os.open(self.filename, os.O_CREAT | os.O_RDWR)
+
+    # -----------------------------------------------------------
+
+    def __close(self):
+        os.close(self.fd)
+        self.fd = None
+
+    def read_lock(self, wait=True, force=False):
+        self.__lock(write=False, wait=wait)
+        return self
+
+    def write_lock(self, wait=True, force=False):
+        self.__lock(write=True, wait=wait)
+        return self
+
+    def __lock(self, write, wait):
+
+        self.__open()
+
+        if write:
+            flags = fcntl.LOCK_EX
+        else:
+            flags = fcntl.LOCK_SH
+
+        if not wait:
+            flags |= fcntl.LOCK_NB
+
+        try:
+            fcntl.lockf(self.fd, flags)
+        except IOError as ex:
+            if ex.errno in (errno.EACCES, errno.EAGAIN):
+                raise ErrorFileLocked(self.filename)
+            raise
+
+    def release_lock(self):
+        fcntl.lockf(self.fd, fcntl.LOCK_UN)
+        self.__close()
+
+
+# ==============================================================================
+# Windows implementation
+# ==============================================================================
+
+
+class WindowsFileLock(object):
+    def __init_win_types(self):
+        self.LOCKFILE_FAIL_IMMEDIATELY = 0x1
+        self.LOCKFILE_EXCLUSIVE_LOCK = 0x2
+
+        # is 64 bit
+        if ctypes.sizeof(ctypes.c_ulong) != ctypes.sizeof(ctypes.c_void_p):
+            ulong_ptr = ctypes.c_int64
+        else:
+            ulong_ptr = ctypes.c_ulong
+
+        pvoid = ctypes.c_void_p
+        dword = ctypes.wintypes.DWORD
+        handle = ctypes.wintypes.HANDLE
+
+        class _Offset(ctypes.Structure):
+            _fields_ = [
+                ('Offset', dword),
+                ('OffsetHigh', dword)
+            ]
+
+        class _OffsetUnion(ctypes.Union):
+            _anonymous_ = ['_offset']
+
+            _fields_ = [
+                ('_offset', _Offset),
+                ('Pointer', pvoid)
+            ]
+
+        class OVERLAPPED(ctypes.Structure):
+            _anonymous_ = ['_offset_union']
+
+            _fields_ = [
+                ('Internal', ulong_ptr),
+                ('InternalHigh', ulong_ptr),
+                ('_offset_union', _OffsetUnion),
+                ('hEvent', handle)
+            ]
+
+        lpoverlapped = ctypes.POINTER(OVERLAPPED)
+
+        self.overlapped = OVERLAPPED()
+        self.poverlapped = lpoverlapped(self.overlapped)
+
+        self.LockFileEx = ctypes.windll.kernel32.LockFileEx
+        self.UnlockFileEx = ctypes.windll.kernel32.UnlockFileEx
+
+    # -----------------------------------------------------------
+
+    def __init__(self, filename):
+
+        self.__init_win_types()
+        filename = os.path.normcase(os.path.abspath(filename))
+        self.filename = filename
+        self.fd = None
+        self.handle = None
+
+    # -----------------------------------------------------------
+
+    def __enter__(self):
+        return self
+
+    # noinspection PyUnusedLocal
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.release_lock()
+
+    # -----------------------------------------------------------
+
+    def __open(self):
+
+        if self.fd is None:
+            lockfilename = self.filename + ".lock"
+            self.fd = os.open(
+                lockfilename, os.O_CREAT | os.O_RDWR | os.O_NOINHERIT)
+            self.handle = msvcrt.get_osfhandle(self.fd)
+
+    # -----------------------------------------------------------
+
+    def __close(self):
+        os.close(self.fd)
+        self.fd = None
+        self.handle = None
+
+    # -----------------------------------------------------------
+
+    def __lock(self, write, wait):
+        self.__open()
+
+        if write:
+            flags = self.LOCKFILE_EXCLUSIVE_LOCK
+        else:
+            flags = 0
+
+        if not wait:
+            flags |= self.LOCKFILE_FAIL_IMMEDIATELY
+
+        result = self.LockFileEx(
+            self.handle, flags, 0, 0, 4096, self.poverlapped)
+        if not result:
+            raise ErrorFileLocked(self.filename)
+
+    # -----------------------------------------------------------
+
+    def read_lock(self, wait=True, force=False):
+        self.__lock(write=False, wait=wait)
+        return self
+
+    def write_lock(self, wait=True, force=False):
+        self.__lock(write=True, wait=wait)
+        return self
+
+    def release_lock(self):
+        self.UnlockFileEx(self.handle, 0, 0, 4096, self.poverlapped)
+        self.__close()
+
+
+# ==============================================================================
+
 try:
-    # ==============================================================================
-    #   Unix implementation
-    # ==============================================================================
-
     import fcntl
-
-    class UnixFileLock (object):
-
-        __slots__ = ('fd', 'filename')
-
-        def __init__(self, filename):
-            filename = os.path.normcase(os.path.abspath(filename))
-            self.filename = filename
-            self.fd = None
-
-        def __enter__(self):
-            return self
-
-        # noinspection PyUnusedLocal
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.release_lock()
-
-        def __open(self):
-
-            if self.fd is None:
-                self.fd = os.open(self.filename, os.O_CREAT | os.O_RDWR)
-
-        # -----------------------------------------------------------
-
-        def __close(self):
-            os.close(self.fd)
-            self.fd = None
-
-        def read_lock(self, wait=True, force=False):
-            self.__lock(write=False, wait=wait)
-            return self
-
-        def write_lock(self, wait=True, force=False):
-            self.__lock(write=True, wait=wait)
-            return self
-
-        def __lock(self, write, wait):
-
-            self.__open()
-
-            if write:
-                flags = fcntl.LOCK_EX
-            else:
-                flags = fcntl.LOCK_SH
-
-            if not wait:
-                flags |= fcntl.LOCK_NB
-
-            try:
-                fcntl.lockf(self.fd, flags)
-            except IOError as ex:
-                if ex.errno in (errno.EACCES, errno.EAGAIN):
-                    raise ErrorFileLocked(self.filename)
-                raise
-
-        def release_lock(self):
-            fcntl.lockf(self.fd, fcntl.LOCK_UN)
-            self.__close()
-
     FileLock = UnixFileLock
 
 except ImportError:
@@ -170,124 +293,6 @@ except ImportError:
         import msvcrt
         import ctypes
         import ctypes.wintypes
-
-        class WindowsFileLock (object):
-
-            def __init_win_types(self):
-                self.LOCKFILE_FAIL_IMMEDIATELY = 0x1
-                self.LOCKFILE_EXCLUSIVE_LOCK = 0x2
-
-                # is 64 bit
-                if ctypes.sizeof(ctypes.c_ulong) !=\
-                   ctypes.sizeof(ctypes.c_void_p):
-
-                    ulong_ptr = ctypes.c_int64
-                else:
-                    ulong_ptr = ctypes.c_ulong
-
-                pvoid = ctypes.c_void_p
-                dword = ctypes.wintypes.DWORD
-                handle = ctypes.wintypes.HANDLE
-
-                class _Offset(ctypes.Structure):
-                    _fields_ = [
-                        ('Offset', dword),
-                        ('OffsetHigh', dword)
-                    ]
-
-                class _OffsetUnion(ctypes.Union):
-                    _anonymous_ = ['_offset']
-
-                    _fields_ = [
-                        ('_offset', _Offset),
-                        ('Pointer', pvoid)
-                    ]
-
-                class OVERLAPPED(ctypes.Structure):
-                    _anonymous_ = ['_offset_union']
-
-                    _fields_ = [
-                        ('Internal', ulong_ptr),
-                        ('InternalHigh', ulong_ptr),
-                        ('_offset_union', _OffsetUnion),
-                        ('hEvent', handle)
-                    ]
-
-                lpoverlapped = ctypes.POINTER(OVERLAPPED)
-
-                self.overlapped = OVERLAPPED()
-                self.poverlapped = lpoverlapped(self.overlapped)
-
-                self.LockFileEx = ctypes.windll.kernel32.LockFileEx
-                self.UnlockFileEx = ctypes.windll.kernel32.UnlockFileEx
-
-            # -----------------------------------------------------------
-
-            def __init__(self, filename):
-
-                self.__init_win_types()
-                filename = os.path.normcase(os.path.abspath(filename))
-                self.filename = filename
-                self.fd = None
-                self.handle = None
-
-            # -----------------------------------------------------------
-
-            def __enter__(self):
-                return self
-
-            # noinspection PyUnusedLocal
-            def __exit__(self, exc_type, exc_value, traceback):
-                self.release_lock()
-
-            # -----------------------------------------------------------
-
-            def __open(self):
-
-                if self.fd is None:
-                    lockfilename = self.filename + ".lock"
-                    self.fd = os.open(
-                        lockfilename, os.O_CREAT | os.O_RDWR | os.O_NOINHERIT)
-                    self.handle = msvcrt.get_osfhandle(self.fd)
-
-            # -----------------------------------------------------------
-
-            def __close(self):
-                os.close(self.fd)
-                self.fd = None
-                self.handle = None
-
-            # -----------------------------------------------------------
-
-            def __lock(self, write, wait):
-                self.__open()
-
-                if write:
-                    flags = self.LOCKFILE_EXCLUSIVE_LOCK
-                else:
-                    flags = 0
-
-                if not wait:
-                    flags |= self.LOCKFILE_FAIL_IMMEDIATELY
-
-                result = self.LockFileEx(
-                    self.handle, flags, 0, 0, 4096, self.poverlapped)
-                if not result:
-                    raise ErrorFileLocked(self.filename)
-
-            # -----------------------------------------------------------
-
-            def read_lock(self, wait=True, force=False):
-                self.__lock(write=False, wait=wait)
-                return self
-
-            def write_lock(self, wait=True, force=False):
-                self.__lock(write=True, wait=wait)
-                return self
-
-            def release_lock(self):
-                self.UnlockFileEx(self.handle, 0, 0, 4096, self.poverlapped)
-                self.__close()
 
         FileLock = WindowsFileLock
 
