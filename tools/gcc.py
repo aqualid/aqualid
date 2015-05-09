@@ -3,10 +3,10 @@ import re
 import itertools
 
 from aql import read_text_file, Tempfile, execute_command, StrOptionType,\
-    ListOptionType, PathOptionType, tool
-
-from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
+    ListOptionType, PathOptionType, tool, \
+    ToolCommonCpp, CommonCppCompiler, CommonCppArchiver, \
     CommonCppLinker, ToolCommonRes, CommonResCompiler
+
 
 # ==============================================================================
 #  BUILDERS IMPLEMENTATION
@@ -425,11 +425,11 @@ class ToolGccCommon(ToolCommonCpp):
         if_.exceptions.is_true().cxxflags += '-fexceptions'
         if_.exceptions.is_false().cxxflags += '-fno-exceptions'
 
-        if_windows.target_subsystem.eq(
-            'console').linkflags += '-Wl,--subsystem,console'
+        if_windows.target_subsystem.eq('console').linkflags +=\
+            '-Wl,--subsystem,console'
 
-        if_windows.target_subsystem.eq(
-            'windows').linkflags += '-Wl,--subsystem,windows'
+        if_windows.target_subsystem.eq('windows').linkflags +=\
+            '-Wl,--subsystem,windows'
 
         if_.debug_symbols.is_true().ccflags += '-g'
         if_.debug_symbols.is_false().linkflags += '-Wl,--strip-all'

@@ -15,7 +15,7 @@
 # from aql import tool_setup
 #
 # @tool_setup('g++', 'gxx', 'gcc')
-# def   setup_gcc( options ):
+# def   setup_gcc(cls, options):
 #   if options.cc_name.is_set_not_to( 'gcc' ):
 #     return
 #

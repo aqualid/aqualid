@@ -17,7 +17,7 @@
 # script=r"C:\Program Files (x86)\Microsoft Visual Studio 12\VC\vcvarsall.bat"
 #
 # @tool_setup('msvcpp','msvc++', 'msvc')
-# def   setup_msvc( options ):
+# def   setup_msvc(cls, options):
 #
 #   if options.cc_name.is_set_not_to('msvc'):
 #     return

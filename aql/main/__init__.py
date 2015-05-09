@@ -20,7 +20,6 @@
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from .aql_info import *
-from .aql_tools import *
-from .aql_builtin_tools import *
+from .aql_tools_manager import *
 from .aql_project import *
 from .aql_main import *

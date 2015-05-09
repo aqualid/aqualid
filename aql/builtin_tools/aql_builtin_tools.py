@@ -13,7 +13,7 @@ from aql.util_types import is_unicode, encode_str, decode_bytes,\
 from aql.utils import open_file
 from aql.entity import FileEntityBase
 from aql.nodes import Builder, FileBuilder
-from .aql_tools import Tool
+from .aql_tool import Tool
 
 __all__ = (
     "BuiltinTool",
