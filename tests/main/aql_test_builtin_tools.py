@@ -14,7 +14,7 @@ from aql.nodes import Node, BuildManager
 from aql.options import builtin_options
 
 from aql.main import Project, ProjectConfig
-from aql.builtin_tools.aql_builtin_tools import ExecuteCommandBuilder
+from aql.builtin_tools.aql_builder_exec_cmd import ExecuteCommandBuilder
 
 # ==============================================================================
 
