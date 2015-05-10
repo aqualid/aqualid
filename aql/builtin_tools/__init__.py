@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014-2015 The developers of Aqualid project
+# Copyright (c) 2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -19,28 +19,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-from .utils import *
-from .util_types import *
-from .entity import *
-from .options import *
-from .nodes import *
-from .builtin_tools import *
-from .main import *
-
-__all__ = (
-    'main',
-    'nodes',
-    'options',
-    'utils',
-    'entity',
-    'util_types',
-)
-
-if __debug__:
-    # A workaround for multiprocessing module
-    import sys
-    import os.path
-    _AQL_MODULE_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..'))
-    sys.path.append(_AQL_MODULE_DIR)
+from .aql_tool import *
+from .aql_builtin_tools import *
+from .aql_cpp_common import *

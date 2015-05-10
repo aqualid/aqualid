@@ -8,7 +8,7 @@ from aql_tests import AqlTestCase
 from tests_utils import run_local_tests
 
 from aql.utils import Tempdir, Tempfile
-from aql.main import Project, ProjectConfig, ErrorToolNotFound
+from aql.main import Project, ProjectConfig
 
 # ==============================================================================
 
@@ -34,11 +34,9 @@ class TestToolMsvc(AqlTestCase):
 
             prj = Project(cfg)
 
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
-            except ErrorToolNotFound:
+            tools_path = os.path.join(os.path.dirname(__file__), '../../tools')
+            cpp = prj.tools.try_tool('msvc++', tools_path=tools_path)
+            if cpp is None:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
@@ -78,11 +76,10 @@ class TestToolMsvc(AqlTestCase):
 
             prj = Project(cfg)
 
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
-            except ErrorToolNotFound:
+            tools_path = os.path.join(os.path.dirname(__file__),
+                                      '../../tools')
+            cpp = prj.tools.try_tool('msvc++', tools_path=tools_path)
+            if cpp is None:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
@@ -127,11 +124,9 @@ class TestToolMsvc(AqlTestCase):
 
             prj = Project(cfg)
 
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
-            except ErrorToolNotFound:
+            tools_path = os.path.join(os.path.dirname(__file__), '../../tools')
+            cpp = prj.tools.try_tool('msvc++', tools_path=tools_path)
+            if cpp is None:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
@@ -167,11 +162,9 @@ class TestToolMsvc(AqlTestCase):
 
             prj = Project(cfg)
 
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
-            except ErrorToolNotFound:
+            tools_path = os.path.join(os.path.dirname(__file__), '../../tools')
+            cpp = prj.tools.try_tool('msvc++', tools_path=tools_path)
+            if cpp is None:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
@@ -221,11 +214,9 @@ class TestToolMsvc(AqlTestCase):
 
             prj = Project(cfg)
 
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
-            except ErrorToolNotFound:
+            tools_path = os.path.join(os.path.dirname(__file__), '../../tools')
+            cpp = prj.tools.try_tool('msvc++', tools_path=tools_path)
+            if cpp is None:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
@@ -274,20 +265,16 @@ class TestToolMsvc(AqlTestCase):
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
             prj = Project(cfg)
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                cpp = prj.tools.get_tool('msvc++', tools_path=tools_path)
-            except ErrorToolNotFound:
+            tools_path = os.path.join(os.path.dirname(__file__), '../../tools')
+            cpp = prj.tools.try_tool('msvc++', tools_path=tools_path)
+            if cpp is None:
                 print("WARNING: MSVC tool has not been found. Skip the test.")
                 return
 
-            try:
-                tools_path = os.path.join(os.path.dirname(__file__),
-                                          '../../tools')
-                rc = prj.tools.get_tool('msrc', tools_path=tools_path)
-            except ErrorToolNotFound:
-                print("WARNING: MSVC tool has not been found. Skip the test.")
+            tools_path = os.path.join(os.path.dirname(__file__), '../../tools')
+            rc = prj.tools.try_tool('msrc', tools_path=tools_path)
+            if rc is None:
+                print("WARNING: MS RC tool has not been found. Skip the test.")
                 return
 
             cpp.Compile(src_files, batch_build=False)

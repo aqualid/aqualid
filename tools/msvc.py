@@ -1,9 +1,8 @@
 import os
 import re
 
-from aql import execute_command, ListOptionType, PathOptionType, tool
-
-from .cpp_common import ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
+from aql import execute_command, ListOptionType, PathOptionType, tool,\
+    ToolCommonCpp, CommonCppCompiler, CommonCppArchiver,\
     CommonCppLinker, ToolCommonRes, CommonResCompiler
 
 # ==============================================================================
@@ -314,8 +313,9 @@ class ToolMsvcCommon(ToolCommonCpp):
             raise NotImplementedError()
 
         cl = cls.find_program(options, 'cl')
-        link, lib, rc = cls.find_optional_programs(
-            options, ['link', 'lib', 'rc'], cl)
+        link, lib, rc = cls.find_optional_programs(options,
+                                                   ['link', 'lib', 'rc'],
+                                                   cl)
 
         specs = _get_msvc_specs(cl)
 

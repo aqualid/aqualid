@@ -24,11 +24,11 @@ import sys
 
 from aql.util_types import to_sequence
 from aql.utils import log_warning, log_error, load_module, load_package,\
-    expand_file_path, find_files, event_warning,\
-    find_program, find_programs, find_optional_program, find_optional_programs
+    expand_file_path, find_files, event_warning
 
-__all__ = ('Tool', 'tool', 'tool_setup',
-           'get_tools_manager', 'ErrorToolNotFound')
+from aql.builtin_tools import Tool
+
+__all__ = ('tool', 'tool_setup', 'get_tools_manager', 'ErrorToolNotFound')
 
 # ==============================================================================
 
@@ -58,7 +58,7 @@ def event_tools_tool_failed(settings, ex, tool_info):
 # ==============================================================================
 
 
-def _tool_setup_stub(options):
+def _tool_setup_stub(cls, options):
     pass
 
 # ==============================================================================
@@ -115,14 +115,16 @@ class ToolInfo(object):
         try:
             tool_options.merge(self.options)
 
-            setup(tool_options)
+            tool_class = self.tool_class
 
-            self.tool_class.setup(tool_options)
+            setup(tool_class, tool_options)
+
+            tool_class.setup(tool_options)
 
             if tool_options.has_changed_key_options():
                 raise NotImplementedError()
 
-            tool_obj = self.tool_class(tool_options)
+            tool_obj = tool_class(tool_options)
             return tool_obj, tool_options
 
         except NotImplementedError:
@@ -270,11 +272,11 @@ class ToolsManager(object):
         tool_info_list = self.__get_tool_info_list(tool_name)
 
         for tool_info in tool_info_list:
+            get_tool = tool_info.get_tool
             for setup in tool_info.setup_methods:
 
-                tool_obj, tool_options = tool_info.get_tool(options,
-                                                            setup,
-                                                            ignore_errors)
+                tool_obj, tool_options = get_tool(options, setup,
+                                                  ignore_errors)
                 if tool_obj is not None:
                     tool_names = self.tool_names.get(tool_info.tool_class, [])
                     return tool_obj, tool_names, tool_options
@@ -306,62 +308,3 @@ def tool_setup(*tool_names):
         return setup_method
 
     return _tool_setup
-
-# ==============================================================================
-
-
-class Tool(object):
-
-    def __init__(self, options):
-        pass
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def setup(cls, options):
-        pass
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def options(cls):
-        return None
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def find_program(cls, options, prog, hint_prog=None):
-        env = options.env.get()
-        prog = find_program(prog, env, hint_prog)
-
-        if prog is None:
-            raise NotImplementedError()
-
-        return prog
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def find_programs(cls, options, progs, hint_prog=None):
-        env = options.env.get()
-        progs = find_programs(progs, env, hint_prog)
-
-        for prog in progs:
-            if prog is None:
-                raise NotImplementedError()
-
-        return progs
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def find_optional_program(cls, options, prog, hint_prog=None):
-        env = options.env.get()
-        return find_optional_program(prog, env, hint_prog)
-
-    # -----------------------------------------------------------
-
-    @classmethod
-    def find_optional_programs(cls, options, progs, hint_prog=None):
-        env = options.env.get()
-        return find_optional_programs(progs, env, hint_prog)

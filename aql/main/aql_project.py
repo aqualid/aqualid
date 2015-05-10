@@ -40,9 +40,10 @@ from aql.options import builtin_options, Options, op_iupdate
 from aql.nodes import BuildManager, Node,\
     NodeFilter, NodeDirNameFilter, NodeBaseNameFilter
 
+from aql.builtin_tools import BuiltinTool
+
 from .aql_info import get_aql_info
-from .aql_tools import get_tools_manager
-from .aql_builtin_tools import BuiltinTool
+from .aql_tools_manager import get_tools_manager, ErrorToolNotFound
 
 __all__ = ('Project', 'ProjectConfig',
            'ErrorProjectBuilderMethodFewArguments',
@@ -620,6 +621,14 @@ class ProjectTools(object):
 
     # -----------------------------------------------------------
 
+    def try_tool(self, tool_name, **kw):
+        try:
+            return self.get_tools(tool_name, **kw)[0]
+        except ErrorToolNotFound:
+            return None
+
+    # -----------------------------------------------------------
+
     def add_tool(self, tool_class, tool_names=tuple()):
         self.tools.add_tool(tool_class, tool_names)
 
@@ -692,6 +701,7 @@ class Project(object):
             'options':          self.options,
             'tools':            self.tools,
             'Tool':             self.tools.get_tool,
+            'TryTool':          self.tools.try_tool,
             'Tools':            self.tools.get_tools,
             'AddTool':          self.tools.add_tool,
             'LoadTools':        self.tools.tools.load_tools,
@@ -1029,7 +1039,7 @@ class Project(object):
             is_built = (build_nodes is None) or nodes.issubset(build_nodes)
             targets.append((tuple(aliases), is_built, description))
 
-        # sorted list in format: [ (target_names, is_built, description), ... ]
+        # sorted list in format: [(target_names, is_built, description), ...]
         targets.sort(key=lambda names: names[0][0].lower())
 
         return _text_targets(targets)

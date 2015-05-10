@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014-2015 The developers of Aqualid project
+# Copyright (c) 2015 The developers of Aqualid project
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -19,28 +19,41 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import os
+import sys
 
-from .utils import *
-from .util_types import *
-from .entity import *
-from .options import *
-from .nodes import *
-from .builtin_tools import *
-from .main import *
+from aql.nodes import FileBuilder
 
-__all__ = (
-    'main',
-    'nodes',
-    'options',
-    'utils',
-    'entity',
-    'util_types',
-)
+# ==============================================================================
 
-if __debug__:
-    # A workaround for multiprocessing module
-    import sys
-    import os.path
-    _AQL_MODULE_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..'))
-    sys.path.append(_AQL_MODULE_DIR)
+
+class InstallDistBuilder (FileBuilder):
+
+    NAME_ATTRS = ('user',)
+
+    def __init__(self, options, user):
+
+        self.user = user
+
+    # -----------------------------------------------------------
+
+    def get_trace_name(self, source_entities, brief):
+        return "distutils install"
+
+    # -----------------------------------------------------------
+
+    def build(self, source_entities, targets):
+
+        script = source_entities[0].get()
+
+        cmd = [sys.executable, script, "install"]
+        if self.user:
+            cmd.append("--user")
+
+        script_dir = os.path.dirname(script)
+        out = self.exec_cmd(cmd, script_dir)
+
+        # TODO: Add parsing of setup.py output
+        # "copying <filepath> -> <detination dir>"
+
+        return out

@@ -9,7 +9,7 @@ from aql_tests import AqlTestCase
 from tests_utils import skip, run_local_tests
 
 from aql.utils import Tempdir
-from aql.main import Project, ProjectConfig, ErrorToolNotFound
+from aql.main import Project, ProjectConfig
 
 # ==============================================================================
 
@@ -34,12 +34,11 @@ class TestToolRsync(AqlTestCase):
 
                     prj = Project(cfg)
 
-                    try:
-                        tools_path = os.path.join(os.path.dirname(__file__),
-                                                  '../../tools')
-                        rsync = prj.tools.get_tool('rsync',
-                                                   tools_path=tools_path)
-                    except ErrorToolNotFound:
+                    tools_path = os.path.join(os.path.dirname(__file__),
+                                              '../../tools')
+                    rsync = prj.tools.get_tool('rsync',
+                                               tools_path=tools_path)
+                    if rsync is None:
                         print("WARNING: Rsync tool has not been found. "
                               "Skip the test.")
                         return
@@ -91,12 +90,11 @@ class TestToolRsync(AqlTestCase):
 
                     prj = Project(cfg)
 
-                    try:
-                        tools_path = os.path.join(os.path.dirname(__file__),
-                                                  '../../tools')
-                        rsync = prj.tools.get_tool('rsync',
-                                                   tools_path=tools_path)
-                    except ErrorToolNotFound:
+                    tools_path = os.path.join(os.path.dirname(__file__),
+                                              '../../tools')
+                    rsync = prj.tools.get_tool('rsync',
+                                               tools_path=tools_path)
+                    if rsync is None:
                         print("WARNING: Rsync tool has not been found. "
                               "Skip the test.")
                         return

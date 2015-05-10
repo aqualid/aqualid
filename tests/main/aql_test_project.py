@@ -10,7 +10,8 @@ from tests_utils import run_local_tests
 from aql.entity import SimpleEntity
 from aql.nodes import Builder
 from aql.utils import Tempfile, Tempdir, remove_user_handler, add_user_handler
-from aql.main import Project, ProjectConfig, Tool
+from aql.builtin_tools import Tool
+from aql.main import Project, ProjectConfig
 
 # ==============================================================================
 
