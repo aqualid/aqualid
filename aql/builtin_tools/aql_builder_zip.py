@@ -28,6 +28,7 @@ from aql.nodes import FileBuilder
 
 # ==============================================================================
 
+
 class ZipFilesBuilder (FileBuilder):
 
     NAME_ATTRS = ['target']
@@ -116,4 +117,3 @@ class ZipFilesBuilder (FileBuilder):
 
     def get_target_entities(self, source_entities):
         return self.target
-

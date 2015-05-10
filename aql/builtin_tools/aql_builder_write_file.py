@@ -68,4 +68,3 @@ class WriteFileBuilder (Builder):
 
     def get_target_entities(self, source_entities):
         return self.target
-

@@ -27,6 +27,7 @@ from aql.nodes import Builder
 
 # ==============================================================================
 
+
 class ExecuteCommandBuilder (Builder):
 
     NAME_ATTRS = ('targets', 'cwd')
@@ -97,4 +98,3 @@ class ExecuteCommandBuilder (Builder):
 
     def get_trace_sources(self, source_entities, brief):
         return source_entities[1:]
-

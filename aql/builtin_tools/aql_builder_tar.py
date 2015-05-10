@@ -30,6 +30,7 @@ from aql.nodes import FileBuilder
 
 # ==============================================================================
 
+
 class TarFilesBuilder (FileBuilder):
 
     NAME_ATTRS = ['target']
@@ -114,4 +115,3 @@ class TarFilesBuilder (FileBuilder):
 
     def get_target_entities(self, source_entities):
         return self.target
-

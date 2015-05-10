@@ -57,4 +57,3 @@ class InstallDistBuilder (FileBuilder):
         # "copying <filepath> -> <detination dir>"
 
         return out
-

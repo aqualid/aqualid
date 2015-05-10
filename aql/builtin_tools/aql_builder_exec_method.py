@@ -102,4 +102,3 @@ class ExecuteMethodBuilder (Builder):
                 return "%s(%s)" % (name, args)
 
         return name
-
