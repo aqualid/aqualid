@@ -28,7 +28,7 @@ from aql.utils import new_hash, event_status, log_debug, log_info
 from aql.entity import EntityBase, SimpleEntity, pickleable
 
 __all__ = (
-    'Node',
+    'Node', 'NodeEntity',
     'NodeFilter', 'NodeDirNameFilter', 'NodeBaseNameFilter',
 )
 

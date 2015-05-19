@@ -1,6 +1,5 @@
 .idea
-*.pyc
-*.pyo
+*.py[cod]
 *.prof
 **/__pycache__/
 **/output/
