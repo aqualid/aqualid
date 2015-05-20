@@ -24,7 +24,7 @@ import sys
 import os.path
 import unittest
 
-from tests_case import TestCaseSuite, TestCaseBase
+from .tests_case import TestCaseSuite, TestCaseBase
 
 __all__ = ('tests_suite', 'local_tests_suite', 'skip',
            'run_suite', 'run_tests', 'run_local_tests')
@@ -639,7 +639,7 @@ def run_suite(suite):
 
 def run_tests(suite_class=TestCaseSuite, options=None):
     if options is None:
-        from tests_options import TestsOptions
+        from .tests_options import TestsOptions
         options = TestsOptions.instance()
 
     suite = tests_suite(options.tests_dirs, options.test_modules_prefix,
@@ -658,7 +658,7 @@ def run_tests(suite_class=TestCaseSuite, options=None):
 
 def run_local_tests(suite_class=TestCaseSuite, options=None):
     if options is None:
-        from tests_options import TestsOptions
+        from .tests_options import TestsOptions
         options = TestsOptions.instance()
 
     suite = local_tests_suite(options.test_methods_prefix, options.run_tests,
