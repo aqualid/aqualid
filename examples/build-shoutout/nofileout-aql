@@ -1,2 +1,0 @@
-
-tools.Command( 'sh', './nofileout-run', File('input'), '--', cwd = '.' )

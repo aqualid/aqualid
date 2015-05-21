@@ -1,7 +1,0 @@
-cpp = tools.cpp
-
-Config('../../make.cfg', cpp.options)
-
-lib = cpp.LinkStaticLibrary( 'tool.cpp', api_cpppath = '.', target = 'tool' )
-
-Alias( 'lib', lib, "Build static library" )

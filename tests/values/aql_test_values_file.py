@@ -5,7 +5,7 @@ import operator
 sys.path.insert(
     0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
-from aql_tests import AqlTestCase
+from aql_testcase import AqlTestCase
 from tests_utils import skip, run_local_tests
 
 from aql.utils import Tempfile, Chrono

@@ -1,9 +1,0 @@
-cpp = Tool('c++')
-
-gen = cpp.Program( 'src/generator.cpp', target = 'gen_hpp' )
-
-rect_hpp = tools.Command( gen, target = 'rect.hpp' )
-
-test = cpp.Program( 'src/main.cpp', target = 'test', cpppath = DirName( rect_hpp ) )
-
-tools.Command( test )
