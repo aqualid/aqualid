@@ -1,13 +1,7 @@
-import sys
 import os
-import os.path
 import stat
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.utils import equal_function_args, check_function_args,\
     get_function_name, execute_command, flatten_list, group_items, Tempfile,\
@@ -213,7 +207,3 @@ class TestUtils(AqlTestCase):
         groups = group_items(items, wish_groups=1, max_group_size=2)
         self.assertEqual(groups, [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]])
 
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

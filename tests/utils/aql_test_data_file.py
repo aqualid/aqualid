@@ -1,14 +1,9 @@
-import os
-import sys
 import random
 import uuid
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
 
-from tests_utils import skip, run_local_tests
+from tests_utils import skip
 
 from aql.utils import Tempfile, Chrono
 from aql.utils import DataFile, SqlDataFile
@@ -286,8 +281,3 @@ class TestDataFile(AqlTestCase):
     def test_data_file_remove_sql(self):
         self._test_data_file_remove(SqlDataFile)
 
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

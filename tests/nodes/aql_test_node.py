@@ -1,15 +1,11 @@
-import sys
 import os.path
 import timeit
 import shutil
 import hashlib
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
 
-from tests_utils import skip, run_local_tests
+from tests_utils import skip
 
 from aql.util_types import to_sequence
 
@@ -509,7 +505,3 @@ class TestNodesSpeed (AqlTestCase):
                 except OSError:
                     pass
 
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

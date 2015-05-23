@@ -1,12 +1,6 @@
-import sys
-import os.path
 import time
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.utils import TaskManager, TaskResult
 
@@ -168,7 +162,3 @@ class TestTaskManager(AqlTestCase):
         self.assertEqual(done_tasks[3].task_id, 3)
         self.assertIsNotNone(done_tasks[3].error)
 
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

@@ -1,11 +1,7 @@
-import sys
 import os.path
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
-from tests_utils import skip, run_local_tests
+from tests_utils import skip
 
 from aql.util_types import UpperCaseString, FilePath
 
@@ -705,9 +701,3 @@ class TestOptions(AqlTestCase):
         options.build_variant = 'debug'
 
         print(options.debug_symbols)
-
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

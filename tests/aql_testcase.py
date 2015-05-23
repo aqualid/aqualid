@@ -1,6 +1,7 @@
 import os.path
 import pickle
 import shutil
+import random
 
 from tests_utils import TestCaseBase
 
@@ -74,8 +75,15 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def generate_file(tmp_dir, start, stop):
-        tmp = Tempfile(folder=tmp_dir)
+    def regenerate_file(filepath, size = 200):
+        with open(filepath, 'wb') as f:
+            f.write(bytearray(random.randint(0,255) for i in range(size)))
+
+    # ==============================================================================
+
+    @staticmethod
+    def generate_file(tmp_dir, start, stop, suffix='.tmp'):
+        tmp = Tempfile(folder=tmp_dir, suffix = suffix)
         tmp.write(bytearray(map(lambda v: v % 256, range(start, stop))))
 
         tmp.close()
@@ -101,7 +109,7 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def generate_source_files(tmp_dir, num, size):
+    def generate_source_files(tmp_dir, num, size, suffix='.tmp'):
 
         src_files = []
 
@@ -110,8 +118,10 @@ class AqlTestCase(TestCaseBase):
         try:
             while num > 0:
                 num -= 1
-                src_files.append(
-                    AqlTestCase.generate_file(tmp_dir, start, start + size))
+                src_files.append( AqlTestCase.generate_file(tmp_dir,
+                                                            start,
+                                                            start + size,
+                                                            suffix))
                 start += size
         except:
             AqlTestCase.remove_files(src_files)

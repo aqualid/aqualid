@@ -1,12 +1,6 @@
-import sys
 import time
-import os.path
-
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.utils import Tempfile
 from aql.entity.aql_file_entity import FileChecksumEntity, FileTimestampEntity
@@ -115,8 +109,3 @@ class TestFileValue(AqlTestCase):
 
         self._test_save_load(value1)
         self._test_save_load(value2)
-
-# ==========================================================
-
-if __name__ == "__main__":
-    run_local_tests()

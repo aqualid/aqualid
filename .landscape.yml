@@ -2,7 +2,5 @@ pep8:
     full: true
 
 ignore-paths:
-    - examples
     - make
     - tests
-    - test_utils

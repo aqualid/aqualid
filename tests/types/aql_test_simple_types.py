@@ -1,11 +1,4 @@
-import sys
-import os.path
-
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.util_types import IgnoreCaseString, LowerCaseString, UpperCaseString,\
     Version
@@ -112,7 +105,3 @@ class TestSimpleTypes(AqlTestCase):
         self.assertEqual(v, v1)
         self.assertEqual(Version('1.2.100.12.a'), v1)
 
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

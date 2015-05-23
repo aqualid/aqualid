@@ -1,11 +1,6 @@
-import sys
 import os.path
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.options import OptionType, BoolOptionType, EnumOptionType,\
     RangeOptionType, ListOptionType, DictOptionType, PathOptionType, \
@@ -370,7 +365,3 @@ class TestOptionTypes(AqlTestCase):
                                               '/usr/local/bin'])))
 
 
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

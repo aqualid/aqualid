@@ -1,11 +1,5 @@
-import sys
-import os.path
-
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
 
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.entity import SimpleEntity
 from aql.nodes import Builder
@@ -203,7 +197,3 @@ options.build_variant = "final"
             prj.build()
             self.assertEqual(self.built_nodes, 0)
 
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()
