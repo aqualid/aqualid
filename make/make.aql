@@ -15,14 +15,9 @@ from setup_settings import UNIX_SCRIPT_PATH, \
 
 # ==============================================================================
 
-options.ext_tools_path = aql.ListOptionType(aql.PathOptionType,
-                                            unique=True,
-                                            description="Paths to external tools")
-
-# ==============================================================================
 
 src_dir = os.path.abspath('../aql')
-tool_dir = options.ext_tools_path.get()     # should be specified via CLI
+tool_dir = GetProjectConfig().tools_path
 dist_dir = './install'
 
 SetBuildDir('output')

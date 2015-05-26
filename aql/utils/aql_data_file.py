@@ -702,7 +702,7 @@ class DataFile (object):
 
     # -----------------------------------------------------------
 
-    def remove(self, data_ids):
+    def remove(self, data_ids):     # noqa  TODO: refactor to compexity < 10
 
         move = self.handle.move
         meta_size = MetaData.size

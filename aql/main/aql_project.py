@@ -190,12 +190,17 @@ def _get_default_tools_path(info=get_aql_info()):
 # ==============================================================================
 
 
-def _read_config(config_file, cli_config, options, tools_path):
+def _read_config(config_file, cli_config, options):
+
+    tools_path = cli_config.tools_path
+    cli_config.tools_path = None
+
     cli_config.read_file(config_file, {'options': options})
 
     if cli_config.tools_path:
-        tools_path.extend(cli_config.tools_path)
-        cli_config.tools_path = None
+        tools_path.insert(0, cli_config.tools_path)
+
+    cli_config.tools_path = tools_path
 
 # ==============================================================================
 
@@ -204,7 +209,8 @@ class ProjectConfig(object):
 
     __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
                  'verbose', 'silent', 'no_output', 'jobs', 'keep_going',
-                 'search_up', 'tools_path', 'no_tool_errors',
+                 'search_up', 'default_tools_path', 'tools_path',
+                 'no_tool_errors',
                  'clean', 'list_options', 'list_tool_options',
                  'list_targets',
                  'debug_profile', 'debug_profile_top', 'debug_memory',
@@ -227,11 +233,11 @@ class ProjectConfig(object):
 
             CLIOption("-C", "--directory",  "directory",  FilePath, '',
                       "Change directory before reading the make files.",
-                      'FILE PATH'),
+                      'FILE PATH', cli_only=True),
 
             CLIOption("-f", "--makefile", "makefile", FilePath, 'make.aql',
                       "Path to a make file.",
-                      'FILE PATH'),
+                      'FILE PATH', cli_only=True),
 
             CLIOption("-l", "--list-options", "list_options", bool, False,
                       "List current options and exit."),
@@ -239,19 +245,21 @@ class ProjectConfig(object):
             CLIOption("-L", "--list-tool-options", "list_tool_options",
                       strings_type, [],
                       "List tool options and exit.",
-                      "TOOL_NAME"),
+                      "TOOL_NAME", cli_only=True),
 
             CLIOption("-t", "--list-targets", "list_targets", bool, False,
-                      "List all available targets and exit."),
+                      "List all available targets and exit.", cli_only=True),
 
             CLIOption("-c", "--config", "config", FilePath, None,
-                      "The configuration file used to read CLI arguments."),
+                      "The configuration file used to read CLI arguments.",
+                      cli_only=True),
 
             CLIOption("-R", "--clean", "clean", bool, False,
-                      "Cleans targets."),
+                      "Cleans targets.", cli_only=True),
 
             CLIOption("-u", "--up", "search_up", bool, False,
-                      "Search up directory tree for a make file."),
+                      "Search up directory tree for a make file.",
+                      cli_only=True),
 
             CLIOption("-e", "--no-tool-errors", "no_tool_errors", bool, False,
                       "Stop on any error during initialization of tools."),
@@ -298,13 +306,13 @@ class ProjectConfig(object):
                       bool, False, "Show call stack back traces for errors."),
 
             CLIOption(None, "--force-lock", "force_lock", bool, False,
-                      "Forces to lock AQL DB file."),
+                      "Forces to lock AQL DB file.", cli_only=True),
 
             CLIOption(None, "--use-sqlite",  "use_sqlite", bool, False,
                       "Use SQLite DB."),
 
             CLIOption("-V", "--version", "version", bool, False,
-                      "Show version and exit."),
+                      "Show version and exit.", cli_only=True),
         )
 
         cli_config = CLIConfig(cli_usage, cli_options, args)
@@ -312,30 +320,20 @@ class ProjectConfig(object):
         options = builtin_options()
 
         # -----------------------------------------------------------
-        # Add default tools path
+        # Add tools path
 
-        tools_path = _get_default_tools_path()
-        cli_tools_path = cli_config.tools_path
-        cli_config.tools_path = None
-
-        # -----------------------------------------------------------
         # Read a config file from user's home
 
         user_config = os.path.join(_get_user_config_dir(), 'default.cfg')
         if os.path.isfile(user_config):
-            _read_config(user_config, cli_config, options, tools_path)
+            _read_config(user_config, cli_config, options)
 
         # -----------------------------------------------------------
         # Read a config file specified from CLI
 
         config = cli_config.config
         if config:
-            _read_config(config, cli_config, options, tools_path)
-
-        # add user specified tools_path to the end of search path to override
-        # default tools
-        if cli_tools_path:
-            tools_path.extend(cli_tools_path)
+            _read_config(config, cli_config, options)
 
         # -----------------------------------------------------------
         # Apply non-cli arguments to options
@@ -358,7 +356,8 @@ class ProjectConfig(object):
         self.directory = os.path.abspath(cli_config.directory)
         self.makefile = cli_config.makefile
         self.search_up = cli_config.search_up
-        self.tools_path = tools_path
+        self.tools_path = cli_config.tools_path
+        self.default_tools_path = _get_default_tools_path()
         self.no_tool_errors = cli_config.no_tool_errors
         self.targets = cli_config.targets
         self.verbose = cli_config.verbose
@@ -525,7 +524,10 @@ class ProjectTools(object):
 
         tools = get_tools_manager()
 
-        tools.load_tools(self.project.config.tools_path)
+        config = self.project.config
+
+        tools.load_tools(config.default_tools_path)
+        tools.load_tools(config.tools_path)
 
         self.tools = tools
 
@@ -707,6 +709,7 @@ class Project(object):
             'LoadTools':        self.tools.tools.load_tools,
             'FindFiles':        find_files,
             'GetProject':       self.get_project,
+            'GetProjectConfig': self.get_project_config,
             'GetBuildTargets':  self.get_build_targets,
             'File':             self.make_file_entity,
             'Entity':           self.make_entity,
@@ -733,6 +736,11 @@ class Project(object):
 
     def get_project(self):
         return self
+
+    # -----------------------------------------------------------
+
+    def get_project_config(self):
+        return self.config
 
     # -----------------------------------------------------------
 

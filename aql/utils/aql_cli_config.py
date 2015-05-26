@@ -33,6 +33,7 @@ class CLIOption(object):
     __slots__ = (
         'cli_name',
         'cli_long_name',
+        'cli_only',
         'opt_name',
         'value_type',
         'default',
@@ -47,10 +48,12 @@ class CLIOption(object):
                  value_type,
                  default,
                  description,
-                 metavar=None):
+                 metavar=None,
+                 cli_only=False):
 
         self.cli_name = cli_name
         self.cli_long_name = cli_long_name
+        self.cli_only = cli_only
         self.opt_name = opt_name
         self.value_type = value_type
         self.default = None if default is None else value_type(default)
