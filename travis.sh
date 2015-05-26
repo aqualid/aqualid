@@ -7,6 +7,8 @@ python -c "import aql;import sys;sys.exit(aql.main())" -C make -L c++
 
 git clone --depth 1 https://github.com/aqualid/tools.git
 
+PYTHONPATH=$PWD python tools/tests/run.py
+
 python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $PWD/tools
 
 python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $PWD/tools --use-sqlite
