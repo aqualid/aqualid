@@ -206,4 +206,3 @@ class TestUtils(AqlTestCase):
 
         groups = group_items(items, wish_groups=1, max_group_size=2)
         self.assertEqual(groups, [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]])
-

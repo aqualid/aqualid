@@ -208,4 +208,3 @@ class TestOptionValue(AqlTestCase):
         opt_value.append_value(cond_value)
 
         self.assertEqual(opt_value.get({}, None), {3: 4})
-

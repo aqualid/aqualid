@@ -81,4 +81,3 @@ class TestValues(AqlTestCase):
         self.assertFalse(value1.is_actual())
 
         self._test_save_load(value1)
-

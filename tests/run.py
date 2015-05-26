@@ -14,4 +14,3 @@ if __name__ == '__main__':
     options.set_default('test_modules_prefix', 'aql_test_')
 
     run_tests(options=options)
-

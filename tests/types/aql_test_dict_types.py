@@ -75,4 +75,3 @@ class TestDictTypes(AqlTestCase):
         self.assertEqual(ds.setdefault(2, '0'), 1)
 
         self.assertEqual(ds[7], 8)
-

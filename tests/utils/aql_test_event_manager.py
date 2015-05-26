@@ -96,4 +96,3 @@ class TestEventManager(AqlTestCase):
                           em.add_user_handler,
                           test_user_event2,
                           'test_event2')
-

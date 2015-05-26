@@ -1,5 +1,6 @@
 
 from aql_testcase import AqlTestCase
+from tests_utils import run_local_tests
 
 from aql.entity import SimpleEntity
 from aql.nodes import Builder
@@ -122,6 +123,19 @@ options.build_variant = "final"
 
     # -----------------------------------------------------------
 
+    def test_prj_list_options(self):
+
+        with Tempdir() as tmp_dir:
+
+            cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir, "test", "run"])
+
+            prj = Project(cfg)
+            self.assertTrue(prj.list_options())
+            self.assertTrue(prj.list_options(brief=True))
+            self.assertFalse(prj.list_tools_options('c++'))
+
+    # -----------------------------------------------------------
+
     def test_prj_default_targets(self):
 
         with Tempdir() as tmp_dir:
@@ -197,3 +211,7 @@ options.build_variant = "final"
             prj.build()
             self.assertEqual(self.built_nodes, 0)
 
+# ==============================================================================
+
+if __name__ == "__main__":
+    run_local_tests()

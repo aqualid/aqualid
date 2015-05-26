@@ -10,6 +10,7 @@ from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
 
 # ==============================================================================
 
+
 class AqlTestCase(TestCaseBase):
 
     def event_node_building_finished(self, settings, node,
@@ -75,15 +76,15 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def regenerate_file(filepath, size = 200):
+    def regenerate_file(filepath, size=200):
         with open(filepath, 'wb') as f:
-            f.write(bytearray(random.randint(0,255) for i in range(size)))
+            f.write(bytearray(random.randint(0, 255) for i in range(size)))
 
     # ==============================================================================
 
     @staticmethod
     def generate_file(tmp_dir, start, stop, suffix='.tmp'):
-        tmp = Tempfile(folder=tmp_dir, suffix = suffix)
+        tmp = Tempfile(folder=tmp_dir, suffix=suffix)
         tmp.write(bytearray(map(lambda v: v % 256, range(start, stop))))
 
         tmp.close()
@@ -118,10 +119,10 @@ class AqlTestCase(TestCaseBase):
         try:
             while num > 0:
                 num -= 1
-                src_files.append( AqlTestCase.generate_file(tmp_dir,
-                                                            start,
-                                                            start + size,
-                                                            suffix))
+                src_file = AqlTestCase.generate_file(tmp_dir, start,
+                                                     start + size, suffix)
+
+                src_files.append(src_file)
                 start += size
         except:
             AqlTestCase.remove_files(src_files)

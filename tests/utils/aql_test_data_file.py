@@ -280,4 +280,3 @@ class TestDataFile(AqlTestCase):
 
     def test_data_file_remove_sql(self):
         self._test_data_file_remove(SqlDataFile)
-

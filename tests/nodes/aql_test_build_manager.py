@@ -992,4 +992,3 @@ class TestBuildManagerSpeed(AqlTestCase):
         bm.add([node])
 
         _generate_node_tree(bm, builder, node, 5000)
-

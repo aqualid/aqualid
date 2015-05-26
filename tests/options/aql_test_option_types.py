@@ -285,7 +285,7 @@ class TestOptionTypes(AqlTestCase):
 
     def test_list_option(self):
         opt1 = ListOptionType(
-            value_type=FilePath, description='Option 1', group="group1")
+            value_type=PathOptionType, description='Option 1', group="group1")
 
         self.assertEqual(opt1('abc'), 'abc')
         # self.assertEqual( opt1( '../abc/../123' ), '../123' )
@@ -363,5 +363,3 @@ class TestOptionTypes(AqlTestCase):
                                              ['/work/bin',
                                               '/usr/bin',
                                               '/usr/local/bin'])))
-
-

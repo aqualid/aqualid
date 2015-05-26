@@ -99,4 +99,3 @@ class TestTempFile(AqlTestCase):
                     mem.move(3, 1, 5)
                     buf = mem[0:10]
                     print("buf: %s" % (buf,))
-

@@ -334,4 +334,3 @@ class TestBuiltinTools(AqlTestCase):
                 prj.tools.CreateZip(
                     sources, value, target=zip_file, rename=rename)
                 self.build_prj(prj, 1)
-

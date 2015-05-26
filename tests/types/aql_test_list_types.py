@@ -183,4 +183,3 @@ class TestListTypes(AqlTestCase):
 
         l.extend([0, -1])
         self.assertEqual(l, [10, 12, 1, 4, 7, 8, 0, -1])
-

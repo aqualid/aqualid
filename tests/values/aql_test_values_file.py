@@ -227,4 +227,3 @@ class TestValuesFile(AqlTestCase):
     @skip
     def test_values_file_speed_sql(self):
         self._test_values_file_speed(use_sqlite=True)
-

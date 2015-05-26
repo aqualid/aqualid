@@ -440,7 +440,7 @@ class OptionType (object):
                  is_hidden=False
                  ):
 
-        if issubclass(value_type, OptionType):
+        if type(value_type) is type and issubclass(value_type, OptionType):
             value_type = value_type()
 
         self.value_type = value_type
@@ -977,6 +977,9 @@ class ListOptionType (OptionType):
                  is_hidden=False
                  ):
 
+        if type(value_type) is type and issubclass(value_type, OptionType):
+            value_type = value_type()
+
         if isinstance(value_type, OptionType):
             if description is None:
                 description = value_type.description
@@ -1057,6 +1060,9 @@ class DictOptionType (OptionType):
                  is_tool_key=False,
                  is_hidden=False
                  ):
+
+        if type(value_type) is type and issubclass(value_type, OptionType):
+            value_type = value_type()
 
         if isinstance(value_type, OptionType):
             if description is None:

@@ -77,4 +77,3 @@ class TestValuePickler(AqlTestCase):
 
         pl = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
         print("pl: %s" % len(pl))
-

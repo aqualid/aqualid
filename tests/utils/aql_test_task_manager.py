@@ -161,4 +161,3 @@ class TestTaskManager(AqlTestCase):
 
         self.assertEqual(done_tasks[3].task_id, 3)
         self.assertIsNotNone(done_tasks[3].error)
-

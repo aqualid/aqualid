@@ -100,4 +100,3 @@ targets="test1 test2 test3"
                           'quite': False, 'bv': 'release', 'size': 100}
 
             self.assertEqual(dict(config.items()), cli_values)
-

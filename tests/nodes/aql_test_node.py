@@ -504,4 +504,3 @@ class TestNodesSpeed (AqlTestCase):
                     os.remove(tmp_file)
                 except OSError:
                     pass
-
