@@ -10,7 +10,7 @@ Key features:
   - Distributed build scripts (no fixed project structure)
   - Support any build target types (files, strings, URLs, remote resources etc.)
   - Conditional options
-  - Scons like build scripts (but don't compatible)
+  - Scons like build scripts (but not compatible)
 
 [Introduction](https://github.com/aqualid/aqualid/wiki/Introduction)
 
