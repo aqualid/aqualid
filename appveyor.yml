@@ -18,4 +18,4 @@ install:
 build: off
 
 test_script:
-  - "python tests\\aql_tests.py"
+  - "python tests\\run.py"
