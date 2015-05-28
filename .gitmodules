@@ -1,3 +1,0 @@
-[submodule "tests/tests_utils"]
-	path = tests/tests_utils
-	url = https://github.com/aqualid/tests_utils.git
