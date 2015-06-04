@@ -5,7 +5,7 @@ coverage run --source=aql tests/run.py
 python -c "import aql;import sys;sys.exit(aql.main())" -C make -l
 python -c "import aql;import sys;sys.exit(aql.main())" -C make -L c++
 
-git clone --depth 1 --recursive https://github.com/aqualid/tools.git
+git clone --depth 1 https://github.com/aqualid/tools.git
 
 PYTHONPATH=$PWD python tools/tests/run.py
 
