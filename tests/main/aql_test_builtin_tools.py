@@ -254,7 +254,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 build_dir = os.path.join(tmp_dir, 'output')
 
-                source = self.generate_file(tmp_dir, 0, 200)
+                source = self.generate_file(tmp_dir, 200)
                 target = os.path.join(tmp_install_dir, 'copy_as_source.dat')
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
