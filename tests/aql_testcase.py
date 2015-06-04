@@ -83,9 +83,9 @@ class AqlTestCase(TestCaseBase):
     # ==============================================================================
 
     @staticmethod
-    def generate_file(tmp_dir, start, stop, suffix='.tmp'):
+    def generate_file(tmp_dir, size, suffix='.tmp'):
         tmp = Tempfile(folder=tmp_dir, suffix=suffix)
-        tmp.write(bytearray(map(lambda v: v % 256, range(start, stop))))
+        tmp.write(bytearray(random.randint(0, 255) for i in range(size)))
 
         tmp.close()
 
@@ -114,16 +114,11 @@ class AqlTestCase(TestCaseBase):
 
         src_files = []
 
-        start = 0
-
         try:
             while num > 0:
                 num -= 1
-                src_file = AqlTestCase.generate_file(tmp_dir, start,
-                                                     start + size, suffix)
-
+                src_file = AqlTestCase.generate_file(tmp_dir, size, suffix)
                 src_files.append(src_file)
-                start += size
         except:
             AqlTestCase.remove_files(src_files)
             raise
