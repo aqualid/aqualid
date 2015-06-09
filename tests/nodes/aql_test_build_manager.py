@@ -1,13 +1,9 @@
-import sys
 import os.path
 import time
 import threading
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
-from tests_utils import skip, run_local_tests
+from aql_testcase import AqlTestCase
+from tests_utils import skip
 
 from aql.util_types import encode_str
 from aql.utils import file_checksum, Tempdir, \
@@ -607,7 +603,7 @@ class TestBuildManager(AqlTestCase):
 
             # -----------------------------------------------------------
 
-            self.touch_cpp_file(src_files[0])
+            self.regenerate_file(src_files[0], )
 
             bm = BuildManager()
 
@@ -655,7 +651,7 @@ class TestBuildManager(AqlTestCase):
 
             # -----------------------------------------------------------
 
-            self.touch_cpp_file(src_files[0])
+            self.regenerate_file(src_files[0], 201)
 
             bm = BuildManager()
 
@@ -996,8 +992,3 @@ class TestBuildManagerSpeed(AqlTestCase):
         bm.add([node])
 
         _generate_node_tree(bm, builder, node, 5000)
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

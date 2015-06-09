@@ -1,12 +1,7 @@
-import sys
-import os.path
 import operator
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
-from tests_utils import skip, run_local_tests
+from aql_testcase import AqlTestCase
+from tests_utils import skip
 
 from aql.utils import Tempfile, Chrono
 from aql.entity import SimpleEntity, SignatureEntity, EntitiesFile
@@ -232,8 +227,3 @@ class TestValuesFile(AqlTestCase):
     @skip
     def test_values_file_speed_sql(self):
         self._test_values_file_speed(use_sqlite=True)
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

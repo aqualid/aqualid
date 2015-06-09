@@ -1,10 +1,5 @@
-import sys
-import os.path
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
+from aql_testcase import AqlTestCase
 from tests_utils import run_local_tests
 
 from aql.entity import SimpleEntity
@@ -125,6 +120,19 @@ options.build_variant = "final"
             prj.build()
 
             self.assertEqual(self.built_nodes, 1)
+
+    # -----------------------------------------------------------
+
+    def test_prj_list_options(self):
+
+        with Tempdir() as tmp_dir:
+
+            cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir, "test", "run"])
+
+            prj = Project(cfg)
+            self.assertTrue(prj.list_options())
+            self.assertTrue(prj.list_options(brief=True))
+            self.assertFalse(prj.list_tools_options('c++'))
 
     # -----------------------------------------------------------
 

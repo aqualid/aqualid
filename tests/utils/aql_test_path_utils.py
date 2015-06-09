@@ -1,12 +1,6 @@
-import sys
 import os
-import os.path
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
-from tests_utils import run_local_tests
+from aql_testcase import AqlTestCase
 
 from aql.utils import find_files, change_path, \
     find_program, find_programs, find_optional_program, \
@@ -17,7 +11,6 @@ from aql.utils import find_files, change_path, \
 
 
 class TestPathUtils(AqlTestCase):
-    # ==============================================================================
 
     def test_path_relative_join(self):
 
@@ -230,8 +223,3 @@ class TestPathUtils(AqlTestCase):
         result = [os.path.normcase(os.path.abspath(file)) for file in result]
 
         self.assertEqual(exclude_files_from_dirs(files, dirs), result)
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

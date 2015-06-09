@@ -15,12 +15,7 @@ install:
 
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;C:\\MinGW\\bin;%PATH%"
 
-  # Check that we have the expected version and architecture for Python
-  - "python --version"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
-  - "gcc --version"
-
 build: off
 
 test_script:
-  - "python tests\\aql_tests.py"
+  - "python tests\\run.py"

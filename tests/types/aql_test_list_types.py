@@ -1,11 +1,4 @@
-import sys
-import os.path
-
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
-from tests_utils import run_local_tests
+from aql_testcase import AqlTestCase
 
 from aql.util_types import UniqueList, split_list_type, List, value_list_type
 
@@ -190,8 +183,3 @@ class TestListTypes(AqlTestCase):
 
         l.extend([0, -1])
         self.assertEqual(l, [10, 12, 1, 4, 7, 8, 0, -1])
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

@@ -2,11 +2,7 @@ import os
 import sys
 import shutil
 
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
-from tests_utils import run_local_tests
+from aql_testcase import AqlTestCase
 
 from aql.utils import Tempdir, remove_user_handler, add_user_handler
 from aql.utils import EventSettings, set_event_settings
@@ -140,8 +136,15 @@ class TestBuiltinTools(AqlTestCase):
             build_dir = os.path.join(tmp_dir, 'build_output')
 
             num_sources = 2
-            sources, headers = self.generate_cpp_files(
-                tmp_dir, 'test_method_', num_sources)
+            sources = self.generate_source_files(tmp_dir,
+                                                 num_sources,
+                                                 size=200,
+                                                 suffix='.cpp')
+
+            headers = self.generate_source_files(tmp_dir,
+                                                 num_sources,
+                                                 size=200,
+                                                 suffix='.hpp')
 
             cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
@@ -251,7 +254,7 @@ class TestBuiltinTools(AqlTestCase):
 
                 build_dir = os.path.join(tmp_dir, 'output')
 
-                source = self.generate_file(tmp_dir, 0, 200)
+                source = self.generate_file(tmp_dir, 200)
                 target = os.path.join(tmp_install_dir, 'copy_as_source.dat')
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
@@ -326,14 +329,8 @@ class TestBuiltinTools(AqlTestCase):
 
                 self.build_prj(prj, 0)
 
-                self.touch_cpp_file(sources[-1])
+                self.regenerate_file(sources[-1], 200)
 
                 prj.tools.CreateZip(
                     sources, value, target=zip_file, rename=rename)
                 self.build_prj(prj, 1)
-
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

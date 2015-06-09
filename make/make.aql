@@ -15,8 +15,9 @@ from setup_settings import UNIX_SCRIPT_PATH, \
 
 # ==============================================================================
 
+
 src_dir = os.path.abspath('../aql')
-tool_dir = os.path.abspath('../tools')
+tool_dir = GetProjectConfig().tools_path
 dist_dir = './install'
 
 SetBuildDir('output')
@@ -57,8 +58,12 @@ module_dir = setup_dir + AQL_MODULE_PATH
 
 mod = tools.CopyFileAs(linked_file, target=module_dir + '/__init__.py')
 
-tool_files = FindFiles(tool_dir, '*.py')
-aql_tools = tools.CopyFiles(tool_files,    target=module_dir + '/tools')
+tools_files = FindFiles(tool_dir, '*.py')
+print("tool_dir: %s" % (tool_dir,))
+print("tools_files: %s" % (tools_files,))
+
+aql_tools = tools.CopyFiles(tools_files, target=module_dir + '/tools')
+
 readme = tools.CopyFileAs('../README.md',  target=setup_dir + '/README.txt')
 
 manifest = tools.WriteFile(MANIFEST,       target=setup_dir + "MANIFEST.in")
@@ -85,47 +90,17 @@ wdist64 = tools.CreateDist(setup_script,
                            command="bdist",
                            args=["--plat-name=win-amd64", "--formats=wininst"])
 
-rpm_dist = tools.CreateDist(setup_script,
-                            target=dist_dir,
-                            command="bdist",
-                            args="--formats=rpm")
-
 install_user = tools.InstallDist(setup_script, user=True)
 
 install_system = tools.InstallDist(setup_script, user=False)
 
-Depends([sdist, wdist32, wdist64, rpm_dist, install_user, install_system],
+Depends([sdist, wdist32, wdist64, install_user, install_system],
         [mod, aql_tools, unix_script, win_script, manifest, readme])
 
-Sync(wdist32, wdist64, rpm_dist, sdist, install_user, install_system)
+Sync(wdist32, wdist64, sdist, install_user, install_system)
 
 Alias('sdist', sdist, "Build source distributions.")
 Alias('wdist', [wdist32, wdist64], "Build Windows distributions.")
-Alias('rpm', rpm_dist, "Build RPM distribution.")
 Alias('install', install_user,
       "Install distribution for the current user only.")
 Alias('install_system', install_system, "Install distribution for all users.")
-
-# -----------------------------------------------------------
-# Examples
-
-examples_name = dist_dir + \
-    "/{name}-{version}-examples".format(name=info.name, version=info.version)
-
-examples_dir = os.path.abspath('../examples')
-
-examples = FindFiles(examples_dir, ["*.cpp", "*.hpp", "*.aql", "*.cfg"],
-                     exclude_subdir_mask=["benchmarks",
-                                          "build-shoutout",
-                                          ".*", "_*"])
-
-examples_zip = tools.CreateZip(examples,
-                               target=examples_name,
-                               basedir=examples_dir)
-
-examples_tar = tools.CreateTar(examples,
-                               target=examples_name,
-                               basedir=examples_dir)
-
-Alias('examples', [examples_zip, examples_tar],
-      "Create an archive of examples")

@@ -1,11 +1,4 @@
-import sys
-import os.path
-
-sys.path.insert(
-    0, os.path.normpath(os.path.join(os.path.dirname(__file__), '..')))
-
-from aql_tests import AqlTestCase
-from tests_utils import run_local_tests
+from aql_testcase import AqlTestCase
 
 from aql.utils import event_warning, event_status, event_handler, \
     disable_events, disable_default_handlers, enable_default_handlers, \
@@ -103,8 +96,3 @@ class TestEventManager(AqlTestCase):
                           em.add_user_handler,
                           test_user_event2,
                           'test_event2')
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

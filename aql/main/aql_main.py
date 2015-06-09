@@ -216,8 +216,8 @@ def _list_options(prj):
         text += prj.list_options(brief=not prj_cfg.verbose)
 
     if prj_cfg.list_tool_options:
-        text += prj.list_tool_options(prj_cfg.list_tool_options,
-                                      brief=not prj_cfg.verbose)
+        text += prj.list_tools_options(prj_cfg.list_tool_options,
+                                       brief=not prj_cfg.verbose)
 
     log_info('\n'.join(text))
 
@@ -268,7 +268,7 @@ def _main(prj_cfg):
                 log_info('\n'.join(text))
 
             elif prj_cfg.list_options or prj_cfg.list_tool_options:
-                _list_options(prj_cfg)
+                _list_options(prj)
             else:
                 success = _build(prj)
 
