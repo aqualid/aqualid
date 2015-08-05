@@ -1,6 +1,5 @@
 
 from aql_testcase import AqlTestCase
-from tests_utils import run_local_tests
 
 from aql.entity import SimpleEntity
 from aql.nodes import Builder
@@ -210,8 +209,3 @@ options.build_variant = "final"
             tool.noop(v1=v1, v2="b", v3="c")
             prj.build()
             self.assertEqual(self.built_nodes, 0)
-
-# ==============================================================================
-
-if __name__ == "__main__":
-    run_local_tests()

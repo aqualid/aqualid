@@ -1,7 +1,7 @@
 import os.path
 
-from aql_testcase import AqlTestCase
-from tests_utils import skip
+from aql_testcase import AqlTestCase, skip
+
 
 from aql.util_types import UpperCaseString, FilePath
 

@@ -2,8 +2,7 @@ import os.path
 import time
 import threading
 
-from aql_testcase import AqlTestCase
-from tests_utils import skip
+from aql_testcase import AqlTestCase, skip
 
 from aql.util_types import encode_str
 from aql.utils import file_checksum, Tempdir, \

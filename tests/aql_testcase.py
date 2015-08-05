@@ -2,8 +2,10 @@ import os.path
 import pickle
 import shutil
 import random
+import unittest
 
-from tests_utils import TestCaseBase
+import pytest
+skip = pytest.skip
 
 from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
     enable_default_handlers
@@ -11,7 +13,7 @@ from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
 # ==============================================================================
 
 
-class AqlTestCase(TestCaseBase):
+class AqlTestCase(unittest.TestCase):
 
     def event_node_building_finished(self, settings, node,
                                      builder_output, progress):
@@ -40,6 +42,118 @@ class AqlTestCase(TestCaseBase):
 
         super(AqlTestCase, self).tearDown()
 
+    #//===========================================================================//
+    
+    if not hasattr(unittest.TestCase, 'assertIn'):
+        def assertIn(self, a, b, msg=None):         # noqa
+            if msg is None:
+                msg = str(a) + " in " + str(b) + ' is False'
+            self.assertTrue(a in b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertNotIn'):
+        def assertNotIn(self, a, b, msg=None):      # noqa
+            if msg is None:
+                msg = str(a) + " not in " + str(b) + ' is False'
+            self.assertTrue(a not in b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertIsNone'):
+        def assertIsNone(self, a, msg=None):        # noqa
+            if msg is None:
+                msg = str(a) + " is " + str(None) + ' is False'
+            self.assertTrue(a is None, msg)
+
+    if not hasattr(unittest.TestCase, 'assertIs'):
+        def assertIs(self, a, b, msg=None):         # noqa
+            if msg is None:
+                msg = str(a) + " is not " + str(b)
+            self.assertTrue(a is b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertIsNot'):
+        def assertIsNot(self, a, b, msg=None):      # noqa
+            if msg is None:
+                msg = str(a) + " is " + str(b)
+            self.assertTrue(a is not b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertIsNotNone'):
+        def assertIsNotNone(self, a, msg=None):     # noqa
+            if msg is None:
+                msg = str(a) + " is not " + str(None) + ' is False'
+            self.assertTrue(a is not None, msg)
+
+    if not hasattr(unittest.TestCase, 'assertGreater'):
+        def assertGreater(self, a, b, msg=None):    # noqa
+            if msg is None:
+                msg = str(a) + " > " + str(b) + ' is False'
+            self.assertTrue(a > b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertGreaterEqual'):
+        def assertGreaterEqual(self, a, b, msg=None):   # noqa
+            if msg is None:
+                msg = str(a) + " >= " + str(b) + ' is False'
+            self.assertTrue(a >= b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertLess'):
+        def assertLess(self, a, b, msg=None):       # noqa
+            if msg is None:
+                msg = str(a) + " < " + str(b) + ' is False'
+            self.assertTrue(a < b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertLessEqual'):
+        def assertLessEqual(self, a, b, msg=None):  # noqa
+            if msg is None:
+                msg = str(a) + " <= " + str(b) + ' is False'
+            self.assertTrue(a <= b, msg)
+
+    if not hasattr(unittest.TestCase, 'assertSequenceEqual'):
+        def assertSequenceEqual(self,       # noqa
+                                first,
+                                second,
+                                msg=None,
+                                seq_type=None):
+            if msg is None:
+                msg = str(first) + " != " + str(second)
+
+            if seq_type:
+                self.assertEqual(type(first), type(second), msg)
+
+            first = iter(first)
+            second = iter(second)
+
+            while True:
+                try:
+                    v1 = next(first)
+                except StopIteration:
+                    try:
+                        v2 = next(second)
+                    except StopIteration:
+                        return
+
+                    raise AssertionError(msg)
+
+                try:
+                    v2 = next(second)
+                except StopIteration:
+                    raise AssertionError(msg)
+
+                self.assertEqual(v1, v2, msg)
+
+    if not hasattr(unittest.TestCase, 'assertItemsEqual'):
+        def assertItemsEqual(self, actual, expected, msg=None):     # noqa
+            def _value_counts(seq):
+                counts = dict()
+                for value in seq:
+                    counts.setdefault(value, 0)
+                    counts[value] += 1
+                return counts
+
+            actual_counts = _value_counts(actual)
+            expected_counts = _value_counts(expected)
+
+            if msg is None:
+                msg = str(actual) + " != " + str(expected)
+
+            self.assertTrue(actual_counts == expected_counts, msg)
+            
     # ==============================================================================
 
     def build_prj(self, prj, num_built_nodes, num_failed_nodes=0, jobs=4):

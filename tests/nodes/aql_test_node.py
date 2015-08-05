@@ -3,9 +3,8 @@ import timeit
 import shutil
 import hashlib
 
-from aql_testcase import AqlTestCase
+from aql_testcase import AqlTestCase, skip
 
-from tests_utils import skip
 
 from aql.util_types import to_sequence
 

@@ -1,7 +1,6 @@
 import operator
 
-from aql_testcase import AqlTestCase
-from tests_utils import skip
+from aql_testcase import AqlTestCase, skip
 
 from aql.utils import Tempfile, Chrono
 from aql.entity import SimpleEntity, SignatureEntity, EntitiesFile

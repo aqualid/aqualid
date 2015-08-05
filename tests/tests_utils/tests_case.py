@@ -151,27 +151,34 @@ class TestCaseBase(unittest.TestCase):
         raise AttributeError("Invalid attribute: '%s'" % str(attr))
 
     # -----------------------------------------------------------
+    
+    def __stop_if_failed(self):
+        try:
+            if not (self.keep_going or self.result.wasSuccessful()):
+                self.result.stop()
+                return True
+        except AttributeError:
+            pass
+
+        return False
+
+    # -----------------------------------------------------------
 
     def run(self, result=None):
         self.result = result
 
-        if self.keep_going or result.wasSuccessful():
+        if not self.__stop_if_failed():
             super(TestCaseBase, self).run(result)
-        else:
-            result.stop()
 
     # -----------------------------------------------------------
 
     def tearDown(self):     # noqa
-        if not (self.keep_going or self.result.wasSuccessful()):
-            self.result.stop()
-
+        self.__stop_if_failed()
     # -----------------------------------------------------------
 
     def setUp(self):    # noqa
-        if not (self.keep_going or self.result.wasSuccessful()):
-            self.result.stop()
-
+        self.__stop_if_failed()
+        
         test_name = self.id()
         description = self.shortDescription()
         if description:
