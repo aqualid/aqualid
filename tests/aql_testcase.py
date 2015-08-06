@@ -5,10 +5,14 @@ import random
 import unittest
 
 import pytest
-skip = pytest.skip
 
 from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
     enable_default_handlers
+
+#//===========================================================================//
+
+def skip(instance):
+    return pytest.mark.skipif("True")(instance)
 
 # ==============================================================================
 
