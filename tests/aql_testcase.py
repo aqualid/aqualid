@@ -11,8 +11,7 @@ from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
 
 #//===========================================================================//
 
-def skip(instance):
-    return pytest.mark.skipif("True")(instance)
+skip = pytest.mark.skipif("True")
 
 # ==============================================================================
 

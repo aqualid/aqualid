@@ -10,7 +10,7 @@ from aql.main import Project, ProjectConfig
 # ==============================================================================
 
 
-class TestNullBuilder (Builder):
+class _NullBuilder (Builder):
 
     def __init__(self, options, v1, v2, v3):
         self.v1 = v1
@@ -25,10 +25,10 @@ class TestNullBuilder (Builder):
 # ==============================================================================
 
 
-class TestTool(Tool):
+class _NullTool(Tool):
 
     def noop(self, options, v1, v2, v3):
-        return TestNullBuilder(options, v1, v2, v3)
+        return _NullBuilder(options, v1, v2, v3)
 
 # ==============================================================================
 
@@ -165,7 +165,7 @@ options.build_variant = "final"
 
             prj = Project(cfg)
 
-            tool = prj.tools.add_tool(TestTool)
+            tool = prj.tools.add_tool(_NullTool)
 
             tool.noop(v1="a", v2="b", v3="c")
             prj.build()
