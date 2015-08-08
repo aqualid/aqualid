@@ -6,6 +6,7 @@ if __name__ == '__main__':
     import pytest
 
     curdir = os.path.dirname(__file__)
+    os.chdir(curdir)
 
     sys.path.insert(0, curdir)
     sys.path.insert(0, os.path.normpath(os.path.join(curdir, '..')))
