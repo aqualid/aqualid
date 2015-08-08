@@ -5,10 +5,10 @@ if __name__ == '__main__':
     import os
     import pytest
 
-    curdir = os.path.dirname(__file__)
+    curdir = os.path.abspath(os.path.dirname(__file__))
+    aqldir = os.path.dirname(curdir)
+
+    sys.path[0:0] = [aqldir, curdir]
+
     os.chdir(curdir)
-
-    sys.path.insert(0, curdir)
-    sys.path.insert(0, os.path.normpath(os.path.join(curdir, '..')))
-
     sys.exit(pytest.main())
