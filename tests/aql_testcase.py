@@ -9,9 +9,10 @@ import pytest
 from aql.utils import Tempfile, add_user_handler, remove_user_handler, \
     enable_default_handlers
 
-#//===========================================================================//
+# ==============================================================================
 
 skip = pytest.mark.skipif("True")
+skipped = pytest.skip
 
 # ==============================================================================
 
@@ -45,8 +46,8 @@ class AqlTestCase(unittest.TestCase):
 
         super(AqlTestCase, self).tearDown()
 
-    #//===========================================================================//
-    
+    # ==============================================================================
+
     if not hasattr(unittest.TestCase, 'assertIn'):
         def assertIn(self, a, b, msg=None):         # noqa
             if msg is None:
@@ -156,7 +157,7 @@ class AqlTestCase(unittest.TestCase):
                 msg = str(actual) + " != " + str(expected)
 
             self.assertTrue(actual_counts == expected_counts, msg)
-            
+
     # ==============================================================================
 
     def build_prj(self, prj, num_built_nodes, num_failed_nodes=0, jobs=4):
