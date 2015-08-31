@@ -1,11 +1,12 @@
 set -ex
 
+git clone --depth 1 https://github.com/aqualid/examples.git
+git clone -b pytest --depth 1 https://github.com/aqualid/tools.git
+
 coverage run --source=aql tests/run.py
 
 python -c "import aql;import sys;sys.exit(aql.main())" -C make -l
 python -c "import aql;import sys;sys.exit(aql.main())" -C make -L c++
-
-git clone -b pytest --depth 1 https://github.com/aqualid/tools.git
 
 PYTHONPATH=$PWD python tools/tests/run.py
 
@@ -13,9 +14,6 @@ python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $P
 
 python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $PWD/tools/tools --use-sqlite
 python -c "import aql;import sys;sys.exit(aql.main())" -C make local sdist -I $PWD/tools/tools -R --force-lock
-
-
-git clone --depth 1 https://github.com/aqualid/examples.git
 
 python -c "import aql;import sys;sys.exit(aql.main())" -C examples/cpp_hello -I $PWD/tools/tools
 python -c "import aql;import sys;sys.exit(aql.main())" -C examples/cpp_hello -I $PWD/tools/tools -R

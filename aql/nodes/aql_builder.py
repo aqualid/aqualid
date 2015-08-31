@@ -119,7 +119,7 @@ def _join_args(entities, brief):
 
 def _get_trace_str(name, sources, targets, brief):
 
-    name = _join_args(name,    brief)
+    name = _join_args(name, brief)
     sources = _join_args(sources, brief)
 
     targets = _join_args(targets, brief)

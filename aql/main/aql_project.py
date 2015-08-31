@@ -231,7 +231,7 @@ class ProjectConfig(object):
 
         cli_options = (
 
-            CLIOption("-C", "--directory",  "directory",  FilePath, '',
+            CLIOption("-C", "--directory", "directory", FilePath, '',
                       "Change directory before reading the make files.",
                       'FILE PATH', cli_only=True),
 
@@ -308,7 +308,7 @@ class ProjectConfig(object):
             CLIOption(None, "--force-lock", "force_lock", bool, False,
                       "Forces to lock AQL DB file.", cli_only=True),
 
-            CLIOption(None, "--use-sqlite",  "use_sqlite", bool, False,
+            CLIOption(None, "--use-sqlite", "use_sqlite", bool, False,
                       "Use SQLite DB."),
 
             CLIOption("-V", "--version", "version", bool, False,
