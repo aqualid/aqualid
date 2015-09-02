@@ -29,7 +29,7 @@ from .aql_utils import equal_function_args
 
 __all__ = (
     'EVENT_WARNING', 'EVENT_STATUS', 'EVENT_DEBUG', 'EVENT_ALL',
-    'event_warning',  'event_status',  'event_debug', 'event_error',
+    'event_warning', 'event_status', 'event_debug', 'event_error',
     'event_handler', 'disable_events', 'enable_events', 'EventSettings',
     'set_event_settings', 'disable_default_handlers',
     'enable_default_handlers',

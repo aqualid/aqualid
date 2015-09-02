@@ -23,7 +23,7 @@
 import logging
 
 __all__ = (
-    'set_log_level', 'log_critical',  'log_warning',  'log_error', 'log_debug',
+    'set_log_level', 'log_critical', 'log_warning', 'log_error', 'log_debug',
     'log_info', 'add_log_handler',
     'LOG_CRITICAL', 'LOG_WARNING', 'LOG_ERROR', 'LOG_DEBUG', 'LOG_INFO',
 )

@@ -554,10 +554,10 @@ class TestBuildManager(AqlTestCase):
                     num_built_nodes += 2
 
                     node = Node(builder, node)
-                    num_built_nodes += 2**2
+                    num_built_nodes += 2 ** 2
 
                     node = Node(builder, node)
-                    num_built_nodes += 2**3
+                    num_built_nodes += 2 ** 3
 
                     bm.add([node])
 
