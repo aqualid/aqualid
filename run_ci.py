@@ -101,7 +101,15 @@ def run(core_dir):
     tests_dir = os.path.join(core_dir, 'tests')
     source_dir = os.path.join(core_dir, 'aql')
 
-    _run_tests(tests_dir, source_dir)
+    # _run_tests(tests_dir, source_dir)
+
+    # python -c "import aql;import sys;sys.exit(aql.main())" -C make - l
+    # python -c "import aql;import sys;sys.exit(aql.main())" -C make - L c++
+    _run_cmd([sys.executable, "-c",
+              "import aql;import sys;sys.exit(aql.main())", "-C", os.path.join(core_dir,"make"), "-l"])
+
+    _run_cmd([sys.executable, "-c",
+              "import aql;import sys;sys.exit(aql.main())", "-C", os.path.join(core_dir,"make"), "-L", "c++"])
 
     # check for PEP8 violations, max complexity and other standards
     _run_flake8(_find_files( source_dir ), complexity=9)
@@ -113,8 +121,8 @@ def run(core_dir):
 
     ###############
     # test tools
-    _run_cmd(["git", "clone", "-b", "pytest", "--depth", "1", "https://github.com/aqualid/tools.git"])
     tools_dir = os.path.join(core_dir, 'tools')
+    _run_cmd(["git", "clone", "-b", "pytest", "--depth", "1", "https://github.com/aqualid/tools.git", tools_dir])
 
     module = _load_module('run_ci', tools_dir)
     module.run(core_dir, tools_dir)
