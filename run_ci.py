@@ -82,6 +82,9 @@ def _run_cmd(cmd, path=None):
 
     if path:
         env = os.environ.copy()
+        if isinstance(path,(list, tuple, set, frozenset)):
+            path = os.pathsep.join(path)
+
         env['PYTHONPATH'] = path
     else:
         env = None
@@ -103,14 +106,12 @@ def run(core_dir):
 
     _run_tests(tests_dir, source_dir)
 
-    # python -c "import aql;import sys;sys.exit(aql.main())" -C make - l
-    # python -c "import aql;import sys;sys.exit(aql.main())" -C make - L c++
     make_dir = os.path.join(core_dir,"make")
     _run_cmd([sys.executable, "-c",
-              "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-l"], make_dir)
+              "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-l"], [core_dir, make_dir])
 
     _run_cmd([sys.executable, "-c",
-              "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-L", "c++"], make_dir)
+              "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-L", "c++"], [core_dir, make_dir])
 
     # check for PEP8 violations, max complexity and other standards
     _run_flake8(_find_files( source_dir ), complexity=9)
