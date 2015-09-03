@@ -1,6 +1,0 @@
-.idea
-*.py[cod]
-*.prof
-**/__pycache__/
-htmlcov
-.coverage

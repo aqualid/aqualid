@@ -376,25 +376,25 @@ class OptionValueProxy (object):
         return self.cmp(context, operator.ge, other)
 
     def __eq__(self, other):
-        return self.eq(None,   _eval_cmp_value(other))
+        return self.eq(None, _eval_cmp_value(other))
 
     def __ne__(self, other):
-        return self.ne(None,   _eval_cmp_value(other))
+        return self.ne(None, _eval_cmp_value(other))
 
     def __lt__(self, other):
-        return self.lt(None,   _eval_cmp_value(other))
+        return self.lt(None, _eval_cmp_value(other))
 
     def __le__(self, other):
-        return self.le(None,   _eval_cmp_value(other))
+        return self.le(None, _eval_cmp_value(other))
 
     def __gt__(self, other):
-        return self.gt(None,   _eval_cmp_value(other))
+        return self.gt(None, _eval_cmp_value(other))
 
     def __ge__(self, other):
-        return self.ge(None,   _eval_cmp_value(other))
+        return self.ge(None, _eval_cmp_value(other))
 
     def __contains__(self, other):
-        return self.has(None,  _eval_cmp_value(other))
+        return self.has(None, _eval_cmp_value(other))
 
     # -----------------------------------------------------------
 
@@ -532,37 +532,37 @@ class ConditionGeneratorHelper(object):
     # -----------------------------------------------------------
 
     def eq(self, other):
-        return self.cmp('eq',      other)
+        return self.cmp('eq', other)
 
     def ne(self, other):
-        return self.cmp('ne',      other)
+        return self.cmp('ne', other)
 
     def gt(self, other):
-        return self.cmp('gt',      other)
+        return self.cmp('gt', other)
 
     def ge(self, other):
-        return self.cmp('ge',      other)
+        return self.cmp('ge', other)
 
     def lt(self, other):
-        return self.cmp('lt',      other)
+        return self.cmp('lt', other)
 
     def le(self, other):
-        return self.cmp('le',      other)
+        return self.cmp('le', other)
 
     def has(self, value):
-        return self.cmp('has',     value)
+        return self.cmp('has', value)
 
     def has_any(self, values):
-        return self.cmp('has_any',  values)
+        return self.cmp('has_any', values)
 
     def has_all(self, values):
-        return self.cmp('has_all',  values)
+        return self.cmp('has_all', values)
 
     def one_of(self, values):
-        return self.cmp('one_of',   values)
+        return self.cmp('one_of', values)
 
     def not_in(self, values):
-        return self.cmp('not_in',   values)
+        return self.cmp('not_in', values)
 
     def is_true(self):
         return self.cmp('is_true')

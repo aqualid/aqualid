@@ -3,9 +3,8 @@ import timeit
 import shutil
 import hashlib
 
-from aql_testcase import AqlTestCase
+from aql_testcase import AqlTestCase, skip
 
-from tests_utils import skip
 
 from aql.util_types import to_sequence
 
@@ -401,7 +400,7 @@ class TestNodes(AqlTestCase):
 _FileValueType = FileChecksumEntity
 
 
-class TestSpeedBuilder (Builder):
+class _SpeedBuilder (Builder):
 
     __slots__ = ('ext', 'idep')
 
@@ -479,7 +478,7 @@ class TestNodesSpeed (AqlTestCase):
 
                 vfile = EntitiesFile(tmp)
                 try:
-                    builder = TestSpeedBuilder("TestSpeedBuilder", "tmp", "h")
+                    builder = _SpeedBuilder("SpeedBuilder", "tmp", "h")
 
                     for source in source_files:
                         node = Node(builder, _FileValueType(source))

@@ -2,8 +2,7 @@ import os.path
 import time
 import threading
 
-from aql_testcase import AqlTestCase
-from tests_utils import skip
+from aql_testcase import AqlTestCase, skip
 
 from aql.util_types import encode_str
 from aql.utils import file_checksum, Tempdir, \
@@ -555,10 +554,10 @@ class TestBuildManager(AqlTestCase):
                     num_built_nodes += 2
 
                     node = Node(builder, node)
-                    num_built_nodes += 2**2
+                    num_built_nodes += 2 ** 2
 
                     node = Node(builder, node)
-                    num_built_nodes += 2**3
+                    num_built_nodes += 2 ** 3
 
                     bm.add([node])
 

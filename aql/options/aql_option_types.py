@@ -689,7 +689,7 @@ class BoolOptionType (OptionType):
         true_values = to_sequence(true_values)
         false_values = to_sequence(false_values)
 
-        self.true_values.update(map(IgnoreCaseString,  true_values))
+        self.true_values.update(map(IgnoreCaseString, true_values))
         self.false_values.update(map(IgnoreCaseString, false_values))
 
     # -----------------------------------------------------------
