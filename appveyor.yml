@@ -8,14 +8,22 @@ environment:
     - PYTHON: "C:\\Python34-x64"
 
 os:
-  - Visual Studio 2014 CTP4
+  - Visual Studio 2015
+  - MinGW
 
 install:
-  - CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+  #- CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;C:\\MinGW\\bin;%PATH%"
+  - pip install pytest
+  - pip install pep8
+  - pip install pep8-naming
+  - pip install flake8
+  - pip install coverage
+  - pip install coveralls
+
 
 build: off
 
 test_script:
-  - "python tests\\run.py"
+  - "python run_ci.py"
