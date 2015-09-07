@@ -6,9 +6,6 @@ import imp
 import uuid
 import subprocess
 
-import coverage
-import flake8.main
-
 
 # ==============================================================================
 def _find_files(path, recursive=True):
@@ -23,7 +20,7 @@ def _find_files(path, recursive=True):
 
         if recursive:
             folders[:] = (folder for folder in folders
-                            if not folder.startswith('.'))
+                          if not folder.startswith('.'))
         else:
             folders[:] = []
 
@@ -39,23 +36,38 @@ def _load_module(name, path):
 
 # ==============================================================================
 def _run_tests(tests_dir, source_dir):
-
-    cov = coverage.coverage(source=[source_dir])
-
     module = _load_module('run', tests_dir)
 
-    cov.start()
+    try:
+        import coverage
+    except ImportError:
+        print("WARNING: Module 'coverage' has not been found")
+        cov = None
+    else:
+        cov = coverage.coverage(source=[source_dir])
+
+    if cov is not None:
+        cov.start()
+
     result = module.run()
-    cov.stop()
-    cov.save()
+
+    if cov is not None:
+        cov.stop()
+        cov.save()
 
     if result:
         sys.exit(result)
 
 
 # ==============================================================================
-def _run_flake8( source_files, ignore=None, complexity=-1):
-    if not isinstance(source_files, (list,tuple,frozenset,set)):
+def _run_flake8(source_files, ignore=None, complexity=-1):
+    try:
+        import flake8.main
+    except ImportError:
+        print("WARNING: flake8 has not been found")
+        return
+
+    if not isinstance(source_files, (list, tuple, frozenset, set)):
         source_files = (source_files,)
 
     ignore_errors = ('F403', 'E241')
@@ -82,7 +94,7 @@ def _run_cmd(cmd, path=None):
 
     if path:
         env = os.environ.copy()
-        if isinstance(path,(list, tuple, set, frozenset)):
+        if isinstance(path, (list, tuple, set, frozenset)):
             path = os.pathsep.join(path)
 
         env['PYTHONPATH'] = path
@@ -106,7 +118,7 @@ def run(core_dir):
 
     _run_tests(tests_dir, source_dir)
 
-    make_dir = os.path.join(core_dir,"make")
+    make_dir = os.path.join(core_dir, "make")
     _run_cmd([sys.executable, "-c",
               "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-l"], [core_dir, make_dir])
 
@@ -114,7 +126,7 @@ def run(core_dir):
               "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-L", "c++"], [core_dir, make_dir])
 
     # check for PEP8 violations, max complexity and other standards
-    _run_flake8(_find_files( source_dir ), complexity=9)
+    _run_flake8(_find_files(source_dir), complexity=9)
 
     # check for PEP8 violations
     _run_flake8(_find_files(tests_dir))
