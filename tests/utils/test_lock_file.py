@@ -1,7 +1,7 @@
 import time
 import multiprocessing as mp
 
-from aql_testcase import AqlTestCase
+from aql_testcase import AqlTestCase, skipped
 
 from aql.utils import Tempfile, FileLock, ErrorFileLocked
 from aql.utils.aql_lock_file import GeneralFileLock
@@ -95,7 +95,7 @@ class TestFileLock(AqlTestCase):
     def test_read_file_lock(self):
 
         if FileLock is GeneralFileLock:
-            return
+            skipped("System specific FileLock is not available")
 
         with Tempfile() as temp_file:
 
@@ -115,7 +115,7 @@ class TestFileLock(AqlTestCase):
     def test_file_wrlock(self):
 
         if FileLock is GeneralFileLock:
-            return
+            skipped("System specific FileLock is not available")
 
         with Tempfile() as temp_file:
 
@@ -146,7 +146,7 @@ class TestFileLock(AqlTestCase):
     def test_file_rwlock(self):
 
         if FileLock is GeneralFileLock:
-            return
+            skipped("System specific FileLock is not available")
 
         with Tempfile() as temp_file:
 
@@ -203,7 +203,7 @@ class TestFileLock(AqlTestCase):
     def test_general_file_lock_no_wait(self):
 
         if FileLock is GeneralFileLock:
-            return
+            skipped("System specific FileLock is not available")
 
         self._test_file_lock_no_wait(GeneralFileLock)
 
@@ -212,7 +212,7 @@ class TestFileLock(AqlTestCase):
     def test_file_lock_force(self):
 
         if FileLock is GeneralFileLock:
-            return
+            skipped("System specific FileLock is not available")
 
         with Tempfile() as temp_file:
 

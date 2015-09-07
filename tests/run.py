@@ -11,8 +11,10 @@ def run():
 
     sys.path[0:0] = [aql_dir, cur_dir]
 
-    os.chdir(cur_dir)
-    return pytest.main()
+    args = sys.argv[1:]
+    args.extend(['-x', cur_dir])
+
+    return pytest.main(args)
 
 if __name__ == '__main__':
     sys.exit(run())
