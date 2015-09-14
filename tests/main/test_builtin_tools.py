@@ -126,7 +126,7 @@ class TestBuiltinTools(AqlTestCase):
             src_file = source_entities[0].get()
             dst_file = os.path.splitext(src_file)[0] + ext
             shutil.copy(src_file, dst_file)
-            targets.add(dst_file)
+            targets.add_targets(dst_file)
 
         with Tempdir() as tmp_dir:
 

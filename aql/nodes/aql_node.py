@@ -246,7 +246,7 @@ class NodeEntity (EntityBase):
         targets = builder.get_target_entities(self.source_entities)
         if not targets:
             return ()
-        return builder.make_entities(targets)
+        return tuple(builder.make_entities(targets))
 
     # -----------------------------------------------------------
 
@@ -446,16 +446,19 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def add_targets(self, entities, tags=None):
+    def add_targets(self, values, tags=None):
         self.target_entities.extend(
-            self.builder.make_entities(to_sequence(entities), tags))
+            self.builder.make_entities(to_sequence(values), tags))
 
-    def add_target_files(self, entities, tags=None):
+    def add_target_files(self, values, tags=None):
         self.target_entities.extend(
-            self.builder.make_file_entities(to_sequence(entities), tags))
+            self.builder.make_file_entities(to_sequence(values), tags))
 
-    add = add_targets
-    add_files = add_target_files
+    def add_target_entity(self, entity):
+        self.target_entities.append(entity)
+
+    def add_target_entities(self, entities):
+        self.target_entities.extend(entities)
 
     # -----------------------------------------------------------
 
@@ -707,7 +710,6 @@ class Node (object):
         make_entity = self.builder.make_entity
 
         for src in self.sources:
-
             if isinstance(src, Node):
                 entities += src.target_entities
 
@@ -722,7 +724,7 @@ class Node (object):
                 entities.append(entity)
 
         self.sources = None
-        self.source_entities = tuple(entities)
+        self.source_entities = entities
 
     # ==========================================================
 

@@ -335,8 +335,12 @@ class Builder (object):
         self.build_dir = options.build_dir.get()
         self.build_path = options.build_path.get()
         self.relative_build_paths = options.relative_build_paths.get()
-        self.file_entity_type = \
-            _get_file_signature_type(options.file_signature.get())
+        if options.file_signature == 'timestamp':
+            self.use_timestamp = True
+            self.file_entity_type = FileTimestampEntity
+        else:
+            self.use_timestamp = False
+            self.file_entity_type = FileChecksumEntity
 
         self.env = options.env.get()
 
@@ -671,41 +675,41 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def get_file_entity_type(self):
-        return self.file_entity_type
+    def make_entity(self, value, tags=None):
+        if isinstance(value, FilePath):
+            return self.make_file_entity(name=value, tags=tags)
+
+        return SimpleEntity(value, tags=tags)
 
     # -----------------------------------------------------------
 
-    def make_simple_entity(self, entity, tags=None):
-        if isinstance(entity, EntityBase):
-            return entity
-
-        if isinstance(entity, FilePath):
-            return self.file_entity_type(name=entity, tags=tags)
-
-        return SimpleEntity(entity)
-
-    make_entity = make_simple_entity
+    def make_simple_entity(self, value, tags=None):
+        return SimpleEntity(value, tags=tags)
 
     # -----------------------------------------------------------
 
-    def make_file_entity(self, entity, tags=None):
-        if isinstance(entity, EntityBase):
-            return entity
-
-        return self.file_entity_type(name=entity, tags=tags)
+    def make_file_entity(self, value, tags=None):
+        return self.file_entity_type(name=value, tags=tags)
 
     # -----------------------------------------------------------
 
     def make_file_entities(self, entities, tags=None):
-        make_entity = self.make_file_entity
-        return tuple(make_entity(entity, tags=tags)
-                     for entity in to_sequence(entities))
+        make_file_entity = self.make_file_entity
+        for entity in to_sequence(entities):
+            if isinstance(entity, EntityBase):
+                yield entity
+            else:
+                yield make_file_entity(entity, tags)
+
+    # ----------------------------------------------------------
 
     def make_entities(self, entities, tags=None):
         make_entity = self.make_entity
-        return tuple(make_entity(entity, tags=tags)
-                     for entity in to_sequence(entities))
+        for entity in to_sequence(entities):
+            if isinstance(entity, EntityBase):
+                yield entity
+            else:
+                yield make_entity(entity, tags)
 
     # -----------------------------------------------------------
 

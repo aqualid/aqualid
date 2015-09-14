@@ -106,7 +106,7 @@ class ZipFilesBuilder (FileBuilder):
             if arch is not None:
                 arch.close()
 
-        targets.add(target)
+        targets.add_targets(target)
 
     # -----------------------------------------------------------
 

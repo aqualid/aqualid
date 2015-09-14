@@ -249,12 +249,14 @@ def data_signature(data, common_hash=None):
 # ==============================================================================
 
 
-def file_signature(filename):
+def file_signature(filename, offset=0):
 
     checksum = hashlib.md5()
     chunk_size = checksum.block_size * 4096
 
     with open_file(filename, binary=True) as f:
+        f.seek(offset)
+
         read = f.read
         checksum_update = checksum.update
 

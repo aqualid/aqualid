@@ -57,7 +57,7 @@ class WriteFileBuilder (Builder):
 
                 f.write(src)
 
-        targets.add_files(target)
+        targets.add_target_files(target)
 
     # -----------------------------------------------------------
 

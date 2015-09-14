@@ -29,7 +29,11 @@ from .aql_entity_pickler import pickleable
 from aql.utils import file_signature, file_time_signature
 
 __all__ = (
-    'FileEntityBase', 'FileChecksumEntity', 'FileTimestampEntity', 'DirEntity',
+    'FileEntityBase',
+    'FileChecksumEntity',
+    'FilePartChecksumEntity',
+    'FileTimestampEntity',
+    'DirEntity',
 )
 
 # ==============================================================================
@@ -59,8 +63,8 @@ class FileEntityBase (EntityBase):
 
         name = os.path.normcase(os.path.abspath(name))
 
-        self = super(FileEntityBase, cls).__new__(
-            cls, name, signature, tags=tags)
+        self = super(FileEntityBase, cls).__new__(cls, name,
+                                                  signature, tags=tags)
         return self
 
     # -----------------------------------------------------------
@@ -92,8 +96,9 @@ class FileEntityBase (EntityBase):
         if self.signature == signature:
             return self
 
-        other = super(FileEntityBase, self).__new__(
-            self.__class__, self.name, signature, self.tags)
+        other = super(FileEntityBase, self).__new__(self.__class__,
+                                                    self.name, signature, self.tags)
+        other.id = self.id
         return other
 
     # -----------------------------------------------------------
@@ -110,9 +115,9 @@ class FileEntityBase (EntityBase):
 # ==============================================================================
 
 
-def _get_file_checksum(path):
+def _get_file_checksum(path, offset=0):
     try:
-        signature = file_signature(path)
+        signature = file_signature(path, offset)
     except (OSError, IOError) as err:
         if err.errno != errno.EISDIR:
             return None
@@ -124,9 +129,8 @@ def _get_file_checksum(path):
 
     return signature
 
+
 # ==============================================================================
-
-
 def _get_file_timestamp(path):
     try:
         signature = file_time_signature(path)
@@ -135,27 +139,24 @@ def _get_file_timestamp(path):
 
     return signature
 
+
 # ==============================================================================
-
-
 @pickleable
 class FileChecksumEntity(FileEntityBase):
 
     def get_signature(self):
         return _get_file_checksum(self.name)
 
+
 # ==============================================================================
-
-
 @pickleable
 class FileTimestampEntity(FileEntityBase):
 
     def get_signature(self):
         return _get_file_timestamp(self.name)
 
+
 # ==============================================================================
-
-
 @pickleable
 class DirEntity (FileTimestampEntity):
 
@@ -164,3 +165,51 @@ class DirEntity (FileTimestampEntity):
             os.rmdir(self.name)
         except OSError:
             pass
+
+
+# ==============================================================================
+@pickleable
+class FilePartChecksumEntity (FileEntityBase):
+    __slots__ = ('offset',)
+
+    def __new__(cls, name, signature=NotImplemented, tags=None, offset=0):
+
+        self = super(FilePartChecksumEntity, cls).__new__(cls,
+                                                          name,
+                                                          signature,
+                                                          tags=tags)
+        self.offset = offset
+        return self
+
+    # -----------------------------------------------------------
+
+    def __getnewargs__(self):
+        tags = self.tags
+        if not tags:
+            tags = None
+
+        return self.name, self.signature, tags, self.offset
+
+    # -----------------------------------------------------------
+
+    def get_signature(self):
+        return _get_file_checksum(self.name, self.offset)
+
+    # ----------------------------------------------------------
+
+    def get_actual(self):
+        signature = self.get_signature()
+        if self.signature == signature:
+            return self
+
+        other = super(FileEntityBase, self).__new__(self.__class__,
+                                                    self.name, signature, self.tags)
+        other.id = self.id
+        other.offset = self.offset
+        return other
+
+    # ----------------------------------------------------------
+
+    def __eq__(self, other):
+        return super(FilePartChecksumEntity, self).__eq__(other) and \
+               (self.offset == other.offset)

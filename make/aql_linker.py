@@ -114,10 +114,10 @@ class AqlPreprocess (aql.FileBuilder):
 
         content = empty_re.sub("", content)
 
-        target = aql.SimpleEntity(
-            name=src_file, data=(std_imports, aql_imports, content))
+        target = aql.SimpleEntity(name=src_file,
+                                  data=(std_imports, aql_imports, content))
 
-        targets.add(target)
+        targets.add_entity(target)
 
 # ==============================================================================
 
@@ -228,7 +228,7 @@ class AqlLink (aql.Builder):
 
         aql.write_text_file(self.target, content)
 
-        targets.add_files(self.target)
+        targets.add_target_files(self.target)
 
 # ==============================================================================
 
