@@ -115,7 +115,7 @@ class SyncValueBuilder (Builder):
         target = [src.get() for src in source_entities]
         target = self.make_simple_entity(target)
 
-        targets.add(target)
+        targets.add_targets(target)
 
 # ==============================================================================
 
@@ -133,7 +133,7 @@ class CopyValueBuilder (Builder):
                 source_value.get(), name=source_value.name + '_copy')
             target_entities.append(copy_value)
 
-        targets.add(target_entities)
+        targets.add_targets(target_entities)
 
     def get_trace_targets(self, target_entities, brief):
         return tuple(value.name for value in target_entities)
@@ -184,7 +184,7 @@ class ChecksumBuilder (FileBuilder):
             target_entities.append(self._build_src(src, 'md5'))
             target_entities.append(self._build_src(src, 'sha512'))
 
-        targets.add(target_entities)
+        targets.add_targets(target_entities)
 
     # -----------------------------------------------------------
 
@@ -193,7 +193,7 @@ class ChecksumBuilder (FileBuilder):
             target_files = [self._build_src(src_value.get(), 'md5'),
                             self._build_src(src_value.get(), 'sha512')]
 
-            targets[src_value].add(target_files)
+            targets[src_value].add_targets(target_files)
 
 # ==============================================================================
 

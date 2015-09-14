@@ -48,7 +48,7 @@ class ChecksumBuilder (Builder):
             chcksum_sha512 = hashlib.sha512()
             chcksum_sha512.update(content)
 
-            targets.add(chcksum.digest())
+            targets.add_targets(chcksum.digest())
             targets.add_side_effects(chcksum_sha512.digest())
 
 # ==============================================================================
@@ -81,7 +81,7 @@ class CopyBuilder (FileBuilder):
             target_values.append(new_name)
             itarget_values.append(new_iname)
 
-        targets.add(target_values)
+        targets.add_targets(target_values)
         targets.add_side_effects(itarget_values)
         targets.add_implicit_deps(idep)
 
@@ -101,7 +101,7 @@ class CopyBuilder (FileBuilder):
             shutil.copy(src, new_iname)
 
             src_targets = targets[src_value]
-            src_targets.add(new_name)
+            src_targets.add_targets(new_name)
             src_targets.add_side_effects(new_iname)
             src_targets.add_implicit_deps(idep)
 
@@ -419,7 +419,7 @@ class _SpeedBuilder (Builder):
 
             shutil.copy(source_value.name, new_name)
 
-            targets.add_files(new_name)
+            targets.add_target_files(new_name)
             targets.add_implicit_dep_files(idep_name)
 
     # -----------------------------------------------------------

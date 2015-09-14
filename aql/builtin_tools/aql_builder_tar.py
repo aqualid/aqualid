@@ -104,7 +104,7 @@ class TarFilesBuilder (FileBuilder):
         finally:
             arch.close()
 
-        targets.add(target)
+        targets.add_targets(target)
 
     # -----------------------------------------------------------
 

@@ -47,7 +47,7 @@ class CopyFilesBuilder (FileBuilder):
             shutil.copyfile(src, dst)
             shutil.copymode(src, dst)
 
-            targets[src_entity].add(dst)
+            targets[src_entity].add_targets(dst)
 
     # -----------------------------------------------------------
 
@@ -79,7 +79,7 @@ class CopyFileAsBuilder (FileBuilder):
         shutil.copyfile(source, target)
         shutil.copymode(source, target)
 
-        targets.add(target)
+        targets.add_targets(target)
 
     # -----------------------------------------------------------
 

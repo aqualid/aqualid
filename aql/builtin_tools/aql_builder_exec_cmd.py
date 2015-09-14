@@ -25,9 +25,8 @@ import itertools
 from aql.util_types import to_sequence
 from aql.nodes import Builder
 
+
 # ==============================================================================
-
-
 class ExecuteCommandBuilder (Builder):
 
     NAME_ATTRS = ('targets', 'cwd')
@@ -77,7 +76,7 @@ class ExecuteCommandBuilder (Builder):
 
         out = self.exec_cmd(cmd, cwd=self.cwd)
 
-        targets.add_files(self.targets)
+        targets.add_target_files(self.targets)
 
         return out
 

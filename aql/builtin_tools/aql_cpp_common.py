@@ -385,7 +385,7 @@ class HeaderChecker (Builder):
                 has_headers = False
                 break
 
-        targets.add(has_headers)
+        targets.add_targets(has_headers)
 
 # ==============================================================================
 
