@@ -720,7 +720,7 @@ class Builder (object):
         if result.failed():
             raise result
 
-        return result.output
+        return result.output()
 
     # -----------------------------------------------------------
 

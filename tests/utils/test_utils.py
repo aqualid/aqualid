@@ -130,7 +130,7 @@ class TestUtils(AqlTestCase):
         else:
             result = execute_command("ls")
 
-        self.assertTrue(result.output)
+        self.assertTrue(result.stdout)
 
     # ==============================================================================
 

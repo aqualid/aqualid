@@ -458,20 +458,15 @@ class ExecCommandException(Exception):
 
 
 class ExecCommandResult(Exception):
-    __slots__ = ('cmd', 'status', 'output')
+    __slots__ = ('cmd', 'status', 'stdout', 'stderr')
 
     def __init__(self, cmd, status=None, stdout=None, stderr=None):
 
         self.cmd = tuple(to_sequence(cmd))
         self.status = status
 
-        if not stdout:
-            stdout = str()
-
-        if stderr:
-            stdout += '\n' + stderr
-
-        self.output = stdout
+        self.stdout = stdout if stdout else ''
+        self.stderr = stderr if stderr else ''
 
         super(ExecCommandResult, self).__init__()
 
@@ -480,8 +475,9 @@ class ExecCommandResult(Exception):
     def __str__(self):
         msg = ' '.join(self.cmd)
 
-        if self.output:
-            msg += '\n' + self.output
+        out = self.output()
+        if out:
+            msg += '\n' + out
 
         if self.status:
             msg += "\nExit status: %s" % (self.status,)
@@ -492,6 +488,19 @@ class ExecCommandResult(Exception):
 
     def failed(self):
         return self.status != 0
+
+    # -----------------------------------------------------------
+
+    def output(self):
+        out = self.stdout
+        if self.stderr:
+            if out:
+                out += '\n'
+                out += self.stderr
+            else:
+                out = self.stderr
+
+        return out
 
     def __bool__(self):
         return self.failed()
