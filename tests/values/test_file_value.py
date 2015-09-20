@@ -3,7 +3,8 @@ import time
 from aql_testcase import AqlTestCase
 
 from aql.utils import Tempfile
-from aql.entity.aql_file_entity import FilePartChecksumEntity, FileChecksumEntity, FileTimestampEntity
+from aql.entity.aql_file_entity import FilePartChecksumEntity, \
+    FileChecksumEntity, FileTimestampEntity
 
 
 class TestFileValue(AqlTestCase):
@@ -37,7 +38,9 @@ class TestFileValue(AqlTestCase):
             self.assertIsNot(actual_value, temp_file_value1)
             self.assertEqual(actual_value.name, temp_file_value1.name)
             self.assertEqual(actual_value.id, temp_file_value1.id)
-            self.assertNotEqual(actual_value.signature, temp_file_value1.signature)
+
+            self.assertNotEqual(actual_value.signature,
+                                temp_file_value1.signature)
 
     # ----------------------------------------------------------
 
@@ -70,7 +73,9 @@ class TestFileValue(AqlTestCase):
             temp_file.write("098765".encode())
             temp_file.flush()
 
-            temp_file_value2 = FilePartChecksumEntity(temp_file_value1, offset=4)
+            temp_file_value2 = FilePartChecksumEntity(temp_file_value1,
+                                                      offset=4)
+
             self.assertEqual(temp_file_value1.name, temp_file_value2.name)
             self.assertNotEqual(temp_file_value1, temp_file_value2)
             self.assertFalse(temp_file_value1.is_actual())
@@ -78,7 +83,9 @@ class TestFileValue(AqlTestCase):
             actual_value = temp_file_value1.get_actual()
             self.assertIsNot(actual_value, temp_file_value1)
             self.assertEqual(actual_value.name, temp_file_value1.name)
-            self.assertNotEqual(actual_value.signature, temp_file_value1.signature)
+
+            self.assertNotEqual(actual_value.signature,
+                                temp_file_value1.signature)
 
     # ----------------------------------------------------------
 

@@ -7,8 +7,6 @@ class TestCLIConfig(AqlTestCase):
 
     def test_cli_config(self):
 
-        usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
-
         cli_options = (
             CLIOption("-l", "--log-level", "log_level", int, None,
                       "", 'NUMBER'),
@@ -19,8 +17,8 @@ class TestCLIConfig(AqlTestCase):
             CLIOption("-v", "--verbose", "verbose", bool, False,  ""),
         )
 
-        config = CLIConfig(usage, cli_options, ["-j", "0", "-v", "foo", "-s32",
-                                                "bv=release", "jobs=10"])
+        config = CLIConfig(cli_options, ["-j", "0", "-v", "-s32", "foo",
+                                         "bv=release", "jobs=10"])
 
         config.set_default('jobs', 3)
         config.set_default('size', 10)
@@ -55,8 +53,6 @@ class TestCLIConfig(AqlTestCase):
 
     def test_cli_config_file(self):
 
-        usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
-
         cli_options = (
             CLIOption("-j", "--jobs", "jobs", int, 1, "", 'NUMBER'),
             CLIOption("-s", "--size", "size", int, 256, "", 'NUMBER'),
@@ -75,9 +71,9 @@ targets="test1 test2 test3"
             f.write(cfg)
             f.flush()
 
-            config = CLIConfig(
-                usage, cli_options, ["-j", "0", "-v", "foo", "bar",
-                                     "bv=release", "jobs=10"])
+            config = CLIConfig(cli_options,
+                               ["-j", "0", "-v", "foo", "bar",
+                                "bv=release", "jobs=10"])
             options = {}
             config.read_file(f, {'options': options})
 
@@ -88,8 +84,8 @@ targets="test1 test2 test3"
             self.assertEqual(config.size, 100)
             self.assertEqual(config.targets, "foo, bar")
 
-            config = CLIConfig(
-                usage, cli_options, ["-j", "0", "-v", "bv=release", "jobs=10"])
+            config = CLIConfig(cli_options, ["-j", "0", "-v",
+                                             "bv=release", "jobs=10"])
             options = {}
             config.read_file(f, {'options': options})
 

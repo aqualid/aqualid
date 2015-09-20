@@ -45,9 +45,8 @@ class ErrorFileEntityNoName(Exception):
         msg = "Filename is not specified"
         super(ErrorFileEntityNoName, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class FileEntityBase (EntityBase):
 
     def __new__(cls, name, signature=NotImplemented, tags=None):
@@ -97,7 +96,9 @@ class FileEntityBase (EntityBase):
             return self
 
         other = super(FileEntityBase, self).__new__(self.__class__,
-                                                    self.name, signature, self.tags)
+                                                    self.name,
+                                                    signature,
+                                                    self.tags)
         other.id = self.id
         return other
 
@@ -203,7 +204,9 @@ class FilePartChecksumEntity (FileEntityBase):
             return self
 
         other = super(FileEntityBase, self).__new__(self.__class__,
-                                                    self.name, signature, self.tags)
+                                                    self.name,
+                                                    signature,
+                                                    self.tags)
         other.id = self.id
         other.offset = self.offset
         return other
@@ -212,4 +215,4 @@ class FilePartChecksumEntity (FileEntityBase):
 
     def __eq__(self, other):
         return super(FilePartChecksumEntity, self).__eq__(other) and \
-               (self.offset == other.offset)
+            (self.offset == other.offset)

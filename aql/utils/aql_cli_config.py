@@ -19,7 +19,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import optparse
+import argparse
 
 from aql.util_types import split_list_type, value_list_type, UniqueList
 from .aql_utils import exec_file
@@ -81,7 +81,7 @@ class CLIOption(object):
               'help': self.description, 'action': action}
         if self.metavar:
             kw['metavar'] = self.metavar
-        parser.add_option(*args, **kw)
+        parser.add_argument(*args, **kw)
 
 # ==============================================================================
 
@@ -90,19 +90,19 @@ class CLIConfig(object):
 
     # -----------------------------------------------------------
 
-    def __init__(self, cli_usage, cli_options, args=None):
+    def __init__(self, cli_options, args=None):
 
         super(CLIConfig, self).__setattr__('targets', tuple())
         super(CLIConfig, self).__setattr__('_set_options', set())
         super(CLIConfig, self).__setattr__('_defaults', {})
 
-        self.__parse_arguments(cli_usage, cli_options, args)
+        self.__parse_arguments(cli_options, args)
 
     # -----------------------------------------------------------
 
     @staticmethod
-    def __get_args_parser(cli_usage, cli_options):
-        parser = optparse.OptionParser(usage=cli_usage)
+    def __get_args_parser(cli_options):
+        parser = argparse.ArgumentParser()
 
         for opt in cli_options:
             opt.add_to_parser(parser)
@@ -156,12 +156,17 @@ class CLIConfig(object):
 
     # -----------------------------------------------------------
 
-    def __parse_arguments(self, cli_usage, cli_options, cli_args):
-        parser = self.__get_args_parser(cli_usage, cli_options)
-        args, values = parser.parse_args(cli_args)
+    def __parse_arguments(self, cli_options, cli_args):
+        parser = self.__get_args_parser(cli_options)
+
+        parser.add_argument('targets_or_options',
+                            metavar='TARGET | OPTION=VALUE',
+                            nargs='*', help="Targets or option's values")
+
+        args = parser.parse_args(cli_args)
 
         self.__parse_options(cli_options, args)
-        self.__parse_values(values)
+        self.__parse_values(args.targets_or_options)
 
     # -----------------------------------------------------------
 

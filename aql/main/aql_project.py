@@ -224,8 +224,6 @@ class ProjectConfig(object):
 
     def __init__(self, args=None):
 
-        cli_usage = "usage: %prog [FLAGS] [[TARGET] [OPTION=VALUE] ...]"
-
         paths_type = value_list_type(UniqueList, FilePath)
         strings_type = value_list_type(UniqueList, str)
 
@@ -315,7 +313,7 @@ class ProjectConfig(object):
                       "Show version and exit.", cli_only=True),
         )
 
-        cli_config = CLIConfig(cli_usage, cli_options, args)
+        cli_config = CLIConfig(cli_options, args)
 
         options = builtin_options()
 

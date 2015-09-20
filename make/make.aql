@@ -59,8 +59,6 @@ module_dir = setup_dir + AQL_MODULE_PATH
 mod = tools.CopyFileAs(linked_file, target=module_dir + '/__init__.py')
 
 tools_files = FindFiles(tool_dir, '*.py')
-print("tool_dir: %s" % (tool_dir,))
-print("tools_files: %s" % (tools_files,))
 
 aql_tools = tools.CopyFiles(tools_files, target=module_dir + '/tools')
 

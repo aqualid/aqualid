@@ -67,7 +67,7 @@ options.build_variant = "final"
             f.write(cfg)
             f.flush()
 
-            args = ["-v", "-j", 5, "-c", f]
+            args = ["-v", "-j", "5", "-c", f]
             cfg = ProjectConfig(args)
 
             self.assertEqual(cfg.options.bv, 'final')

@@ -4,6 +4,7 @@ import os
 import sys
 import imp
 import uuid
+import argparse
 import subprocess
 
 
@@ -49,7 +50,7 @@ def _run_tests(tests_dir, source_dir):
     if cov is not None:
         cov.start()
 
-    result = module.run()
+    result = module.run([])
 
     if cov is not None:
         cov.stop()
@@ -111,42 +112,109 @@ def _run_cmd(cmd, path=None):
 
 
 # ==============================================================================
-def run(core_dir):
+def _fetch_repo(cur_dir, repo_name, repo_dir=None):
+    if repo_dir:
+        repo_dir = os.path.abspath(repo_dir)
+    else:
+        repo_dir = os.path.join(cur_dir, repo_name)
+
+        _run_cmd(["git", "clone", "-b", "master", "--depth", "1",
+                  "https://github.com/aqualid/%s.git" % repo_name, repo_dir])
+
+    print("%s: %s" % (repo_name, repo_dir))
+
+    return repo_dir
+
+
+# ==============================================================================
+def run(core_dir, tools_dir, examples_dir, run_tests=None):
 
     tests_dir = os.path.join(core_dir, 'tests')
     source_dir = os.path.join(core_dir, 'aql')
 
-    _run_tests(tests_dir, source_dir)
+    if (run_tests is None) or 'tests' in run_tests:
+        _run_tests(tests_dir, source_dir)
 
-    make_dir = os.path.join(core_dir, "make")
-    _run_cmd([sys.executable, "-c",
-              "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-l"], [core_dir, make_dir])
+    if (run_tests is None) or 'make' in run_tests:
+        make_dir = os.path.join(core_dir, "make")
+        _run_cmd([sys.executable, "-c",
+                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
+                  "-l"], [core_dir, make_dir])
 
-    _run_cmd([sys.executable, "-c",
-              "import aql;import sys;sys.exit(aql.main())", "-C", make_dir, "-L", "c++"], [core_dir, make_dir])
+        _run_cmd([sys.executable, "-c",
+                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
+                  "-L", "c++"], [core_dir, make_dir])
 
-    # check for PEP8 violations, max complexity and other standards
-    _run_flake8(_find_files(source_dir), complexity=9)
+        _run_cmd([sys.executable, "-c",
+                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
+                  "-t"], [core_dir, make_dir])
 
-    # check for PEP8 violations
-    _run_flake8(_find_files(tests_dir))
-    _run_flake8(_find_files(os.path.join(core_dir, 'make'), recursive=False))
-    _run_flake8(os.path.join(core_dir, 'make', 'make.aql'), ignore='F821')
+        _run_cmd([sys.executable, "-c",
+                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
+                  "local"], [core_dir, make_dir])
+
+    if (run_tests is None) or 'flake8' in run_tests:
+        # check for PEP8 violations, max complexity and other standards
+        _run_flake8(_find_files(source_dir), complexity=9)
+
+        # check for PEP8 violations
+        _run_flake8(_find_files(tests_dir))
+
+        make_srcs = _find_files(os.path.join(core_dir, 'make'), recursive=False)
+        _run_flake8(make_srcs)
+
+        _run_flake8(os.path.join(core_dir, 'make', 'make.aql'), ignore='F821')
 
     ###############
-    # test tools
-    tools_dir = os.path.join(core_dir, 'tools')
-    _run_cmd(["git", "clone", "-b", "master", "--depth", "1", "https://github.com/aqualid/tools.git", tools_dir])
+    if (run_tests is None) or 'tools' in run_tests:
+        tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
 
-    module = _load_module('run_ci', tools_dir)
-    module.run(core_dir, tools_dir)
+        module = _load_module('run_ci', tools_dir)
+        module.run(core_dir, tools_dir, examples_dir)
 
 
 # ==============================================================================
+def _parse_args(choices):
+    args_parser = argparse.ArgumentParser()
 
+    args_parser.add_argument('--skip', action='append', choices=choices,
+                             dest='skip_tests',
+                             help="Skip specific tests")
+
+    args_parser.add_argument('--run', action='append', choices=choices,
+                             dest='run_tests',
+                             help="Run specific tests")
+
+    args_parser.add_argument('--tools-dir', action='store',
+                             dest='tools_dir', metavar='PATH',
+                             help="Aqualid examples directory. "
+                                  "By default it will be fetched from GitHub.")
+
+    args_parser.add_argument('--examples-dir', action='store',
+                             dest='examples_dir', metavar='PATH',
+                             help="Aqualid examples directory. "
+                                  "By default it will be fetched from GitHub.")
+
+    return args_parser.parse_args()
+
+
+# ==============================================================================
 def main():
+    choices = ('tests', 'make', 'flake8', 'tools')
+
+    args = _parse_args(choices)
+
     core_dir = os.path.abspath(os.path.dirname(__file__))
-    run(core_dir)
+
+    if args.run_tests is None:
+        run_tests = set(choices)
+    else:
+        run_tests = set(args.run_tests)
+
+    if args.skip_tests:
+        run_tests.difference_update(args.skip_tests)
+
+    run(core_dir, args.tools_dir, args.examples_dir, run_tests)
 
 
 # ==============================================================================
