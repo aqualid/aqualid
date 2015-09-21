@@ -125,12 +125,9 @@ class TestUtils(AqlTestCase):
     # ==============================================================================
 
     def test_exec_command(self):
-        if os.name == 'nt':
-            result = execute_command("route")
-        else:
-            result = execute_command("ls")
+        result = execute_command("echo 123")
 
-        self.assertTrue(result.stdout)
+        self.assertEqual(result.stdout.strip(), '123')
 
     # ==============================================================================
 
