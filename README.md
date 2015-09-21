@@ -1,4 +1,9 @@
-Aqualid [![Linux Build Status](https://travis-ci.org/aqualid/aqualid.svg?branch=master)](https://travis-ci.org/aqualid/aqualid)  [![Windows Build status](https://ci.appveyor.com/api/projects/status/07s07rddxv9r3hgc?svg=true)](https://ci.appveyor.com/project/menify/aqualid) [![Code Health](https://landscape.io/github/aqualid/aqualid/master/landscape.svg?style=flat)](https://landscape.io/github/aqualid/aqualid/master) [![CoverageStatus](https://coveralls.io/repos/aqualid/aqualid/badge.svg?branch=master)](https://coveralls.io/r/aqualid/aqualid)
+[![Linux Build Status](https://travis-ci.org/aqualid/aqualid.svg?branch=master)](https://travis-ci.org/aqualid/aqualid)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/07s07rddxv9r3hgc?svg=true)](https://ci.appveyor.com/project/menify/aqualid)
+[![Coverage Status](https://coveralls.io/repos/aqualid/aqualid/badge.svg?branch=master&service=github)](https://coveralls.io/github/aqualid/aqualid?branch=master)
+[![Code Health](https://landscape.io/github/aqualid/aqualid/master/landscape.svg?style=flat)](https://landscape.io/github/aqualid/aqualid/master)
+
+Aqualid
 =======
 
 General purpose build tool.
