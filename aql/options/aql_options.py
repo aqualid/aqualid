@@ -184,9 +184,8 @@ def _load_op_value(options, context, value):
 
     return value
 
+
 # ==============================================================================
-
-
 def _eval_cmp_value(value):
     if isinstance(value, OptionValueProxy):
         value = value.get()
@@ -195,11 +194,8 @@ def _eval_cmp_value(value):
 
     return value
 
+
 # ==============================================================================
-
-# noinspection PyProtectedMember
-
-
 class OptionValueProxy (object):
 
     def __init__(self,
@@ -611,8 +607,10 @@ class ConditionGenerator(object):
 
             condition = self.__dict__['__condition']
 
-            self.__dict__['__options'].append_value(
-                name, value, op_set, condition)
+            self.__dict__['__options'].append_value(name,
+                                                    value,
+                                                    op_set,
+                                                    condition)
 
 # ==============================================================================
 
@@ -625,7 +623,7 @@ def _items_by_value(items):
         try:
             values[value].add(name)
         except KeyError:
-            values[value] = set((name,))
+            values[value] = {name}
 
     return values
 
@@ -1246,7 +1244,20 @@ class Options (object):
 
     # -----------------------------------------------------------
 
-    def when(self):
-        return ConditionGenerator(self)
+    def when(self, cond=None):
+
+        if cond is not None:
+            if isinstance(cond, ConditionGeneratorHelper):
+                cond = cond.condition
+
+            elif isinstance(cond, ConditionGenerator):
+                cond = cond.__dict__['__condition']
+
+            elif not isinstance(cond, Condition):
+                cond = Condition(None,
+                                 lambda options, context, arg: bool(arg),
+                                 cond)
+
+        return ConditionGenerator(self, cond)
 
     If = when

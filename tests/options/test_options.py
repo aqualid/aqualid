@@ -7,7 +7,7 @@ from aql.util_types import UpperCaseString, FilePath
 
 from aql.options import BoolOptionType, EnumOptionType, RangeOptionType,\
     ListOptionType, DictOptionType, PathOptionType, StrOptionType, OptionType,\
-    builtin_options, Options, op_iadd, \
+    builtin_options, Options, Condition, op_iadd, \
     ErrorOptionsCyclicallyDependent, \
     ErrorOptionsMergeNonOptions, ErrorOptionsNoIteration
 
@@ -247,6 +247,61 @@ class TestOptions(AqlTestCase):
         to += 5
 
         self.assertEqual(options.opt, 50)
+
+    # -----------------------------------------------------------
+
+    def test_options_external_conditions(self):
+        options = Options()
+
+        options.warning_level = RangeOptionType(min_value=0, max_value=5)
+        options.optimization = EnumOptionType(values=('debug',
+                                                      'release',
+                                                      'final'))
+
+        options.warning_level = 0
+        options.optimization = 'release'
+
+        options.If(options.If().warning_level.eq(3)).optimization = 'debug'
+
+        self.assertEqual(options.optimization, 'release')
+
+        options.warning_level = 3
+        self.assertEqual(options.optimization, 'debug')
+
+        options.If(True).optimization = 'final'
+        self.assertEqual(options.optimization, 'final')
+
+        options.If(Condition(None, lambda options, context: True)).\
+            optimization = 'release'
+
+        self.assertEqual(options.optimization, 'release')
+
+        options.If(Condition(None,
+                             lambda options, context, op: op == 2,
+                             options.warning_level)).optimization = 'debug'
+        self.assertEqual(options.optimization, 'release')
+        options.warning_level = 2
+        self.assertEqual(options.optimization, 'debug')
+
+        class _Value (object):
+            def __init__(self, value):
+                self.value = value
+
+            def set(self, value):
+                self.value = value
+
+            def get(self):
+                return bool(self.value)
+
+        v = _Value(1)
+
+        options.If(v).warning_level = 0
+        self.assertEqual(options.warning_level, 0)
+
+        v.set(0)
+        options.clear_cache()
+
+        self.assertEqual(options.warning_level.get(), 2)
 
     # -----------------------------------------------------------
 
