@@ -818,7 +818,7 @@ def flatten_list(seq):
 _SIMPLE_SEQUENCES = (list, tuple, UniqueList, set, frozenset)
 
 
-def simplify_value(value,
+def simplify_value(value,                           # noqa  compexity > 9
                    simple_types=SIMPLE_TYPES_SET,
                    simple_lists=_SIMPLE_SEQUENCES):
 
@@ -843,7 +843,11 @@ def simplify_value(value,
     try:
         return simplify_value(value.get())
     except Exception:
-        pass
+        trace_back = sys.exc_info()[2]
+
+        # re-raise the exception if it was raised by 'get()' method itself
+        if trace_back.tb_next is not None:
+            raise
 
     return value
 

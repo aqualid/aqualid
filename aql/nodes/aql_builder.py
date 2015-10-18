@@ -33,21 +33,19 @@ from aql.entity import EntityBase, FileChecksumEntity, FileTimestampEntity,\
     FileEntityBase, SimpleEntity
 
 __all__ = (
-    'Builder', 'FileBuilder'
+    'Builder', 'FileBuilder',
 )
 
+
 # ==============================================================================
-
-
 @event_debug
 def event_exec_cmd(settings, cmd, cwd, env):
     if settings.trace_exec:
         cmd = ' '.join(cmd)
         log_debug("CWD: '%s', CMD: '%s'", cwd, cmd)
 
+
 # ==============================================================================
-
-
 def _get_trace_arg(entity, brief):
 
     value = None
@@ -79,9 +77,8 @@ def _get_trace_arg(entity, brief):
 
     return value
 
+
 # ==============================================================================
-
-
 def _join_args(entities, brief):
 
     args = []
@@ -114,9 +111,8 @@ def _join_args(entities, brief):
 
     return ' '.join(args_str)
 
+
 # ==============================================================================
-
-
 def _get_trace_str(name, sources, targets, brief):
 
     name = _join_args(name, brief)
@@ -132,9 +128,8 @@ def _get_trace_str(name, sources, targets, brief):
 
     return build_str
 
+
 # ==============================================================================
-
-
 def _make_build_path(path_dir, _path_cache=set()):
     if path_dir not in _path_cache:
         if not os.path.isdir(path_dir):
@@ -146,16 +141,14 @@ def _make_build_path(path_dir, _path_cache=set()):
 
         _path_cache.add(path_dir)
 
+
 # ==============================================================================
-
-
 def _make_build_paths(dirnames):
     for dirname in dirnames:
         _make_build_path(dirname)
 
+
 # ==============================================================================
-
-
 def _split_filename_ext(filename, ext, replace_ext):
     if ext:
         if filename.endswith(ext):
@@ -172,9 +165,8 @@ def _split_filename_ext(filename, ext, replace_ext):
 
     return filename, ext
 
+
 # ==============================================================================
-
-
 def _split_file_name(file_path,
                      ext=None,
                      prefix=None,
@@ -199,9 +191,8 @@ def _split_file_name(file_path,
 
     return dirname, filename
 
+
 # ==============================================================================
-
-
 def _split_file_names(file_paths,
                       ext=None,
                       prefix=None,
@@ -218,18 +209,16 @@ def _split_file_names(file_paths,
 
     return dirnames, filenames
 
+
 # ==============================================================================
-
-
 def _get_file_signature_type(file_signature_type):
     if file_signature_type == 'timestamp':
         return FileTimestampEntity
 
     return FileChecksumEntity
 
+
 # ==============================================================================
-
-
 class BuilderInitiator(object):
 
     __slots__ = ('is_initiated', 'builder', 'options', 'args', 'kw')
@@ -304,11 +293,8 @@ class BuilderInitiator(object):
     def is_batch(self):
         return self.builder.is_batch()
 
+
 # ==============================================================================
-
-# noinspection PyAttributeOutsideInit
-
-
 class Builder (object):
 
     """
@@ -383,10 +369,8 @@ class Builder (object):
                 bool(self.relative_build_paths)]
 
         if self.NAME_ATTRS:
-            for attr_name in self.NAME_ATTRS:
-                value = getattr(self, attr_name)
-                value = simplify_value(value)
-                name.append(value)
+            name.extend(simplify_value(getattr(self, attr_name))
+                        for attr_name in self.NAME_ATTRS)
 
         self.name = simple_object_signature(name)
 
@@ -396,10 +380,8 @@ class Builder (object):
         sign = []
 
         if self.SIGNATURE_ATTRS:
-            for attr_name in self.SIGNATURE_ATTRS:
-                value = getattr(self, attr_name)
-                value = simplify_value(value)
-                sign.append(value)
+            sign.extend(simplify_value(getattr(self, attr_name))
+                        for attr_name in self.SIGNATURE_ATTRS)
 
         self.signature = simple_object_signature(sign)
 
@@ -744,8 +726,7 @@ class Builder (object):
 
         return result
 
+
 # ==============================================================================
-
-
 class FileBuilder (Builder):
     make_entity = Builder.make_file_entity

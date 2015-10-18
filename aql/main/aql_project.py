@@ -719,6 +719,8 @@ class Project(object):
             'Requires':         self.requires,
             'RequireModules':   self.require_modules,
             'Sync':             self.sync_nodes,
+            'BuildIf':          self.build_if,
+            'SkipIf':           self.skip_if,
             'Alias':            self.alias_nodes,
             'Default':          self.default_build,
             'AlwaysBuild':      self.always_build,
@@ -852,12 +854,23 @@ class Project(object):
 
     # -----------------------------------------------------------
 
+    def build_if(self, condition, nodes):
+        self.build_manager.build_if(condition, nodes)
+
+    # -----------------------------------------------------------
+
+    def skip_if(self, condition, nodes):
+        self.build_manager.skip_if(condition, nodes)
+
+    # -----------------------------------------------------------
+
     def depends(self, nodes, dependencies):
         dependencies = tuple(to_sequence(dependencies))
 
+        depends = self.build_manager.depends
         for node in to_sequence(nodes):
             node.depends(dependencies)
-            self.build_manager.depends(node, node.dep_nodes)
+            depends(node, node.dep_nodes)
 
     # -----------------------------------------------------------
 
