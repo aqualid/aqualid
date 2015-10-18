@@ -2,6 +2,7 @@
 *.py[cod]
 *.prof
 **/__pycache__/
+**/.cache/
 **/output/
 **/build_output/
 make/install

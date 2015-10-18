@@ -1,6 +1,7 @@
 import os.path
 import time
 import threading
+import operator
 
 from aql_testcase import AqlTestCase, skip
 
@@ -9,18 +10,36 @@ from aql.utils import file_checksum, Tempdir, \
     add_user_handler, remove_user_handler
 
 from aql.entity import SimpleEntity, FileChecksumEntity
-from aql.options import builtin_options
+from aql.options import builtin_options, BoolOptionType
 from aql.nodes import Node, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic,\
     ErrorNodeSignatureDifferent
 
+
 # ==============================================================================
-
-
 class FailedBuilder (Builder):
 
     def build(self, source_entities, targets):
         raise Exception("Builder always fail.")
+
+
+# ==============================================================================
+class ValueBuilder (Builder):
+
+    def build(self, source_entities, targets):
+
+        value = '-'.join(map(str, map(operator.methodcaller('get'),
+                                      source_entities)))
+
+        targets.add_targets(value)
+
+
+# ==============================================================================
+class CondBuilder (Builder):
+
+    def build(self, source_entities, targets):
+        value = source_entities[0].get()
+        targets.add_targets(value)
 
 # ==============================================================================
 
@@ -931,6 +950,75 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
+    def test_bm_skip_nodes_by_value(self):
+        with Tempdir() as tmp_dir:
+            options = builtin_options()
+            options.build_dir = tmp_dir
+
+            bm = BuildManager()
+
+            self.built_nodes = 0
+
+            node = Node(ValueBuilder(options), [1, 2, 3, 4])
+            bm.add([node])
+
+            bm.build_if(False, node)
+
+            _build(bm, jobs=4)
+            self.assertEqual(self.built_nodes, 0)
+
+    # ----------------------------------------------------------
+
+    def test_bm_skip_nodes_by_node(self):
+        with Tempdir() as tmp_dir:
+            options = builtin_options()
+            options.build_dir = tmp_dir
+
+            bm = BuildManager()
+
+            self.built_nodes = 0
+
+            cond_node1 = Node(CondBuilder(options), False)
+            node1 = Node(ValueBuilder(options), [1, 2])
+            cond_node2 = Node(CondBuilder(options), True)
+            node2 = Node(ValueBuilder(options), [3, 4])
+            main = Node(ValueBuilder(options), [7, 8, node1, node2])
+
+            bm.add([main])
+
+            bm.build_if(cond_node1, node1)
+            bm.build_if(cond_node2, node2)
+
+            _build(bm, jobs=4)
+            self.assertEqual(main.get(), "7-8-3-4")
+            self.assertEqual(self.built_nodes, 4)
+
+    # ----------------------------------------------------------
+
+    def test_bm_skip_nodes_by_option(self):
+        with Tempdir() as tmp_dir:
+            options = builtin_options()
+            options.build_dir = tmp_dir
+
+            bm = BuildManager()
+            self.built_nodes = 0
+
+            cond_node = Node(CondBuilder(options), False)
+
+            options.has_openmp = BoolOptionType(default=True)
+            options.has_openmp = cond_node
+
+            node = Node(ValueBuilder(options), None)
+            bm.add([node])
+
+            bm.build_if(options.has_openmp, node)
+            bm.depends(node, [cond_node])
+
+            _build(bm, jobs=4)
+            self.assertEqual(self.built_nodes, 1)
+
+    # -----------------------------------------------------------
+
     @skip
     def test_bm_node_names(self):
 
@@ -965,18 +1053,16 @@ class TestBuildManager(AqlTestCase):
             finally:
                 bm.close()
 
+
 # ==============================================================================
-
-
 def _generate_node_tree(bm, builder, node, depth):
     while depth:
         node = Node(builder, node)
         bm.add([node])
         depth -= 1
 
+
 # ==============================================================================
-
-
 @skip
 class TestBuildManagerSpeed(AqlTestCase):
 

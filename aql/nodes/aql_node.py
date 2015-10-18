@@ -387,7 +387,7 @@ class NodeEntity (EntityBase):
 
             self.builder.check_actual(target_entities)
 
-        except Exception as reason:
+        except NodeRebuildReason as reason:
             if explain:
                 event_node_rebuild_reason(reason)
 
@@ -448,11 +448,11 @@ class NodeEntity (EntityBase):
 
     def add_targets(self, values, tags=None):
         self.target_entities.extend(
-            self.builder.make_entities(to_sequence(values), tags))
+            self.builder.make_entities(values, tags))
 
     def add_target_files(self, values, tags=None):
         self.target_entities.extend(
-            self.builder.make_file_entities(to_sequence(values), tags))
+            self.builder.make_file_entities(values, tags))
 
     def add_target_entity(self, entity):
         self.target_entities.append(entity)
@@ -464,21 +464,21 @@ class NodeEntity (EntityBase):
 
     def add_side_effects(self, entities, tags=None):
         self.itarget_entities.extend(
-            self.builder.make_entities(to_sequence(entities), tags))
+            self.builder.make_entities(entities, tags))
 
     def add_side_effect_files(self, entities, tags=None):
         self.itarget_entities.extend(
-            self.builder.make_file_entities(to_sequence(entities), tags))
+            self.builder.make_file_entities(entities, tags))
 
     # -----------------------------------------------------------
 
     def add_implicit_deps(self, entities, tags=None):
         self.idep_entities.extend(
-            self.builder.make_entities(to_sequence(entities), tags))
+            self.builder.make_entities(entities, tags))
 
     def add_implicit_dep_files(self, entities, tags=None):
         self.idep_entities.extend(
-            self.builder.make_file_entities(to_sequence(entities), tags))
+            self.builder.make_file_entities(entities, tags))
 
 
 # ==============================================================================
@@ -590,7 +590,6 @@ class NodeIndexFilter(NodeFilter):
 
 
 # ==============================================================================
-
 class NodeDirNameFilter(NodeFilter):
 
     def get_entities(self):
@@ -598,9 +597,8 @@ class NodeDirNameFilter(NodeFilter):
         return tuple(SimpleEntity(os.path.dirname(entity.get()))
                      for entity in entities)
 
+
 # ==============================================================================
-
-
 class NodeBaseNameFilter(NodeFilter):
 
     def get_entities(self):
@@ -608,11 +606,8 @@ class NodeBaseNameFilter(NodeFilter):
         return tuple(SimpleEntity(os.path.basename(entity.get()))
                      for entity in entities)
 
+
 # ==============================================================================
-
-# noinspection PyAttributeOutsideInit
-
-
 class Node (object):
 
     __slots__ = (
@@ -624,7 +619,7 @@ class Node (object):
         'depends_called',
         'replace_called',
         'split_called',
-        'is_actual',
+        'check_actual',
 
         'node_entities',
         'node_entities_map',
@@ -656,13 +651,13 @@ class Node (object):
         self.depends_called = False
         self.replace_called = False
         self.split_called = False
-        self.is_actual = False
+        self.check_actual = self._not_actual
 
         self.sources = tuple(to_sequence(sources))
         self.dep_nodes = set()
         self.dep_entities = []
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def shrink(self):
         self.cwd = None
@@ -670,11 +665,27 @@ class Node (object):
         self.sources = None
         self.node_entities = None
         self.node_entities_map = None
+        self.dep_entities = None
+        self.check_actual = None
 
         self.builder = None
         self.options = None
 
-    # ==========================================================
+    # ----------------------------------------------------------
+
+    def skip(self):
+        self.shrink()
+
+        self.initiated = True
+        self.depends_called = True
+        self.replace_called = True
+        self.split_called = True
+
+        self.target_entities = \
+            self.itarget_entities = \
+            self.idep_entities = tuple()
+
+    # ----------------------------------------------------------
 
     def depends(self, dependencies):
 
@@ -694,7 +705,7 @@ class Node (object):
             else:
                 raise ErrorNodeDependencyInvalid(entity)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def __getattr__(self, attr):
         if attr in ['target_entities', 'itarget_entities', 'idep_entities']:
@@ -702,7 +713,7 @@ class Node (object):
 
         raise AttributeError("Node has not attribute '%s'" % (attr,))
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _set_source_entities(self):
         entities = []
@@ -726,7 +737,7 @@ class Node (object):
         self.sources = None
         self.source_entities = entities
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _update_dep_entities(self):
         dep_nodes = self.dep_nodes
@@ -745,7 +756,7 @@ class Node (object):
 
         dep_entities.sort(key=operator.attrgetter('id'))
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def initiate(self, chdir=os.chdir):
         if self.initiated:
@@ -761,7 +772,7 @@ class Node (object):
 
             self.initiated = True
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def build_depends(self, chdir=os.chdir):
         if self.depends_called:
@@ -773,7 +784,7 @@ class Node (object):
         nodes = self.builder.depends(self.source_entities)
         return nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def build_replace(self, chdir=os.chdir):
         if self.replace_called:
@@ -791,7 +802,7 @@ class Node (object):
 
         return self.get_source_nodes()
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _split_batch(self, vfile, explain):
         builder = self.builder
@@ -811,16 +822,13 @@ class Node (object):
             node_entities.append(node_entity)
 
         self.node_entities = node_entities
-        # we don't need to check actual status anymore
-        self.is_actual = True
 
         if not not_actual_nodes:
             return None
 
         groups = builder.split_batch(not_actual_sources)
         if not groups:
-            # this should never happen, looks like a bug in the builder or
-            # Aqualid
+            # this should never happen, looks like a bug in the builder
             groups = not_actual_sources
 
         split_nodes = []
@@ -836,13 +844,15 @@ class Node (object):
 
         return split_nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def build_split(self, vfile, explain):
         if self.split_called:
             return None
 
         self.split_called = True
+
+        self.check_actual = self._split_actual
 
         builder = self.builder
         dep_entities = self.dep_entities
@@ -861,7 +871,9 @@ class Node (object):
                                      source_entities=sources,
                                      dep_entities=dep_entities)
 
-            self.is_actual = node_entity.check_actual(vfile, explain)
+            if not node_entity.check_actual(vfile, explain):
+                self.check_actual = self._not_actual
+
             self.node_entities = (node_entity,)
             return None
 
@@ -885,12 +897,10 @@ class Node (object):
             node_entities.append(node_entity)
 
         self.node_entities = node_entities
-        # we don't need to check actual status anymore
-        self.is_actual = True
 
         return split_nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _split(self, source_entities, node_entities):
 
@@ -905,11 +915,11 @@ class Node (object):
         other.depends_called = True
         other.replace_called = True
         other.split_called = True
-        other.is_actual = False
+        other.check_actual = self._not_actual
 
         return other
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def prebuild(self):
         dep_nodes = self.build_depends()
@@ -919,7 +929,7 @@ class Node (object):
         source_nodes = self.build_replace()
         return source_nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _populate_targets(self):
 
@@ -937,7 +947,7 @@ class Node (object):
             itargets = []
             ideps = []
 
-            for node_entity in self.node_entities:
+            for node_entity in node_entities:
                 targets += node_entity.target_entities
                 itargets += node_entity.itarget_entities
                 ideps += node_entity.idep_entities
@@ -946,29 +956,37 @@ class Node (object):
             self.itarget_entities = itargets
             self.idep_entities = ideps
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
-    def check_actual(self, vfile, explain):
+    def _check_actual(self, vfile, explain):
 
-        if self.is_actual is None:
-            for node_entity in self.node_entities:
-                if not node_entity.check_actual(vfile, explain):
-                    return False
-
-            self.is_actual = True
-
-        elif not self.is_actual:
-            return False
+        for node_entity in self.node_entities:
+            if not node_entity.check_actual(vfile, explain):
+                return False
 
         self._populate_targets()
+        self.check_actual = self._actual
         return True
 
-    # ==========================================================
+    def _split_actual(self,  vfile, explain):
+        self._populate_targets()
+        self.check_actual = self._actual
+        return True
+
+    @staticmethod
+    def _actual(vfile, explain):
+        return True
+
+    @staticmethod
+    def _not_actual(vfile, explain):
+        return False
+
+    # ----------------------------------------------------------
 
     def recheck_actual(self):
-        self.is_actual = None
+        self.check_actual = self._check_actual
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def build(self):
 
@@ -984,14 +1002,14 @@ class Node (object):
 
         return output
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def save(self, vfile):
 
         for node_entity in self.node_entities:
             node_entity.save(vfile)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def save_failed(self, vfile):
 
@@ -1006,7 +1024,7 @@ class Node (object):
                 # nodes without targets will be rebuilt next time
                 node_entity.save(vfile)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def _clear_split(self):
 
@@ -1032,7 +1050,7 @@ class Node (object):
 
         self.node_entities = node_entities
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def clear(self, vfile):
 
@@ -1048,12 +1066,12 @@ class Node (object):
 
         return node_entities
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_weight(self):
         return self.builder.get_weight(self.source_entities)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_names(self):
         return (entity.name for entity in self.node_entities)
@@ -1062,22 +1080,22 @@ class Node (object):
         return ((entity.name, entity.signature)
                 for entity in self.node_entities)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_dep_nodes(self):
         return self.dep_nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_sources(self):
         return tuple(src.get() for src in self.get_source_entities())
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_source_entities(self):
         return self.source_entities
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_source_nodes(self):
         nodes = []
@@ -1091,17 +1109,17 @@ class Node (object):
 
         return nodes
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def is_built(self):
         return self.builder is None
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def at(self, tags):
         return NodeTagsFilter(self, tags)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def __iter__(self):
         raise TypeError()
@@ -1109,7 +1127,7 @@ class Node (object):
     def __getitem__(self, item):
         return NodeIndexFilter(self, item)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def __filter(self, node_attribute, tags):
         if tags is None:
@@ -1117,7 +1135,7 @@ class Node (object):
 
         return NodeTagsFilter(self, tags, node_attribute)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def filter_sources(self, tags=None):
         return self.__filter('source_entities', tags)
@@ -1131,7 +1149,7 @@ class Node (object):
     def filter_dependencies(self, tags=None):
         return self.__filter('dep_entities', tags)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get(self):
         targets = self.get_target_entities()
@@ -1140,7 +1158,7 @@ class Node (object):
 
         return tuple(target.get() for target in targets)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_target_entities(self):
         return self.target_entities
@@ -1148,7 +1166,7 @@ class Node (object):
     def get_side_effect_entities(self):
         return self.itarget_entities
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def get_build_str(self, brief=True):
         try:
@@ -1162,7 +1180,7 @@ class Node (object):
 
         return str(self)  # TODO: return raw data
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def print_sources(self):    # noqa
         result = []
@@ -1199,7 +1217,7 @@ class Node (object):
 
         log_info("node '%s' sources: %s", self, sources_str)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def print_targets(self):
         targets = [t.get() for t in getattr(self, 'target_entities', [])]

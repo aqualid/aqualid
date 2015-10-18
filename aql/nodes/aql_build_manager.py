@@ -21,11 +21,15 @@
 
 
 import os.path
+import operator
 import itertools
 
-from aql.utils import event_status, event_warning, event_error,\
+from aql.util_types import to_sequence
+from aql.utils import simplify_value, event_status, event_warning, event_error,\
     log_info, log_error, log_warning, TaskManager
 from aql.entity import EntitiesFile
+
+from .aql_node import Node, NodeFilter
 
 __all__ = (
     'BuildManager',
@@ -140,18 +144,16 @@ class InternalErrorRemoveNonTailNode(Exception):
         msg = "Removing non-tail node: %s" % (node,)
         super(InternalErrorRemoveNonTailNode, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class InternalErrorRemoveUnknownTailNode(Exception):
 
     def __init__(self, node):
         msg = "Remove unknown tail node: : %s" % (node,)
         super(InternalErrorRemoveUnknownTailNode, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class _NodesTree (object):
 
     __slots__ = (
@@ -356,9 +358,8 @@ class _NodesTree (object):
         if all_dep_nodes - set(self.dep2nodes):
             raise AssertionError("Not all deps are added")
 
+
 # ==============================================================================
-
-
 class _VFiles(object):
     __slots__ = (
         'names',
@@ -421,9 +422,8 @@ class _VFiles(object):
     def __exit__(self, exc_type, exc_value, backtrace):
         self.close()
 
+
 # ==============================================================================
-
-
 def _build_node(node):
 
     event_node_building(node)
@@ -438,9 +438,8 @@ def _build_node(node):
 
     return out
 
+
 # ==============================================================================
-
-
 def _get_module_nodes(node, module_cache, node_cache):
     try:
         return module_cache[node]
@@ -460,9 +459,8 @@ def _get_module_nodes(node, module_cache, node_cache):
     module_cache[node] = result
     return result
 
+
 # ==============================================================================
-
-
 def _get_leaf_nodes(nodes, exclude_nodes, node_cache):
     leafs = set()
     for node in nodes:
@@ -471,9 +469,8 @@ def _get_leaf_nodes(nodes, exclude_nodes, node_cache):
 
     return leafs
 
+
 # ==============================================================================
-
-
 class _NodeLocker(object):
     __slots__ = (
         'node2deps',
@@ -631,7 +628,6 @@ class _NodeLocker(object):
 
 
 # ==============================================================================
-
 class _NodesBuilder (object):
 
     __slots__ = (
@@ -715,62 +711,62 @@ class _NodesBuilder (object):
 
     # -----------------------------------------------------------
 
-    def build(self, nodes):
+    def build_node(self, node):
 
         build_manager = self.build_manager
         explain = build_manager.explain
 
-        vfiles = self.vfiles
-        add_task = self.task_manager.add_task
+        if not build_manager.lock_node(node):
+            return False
 
-        tasks_check_period = 10
-        added_tasks = 0
-        changed = False
+        if build_manager.skip_node(node):
+            return True
+
+        node.initiate()
+
+        vfile = self.vfiles[node.builder]
+
+        prebuit_nodes = node.prebuild()
+
+        if prebuit_nodes:
+            build_manager.depends(node, prebuit_nodes)
+            return True
+
+        split_nodes = node.build_split(vfile, explain)
+        if split_nodes:
+            build_manager.depends(node, split_nodes)
+
+            # split nodes are not actual, check them for building conflicts
+            for split_node in split_nodes:
+                self._add_building_node(split_node)
+
+            return True
+
+        if node.check_actual(vfile, explain):
+            build_manager.actual_node(node)
+            return True
+
+        if not self._add_building_node(node):
+            return False
+
+        self.task_manager.add_task(-node.get_weight(), node, _build_node, node)
+        return False
+
+    # -----------------------------------------------------------
+
+    def build(self, nodes):
+
+        node_tree_changed = False
 
         for node in nodes:
-            if not build_manager.lock_node(node):
-                continue
+            if self.build_node(node):
+                node_tree_changed = True
 
-            node.initiate()
+            if len(self.building_nodes) > 10:
+                if self._get_finished_nodes(block=False):
+                    node_tree_changed = True
 
-            vfile = vfiles[node.builder]
-
-            prebuit_nodes = node.prebuild()
-            if prebuit_nodes:
-                build_manager.depends(node, prebuit_nodes)
-                changed = True
-                continue
-
-            split_nodes = node.build_split(vfile, explain)
-            if split_nodes:
-                build_manager.depends(node, split_nodes)
-
-                # split nodes are not actual, check them for building conflicts
-                for split_node in split_nodes:
-                    self._add_building_node(split_node)
-
-                changed = True
-                continue
-
-            actual = node.check_actual(vfile, explain)
-
-            if actual:
-                build_manager.actual_node(node)
-                changed = True
-                continue
-
-            if not self._add_building_node(node):
-                continue
-
-            add_task(-node.get_weight(), node, _build_node, node)
-
-            added_tasks += 1
-
-            if added_tasks == tasks_check_period:
-                changed = self._get_finished_nodes(block=False) or changed
-                added_tasks = 0
-
-        return self._get_finished_nodes(block=not changed)
+        return self._get_finished_nodes(block=not node_tree_changed)
 
     # -----------------------------------------------------------
 
@@ -837,9 +833,40 @@ class _NodesBuilder (object):
         finally:
             self.vfiles.close()
 
+
 # ==============================================================================
+class _NodeCondition (object):
+    __slots__ = (
+        'value',
+        'op',
+    )
+
+    def __init__(self, condition, result=True):
+        self.value = condition
+        self.op = operator.truth if result else operator.__not__
+
+    def get_node(self):
+        value = self.value
+        if isinstance(value, Node):
+            return value
+
+        elif isinstance(value, NodeFilter):
+            return value.get_node()
+
+        return None
+
+    def get(self):
+        value = simplify_value(self.value)
+        return self.op(value)
+
+    def __bool__(self):
+        return self.get()
+
+    def __nonzero__(self):
+        return self.get()
 
 
+# ==============================================================================
 class BuildManager (object):
 
     __slots__ = (
@@ -849,8 +876,10 @@ class BuildManager (object):
         '_node_locker',
         '_module_cache',
         '_node_cache',
+        '_node_conditions',
         'completed',
         'actual',
+        'skipped',
         'explain',
     )
 
@@ -859,6 +888,7 @@ class BuildManager (object):
     def __init__(self):
         self._nodes = _NodesTree()
         self._node_locker = None
+        self._node_conditions = {}
         self.__reset()
 
     # -----------------------------------------------------------
@@ -872,6 +902,7 @@ class BuildManager (object):
 
         self.completed = 0
         self.actual = 0
+        self.skipped = 0
         self.explain = explain
 
     # -----------------------------------------------------------
@@ -883,6 +914,31 @@ class BuildManager (object):
 
     def depends(self, node, deps):
         self._nodes.depends(node, deps)
+
+    # ----------------------------------------------------------
+
+    def build_if(self, condition, nodes):
+
+        if not isinstance(condition, _NodeCondition):
+            condition = _NodeCondition(condition)
+
+        cond_node = condition.get_node()
+        if cond_node is not None:
+            cond_node = (cond_node,)
+
+        depends = self._nodes.depends
+        set_node_condition = self._node_conditions.__setitem__
+
+        for node in to_sequence(nodes):
+            if cond_node is not None:
+                depends(node, cond_node)
+
+            set_node_condition(node, condition)
+
+    # ----------------------------------------------------------
+
+    def skip_if(self, condition, nodes):
+        self.build_if(_NodeCondition(condition, False), nodes)
 
     # -----------------------------------------------------------
 
@@ -958,6 +1014,22 @@ class BuildManager (object):
 
     # -----------------------------------------------------------
 
+    def skip_node(self, node):
+        cond = self._node_conditions.pop(node, None)
+
+        if (cond is None) or cond:
+            return False
+
+        self.unlock_node(node)
+        self._nodes.remove_tail(node)
+        self.skipped += 1
+
+        node.skip()
+
+        return True
+
+    # -----------------------------------------------------------
+
     def actual_node(self, node):
         self.unlock_node(node)
         self._nodes.remove_tail(node)
@@ -1000,7 +1072,7 @@ class BuildManager (object):
     # -----------------------------------------------------------
 
     def get_progress_str(self):
-        done = self.completed + self.actual
+        done = self.completed + self.actual + self.skipped
         total = len(self._nodes) + done
 
         processed = done + len(self._failed_nodes)
@@ -1012,6 +1084,8 @@ class BuildManager (object):
 
     def close(self):
         self._nodes = _NodesTree()
+        self._node_locker = None
+        self._node_conditions = {}
 
     # -----------------------------------------------------------
 
@@ -1043,15 +1117,8 @@ class BuildManager (object):
 
     # -----------------------------------------------------------
 
-    def build(self,
-              jobs,
-              keep_going,
-              nodes=None,
-              explain=False,
-              with_backtrace=True,
-              use_sqlite=False,
-              force_lock=False
-              ):
+    def build(self, jobs, keep_going, nodes=None, explain=False,
+              with_backtrace=True, use_sqlite=False, force_lock=False):
 
         self.__reset(explain=explain)
 
@@ -1095,6 +1162,7 @@ class BuildManager (object):
 
     def print_build_state(self):
         log_info("Failed nodes: %s", len(self._failed_nodes))
+        log_info("Skipped nodes: %s", self.skipped)
         log_info("Completed nodes: %s", self.completed)
         log_info("Actual nodes: %s", self.actual)
 
