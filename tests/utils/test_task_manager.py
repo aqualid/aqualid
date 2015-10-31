@@ -1,26 +1,40 @@
 import time
+import threading
 
 from aql_testcase import AqlTestCase
 
 from aql.utils import TaskManager, TaskResult
 
+
 # ==============================================================================
-
-
 def _do_append(arg, results, delay=0):
     time.sleep(delay)
     results.add(arg)
 
+
 # ==============================================================================
-
-
 def _do_fail(delay=0):
     time.sleep(delay)
     raise Exception()
 
+
 # ==============================================================================
+def _do_expensive(event, delay=1):
+    if event.wait(delay):
+        raise Exception("Concurrent run")
+    event.set()
+    time.sleep(delay)   # doing a heavy work
+    event.clear()
 
 
+# ==============================================================================
+def _do_non_expensive(event, delay=1):
+    if event.wait(delay):
+        raise Exception("Concurrent run")
+    time.sleep(delay)
+
+
+# ==============================================================================
 class TestTaskManager(AqlTestCase):
 
     def test_task_manager(self):
@@ -150,7 +164,6 @@ class TestTaskManager(AqlTestCase):
         time.sleep(1)
 
         done_tasks = sorted(tm.get_finished_tasks(), key=lambda t: t.task_id)
-        print()
         self.assertEqual(len(done_tasks), jobs)
 
         items = zip(range(jobs), [None] * num_tasks, [None] * num_tasks)
@@ -161,3 +174,24 @@ class TestTaskManager(AqlTestCase):
 
         self.assertEqual(done_tasks[3].task_id, 3)
         self.assertIsNotNone(done_tasks[3].error)
+
+    # ----------------------------------------------------------
+
+    def test_tm_expensive(self):
+
+        expensive_event = threading.Event()
+
+        num_tasks = 8
+        jobs = 8
+
+        tm = TaskManager(0, stop_on_fail=True)
+
+        for i in range(num_tasks):
+            if i % 2:
+                tm.add_expensive_task(0, i, _do_expensive, expensive_event )
+            else:
+                tm.add_task(0, i, _do_non_expensive, expensive_event)
+
+        tm.start(jobs)
+
+        tm.get_finished_tasks()
