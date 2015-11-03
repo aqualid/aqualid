@@ -1,7 +1,7 @@
 import time
 import threading
 
-from aql_testcase import AqlTestCase
+from aql_testcase import AqlTestCase, skip
 
 from aql.utils import TaskManager, TaskResult
 
@@ -187,11 +187,30 @@ class TestTaskManager(AqlTestCase):
         tm = TaskManager(0, stop_on_fail=True)
 
         for i in range(num_tasks):
+            tm.add_task(0, i, _do_non_expensive, expensive_event)
+
+        tm.start(jobs)
+        time.sleep(0.25)
+
+        for i in range(num_tasks, num_tasks*2):
             if i % 2:
-                tm.add_expensive_task(0, i, _do_expensive, expensive_event )
+                tm.add_expensive_task(i, _do_expensive, expensive_event)
             else:
                 tm.add_task(0, i, _do_non_expensive, expensive_event)
 
         tm.start(jobs)
 
-        tm.get_finished_tasks()
+        results = []
+
+        while True:
+            tmp_results = tm.get_finished_tasks()
+            if not tmp_results:
+                break
+            results.extend(tmp_results)
+
+        for result in results:
+            self.assertFalse(result.is_failed(), result)
+
+        self.assertEqual(len(results), num_tasks * 2)
+
+
