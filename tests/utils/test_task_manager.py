@@ -105,10 +105,13 @@ class TestTaskManager(AqlTestCase):
 
         tm = TaskManager(num_threads=jobs)
 
+        tm.stop()
+        tm.start(jobs)
+
         results = set()
 
         for i in range(num_tasks):
-            tm.add_task(0, i, _do_append, i, results, 1)
+            tm.add_task(0, i, _do_append, i, results, 0.2 * (i + 1))
 
         time.sleep(0.1)
 
@@ -120,6 +123,24 @@ class TestTaskManager(AqlTestCase):
 
         self.assertEqual(len(done_tasks), jobs)
         self.assertEqual(results, set(done_tasks))
+
+        tm.start(jobs)
+        done_tasks = sorted(result.task_id
+                            for result in self.get_done_tasks(tm))
+
+        self.assertEqual(len(done_tasks), max(0, num_tasks - jobs))
+        tm.stop()
+
+        tm.start(jobs)
+
+        for i in range(jobs):
+            tm.add_task(0, i, _do_append, i, results, 0.2 * i)
+
+        self.get_done_tasks(tm)
+
+        tm.stop()
+
+
 
     # ==============================================================================
 
@@ -153,7 +174,7 @@ class TestTaskManager(AqlTestCase):
 
     # ==============================================================================
 
-    def test_task_manager_stop_on_fail(self):
+    def test_task_manager_abort_on_fail(self):
         num_tasks = 8
         jobs = 4
 

@@ -226,7 +226,6 @@ class _WorkerThread(threading.Thread):
         task_lock = self.task_lock
 
         while not is_stopped():
-
             task = tasks.get()
 
             task_id = task.task_id
@@ -333,6 +332,8 @@ class TaskManager (object):
 
         for thread in self.threads:
             put_task(_null_task)
+
+        for thread in self.threads:
             thread.join()
 
         self.threads.clear()
