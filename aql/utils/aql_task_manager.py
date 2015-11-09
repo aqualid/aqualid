@@ -313,7 +313,7 @@ class TaskManager (object):
         for thread in self.threads:
             thread.join()
 
-        self.threads.clear()
+        self.threads[:] = []
         stop_event.clear()
 
     # ----------------------------------------------------------
