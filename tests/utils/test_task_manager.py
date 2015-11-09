@@ -1,7 +1,7 @@
 import time
 import threading
 
-from aql_testcase import AqlTestCase, skip
+from aql_testcase import AqlTestCase
 
 from aql.utils import TaskManager, TaskResult
 
@@ -56,7 +56,7 @@ class TestTaskManager(AqlTestCase):
     def test_task_manager(self):
 
         jobs = 1
-        tm = TaskManager(0)
+        tm = TaskManager()
 
         results = set()
 
@@ -73,13 +73,14 @@ class TestTaskManager(AqlTestCase):
         self.assertEqual(done_tasks, expected_tasks)
         self.assertEqual(results, set(range(num_of_tasks)))
 
-    # ==============================================================================
+    # ----------------------------------------------------------
 
     def test_task_manager_fail(self):
 
         jobs = 4
 
-        tm = TaskManager(jobs)
+        tm = TaskManager()
+        tm.start(jobs)
 
         num_of_tasks = 100
 
@@ -96,14 +97,15 @@ class TestTaskManager(AqlTestCase):
             self.assertEqual(t.task_id, i)
             self.assertIsNotNone(t.error)
 
-    # ==============================================================================
+    # ----------------------------------------------------------
 
     def test_task_manager_stop(self):
 
         jobs = 4
         num_tasks = 8
 
-        tm = TaskManager(num_threads=jobs)
+        tm = TaskManager()
+        tm.start(jobs)
 
         tm.stop()
         tm.start(jobs)
@@ -140,12 +142,11 @@ class TestTaskManager(AqlTestCase):
 
         tm.stop()
 
-
-
-    # ==============================================================================
+    # ----------------------------------------------------------
 
     def test_task_manager_one_fail(self):
-        tm = TaskManager(4)
+        tm = TaskManager()
+        tm.start(4)
 
         results = set()
 
@@ -172,13 +173,14 @@ class TestTaskManager(AqlTestCase):
 
         self.assertEqual(done_tasks[2], expected_tasks[2])
 
-    # ==============================================================================
+    # ----------------------------------------------------------
 
     def test_task_manager_abort_on_fail(self):
         num_tasks = 8
         jobs = 4
 
-        tm = TaskManager(0, stop_on_fail=True)
+        tm = TaskManager()
+        tm.disable_keep_going()
 
         results = set()
 
@@ -213,7 +215,8 @@ class TestTaskManager(AqlTestCase):
         num_tasks = 8
         jobs = 16
 
-        tm = TaskManager(0, stop_on_fail=True)
+        tm = TaskManager()
+        tm.disable_keep_going()
 
         for i in range(num_tasks):
             tm.add_task(0, i, _do_non_expensive, expensive_event)
@@ -223,7 +226,7 @@ class TestTaskManager(AqlTestCase):
 
         expensive_task_ids = set()
 
-        for i in range(num_tasks, num_tasks*2):
+        for i in range(num_tasks, num_tasks * 2):
             if i % 2:
                 expensive_task_ids.add(i)
                 tm.add_expensive_task(i, _do_expensive, expensive_event)
@@ -252,7 +255,8 @@ class TestTaskManager(AqlTestCase):
         num_tasks = 8
         jobs = 16
 
-        tm = TaskManager(0, stop_on_fail=False)
+        tm = TaskManager()
+        tm.disable_backtrace()
 
         for i in range(num_tasks):
             tm.add_task(0, i, _do_non_expensive, expensive_event)
@@ -278,7 +282,8 @@ class TestTaskManager(AqlTestCase):
         num_tasks = 4
         jobs = 16
 
-        tm = TaskManager(0, stop_on_fail=True)
+        tm = TaskManager()
+        tm.disable_keep_going()
 
         for i in range(num_tasks):
             tm.add_task(0, i, _do_non_expensive, expensive_event)
@@ -296,5 +301,3 @@ class TestTaskManager(AqlTestCase):
         self.assertEqual(len(results), num_tasks + 1)
         task_ids = sorted(result.task_id for result in results)
         self.assertEqual(task_ids, list(range(num_tasks + 1)))
-
-

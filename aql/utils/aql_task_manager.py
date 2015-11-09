@@ -201,20 +201,18 @@ class TaskResult (object):
 class _WorkerThread(threading.Thread):
 
     def __init__(self, tasks, finished_tasks, task_lock,
-                 stop_event, fail_event, stop_on_fail, with_backtrace):
+                 stop_event, fail_handler):
 
         super(_WorkerThread, self).__init__()
 
         self.tasks = tasks
         self.finished_tasks = finished_tasks
         self.task_lock = task_lock
-        self.stop_on_fail = stop_on_fail
+        self.fail_handler = fail_handler
         self.stop_event = stop_event
-        self.fail_event = fail_event
 
         # let the main thread to exit even if task threads are still active
         self.daemon = True
-        self.with_backtrace = with_backtrace
 
     # -----------------------------------------------------------
 
@@ -242,31 +240,13 @@ class _WorkerThread(threading.Thread):
                     task_result.result = result
 
             except BaseException as ex:
-                self.fail_task(task_result, ex)
+                self.fail_handler(task_result, ex)
 
             finally:
                 if task_result is not None:
                     finished_tasks.put(task_result)
 
                 tasks.task_done()
-
-    # ----------------------------------------------------------
-
-    def fail_task(self, task_result, ex):
-
-        if self.with_backtrace:
-            err = traceback.format_exc()
-        else:
-            err = str(ex)
-
-        if task_result is not None:
-            task_result.error = err
-        else:
-            log_warning("Task failed with error: %s", err)
-
-        self.fail_event.set()
-        if self.stop_on_fail:
-            self.stop_event.set()
 
 
 # ==============================================================================
@@ -279,7 +259,7 @@ class TaskManager (object):
         'tasks',
         'finished_tasks',
         'unfinished_tasks',
-        'stop_on_fail',
+        'keep_going',
         'stop_event',
         'fail_event',
         'with_backtrace',
@@ -287,7 +267,7 @@ class TaskManager (object):
 
     # -----------------------------------------------------------
 
-    def __init__(self, num_threads, stop_on_fail=False, with_backtrace=True):
+    def __init__(self):
 
         self.tasks = queue.PriorityQueue()
         self.finished_tasks = queue.Queue()
@@ -295,12 +275,10 @@ class TaskManager (object):
 
         self.unfinished_tasks = 0
         self.threads = []
-        self.stop_on_fail = stop_on_fail
+        self.keep_going = True
         self.stop_event = threading.Event()
         self.fail_event = threading.Event()
-        self.with_backtrace = with_backtrace
-
-        self.start(num_threads)
+        self.with_backtrace = True
 
     # ----------------------------------------------------------
 
@@ -310,8 +288,7 @@ class TaskManager (object):
         num_threads -= len(threads)
 
         args = (self.tasks, self.finished_tasks, self.task_lock,
-                self.stop_event, self.fail_event,
-                self.stop_on_fail, self.with_backtrace)
+                self.stop_event, self.fail_handler)
 
         for i in range(num_threads):
             thread = _WorkerThread(*args)
@@ -354,12 +331,25 @@ class TaskManager (object):
 
     # -----------------------------------------------------------
 
-    def __enable_expensive(self):
+    def disable_keep_going(self):
+        self.keep_going = False
+
+    # -----------------------------------------------------------
+
+    def disable_backtrace(self):
+        self.with_backtrace = False
+
+    # -----------------------------------------------------------
+
+    def enable_expensive(self):
+
+        if isinstance(self.task_lock, _SharedLock):
+            return
 
         num_threads = len(self.threads)
 
         self.stop()
-        if self.stop_on_fail and self.fail_event.is_set():
+        if self.fail_event.is_set():
             return
 
         self.task_lock = _SharedLock()
@@ -370,10 +360,26 @@ class TaskManager (object):
     def add_expensive_task(self, task_id, function, *args, **kw):
         task = _ExpensiveTask(task_id, function, args, kw)
 
-        if isinstance(self.task_lock, _NoLock):
-            self.__enable_expensive()
+        self.enable_expensive()
 
         self.__add_task(task)
+
+    # -----------------------------------------------------------
+
+    def fail_handler(self, task_result, ex):
+        if self.with_backtrace:
+            err = traceback.format_exc()
+        else:
+            err = str(ex)
+
+        if task_result is not None:
+            task_result.error = err
+        else:
+            log_warning("Internal task failed with error: %s", err)
+
+        if not self.keep_going:
+            self.fail_event.set()
+            self.stop_event.set()
 
     # -----------------------------------------------------------
 
