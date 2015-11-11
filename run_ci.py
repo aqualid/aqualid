@@ -121,9 +121,25 @@ def _fetch_repo(cur_dir, repo_name, repo_dir=None):
         _run_cmd(["git", "clone", "-b", "master", "--depth", "1",
                   "https://github.com/aqualid/%s.git" % repo_name, repo_dir])
 
-    print("%s: %s" % (repo_name, repo_dir))
-
     return repo_dir
+
+
+# ==============================================================================
+def _make_aql(core_dir, args):
+    make_dir = os.path.join(core_dir, "make")
+
+    cmd = [sys.executable, "-c", "import aql;import sys;sys.exit(aql.main())"]
+    cmd.extend(["-C", make_dir])
+    cmd.extend(args)
+
+    _run_cmd(cmd, [core_dir, make_dir])
+
+
+# ==============================================================================
+def _make_dist(core_dir, tools_dir):
+    tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
+    args = ['-I', tools_dir, 'sdist']
+    _make_aql(core_dir, args)
 
 
 # ==============================================================================
@@ -136,22 +152,10 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
         _run_tests(tests_dir, source_dir)
 
     if (run_tests is None) or 'make' in run_tests:
-        make_dir = os.path.join(core_dir, "make")
-        _run_cmd([sys.executable, "-c",
-                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
-                  "-l"], [core_dir, make_dir])
-
-        _run_cmd([sys.executable, "-c",
-                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
-                  "-L", "c++"], [core_dir, make_dir])
-
-        _run_cmd([sys.executable, "-c",
-                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
-                  "-t"], [core_dir, make_dir])
-
-        _run_cmd([sys.executable, "-c",
-                  "import aql;import sys;sys.exit(aql.main())", "-C", make_dir,
-                  "local"], [core_dir, make_dir])
+        _make_aql(core_dir, ['-l'])
+        _make_aql(core_dir, ['-L', 'c++'])
+        _make_aql(core_dir, ['-t'])
+        _make_aql(core_dir, ['local'])
 
     if (run_tests is None) or 'flake8' in run_tests:
         # check for PEP8 violations, max complexity and other standards
@@ -164,6 +168,9 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
         _run_flake8(make_srcs)
 
         _run_flake8(os.path.join(core_dir, 'make', 'make.aql'), ignore='F821')
+
+    if (run_tests is None) or 'dist' in run_tests:
+        _make_dist(core_dir, tools_dir)
 
     ###############
     if (run_tests is None) or 'tools' in run_tests:
