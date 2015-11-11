@@ -81,7 +81,9 @@ options.build_variant = "final"
 
             prj = Project(cfg)
 
-            prj.tools.ExecuteCommand(sys.executable, "-c", "print('test builtin')")
+            cmd = sys.executable, "-c", "print('test builtin')"
+
+            prj.tools.ExecuteCommand(cmd)
             prj.build()
 
             self.assertEqual(self.building_started, 1)
@@ -90,7 +92,7 @@ options.build_variant = "final"
             self.building_started = 0
 
             prj = Project(cfg)
-            prj.tools.ExecuteCommand(sys.executable, "-c", "print('test builtin')")
+            prj.tools.ExecuteCommand(cmd)
             prj.build()
 
             self.assertEqual(self.building_started, 0)
@@ -108,7 +110,8 @@ options.build_variant = "final"
             cmd = prj.tools.ExecuteCommand(
                 sys.executable, "-c", "print('test builtin')")
 
-            prj.tools.ExecuteCommand(sys.executable, "-c", "print('test other')")
+            prj.tools.ExecuteCommand(sys.executable, "-c",
+                                     "print('test other')")
 
             self.assertSequenceEqual(prj.get_build_targets(), ['test', 'run'])
 
@@ -218,8 +221,8 @@ options.build_variant = "final"
             cmd_heavy = prj.tools.ExecuteCommand(
                 sys.executable, "-c", "print('test expensive')")
 
-            cmd_light = prj.tools.ExecuteCommand(
-                sys.executable, "-c", "print('test light')")
+            prj.tools.ExecuteCommand(sys.executable, "-c",
+                                     "print('test light')")
 
             prj.expensive(cmd_heavy)
 
