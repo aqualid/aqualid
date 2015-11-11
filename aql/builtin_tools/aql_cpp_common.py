@@ -387,11 +387,8 @@ class HeaderChecker (Builder):
 
         targets.add_targets(has_headers)
 
+
 # ==============================================================================
-
-# noinspection PyAttributeOutsideInit
-
-
 class CommonCompiler (FileBuilder):
 
     NAME_ATTRS = ('prefix', 'suffix', 'ext')
@@ -399,7 +396,6 @@ class CommonCompiler (FileBuilder):
 
     # -----------------------------------------------------------
 
-    # noinspection PyUnusedLocal
     def __init__(self, options, ext, cmd):
 
         self.prefix = options.prefix.get()
@@ -503,11 +499,8 @@ class CommonCppCompiler (CommonCompiler):
                                                 ext=options.objsuffix.get(),
                                                 cmd=options.cc_cmd.get())
 
+
 # ==============================================================================
-
-# noinspection PyAttributeOutsideInit
-
-
 class CommonResCompiler (CommonCompiler):
 
     def __init__(self, options):
@@ -515,11 +508,8 @@ class CommonResCompiler (CommonCompiler):
                                                 ext=options.ressuffix.get(),
                                                 cmd=options.rc_cmd.get())
 
+
 # ==============================================================================
-
-# noinspection PyAttributeOutsideInit
-
-
 class CommonCppLinkerBase(FileBuilder):
 
     CPP_EXT = (".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C", ".c")

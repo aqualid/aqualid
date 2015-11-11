@@ -35,6 +35,50 @@ class ValueBuilder (Builder):
 
 
 # ==============================================================================
+class ExpensiveValueBuilder (Builder):
+
+    __slots__ = (
+        'event',
+        'do_expensive',
+    )
+
+    def __init__(self, options, event, do_expensive):
+        self.event = event
+        self.do_expensive = do_expensive
+
+    # ----------------------------------------------------------
+
+    def get_trace_name(self, source_entities, brief):
+        if self.do_expensive:
+            return "Heavy"
+        return "Light"
+
+    # ----------------------------------------------------------
+
+    def split(self, source_entities):
+        return self.split_single(source_entities)
+
+    # ----------------------------------------------------------
+
+    def build(self, source_entities, targets):
+
+        if self.event.wait(1):
+            raise Exception("Concurrent run")
+
+        if self.do_expensive:
+            self.event.set()
+            time.sleep(1)  # doing a heavy work
+            self.event.clear()
+        else:
+            time.sleep(0.5)
+
+        value = '-'.join(map(str, map(operator.methodcaller('get'),
+                                      source_entities)))
+
+        targets.add_targets(value)
+
+
+# ==============================================================================
 class CondBuilder (Builder):
 
     def build(self, source_entities, targets):
@@ -1017,41 +1061,27 @@ class TestBuildManager(AqlTestCase):
             _build(bm, jobs=4)
             self.assertEqual(self.built_nodes, 1)
 
-    # -----------------------------------------------------------
+    # ----------------------------------------------------------
 
-    @skip
-    def test_bm_node_names(self):
-
+    def test_bm_expensive(self):
         with Tempdir() as tmp_dir:
-            src_files = self.generate_source_files(tmp_dir, 3, 201)
             options = builtin_options()
             options.build_dir = tmp_dir
 
-            builder = ChecksumBuilder(options, 0, 256, replace_ext=False)
             bm = BuildManager()
-            try:
-                src_entities = []
-                for s in src_files:
-                    src_entities.append(FileChecksumEntity(s))
+            self.built_nodes = 0
 
-                node0 = Node(builder, None)
-                node1 = Node(builder, src_entities)
-                node2 = Node(builder, node1)
-                node3 = Node(builder, node2)
-                node4 = Node(builder, node3)
+            event = threading.Event()
 
-                bm.add([node0, node1, node2, node3, node4])
+            heavy = ExpensiveValueBuilder(options, event, do_expensive=True)
+            light = ExpensiveValueBuilder(options, event, do_expensive=False)
 
-                bm.build(1, False)
+            node1 = Node(heavy, [1, 2, 3, 4, 5, 7])
+            node2 = Node(light, list(range(10, 100, 10)))
+            bm.add([node2, node1])
+            bm.expensive(node1)
 
-                print("node2: %s" % str(node4))
-                print("node2: %s" % str(node3))
-                print("node2: %s" % str(node2))
-                print("node1: %s" % str(node1))
-                print("node0: %s" % str(node0))
-
-            finally:
-                bm.close()
+            _build(bm, jobs=16)
 
 
 # ==============================================================================

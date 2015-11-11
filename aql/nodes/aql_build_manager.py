@@ -635,25 +635,34 @@ class _NodesBuilder (object):
         'build_manager',
         'task_manager',
         'building_nodes',
+        'expensive_nodes',
     )
 
     # -----------------------------------------------------------
 
-    def __init__(self,
-                 build_manager,
-                 jobs=0,
-                 keep_going=False,
-                 with_backtrace=True,
-                 use_sqlite=False,
-                 force_lock=False
-                 ):
+    def __init__(self, build_manager,
+                 jobs=0, keep_going=False, with_backtrace=True,
+                 use_sqlite=False, force_lock=False):
 
         self.vfiles = _VFiles(use_sqlite=use_sqlite, force_lock=force_lock)
         self.building_nodes = {}
+        self.expensive_nodes = set(build_manager._expensive_nodes)
         self.build_manager = build_manager
-        self.task_manager = TaskManager(num_threads=jobs,
-                                        stop_on_fail=not keep_going,
-                                        with_backtrace=with_backtrace)
+
+        tm = TaskManager()
+
+        if self.expensive_nodes:
+            tm.enable_expensive()
+
+        if not keep_going:
+            tm.disable_keep_going()
+
+        if not with_backtrace:
+            tm.disable_backtrace()
+
+        tm.start(jobs)
+
+        self.task_manager = tm
 
     # -----------------------------------------------------------
 
@@ -711,6 +720,15 @@ class _NodesBuilder (object):
 
     # -----------------------------------------------------------
 
+    def add_build_task(self, node):
+        if node in self.expensive_nodes:
+            self.task_manager.add_expensive_task(node, _build_node, node)
+        else:
+            task_priority = -node.get_weight()  # less is higher
+            self.task_manager.add_task(task_priority, node, _build_node, node)
+
+    # -----------------------------------------------------------
+
     def build_node(self, node):
 
         build_manager = self.build_manager
@@ -740,6 +758,9 @@ class _NodesBuilder (object):
             for split_node in split_nodes:
                 self._add_building_node(split_node)
 
+            if node in self.expensive_nodes:
+                self.expensive_nodes.update(split_nodes)
+
             return True
 
         if node.check_actual(vfile, explain):
@@ -749,7 +770,8 @@ class _NodesBuilder (object):
         if not self._add_building_node(node):
             return False
 
-        self.task_manager.add_task(-node.get_weight(), node, _build_node, node)
+        self.add_build_task(node)
+
         return False
 
     # -----------------------------------------------------------
@@ -877,6 +899,7 @@ class BuildManager (object):
         '_module_cache',
         '_node_cache',
         '_node_conditions',
+        '_expensive_nodes',
         'completed',
         'actual',
         'skipped',
@@ -889,6 +912,7 @@ class BuildManager (object):
         self._nodes = _NodesTree()
         self._node_locker = None
         self._node_conditions = {}
+        self._expensive_nodes = set()
         self.__reset()
 
     # -----------------------------------------------------------
@@ -939,6 +963,11 @@ class BuildManager (object):
 
     def skip_if(self, condition, nodes):
         self.build_if(_NodeCondition(condition, False), nodes)
+
+    # -----------------------------------------------------------
+
+    def expensive(self, nodes):
+        self._expensive_nodes.update(to_sequence(nodes))
 
     # -----------------------------------------------------------
 

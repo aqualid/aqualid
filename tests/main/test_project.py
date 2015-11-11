@@ -1,3 +1,4 @@
+import sys
 
 from aql_testcase import AqlTestCase
 
@@ -7,9 +8,8 @@ from aql.utils import Tempfile, Tempdir, remove_user_handler, add_user_handler
 from aql.builtin_tools import Tool
 from aql.main import Project, ProjectConfig
 
+
 # ==============================================================================
-
-
 class _NullBuilder (Builder):
 
     def __init__(self, options, v1, v2, v3):
@@ -22,20 +22,17 @@ class _NullBuilder (Builder):
     def build(self, source_entities, targets):
         pass
 
+
 # ==============================================================================
-
-
 class _NullTool(Tool):
 
     def noop(self, options, v1, v2, v3):
         return _NullBuilder(options, v1, v2, v3)
 
+
 # ==============================================================================
-
-
 class TestProject(AqlTestCase):
 
-    # noinspection PyUnusedLocal
     def event_node_building(self, settings, node):
         self.building_started += 1
 
@@ -84,7 +81,9 @@ options.build_variant = "final"
 
             prj = Project(cfg)
 
-            prj.tools.ExecuteCommand("python", "-c", "print('test builtin')")
+            cmd = sys.executable, "-c", "print('test builtin')"
+
+            prj.tools.ExecuteCommand(cmd)
             prj.build()
 
             self.assertEqual(self.building_started, 1)
@@ -93,7 +92,7 @@ options.build_variant = "final"
             self.building_started = 0
 
             prj = Project(cfg)
-            prj.tools.ExecuteCommand("python", "-c", "print('test builtin')")
+            prj.tools.ExecuteCommand(cmd)
             prj.build()
 
             self.assertEqual(self.building_started, 0)
@@ -109,9 +108,10 @@ options.build_variant = "final"
             prj = Project(cfg)
 
             cmd = prj.tools.ExecuteCommand(
-                "python", "-c", "print('test builtin')")
+                sys.executable, "-c", "print('test builtin')")
 
-            prj.tools.ExecuteCommand("python", "-c", "print('test other')")
+            prj.tools.ExecuteCommand(sys.executable, "-c",
+                                     "print('test other')")
 
             self.assertSequenceEqual(prj.get_build_targets(), ['test', 'run'])
 
@@ -144,18 +144,18 @@ options.build_variant = "final"
             prj = Project(cfg)
 
             prj.tools.ExecuteCommand(
-                "python", "-c", "print('test builtin')")
+                sys.executable, "-c", "print('test builtin')")
             cmd_other = prj.tools.ExecuteCommand(
-                "python", "-c", "print('test other')")
+                sys.executable, "-c", "print('test other')")
             cmd_other2 = prj.tools.ExecuteCommand(
-                "python", "-c", "print('test other2')")
+                sys.executable, "-c", "print('test other2')")
 
             prj.default_build([cmd_other, cmd_other2])
             prj.build()
 
             self.assertEqual(self.built_nodes, 2)
 
-    # ==========================================================
+    # ----------------------------------------------------------
 
     def test_prj_implicit_value_args(self):
 
@@ -209,3 +209,23 @@ options.build_variant = "final"
             tool.noop(v1=v1, v2="b", v3="c")
             prj.build()
             self.assertEqual(self.built_nodes, 0)
+
+    # -----------------------------------------------------------
+
+    def test_prj_expensive(self):
+        with Tempdir() as tmp_dir:
+            cfg = ProjectConfig(args=["build_dir=%s" % tmp_dir])
+
+            prj = Project(cfg)
+
+            cmd_heavy = prj.tools.ExecuteCommand(
+                sys.executable, "-c", "print('test expensive')")
+
+            prj.tools.ExecuteCommand(sys.executable, "-c",
+                                     "print('test light')")
+
+            prj.expensive(cmd_heavy)
+
+            prj.build()
+
+            self.assertEqual(self.built_nodes, 2)

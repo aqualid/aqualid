@@ -724,6 +724,7 @@ class Project(object):
             'Alias':            self.alias_nodes,
             'Default':          self.default_build,
             'AlwaysBuild':      self.always_build,
+            'Expensive':        self.expensive,
             'Build':            self.build,
             'Clear':            self.clear,
             'DirName':          self.node_dirname,
@@ -931,6 +932,11 @@ class Project(object):
         null_value = NullEntity()
         for node in to_sequence(nodes):
             node.depends(null_value)
+
+    # ----------------------------------------------------------
+
+    def expensive(self, nodes):
+        self.build_manager.expensive(nodes)
 
     # ----------------------------------------------------------
 
