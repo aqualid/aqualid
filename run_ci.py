@@ -184,20 +184,20 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
 def _parse_args(choices):
     args_parser = argparse.ArgumentParser()
 
-    args_parser.add_argument('--skip', action='append', choices=choices,
+    args_parser.add_argument('--skip', '-s', action='append', choices=choices,
                              dest='skip_tests',
                              help="Skip specific tests")
 
-    args_parser.add_argument('--run', action='append', choices=choices,
+    args_parser.add_argument('--run', '-r', action='append', choices=choices,
                              dest='run_tests',
                              help="Run specific tests")
 
-    args_parser.add_argument('--tools-dir', action='store',
+    args_parser.add_argument('--tools-dir', '-T', action='store',
                              dest='tools_dir', metavar='PATH',
                              help="Aqualid examples directory. "
                                   "By default it will be fetched from GitHub.")
 
-    args_parser.add_argument('--examples-dir', action='store',
+    args_parser.add_argument('--examples-dir', '-E', action='store',
                              dest='examples_dir', metavar='PATH',
                              help="Aqualid examples directory. "
                                   "By default it will be fetched from GitHub.")
