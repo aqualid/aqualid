@@ -102,8 +102,6 @@ def _run_cmd(cmd, path=None):
     else:
         env = None
 
-    print(cmd)
-
     p = subprocess.Popen(cmd, env=env, shell=False)
     result = p.wait()
 
@@ -138,6 +136,8 @@ def _make_aql(core_dir, args):
 # ==============================================================================
 def _make_dist(core_dir, tools_dir):
     tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
+
+    tools_dir = os.path.join(tools_dir, 'tools')
     args = ['-I', tools_dir, 'sdist']
     _make_aql(core_dir, args)
 
@@ -207,7 +207,7 @@ def _parse_args(choices):
 
 # ==============================================================================
 def main():
-    choices = ('tests', 'make', 'flake8', 'tools')
+    choices = ('tests', 'make', 'dist', 'flake8', 'tools')
 
     args = _parse_args(choices)
 

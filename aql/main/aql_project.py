@@ -29,7 +29,7 @@ import itertools
 from aql.utils import CLIConfig, CLIOption, get_function_args, exec_file,\
     flatten_list, find_files, cpu_count, Chdir, expand_file_path
 
-from aql.util_types import FilePath, value_list_type, UniqueList,\
+from aql.util_types import AbsFilePath, FilePath, value_list_type, UniqueList,\
     to_sequence, is_sequence
 
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity,\
@@ -224,12 +224,12 @@ class ProjectConfig(object):
 
     def __init__(self, args=None):
 
-        paths_type = value_list_type(UniqueList, FilePath)
+        paths_type = value_list_type(UniqueList, AbsFilePath)
         strings_type = value_list_type(UniqueList, str)
 
         cli_options = (
 
-            CLIOption("-C", "--directory", "directory", FilePath, '',
+            CLIOption("-C", "--directory", "directory", AbsFilePath, '',
                       "Change directory before reading the make files.",
                       'FILE PATH', cli_only=True),
 
@@ -248,7 +248,7 @@ class ProjectConfig(object):
             CLIOption("-t", "--list-targets", "list_targets", bool, False,
                       "List all available targets and exit.", cli_only=True),
 
-            CLIOption("-c", "--config", "config", FilePath, None,
+            CLIOption("-c", "--config", "config", AbsFilePath, None,
                       "The configuration file used to read CLI arguments.",
                       cli_only=True),
 
@@ -283,7 +283,7 @@ class ProjectConfig(object):
             CLIOption(None, "--debug-memory", "debug_memory", bool, False,
                       "Display memory usage."),
 
-            CLIOption("-P", "--debug-profile", "debug_profile", FilePath, None,
+            CLIOption("-P", "--debug-profile", "debug_profile", AbsFilePath, None,
                       "Run under profiler and save the results "
                       "in the specified file.",
                       'FILE PATH'),
@@ -352,7 +352,13 @@ class ProjectConfig(object):
         self.options = options
         self.arguments = arguments
         self.directory = os.path.abspath(cli_config.directory)
-        self.makefile = cli_config.makefile
+
+        makefile = cli_config.makefile
+        if makefile.find(os.path.sep) != -1:
+            makefile = os.path.abspath(makefile)
+
+        self.makefile = makefile
+
         self.search_up = cli_config.search_up
         self.tools_path = cli_config.tools_path
         self.default_tools_path = _get_default_tools_path()
