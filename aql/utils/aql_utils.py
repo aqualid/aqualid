@@ -228,15 +228,13 @@ def simple_object_signature(obj, common_hash=None):
     data = dump_simple_object(obj)
     return data_signature(data, common_hash)
 
+
 # ==============================================================================
-
-
 def new_hash(data=b''):
     return hashlib.md5(data)
 
+
 # ==============================================================================
-
-
 def data_signature(data, common_hash=None):
     if common_hash is None:
         obj_hash = hashlib.md5(data)
@@ -246,9 +244,8 @@ def data_signature(data, common_hash=None):
 
     return obj_hash.digest()
 
+
 # ==============================================================================
-
-
 def file_signature(filename, offset=0):
 
     checksum = hashlib.md5()
@@ -269,18 +266,16 @@ def file_signature(filename, offset=0):
     # print("file_signature: %s: %s" % (filename, checksum.hexdigest()) )
     return checksum.digest()
 
+
 # ==============================================================================
-
-
 def file_time_signature(filename):
     stat = os.stat(filename)
     # print("file_time_signature: %s: %s" %
     #                           (filename, (stat.st_size, stat.st_mtime)) )
     return simple_object_signature((stat.st_size, stat.st_mtime))
 
+
 # ==============================================================================
-
-
 def file_checksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
 
     checksum = hashlib.__dict__[alg]()
@@ -337,9 +332,8 @@ try:
 except AttributeError:
     _getargspec = inspect.getargspec
 
+
 # ==============================================================================
-
-
 def get_function_args(function, getargspec=_getargspec):
 
     args = getargspec(function)[:4]
@@ -350,9 +344,8 @@ def get_function_args(function, getargspec=_getargspec):
 
     return args
 
+
 # ==============================================================================
-
-
 def equal_function_args(function1, function2):
     if function1 is function2:
         return True

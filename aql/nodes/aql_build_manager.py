@@ -79,25 +79,22 @@ def event_node_building_finished(settings, node, builder_output, progress):
 
     log_info(msg)
 
+
 # ==============================================================================
-
-
 @event_status
 def event_node_building_failed(settings, node, error):
     pass
 
+
 # ==============================================================================
-
-
 @event_status
 def event_node_removed(settings, node, progress):
     msg = node.get_build_str(settings.brief)
     if msg:
         log_info("(%s) Removed: %s", progress, msg)
 
+
 # ==============================================================================
-
-
 class ErrorNodeDependencyCyclic(Exception):
 
     def __init__(self, node, deps):

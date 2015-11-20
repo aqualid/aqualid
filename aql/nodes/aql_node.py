@@ -441,7 +441,8 @@ class NodeEntity (EntityBase):
 
         try:
             self.builder.clear(self.target_entities, self.itarget_entities)
-        except Exception:
+        except Exception as ex:
+            print("Clear Exception: %s" % (ex,))
             pass
 
     # -----------------------------------------------------------
@@ -781,7 +782,7 @@ class Node (object):
         self.depends_called = True
 
         chdir(self.cwd)
-        nodes = self.builder.depends(self.source_entities)
+        nodes = self.builder.depends(self.options, self.source_entities)
         return nodes
 
     # ----------------------------------------------------------
@@ -793,7 +794,7 @@ class Node (object):
         self.replace_called = True
 
         chdir(self.cwd)
-        sources = self.builder.replace(self.source_entities)
+        sources = self.builder.replace(self.options, self.source_entities)
         if sources is None:
             return False
 
@@ -1036,7 +1037,7 @@ class Node (object):
         else:
             groups = self.builder.split(source_entities)
             if not groups:
-                groups = source_entities
+                groups = [source_entities]
 
         node_entities = []
         for group in groups:

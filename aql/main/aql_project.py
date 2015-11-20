@@ -52,27 +52,28 @@ __all__ = ('Project', 'ProjectConfig',
            'ErrorProjectInvalidMethod',
            )
 
+
 # ==============================================================================
+_EMBEDDED_EXTERNAL_TOOLS = []   # only used by standalone script
 
 
+# ==============================================================================
 class ErrorProjectInvalidMethod(Exception):
 
     def __init__(self, method):
         msg = "Invalid project method: '%s'" % (method,)
         super(ErrorProjectInvalidMethod, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectUnknownTarget(Exception):
 
     def __init__(self, target):
         msg = "Unknown build target: '%s'" % (target,)
         super(ErrorProjectUnknownTarget, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodWithKW(Exception):
 
     def __init__(self, method):
@@ -80,27 +81,24 @@ class ErrorProjectBuilderMethodWithKW(Exception):
             method,)
         super(ErrorProjectBuilderMethodWithKW, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodUnbound(Exception):
 
     def __init__(self, method):
         msg = "Unbound builder method: '%s'" % (method,)
         super(ErrorProjectBuilderMethodUnbound, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodFewArguments(Exception):
 
     def __init__(self, method):
         msg = "Too few arguments in builder method: '%s'" % (method,)
         super(ErrorProjectBuilderMethodFewArguments, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodInvalidOptions(Exception):
 
     def __init__(self, value):
@@ -108,15 +106,13 @@ class ErrorProjectBuilderMethodInvalidOptions(Exception):
               "'%s'(%s)" % (type(value), value)
         super(ErrorProjectBuilderMethodInvalidOptions, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 def _get_user_config_dir():
     return os.path.join(os.path.expanduser('~'), '.config')
 
+
 # ==============================================================================
-
-
 def _add_packages_from_sys_path(paths):
 
     local_path = os.path.normcase(os.path.expanduser('~'))
@@ -127,9 +123,8 @@ def _add_packages_from_sys_path(paths):
             if path not in paths:
                 paths.append(path)
 
+
 # ==============================================================================
-
-
 def _add_packages_from_sysconfig(paths):
     try:
         from distutils.sysconfig import get_python_lib
@@ -140,9 +135,8 @@ def _add_packages_from_sysconfig(paths):
     except Exception:
         pass
 
+
 # ==============================================================================
-
-
 def _get_site_packages():
 
     try:
@@ -157,9 +151,8 @@ def _get_site_packages():
 
     return paths
 
+
 # ==============================================================================
-
-
 def _get_aqualid_install_dir():
     try:
         import aql
@@ -167,9 +160,8 @@ def _get_aqualid_install_dir():
     except Exception:
         return None
 
+
 # ==============================================================================
-
-
 def _get_default_tools_path(info=get_aql_info()):
 
     aql_module_name = info.module
@@ -187,9 +179,8 @@ def _get_default_tools_path(info=get_aql_info()):
     tool_dirs = [os.path.join(path, 'tools') for path in tool_dirs]
     return tool_dirs
 
+
 # ==============================================================================
-
-
 def _read_config(config_file, cli_config, options):
 
     tools_path = cli_config.tools_path
@@ -202,9 +193,8 @@ def _read_config(config_file, cli_config, options):
 
     cli_config.tools_path = tools_path
 
+
 # ==============================================================================
-
-
 class ProjectConfig(object):
 
     __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
@@ -283,7 +273,8 @@ class ProjectConfig(object):
             CLIOption(None, "--debug-memory", "debug_memory", bool, False,
                       "Display memory usage."),
 
-            CLIOption("-P", "--debug-profile", "debug_profile", AbsFilePath, None,
+            CLIOption("-P", "--debug-profile", "debug_profile",
+                      AbsFilePath, None,
                       "Run under profiler and save the results "
                       "in the specified file.",
                       'FILE PATH'),
@@ -517,9 +508,8 @@ class ToolWrapper(object):
         setattr(self, attr, builder)
         return builder
 
+
 # ==============================================================================
-
-
 class ProjectTools(object):
 
     def __init__(self, project):

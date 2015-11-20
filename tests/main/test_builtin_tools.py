@@ -120,6 +120,49 @@ class TestBuiltinTools(AqlTestCase):
 
     # -----------------------------------------------------------
 
+    def test_find_files(self):
+
+        with Tempdir() as tmp_install_dir:
+            with Tempdir() as tmp_dir:
+
+                build_dir = os.path.join(tmp_dir, 'output')
+
+                num_sources = 3
+                sources = self.generate_source_files(tmp_dir, num_sources, 20)
+
+                cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
+
+                prj = Project(cfg)
+
+                prj.tools.FindFiles(tmp_dir)
+                prj.tools.FindFiles(tmp_dir, mask = "*.tmp")
+
+                self.build_prj(prj, 2)
+
+                self.build_prj(prj, 0)
+
+                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+                self.build_prj(prj, 1)
+
+                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+                self.build_prj(prj, 0)
+
+                sources += self.generate_source_files(tmp_dir, 1, 20)
+
+                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+                prj.tools.FindFiles(tmp_dir, mask="*.tmp")
+                self.build_prj(prj, 2)
+
+                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+                prj.tools.FindFiles(tmp_dir, mask="*.tmp")
+
+                self.clear_prj(prj)
+
+                self.assertTrue(all(os.path.isfile(source)
+                                    for source in sources))
+
+    # -----------------------------------------------------------
+
     def test_exec_method(self):
 
         def copy_file_ext(builder, source_entities, targets, ext):

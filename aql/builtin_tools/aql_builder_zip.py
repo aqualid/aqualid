@@ -34,7 +34,7 @@ class ZipFilesBuilder (FileBuilder):
     NAME_ATTRS = ['target']
     SIGNATURE_ATTRS = ['rename', 'basedir']
 
-    def __init__(self, options, target, rename, basedir, ext):
+    def __init__(self, options, target, rename=None, basedir=None, ext=None):
 
         if ext is None:
             ext = ".zip"

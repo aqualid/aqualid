@@ -17,7 +17,7 @@ from setup_settings import UNIX_SCRIPT_PATH, \
 
 
 src_dir = os.path.abspath('../aql')
-tool_dir = GetProjectConfig().tools_path
+tools_path = GetProjectConfig().tools_path
 dist_dir = './install'
 
 SetBuildDir('output')
@@ -27,10 +27,13 @@ src_files = FindFiles(src_dir, '*.py', exclude_mask="__init__.py")
 
 aql_tool = AddTool(AqlBuildTool)
 
-pre_files = aql_tool.Preprocess(src_files)
-linked_file = aql_tool.Link(pre_files, target="aql.py")
+joined_files = aql_tool.Join(src_files)
 
-Alias('link', linked_file, "Merge aql source files into one Python script.")
+tools_zip = aql_tool.EmbedTools(tools_path)
+
+linked_file = aql_tool.Link(joined_files, tools_zip, target="aql.py")
+
+Alias('link', linked_file, "Join all source files into one script.")
 Default(linked_file)
 
 # -----------------------------------------------------------
@@ -58,13 +61,12 @@ module_dir = setup_dir + AQL_MODULE_PATH
 
 mod = tools.CopyFileAs(linked_file, target=module_dir + '/__init__.py')
 
-tools_files = FindFiles(tool_dir, '*.py')
-
+tools_files = FindFiles(tools_path, "*.py")
 aql_tools = tools.CopyFiles(tools_files, target=module_dir + '/tools')
 
 readme = tools.CopyFileAs('../README.md',  target=setup_dir + '/README.txt')
 
-manifest = tools.WriteFile(MANIFEST,       target=setup_dir + "MANIFEST.in")
+manifest = tools.WriteFile(MANIFEST, target=setup_dir + "MANIFEST.in")
 
 win_script = tools.WriteFile(WINDOWS_SCRIPT,
                              target=setup_dir + WINDOWS_SCRIPT_PATH,
