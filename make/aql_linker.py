@@ -318,7 +318,7 @@ class AqlEmbedTools (aql.FileBuilder):
 
 
 # ==============================================================================
-class AqlLink (aql.Builder):
+class AqlLink (aql.FileBuilder):
 
     def __init__(self, options, target):
         self.target = self.get_target_path(target)

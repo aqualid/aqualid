@@ -363,10 +363,6 @@ class NodeEntity (EntityBase):
 
     def check_actual(self, vfile, explain):
 
-        self.target_entities = []
-        self.itarget_entities = []
-        self.idep_entities = []
-
         try:
             previous = vfile.find_node_entity(self)
 
@@ -442,7 +438,6 @@ class NodeEntity (EntityBase):
         try:
             self.builder.clear(self.target_entities, self.itarget_entities)
         except Exception as ex:
-            print("Clear Exception: %s" % (ex,))
             pass
 
     # -----------------------------------------------------------
@@ -796,7 +791,7 @@ class Node (object):
         chdir(self.cwd)
         sources = self.builder.replace(self.options, self.source_entities)
         if sources is None:
-            return False
+            return None
 
         # source_entities will be reinitialized later
         self.sources = tuple(to_sequence(sources))
@@ -932,6 +927,14 @@ class Node (object):
 
     # ----------------------------------------------------------
 
+    def _reset_targets(self):
+        for node_entity in self.node_entities:
+            node_entity.target_entities = []
+            node_entity.itarget_entities = []
+            node_entity.idep_entities = []
+
+    # ----------------------------------------------------------
+
     def _populate_targets(self):
 
         node_entities = self.node_entities
@@ -992,6 +995,9 @@ class Node (object):
     def build(self):
 
         builder = self.builder
+
+        self._reset_targets()
+
         if builder.is_batch():
             targets = _NodeBatchTargets(self.node_entities_map)
             output = builder.build_batch(self.source_entities, targets)

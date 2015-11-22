@@ -401,7 +401,6 @@ class Builder (object):
 
     def clear(self, target_entities, side_effect_entities):
         for entity in target_entities:
-            print("remove entity: %s" % (entity.name,))
             entity.remove()
 
         for entity in side_effect_entities:
