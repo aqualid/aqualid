@@ -2,7 +2,6 @@ import re
 import os.path
 import datetime
 import base64
-import hashlib
 
 import aql
 
@@ -37,19 +36,25 @@ HEADER = """#!/usr/bin/env python
            name=info.name, url=info.url)
 
 # ==============================================================================
+AQL_DATE = '_AQL_VERSION_INFO.date = "{date}"'.format(
+    date=datetime.date.today().isoformat())
 
+
+# ==============================================================================
 MAIN = """
-_AQL_VERSION_INFO.date = "{date}"
 if __name__ == '__main__':
-  aql_module_globals = globals().copy()
-  aql_module_name = "aql"
-  aql_module = imp.new_module( aql_module_name )
-  aql_module_globals.update( aql_module.__dict__ )
-  aql_module.__dict__.update( aql_module_globals )
-  sys.modules[ aql_module_name ] = aql_module
+    aql_module_globals = globals().copy()
+    aql_module_name = "aql"
+    aql_module = imp.new_module(aql_module_name)
+    aql_module_globals.update( aql_module.__dict__)
+    aql_module.__dict__.update(aql_module_globals)
+    sys.modules[aql_module_name] = aql_module
+    {embedded_tools}
+    sys.exit(main())
+"""
 
-  sys.exit( main() )
-""".format(date=datetime.date.today().isoformat())
+# ==============================================================================
+EMBEDDED_TOOLS = '\n    _EMBEDDED_EXTERNAL_TOOLS.append("""\n%s""")\n'
 
 
 # ==============================================================================
@@ -129,15 +134,18 @@ class AqlPreprocess (aql.FileBuilder):
 
 
 # ==============================================================================
-class AqlJoin (aql.FileBuilder):
+class AqlLinkCore (aql.FileBuilder):
+
+    def __init__(self, options, target):
+        self.target = self.get_target_path(target, ext='.py')
 
     def get_trace_name(self, source_entities, brief):
-        return "Join preprocessed files"
+        return "Link AQL Module"
 
     # ----------------------------------------------------------
 
-    def get_trace_targets(self, target_entities, brief):
-        return None
+    def get_target_entities(self, source_entities):
+        return self.target
 
     # ----------------------------------------------------------
 
@@ -147,7 +155,12 @@ class AqlJoin (aql.FileBuilder):
     # -----------------------------------------------------------
 
     def replace(self, options, source_entities):
-        return aql.Node(AqlPreprocess(options), source_entities)
+        finder = aql.FindFilesBuilder(options,
+                                      mask='*.py',
+                                      exclude_mask="__init__.py")
+        core_files = aql.Node(finder, source_entities)
+
+        return aql.Node(AqlPreprocess(options), core_files)
 
     # -----------------------------------------------------------
 
@@ -240,85 +253,66 @@ class AqlJoin (aql.FileBuilder):
         imports_content = '\n'.join(
             "import %s" % module for module in sorted(std_modules))
 
-        content = imports_content + '\n' + content
+        content = '\n'.join([HEADER, imports_content, content, AQL_DATE])
 
-        target = aql.SimpleEntity(data=content)
-        targets.add_target_entity(target)
+        aql.write_text_file(self.target, data=content)
+        targets.add_target_files(self.target)
 
 
 # ==============================================================================
-class AqlEmbedTools (aql.FileBuilder):
+class AqlPackTools (aql.FileBuilder):
 
-    split = aql.FileBuilder.split_single
+    NAME_ATTRS = ['target']
+
+    def __init__(self, options, target):
+        self.target = self.get_target_path(target, ext='.b64')
 
     # ----------------------------------------------------------
 
     def get_trace_name(self, source_entities, brief):
-        return "Embed tools"
+        return "Pack Tools"
+
+    # ----------------------------------------------------------
+
+    def get_target_entities(self, source_values):
+        return self.target
 
     # ----------------------------------------------------------
 
     def replace(self, options, source_entities):
 
-        nodes = []
+        tools_path = [source.get() for source in source_entities]
+        if not tools_path:
+            return None
 
         finder = aql.FindFilesBuilder(options, '*.py')
+        zipper = aql.ZipFilesBuilder(options,
+                                     target=self.target,
+                                     basedir=tools_path)
 
-        for source in source_entities:
-            tools_path = source.get()
+        tool_files = aql.Node(finder, source_entities)
+        zip = aql.Node(zipper, tool_files)
 
-            tool_files = aql.Node(finder, (source,))
-
-            zip_file = hashlib.md5(tools_path).hexdigest()
-
-            zipper = aql.ZipFilesBuilder(options,
-                                         target=zip_file,
-                                         basedir=tools_path)
-
-            zip_arch = aql.Node(zipper, tool_files)
-            nodes.append(zip_arch)
-
-        return nodes
-
-    # ----------------------------------------------------------
-
-    @staticmethod
-    def _split_content(content):
-        result = []
-        pos = 0
-        size = len(content)
-        line_size = 64
-        while (pos + line_size) < size:
-            line = content[pos:line_size]
-            result.append(line)
-            pos += line_size
-
-        line = content[pos:]
-        if line:
-            result.append(line)
-
-        return result
+        return zip
 
     # -----------------------------------------------------------
 
     def build(self, source_entities, targets):
-        for source in source_entities:
-            zip_file = source.get()
 
-            content = aql.read_bin_file(zip_file)
-            content = base64.b64encode(content)
+        with aql.open_file(self.target, write=True,
+                           binary=True, truncate=True) as output:
 
-            result = self._split_content(content)
+            for source in source_entities:
+                zip_file = source.get()
 
-            result = '_EMBEDDED_EXTERNAL_TOOLS.append("""' +\
-                     '\n'.join(result) + '\n""")'
+                with aql.open_file(zip_file, read=True, binary=True) as input:
+                    base64.encode(input, output)
 
-            target = aql.SimpleEntity(data=result)
-            targets.add_target_entity(target)
+        targets.add_target_files(self.target, tags="embedded_tools")
 
 
 # ==============================================================================
-class AqlLink (aql.FileBuilder):
+class AqlLinkStandalone (aql.FileBuilder):
 
     def __init__(self, options, target):
         self.target = self.get_target_path(target)
@@ -326,7 +320,7 @@ class AqlLink (aql.FileBuilder):
     # -----------------------------------------------------------
 
     def get_trace_name(self, source_entities, brief):
-        return "Link AQL script"
+        return "Link AQL standalone script"
 
     # ----------------------------------------------------------
 
@@ -341,13 +335,23 @@ class AqlLink (aql.FileBuilder):
     # ----------------------------------------------------------
 
     def build(self, source_entities, targets):
-        content = HEADER + '\n'
+        content = []
+
+        embedded_tools = ""
 
         for source in source_entities:
-            content += source.get()
-            content += '\n'
+            data = aql.read_text_file(source.get())
+            if not data:
+                continue
 
-        content += MAIN
+            if "embedded_tools" in source.tags:
+                embedded_tools = EMBEDDED_TOOLS % data
+            else:
+                content.append(data)
+
+        content.append(MAIN.format(embedded_tools=embedded_tools))
+
+        content = '\n'.join(content)
 
         aql.write_text_file(self.target, content)
         targets.add_target_files(self.target)
@@ -356,15 +360,15 @@ class AqlLink (aql.FileBuilder):
 # ==============================================================================
 class AqlBuildTool(aql.Tool):
 
-    def join(self, options):
-        return AqlJoin(options)
+    def pack_tools(self, options, target):
+        return AqlPackTools(options, target)
 
-    def embed_tools(self, options):
-        return AqlEmbedTools(options)
+    def link_module(self, options, target):
+        return AqlLinkCore(options, target)
 
-    def link(self, options, target):
-        return AqlLink(options, target)
+    def link_standalone(self, options, target):
+        return AqlLinkStandalone(options, target)
 
-    Join = join
-    EmbedTools = embed_tools
-    Link = link
+    PackTools = pack_tools
+    LinkModule = link_module
+    LinkStandalone = link_standalone

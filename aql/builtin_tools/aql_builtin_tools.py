@@ -76,7 +76,10 @@ class BuiltinTool(Tool):
 
     def find_files(self, options, mask=None,
                    exclude_mask=None, exclude_subdir_mask=None):
-        return FindFilesBuilder(options, mask, exclude_mask, exclude_subdir_mask)
+        return FindFilesBuilder(options,
+                                mask,
+                                exclude_mask,
+                                exclude_subdir_mask)
 
     FindFiles = find_files
 

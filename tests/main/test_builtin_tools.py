@@ -347,10 +347,15 @@ class TestBuiltinTools(AqlTestCase):
                 # tmp_install_dir = Tempdir()
                 # tmp_dir = Tempdir()
 
+                sub_dir1 = Tempdir(folder=tmp_dir)
+                sub_dir2 = Tempdir(folder=tmp_dir)
+
                 build_dir = os.path.join(tmp_dir, 'output')
 
                 num_sources = 3
-                sources = self.generate_source_files(tmp_dir, num_sources, 200)
+                sources = []
+                sources += self.generate_source_files(sub_dir1, num_sources, 200)
+                sources += self.generate_source_files(sub_dir2, num_sources, 200)
 
                 zip_file = tmp_install_dir + "/test.zip"
 
@@ -358,22 +363,22 @@ class TestBuiltinTools(AqlTestCase):
 
                 prj = Project(cfg)
 
-                value = prj.make_entity("test_content.txt",
-                                        "To add to a ZIP file")
+                value = prj.make_entity(name="test_content.txt",
+                                        data="To add to a ZIP file")
                 rename = [('test_file', sources[0])]
 
                 prj.tools.CreateZip(
-                    sources, value, target=zip_file, rename=rename)
+                    sources, value, target=zip_file, basedir=tmp_dir, rename=rename)
 
                 self.build_prj(prj, 1)
 
                 prj.tools.CreateZip(
-                    sources, value, target=zip_file, rename=rename)
+                    sources, value, target=zip_file, basedir=tmp_dir, rename=rename)
 
                 self.build_prj(prj, 0)
 
                 self.regenerate_file(sources[-1], 200)
 
                 prj.tools.CreateZip(
-                    sources, value, target=zip_file, rename=rename)
+                    sources, value, target=zip_file, basedir=tmp_dir, rename=rename)
                 self.build_prj(prj, 1)

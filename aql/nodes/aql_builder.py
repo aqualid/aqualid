@@ -24,7 +24,7 @@ import os
 import errno
 import operator
 
-from aql.util_types import FilePath, is_string, to_sequence
+from aql.util_types import FilePath, is_string, to_sequence, to_string
 from aql.utils import simple_object_signature, simplify_value, execute_command,\
     event_debug, log_debug, group_paths_by_dir, group_items, relative_join,\
     relative_join_list
@@ -47,33 +47,34 @@ def event_exec_cmd(settings, cmd, cwd, env):
 
 # ==============================================================================
 def _get_trace_arg(entity, brief):
-
-    value = None
-
     if isinstance(entity, FileEntityBase):
         value = entity.get()
         if brief:
             value = os.path.basename(value)
     else:
-        if isinstance(entity, EntityBase):
-            value = entity.get()
+        if isinstance(entity, FilePath):
+            value = entity
 
-        elif isinstance(entity, FilePath):
             if brief:
-                value = os.path.basename(entity)
+                value = os.path.basename(value)
 
-        elif is_string(entity):
-            value = entity.strip()
+        else:
+            if isinstance(entity, EntityBase):
+                value = to_string(entity.get())
+            else:
+                value = to_string(entity)
 
-            npos = value.find('\n')
-            if npos != -1:
-                value = value[:npos]
+            value = value.strip()
 
             max_len = 64 if brief else 256
             src_len = len(value)
+
             if src_len > max_len:
-                value = "%s...%s" % (
-                    value[:max_len // 2], value[src_len - (max_len // 2):])
+                value = "%s...%s" % (value[:max_len // 2],
+                                     value[src_len - (max_len // 2):])
+
+            value = value.replace('\r', '')
+            value = value.replace('\n', ' ')
 
     return value
 
@@ -81,12 +82,7 @@ def _get_trace_arg(entity, brief):
 # ==============================================================================
 def _join_args(entities, brief):
 
-    args = []
-
-    for arg in to_sequence(entities):
-        arg = _get_trace_arg(arg, brief)
-        if arg and is_string(arg):
-            args.append(arg)
+    args = [_get_trace_arg(arg, brief) for arg in to_sequence(entities)]
 
     if not brief or (len(args) < 3):
         return ' '.join(args)
@@ -560,13 +556,16 @@ class Builder (object):
     # -----------------------------------------------------------
 
     def get_target_path(self, target, ext=None, prefix=None):
-        target_dir, name = _split_file_name(target, prefix=prefix, ext=ext)
+        target_dir, name = _split_file_name(target,
+                                            prefix=prefix,
+                                            ext=ext,
+                                            replace_ext=True)
 
         if target_dir.startswith((os.path.curdir, os.path.pardir)):
             target_dir = os.path.abspath(target_dir)
         elif not os.path.isabs(target_dir):
-            target_dir = os.path.abspath(
-                os.path.join(self.build_path, target_dir))
+            target_dir = os.path.abspath(os.path.join(self.build_path,
+                                                      target_dir))
 
         _make_build_path(target_dir)
 

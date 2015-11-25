@@ -111,20 +111,25 @@ def open_file(filename,
               write=False,
               binary=False,
               sync=False,
+              truncate=False,
               encoding=None):
 
     if not is_string(filename):
         raise ErrorFileName(filename)
 
     flags = _O_NOINHERIT | _O_BINARY
-    mode = 'r'
 
     if not write:
+        mode = 'r'
         flags |= os.O_RDONLY
         sync = False
     else:
         flags |= os.O_CREAT
-        mode += '+'
+        if truncate:
+            mode = "w"
+            flags |= os.O_TRUNC
+        else:
+            mode = 'r+'
 
         if read:
             flags |= os.O_RDWR
@@ -140,18 +145,15 @@ def open_file(filename,
     fd = os.open(filename, flags)
     try:
         if sync:
-            # noinspection PyTypeChecker
             return io.open(fd, mode, 0, encoding=encoding)
         else:
-            # noinspection PyTypeChecker
             return io.open(fd, mode, encoding=encoding)
     except:
         os.close(fd)
         raise
 
+
 # ==============================================================================
-
-
 def read_text_file(filename, encoding='utf-8'):
     with open_file(filename, encoding=encoding) as f:
         return f.read()
@@ -163,16 +165,14 @@ def read_bin_file(filename):
 
 
 def write_text_file(filename, data, encoding='utf-8'):
-    with open_file(filename, write=True, encoding=encoding) as f:
-        f.truncate()
+    with open_file(filename, write=True, truncate=True, encoding=encoding) as f:
         if isinstance(data, (bytearray, bytes)):
             data = decode_bytes(data, encoding)
         f.write(data)
 
 
 def write_bin_file(filename, data, encoding=None):
-    with open_file(filename, write=True, binary=True, encoding=encoding) as f:
-        f.truncate()
+    with open_file(filename, write=True, binary=True, truncate=True, encoding=encoding) as f:
         if is_unicode(data):
             data = encode_str(data, encoding)
 

@@ -38,46 +38,45 @@ from .aql_info import get_aql_info, dump_aql_info
 
 __all__ = ('main', )
 
+
 # ==============================================================================
-
-
 @event_status
 def event_reading_scripts(settings):
     log_info("Reading scripts...")
 
 
+# ==============================================================================
 @event_status
 def event_reading_scripts_done(settings, elapsed):
     log_info("Reading scripts finished (%s)", elapsed)
 
 
+# ==============================================================================
 @event_error
 def event_aql_error(settings, error):
     log_error(error)
 
+
 # ==============================================================================
-
-
 @event_status
 def event_building(settings):
     log_info("Building targets...")
 
 
+# ==============================================================================
 @event_status
 def event_building_done(settings, success, elapsed):
     status = "finished" if success else "failed"
     log_info("Building targets %s (%s)", status, elapsed)
 
+
 # ==============================================================================
-
-
 @event_status
 def event_build_summary(settings, elapsed):
     log_info("Total time: %s", elapsed)
 
+
 # ==============================================================================
-
-
 def _find_make_script(script):
 
     if os.path.isabs(script):
@@ -95,9 +94,8 @@ def _find_make_script(script):
 
     return script
 
+
 # ==============================================================================
-
-
 def _start_memory_tracing():
     try:
         import tracemalloc
@@ -106,9 +104,8 @@ def _start_memory_tracing():
 
     tracemalloc.start()
 
+
 # ==============================================================================
-
-
 def _stop_memory_tracing():
     try:
         import tracemalloc
@@ -121,9 +118,8 @@ def _stop_memory_tracing():
 
     tracemalloc.stop()
 
+
 # ==============================================================================
-
-
 def _log_memory_top(snapshot, group_by='lineno', limit=30):
 
     try:
@@ -158,9 +154,8 @@ def _log_memory_top(snapshot, group_by='lineno', limit=30):
     total = sum(stat.size for stat in top_stats)
     log_info("Total allocated size: %.1f KiB", total / 1024)
 
+
 # ==============================================================================
-
-
 def _print_memory_status():
 
     _stop_memory_tracing()
@@ -204,9 +199,8 @@ def _read_make_script(prj):
 
     event_reading_scripts_done(elapsed)
 
+
 # ==============================================================================
-
-
 def _list_options(prj):
     prj_cfg = prj.config
 
@@ -223,7 +217,6 @@ def _list_options(prj):
 
 
 # ==============================================================================
-
 def _build(prj):
     event_building()
 
@@ -239,9 +232,7 @@ def _build(prj):
 
 
 # ==============================================================================
-
-
-def _main(prj_cfg):
+def _main(prj_cfg, embedded_tools):
     with Chrono() as total_elapsed:
 
         ev_settings = EventSettings(brief=not prj_cfg.verbose,
@@ -281,9 +272,8 @@ def _main(prj_cfg):
 
     return status
 
+
 # ==============================================================================
-
-
 def _patch_sys_modules():
     aql_module = sys.modules.get('aql', None)
     if aql_module is not None:
@@ -293,18 +283,17 @@ def _patch_sys_modules():
         if aql_module is not None:
             sys.modules.setdefault('aql', aql_module)
 
+
 # ==============================================================================
-
-
-def _run_main(prj_cfg):
+def _run_main(prj_cfg, embedded_tools):
     debug_profile = prj_cfg.debug_profile
 
     if not debug_profile:
-        status = _main(prj_cfg)
+        status = _main(prj_cfg, embedded_tools)
     else:
         profiler = cProfile.Profile()
 
-        status = profiler.runcall(_main, prj_cfg)
+        status = profiler.runcall(_main, prj_cfg, embedded_tools)
 
         profiler.dump_stats(debug_profile)
 
@@ -315,9 +304,8 @@ def _run_main(prj_cfg):
 
     return status
 
+
 # ==============================================================================
-
-
 def _log_error(ex, with_backtrace):
     if with_backtrace:
         err = traceback.format_exc()
@@ -329,10 +317,9 @@ def _log_error(ex, with_backtrace):
 
     event_aql_error(err)
 
+
 # ==============================================================================
-
-
-def main():
+def main(embedded_tools=""):
     with_backtrace = True
     try:
         _patch_sys_modules()
@@ -347,12 +334,10 @@ def main():
         if prj_cfg.silent:
             set_log_level(LOG_WARNING)
 
-        status = _run_main(prj_cfg)
+        status = _run_main(prj_cfg, embedded_tools)
 
     except (Exception, KeyboardInterrupt) as ex:
         _log_error(ex, with_backtrace)
         status = 1
 
     return status
-
-# ==============================================================================

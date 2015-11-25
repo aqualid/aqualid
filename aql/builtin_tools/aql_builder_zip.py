@@ -22,7 +22,7 @@
 import os
 import zipfile
 
-from aql.util_types import is_unicode, encode_str
+from aql.util_types import is_unicode, encode_str, to_sequence
 from aql.entity import FileEntityBase
 from aql.nodes import FileBuilder
 
@@ -40,9 +40,9 @@ class ZipFilesBuilder (FileBuilder):
             ext = ".zip"
 
         self.target = self.get_target_path(target, ext=ext)
-        self.rename = rename if rename else tuple()
-        self.basedir = os.path.normcase(
-            os.path.normpath(basedir)) if basedir else None
+        self.rename = tuple(rename for rename in to_sequence(rename))
+        self.basedir = tuple(os.path.normcase(os.path.normpath(basedir))
+                             for basedir in to_sequence(basedir))
 
     # -----------------------------------------------------------
 
@@ -64,8 +64,7 @@ class ZipFilesBuilder (FileBuilder):
             if file_path == path:
                 return arc_name
 
-        basedir = self.basedir
-        if basedir:
+        for basedir in self.basedir:
             if file_path.startswith(basedir):
                 return file_path[len(basedir):]
 
