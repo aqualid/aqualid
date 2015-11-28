@@ -138,7 +138,7 @@ def _make_dist(core_dir, tools_dir):
     tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
 
     tools_dir = os.path.join(tools_dir, 'tools')
-    args = ['-I', tools_dir, 'sdist']
+    args = ['-I', tools_dir, 'sdist', 'wdist', 'local']
     _make_aql(core_dir, args)
 
 

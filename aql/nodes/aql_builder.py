@@ -563,7 +563,7 @@ class Builder (object):
         target_dir, name = _split_file_name(target,
                                             prefix=prefix,
                                             ext=ext,
-                                            replace_ext=True)
+                                            replace_ext=False)
 
         if target_dir.startswith((os.path.curdir, os.path.pardir)):
             target_dir = os.path.abspath(target_dir)

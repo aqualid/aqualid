@@ -265,7 +265,8 @@ class AqlPackTools (aql.FileBuilder):
     NAME_ATTRS = ['target']
 
     def __init__(self, options, target):
-        self.target = self.get_target_path(target, ext='.b64')
+        self.target = target
+        self.build_target = self.get_target_path(target, ext='.b64')
 
     # ----------------------------------------------------------
 
@@ -275,7 +276,7 @@ class AqlPackTools (aql.FileBuilder):
     # ----------------------------------------------------------
 
     def get_target_entities(self, source_values):
-        return self.target
+        return self.build_target
 
     # ----------------------------------------------------------
 
@@ -299,7 +300,9 @@ class AqlPackTools (aql.FileBuilder):
 
     def build(self, source_entities, targets):
 
-        with aql.open_file(self.target, write=True,
+        target = self.build_target
+
+        with aql.open_file(target, write=True,
                            binary=True, truncate=True) as output:
 
             for source in source_entities:
@@ -308,7 +311,7 @@ class AqlPackTools (aql.FileBuilder):
                 with aql.open_file(zip_file, read=True, binary=True) as input:
                     base64.encode(input, output)
 
-        targets.add_target_files(self.target, tags="embedded_tools")
+        targets.add_target_files(target, tags="embedded_tools")
 
 
 # ==============================================================================

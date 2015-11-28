@@ -38,7 +38,7 @@ standalone = aql_tool.LinkStandalone(aql_module, tools_pack, target="aql.py")
 
 info = aql.get_aql_info()
 standalone_name = dist_dir + \
-    "/{name}-{version}.local".format(name=info.name, version=info.version)
+    "/{name}-{version}-local".format(name=info.name, version=info.version)
 
 standalone_zip = tools.CreateZip(standalone,
                                  Entity(STANDALONE_WINDOWS_SCRIPT, 'aql.cmd'),
@@ -59,7 +59,7 @@ module_dir = setup_dir + AQL_MODULE_PATH
 
 mod = tools.CopyFileAs(aql_module, target=module_dir + '/__init__.py')
 
-tools_files = tools.FindFiles(tools_path, "*.py")
+tools_files = tools.FindFiles(tools_path, mask="*.py")
 aql_tools = tools.CopyFiles(tools_files, basedir=tools_path,
                             target=module_dir + '/tools')
 
