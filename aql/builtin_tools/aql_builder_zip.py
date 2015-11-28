@@ -41,7 +41,8 @@ class ZipFilesBuilder (FileBuilder):
 
         self.target = self.get_target_path(target, ext=ext)
         self.rename = tuple(rename for rename in to_sequence(rename))
-        self.basedir = tuple(os.path.normcase(os.path.normpath(basedir))
+        sep = os.path.sep
+        self.basedir = tuple(os.path.normcase(os.path.normpath(basedir)) + sep
                              for basedir in to_sequence(basedir))
 
     # -----------------------------------------------------------

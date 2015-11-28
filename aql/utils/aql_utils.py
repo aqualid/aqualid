@@ -103,33 +103,20 @@ if hasattr(os, 'O_BINARY'):
 else:
     _O_BINARY = 0
 
-# -------------------------------------------------------------------------------
 
-
-def open_file(filename,
-              read=True,
-              write=False,
-              binary=False,
-              sync=False,
-              truncate=False,
-              encoding=None):
-
-    if not is_string(filename):
-        raise ErrorFileName(filename)
+# ==============================================================================
+def _open_file_handle(filename, read=True, write=False,
+                      sync=False, truncate=False):
 
     flags = _O_NOINHERIT | _O_BINARY
 
     if not write:
-        mode = 'r'
         flags |= os.O_RDONLY
-        sync = False
+
     else:
         flags |= os.O_CREAT
         if truncate:
-            mode = "w"
             flags |= os.O_TRUNC
-        else:
-            mode = 'r+'
 
         if read:
             flags |= os.O_RDWR
@@ -139,12 +126,28 @@ def open_file(filename,
         if sync:
             flags |= _O_SYNC
 
+    return os.open(filename, flags)
+
+
+# ==============================================================================
+def open_file(filename, read=True, write=False, binary=False,
+              sync=False, truncate=False, encoding=None):
+
+    if not is_string(filename):
+        raise ErrorFileName(filename)
+
+    if write:
+        mode = 'r+'
+    else:
+        mode = 'r'
+
     if binary:
         mode += 'b'
 
-    fd = os.open(filename, flags)
+    fd = _open_file_handle(filename, read=read, write=write,
+                           sync=sync, truncate=truncate)
     try:
-        if sync:
+        if sync and binary:
             return io.open(fd, mode, 0, encoding=encoding)
         else:
             return io.open(fd, mode, encoding=encoding)
@@ -165,14 +168,16 @@ def read_bin_file(filename):
 
 
 def write_text_file(filename, data, encoding='utf-8'):
-    with open_file(filename, write=True, truncate=True, encoding=encoding) as f:
+    with open_file(filename, write=True,
+                   truncate=True, encoding=encoding) as f:
         if isinstance(data, (bytearray, bytes)):
             data = decode_bytes(data, encoding)
         f.write(data)
 
 
 def write_bin_file(filename, data, encoding=None):
-    with open_file(filename, write=True, binary=True, truncate=True, encoding=encoding) as f:
+    with open_file(filename, write=True, binary=True,
+                   truncate=True, encoding=encoding) as f:
         if is_unicode(data):
             data = encode_str(data, encoding)
 

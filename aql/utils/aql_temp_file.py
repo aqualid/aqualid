@@ -34,9 +34,11 @@ __all__ = (
 
 class Tempfile (str):
 
-    def __new__(cls, prefix='tmp', suffix='', folder=None, mode='w+b'):
-        handle = tempfile.NamedTemporaryFile(
-            mode=mode, suffix=suffix, prefix=prefix, dir=folder, delete=False)
+    def __new__(cls, prefix='tmp', suffix='', root_dir=None, mode='w+b'):
+
+        handle = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
+                                             prefix=prefix, dir=root_dir,
+                                             delete=False)
 
         self = super(Tempfile, cls).__new__(cls, handle.name)
         self.__handle = handle
@@ -86,17 +88,17 @@ class Tempfile (str):
 
 class Tempdir(str):
 
-    def __new__(cls, prefix='tmp', suffix='', folder=None, name=None):
+    def __new__(cls, prefix='tmp', suffix='', root_dir=None, name=None):
 
-        if folder is not None:
-            if not os.path.isdir(folder):
-                os.makedirs(folder)
+        if root_dir is not None:
+            if not os.path.isdir(root_dir):
+                os.makedirs(root_dir)
 
         if name is None:
-            path = tempfile.mkdtemp(prefix=prefix, suffix=suffix, dir=folder)
+            path = tempfile.mkdtemp(prefix=prefix, suffix=suffix, dir=root_dir)
         else:
-            if folder is not None:
-                name = os.path.join(folder, name)
+            if root_dir is not None:
+                name = os.path.join(root_dir, name)
 
             path = os.path.abspath(name)
 

@@ -54,9 +54,12 @@ class FindFilesBuilder (FileBuilder):
         if self.exclude_subdir_mask is not None:
             args['exclude_subdir_mask'] = self.exclude_subdir_mask
 
+        args['found_dirs'] = found_dirs = set()
+
         files = find_files(**args)
 
         targets.add_target_files(files)
+        targets.add_implicit_dep_files(found_dirs)
 
     # -----------------------------------------------------------
 
@@ -68,6 +71,12 @@ class FindFilesBuilder (FileBuilder):
         return trace
 
     # ----------------------------------------------------------
+    def check_actual(self, target_entities):
+        # We don't care about content of previously found files
+        return None
+
+    # ----------------------------------------------------------
 
     def clear(self, target_entities, side_effect_entities):
+        # Never delete found files
         pass

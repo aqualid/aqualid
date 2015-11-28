@@ -22,28 +22,48 @@
 import os
 import shutil
 
+from aql.util_types import to_sequence
 from aql.nodes import FileBuilder
 
+
 # ==============================================================================
-
-
 class CopyFilesBuilder (FileBuilder):
 
     NAME_ATTRS = ['target']
+    SIGNATURE_ATTRS = ['basedir']
 
-    def __init__(self, options, target):
+    split = FileBuilder.split_batch
+
+    def __init__(self, options, target, basedir=None):
         self.target = self.get_target_dir(target)
-        self.split = self.split_batch
+        sep = os.path.sep
+        self.basedir = tuple(os.path.normcase(os.path.normpath(basedir)) + sep
+                             for basedir in to_sequence(basedir))
+
+    # -----------------------------------------------------------
+
+    def __get_dst(self, file_path):
+
+        for basedir in self.basedir:
+            if file_path.startswith(basedir):
+                filename = file_path[len(basedir):]
+                dirname, filename = os.path.split(filename)
+
+                dst_dir = os.path.join(self.target, dirname)
+                self.makedirs(dst_dir)
+                return os.path.join(dst_dir, filename)
+
+        filename = os.path.basename(file_path)
+        return os.path.join(self.target, filename)
 
     # -----------------------------------------------------------
 
     def build_batch(self, source_entities, targets):
-        target = self.target
-
         for src_entity in source_entities:
             src = src_entity.get()
 
-            dst = os.path.join(target, os.path.basename(src))
+            dst = self.__get_dst(src)
+
             shutil.copyfile(src, dst)
             shutil.copymode(src, dst)
 
@@ -62,7 +82,6 @@ class CopyFilesBuilder (FileBuilder):
 
 
 # ==============================================================================
-
 class CopyFileAsBuilder (FileBuilder):
 
     NAME_ATTRS = ['target']

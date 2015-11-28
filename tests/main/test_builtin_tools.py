@@ -4,8 +4,8 @@ import shutil
 
 from aql_testcase import AqlTestCase
 
-from aql.utils import Tempdir, remove_user_handler, add_user_handler
-from aql.utils import EventSettings, set_event_settings
+from aql.utils import Tempdir, remove_user_handler, add_user_handler,\
+    find_files, EventSettings, set_event_settings
 from aql.nodes import Node, BuildManager
 from aql.options import builtin_options
 
@@ -19,7 +19,6 @@ class TestBuiltinTools(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    # noinspection PyUnusedLocal
     def event_node_building(self, settings, node):
         self.building_started += 1
 
@@ -99,22 +98,46 @@ class TestBuiltinTools(AqlTestCase):
                 # tmp_install_dir = Tempdir()
                 # tmp_dir = Tempdir()
 
-                build_dir = os.path.join(tmp_dir, 'output')
+                sub_dir1 = Tempdir(root_dir=tmp_dir)
+                sub_dir2 = Tempdir(root_dir=tmp_dir)
 
                 num_sources = 3
-                sources = self.generate_source_files(tmp_dir, num_sources, 200)
+                sources = []
+                sources += self.generate_source_files(sub_dir1, num_sources, 2)
+                sources += self.generate_source_files(sub_dir2, num_sources, 2)
+                sources += self.generate_source_files(tmp_dir, num_sources, 2)
+
+                build_dir = os.path.join(tmp_dir, 'output')
 
                 cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
                 prj = Project(cfg)
 
-                node = prj.tools.CopyFiles(sources, target=tmp_install_dir)
+                node = prj.tools.CopyFiles(sources,
+                                           target=tmp_install_dir,
+                                           basedir=tmp_dir)
 
                 node.options.batch_groups = 1
 
                 self.build_prj(prj, 1)
 
-                prj.tools.CopyFiles(sources, target=tmp_install_dir)
+                found_dirs = set()
+                files = find_files(tmp_install_dir, found_dirs=found_dirs)
+                filenames = set(os.path.basename(path) for path in files)
+                srcnames = set(os.path.basename(path) for path in sources)
+                self.assertSetEqual(filenames, srcnames)
+
+                found_dir_names = set(os.path.basename(path)
+                                      for path in found_dirs)
+
+                sub_dir_names = set(os.path.basename(path)
+                                    for path in [sub_dir1, sub_dir2])
+
+                self.assertSetEqual(found_dir_names, sub_dir_names)
+
+                prj.tools.CopyFiles(sources,
+                                    target=tmp_install_dir,
+                                    basedir=tmp_dir)
 
                 self.build_prj(prj, 0)
 
@@ -122,44 +145,43 @@ class TestBuiltinTools(AqlTestCase):
 
     def test_find_files(self):
 
-        with Tempdir() as tmp_install_dir:
-            with Tempdir() as tmp_dir:
+        with Tempdir() as tmp_dir:
 
-                build_dir = os.path.join(tmp_dir, 'output')
+            build_dir = os.path.join(tmp_dir, 'output')
 
-                num_sources = 3
-                sources = self.generate_source_files(tmp_dir, num_sources, 20)
+            num_sources = 3
+            sources = self.generate_source_files(tmp_dir, num_sources, 20)
 
-                cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
+            cfg = ProjectConfig(args=["build_dir=%s" % build_dir])
 
-                prj = Project(cfg)
+            prj = Project(cfg)
 
-                prj.tools.FindFiles(tmp_dir)
-                prj.tools.FindFiles(tmp_dir, mask = "*.tmp")
+            prj.tools.FindFiles(tmp_dir)
+            prj.tools.FindFiles(tmp_dir, mask="*.tmp")
 
-                self.build_prj(prj, 2)
+            self.build_prj(prj, 2)
 
-                self.build_prj(prj, 0)
+            self.build_prj(prj, 0)
 
-                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
-                self.build_prj(prj, 1)
+            prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+            self.build_prj(prj, 1)
 
-                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
-                self.build_prj(prj, 0)
+            prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+            self.build_prj(prj, 0)
 
-                sources += self.generate_source_files(tmp_dir, 1, 20)
+            sources += self.generate_source_files(tmp_dir, 1, 20)
 
-                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
-                prj.tools.FindFiles(tmp_dir, mask="*.tmp")
-                self.build_prj(prj, 2)
+            prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+            prj.tools.FindFiles(tmp_dir, mask="*.tmp")
+            self.build_prj(prj, 2)
 
-                prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
-                prj.tools.FindFiles(tmp_dir, mask="*.tmp")
+            prj.tools.FindFiles(tmp_dir, exclude_mask="*.db")
+            prj.tools.FindFiles(tmp_dir, mask="*.tmp")
 
-                self.clear_prj(prj)
+            self.clear_prj(prj)
 
-                self.assertTrue(all(os.path.isfile(source)
-                                    for source in sources))
+            self.assertTrue(all(os.path.isfile(source)
+                                for source in sources))
 
     # -----------------------------------------------------------
 
@@ -347,15 +369,15 @@ class TestBuiltinTools(AqlTestCase):
                 # tmp_install_dir = Tempdir()
                 # tmp_dir = Tempdir()
 
-                sub_dir1 = Tempdir(folder=tmp_dir)
-                sub_dir2 = Tempdir(folder=tmp_dir)
+                sub_dir1 = Tempdir(root_dir=tmp_dir)
+                sub_dir2 = Tempdir(root_dir=tmp_dir)
 
                 build_dir = os.path.join(tmp_dir, 'output')
 
                 num_sources = 3
                 sources = []
-                sources += self.generate_source_files(sub_dir1, num_sources, 200)
-                sources += self.generate_source_files(sub_dir2, num_sources, 200)
+                sources += self.generate_source_files(sub_dir1, num_sources, 2)
+                sources += self.generate_source_files(sub_dir2, num_sources, 2)
 
                 zip_file = tmp_install_dir + "/test.zip"
 
@@ -368,17 +390,20 @@ class TestBuiltinTools(AqlTestCase):
                 rename = [('test_file', sources[0])]
 
                 prj.tools.CreateZip(
-                    sources, value, target=zip_file, basedir=tmp_dir, rename=rename)
+                    sources, value, target=zip_file,
+                    basedir=tmp_dir, rename=rename)
 
                 self.build_prj(prj, 1)
 
                 prj.tools.CreateZip(
-                    sources, value, target=zip_file, basedir=tmp_dir, rename=rename)
+                    sources, value, target=zip_file,
+                    basedir=tmp_dir, rename=rename)
 
                 self.build_prj(prj, 0)
 
                 self.regenerate_file(sources[-1], 200)
 
                 prj.tools.CreateZip(
-                    sources, value, target=zip_file, basedir=tmp_dir, rename=rename)
+                    sources, value, target=zip_file,
+                    basedir=tmp_dir, rename=rename)
                 self.build_prj(prj, 1)

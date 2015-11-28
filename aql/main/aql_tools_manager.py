@@ -159,6 +159,11 @@ class ToolsManager(object):
 
     # -----------------------------------------------------------
 
+    def empty(self):
+        return not bool(self.tool_classes)
+
+    # -----------------------------------------------------------
+
     @staticmethod
     def __add_to_map(values_map, names, value):
         for name in names:
@@ -194,16 +199,17 @@ class ToolsManager(object):
 
     # -----------------------------------------------------------
 
-    def load_tools(self, paths):
+    def load_tools(self, paths, reload=False):
 
         for path in to_sequence(paths):
 
             path = expand_file_path(path)
 
             if path in self.loaded_paths:
-                continue
-
-            self.loaded_paths.append(path)
+                if not reload:
+                    continue
+            else:
+                self.loaded_paths.append(path)
 
             module_files = find_files(path, mask="*.py")
             if not module_files:

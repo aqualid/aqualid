@@ -351,16 +351,6 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
-    def _check_targets(self, entities):
-        if entities is None:
-            raise NodeRebuildReasonNoTargets(self)
-
-        for entity in entities:
-            if not entity.is_actual():
-                raise NodeRebuildReasonTarget(self, entity)
-
-    # -----------------------------------------------------------
-
     def check_actual(self, vfile, explain):
 
         try:
@@ -379,9 +369,12 @@ class NodeEntity (EntityBase):
 
             target_entities = previous.target_entities
 
-            self._check_targets(target_entities)
+            if target_entities is None:
+                raise NodeRebuildReasonNoTargets(self)
 
-            self.builder.check_actual(target_entities)
+            unactual_target = self.builder.check_actual(target_entities)
+            if unactual_target is not None:
+                raise NodeRebuildReasonTarget(self, unactual_target)
 
         except NodeRebuildReason as reason:
             if explain:
@@ -437,7 +430,7 @@ class NodeEntity (EntityBase):
 
         try:
             self.builder.clear(self.target_entities, self.itarget_entities)
-        except Exception as ex:
+        except Exception:
             pass
 
     # -----------------------------------------------------------

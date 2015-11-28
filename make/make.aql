@@ -59,8 +59,9 @@ module_dir = setup_dir + AQL_MODULE_PATH
 
 mod = tools.CopyFileAs(aql_module, target=module_dir + '/__init__.py')
 
-tools_files = FindFiles(tools_path, "*.py")
-aql_tools = tools.CopyFiles(tools_files, target=module_dir + '/tools')
+tools_files = tools.FindFiles(tools_path, "*.py")
+aql_tools = tools.CopyFiles(tools_files, basedir=tools_path,
+                            target=module_dir + '/tools')
 
 readme = tools.CopyFileAs('../README.md',  target=setup_dir + '/README.txt')
 
@@ -77,8 +78,8 @@ unix_script = tools.WriteFile(UNIX_SCRIPT,
 setup_script = tools.WriteFile(SETUP_SCRIPT,
                                target=setup_dir + "setup.py")
 
-sdist = tools.CreateDist(
-    setup_script, target=dist_dir, command="sdist", args="--formats=zip,bztar")
+sdist = tools.CreateDist(setup_script, target=dist_dir,
+                         command="sdist", args="--formats=zip,bztar")
 
 wdist32 = tools.CreateDist(setup_script, target=dist_dir, command="bdist",
                            args=["--plat-name=win32", "--formats=wininst"])

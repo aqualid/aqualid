@@ -25,6 +25,11 @@ import os.path
 import site
 import types
 import itertools
+import zipfile
+import base64
+import errno
+import io
+
 
 from aql.utils import CLIConfig, CLIOption, get_function_args, exec_file,\
     flatten_list, find_files, cpu_count, Chdir, expand_file_path
@@ -55,6 +60,31 @@ __all__ = ('Project', 'ProjectConfig',
 
 # ==============================================================================
 _EMBEDDED_EXTERNAL_TOOLS = []   # only used by standalone script
+
+
+# ==============================================================================
+def _extract_embedded_tools(path):
+
+    if not _EMBEDDED_EXTERNAL_TOOLS:
+        return False
+
+    try:
+        zipped_tools = base64.b64decode(_EMBEDDED_EXTERNAL_TOOLS[0])
+
+        with io.BytesIO(zipped_tools) as handle:
+            with zipfile.ZipFile(handle) as zip_handle:
+                try:
+                    os.makedirs(path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+
+                zip_handle.extractall(path)
+
+    except Exception:
+        return False
+
+    return True
 
 
 # ==============================================================================
@@ -159,6 +189,11 @@ def _get_aqualid_install_dir():
         return os.path.dirname(aql.__file__)
     except Exception:
         return None
+
+
+# ==============================================================================
+def _get_user_tools_dir(info=get_aql_info()):
+    return os.path.join(_get_user_config_dir(), info.module, 'tools')
 
 
 # ==============================================================================
@@ -485,9 +520,8 @@ class BuilderWrapper(object):
 
         return node
 
+
 # ==============================================================================
-
-
 class ToolWrapper(object):
 
     def __init__(self, tool, project, options):
@@ -522,6 +556,10 @@ class ProjectTools(object):
 
         tools.load_tools(config.default_tools_path)
         tools.load_tools(config.tools_path)
+        if tools.empty():
+            usr_tools_path = _get_user_tools_dir()
+            if _extract_embedded_tools(usr_tools_path):
+                tools.load_tools(usr_tools_path, reload=True)
 
         self.tools = tools
 

@@ -85,8 +85,8 @@ class BuiltinTool(Tool):
 
     # ----------------------------------------------------------
 
-    def copy_files(self, options, target):
-        return CopyFilesBuilder(options, target)
+    def copy_files(self, options, target, basedir=None):
+        return CopyFilesBuilder(options, target, basedir=basedir)
 
     CopyFiles = copy_files
 

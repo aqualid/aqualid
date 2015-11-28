@@ -232,7 +232,7 @@ def _build(prj):
 
 
 # ==============================================================================
-def _main(prj_cfg, embedded_tools):
+def _main(prj_cfg):
     with Chrono() as total_elapsed:
 
         ev_settings = EventSettings(brief=not prj_cfg.verbose,
@@ -285,15 +285,15 @@ def _patch_sys_modules():
 
 
 # ==============================================================================
-def _run_main(prj_cfg, embedded_tools):
+def _run_main(prj_cfg):
     debug_profile = prj_cfg.debug_profile
 
     if not debug_profile:
-        status = _main(prj_cfg, embedded_tools)
+        status = _main(prj_cfg)
     else:
         profiler = cProfile.Profile()
 
-        status = profiler.runcall(_main, prj_cfg, embedded_tools)
+        status = profiler.runcall(_main, prj_cfg)
 
         profiler.dump_stats(debug_profile)
 
@@ -319,7 +319,7 @@ def _log_error(ex, with_backtrace):
 
 
 # ==============================================================================
-def main(embedded_tools=""):
+def main():
     with_backtrace = True
     try:
         _patch_sys_modules()
@@ -334,7 +334,7 @@ def main(embedded_tools=""):
         if prj_cfg.silent:
             set_log_level(LOG_WARNING)
 
-        status = _run_main(prj_cfg, embedded_tools)
+        status = _run_main(prj_cfg)
 
     except (Exception, KeyboardInterrupt) as ex:
         _log_error(ex, with_backtrace)

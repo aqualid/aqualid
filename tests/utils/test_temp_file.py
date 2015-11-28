@@ -35,10 +35,10 @@ class TestTempFile(AqlTestCase):
 
     def test_temp_dir(self):
         with Tempdir() as tmp_dir:
-            tmp_dir = Tempdir(folder=tmp_dir)
+            tmp_dir = Tempdir(root_dir=tmp_dir)
 
             for i in range(10):
-                Tempfile(folder=tmp_dir, suffix='.tmp').close()
+                Tempfile(root_dir=tmp_dir, suffix='.tmp').close()
 
         self.assertFalse(os.path.exists(tmp_dir))
 

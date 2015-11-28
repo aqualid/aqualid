@@ -104,8 +104,8 @@ class AqlPreprocess (aql.FileBuilder):
 
         # -----------------------------------------------------------
 
-        aql_import_re = re.compile(
-            r"^\s*from\s+(\.?aql.+)\s+import\s+.+$", re.MULTILINE)
+        aql_import_re = re.compile(r"^\s*from\s+(\.?aql.+)\s+import\s+.+$",
+                                   re.MULTILINE)
 
         aql_imports = set()
 
@@ -321,11 +321,6 @@ class AqlLinkStandalone (aql.FileBuilder):
 
     def get_trace_name(self, source_entities, brief):
         return "Link AQL standalone script"
-
-    # ----------------------------------------------------------
-
-    def get_trace_sources(self, source_entities, brief):
-        return None
 
     # ----------------------------------------------------------
 

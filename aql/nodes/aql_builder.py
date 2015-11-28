@@ -24,7 +24,7 @@ import os
 import errno
 import operator
 
-from aql.util_types import FilePath, is_string, to_sequence, to_string
+from aql.util_types import FilePath, to_sequence, to_string
 from aql.utils import simple_object_signature, simplify_value, execute_command,\
     event_debug, log_debug, group_paths_by_dir, group_items, relative_join,\
     relative_join_list
@@ -385,13 +385,17 @@ class Builder (object):
 
     def check_actual(self, target_entities):
         """
-        Checks that target entities are up to date.
+        Checks that previous target entities are still up to date.
         It called only if all other checks were successful.
-        It can't be used to check remote resources.
-        It should raise an exception if any target is not up to date.
+        Returns None if all targets are actual.
+        Otherwise first not actual target.
         :param target_entities: Previous target entities
         """
-        pass
+        for entity in target_entities:
+            if not entity.is_actual():
+                return target_entities
+
+        return None
 
     # -----------------------------------------------------------
 
@@ -574,6 +578,12 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
+    @staticmethod
+    def makedirs(path):
+        _make_build_path(path)
+
+    # -----------------------------------------------------------
+
     def get_target_dir(self, target_dir):
         target_dir, name = os.path.split(target_dir)
         if not name:
@@ -587,8 +597,8 @@ class Builder (object):
             target_dir = os.path.abspath(target_dir)
 
         elif not os.path.isabs(target_dir):
-            target_dir = os.path.abspath(
-                os.path.join(self.build_path, target_dir))
+            target_dir = os.path.abspath(os.path.join(self.build_path,
+                                                      target_dir))
 
         target_dir = os.path.join(target_dir, name)
 
