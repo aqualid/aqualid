@@ -54,7 +54,11 @@ Alias('local', [standalone_zip, standalone_tar],
 
 # -----------------------------------------------------------
 
-setup_dir = 'setup/'
+if os.environ.get('TRAVIS') == 'true':
+    setup_dir = os.path.abspath('..')
+else:
+    setup_dir = 'setup/'
+
 module_dir = setup_dir + AQL_MODULE_PATH
 
 mod = tools.CopyFileAs(aql_module, target=module_dir + '/__init__.py')

@@ -27,6 +27,12 @@ import fnmatch
 import operator
 import itertools
 
+try:
+    filterfalse = itertools.filterfalse
+except AttributeError:
+    filterfalse = itertools.ifilterfalse
+
+
 from aql.util_types import is_string, to_sequence
 
 from .aql_utils import ItemsGroups
@@ -138,8 +144,7 @@ def find_files(paths=".",
 
                     found_files.append(path_join(root, file_name))
 
-            folders[:] = itertools.filterfalse(match_exclude_subdir_mask,
-                                               folders)
+            folders[:] = filterfalse(match_exclude_subdir_mask, folders)
 
             if found_dirs is not None:
                 found_dirs.update(path_join(root, folder)

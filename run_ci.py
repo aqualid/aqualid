@@ -91,46 +91,86 @@ def _run_flake8(source_files, ignore=None, complexity=-1):
 
 
 # ==============================================================================
-def _run_cmd(cmd, path=None):
+def _run_cmd_status(cmd, path=None):
 
     if path:
         env = os.environ.copy()
-        if isinstance(path, (list, tuple, set, frozenset)):
+        if isinstance(path, (list,tuple,set,frozenset)):
             path = os.pathsep.join(path)
-
         env['PYTHONPATH'] = path
     else:
         env = None
 
-    p = subprocess.Popen(cmd, env=env, shell=False)
-    result = p.wait()
+    print(cmd)
 
-    if result:
-        sys.exit(result)
+    p = subprocess.Popen(cmd, env=env, shell=False)
+    return p.wait()
+
+
+# ==============================================================================
+def _run_cmd(cmd, path=None):
+    status = _run_cmd_status(cmd, path)
+    if status:
+        sys.exit(status)
 
 
 # ==============================================================================
 def _fetch_repo(cur_dir, repo_name, repo_dir=None):
     if repo_dir:
-        repo_dir = os.path.abspath(repo_dir)
-    else:
-        repo_dir = os.path.join(cur_dir, repo_name)
+        return os.path.abspath(repo_dir)
 
-        _run_cmd(["git", "clone", "-b", "master", "--depth", "1",
-                  "https://github.com/aqualid/%s.git" % repo_name, repo_dir])
+    repo_dir = os.path.join(cur_dir, repo_name)
+
+    default_branch = 'master'
+
+    branch = os.environ.get('TRAVIS_BRANCH')
+    if not branch:
+        branch = os.environ.get('APPVEYOR_REPO_BRANCH', default_branch)
+
+    cmd = ["git", "clone", "--depth", "1",
+           "https://github.com/aqualid/%s.git" % repo_name, repo_dir]
+
+    status = _run_cmd_status(cmd + ["-b", branch])
+    if status:
+        if branch == default_branch:
+            sys.exit(status)
+
+        _run_cmd(cmd + ["-b", default_branch])
 
     return repo_dir
 
 
 # ==============================================================================
-def _make_aql(core_dir, args):
+def _make_aql(core_dir, args, script=None, module_dir=None):
+
     make_dir = os.path.join(core_dir, "make")
 
-    cmd = [sys.executable, "-c", "import aql;import sys;sys.exit(aql.main())"]
+    cmd = [sys.executable]
+    if script is None:
+        cmd.extend(["-c", "import aql;import sys;sys.exit(aql.main())"])
+    else:
+        cmd.append(script)
+
     cmd.extend(["-C", make_dir])
     cmd.extend(args)
 
-    _run_cmd(cmd, [core_dir, make_dir])
+    path = [make_dir]
+    if script is None:
+        path.append(core_dir)
+
+    elif module_dir:
+        path.append(module_dir)
+
+    _run_cmd(cmd, path)
+
+
+# ==============================================================================
+def _run_make(core_dir):
+    _make_aql(core_dir, ['-l'])
+    _make_aql(core_dir, ['-L', 'c++'])
+    _make_aql(core_dir, ['-t'])
+    _make_aql(core_dir, ['link'])
+    _make_aql(core_dir, ['-R', 'link'])
 
 
 # ==============================================================================
@@ -138,8 +178,28 @@ def _make_dist(core_dir, tools_dir):
     tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
 
     tools_dir = os.path.join(tools_dir, 'tools')
-    args = ['-I', tools_dir, 'sdist', 'wdist', 'local']
+    args = ['-I', tools_dir, 'sdist', 'local']
+    if sys.platform.startswith('win'):
+        args.append('wdist')
+
     _make_aql(core_dir, args)
+
+
+# ==============================================================================
+def _run_examples(core_dir, tools_dir, examples_dir):
+
+    examples_dir = _fetch_repo(core_dir, 'examples', examples_dir)
+
+    output_dir = os.path.join(core_dir, 'make', 'output')
+
+    module_dir = os.path.join(output_dir, 'setup', 'modules')
+    script = os.path.join(output_dir, 'setup', 'scripts', 'aql')
+
+    module = _load_module('run_ci', examples_dir)
+    module.run_script(script, module_dir, examples_dir)
+
+    standalone_script = os.path.join(output_dir, 'aql.py')
+    module.run_script(standalone_script, None, examples_dir)
 
 
 # ==============================================================================
@@ -152,10 +212,7 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
         _run_tests(tests_dir, source_dir)
 
     if (run_tests is None) or 'make' in run_tests:
-        _make_aql(core_dir, ['-l'])
-        _make_aql(core_dir, ['-L', 'c++'])
-        _make_aql(core_dir, ['-t'])
-        _make_aql(core_dir, ['local'])
+        _run_make(core_dir)
 
     if (run_tests is None) or 'flake8' in run_tests:
         # check for PEP8 violations, max complexity and other standards
@@ -169,15 +226,20 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
 
         _run_flake8(os.path.join(core_dir, 'make', 'make.aql'), ignore='F821')
 
-    if (run_tests is None) or 'dist' in run_tests:
+    if (run_tests is None) or \
+       ('dist' in run_tests) or \
+       ('examples' in run_tests):
+
         _make_dist(core_dir, tools_dir)
 
-    ###############
     if (run_tests is None) or 'tools' in run_tests:
         tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
 
         module = _load_module('run_ci', tools_dir)
         module.run(core_dir, tools_dir, examples_dir)
+
+    if (run_tests is None) or 'examples' in run_tests:
+        _run_examples(core_dir, tools_dir, examples_dir)
 
 
 # ==============================================================================
@@ -207,7 +269,7 @@ def _parse_args(choices):
 
 # ==============================================================================
 def main():
-    choices = ('tests', 'make', 'dist', 'flake8', 'tools')
+    choices = ('tests', 'make', 'dist', 'flake8', 'tools', 'examples')
 
     args = _parse_args(choices)
 
