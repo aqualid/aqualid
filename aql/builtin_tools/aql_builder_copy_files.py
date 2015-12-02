@@ -32,8 +32,6 @@ class CopyFilesBuilder (FileBuilder):
     NAME_ATTRS = ['target']
     SIGNATURE_ATTRS = ['basedir']
 
-    split = FileBuilder.split_batch
-
     def __init__(self, options, target, basedir=None):
         self.target = self.get_target_dir(target)
         sep = os.path.sep
@@ -50,7 +48,6 @@ class CopyFilesBuilder (FileBuilder):
                 dirname, filename = os.path.split(filename)
 
                 dst_dir = os.path.join(self.target, dirname)
-                self.makedirs(dst_dir)
                 return os.path.join(dst_dir, filename)
 
         filename = os.path.basename(file_path)
@@ -63,6 +60,7 @@ class CopyFilesBuilder (FileBuilder):
             src = src_entity.get()
 
             dst = self.__get_dst(src)
+            self.makedirs(os.path.dirname(dst))
 
             shutil.copyfile(src, dst)
             shutil.copymode(src, dst)
@@ -77,8 +75,8 @@ class CopyFilesBuilder (FileBuilder):
     # -----------------------------------------------------------
 
     def get_target_entities(self, source_entities):
-        src = source_entities[0].get()
-        return os.path.join(self.target, os.path.basename(src)),
+        get_dst = self.__get_dst
+        return (get_dst(src.get()) for src in source_entities)
 
 
 # ==============================================================================

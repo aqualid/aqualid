@@ -54,10 +54,7 @@ Alias('local', [standalone_zip, standalone_tar],
 
 # -----------------------------------------------------------
 
-if os.environ.get('TRAVIS') == 'true':
-    setup_dir = os.path.abspath('..')
-else:
-    setup_dir = 'setup/'
+setup_dir = 'setup/'
 
 module_dir = setup_dir + AQL_MODULE_PATH
 
@@ -67,7 +64,7 @@ tools_files = tools.FindFiles(tools_path, mask="*.py")
 aql_tools = tools.CopyFiles(tools_files, basedir=tools_path,
                             target=module_dir + '/tools')
 
-readme = tools.CopyFileAs('../README.md',  target=setup_dir + '/README.txt')
+readme = tools.CopyFileAs('../README.md',  target=setup_dir + 'README.txt')
 
 manifest = tools.WriteFile(MANIFEST, target=setup_dir + "MANIFEST.in")
 
@@ -81,6 +78,18 @@ unix_script = tools.WriteFile(UNIX_SCRIPT,
 
 setup_script = tools.WriteFile(SETUP_SCRIPT,
                                target=setup_dir + "setup.py")
+
+Alias('setup_dir',
+      [mod, aql_tools, readme, manifest,
+       win_script, unix_script, setup_script],
+      "Create distutils folder.")
+
+copy_setup = tools.CopyFiles(mod, aql_tools, readme, manifest,
+                             win_script, unix_script, setup_script,
+                             basedir=DirName(setup_script),
+                             target='..')
+
+Alias('copy_setup', copy_setup)
 
 sdist = tools.CreateDist(setup_script, target=dist_dir,
                          command="sdist", args="--formats=zip,bztar")

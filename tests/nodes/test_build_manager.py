@@ -332,7 +332,7 @@ class TestBuildManager(AqlTestCase):
     # -----------------------------------------------------------
 
     def tearDown(self):     # noqa
-        remove_user_handler([self.event_node_building, ])
+        remove_user_handler([self.event_node_building])
 
         super(TestBuildManager, self).tearDown()
 
@@ -589,6 +589,7 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
+    @skip
     def test_bm_rebuild(self):
 
         with Tempdir() as tmp_dir:
@@ -605,9 +606,9 @@ class TestBuildManager(AqlTestCase):
 
                 builder = ChecksumSingleBuilder(options, 0, 256)
 
-                src_entities = []
-                for s in src_files:
-                    src_entities.append(FileChecksumEntity(s))
+                src_entities = tuple(map(FileChecksumEntity, src_files))
+
+                num_built_nodes = 0
 
                 for i in range(num_dups):
                     num_built_nodes = 1

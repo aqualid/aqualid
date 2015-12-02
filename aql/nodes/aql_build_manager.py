@@ -36,17 +36,15 @@ __all__ = (
     'ErrorNodeDependencyCyclic', 'ErrorNodeDependencyUnknown',
 )
 
+
 # ==============================================================================
-
-
 @event_warning
 def event_build_target_twice(settings, entity, node1):
     log_warning("Target '%s' is built twice. The last time built by: '%s' ",
                 entity.name, node1.get_build_str(settings.brief))
 
+
 # ==============================================================================
-
-
 @event_error
 def event_failed_node(settings, node, error):
 
@@ -55,16 +53,14 @@ def event_failed_node(settings, node, error):
 
     log_error(msg)
 
+
 # ==============================================================================
-
-
 @event_status
 def event_node_building(settings, node):
     pass
 
+
 # ==============================================================================
-
-
 @event_status
 def event_node_building_finished(settings, node, builder_output, progress):
 
@@ -111,20 +107,29 @@ class ErrorNodeUnknown(Exception):
         msg = "Unknown node '%s'" % (node, )
         super(ErrorNodeUnknown, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorNodeSignatureDifferent(Exception):
 
-    def __init__(self, node):
+    def __init__(self, node, other_node):
         msg = "Two similar nodes have different signatures" \
-              "(sources, builder parameters or dependencies): %s" % \
-              (node.get_build_str(brief=False), )
+              "(sources, builder parameters or dependencies): [%s], [%s]" % \
+              (node.get_build_str(brief=False),
+               other_node.get_build_str(brief=False))
+
         super(ErrorNodeSignatureDifferent, self).__init__(msg)
 
+
 # ==============================================================================
+class ErrorNodeDuplicateNames(Exception):
+    def __init__(self, node):
+        msg = "Batch node has similar source names: %s" % \
+              (node.get_build_str(brief=False))
+
+        super(ErrorNodeDuplicateNames, self).__init__(msg)
 
 
+# ==============================================================================
 class ErrorNodeDependencyUnknown(Exception):
 
     def __init__(self, node, dep_node):
@@ -680,6 +685,7 @@ class _NodesBuilder (object):
         node_names = {}
 
         for name, signature in node.get_names_and_signatures():
+
             other = building_nodes.get(name, None)
             if other is None:
                 node_names[name] = (node, signature)
@@ -688,10 +694,10 @@ class _NodesBuilder (object):
             other_node, other_signature = other
 
             if node is other_node:
-                continue
+                raise ErrorNodeDuplicateNames(node)
 
             if other_signature != signature:
-                raise ErrorNodeSignatureDifferent(node)
+                raise ErrorNodeSignatureDifferent(node, other_node)
 
             conflicting_nodes.append(other_node)
 
@@ -751,9 +757,9 @@ class _NodesBuilder (object):
         if split_nodes:
             build_manager.depends(node, split_nodes)
 
-            # split nodes are not actual, check them for building conflicts
-            for split_node in split_nodes:
-                self._add_building_node(split_node)
+            # # split nodes are not actual, check them for building conflicts
+            # for split_node in split_nodes:
+            #     self._add_building_node(split_node)
 
             if node in self.expensive_nodes:
                 self.expensive_nodes.update(split_nodes)
