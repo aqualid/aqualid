@@ -123,7 +123,7 @@ class ErrorNodeSignatureDifferent(Exception):
 # ==============================================================================
 class ErrorNodeDuplicateNames(Exception):
     def __init__(self, node):
-        msg = "Batch node has similar source names: %s" % \
+        msg = "Batch node has duplicate targets: %s" % \
               (node.get_build_str(brief=False))
 
         super(ErrorNodeDuplicateNames, self).__init__(msg)
@@ -688,13 +688,16 @@ class _NodesBuilder (object):
 
             other = building_nodes.get(name, None)
             if other is None:
+                if name in node_names:
+                    raise ErrorNodeDuplicateNames(node)
+
                 node_names[name] = (node, signature)
                 continue
 
             other_node, other_signature = other
 
             if node is other_node:
-                raise ErrorNodeDuplicateNames(node)
+                continue
 
             if other_signature != signature:
                 raise ErrorNodeSignatureDifferent(node, other_node)
@@ -755,14 +758,15 @@ class _NodesBuilder (object):
 
         split_nodes = node.build_split(vfile, explain)
         if split_nodes:
-            build_manager.depends(node, split_nodes)
-
-            # # split nodes are not actual, check them for building conflicts
-            # for split_node in split_nodes:
-            #     self._add_building_node(split_node)
 
             if node in self.expensive_nodes:
                 self.expensive_nodes.update(split_nodes)
+
+            build_manager.depends(node, split_nodes)
+
+            # split nodes are not actual, check them for building conflicts
+            for split_node in split_nodes:
+                self._add_building_node(split_node)
 
             return True
 

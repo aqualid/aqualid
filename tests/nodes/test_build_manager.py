@@ -13,7 +13,7 @@ from aql.entity import SimpleEntity, FileChecksumEntity
 from aql.options import builtin_options, BoolOptionType
 from aql.nodes import Node, Builder, FileBuilder, BuildManager
 from aql.nodes.aql_build_manager import ErrorNodeDependencyCyclic,\
-    ErrorNodeSignatureDifferent
+    ErrorNodeSignatureDifferent, ErrorNodeDuplicateNames
 
 
 # ==============================================================================
@@ -180,9 +180,8 @@ class SyncValueBuilder (Builder):
 
         targets.add_targets(target)
 
+
 # ==============================================================================
-
-
 class CopyValueBuilder (Builder):
 
     def __init__(self, options):
@@ -206,7 +205,6 @@ class CopyValueBuilder (Builder):
 
 
 # ==============================================================================
-
 class ChecksumBuilder (FileBuilder):
 
     NAME_ATTRS = ('replace_ext',)
@@ -252,22 +250,28 @@ class ChecksumBuilder (FileBuilder):
     # -----------------------------------------------------------
 
     def build_batch(self, source_entities, targets):
+        print("build_batch: %s" % (source_entities,))
         for src_value in source_entities:
             target_files = [self._build_src(src_value.get(), 'md5'),
                             self._build_src(src_value.get(), 'sha512')]
 
             targets[src_value].add_targets(target_files)
 
+
 # ==============================================================================
-
-
 class ChecksumSingleBuilder (ChecksumBuilder):
 
     split = ChecksumBuilder.split_single
 
+
 # ==============================================================================
+class ChecksumBadBuilder (ChecksumBuilder):
+
+    def get_target_entities(self, source_entities):
+        return self.get_source_target_path('bad_target')
 
 
+# ==============================================================================
 def _add_nodes_to_bm(builder, src_files):
     bm = BuildManager()
     try:
@@ -284,9 +288,8 @@ def _add_nodes_to_bm(builder, src_files):
 
     return bm
 
+
 # ==============================================================================
-
-
 def _build(bm, jobs=1, keep_going=False, explain=False):
     try:
         bm.self_test()
@@ -303,10 +306,10 @@ def _build(bm, jobs=1, keep_going=False, explain=False):
 # ==============================================================================
 
 
-def _build_checksums(builder, src_files):
+def _build_checksums(builder, src_files, jobs=1):
 
     bm = _add_nodes_to_bm(builder, src_files)
-    _build(bm)
+    _build(bm, jobs=jobs)
 
 # ==============================================================================
 
@@ -589,7 +592,26 @@ class TestBuildManager(AqlTestCase):
 
     # -----------------------------------------------------------
 
-    @skip
+    def test_bm_dup_names(self):
+
+        with Tempdir() as tmp_dir:
+            options = builtin_options()
+            options.build_dir = tmp_dir
+            options.batch_build = True
+            # options.batch_groups = 4
+            options.batch_size = 3
+
+            src_files = self.generate_source_files(tmp_dir, 10, 201)
+
+            builder = ChecksumBadBuilder(options, 0, 256, replace_ext=True)
+
+            self.building_nodes = self.built_nodes = 0
+
+            with self.assertRaises(ErrorNodeDuplicateNames):
+                _build_checksums(builder, src_files, jobs=4)
+
+    # -----------------------------------------------------------
+
     def test_bm_rebuild(self):
 
         with Tempdir() as tmp_dir:
