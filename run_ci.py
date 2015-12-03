@@ -175,7 +175,6 @@ def _run_make(core_dir):
 
 # ==============================================================================
 def _make_dist(core_dir, tools_dir):
-    tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
 
     tools_dir = os.path.join(tools_dir, 'tools')
     args = ['-I', tools_dir, 'sdist', 'local']
@@ -186,9 +185,7 @@ def _make_dist(core_dir, tools_dir):
 
 
 # ==============================================================================
-def _run_examples(core_dir, tools_dir, examples_dir):
-
-    examples_dir = _fetch_repo(core_dir, 'examples', examples_dir)
+def _run_examples(core_dir, examples_dir):
 
     output_dir = os.path.join(core_dir, 'make', 'output')
 
@@ -230,16 +227,18 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
        ('dist' in run_tests) or \
        ('examples' in run_tests):
 
+        tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
         _make_dist(core_dir, tools_dir)
 
     if (run_tests is None) or 'tools' in run_tests:
         tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
+        examples_dir = _fetch_repo(core_dir, 'examples', examples_dir)
 
         module = _load_module('run_ci', tools_dir)
         module.run(core_dir, tools_dir, examples_dir)
 
     if (run_tests is None) or 'examples' in run_tests:
-        _run_examples(core_dir, tools_dir, examples_dir)
+        _run_examples(core_dir, examples_dir)
 
 
 # ==============================================================================
