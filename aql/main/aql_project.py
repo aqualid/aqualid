@@ -72,39 +72,42 @@ def event_extract_tools_failed(settings, error):
 
 
 # ==============================================================================
-_EMBEDDED_EXTERNAL_TOOLS = []   # only used by standalone script
+_EMBEDDED_TOOLS = []   # only used by standalone script
 
 
 # ==============================================================================
-def _extract_embedded_tools(path):
+def _extract_embedded_tools(info=get_aql_info(),
+                            embedded_tools=_EMBEDDED_TOOLS):
 
-    if not _EMBEDDED_EXTERNAL_TOOLS:
-        return False
+    if not embedded_tools:
+        return None
 
-    packed_tools = _EMBEDDED_EXTERNAL_TOOLS[0]
-    if not packed_tools:
-        return False
+    embedded_tools = embedded_tools[0]
+    if not embedded_tools:
+        return None
+
+    path = os.path.join(_get_user_config_dir(), info.module, '.embedded_tools')
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+        return path
 
     try:
-        zipped_tools = base64.b64decode(packed_tools)
+        zipped_tools = base64.b64decode(embedded_tools)
 
         with io.BytesIO(zipped_tools) as handle:
             with zipfile.ZipFile(handle) as zip_handle:
-                try:
-                    os.makedirs(path)
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
-
                 zip_handle.extractall(path)
 
     except Exception as ex:
         event_extract_tools_failed(ex)
-        return False
+        return None
 
     event_extracted_tools(path)
 
-    return True
+    return path
 
 
 # ==============================================================================
@@ -212,18 +215,14 @@ def _get_aqualid_install_dir():
 
 
 # ==============================================================================
-def _get_user_tools_dir(info=get_aql_info()):
-    return os.path.join(_get_user_config_dir(), info.module, 'tools')
-
-
-# ==============================================================================
 def _get_default_tools_path(info=get_aql_info()):
 
     aql_module_name = info.module
 
     tool_dirs = _get_site_packages()
 
-    tool_dirs += (site.USER_SITE, _get_user_config_dir())
+    tool_dirs.append(site.USER_SITE)
+    tool_dirs.append(_get_user_config_dir())
 
     tool_dirs = [os.path.join(path, aql_module_name) for path in tool_dirs]
 
@@ -577,9 +576,9 @@ class ProjectTools(object):
         tools.load_tools(config.default_tools_path)
         tools.load_tools(config.tools_path)
         if tools.empty():
-            usr_tools_path = _get_user_tools_dir()
-            if _extract_embedded_tools(usr_tools_path):
-                tools.load_tools(usr_tools_path, reload=True)
+            embedded_tools_path = _extract_embedded_tools()
+            if embedded_tools_path:
+                tools.load_tools(embedded_tools_path)
 
         self.tools = tools
 
