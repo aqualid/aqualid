@@ -54,7 +54,6 @@ class GeneralFileLock (object):
     def __enter__(self):
         return self
 
-    # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_value, traceback):
         self.release_lock()
 
@@ -114,7 +113,6 @@ class UnixFileLock(object):
     def __enter__(self):
         return self
 
-    # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_value, traceback):
         self.release_lock()
 

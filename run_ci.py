@@ -151,7 +151,7 @@ def _make_aql(core_dir, args, script=None, module_dir=None):
     else:
         cmd.append(script)
 
-    cmd.extend(["-C", make_dir])
+    cmd.extend(["-C", make_dir, '--bt'])
     cmd.extend(args)
 
     path = [make_dir]
@@ -189,10 +189,10 @@ def _run_examples(core_dir, examples_dir):
 
     output_dir = os.path.join(core_dir, 'make', 'output')
 
+    module = _load_module('run_ci', examples_dir)
+
     module_dir = os.path.join(output_dir, 'setup', 'modules')
     script = os.path.join(output_dir, 'setup', 'scripts', 'aql')
-
-    module = _load_module('run_ci', examples_dir)
     module.run_script(script, module_dir, examples_dir)
 
     standalone_script = os.path.join(output_dir, 'aql.py')

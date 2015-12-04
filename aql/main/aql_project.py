@@ -32,7 +32,8 @@ import io
 
 
 from aql.utils import CLIConfig, CLIOption, get_function_args, exec_file,\
-    flatten_list, find_files, cpu_count, Chdir, expand_file_path
+    flatten_list, find_files, cpu_count, Chdir, expand_file_path,\
+    event_status, event_warning, log_info, log_warning
 
 from aql.util_types import AbsFilePath, FilePath, value_list_type, UniqueList,\
     to_sequence, is_sequence
@@ -59,6 +60,18 @@ __all__ = ('Project', 'ProjectConfig',
 
 
 # ==============================================================================
+@event_status
+def event_extracted_tools(settings, path):
+    log_info("Extracted embedded tools into: '%s'" % (path,))
+
+
+# ==============================================================================
+@event_warning
+def event_extract_tools_failed(settings, error):
+    log_warning("Failed to extract embedded tools: %s" % (error,))
+
+
+# ==============================================================================
 _EMBEDDED_EXTERNAL_TOOLS = []   # only used by standalone script
 
 
@@ -68,8 +81,12 @@ def _extract_embedded_tools(path):
     if not _EMBEDDED_EXTERNAL_TOOLS:
         return False
 
+    packed_tools = _EMBEDDED_EXTERNAL_TOOLS[0]
+    if not packed_tools:
+        return False
+
     try:
-        zipped_tools = base64.b64decode(_EMBEDDED_EXTERNAL_TOOLS[0])
+        zipped_tools = base64.b64decode(packed_tools)
 
         with io.BytesIO(zipped_tools) as handle:
             with zipfile.ZipFile(handle) as zip_handle:
@@ -81,8 +98,11 @@ def _extract_embedded_tools(path):
 
                 zip_handle.extractall(path)
 
-    except Exception:
+    except Exception as ex:
+        event_extract_tools_failed(ex)
         return False
+
+    event_extracted_tools(path)
 
     return True
 
