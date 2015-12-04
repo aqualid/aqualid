@@ -378,7 +378,7 @@ class TestNodes(AqlTestCase):
     def test_node_batch(self):
 
         with Tempdir() as tmp_dir:
-            vfile_name = Tempfile(folder=tmp_dir)
+            vfile_name = Tempfile(root_dir=tmp_dir)
             vfile_name.close()
             with EntitiesFile(vfile_name) as vfile:
                 src_files = self.generate_source_files(tmp_dir, 5, 100)

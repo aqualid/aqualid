@@ -103,28 +103,20 @@ if hasattr(os, 'O_BINARY'):
 else:
     _O_BINARY = 0
 
-# -------------------------------------------------------------------------------
 
-
-def open_file(filename,
-              read=True,
-              write=False,
-              binary=False,
-              sync=False,
-              encoding=None):
-
-    if not is_string(filename):
-        raise ErrorFileName(filename)
+# ==============================================================================
+def _open_file_handle(filename, read=True, write=False,
+                      sync=False, truncate=False):
 
     flags = _O_NOINHERIT | _O_BINARY
-    mode = 'r'
 
     if not write:
         flags |= os.O_RDONLY
-        sync = False
+
     else:
         flags |= os.O_CREAT
-        mode += '+'
+        if truncate:
+            flags |= os.O_TRUNC
 
         if read:
             flags |= os.O_RDWR
@@ -134,24 +126,37 @@ def open_file(filename,
         if sync:
             flags |= _O_SYNC
 
+    return os.open(filename, flags)
+
+
+# ==============================================================================
+def open_file(filename, read=True, write=False, binary=False,
+              sync=False, truncate=False, encoding=None):
+
+    if not is_string(filename):
+        raise ErrorFileName(filename)
+
+    if write:
+        mode = 'r+'
+    else:
+        mode = 'r'
+
     if binary:
         mode += 'b'
 
-    fd = os.open(filename, flags)
+    fd = _open_file_handle(filename, read=read, write=write,
+                           sync=sync, truncate=truncate)
     try:
-        if sync:
-            # noinspection PyTypeChecker
+        if sync and binary:
             return io.open(fd, mode, 0, encoding=encoding)
         else:
-            # noinspection PyTypeChecker
             return io.open(fd, mode, encoding=encoding)
     except:
         os.close(fd)
         raise
 
+
 # ==============================================================================
-
-
 def read_text_file(filename, encoding='utf-8'):
     with open_file(filename, encoding=encoding) as f:
         return f.read()
@@ -163,16 +168,16 @@ def read_bin_file(filename):
 
 
 def write_text_file(filename, data, encoding='utf-8'):
-    with open_file(filename, write=True, encoding=encoding) as f:
-        f.truncate()
+    with open_file(filename, write=True,
+                   truncate=True, encoding=encoding) as f:
         if isinstance(data, (bytearray, bytes)):
             data = decode_bytes(data, encoding)
         f.write(data)
 
 
 def write_bin_file(filename, data, encoding=None):
-    with open_file(filename, write=True, binary=True, encoding=encoding) as f:
-        f.truncate()
+    with open_file(filename, write=True, binary=True,
+                   truncate=True, encoding=encoding) as f:
         if is_unicode(data):
             data = encode_str(data, encoding)
 
@@ -228,15 +233,13 @@ def simple_object_signature(obj, common_hash=None):
     data = dump_simple_object(obj)
     return data_signature(data, common_hash)
 
+
 # ==============================================================================
-
-
 def new_hash(data=b''):
     return hashlib.md5(data)
 
+
 # ==============================================================================
-
-
 def data_signature(data, common_hash=None):
     if common_hash is None:
         obj_hash = hashlib.md5(data)
@@ -246,9 +249,8 @@ def data_signature(data, common_hash=None):
 
     return obj_hash.digest()
 
+
 # ==============================================================================
-
-
 def file_signature(filename, offset=0):
 
     checksum = hashlib.md5()
@@ -269,18 +271,16 @@ def file_signature(filename, offset=0):
     # print("file_signature: %s: %s" % (filename, checksum.hexdigest()) )
     return checksum.digest()
 
+
 # ==============================================================================
-
-
 def file_time_signature(filename):
     stat = os.stat(filename)
     # print("file_time_signature: %s: %s" %
     #                           (filename, (stat.st_size, stat.st_mtime)) )
     return simple_object_signature((stat.st_size, stat.st_mtime))
 
+
 # ==============================================================================
-
-
 def file_checksum(filename, offset=0, size=-1, alg='md5', chunk_size=262144):
 
     checksum = hashlib.__dict__[alg]()
@@ -337,9 +337,8 @@ try:
 except AttributeError:
     _getargspec = inspect.getargspec
 
+
 # ==============================================================================
-
-
 def get_function_args(function, getargspec=_getargspec):
 
     args = getargspec(function)[:4]
@@ -350,9 +349,8 @@ def get_function_args(function, getargspec=_getargspec):
 
     return args
 
+
 # ==============================================================================
-
-
 def equal_function_args(function1, function2):
     if function1 is function2:
         return True

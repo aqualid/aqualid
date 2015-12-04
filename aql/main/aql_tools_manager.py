@@ -30,16 +30,14 @@ from aql.builtin_tools import Tool
 
 __all__ = ('tool', 'tool_setup', 'get_tools_manager', 'ErrorToolNotFound')
 
+
 # ==============================================================================
-
-
 @event_warning
 def event_tools_unable_load_module(settings, module, err):
     log_warning("Unable to load module: %s, error: %s", module, err)
 
+
 # ==============================================================================
-
-
 @event_warning
 def event_tools_tool_failed(settings, ex, tool_info):
     tool_class = tool_info.tool_class
@@ -55,15 +53,13 @@ def event_tools_tool_failed(settings, ex, tool_info):
               names, tool_class.__name__, filename)
     log_error(ex)
 
+
 # ==============================================================================
-
-
 def _tool_setup_stub(cls, options):
     pass
 
+
 # ==============================================================================
-
-
 class ErrorToolInvalid(Exception):
 
     def __init__(self, tool_class):
@@ -71,6 +67,7 @@ class ErrorToolInvalid(Exception):
         super(ErrorToolInvalid, self).__init__(msg)
 
 
+# ==============================================================================
 class ErrorToolInvalidSetupMethod(Exception):
 
     def __init__(self, method):
@@ -78,6 +75,7 @@ class ErrorToolInvalidSetupMethod(Exception):
         super(ErrorToolInvalidSetupMethod, self).__init__(msg)
 
 
+# ==============================================================================
 class ErrorToolNotFound(Exception):
 
     def __init__(self, tool_name, loaded_paths):
@@ -86,9 +84,8 @@ class ErrorToolNotFound(Exception):
             tool_name, loaded_paths)
         super(ErrorToolNotFound, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ToolInfo(object):
     __slots__ = (
         'tool_class',
@@ -140,8 +137,6 @@ class ToolInfo(object):
 
 
 # ==============================================================================
-
-
 class ToolsManager(object):
 
     __slots__ = (
@@ -161,6 +156,11 @@ class ToolsManager(object):
         self.all_setup_methods = {}
         self.tool_info = {}
         self.loaded_paths = []
+
+    # -----------------------------------------------------------
+
+    def empty(self):
+        return not bool(self.tool_classes)
 
     # -----------------------------------------------------------
 
@@ -199,16 +199,17 @@ class ToolsManager(object):
 
     # -----------------------------------------------------------
 
-    def load_tools(self, paths):
+    def load_tools(self, paths, reload=False):
 
         for path in to_sequence(paths):
 
             path = expand_file_path(path)
 
             if path in self.loaded_paths:
-                continue
-
-            self.loaded_paths.append(path)
+                if not reload:
+                    continue
+            else:
+                self.loaded_paths.append(path)
 
             module_files = find_files(path, mask="*.py")
             if not module_files:

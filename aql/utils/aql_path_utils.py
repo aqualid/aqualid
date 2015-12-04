@@ -25,6 +25,13 @@ import sys
 import re
 import fnmatch
 import operator
+import itertools
+
+try:
+    filterfalse = itertools.filterfalse
+except AttributeError:
+    filterfalse = itertools.ifilterfalse
+
 
 from aql.util_types import is_string, to_sequence
 
@@ -113,9 +120,10 @@ def _masks_to_match(masks, _null_match=lambda name: False):
 
 
 def find_files(paths=".",
-               mask=("*", ),
-               exclude_mask=tuple(),
-               exclude_subdir_mask=('__*', '.*')):
+               mask=("*",),
+               exclude_mask=('.*',),
+               exclude_subdir_mask=('__*', '.*'),
+               found_dirs=None):
 
     found_files = []
 
@@ -125,6 +133,8 @@ def find_files(paths=".",
     match_exclude_mask = _masks_to_match(exclude_mask)
     match_exclude_subdir_mask = _masks_to_match(exclude_subdir_mask)
 
+    path_join = os.path.join
+
     for path in paths:
         for root, folders, files in os.walk(os.path.abspath(path)):
             for file_name in files:
@@ -132,10 +142,13 @@ def find_files(paths=".",
                 if (not match_exclude_mask(file_name_nocase)) and\
                    match_mask(file_name_nocase):
 
-                    found_files.append(os.path.join(root, file_name))
+                    found_files.append(path_join(root, file_name))
 
-            folders[:] = (folder for folder in folders
-                          if not match_exclude_subdir_mask(folder))
+            folders[:] = filterfalse(match_exclude_subdir_mask, folders)
+
+            if found_dirs is not None:
+                found_dirs.update(path_join(root, folder)
+                                  for folder in folders)
 
     found_files.sort()
     return found_files
@@ -396,9 +409,8 @@ def _common_prefix_size(*paths):
             return i
     return i + 1
 
+
 # ==============================================================================
-
-
 def _relative_join(base_path, base_path_seq, path, sep=os.path.sep):
 
     path = _split_path(_norm_local_path(path))
@@ -418,18 +430,16 @@ def _relative_join(base_path, base_path_seq, path, sep=os.path.sep):
 
     return sep.join(path)
 
+
 # ==============================================================================
-
-
 def relative_join_list(base_path, paths):
     base_path = _norm_local_path(base_path)
     base_path_seq = _split_path(base_path)
     return [_relative_join(base_path, base_path_seq, path)
             for path in to_sequence(paths)]
 
+
 # ==============================================================================
-
-
 def relative_join(base_path, path):
     base_path = _norm_local_path(base_path)
     base_path_seq = _split_path(base_path)

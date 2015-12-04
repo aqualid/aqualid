@@ -77,7 +77,7 @@ class EntityBase (object):
         if signature is not NotImplemented:
             self.signature = signature
 
-        self.tags = frozenset(to_sequence(tags)) if tags else None
+        self.tags = frozenset(to_sequence(tags))
 
         return self
 

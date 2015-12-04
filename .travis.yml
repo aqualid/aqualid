@@ -17,6 +17,28 @@ install:
   - pip install coveralls
 
 script: python run_ci.py
-
 after_success:
   coveralls
+
+deploy:
+  matrix:
+    - provider: releases
+      api-key: GITHUB OAUTH TOKEN
+      file: "make/install/*"
+
+      skip_cleanup: true
+      on:
+        tags: true
+        python:
+          - '3.4'
+
+    - provider: pypi
+      user: menify
+      password:
+        secure: fuRH38Q+YYY5BW/gvu3SREgI6+Uj6VL6MaXqsjiEwNcT/kluhP+UbiMye0qY6FFwJgJY8GIjR6MPuUllVO0WxUlOEI3QjaPxJ0S0NQsJMHDmwk7ud03IVVQJFNcWD0XTZVv2Dw+4KD7Fo5Z7AfpFx07ZG+iSLVMnXVc4wqSLtLA=
+      skip_cleanup: true
+      on:
+        tags: true
+        python:
+          - '3.4'
+

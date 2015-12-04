@@ -1,6 +1,7 @@
 import re
 import os.path
 import datetime
+import base64
 
 import aql
 
@@ -35,26 +36,38 @@ HEADER = """#!/usr/bin/env python
            name=info.name, url=info.url)
 
 # ==============================================================================
+AQL_DATE = '_AQL_VERSION_INFO.date = "{date}"'.format(
+    date=datetime.date.today().isoformat())
 
-MAIN = """
-_AQL_VERSION_INFO.date = "{date}"
-if __name__ == '__main__':
-  aql_module_globals = globals().copy()
-  aql_module_name = "aql"
-  aql_module = imp.new_module( aql_module_name )
-  aql_module_globals.update( aql_module.__dict__ )
-  aql_module.__dict__.update( aql_module_globals )
-  sys.modules[ aql_module_name ] = aql_module
-
-  sys.exit( main() )
-""".format(date=datetime.date.today().isoformat())
 
 # ==============================================================================
+MAIN = """
+if __name__ == '__main__':
+    aql_module_globals = globals().copy()
+    aql_module_name = "aql"
+    aql_module = imp.new_module(aql_module_name)
+    aql_module_globals.update( aql_module.__dict__)
+    aql_module.__dict__.update(aql_module_globals)
+    sys.modules[aql_module_name] = aql_module
+    {embedded_tools}
+    sys.exit(main())
+"""
+
+# ==============================================================================
+EMBEDDED_TOOLS = '\n    _EMBEDDED_TOOLS.append(b"""\n%s""")\n'
 
 
+# ==============================================================================
 class AqlPreprocess (aql.FileBuilder):
 
     split = aql.FileBuilder.split_single
+
+    # ----------------------------------------------------------
+
+    def get_trace_name(self, source_entities, brief):
+        return "Preprocess file"
+
+    # ----------------------------------------------------------
 
     def get_trace_targets(self, target_entities, brief):
         return None
@@ -91,8 +104,8 @@ class AqlPreprocess (aql.FileBuilder):
 
         # -----------------------------------------------------------
 
-        aql_import_re = re.compile(
-            r"^\s*from\s+(\.?aql.+)\s+import\s+.+$", re.MULTILINE)
+        aql_import_re = re.compile(r"^\s*from\s+(\.?aql.+)\s+import\s+.+$",
+                                   re.MULTILINE)
 
         aql_imports = set()
 
@@ -119,18 +132,35 @@ class AqlPreprocess (aql.FileBuilder):
 
         targets.add_target_entity(target)
 
+
 # ==============================================================================
-
-
-class AqlLink (aql.Builder):
+class AqlLinkCore (aql.FileBuilder):
 
     def __init__(self, options, target):
-        self.target = self.get_target_path(target)
+        self.target = self.get_target_path(target, ext='.py')
+
+    def get_trace_name(self, source_entities, brief):
+        return "Link AQL Module"
+
+    # ----------------------------------------------------------
+
+    def get_target_entities(self, source_entities):
+        return self.target
+
+    # ----------------------------------------------------------
+
+    def get_trace_sources(self, source_entities, brief):
+        return (os.path.basename(src.name) for src in source_entities)
 
     # -----------------------------------------------------------
 
-    def get_target_entities(self, source_values):
-        return self.target
+    def replace(self, options, source_entities):
+        finder = aql.FindFilesBuilder(options,
+                                      mask='*.py',
+                                      exclude_mask="__init__.py")
+        core_files = aql.Node(finder, source_entities)
+
+        return aql.Node(AqlPreprocess(options), core_files)
 
     # -----------------------------------------------------------
 
@@ -223,23 +253,120 @@ class AqlLink (aql.Builder):
         imports_content = '\n'.join(
             "import %s" % module for module in sorted(std_modules))
 
-        content = HEADER + '\n' + imports_content + \
-            '\n' + content + '\n' + MAIN
+        content = '\n'.join([HEADER, imports_content, content, AQL_DATE])
 
-        aql.write_text_file(self.target, content)
-
+        aql.write_text_file(self.target, data=content)
         targets.add_target_files(self.target)
 
+
 # ==============================================================================
+class AqlPackTools (aql.FileBuilder):
+
+    NAME_ATTRS = ['target']
+
+    def __init__(self, options, target):
+        self.target = target
+        self.build_target = self.get_target_path(target, ext='.b64')
+
+    # ----------------------------------------------------------
+
+    def get_trace_name(self, source_entities, brief):
+        return "Pack Tools"
+
+    # ----------------------------------------------------------
+
+    def get_target_entities(self, source_values):
+        return self.build_target
+
+    # ----------------------------------------------------------
+
+    def replace(self, options, source_entities):
+
+        tools_path = [source.get() for source in source_entities]
+        if not tools_path:
+            return None
+
+        finder = aql.FindFilesBuilder(options, '*.py')
+        zipper = aql.ZipFilesBuilder(options,
+                                     target=self.target,
+                                     basedir=tools_path)
+
+        tool_files = aql.Node(finder, source_entities)
+        zip = aql.Node(zipper, tool_files)
+
+        return zip
+
+    # -----------------------------------------------------------
+
+    def build(self, source_entities, targets):
+
+        target = self.build_target
+
+        with aql.open_file(target, write=True,
+                           binary=True, truncate=True) as output:
+
+            for source in source_entities:
+                zip_file = source.get()
+
+                with aql.open_file(zip_file, read=True, binary=True) as input:
+                    base64.encode(input, output)
+
+        targets.add_target_files(target, tags="embedded_tools")
 
 
+# ==============================================================================
+class AqlLinkStandalone (aql.FileBuilder):
+
+    def __init__(self, options, target):
+        self.target = self.get_target_path(target)
+
+    # -----------------------------------------------------------
+
+    def get_trace_name(self, source_entities, brief):
+        return "Link AQL standalone script"
+
+    # ----------------------------------------------------------
+
+    def get_target_entities(self, source_values):
+        return self.target
+
+    # ----------------------------------------------------------
+
+    def build(self, source_entities, targets):
+        content = []
+
+        embedded_tools = ""
+
+        for source in source_entities:
+            data = aql.read_text_file(source.get())
+            if not data:
+                continue
+
+            if "embedded_tools" in source.tags:
+                embedded_tools = EMBEDDED_TOOLS % data
+            else:
+                content.append(data)
+
+        content.append(MAIN.format(embedded_tools=embedded_tools))
+
+        content = '\n'.join(content)
+
+        aql.write_text_file(self.target, content)
+        targets.add_target_files(self.target)
+
+
+# ==============================================================================
 class AqlBuildTool(aql.Tool):
 
-    def preprocess(self, options):
-        return AqlPreprocess(options)
+    def pack_tools(self, options, target):
+        return AqlPackTools(options, target)
 
-    def link(self, options, target):
-        return AqlLink(options, target)
+    def link_module(self, options, target):
+        return AqlLinkCore(options, target)
 
-    Preprocess = preprocess
-    Link = link
+    def link_standalone(self, options, target):
+        return AqlLinkStandalone(options, target)
+
+    PackTools = pack_tools
+    LinkModule = link_module
+    LinkStandalone = link_standalone

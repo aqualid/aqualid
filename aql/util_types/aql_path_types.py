@@ -42,18 +42,14 @@ except AttributeError:
     def _splitunc(path):
         return str(), path
 
+
 # ==============================================================================
-
-# noinspection PyAttributeOutsideInit
-
-
 class FilePath (FilePathBase):
 
     # -----------------------------------------------------------
 
     def __getnewargs__(self):
-        # noinspection PyRedundantParentheses
-        return (str(self), )
+        return str(self),
 
     def __getstate__(self):
         return {}

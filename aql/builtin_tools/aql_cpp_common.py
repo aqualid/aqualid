@@ -569,7 +569,7 @@ class CommonCppLinkerBase(FileBuilder):
 
     # -----------------------------------------------------------
 
-    def replace(self, source_entities):
+    def replace(self, options, source_entities):
 
         cwd = os.getcwd()
 

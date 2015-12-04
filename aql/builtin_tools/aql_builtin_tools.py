@@ -23,6 +23,7 @@
 from .aql_tool import Tool
 from .aql_builder_exec_cmd import ExecuteCommandBuilder
 from .aql_builder_copy_files import CopyFilesBuilder, CopyFileAsBuilder
+from .aql_builder_find_files import FindFilesBuilder
 from .aql_builder_exec_method import ExecuteMethodBuilder
 from .aql_builder_tar import TarFilesBuilder
 from .aql_builder_write_file import WriteFileBuilder
@@ -33,6 +34,15 @@ from .aql_builder_install import InstallDistBuilder
 
 __all__ = (
     "BuiltinTool",
+    'ExecuteCommandBuilder',
+    'CopyFilesBuilder',
+    'CopyFileAsBuilder',
+    'FindFilesBuilder',
+    'ExecuteMethodBuilder',
+    'TarFilesBuilder',
+    'WriteFileBuilder',
+    'ZipFilesBuilder',
+    'DistBuilder',
 )
 
 # ==============================================================================
@@ -64,8 +74,19 @@ class BuiltinTool(Tool):
 
     # ----------------------------------------------------------
 
-    def copy_files(self, options, target):
-        return CopyFilesBuilder(options, target)
+    def find_files(self, options, mask=None,
+                   exclude_mask=None, exclude_subdir_mask=None):
+        return FindFilesBuilder(options,
+                                mask,
+                                exclude_mask,
+                                exclude_subdir_mask)
+
+    FindFiles = find_files
+
+    # ----------------------------------------------------------
+
+    def copy_files(self, options, target, basedir=None):
+        return CopyFilesBuilder(options, target, basedir=basedir)
 
     CopyFiles = copy_files
 

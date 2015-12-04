@@ -25,11 +25,17 @@ import os.path
 import site
 import types
 import itertools
+import zipfile
+import base64
+import errno
+import io
+
 
 from aql.utils import CLIConfig, CLIOption, get_function_args, exec_file,\
-    flatten_list, find_files, cpu_count, Chdir, expand_file_path
+    flatten_list, find_files, cpu_count, Chdir, expand_file_path,\
+    event_status, event_warning, log_info, log_warning
 
-from aql.util_types import FilePath, value_list_type, UniqueList,\
+from aql.util_types import AbsFilePath, FilePath, value_list_type, UniqueList,\
     to_sequence, is_sequence
 
 from aql.entity import NullEntity, EntityBase, FileTimestampEntity,\
@@ -52,27 +58,75 @@ __all__ = ('Project', 'ProjectConfig',
            'ErrorProjectInvalidMethod',
            )
 
+
 # ==============================================================================
+@event_status
+def event_extracted_tools(settings, path):
+    log_info("Extracted embedded tools into: '%s'" % (path,))
 
 
+# ==============================================================================
+@event_warning
+def event_extract_tools_failed(settings, error):
+    log_warning("Failed to extract embedded tools: %s" % (error,))
+
+
+# ==============================================================================
+_EMBEDDED_TOOLS = []   # only used by standalone script
+
+
+# ==============================================================================
+def _extract_embedded_tools(info=get_aql_info(),
+                            embedded_tools=_EMBEDDED_TOOLS):
+
+    if not embedded_tools:
+        return None
+
+    embedded_tools = embedded_tools[0]
+    if not embedded_tools:
+        return None
+
+    path = os.path.join(_get_user_config_dir(), info.module, '.embedded_tools')
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+        return path
+
+    try:
+        zipped_tools = base64.b64decode(embedded_tools)
+
+        with io.BytesIO(zipped_tools) as handle:
+            with zipfile.ZipFile(handle) as zip_handle:
+                zip_handle.extractall(path)
+
+    except Exception as ex:
+        event_extract_tools_failed(ex)
+        return None
+
+    event_extracted_tools(path)
+
+    return path
+
+
+# ==============================================================================
 class ErrorProjectInvalidMethod(Exception):
 
     def __init__(self, method):
         msg = "Invalid project method: '%s'" % (method,)
         super(ErrorProjectInvalidMethod, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectUnknownTarget(Exception):
 
     def __init__(self, target):
         msg = "Unknown build target: '%s'" % (target,)
         super(ErrorProjectUnknownTarget, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodWithKW(Exception):
 
     def __init__(self, method):
@@ -80,27 +134,24 @@ class ErrorProjectBuilderMethodWithKW(Exception):
             method,)
         super(ErrorProjectBuilderMethodWithKW, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodUnbound(Exception):
 
     def __init__(self, method):
         msg = "Unbound builder method: '%s'" % (method,)
         super(ErrorProjectBuilderMethodUnbound, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodFewArguments(Exception):
 
     def __init__(self, method):
         msg = "Too few arguments in builder method: '%s'" % (method,)
         super(ErrorProjectBuilderMethodFewArguments, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 class ErrorProjectBuilderMethodInvalidOptions(Exception):
 
     def __init__(self, value):
@@ -108,15 +159,13 @@ class ErrorProjectBuilderMethodInvalidOptions(Exception):
               "'%s'(%s)" % (type(value), value)
         super(ErrorProjectBuilderMethodInvalidOptions, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 def _get_user_config_dir():
     return os.path.join(os.path.expanduser('~'), '.config')
 
+
 # ==============================================================================
-
-
 def _add_packages_from_sys_path(paths):
 
     local_path = os.path.normcase(os.path.expanduser('~'))
@@ -127,9 +176,8 @@ def _add_packages_from_sys_path(paths):
             if path not in paths:
                 paths.append(path)
 
+
 # ==============================================================================
-
-
 def _add_packages_from_sysconfig(paths):
     try:
         from distutils.sysconfig import get_python_lib
@@ -140,9 +188,8 @@ def _add_packages_from_sysconfig(paths):
     except Exception:
         pass
 
+
 # ==============================================================================
-
-
 def _get_site_packages():
 
     try:
@@ -157,9 +204,8 @@ def _get_site_packages():
 
     return paths
 
+
 # ==============================================================================
-
-
 def _get_aqualid_install_dir():
     try:
         import aql
@@ -167,16 +213,16 @@ def _get_aqualid_install_dir():
     except Exception:
         return None
 
+
 # ==============================================================================
-
-
 def _get_default_tools_path(info=get_aql_info()):
 
     aql_module_name = info.module
 
     tool_dirs = _get_site_packages()
 
-    tool_dirs += (site.USER_SITE, _get_user_config_dir())
+    tool_dirs.append(site.USER_SITE)
+    tool_dirs.append(_get_user_config_dir())
 
     tool_dirs = [os.path.join(path, aql_module_name) for path in tool_dirs]
 
@@ -187,9 +233,8 @@ def _get_default_tools_path(info=get_aql_info()):
     tool_dirs = [os.path.join(path, 'tools') for path in tool_dirs]
     return tool_dirs
 
+
 # ==============================================================================
-
-
 def _read_config(config_file, cli_config, options):
 
     tools_path = cli_config.tools_path
@@ -202,9 +247,8 @@ def _read_config(config_file, cli_config, options):
 
     cli_config.tools_path = tools_path
 
+
 # ==============================================================================
-
-
 class ProjectConfig(object):
 
     __slots__ = ('directory', 'makefile', 'targets', 'options', 'arguments',
@@ -224,12 +268,12 @@ class ProjectConfig(object):
 
     def __init__(self, args=None):
 
-        paths_type = value_list_type(UniqueList, FilePath)
+        paths_type = value_list_type(UniqueList, AbsFilePath)
         strings_type = value_list_type(UniqueList, str)
 
         cli_options = (
 
-            CLIOption("-C", "--directory", "directory", FilePath, '',
+            CLIOption("-C", "--directory", "directory", AbsFilePath, '',
                       "Change directory before reading the make files.",
                       'FILE PATH', cli_only=True),
 
@@ -248,7 +292,7 @@ class ProjectConfig(object):
             CLIOption("-t", "--list-targets", "list_targets", bool, False,
                       "List all available targets and exit.", cli_only=True),
 
-            CLIOption("-c", "--config", "config", FilePath, None,
+            CLIOption("-c", "--config", "config", AbsFilePath, None,
                       "The configuration file used to read CLI arguments.",
                       cli_only=True),
 
@@ -283,7 +327,8 @@ class ProjectConfig(object):
             CLIOption(None, "--debug-memory", "debug_memory", bool, False,
                       "Display memory usage."),
 
-            CLIOption("-P", "--debug-profile", "debug_profile", FilePath, None,
+            CLIOption("-P", "--debug-profile", "debug_profile",
+                      AbsFilePath, None,
                       "Run under profiler and save the results "
                       "in the specified file.",
                       'FILE PATH'),
@@ -352,7 +397,13 @@ class ProjectConfig(object):
         self.options = options
         self.arguments = arguments
         self.directory = os.path.abspath(cli_config.directory)
-        self.makefile = cli_config.makefile
+
+        makefile = cli_config.makefile
+        if makefile.find(os.path.sep) != -1:
+            makefile = os.path.abspath(makefile)
+
+        self.makefile = makefile
+
         self.search_up = cli_config.search_up
         self.tools_path = cli_config.tools_path
         self.default_tools_path = _get_default_tools_path()
@@ -488,9 +539,8 @@ class BuilderWrapper(object):
 
         return node
 
+
 # ==============================================================================
-
-
 class ToolWrapper(object):
 
     def __init__(self, tool, project, options):
@@ -511,9 +561,8 @@ class ToolWrapper(object):
         setattr(self, attr, builder)
         return builder
 
+
 # ==============================================================================
-
-
 class ProjectTools(object):
 
     def __init__(self, project):
@@ -526,6 +575,10 @@ class ProjectTools(object):
 
         tools.load_tools(config.default_tools_path)
         tools.load_tools(config.tools_path)
+        if tools.empty():
+            embedded_tools_path = _extract_embedded_tools()
+            if embedded_tools_path:
+                tools.load_tools(embedded_tools_path)
 
         self.tools = tools
 

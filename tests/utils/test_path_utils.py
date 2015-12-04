@@ -5,7 +5,7 @@ from aql_testcase import AqlTestCase
 from aql.utils import find_files, change_path, \
     find_program, find_programs, find_optional_program, \
     find_optional_programs, relative_join, exclude_files_from_dirs, \
-    group_paths_by_dir
+    group_paths_by_dir, Tempdir
 
 # ==============================================================================
 
@@ -184,15 +184,40 @@ class TestPathUtils(AqlTestCase):
     # ==============================================================================
 
     def test_find_files(self):
-        path = os.path.join(os.path.dirname(__file__), '..', '..')
 
-        files = find_files(path,
-                           mask=['*.pythonics', "*.tdt", "*.py", "*.pyc"])
+        with Tempdir() as tmp_dir:
+            sub_dir1 = Tempdir(root_dir=tmp_dir)
+            sub_dir2 = Tempdir(root_dir=tmp_dir)
+            sub_dir3 = Tempdir(root_dir=tmp_dir)
+            exc_sub_dir = Tempdir(root_dir=tmp_dir)
+            exclude_subdir_mask = os.path.basename(exc_sub_dir)
 
-        self.assertIn(os.path.abspath(__file__), files)
+            src_files = []
+            src_files += self.generate_source_files(sub_dir1, 3,
+                                                    size=1, suffix='.tmp1')
 
-        files2 = find_files(path, mask='|*.pythonics|*.tdt||*.py|*.pyc')
-        self.assertEqual(files2, files)
+            src_files += self.generate_source_files(sub_dir2, 3,
+                                                    size=1, suffix='.tmp2')
+
+            src_files = set(src_files)
+
+            self.generate_source_files(exc_sub_dir, 3, size=1, suffix='.tmp2')
+            self.generate_source_files(sub_dir3, 3, size=1, suffix='.tmp')
+
+            found_dirs = set()
+
+            files = find_files(tmp_dir, mask=['*.tmp?', "*.tmp2"],
+                               exclude_subdir_mask=exclude_subdir_mask,
+                               found_dirs=found_dirs)
+
+            self.assertSetEqual(src_files, set(files))
+            self.assertSetEqual(found_dirs,
+                                set([sub_dir1, sub_dir2, sub_dir3]))
+
+            files = find_files(tmp_dir, mask='|*.tmp?|*.tmp3||*.tmp3|',
+                               exclude_subdir_mask=exclude_subdir_mask)
+
+            self.assertSetEqual(src_files, set(files))
 
     # ==============================================================================
 

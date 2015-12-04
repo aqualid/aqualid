@@ -24,7 +24,7 @@ import os
 import errno
 import operator
 
-from aql.util_types import FilePath, is_string, to_sequence
+from aql.util_types import FilePath, to_sequence, to_string
 from aql.utils import simple_object_signature, simplify_value, execute_command,\
     event_debug, log_debug, group_paths_by_dir, group_items, relative_join,\
     relative_join_list
@@ -47,33 +47,34 @@ def event_exec_cmd(settings, cmd, cwd, env):
 
 # ==============================================================================
 def _get_trace_arg(entity, brief):
-
-    value = None
-
     if isinstance(entity, FileEntityBase):
         value = entity.get()
         if brief:
             value = os.path.basename(value)
     else:
-        if isinstance(entity, EntityBase):
-            value = entity.get()
+        if isinstance(entity, FilePath):
+            value = entity
 
-        elif isinstance(entity, FilePath):
             if brief:
-                value = os.path.basename(entity)
+                value = os.path.basename(value)
 
-        elif is_string(entity):
-            value = entity.strip()
+        else:
+            if isinstance(entity, EntityBase):
+                value = to_string(entity.get())
+            else:
+                value = to_string(entity)
 
-            npos = value.find('\n')
-            if npos != -1:
-                value = value[:npos]
+            value = value.strip()
 
             max_len = 64 if brief else 256
             src_len = len(value)
+
             if src_len > max_len:
-                value = "%s...%s" % (
-                    value[:max_len // 2], value[src_len - (max_len // 2):])
+                value = "%s...%s" % (value[:max_len // 2],
+                                     value[src_len - (max_len // 2):])
+
+            value = value.replace('\r', '')
+            value = value.replace('\n', ' ')
 
     return value
 
@@ -81,12 +82,7 @@ def _get_trace_arg(entity, brief):
 # ==============================================================================
 def _join_args(entities, brief):
 
-    args = []
-
-    for arg in to_sequence(entities):
-        arg = _get_trace_arg(arg, brief)
-        if arg and is_string(arg):
-            args.append(arg)
+    args = [_get_trace_arg(arg, brief) for arg in to_sequence(entities)]
 
     if not brief or (len(args) < 3):
         return ' '.join(args)
@@ -389,13 +385,17 @@ class Builder (object):
 
     def check_actual(self, target_entities):
         """
-        Checks that target entities are up to date.
+        Checks that previous target entities are still up to date.
         It called only if all other checks were successful.
-        It can't be used to check remote resources.
-        It should raise an exception if any target is not up to date.
+        Returns None if all targets are actual.
+        Otherwise first not actual target.
         :param target_entities: Previous target entities
         """
-        pass
+        for entity in target_entities:
+            if not entity.is_actual():
+                return target_entities
+
+        return None
 
     # -----------------------------------------------------------
 
@@ -408,7 +408,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def depends(self, source_entities):
+    def depends(self, options, source_entities):
         """
         Could be used to dynamically generate dependency nodes
         Returns list of dependency nodes or None
@@ -417,7 +417,7 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
-    def replace(self, source_entities):
+    def replace(self, options, source_entities):
         """
         Could be used to dynamically replace sources
         Returns list of nodes/entities or None (if sources are not changed)
@@ -560,18 +560,27 @@ class Builder (object):
     # -----------------------------------------------------------
 
     def get_target_path(self, target, ext=None, prefix=None):
-        target_dir, name = _split_file_name(target, prefix=prefix, ext=ext)
+        target_dir, name = _split_file_name(target,
+                                            prefix=prefix,
+                                            ext=ext,
+                                            replace_ext=False)
 
         if target_dir.startswith((os.path.curdir, os.path.pardir)):
             target_dir = os.path.abspath(target_dir)
         elif not os.path.isabs(target_dir):
-            target_dir = os.path.abspath(
-                os.path.join(self.build_path, target_dir))
+            target_dir = os.path.abspath(os.path.join(self.build_path,
+                                                      target_dir))
 
         _make_build_path(target_dir)
 
         target = os.path.join(target_dir, name)
         return target
+
+    # -----------------------------------------------------------
+
+    @staticmethod
+    def makedirs(path):
+        _make_build_path(path)
 
     # -----------------------------------------------------------
 
@@ -588,8 +597,8 @@ class Builder (object):
             target_dir = os.path.abspath(target_dir)
 
         elif not os.path.isabs(target_dir):
-            target_dir = os.path.abspath(
-                os.path.join(self.build_path, target_dir))
+            target_dir = os.path.abspath(os.path.join(self.build_path,
+                                                      target_dir))
 
         target_dir = os.path.join(target_dir, name)
 
