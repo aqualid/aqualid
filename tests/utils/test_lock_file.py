@@ -58,7 +58,6 @@ class TestFileLock(AqlTestCase):
 
             start_time = time.time()
             with flock.write_lock():
-
                 self.assertGreaterEqual(time.time() - start_time, 1)
 
                 with open(temp_file, 'w+b') as file:
@@ -88,7 +87,7 @@ class TestFileLock(AqlTestCase):
             with flock1.write_lock():
                 start_time = time.time()
                 self.assertRaises(ErrorFileLocked, flock2.write_lock)
-                self.assertGreaterEqual(time.time() - start_time, 3)
+                self.assertGreater(time.time() - start_time, 2)
 
     # ==============================================================================
 
@@ -132,7 +131,6 @@ class TestFileLock(AqlTestCase):
             start_time = time.time()
 
             with flock.read_lock():
-
                 self.assertGreaterEqual(time.time() - start_time, 1)
 
                 with open(temp_file, 'w+b') as file:
@@ -163,7 +161,6 @@ class TestFileLock(AqlTestCase):
             start_time = time.time()
 
             with flock.write_lock():
-
                 self.assertGreaterEqual(time.time() - start_time, 1)
 
                 with open(temp_file, 'w+b') as file:

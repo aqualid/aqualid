@@ -50,7 +50,7 @@ def _run_tests(tests_dir, source_dir):
     if cov is not None:
         cov.start()
 
-    result = module.run([])
+    result = module.run(['--capture=sys'])
 
     if cov is not None:
         cov.stop()
