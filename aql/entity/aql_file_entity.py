@@ -21,7 +21,6 @@
 
 
 import os
-import errno
 
 from .aql_entity import EntityBase
 from .aql_entity_pickler import pickleable
