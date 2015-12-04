@@ -22,6 +22,7 @@
 
 from aql.utils import find_files
 from aql.nodes import FileBuilder
+from aql.entity import DirEntity
 
 
 # ==============================================================================
@@ -37,6 +38,12 @@ class FindFilesBuilder (FileBuilder):
         self.mask = mask
         self.exclude_mask = exclude_mask
         self.exclude_subdir_mask = exclude_subdir_mask
+
+    # ----------------------------------------------------------
+
+    def make_entity(self, value, tags=None):
+        # this method is used only for source entities, which can be only dirs
+        return DirEntity(name=value, tags=tags)
 
     # ----------------------------------------------------------
 
@@ -59,7 +66,9 @@ class FindFilesBuilder (FileBuilder):
         files = find_files(**args)
 
         targets.add_target_files(files)
-        targets.add_implicit_dep_files(found_dirs)
+
+        found_dirs = map(DirEntity, found_dirs)
+        targets.add_implicit_dep_entities(found_dirs)
 
     # -----------------------------------------------------------
 

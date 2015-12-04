@@ -24,7 +24,7 @@ import os
 import operator
 
 from aql.util_types import to_sequence
-from aql.utils import new_hash, event_status, log_debug, log_info
+from aql.utils import new_hash, event_status, log_debug, log_info, log_error
 from aql.entity import EntityBase, SimpleEntity, pickleable
 
 __all__ = (
@@ -32,18 +32,15 @@ __all__ = (
     'NodeFilter', 'NodeDirNameFilter', 'NodeBaseNameFilter',
 )
 
+
 # ==============================================================================
-
-
 class ErrorNodeDependencyInvalid(Exception):
-
     def __init__(self, dep):
         msg = "Invalid node dependency: %s" % (dep,)
         super(ErrorNodeDependencyInvalid, self).__init__(msg)
 
 
 class ErrorNodeSplitUnknownSource(Exception):
-
     def __init__(self, node, entity):
         msg = "Node '%s' can't be split to unknown source entity: %s" % (
             node.get_build_str(brief=False), entity)
@@ -51,14 +48,12 @@ class ErrorNodeSplitUnknownSource(Exception):
 
 
 class ErrorNoTargets(AttributeError):
-
     def __init__(self, node):
         msg = "Node targets are not built or set yet: %s" % (node,)
         super(ErrorNoTargets, self).__init__(msg)
 
 
 class ErrorNoSrcTargets(Exception):
-
     def __init__(self, node, src_entity):
         msg = "Source '%s' targets are not built or set yet: %s" % (
             src_entity.get(), node)
@@ -66,22 +61,19 @@ class ErrorNoSrcTargets(Exception):
 
 
 class ErrorUnactualEntity(Exception):
-
-    def __init__(self, entity):
-        msg = "Target entity is not actual: %s (%s)" % (
-            entity.name, type(entity))
+    def __init__(self, node_entity, entity):
+        msg = "Target entity is not actual: %s (%s), node: %s" % \
+              (entity.name, type(entity), node_entity.get_build_str())
         super(ErrorUnactualEntity, self).__init__(msg)
 
 
 class ErrorNodeUnknownSource(Exception):
-
     def __init__(self, src_entity):
         msg = "Unknown source entity: %s (%s)" % (src_entity, type(src_entity))
         super(ErrorNodeUnknownSource, self).__init__(msg)
 
+
 # ==============================================================================
-
-
 @event_status
 def event_node_rebuild_reason(settings, reason):
     if isinstance(reason, NodeRebuildReason):
@@ -91,9 +83,8 @@ def event_node_rebuild_reason(settings, reason):
 
     log_debug(msg)
 
+
 # ==============================================================================
-
-
 class NodeRebuildReason (Exception):
     __slots__ = (
         'builder',
@@ -128,9 +119,8 @@ class NodeRebuildReason (Exception):
     def get_description(self, brief):
         return "Node's state is changed."
 
+
 # ==============================================================================
-
-
 class NodeRebuildReasonAlways (NodeRebuildReason):
     def get_description(self, brief):
         return "Node is marked to rebuild always."
@@ -153,7 +143,6 @@ class NodeRebuildReasonNoTargets (NodeRebuildReason):
 
 
 class NodeRebuildReasonImplicitDep (NodeRebuildReason):
-
     __slots__ = (
         'entity',
     )
@@ -168,7 +157,6 @@ class NodeRebuildReasonImplicitDep (NodeRebuildReason):
 
 
 class NodeRebuildReasonTarget (NodeRebuildReason):
-
     __slots__ = (
         'entity',
     )
@@ -180,9 +168,8 @@ class NodeRebuildReasonTarget (NodeRebuildReason):
     def get_description(self, brief):
         return "Node's target '%s' has changed." % (self.entity,)
 
+
 # ==============================================================================
-
-
 @pickleable
 class NodeEntity (EntityBase):
 
@@ -293,6 +280,17 @@ class NodeEntity (EntityBase):
 
     # -----------------------------------------------------------
 
+    def get_build_str(self):
+        try:
+            targets = getattr(self, 'target_entities', None)
+            return self.builder.get_trace(self.source_entities, targets)
+        except Exception as ex:
+            log_error(ex)
+
+        return str(self)  # Can't do much, show as a raw pointer
+
+    # -----------------------------------------------------------
+
     def __getattr__(self, attr):
         if attr == 'target_entities':
             self.target_entities = targets = self.get_targets()
@@ -340,7 +338,7 @@ class NodeEntity (EntityBase):
 
             if cached_entity is entity:
                 if entity.signature is None:
-                    raise ErrorUnactualEntity(entity)
+                    raise ErrorUnactualEntity(self, entity)
 
             entities.append(cached_entity)
 
@@ -394,7 +392,7 @@ class NodeEntity (EntityBase):
 
         for entity in self.target_entities:
             if entity.signature is None:
-                raise ErrorUnactualEntity(entity)
+                raise ErrorUnactualEntity(self, entity)
 
         self._save_ideps(vfile)
 
@@ -459,6 +457,12 @@ class NodeEntity (EntityBase):
         self.itarget_entities.extend(
             self.builder.make_file_entities(entities, tags))
 
+    def add_side_effect_entity(self, entity):
+        self.itarget_entities.append(entity)
+
+    def add_side_effect_entities(self, entities):
+        self.itarget_entities.extend(entities)
+
     # -----------------------------------------------------------
 
     def add_implicit_deps(self, entities, tags=None):
@@ -469,9 +473,14 @@ class NodeEntity (EntityBase):
         self.idep_entities.extend(
             self.builder.make_file_entities(entities, tags))
 
+    def add_implicit_dep_entity(self, entity):
+        self.idep_entities.append(entity)
+
+    def add_implicit_dep_entities(self, entities):
+        self.idep_entities.extend(entities)
+
 
 # ==============================================================================
-
 class _NodeBatchTargets (object):
 
     def __init__(self, node_entities_map):
@@ -1171,14 +1180,12 @@ class Node (object):
     def get_build_str(self, brief=True):
         try:
             targets = getattr(self, 'target_entities', None)
-
             return self.builder.get_trace(self.source_entities, targets, brief)
-
         except Exception as ex:
             if 'BuilderInitiator' not in str(ex):
                 raise
 
-        return str(self)  # TODO: return raw data
+        return str(self)  # show as a raw pointer
 
     # ----------------------------------------------------------
 

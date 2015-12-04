@@ -121,7 +121,7 @@ def _masks_to_match(masks, _null_match=lambda name: False):
 
 def find_files(paths=".",
                mask=("*",),
-               exclude_mask=tuple(),
+               exclude_mask=('.*',),
                exclude_subdir_mask=('__*', '.*'),
                found_dirs=None):
 

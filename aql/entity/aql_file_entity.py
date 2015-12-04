@@ -113,16 +113,12 @@ class FileEntityBase (EntityBase):
 
         return False
 
+
 # ==============================================================================
-
-
 def _get_file_checksum(path, offset=0):
     try:
         signature = file_signature(path, offset)
-    except (OSError, IOError) as err:
-        if err.errno != errno.EISDIR:
-            return None
-
+    except (OSError, IOError):
         try:
             signature = file_time_signature(path)
         except (OSError, IOError):
@@ -144,7 +140,6 @@ def _get_file_timestamp(path):
 # ==============================================================================
 @pickleable
 class FileChecksumEntity(FileEntityBase):
-
     def get_signature(self):
         return _get_file_checksum(self.name)
 
@@ -152,7 +147,6 @@ class FileChecksumEntity(FileEntityBase):
 # ==============================================================================
 @pickleable
 class FileTimestampEntity(FileEntityBase):
-
     def get_signature(self):
         return _get_file_timestamp(self.name)
 
@@ -160,7 +154,6 @@ class FileTimestampEntity(FileEntityBase):
 # ==============================================================================
 @pickleable
 class DirEntity (FileTimestampEntity):
-
     def remove(self):
         try:
             os.rmdir(self.name)
