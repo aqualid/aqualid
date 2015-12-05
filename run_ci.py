@@ -188,7 +188,7 @@ def _make_dist(core_dir, tools_dir):
 def _make_release(core_dir, tools_dir):
 
     tools_dir = os.path.join(tools_dir, 'tools')
-    args = ['-I', tools_dir, 'sdist', 'local', 'wdist', 'copy_setup']
+    args = ['-I', tools_dir, 'sdist', 'local', 'copy_setup']
 
     _make_aql(core_dir, args)
 
