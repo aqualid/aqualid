@@ -185,6 +185,15 @@ def _make_dist(core_dir, tools_dir):
 
 
 # ==============================================================================
+def _make_release(core_dir, tools_dir):
+
+    tools_dir = os.path.join(tools_dir, 'tools')
+    args = ['-I', tools_dir, 'sdist', 'local', 'wdist', 'copy_setup']
+
+    _make_aql(core_dir, args)
+
+
+# ==============================================================================
 def _run_examples(core_dir, examples_dir):
 
     output_dir = os.path.join(core_dir, 'make', 'output')
@@ -240,6 +249,10 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
     if (run_tests is None) or 'examples' in run_tests:
         _run_examples(core_dir, examples_dir)
 
+    if 'release' in run_tests:
+        tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
+        _make_release(core_dir, tools_dir)
+
 
 # ==============================================================================
 def _parse_args(choices):
@@ -268,7 +281,8 @@ def _parse_args(choices):
 
 # ==============================================================================
 def main():
-    choices = ('tests', 'make', 'dist', 'flake8', 'tools', 'examples')
+    choices = ('tests', 'make', 'dist', 'flake8',
+               'tools', 'examples', 'release')
 
     args = _parse_args(choices)
 
@@ -281,6 +295,9 @@ def main():
 
     if args.skip_tests:
         run_tests.difference_update(args.skip_tests)
+
+    if os.environ.get('TRAVIS_TAG'):
+        run_tests = ('release',)
 
     run(core_dir, args.tools_dir, args.examples_dir, run_tests)
 
