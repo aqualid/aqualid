@@ -290,6 +290,7 @@ def main():
 
     if args.run_tests is None:
         run_tests = set(choices)
+        run_tests.discard('release')
     else:
         run_tests = set(args.run_tests)
 
