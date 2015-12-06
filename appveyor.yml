@@ -22,11 +22,14 @@ build: off
 test_script:
   - "python run_ci.py"
 
+artifacts:
+    - path: 'make/install/*.exe'
+      name: Distributions for Windows
+
 deploy:
   provider: GitHub
   auth_token:
     secure: 79ZJS9bGVP+7P+00FDjBAsio7iAiXISHzTcedhTI1TRDo6R3oUkuhklPip2oevQW
-  artifact: make/install/*.exe
   draft: false
   on:
     appveyor_repo_tag: true
