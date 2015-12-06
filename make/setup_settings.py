@@ -1,3 +1,4 @@
+import re
 
 from aql import get_aql_info, read_text_file
 
@@ -15,8 +16,8 @@ include {win_script}
 """.format(unix_script=UNIX_SCRIPT_PATH,
            win_script=WINDOWS_SCRIPT_PATH)
 
-# ==============================================================================
 
+# ==============================================================================
 UNIX_SCRIPT = """#!/usr/bin/env python
 if __name__ == '__main__':
   import {module}
@@ -24,8 +25,8 @@ if __name__ == '__main__':
   sys.exit({module}.main())
 """.format(module=info.module).replace('\r', '')
 
-# ==============================================================================
 
+# ==============================================================================
 WINDOWS_SCRIPT = """@echo off
 @echo off
 
@@ -50,8 +51,8 @@ ENDLOCAL & set AQL_ERRORLEVEL=%ERRORLEVEL%
 exit /B %AQL_ERRORLEVEL%
 """.format(module=info.module).replace('\r', '').replace('\n', '\r\n')
 
-# ==============================================================================
 
+# ==============================================================================
 STANDALONE_WINDOWS_SCRIPT = """@echo off
 IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=
@@ -65,16 +66,23 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
 )
 """.replace('\r', '').replace('\n', '\r\n')
 
+
 # ==============================================================================
-
-
 def read_long_description(readme_path):
+    md_link_re = re.compile("\[.*\]\(.+\)")
+
     readme = read_text_file(readme_path)
-    readme = '\n'.join(readme.split('\n')[2:])
+    lines = []
+    for line in readme.split('\n'):
+        if line.startswith('#') or md_link_re.search(line):
+            continue
+        lines.append(line)
+
+    readme = '\n'.join(lines)
     return readme.strip()
 
-# ==============================================================================
 
+# ==============================================================================
 SETUP_SCRIPT = """
 import os
 import errno
@@ -92,8 +100,8 @@ except LookupError:
     func = lambda name, enc=ascii: {{True: enc}}.get(name=='mbcs')
     codecs.register(func)
 
-# ==============================================================================
 
+# ==============================================================================
 def   _removeFile( file ):
   try:
     os.remove( file )
