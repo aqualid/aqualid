@@ -174,21 +174,17 @@ def _run_make(core_dir):
 
 
 # ==============================================================================
-def _make_dist(core_dir, tools_dir):
+def _make_dist(core_dir, tools_dir, release=False):
 
     tools_dir = os.path.join(tools_dir, 'tools')
+
     args = ['-I', tools_dir, 'sdist', 'local']
+
     if sys.platform.startswith('win'):
         args.append('wdist')
 
-    _make_aql(core_dir, args)
-
-
-# ==============================================================================
-def _make_release(core_dir, tools_dir):
-
-    tools_dir = os.path.join(tools_dir, 'tools')
-    args = ['-I', tools_dir, 'sdist', 'local', 'copy_setup']
+    if release:
+        args.append('copy_setup')
 
     _make_aql(core_dir, args)
 
@@ -239,6 +235,10 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
         tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
         _make_dist(core_dir, tools_dir)
 
+    if (run_tests is not None) and 'release' in run_tests:
+        tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
+        _make_dist(core_dir, tools_dir, release=True)
+
     if (run_tests is None) or 'tools' in run_tests:
         tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
         examples_dir = _fetch_repo(core_dir, 'examples', examples_dir)
@@ -248,10 +248,6 @@ def run(core_dir, tools_dir, examples_dir, run_tests=None):
 
     if (run_tests is None) or 'examples' in run_tests:
         _run_examples(core_dir, examples_dir)
-
-    if 'release' in run_tests:
-        tools_dir = _fetch_repo(core_dir, 'tools', tools_dir)
-        _make_release(core_dir, tools_dir)
 
 
 # ==============================================================================
@@ -297,7 +293,7 @@ def main():
     if args.skip_tests:
         run_tests.difference_update(args.skip_tests)
 
-    if os.environ.get('TRAVIS_TAG'):
+    if os.environ.get('TRAVIS_TAG') or os.environ.get('APPVEYOR_REPO_TAG'):
         run_tests = ('release',)
 
     run(core_dir, args.tools_dir, args.examples_dir, run_tests)

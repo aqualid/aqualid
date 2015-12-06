@@ -38,7 +38,7 @@ standalone = aql_tool.LinkStandalone(aql_module, tools_pack, target="aql.py")
 
 info = aql.get_aql_info()
 standalone_name = dist_dir + \
-    "/{name}-{version}-local".format(name=info.name, version=info.version)
+    "/{name}-{version}-standalone".format(name=info.name, version=info.version)
 
 standalone_zip = tools.CreateZip(standalone,
                                  Entity(STANDALONE_WINDOWS_SCRIPT, 'aql.cmd'),

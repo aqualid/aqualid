@@ -25,7 +25,7 @@ deploy:
     api_key:
         secure: wqUW3M6GzXnf7H71skp9LNm+r3VXeIE2atGWFYH/QhSmpUlWPDKIofsywHEG34TCEQsf0iWY9klv2qR6JJxY+4EfcvlnwLpVOoKflo/Hy7mn+wqbxULhVTg/niqZ7uoYjxoWaw3OgXPgn2mpZm44H1RzS75LeJmbKrrfpGyH4gU=
     file_glob: true
-    file: "/home/travis/build/aqualid/aqualid/make/install/*"
+    file: "make/install/*"
     on:
         tags: true
         python: '3.4'

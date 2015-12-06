@@ -10,6 +10,8 @@ environment:
 os:
   - Visual Studio 2015
 
+shallow_clone: true
+
 install:
   - CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;C:\\MinGW\\bin;%PATH%"
@@ -19,3 +21,13 @@ build: off
 
 test_script:
   - "python run_ci.py"
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: 79ZJS9bGVP+7P+00FDjBAsio7iAiXISHzTcedhTI1TRDo6R3oUkuhklPip2oevQW
+  artifact: make/install/*.exe
+  draft: false
+  on:
+    appveyor_repo_tag: true
+    PYTHON: "C:\\Python34-x64"
