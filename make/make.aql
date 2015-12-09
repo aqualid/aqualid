@@ -1,4 +1,5 @@
 import os
+import re
 
 import aql
 
@@ -11,108 +12,194 @@ from setup_settings import UNIX_SCRIPT_PATH, \
     STANDALONE_WINDOWS_SCRIPT, \
     MANIFEST, \
     AQL_MODULE_PATH, \
-    SETUP_SCRIPT
+    generate_setup_script
+
 
 # ==============================================================================
+def _make_module(aql_tool, core_dir):
+    aql_module = aql_tool.LinkModule(core_dir, target='__init__')
+
+    Alias('link', aql_module, "Make AQL module.")
+
+    return aql_module
 
 
-core_dir = os.path.abspath('../aql')
-tools_path = GetProjectConfig().tools_path
-dist_dir = './install'
+# ==============================================================================
+def strip_readme(builder, source_entities, targets):
+    """
+    Strip README
+    """
+    md_link_re = re.compile("\[.*\]\(.+\)")
+
+    readme_path = source_entities[0].get()
+
+    readme = aql.read_text_file(readme_path)
+    lines = []
+    for line in readme.split('\n'):
+        if line.startswith('#') or md_link_re.search(line):
+            continue
+        lines.append(line)
+
+    readme = '\n'.join(lines).strip()
+
+    target = builder.make_simple_entity(readme)
+    targets.add_target_entity(target)
+
+
+# ==============================================================================
+def write_setup_script(builder, source_entities, targets, setup_dir):
+    """
+    Write Setup Script
+    """
+    long_description = source_entities[0].get()
+
+    setup_script = generate_setup_script(long_description)
+    setup_dir = builder.get_target_dir(setup_dir)
+
+    target = os.path.join(setup_dir, 'setup.py')
+
+    aql.write_text_file(target, setup_script)
+    targets.add_target_files(target)
+
+
+# ==============================================================================
+def _make_setup_script(aql_module, tools_path):
+    setup_dir = 'setup/'
+
+    module_dir = setup_dir + AQL_MODULE_PATH
+
+    mod = tools.CopyFileAs(aql_module, target=module_dir + '/__init__.py')
+
+    tools_files = tools.FindFiles(tools_path, mask="*.py")
+    aql_tools = tools.CopyFiles(tools_files, basedir=tools_path,
+                                target=module_dir + '/tools')
+
+    stripped_readme = tools.Method(File('../README.md'), method=strip_readme)
+
+    readme_txt = tools.WriteFile(stripped_readme,
+                                 target=setup_dir + 'README.txt')
+
+    manifest = tools.WriteFile(MANIFEST, target=setup_dir + "MANIFEST.in")
+
+    win_script = tools.WriteFile(WINDOWS_SCRIPT,
+                                 target=setup_dir + WINDOWS_SCRIPT_PATH,
+                                 binary=True)
+
+    unix_script = tools.WriteFile(UNIX_SCRIPT,
+                                  target=setup_dir + UNIX_SCRIPT_PATH,
+                                  binary=True)
+
+    setup_script = tools.Method(stripped_readme, method=write_setup_script,
+                                args=(setup_dir,))
+
+    all_nodes = [mod, aql_tools, readme_txt, manifest,
+                 win_script, unix_script, setup_script]
+
+    Alias('setup', all_nodes, "Create setup.py script.")
+
+    # ----------------------------------------------------------
+
+    copy_setup = tools.CopyFiles(all_nodes,
+                                 basedir=DirName(setup_script),
+                                 target='..')
+
+    Alias('copy_setup', copy_setup,
+          "Copy setup.py files into the root folder.")
+
+    return setup_script, all_nodes
+
+
+# ==============================================================================
+def _make_standalone(aql_tool, aql_module, tools_path, dist_dir):
+    tools_pack = aql_tool.PackTools(tools_path, target='tools')
+
+    standalone = aql_tool.LinkStandalone(aql_module, tools_pack,
+                                         target="aql.py")
+
+    info = aql.get_aql_info()
+    standalone_name = dist_dir + \
+        "/{name}-{version}-standalone".format(name=info.name,
+                                              version=info.version)
+
+    standalone_zip = tools.CreateZip(standalone,
+                                     Entity(STANDALONE_WINDOWS_SCRIPT,
+                                            'aql.cmd'),
+                                     rename=[('aql', standalone)],
+                                     target=standalone_name)
+
+    standalone_tar = tools.CreateTar(standalone,
+                                     rename=[('aql', standalone)],
+                                     target=standalone_name)
+
+    Alias('local', [standalone_zip, standalone_tar],
+          "Create standalone distributions.")
+
+
+# ==============================================================================
+def _make_dists(setup_script, dist_dir, setup_nodes):
+    sdist = tools.CreateDist(setup_script, target=dist_dir,
+                             command="sdist", args="--formats=zip,bztar")
+
+    wdist32 = tools.CreateDist(setup_script, target=dist_dir, command="bdist",
+                               args=["--plat-name=win32",
+                                     "--formats=wininst"])
+
+    wdist64 = tools.CreateDist(setup_script, target=dist_dir, command="bdist",
+                               args=["--plat-name=win-amd64",
+                                     "--formats=wininst"])
+
+    Depends([sdist, wdist32, wdist64], setup_nodes)
+
+    Alias('sdist', sdist, "Build source distributions.")
+    Alias('wdist', [wdist32, wdist64], "Build Windows distributions.")
+
+    return sdist, wdist32, wdist64
+
+
+# ==============================================================================
+def _install_dists(setup_script, setup_nodes):
+    install_user = tools.InstallDist(setup_script, user=True)
+
+    install_system = tools.InstallDist(setup_script, user=False)
+
+    Depends([install_user, install_system], setup_nodes)
+
+    Alias('install', install_user,
+          "Install distribution for the current user only.")
+
+    Alias('install_system', install_system,
+          "Install distribution for all users.")
+
+    return install_user, install_system
+
+
+# ==============================================================================
+def build():
+    core_dir = os.path.abspath('../aql')
+    dist_dir = './install'
+
+    tools_path = GetProjectConfig().tools_path
+
+    aql_tool = AddTool(AqlBuildTool)
+
+    aql_module = _make_module(aql_tool, core_dir)
+
+    setup_script, setup_nodes = _make_setup_script(aql_module, tools_path)
+
+    _make_standalone(aql_tool, aql_module, tools_path, dist_dir)
+
+    dists = _make_dists(setup_script, dist_dir, setup_nodes)
+
+    installs = _install_dists(setup_script, setup_nodes)
+
+    Sync(dists, installs)
+
+    Default(aql_module)
+
+
+# ==============================================================================
 
 SetBuildDir('output')
 options.build_dir_name = ''
 
-aql_tool = AddTool(AqlBuildTool)
-
-aql_module = aql_tool.LinkModule(core_dir, target='__init__')
-
-Alias('link', aql_module, "Make AQL module.")
-Default(aql_module)
-
-# -----------------------------------------------------------
-
-tools_pack = aql_tool.PackTools(tools_path, target='tools')
-
-standalone = aql_tool.LinkStandalone(aql_module, tools_pack, target="aql.py")
-
-info = aql.get_aql_info()
-standalone_name = dist_dir + \
-    "/{name}-{version}-standalone".format(name=info.name, version=info.version)
-
-standalone_zip = tools.CreateZip(standalone,
-                                 Entity(STANDALONE_WINDOWS_SCRIPT, 'aql.cmd'),
-                                 rename=[('aql', standalone)],
-                                 target=standalone_name)
-
-standalone_tar = tools.CreateTar(standalone,
-                                 rename=[('aql', standalone)],
-                                 target=standalone_name)
-
-Alias('local', [standalone_zip, standalone_tar],
-      "Create standalone distributions.")
-
-# -----------------------------------------------------------
-
-setup_dir = 'setup/'
-
-module_dir = setup_dir + AQL_MODULE_PATH
-
-mod = tools.CopyFileAs(aql_module, target=module_dir + '/__init__.py')
-
-tools_files = tools.FindFiles(tools_path, mask="*.py")
-aql_tools = tools.CopyFiles(tools_files, basedir=tools_path,
-                            target=module_dir + '/tools')
-
-readme = tools.CopyFileAs('../README.md',  target=setup_dir + 'README.txt')
-
-manifest = tools.WriteFile(MANIFEST, target=setup_dir + "MANIFEST.in")
-
-win_script = tools.WriteFile(WINDOWS_SCRIPT,
-                             target=setup_dir + WINDOWS_SCRIPT_PATH,
-                             binary=True)
-
-unix_script = tools.WriteFile(UNIX_SCRIPT,
-                              target=setup_dir + UNIX_SCRIPT_PATH,
-                              binary=True)
-
-setup_script = tools.WriteFile(SETUP_SCRIPT,
-                               target=setup_dir + "setup.py")
-
-Alias('setup_dir',
-      [mod, aql_tools, readme, manifest,
-       win_script, unix_script, setup_script],
-      "Create distutils folder.")
-
-copy_setup = tools.CopyFiles(mod, aql_tools, readme, manifest,
-                             win_script, unix_script, setup_script,
-                             basedir=DirName(setup_script),
-                             target='..')
-
-Alias('copy_setup', copy_setup)
-
-sdist = tools.CreateDist(setup_script, target=dist_dir,
-                         command="sdist", args="--formats=zip,bztar")
-
-wdist32 = tools.CreateDist(setup_script, target=dist_dir, command="bdist",
-                           args=["--plat-name=win32", "--formats=wininst"])
-
-wdist64 = tools.CreateDist(setup_script,
-                           target=dist_dir,
-                           command="bdist",
-                           args=["--plat-name=win-amd64", "--formats=wininst"])
-
-install_user = tools.InstallDist(setup_script, user=True)
-
-install_system = tools.InstallDist(setup_script, user=False)
-
-Depends([sdist, wdist32, wdist64, install_user, install_system],
-        [mod, aql_tools, unix_script, win_script, manifest, readme])
-
-Sync(wdist32, wdist64, sdist, install_user, install_system)
-
-Alias('sdist', sdist, "Build source distributions.")
-Alias('wdist', [wdist32, wdist64], "Build Windows distributions.")
-Alias('install', install_user,
-      "Install distribution for the current user only.")
-Alias('install_system', install_system, "Install distribution for all users.")
+build()

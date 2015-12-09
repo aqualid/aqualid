@@ -1,6 +1,5 @@
-import re
 
-from aql import get_aql_info, read_text_file
+from aql import get_aql_info
 
 info = get_aql_info()
 
@@ -44,7 +43,7 @@ goto exit
 SET AQL_RUN_SCRIPT=
 SETLOCAL
 SET "PATH=%~dp0;%PATH%"
-python -OO -c "import {module}; import sys; sys.exit({module}.main())" %*
+python -O -c "import {module}; import sys; sys.exit({module}.main())" %*
 ENDLOCAL & set AQL_ERRORLEVEL=%ERRORLEVEL%
 
 :exit
@@ -56,7 +55,7 @@ exit /B %AQL_ERRORLEVEL%
 STANDALONE_WINDOWS_SCRIPT = """@echo off
 IF [%AQL_RUN_SCRIPT%] == [YES] (
   SET AQL_RUN_SCRIPT=
-  python -OO aql %*
+  python -O aql %*
 
 ) ELSE (
   REM Workaround for an interactive prompt "Terminate batch script? (Y/N)"
@@ -68,22 +67,9 @@ IF [%AQL_RUN_SCRIPT%] == [YES] (
 
 
 # ==============================================================================
-def read_long_description(readme_path):
-    md_link_re = re.compile("\[.*\]\(.+\)")
+def generate_setup_script(long_description):
 
-    readme = read_text_file(readme_path)
-    lines = []
-    for line in readme.split('\n'):
-        if line.startswith('#') or md_link_re.search(line):
-            continue
-        lines.append(line)
-
-    readme = '\n'.join(lines)
-    return readme.strip()
-
-
-# ==============================================================================
-SETUP_SCRIPT = """
+    setup_script = """
 import os
 import errno
 
@@ -167,7 +153,7 @@ setup(
       cmdclass          = {{ 'install_scripts' : InstallScripts,}}
 )
 """.format(short_descr=info.description,
-           long_descr=read_long_description('../README.md'),
+           long_descr=long_description,
            name=info.name,
            modname=info.module,
            version=info.version,
@@ -177,3 +163,5 @@ setup(
            unix_script=UNIX_SCRIPT_PATH,
            win_script=WINDOWS_SCRIPT_PATH,
            )
+
+    return setup_script

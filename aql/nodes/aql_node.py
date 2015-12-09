@@ -494,9 +494,8 @@ class _NodeBatchTargets (object):
         except KeyError:
             raise ErrorNodeUnknownSource(source)
 
+
 # ==============================================================================
-
-
 class NodeFilter (object):
 
     __slots__ = (
@@ -547,9 +546,8 @@ class NodeFilter (object):
 
         return entities
 
+
 # ==============================================================================
-
-
 class NodeTagsFilter(NodeFilter):
     __slots__ = (
         'tags',
@@ -566,9 +564,8 @@ class NodeTagsFilter(NodeFilter):
         return tuple(entity for entity in entities
                      if entity.tags and (entity.tags & tags))
 
+
 # ==============================================================================
-
-
 class NodeIndexFilter(NodeFilter):
     __slots__ = (
         'index',

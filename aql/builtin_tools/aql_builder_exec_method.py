@@ -86,7 +86,12 @@ class ExecuteMethodBuilder (Builder):
     # -----------------------------------------------------------
 
     def get_trace_name(self, source_entities, brief):
-        name = self.method_name
+        name = self.method.__doc__
+        if name:
+            name = name.strip().split('\n')[0].strip()
+
+        if not name:
+            name = self.method_name
 
         if not brief:
             args = ''

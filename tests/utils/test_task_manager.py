@@ -21,7 +21,7 @@ def _do_fail(delay=0, fail_event=None):
 
 
 # ==============================================================================
-def _do_expensive(event, delay=1):
+def _do_expensive(event, delay=0.5):
     if event.wait(delay):
         raise Exception("Concurrent run")
     event.set()
@@ -30,7 +30,7 @@ def _do_expensive(event, delay=1):
 
 
 # ==============================================================================
-def _do_non_expensive(event, delay=1):
+def _do_non_expensive(event, delay=2):
     if event.wait(delay):
         raise Exception("Concurrent run")
     time.sleep(delay)
@@ -236,7 +236,7 @@ class TestTaskManager(AqlTestCase):
         results = self.get_done_tasks(tm)
 
         for result in results:
-            self.assertFalse(result.is_failed(), result)
+            self.assertFalse(result.is_failed(), str(result))
 
         self.assertEqual(len(results), num_tasks * 2)
 

@@ -574,11 +574,13 @@ class ProjectTools(object):
         config = self.project.config
 
         tools.load_tools(config.default_tools_path)
-        tools.load_tools(config.tools_path)
+
         if tools.empty():
             embedded_tools_path = _extract_embedded_tools()
             if embedded_tools_path:
                 tools.load_tools(embedded_tools_path)
+
+        tools.load_tools(config.tools_path)
 
         self.tools = tools
 
@@ -948,7 +950,7 @@ class Project(object):
 
     # -----------------------------------------------------------
 
-    # TODO: It works not fully correctly yet. See test aq_test_sync_modules
+    # TODO: It works not fully correctly yet. See test test_bm_sync_modules
     # def   SyncModules( self, nodes ):
     #   nodes = tuple( node for node in to_sequence( nodes )
     #                  if isinstance( node, Node ) )
