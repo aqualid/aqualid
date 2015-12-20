@@ -399,6 +399,17 @@ class Builder (object):
 
     # -----------------------------------------------------------
 
+    def get_actual(self, target_entities):
+        """
+        Returns a list of actual target entities.
+        :param target_entities: Previous target entities
+        """
+
+        # By default we return the same list as it has been just checked
+        return target_entities
+
+    # -----------------------------------------------------------
+
     def clear(self, target_entities, side_effect_entities):
         for entity in target_entities:
             entity.remove()

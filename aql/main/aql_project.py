@@ -428,9 +428,8 @@ class ProjectConfig(object):
         self.debug_backtrace = cli_config.debug_backtrace
         self.debug_exec = cli_config.debug_exec
 
+
 # ==============================================================================
-
-
 class BuilderWrapper(object):
     __slots__ = ('project', 'options', 'tool', 'method', 'arg_names')
 
@@ -689,9 +688,8 @@ class ProjectTools(object):
 
         return self.__add_tool(tool_class, self.project.options)
 
+
 # ==============================================================================
-
-
 def _text_targets(targets):
     text = ["", "  Targets:", "==================", ""]
 
@@ -718,9 +716,8 @@ def _text_targets(targets):
     text.append('')
     return text
 
+
 # ==============================================================================
-
-
 class Project(object):
 
     def __init__(self, config):

@@ -19,7 +19,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
 #  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
 from aql.utils import find_files
 from aql.nodes import FileBuilder
 from aql.entity import DirEntity
@@ -83,6 +82,11 @@ class FindFilesBuilder (FileBuilder):
     def check_actual(self, target_entities):
         # We don't care about content of previously found files
         return None
+
+    # ----------------------------------------------------------
+    def get_actual(self, target_entities):
+        # Return actual entities of previously found files
+        return [entity.get_actual() for entity in target_entities]
 
     # ----------------------------------------------------------
 

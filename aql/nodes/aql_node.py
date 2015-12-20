@@ -370,9 +370,13 @@ class NodeEntity (EntityBase):
             if target_entities is None:
                 raise NodeRebuildReasonNoTargets(self)
 
-            unactual_target = self.builder.check_actual(target_entities)
+            builder = self.builder
+
+            unactual_target = builder.check_actual(target_entities)
             if unactual_target is not None:
                 raise NodeRebuildReasonTarget(self, unactual_target)
+
+            target_entities = builder.get_actual(target_entities)
 
         except NodeRebuildReason as reason:
             if explain:
